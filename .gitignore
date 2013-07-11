@@ -1,0 +1,13 @@
+target/
+.settings/
+.project
+.classpath
+.metadata/
+*.iml
+*.ipr
+*.iws
+git.properties
+molgenis-compute-core/test-output
+data/
+test-output/
+

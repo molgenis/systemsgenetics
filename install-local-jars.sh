@@ -1,0 +1,1 @@
+mvn install:install-file -Dfile=./lib/jsc.jar -DgroupId=jsc -DartifactId=jsc -Dversion=1.0 -Dpackaging=jar

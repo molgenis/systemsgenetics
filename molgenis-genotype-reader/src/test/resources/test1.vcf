@@ -1,0 +1,42 @@
+##fileformat=VCFv4.1
+##fileDate=2012/11/05
+##source=NextGENeV2.2
+##reference=C:\Program_Files_(x86)\SoftGenetics\NextGENe\References\Human_v37_2_dna
+##contig=<ID=1,length=249240621>
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=ANNOT,Number=.,Type=String,Description="Location-based Annotation: Coding Sequence(CDS),3'UTR(U3),5'UTR(U5),Acceptor Splice Site(AS),Donor Splice Site(DS),Intron(INT),Intergenic Region(ING)">
+##INFO=<ID=REFAA,Number=1,Type=String,Description="Reference Amino Acid">
+##INFO=<ID=AAC,Number=A,Type=String,Description="NextGEe Predicted Amino Acid Changed">
+##INFO=<ID=TI,Number=.,Type=String,Description="Transcript ID">
+##INFO=<ID=PI,Number=.,Type=String,Description="Protein ID">
+##INFO=<ID=GI,Number=.,Type=String,Description="Gene ID">
+##INFO=<ID=PHYLOPC,Number=A,Type=Character,Description="dbNSFP Plylop Classification">
+##INFO=<ID=PHYLOPS,Number=A,Type=Float,Description="dbNSFP Plylop Score">
+##INFO=<ID=SIFTC,Number=A,Type=Character,Description="dbNSFP SIFT Classification">
+##INFO=<ID=SIFTS,Number=A,Type=Float,Description="dbNSFP SIFT Score">
+##INFO=<ID=POLYPHEN2C,Number=A,Type=Character,Description="dbNSFP Polyphen2 Classification">
+##INFO=<ID=Polyphen2S,Number=A,Type=Float,Description="dbNSFP Polyphen2 Score">
+##INFO=<ID=LRTC,Number=A,Type=Character,Description="dbNSFP LRT Classification">
+##INFO=<ID=LRTS,Number=A,Type=Float,Description="dbNSFP LRT Score">
+##INFO=<ID=MTASTERC,Number=A,Type=Character,Description="dbNSFP MutationTaster Classification">
+##INFO=<ID=MTASTERS,Number=A,Type=Float,Description="dbNSFP MutationTaster Score">
+##INFO=<ID=HGENOMES,Number=A,Type=Float,Description="1000 Genomes Frequency">
+##FILTER=<ID=flt,Description="Failing one of the filters">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=EC,Number=A,Type=Integer,Description="alternate allele counts">
+##FORMAT=<ID=CONFS,Number=7,Type=Float,Description="NextGENe Confidence Scores: Overall, Coverage, Read Balance, Allele Balance, Homopolymer, Mismatch, Wrong Allele">
+##FORMAT=<ID=CONFIRM,Number=1,Type=Integer,Description="Confirmed Allele">
+##FORMAT=<ID=DELETE,Number=1,Type=Integer,Description="Deleted Allele">
+##SAMPLE=<ID=test_S0_L001_R1_001_converted_Unique_Output.pjt,Genomes=G1,Mixture=N1,Description=S1>
+##ALT=<ID=DEL,Description="Deletion">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	test_S0_L001_R1_001_converted_Unique_Output.pjt
+1	565286	rs1578391	C	T	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754	GT:DP:EC:CONFS	1/1:5:5:5.300,5.300,1.000,1.000,1.000,1.000,1.000
+1	2243618	rs35434908	A	GTTTCA	.	flt	NS=1;DP=6;AF=1.000;ANNOT=ING	GT:DP:EC:CONFS	1/1:6:6:6.500,6.560,1.000,1.000,1.000,1.000,1.000
+1	3171929	rs4648464	G	A	.	flt	NS=1;DP=4;AF=1.000;ANNOT=INT;GI=PRDM16;TI=NM_022114.3;PI=NP_071397.3	GT:DP:EC:CONFS	1/1:4:4:1.400,4.450,0.330,1.000,1.000,1.000,1.000
+1	3172062	rs4648465	G	A	.	flt	NS=1;DP=11;AF=1.000;ANNOT=INT;GI=PRDM16;TI=NM_022114.3;PI=NP_071397.3	GT:DP:EC:CONFS	1/1:11:11:6.700,8.600,0.780,1.000,1.000,1.000,1.000
+1	3172273	rs2455100	T	C	.	flt	NS=1;DP=7;AF=1.000;ANNOT=INT;GI=PRDM16;TI=NM_022114.3;PI=NP_071397.3	GT:DP:EC:CONFS	1/1:7:7:3.400,7.310,0.470,1.000,1.000,1.000,1.000
+1	6097450	rs1295089	G	A	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=KCNAB2;TI=NM_003636.2;PI=NP_003627.1	GT:DP:EC:CONFS	1/1:5:5:5.000,5.070,1.000,1.000,1.000,1.000,1.000
+1	7569187	rs4908464	G	C	.	flt	NS=1;DP=4;AF=1.000;ANNOT=INT;GI=CAMTA1;TI=NM_015215.1;PI=NP_056030.1	GT:DP:EC:CONFS	1/1:4:4:1.600,4.900,0.330,1.000,1.000,1.000,1.000
