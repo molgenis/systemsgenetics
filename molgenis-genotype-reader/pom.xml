@@ -1,17 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>nl.systemsgenetics</groupId>
 	<artifactId>molgenis-genotype-reader</artifactId>
 	<version>0.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
+	<parent>
+		<groupId>nl.systemsgenetics</groupId>
+		<artifactId>systemsgenetics</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
 	<dependencies>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>molgenis-core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/lib/molgenis-core-0.0.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>
@@ -27,8 +29,6 @@
 			<groupId>net.sf</groupId>
 			<artifactId>samtools</artifactId>
 			<version>1.83</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/lib/sam-1.83.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>org.testng</groupId>
