@@ -71,6 +71,8 @@
 		<module>genetics-lib</module>
 		<module>imputation-tool</module>
 		<module>eqtl-mapping-pipeline</module>
-		
+
+		<module>genotype-aligner</module>
+		<module>molgenis-genotype-reader</module>
 	</modules>
 </project>
