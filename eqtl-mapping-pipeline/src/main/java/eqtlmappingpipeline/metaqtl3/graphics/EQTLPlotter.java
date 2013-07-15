@@ -16,7 +16,7 @@ import java.io.File;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import jsc.util.Arrays;
+import umcg.genetica.util.Primitives;
 import umcg.genetica.graphics.ViolinBoxPlot;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
@@ -456,19 +456,20 @@ public class EQTLPlotter {
 
                 double[] aaArr = toArray(valsAA);
                 if (aaArr.length > 0) {
-                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 0 - 5, minYAA, 25, (maxYAA - minYAA), aaArr, Arrays.min(aaArr), Arrays.max(aaArr), false, true);
+                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 0 - 5, minYAA, 25, (maxYAA - minYAA), aaArr, Primitives.min(aaArr), Primitives.max(aaArr), false, true);
                 }
 
                 double[] abArr = toArray(valsAB);
 
                 if (abArr.length > 0) {
-                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 50 - 5, minYAB, 25, (maxYAB - minYAB), abArr, Arrays.min(abArr), Arrays.max(abArr), false, true);
+                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 50 - 5, minYAB, 25, (maxYAB - minYAB), abArr, Primitives.min(abArr), Primitives.max(abArr), false, true);
                 }
 
                 double[] bbArr = toArray(valsBB);
 
                 if (bbArr.length > 0) {
-                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 100 - 5, minYBB, 25, (maxYBB - minYBB), bbArr, Arrays.min(bbArr), Arrays.max(bbArr), false, true);
+                    
+                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 100 - 5, minYBB, 25, (maxYBB - minYBB), bbArr, Primitives.min(bbArr), Primitives.max(bbArr), false, true);
                 }
 
                 //Draw alleles:

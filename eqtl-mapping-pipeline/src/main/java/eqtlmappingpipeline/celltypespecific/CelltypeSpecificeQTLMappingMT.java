@@ -581,7 +581,7 @@ public class CelltypeSpecificeQTLMappingMT {
 
         HashSet<String> snpsWritten = new HashSet<String>();
 
-        System.out.println("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
+//        System.out.println("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
         proxyEffectFile.writeln("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
         String[] snpsPassingQCArr = snpsPassingQC.toArray(new String[0]);
 
@@ -668,7 +668,7 @@ public class CelltypeSpecificeQTLMappingMT {
                 try {
                     CellTypeSpecificeQTLMappingResults result = pool.take().get();
                     proxyEffectFile.writeln(result.getCellcountInterActionOutput());
-                    System.out.println(result.getCellcountInterActionOutput());
+//                    System.out.println(result.getCellcountInterActionOutput());
                     double[][] interactionVectors = result.getInteractionVector();
 
                     for (int c = 0; c < interactionVectors[interactionVectors.length - 1].length; c++) {

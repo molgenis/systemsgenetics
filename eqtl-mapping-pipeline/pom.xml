@@ -13,7 +13,7 @@
 	<dependencies>
 		<dependency>
             <groupId>nl.systemsgenetics</groupId>
-            <artifactId>genetics-lib</artifactId>
+            <artifactId>genetica-libraries</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
