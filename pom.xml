@@ -68,7 +68,7 @@
 	</reporting>
 
 	<modules>
-		<module>genetics-lib</module>
+		<module>genetica-libraries</module>
 		<module>imputation-tool</module>
 		<module>eqtl-mapping-pipeline</module>
 
