@@ -21,6 +21,8 @@ public class Main {
         app.main(args);
 
 
+        System.out.println("Have a nice day :)");
         System.exit(0);
+        
     }
 }
