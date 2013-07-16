@@ -69,4 +69,15 @@ public class ResourceTest
 	{
 		return getTestResourceFile("/test.haps");
 	}
+
+	protected File getLdTestVcf() throws URISyntaxException
+	{
+		return getTestResourceFile("/ldTest.vcf.gz");
+	}
+
+	protected File getLdTestVcfTbi() throws URISyntaxException
+	{
+		return getTestResourceFile("/ldTest.vcf.gz.tbi");
+	}
+
 }

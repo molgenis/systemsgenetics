@@ -115,6 +115,12 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant
 	}
 
 	@Override
+	public List<Boolean> getSamplePhasing()
+	{
+		return getSampleVariantsProvider().getSamplePhasing(originalVariant);
+	}
+
+	@Override
 	public Map<String, ?> getAnnotationValues()
 	{
 		return originalVariant.getAnnotationValues();

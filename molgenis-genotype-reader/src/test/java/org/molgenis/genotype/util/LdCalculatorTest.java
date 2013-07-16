@@ -9,12 +9,15 @@ import java.util.Iterator;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.DummySampleVariantsProvider;
+import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
+import org.molgenis.genotype.vcf.VcfGenotypeData;
 import org.testng.annotations.Test;
 
-public class LdCalculatorTest
+public class LdCalculatorTest extends ResourceTest
 {
 
 	@Test
@@ -41,10 +44,8 @@ public class LdCalculatorTest
 		ArrayList<String> haps = new ArrayList<String>(Arrays.asList("CC", "CA", "AC", "AA"));
 
 		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
-		// AssertJUnit.assertEquals(ld.getHaplotypesFreq().values(),
-		// hapFreqExpect);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.0001);
 
-		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.000001);
 	}
 
 	@Test
@@ -78,12 +79,61 @@ public class LdCalculatorTest
 		assertEquals(ld.getR2(), 0.1, 0.1);
 		assertEquals(ld.getDPrime(), 0.4, 0.1);
 
-		ArrayList<Double> hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.2801730369238241d,
-				0.21982696307617589d, 0.1198269630761759d, 0.38017303692382415d));
+		ArrayList<Double> hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.2801730369238241d, 0.1198269630761759d,
+				0.21982696307617589d, 0.38017303692382415d));
 		ArrayList<String> haps = new ArrayList<String>(Arrays.asList("CC", "CT", "AC", "AT"));
-
 		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
-		assertEquals(ld.getHaplotypesFreq().values(), hapFreqExpect);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.00001);
+
+	}
+
+	@Test
+	public void calculateLd3() throws LdCalculatorException, Exception
+	{
+
+		RandomAccessGenotypeData testData = new VcfGenotypeData(getLdTestVcf(), getLdTestVcfTbi());
+
+		GeneticVariant rs2073738 = testData.getSnpVariantByPos("22", 19170956);
+		GeneticVariant rs2073738_B = testData.getSnpVariantByPos("22", 19170957);
+		GeneticVariant rs1210711 = testData.getSnpVariantByPos("22", 19339635);
+		GeneticVariant rs1210711_B = testData.getSnpVariantByPos("22", 19339636);
+		GeneticVariant rs5748165 = testData.getSnpVariantByPos("22", 19368723);
+
+		Ld ld;
+
+		ld = rs1210711.calculateLd(rs2073738);
+		ArrayList<Double> hapFreqExpect = new ArrayList<Double>(Arrays.asList(1.0736996276734832E-38d,
+				0.9629258517034068d, 0.006012024048096192d, 0.031062124248496994d));
+		ArrayList<String> haps = new ArrayList<String>(Arrays.asList("CT", "CC", "TT", "TC"));
+		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.00001);
+
+		ld = rs1210711.calculateLd(rs2073738_B);
+		hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.9629258517034068d, 1.0736996276734832E-38d,
+				0.031062124248496994d, 0.006012024048096192));
+		haps = new ArrayList<String>(Arrays.asList("CC", "CT", "TC", "TT"));
+		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.00001);
+
+		ld = rs1210711_B.calculateLd(rs2073738);
+		hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.006012024048096192d, 0.031062124248496994d,
+				1.0736996276734832E-38d, 0.9629258517034068));
+		haps = new ArrayList<String>(Arrays.asList("TT", "TC", "CT", "CC"));
+		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.00001);
+
+		ld = rs1210711_B.calculateLd(rs2073738_B);
+		hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.031062124248496994d, 0.006012024048096192d,
+				0.9629258517034068d, 1.0736996276734832E-38d));
+		haps = new ArrayList<String>(Arrays.asList("TC", "TT", "CC", "CT"));
+		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.00001);
+
+		ld = rs1210711.calculateLd(rs5748165);
+		hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.0d, 0.9629258517034068d, 0.03707414829659319d, 0d));
+		haps = new ArrayList<String>(Arrays.asList("CC", "CT", "TC", "TT"));
+		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
+		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.00001);
 
 	}
 

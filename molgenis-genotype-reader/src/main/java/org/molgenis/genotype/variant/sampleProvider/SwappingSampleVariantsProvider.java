@@ -1,6 +1,7 @@
 package org.molgenis.genotype.variant.sampleProvider;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
@@ -20,6 +21,7 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 	@Override
 	public List<Alleles> getSampleVariants(GeneticVariant variant)
 	{
+
 		List<Alleles> sampleAlleles = sampleVariantsProvider.getSampleVariants(variant);
 		List<Alleles> swapped = new ArrayList<Alleles>(sampleAlleles.size());
 		for (Alleles alleles : sampleAlleles)
@@ -27,7 +29,7 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 			swapped.add(alleles.getComplement());
 		}
 
-		return swapped;
+		return Collections.unmodifiableList(swapped);
 	}
 
 	@Override

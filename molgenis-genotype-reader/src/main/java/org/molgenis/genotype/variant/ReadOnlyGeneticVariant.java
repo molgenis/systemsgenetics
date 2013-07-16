@@ -223,6 +223,12 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant
 	}
 
 	@Override
+	public List<Boolean> getSamplePhasing()
+	{
+		return sampleVariantsProvider.getSamplePhasing(this);
+	}
+
+	@Override
 	public Map<String, ?> getAnnotationValues()
 	{
 		return Collections.unmodifiableMap(annotationValues);
