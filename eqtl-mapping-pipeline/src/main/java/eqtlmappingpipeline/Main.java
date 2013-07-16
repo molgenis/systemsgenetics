@@ -12,6 +12,8 @@ import eqtlmappingpipeline.gui.EQTLMappingPipelineConsole;
  */
 public class Main {
 
+	public static final String VERSION = Main.class.getPackage().getImplementationVersion();
+
     /**
      * @param args the command line arguments
      */
