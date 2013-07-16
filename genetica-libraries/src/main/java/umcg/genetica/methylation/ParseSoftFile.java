@@ -8,6 +8,7 @@ import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import static umcg.genetica.methylation.ParseTcgaFile.ENCODING;
 
 /**
  *
@@ -27,7 +28,7 @@ public class ParseSoftFile {
         }
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(fileLocation)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileLocation)), ENCODING), 8096);
             String str = "";
             while ((str = in.readLine()) != null) {
                 if (str.startsWith("^SAMPLE")) {
@@ -111,7 +112,7 @@ public class ParseSoftFile {
         int sampleID = 0;
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(fileLocation)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileLocation)), ENCODING), 8096);
             String str = "";
             while ((str = in.readLine()) != null) {
                 if (str.startsWith("^")) {
@@ -252,7 +253,7 @@ public class ParseSoftFile {
         int sampleID = 0;
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(fileLocation)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileLocation)), ENCODING), 8096);
             String str = "";
             while ((str = in.readLine()) != null) {
                 if (str.startsWith("^")) {

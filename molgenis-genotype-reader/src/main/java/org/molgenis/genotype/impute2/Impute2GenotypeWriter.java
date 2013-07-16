@@ -45,6 +45,7 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 		this.genotypeData = genotypeData;
 	}
 
+    @Override
 	public void write(String basePath) throws IOException
 	{
 		write(new File(basePath + ".haps"), new File(basePath + ".sample"));
