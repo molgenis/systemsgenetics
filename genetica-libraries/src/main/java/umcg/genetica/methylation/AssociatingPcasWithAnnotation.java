@@ -1,6 +1,5 @@
 package umcg.genetica.methylation;
 
-import JSci.maths.ArrayMath;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +17,6 @@ import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
-import umcg.genetica.math.stats.FisherExactTest;
 import umcg.genetica.math.stats.TTest;
 import umcg.genetica.math.stats.ZScores;
 
@@ -82,7 +80,7 @@ public class AssociatingPcasWithAnnotation {
 
 //        String infoKey = "Gender";
         String infoKey = "Age";
-        ArrayList<String> entries = new ArrayList<String>();
+//        ArrayList<String> entries = new ArrayList<String>();
 
         //entries.addAll(Arrays.asList("Male", "Female"));
 
@@ -584,7 +582,7 @@ public class AssociatingPcasWithAnnotation {
     public static void associateAnovaScoreAndItemOfInterest(DoubleMatrixDataset<String, String> doubleMatrix, HashMap<String, HashMap<String, String>> interestSets) {
         //System.out.println(eigenVectors.nrCols);
         //System.out.println(eigenVectors.nrRows);
-        HashMap<String, Double> scorePerGse = new HashMap<String, Double>();
+//        HashMap<String, Double> scorePerGse = new HashMap<String, Double>();
         HashMap<String, Integer> indeces = new HashMap<String, Integer>();
 
         for (Entry<String, HashMap<String, String>> set : interestSets.entrySet()) {
