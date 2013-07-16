@@ -2,14 +2,10 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package umcg.genetica.methylation;
+package umcg.genetica.math.matrix;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map.Entry;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
  *
@@ -17,72 +13,230 @@ import umcg.genetica.math.matrix.DoubleMatrixDataset;
  */
 public class MergeDoubleMatrices {
 
-    public static DoubleMatrixDataset<String, String> combine(ArrayList<DoubleMatrixDataset> datasets) {
+    /**
+     * Merge a matrix based on shared column identifiers.
+     *
+     * @param matrixI
+     * @param matrixII
+     * @param removeOldMatrix
+     * @return
+     */
+    public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnColumns(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) {
+        DoubleMatrixDataset<String, String> newMatrix = new DoubleMatrixDataset<String, String>();
 
-        HashSet<String> removeList = new HashSet<String>();
+        MatrixHandeling.OrderOnColumns(matrixI);
+        MatrixHandeling.OrderOnColumns(matrixII);
 
-        for (int i = 0; i < (datasets.size()); ++i) {
-            for (int j = 0; j < (datasets.size()); ++j) {
-                if (i != j) {
-                    DoubleMatrixDataset<String, String> ds1 = datasets.get(i);
-                    DoubleMatrixDataset<String, String> ds2 = datasets.get(j);
-                    for (Entry<String, Integer> t : ds1.hashRows.entrySet()) {
-                        if (!(ds2.hashRows.containsKey(t.getKey()))) {
-                            removeList.add(t.getKey());
-                        }
-                    }
-                }
+        if (matrixI.nrCols != matrixII.nrCols) {
+            HashSet<String> keepColNames1 = new HashSet<String>();
+            keepColNames1.addAll(matrixI.colObjects);
+            HashSet<String> keepColNames2 = new HashSet<String>();
+            keepColNames2.addAll(matrixII.colObjects);
+            keepColNames1.retainAll(keepColNames2);
+
+            MatrixHandeling.FilterCols(matrixI, keepColNames1);
+            MatrixHandeling.FilterCols(matrixII, keepColNames1);
+        }
+
+        if (matrixI.nrCols == 0 || matrixII.nrCols == 0) {
+            System.out.println("Warning indivduals merging. No shared columns");
+            System.exit(-1);
+        } else if (matrixI.nrCols != matrixII.nrCols) {
+            System.out.println("Warning indivduals merging. No equal number of columns");
+            System.exit(-1);
+        }
+        
+        HashSet<String> keepRowNames1 = new HashSet<String>();
+        keepRowNames1.addAll(matrixI.rowObjects);
+        HashSet<String> keepRowNames2 = new HashSet<String>();
+        keepRowNames2.addAll(matrixII.rowObjects);
+        keepRowNames1.retainAll(keepRowNames2);
+        
+        keepRowNames2 = new HashSet<String>();
+        
+        for(String key : keepRowNames1){
+            boolean presentMapI = matrixI.hashRows.containsKey(key);
+            boolean presentMapII = matrixII.hashRows.containsKey(key);
+            if(!(presentMapI ^ presentMapII)){
+                keepRowNames2.add(key);
+            }
+        }
+        keepRowNames1.removeAll(keepRowNames2);
+        
+        if(keepRowNames2.size()>0){
+            MatrixHandeling.FilterRows(matrixI, keepRowNames1);
+            MatrixHandeling.FilterRows(matrixII, keepRowNames1);
+        }
+        
+        keepRowNames1 = null;
+        keepRowNames2 = null;
+        
+        double[][] newRawData = new double[(matrixII.nrRows + matrixI.nrRows)][matrixI.nrCols];
+        ArrayList<String> newRowIds = new ArrayList<String>((matrixII.nrRows + matrixI.nrRows));
+
+        int tmpPos = 0;
+
+        for (int r = 0; r < matrixI.nrRows; ++r) {
+            newRowIds.add(matrixI.rowObjects.get(r));
+            for (int s = 0; s < matrixI.nrCols; ++s) {
+                newRawData[r][s] = matrixI.rawData[r][s];
+            }
+            tmpPos++;
+        }
+        for (int r = 0; r < matrixII.nrRows; ++r) {
+            newRowIds.add(matrixII.rowObjects.get(r));
+            for (int s = 0; s < matrixII.nrCols; ++s) {
+                newRawData[r + tmpPos][s] = matrixII.rawData[r][s];
             }
         }
 
-        System.out.println("Number of probes missing in one or more datasets: " + removeList.size());
+        newMatrix.colObjects = matrixI.colObjects;
+        newMatrix.nrCols = matrixI.nrCols;
 
-        //ToDo handle duplicate entry names. 
+        if (removeOldMatrix) {
+            matrixI = null;
+            matrixII = null;
+        }
 
-        HashMap<String, Integer> sampleToDataset = new HashMap<String, Integer>();
-        ArrayList<String> newColumnNames = new ArrayList<String>();
+        newMatrix.rowObjects = newRowIds;
+        newMatrix.nrRows = newRowIds.size();
+        newMatrix.rawData = newRawData;
+        newMatrix.recalculateHashMaps();
 
-        for (int i = 0; i < (datasets.size()); ++i) {
-            if (removeList.size() > 0) {
-                CleanDoubleMatrix.RemoveRows(datasets.get(i), removeList);
+        return (newMatrix);
+    }
+
+    /**
+     * Merge a matrix based on row identifiers.
+     *
+     * @param matrixI
+     * @param matrixII
+     * @param removeOldMatrix
+     * @return
+     */
+    public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnRows(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) {
+        DoubleMatrixDataset<String, String> newMatrix = new DoubleMatrixDataset<String, String>();
+
+        MatrixHandeling.OrderOnRows(matrixI);
+        MatrixHandeling.OrderOnRows(matrixII);
+
+        if (matrixI.nrRows != matrixII.nrRows) {
+            HashSet<String> keepRowNames1 = new HashSet<String>();
+            keepRowNames1.addAll(matrixI.rowObjects);
+            HashSet<String> keepRowNames2 = new HashSet<String>();
+            keepRowNames2.addAll(matrixII.rowObjects);
+            keepRowNames1.retainAll(keepRowNames2);
+
+            MatrixHandeling.FilterCols(matrixI, keepRowNames1);
+            MatrixHandeling.FilterCols(matrixII, keepRowNames1);
+        }
+
+        if (matrixI.nrRows == 0 || matrixII.nrRows == 0) {
+            System.out.println("Warning invlaid merging. No shared rows");
+            System.exit(-1);
+        } else if (matrixI.nrRows != matrixII.nrRows) {
+            System.out.println("Warning invlaid merging. No equal number of rows");
+            System.exit(-1);
+        }
+        
+        HashSet<String> keepColNames1 = new HashSet<String>();
+        keepColNames1.addAll(matrixI.colObjects);
+        HashSet<String> keepColNames2 = new HashSet<String>();
+        keepColNames2.addAll(matrixII.colObjects);
+        keepColNames1.retainAll(keepColNames2);
+        
+        keepColNames2 = new HashSet<String>();
+        
+        for(String key : keepColNames1){
+            boolean presentMapI = matrixI.hashRows.containsKey(key);
+            boolean presentMapII = matrixII.hashRows.containsKey(key);
+            if(!(presentMapI ^ presentMapII)){
+                keepColNames2.add(key);
             }
-            
-            CleanDoubleMatrix.OrderOnRows(datasets.get(i));
+        }
+        keepColNames1.removeAll(keepColNames2);
+        
+        if(keepColNames2.size()>0){
+            MatrixHandeling.FilterCols(matrixI, keepColNames1);
+            MatrixHandeling.FilterCols(matrixII, keepColNames1);
+        }
+        
+        keepColNames1 = null;
+        keepColNames2 = null;
+        
+        
+        double[][] newRawData = new double[(matrixI.nrRows)][(matrixII.nrCols + matrixI.nrCols)];
+        ArrayList<String> newColIds = new ArrayList<String>((matrixII.nrCols + matrixI.nrCols));
 
-            HashMap<String, Integer> t = (HashMap<String, Integer>) datasets.get(i).hashCols;
-            for (Entry<String, Integer> cols : t.entrySet()) {
-                if (!sampleToDataset.containsKey(cols.getKey())) {
-                    sampleToDataset.put(cols.getKey(), i);
-                    newColumnNames.add(cols.getKey());
-                }
+        int tmpPos = 0;
+
+        for (int s = 0; s < matrixI.nrCols; ++s) {
+            newColIds.add(matrixI.colObjects.get(s));
+            for (int r = 0; r < matrixI.nrRows; ++r) {
+                newRawData[r][s] = matrixI.rawData[r][s];
+            }
+            tmpPos++;
+        }
+        for (int s = 0; s < matrixII.nrCols; ++s) {
+            newColIds.add(matrixII.colObjects.get(s));
+            for (int r = 0; r < matrixII.nrRows; ++r) {
+                newRawData[r][s + tmpPos] = matrixII.rawData[r][s];
             }
         }
 
-        System.out.println("Number of unique columnnames : " + sampleToDataset.size());
-        System.out.println("Number of columnnames : " + newColumnNames.size());
+        newMatrix.rowObjects = matrixI.rowObjects;
+        newMatrix.nrRows = matrixI.nrRows;
 
-        double[][] newRawData = new double[datasets.get(0).nrRows][newColumnNames.size()];
+        if (removeOldMatrix) {
+            matrixI = null;
+            matrixII = null;
+        }
 
-        for (int p = 0; p < datasets.get(0).nrRows; ++p) {
-            for (int s = 0; s < newColumnNames.size(); ++s) {
-                int dataSetNr = sampleToDataset.get(newColumnNames.get(s));
+        newMatrix.colObjects = newColIds;
+        newMatrix.nrCols = newColIds.size();
+        newMatrix.rawData = newRawData;
+        newMatrix.recalculateHashMaps();
 
-                //We shouldnt have to do this conversion.
-                int originalS = (Integer) datasets.get(dataSetNr).hashCols.get(newColumnNames.get(s));
-                newRawData[p][s] = datasets.get(dataSetNr).rawData[p][originalS];
+        return (newMatrix);
+    }
+
+    /**
+     * Merge a set of matrices based on row identifiers.
+     * 
+     * @param matrixI
+     * @param matrixII
+     * @param removeOldMatrix
+     * @return
+     */
+    public static DoubleMatrixDataset<String, String> combineBasedOnRows(ArrayList<DoubleMatrixDataset> datasets) {
+        DoubleMatrixDataset<String, String> newMatrix = datasets.get(0);
+
+        if (datasets.size() > 1) {
+            for (int i = 1; i < datasets.size(); ++i) {
+                newMatrix = mergeMatrixBasedOnRows(newMatrix, datasets.get(i), false);
             }
         }
 
-        DoubleMatrixDataset<String, String> newDataset = new DoubleMatrixDataset<String, String>();
-        newDataset.rowObjects = datasets.get(0).rowObjects;
-        newDataset.nrRows = datasets.get(0).nrRows;
+        return (newMatrix);
+    }
 
-        newDataset.colObjects = newColumnNames;
-        newDataset.nrCols = sampleToDataset.size();
+    /**
+     * Merge a set of matrices based on column identifiers.
+     *
+     * @param matrixI
+     * @param matrixII
+     * @param removeOldMatrix
+     * @return
+     */
+    public static DoubleMatrixDataset<String, String> combineBasedOnCols(ArrayList<DoubleMatrixDataset> datasets) {
+        DoubleMatrixDataset<String, String> newMatrix = datasets.get(0);
 
-        newDataset.rawData = newRawData;
-        newDataset.recalculateHashMaps();
+        if (datasets.size() > 1) {
+            for (int i = 1; i < datasets.size(); ++i) {
+                newMatrix = mergeMatrixBasedOnColumns(newMatrix, datasets.get(i), false);
+            }
+        }
 
-        return (newDataset);
+        return (newMatrix);
     }
 }

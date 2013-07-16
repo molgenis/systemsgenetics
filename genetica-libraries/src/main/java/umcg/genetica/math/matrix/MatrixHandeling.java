@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package umcg.genetica.methylation;
+package umcg.genetica.math.matrix;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,13 +12,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
  *
  * @author Marc Jan
  */
-public class CleanDoubleMatrix {
+public class MatrixHandeling {
 
     /**
      * Remove columns with to many missing values
@@ -544,4 +543,6 @@ public class CleanDoubleMatrix {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
+
 }
+
