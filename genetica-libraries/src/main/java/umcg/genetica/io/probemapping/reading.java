@@ -4,8 +4,12 @@
  */
 package umcg.genetica.io.probemapping;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +34,7 @@ public class reading {
     private static Pattern SPLIT_ON_SEMICOLON = Pattern.compile(";");
     private static Pattern SPLIT_ON_SEMICOLON2 = Pattern.compile("; ");
     private static Pattern SPLIT_ON_SPACE = Pattern.compile(" ");
+    protected static final String ENCODING = "ISO-8859-1";
 
     /**
      * Read sam files
@@ -68,7 +73,8 @@ public class reading {
             }
 
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
+                
                 String str;
 
                 while ((str = in.readLine()) != null) {
@@ -184,7 +190,7 @@ public class reading {
             }
 
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str;
 
                 while ((str = in.readLine()) != null) {
@@ -305,7 +311,7 @@ public class reading {
             }
 
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str;
 
                 while ((str = in.readLine()) != null) {
@@ -395,7 +401,7 @@ public class reading {
         HashMap<String, HashMap<String, String>> probeInfo = new HashMap<String, HashMap<String, String>>((int) Math.ceil(sizeMap / 0.75));
         int entryId = 0;
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(annotationFile)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
             String str = "";
 
             str = in.readLine();
@@ -445,7 +451,7 @@ public class reading {
         HashMap<String, String> probeInfo = new HashMap<String, String>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(annotationFile)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
             String str = "";
             if (firstRowAsHeader) {
                 str = in.readLine();
@@ -480,7 +486,7 @@ public class reading {
         HashMap<String, Triple<Integer, Integer, Integer>> probeInfo = new HashMap<String, Triple<Integer, Integer, Integer>>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(annotationFile)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
             String str = "";
             if (firstRowAsHeader) {
                 str = in.readLine();
@@ -530,7 +536,7 @@ public class reading {
         ArrayList< Triple<Integer, Integer, Integer>> probeInfo = new ArrayList< Triple<Integer, Integer, Integer>>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(annotationFile)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
             String str;
             if (firstRowAsHeader) {
                 str = in.readLine();
@@ -573,7 +579,7 @@ public class reading {
         HashMap<String, String> probeInfo = new HashMap<String, String>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(annotationFile)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
             String str = "";
 
             while ((str = in.readLine()) != null) {
@@ -654,7 +660,7 @@ public class reading {
             File currentFile = vecFiles.get(f);
             System.out.println("Processing:\t" + f + "\t" + currentFile.getAbsolutePath());
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = "";
                 if (firstRowAsHeader) {
                     str = in.readLine();
@@ -712,7 +718,7 @@ public class reading {
             String currectChr = "";
             HashMap<Integer, String> locations = new HashMap<Integer, String>();
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = "";
                 if (firstRowAsHeader) {
                     str = in.readLine();
@@ -793,7 +799,7 @@ public class reading {
             String currectChr = "";
             HashMap<Integer, String> locations = new HashMap<Integer, String>();
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = "";
                 if (firstRowAsHeader) {
                     str = in.readLine();
@@ -865,7 +871,7 @@ public class reading {
             String currectChr = "";
             TreeMap<Integer, String> locations = new TreeMap<Integer, String>();
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = "";
                 if (firstRowAsHeader) {
                     str = in.readLine();
@@ -922,7 +928,7 @@ public class reading {
         HashSet<String> probesToBeRemoved = new HashSet<String>();
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(probeFilteringFiles)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(probeFilteringFiles)), ENCODING), 8096);
             String str;
 
             while ((str = in.readLine()) != null) {
@@ -949,7 +955,7 @@ public class reading {
         ArrayList<String> probesToBeRemoved = new ArrayList<String>();
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(probeFilteringFiles)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(probeFilteringFiles)), ENCODING), 8096);
             String str;
 
             while ((str = in.readLine()) != null) {
@@ -976,7 +982,7 @@ public class reading {
         ArrayList<HashSet<String>> probesToBeRemoved = new ArrayList<HashSet<String>>();
         for (String s : probeFilteringFiles) {
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(s)));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(s)), ENCODING), 8096);
                 String str;
                 HashSet<String> tmpPprobesToBeRemoved = new HashSet<String>();
                 while ((str = in.readLine()) != null) {
@@ -1025,7 +1031,7 @@ public class reading {
         HashMap<String, Pair<String, Double>> probeInfo = new HashMap<String, Pair<String, Double>>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(metaAnalysisScores)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(metaAnalysisScores)), ENCODING), 8096);
             String str = "";
             if (firstRowAsHeader) {
                 str = in.readLine();
@@ -1050,7 +1056,7 @@ public class reading {
         HashMap<Integer, HashMap<String, Pair<Integer, Integer>>> probeInfo = new HashMap<Integer, HashMap<String, Pair<Integer, Integer>>>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(annotationFile)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
             String str = "";
             if (firstRowAsHeader) {
                 str = in.readLine();
