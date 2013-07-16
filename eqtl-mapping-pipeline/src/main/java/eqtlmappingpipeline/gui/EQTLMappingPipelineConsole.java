@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.gui;
 
+import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.celltypespecific.CelltypeSpecificeQTLMappingConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
@@ -98,9 +99,12 @@ public class EQTLMappingPipelineConsole {
     }
 
     private void printHeader() {
+		
+		//Note: Version is null when running from netbeans but will be set when buidling a jar
+		
         System.out.println("\n"
                 + ConsoleGUIElems.DOUBLELINE
-                + "EMP r261, March 2013\n"
+                + "Version: " + Main.VERSION + " March 2013\n"
                 + "Department of Genetics, University Medical Centre Groningen\n"
                 + "Harm-Jan Westra, Lude Franke, Marjolein Peters, Tonu Esko, Claudia Schurmann\n"
                 + ConsoleGUIElems.LINE
