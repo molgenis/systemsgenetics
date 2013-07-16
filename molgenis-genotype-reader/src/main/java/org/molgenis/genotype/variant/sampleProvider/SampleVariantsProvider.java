@@ -14,6 +14,13 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public interface SampleVariantsProvider
 {
+	/**
+	 * Get sample variants. Do not call directly always access via the
+	 * variant.getSampleVariants
+	 * 
+	 * @param variant
+	 * @return
+	 */
 	List<Alleles> getSampleVariants(GeneticVariant variant);
 
 	/**

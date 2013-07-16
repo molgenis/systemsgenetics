@@ -11,6 +11,7 @@ import java.util.Iterator;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
@@ -463,7 +464,12 @@ public class ModifiableGenotypeDataInMemoryTest extends ResourceTest
 				removePos2);
 
 		modifiableGenotypeData.excludeVariant(removedVariant1);
+
+		removedVariant2.swap();
+		removedVariant2.updatePrimaryId("test");
 		removedVariant2.exclude();
+
+		assertEquals(modifiableGenotypeData.getExcludedVariantCount(), 2);
 
 		assertNull(modifiableGenotypeData.getModifiableSnpVariantByPos(removeChr1, removePos1));
 		assertNull(modifiableGenotypeData.getModifiableSnpVariantByPos(removeChr2, removePos2));
@@ -476,6 +482,18 @@ public class ModifiableGenotypeDataInMemoryTest extends ResourceTest
 		counter = 0;
 		for (GeneticVariant variant : modifiableGenotypeData)
 		{
+			System.out.println(variant.getPrimaryVariantId());
+			assertEquals(variant.getStartPos() == removePos1, false);
+			assertEquals(variant.getStartPos() == removePos2, false);
+			++counter;
+		}
+		assertEquals(counter, 8);
+
+		GenotypeData data = modifiableGenotypeData;
+		counter = 0;
+		for (GeneticVariant variant : data)
+		{
+			System.out.println(variant.getPrimaryVariantId());
 			assertEquals(variant.getStartPos() == removePos1, false);
 			assertEquals(variant.getStartPos() == removePos2, false);
 			++counter;
@@ -485,6 +503,7 @@ public class ModifiableGenotypeDataInMemoryTest extends ResourceTest
 		counter = 0;
 		for (GeneticVariant variant : modifiableGenotypeData.getSequenceGeneticVariants("22"))
 		{
+			System.out.println(variant.getPrimaryVariantId());
 			assertEquals(variant.getStartPos() == removePos1, false);
 			assertEquals(variant.getStartPos() == removePos2, false);
 			++counter;
@@ -533,6 +552,50 @@ public class ModifiableGenotypeDataInMemoryTest extends ResourceTest
 
 	}
 
+	@Test
+	public void testCreatingMultipleForSameVariant()
+	{
+
+		int posOfTestVariant = 14432918;
+
+		ModifiableGeneticVariant modifiableGeneticVariant = modifiableGenotypeData.getModifiableSnpVariantByPos("22",
+				posOfTestVariant);
+
+		GeneticVariant originalVariant = originalGenotypeData.getSnpVariantByPos("22", posOfTestVariant);
+
+		assertEquals(new ModifiableGeneticVariant(originalVariant, modifiableGenotypeData), modifiableGeneticVariant);
+		assertEquals(new ModifiableGeneticVariant(originalVariant, modifiableGenotypeData).hashCode(),
+				modifiableGeneticVariant.hashCode());
+
+		modifiableGeneticVariant.updatePrimaryId("test");
+		modifiableGeneticVariant.swap();
+
+		assertEquals(new ModifiableGeneticVariant(originalVariant, modifiableGenotypeData), modifiableGeneticVariant);
+		assertEquals(new ModifiableGeneticVariant(originalVariant, modifiableGenotypeData).hashCode(),
+				modifiableGeneticVariant.hashCode());
+
+		originalVariant = originalGenotypeData.getSnpVariantByPos("22", posOfTestVariant);
+
+		assertEquals(new ModifiableGeneticVariant(originalVariant, modifiableGenotypeData), modifiableGeneticVariant);
+		assertEquals(new ModifiableGeneticVariant(originalVariant, modifiableGenotypeData).hashCode(),
+				modifiableGeneticVariant.hashCode());
+
+		boolean tested = false;
+		for (GeneticVariant v : modifiableGenotypeData)
+		{
+			if (v.getStartPos() == posOfTestVariant)
+			{
+				assertEquals(new ModifiableGeneticVariant(v, modifiableGenotypeData), modifiableGeneticVariant);
+				assertEquals(new ModifiableGeneticVariant(v, modifiableGenotypeData).hashCode(),
+						modifiableGeneticVariant.hashCode());
+				tested = true;
+			}
+		}
+
+		assertEquals(tested, true);
+
+	}
+
 	public static void assertEqualsVariantIterators(Iterator<GeneticVariant> originalGeneticVariants,
 			Iterator<? extends GeneticVariant> modifiableGeneticVariants)
 	{
@@ -552,4 +615,5 @@ public class ModifiableGenotypeDataInMemoryTest extends ResourceTest
 		}
 
 	}
+
 }

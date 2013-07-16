@@ -28,7 +28,7 @@ public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
 	private final HashMap<GeneticVariant, Allele> refAlleleUpdate;
 	private final HashMap<GeneticVariant, Alleles> allelesUpdate;
 	private final HashMap<GeneticVariant, SampleVariantsProvider> variantProviderUpdates;
-	private final HashSet<GeneticVariant> filteredOutVariants;
+	private final HashSet<ModifiableGeneticVariant> filteredOutVariants;
 
 	private final HashMap<SampleVariantsProvider, SampleVariantsProvider> swappingSampleVariantProviders;
 
@@ -41,7 +41,7 @@ public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
 		this.allelesUpdate = new HashMap<GeneticVariant, Alleles>();
 		this.variantProviderUpdates = new HashMap<GeneticVariant, SampleVariantsProvider>();
 		this.swappingSampleVariantProviders = new HashMap<SampleVariantsProvider, SampleVariantsProvider>();
-		this.filteredOutVariants = new HashSet<GeneticVariant>();
+		this.filteredOutVariants = new HashSet<ModifiableGeneticVariant>();
 	}
 
 	@Override
@@ -296,13 +296,15 @@ public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
 		{
 			return null;
 		}
-		else if (filteredOutVariants.contains(originalVariant))
+
+		ModifiableGeneticVariant modifiableVariant = new ModifiableGeneticVariant(originalVariant, this);
+		if (filteredOutVariants.contains(modifiableVariant))
 		{
 			return null;
 		}
 		else
 		{
-			return new ModifiableGeneticVariant(originalVariant, this);
+			return modifiableVariant;
 		}
 
 	}
@@ -317,7 +319,7 @@ public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
 	@Override
 	public void excludeVariant(ModifiableGeneticVariant geneticVariant)
 	{
-		filteredOutVariants.add(geneticVariant.getOriginalVariant());
+		filteredOutVariants.add(geneticVariant);
 	}
 
 	@Override

@@ -17,16 +17,14 @@ import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
+import org.molgenis.genotype.annotation.SexAnnotation;
 import org.molgenis.genotype.plink.datatypes.FamEntry;
 import org.molgenis.genotype.plink.readers.BedBimFamReader;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 {
-	public static final String FATHER_SAMPLE_ANNOTATION_NAME = "father";
-	public static final String MOTHER_SAMPLE_ANNOTATION_NAME = "mother";
-	public static final String SEX_SAMPLE_ANNOTATION_NAME = "sex";
-	public static final String PHENOTYPE_SAMPLE_ANNOTATION_NAME = "phenotype";
+
 	private final BedBimFamReader reader;
 	private Map<String, SampleAnnotation> sampleAnnotations;
 
@@ -78,8 +76,8 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 			Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
 			annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, famEntry.getFather());
 			annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, famEntry.getMother());
-			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, famEntry.getSex());
-			annotationValues.put(PHENOTYPE_SAMPLE_ANNOTATION_NAME, famEntry.getPhenotype());
+			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink(famEntry.getSex()));
+			annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, famEntry.getPhenotype());
 
 			samples.add(new Sample(famEntry.getIndividual(), famEntry.getFamily(), annotationValues));
 		}

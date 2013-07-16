@@ -15,6 +15,12 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public interface GenotypeData extends Iterable<GeneticVariant>
 {
+
+	public static final String FATHER_SAMPLE_ANNOTATION_NAME = "fatherId";
+	public static final String MOTHER_SAMPLE_ANNOTATION_NAME = "motherId";
+	public static final String SEX_SAMPLE_ANNOTATION_NAME = "sex_generic";
+	public static final String DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME = "phenotype";
+
 	/**
 	 * Get all possible variant annotations
 	 * 

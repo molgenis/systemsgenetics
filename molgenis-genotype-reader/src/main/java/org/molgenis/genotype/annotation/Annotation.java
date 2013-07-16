@@ -9,7 +9,7 @@ public abstract class Annotation
 {
 	public enum Type
 	{
-		INTEGER, BOOLEAN, FLOAT, STRING, CHAR, UNKOWN
+		INTEGER, BOOLEAN, FLOAT, STRING, CHAR, UNKOWN, SEX
 	}
 
 	private String id;

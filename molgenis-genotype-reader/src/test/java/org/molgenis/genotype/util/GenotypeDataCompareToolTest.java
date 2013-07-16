@@ -24,9 +24,7 @@ public class GenotypeDataCompareToolTest extends ResourceTest
 			GenotypeData genotypeData1 = new PedMapGenotypeData(getTestPed(), getTestMap());
 
 			// Write to file
-			new PedMapGenotypeWriter(genotypeData1, PedMapGenotypeData.FATHER_SAMPLE_ANNOTATION_NAME,
-					PedMapGenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME, PedMapGenotypeData.SEX_SAMPLE_ANNOTATION_NAME,
-					PedMapGenotypeData.PHENOTYPE_SAMPLE_ANNOTATION_NAME).write("pedmapcomparetest");
+			new PedMapGenotypeWriter(genotypeData1).write("pedmapcomparetest");
 
 			// Read it again
 			GenotypeData genotypeData2 = new PedMapGenotypeData("pedmapcomparetest");

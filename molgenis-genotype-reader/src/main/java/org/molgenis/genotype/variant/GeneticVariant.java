@@ -152,6 +152,8 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 */
 	public byte[] getSampleCalledDosages();
 
+	public List<Boolean> getSamplePhasing();
+
 	/**
 	 * Get the sample variant provider used by this variant
 	 * 

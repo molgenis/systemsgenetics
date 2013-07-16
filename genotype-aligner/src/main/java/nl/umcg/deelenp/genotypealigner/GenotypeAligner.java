@@ -15,33 +15,34 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
+import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompetibleMultiPartGenotypeDataException;
-import org.molgenis.genotype.plink.PedMapGenotypeWriter;
 import org.molgenis.genotype.util.LdCalculatorException;
 
 
 @SuppressWarnings("static-access")
 class GenotypeAligner {
-
+	
 	private static final String VERSION = GenotypeAligner.class.getPackage().getImplementationVersion();
 	
 	private static final String HEADER = 
-			"  /-------------------------------------\\\n" + 
-		    "  |           Genotype Aligner          |\n" + 
-		    "  |                                     |\n" + 
-		    "  |            Patrick Deelen           |\n" + 
-		    "  |       patrickdeelen@gmail.com       |\n" + 
-		    "  |                                     |\n" + 
-		    "  |    Erwin Winder, Harm-Jan Westra    |\n" + 
-		    "  |      Lude Franke, Morris Swertz     |\n" + 
-		    "  |                                     |\n" + 
-		    "  |    Genomics Coordication Center     |\n" + 
-		    "  | University Medical Center Groningen |\n" + 
-		    "  \\-------------------------------------/";
+			"  /--------------------------------------\\\n" + 
+		    "  |           Genotype Aligner           |\n" + 
+		    "  |                                      |\n" + 
+		    "  |            Patrick Deelen            |\n" + 
+		    "  |       patrickdeelen@gmail.com        |\n" + 
+		    "  |                                      |\n" +
+		    "  | Joeri van der Velde, Marc Jan Bonder |\n" + 
+		    "  |    Erwin Winder, Harm-Jan Westra     |\n" + 
+		    "  |      Lude Franke, Morris Swertz      |\n" + 
+		    "  |                                      |\n" + 
+		    "  |    Genomics Coordication Center      |\n" + 
+		    "  | University Medical Center Groningen  |\n" + 
+		    "  \\--------------------------------------/";
 	
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
@@ -76,7 +77,7 @@ class GenotypeAligner {
 		
 		option = OptionBuilder.withArgName("basePath")
 				.hasArg()
-				.withDescription("The base bath of the data to align. The extensions are determined based on the input data type.")
+				.withDescription("The base path of the data to align. The extensions are determined based on the input data type.")
 				.withLongOpt("input")
 				.isRequired()
 				.create("i");
@@ -93,10 +94,10 @@ class GenotypeAligner {
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
 				.withDescription("The input data type. \n" +
-						"* PED_MAP - plink PED MAP files gziped with tabix index.\n" +
-						"* VCF - gziped vcf with tabix index file\n" +
-						"* VCFFOLDER - matches all gziped vcf files + tabix index in a folder\n" +
-						"* SHAPEIT2 - shapeit2 phased haplotypes (.haps & .sample)")
+						"* PED_MAP - plink PED MAP files.\n" +
+						"* VCF - bgziped vcf with tabix index file\n" +
+						"* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n" +
+						"* SHAPEIT2 - shapeit2 phased haplotypes. Convert shapeit2 haps to tab separated, apply bgzip and tabix (.haps.gz, .haps.gz.tbi & .sample)")
 				.withLongOpt("inputType")
 				.isRequired()
 				.create("I");
@@ -105,10 +106,10 @@ class GenotypeAligner {
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
 				.withDescription("The reference data type. \n" +
-						"* PED_MAP - plink PED MAP files gziped with tabix index.\n" +
-						"* VCF - gziped vcf with tabix index file\n" +
-						"* VCF_FOLDER - matches all gziped vcf files + tabix index in a folder\n" +
-						"* SHAPEIT2 - shapeit2 phased haplotypes (.haps & .sample)")
+						"* PED_MAP - plink PED MAP files.\n" +
+						"* VCF - bgziped vcf with tabix index file\n" +
+						"* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n" +
+						"* SHAPEIT2 - shapeit2 phased haplotypes. Convert shapeit2 haps to tab separated, apply bgzip and tabix (.haps.gz, .haps.gz.tbi & .sample)")
 				.withLongOpt("refType")
 				.isRequired()
 				.create("R");
@@ -127,9 +128,7 @@ class GenotypeAligner {
 				.hasArg()
 				.withDescription("The reference data type. \n" +
 						"* PED_MAP - plink PED MAP files gziped with tabix index.\n" +
-						"* VCF - gziped vcf with tabix index file\n" +
-						"* VCF_FOLDER - matches all gziped vcf files + tabix index in a folder\n" +
-						"* SHAPEIT2 - shapeit2 phased haplotypes (.haps & .sample)")
+						"* SHAPEIT2 - shapeit2 phased haplotypes.")
 				.withLongOpt("outputType")
 				.isRequired()
 				.create("O");
@@ -137,7 +136,7 @@ class GenotypeAligner {
 		
 		option = OptionBuilder.withArgName("int")
 				.hasArg()
-				.withDescription("Number of SNPs of either flank to consider using for LD-strand alignment. Must be equal or larger than --min-snps. Defaults to " + DEFAULT_FLANK_SNPS_TO_CONSIDER)
+				.withDescription("Number of SNPs on either flank to consider using for LD-strand alignment. Must be equal or larger than --min-snps. Defaults to " + DEFAULT_FLANK_SNPS_TO_CONSIDER)
 				.withLongOpt("snps")
 				.create("s");
 		OPTIONS.addOption(option);
@@ -383,11 +382,17 @@ class GenotypeAligner {
 			return;
 		}
 		
+		System.out.println("Alignment complete");
 		LOGGER.info("Alignment complete");
 		
-				
-		PedMapGenotypeWriter inputDataWriter = new PedMapGenotypeWriter(aligedInputData, null, null, null, null);
+		System.out.println("Removed in total " + aligedInputData.getExcludedVariantCount() + " variants");
+		LOGGER.info("Removed in total " + aligedInputData.getExcludedVariantCount() + " variants");
+	
+		System.out.println("Writing results");
 		
+		
+		GenotypeWriter inputDataWriter = outputType.createGenotypeWriter(aligedInputData);
+	
 		try {
 			inputDataWriter.write(outputBasePath);
 		} catch (IOException e) {

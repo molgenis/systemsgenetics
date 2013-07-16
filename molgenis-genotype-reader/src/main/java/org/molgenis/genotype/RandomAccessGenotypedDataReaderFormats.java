@@ -14,8 +14,9 @@ public enum RandomAccessGenotypedDataReaderFormats
 
 	PED_MAP("PED / MAP file", "plink PED MAP files gziped with tabix index."), VCF("VCF file",
 			"gziped vcf with tabix index file"), VCF_FOLDER("VCF folder",
-			"Matches all gziped vcf files + tabix index in a folder"), SHAPEIT2("Shapeit2 output",
-			".haps and .samples with phased haplotypes as outputted by Shapeit2");
+			"Matches all gziped vcf files + tabix index in a folder"), SHAPEIT2(
+			"Shapeit2 output",
+			".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index");
 
 	private final String name;
 	private final String description;
@@ -50,9 +51,9 @@ public enum RandomAccessGenotypedDataReaderFormats
 				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
 			case SHAPEIT2:
 				return new Impute2GenotypeData(new File(path + ".haps.gz"), new File(path + ".haps.gz.tbi"), new File(
-						path + ".sample"));
+						path + ".sample"), cacheSize);
 			default:
-				throw new RuntimeException("This should not be reachable. Please contact the autors");
+				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
 	}
 }
