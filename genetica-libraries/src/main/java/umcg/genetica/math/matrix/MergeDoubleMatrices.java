@@ -45,32 +45,32 @@ public class MergeDoubleMatrices {
             System.out.println("Warning indivduals merging. No equal number of columns");
             System.exit(-1);
         }
-        
+
         HashSet<String> keepRowNames1 = new HashSet<String>();
         keepRowNames1.addAll(matrixI.rowObjects);
         HashSet<String> keepRowNames2 = new HashSet<String>();
         keepRowNames2.addAll(matrixII.rowObjects);
         keepRowNames1.retainAll(keepRowNames2);
-        
+
         keepRowNames2 = new HashSet<String>();
-        
-        for(String key : keepRowNames1){
+
+        for (String key : keepRowNames1) {
             boolean presentMapI = matrixI.hashRows.containsKey(key);
             boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if(!(presentMapI ^ presentMapII)){
+            if (!(presentMapI ^ presentMapII)) {
                 keepRowNames2.add(key);
             }
         }
         keepRowNames1.removeAll(keepRowNames2);
-        
-        if(keepRowNames2.size()>0){
+
+        if (keepRowNames2.size() > 0) {
             MatrixHandeling.FilterRows(matrixI, keepRowNames1);
             MatrixHandeling.FilterRows(matrixII, keepRowNames1);
         }
-        
+
         keepRowNames1 = null;
         keepRowNames2 = null;
-        
+
         double[][] newRawData = new double[(matrixII.nrRows + matrixI.nrRows)][matrixI.nrCols];
         ArrayList<String> newRowIds = new ArrayList<String>((matrixII.nrRows + matrixI.nrRows));
 
@@ -138,33 +138,33 @@ public class MergeDoubleMatrices {
             System.out.println("Warning invlaid merging. No equal number of rows");
             System.exit(-1);
         }
-        
+
         HashSet<String> keepColNames1 = new HashSet<String>();
         keepColNames1.addAll(matrixI.colObjects);
         HashSet<String> keepColNames2 = new HashSet<String>();
         keepColNames2.addAll(matrixII.colObjects);
         keepColNames1.retainAll(keepColNames2);
-        
+
         keepColNames2 = new HashSet<String>();
-        
-        for(String key : keepColNames1){
+
+        for (String key : keepColNames1) {
             boolean presentMapI = matrixI.hashRows.containsKey(key);
             boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if(!(presentMapI ^ presentMapII)){
+            if (!(presentMapI ^ presentMapII)) {
                 keepColNames2.add(key);
             }
         }
         keepColNames1.removeAll(keepColNames2);
-        
-        if(keepColNames2.size()>0){
+
+        if (keepColNames2.size() > 0) {
             MatrixHandeling.FilterCols(matrixI, keepColNames1);
             MatrixHandeling.FilterCols(matrixII, keepColNames1);
         }
-        
+
         keepColNames1 = null;
         keepColNames2 = null;
-        
-        
+
+
         double[][] newRawData = new double[(matrixI.nrRows)][(matrixII.nrCols + matrixI.nrCols)];
         ArrayList<String> newColIds = new ArrayList<String>((matrixII.nrCols + matrixI.nrCols));
 
@@ -202,7 +202,7 @@ public class MergeDoubleMatrices {
 
     /**
      * Merge a set of matrices based on row identifiers.
-     * 
+     *
      * @param matrixI
      * @param matrixII
      * @param removeOldMatrix
