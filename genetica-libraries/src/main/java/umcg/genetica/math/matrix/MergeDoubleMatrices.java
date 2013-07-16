@@ -7,7 +7,6 @@ package umcg.genetica.math.matrix;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-
 /**
  *
  * @author MarcJan
