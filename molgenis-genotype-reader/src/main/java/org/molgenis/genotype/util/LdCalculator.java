@@ -43,7 +43,7 @@ public class LdCalculator
 		if (variant1Genotypes.length != variant2Genotypes.length)
 		{
 			throw new LdCalculatorException("Error calculating LD: " + variant1.getPrimaryVariantId() + " contains "
-					+ variant1Genotypes.length + " samples and " + variant2.getPrimaryVariantId() + " contains"
+					+ variant1Genotypes.length + " samples and " + variant2.getPrimaryVariantId() + " contains "
 					+ variant2Genotypes.length + " samples. This should be identical");
 		}
 
@@ -91,7 +91,7 @@ public class LdCalculator
 		double[][] genotypesTriangleFreq = new double[3][3];
 		genotypesTriangleFreq[0][0] = 2d * genotypesFreq[0][0] + genotypesFreq[1][0] + genotypesFreq[0][1];
 		genotypesTriangleFreq[2][0] = 2d * genotypesFreq[2][0] + genotypesFreq[1][0] + genotypesFreq[2][1];
-		genotypesTriangleFreq[0][2] = 2d * genotypesFreq[0][2] + genotypesFreq[0][1] + genotypesFreq[1][2];
+		genotypesTriangleFreq[0][2] = 2d * genotypesFreq[0][2] + genotypesFreq[1][2] + genotypesFreq[0][1];
 		genotypesTriangleFreq[2][2] = 2d * genotypesFreq[2][2] + genotypesFreq[1][2] + genotypesFreq[2][1];
 
 		// Calculate expected genotypes, assuming equilibrium, take this as
@@ -102,20 +102,20 @@ public class LdCalculator
 		double h22 = alleleFreq[0][1] * alleleFreq[1][1];
 
 		// Calculate the frequency of the two double heterozygotes:
-		double x12y12 = h11 * h22 / (h11 * h11 + h12 * h21) * genotypesFreq[1][1];
-		double x12y21 = h12 * h21 / (h11 * h11 + h12 * h21) * genotypesFreq[1][1];
+		double x12y12 = (h11 * h22 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
+		double x12y21 = (h12 * h21 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
 
 		// Perform iterations using EM algorithm:
 		for (int itr = 0; itr < 25; itr++)
 		{
 
 			h11 = (x12y12 + genotypesTriangleFreq[0][0]) / 2;
-			h12 = (x12y21 + genotypesTriangleFreq[2][0]) / 2;
-			h21 = (x12y21 + genotypesTriangleFreq[0][2]) / 2;
+			h12 = (x12y21 + genotypesTriangleFreq[0][2]) / 2;
+			h21 = (x12y21 + genotypesTriangleFreq[2][0]) / 2;
 			h22 = (x12y12 + genotypesTriangleFreq[2][2]) / 2;
 
-			x12y12 = h11 * h22 / (h11 * h22 + h12 * h21) * genotypesFreq[1][1];
-			x12y21 = h12 * h21 / (h11 * h22 + h12 * h21) * genotypesFreq[1][1];
+			x12y12 = (h11 * h22 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
+			x12y21 = (h12 * h21 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
 
 		}
 

@@ -9,7 +9,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
+import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.annotation.SexAnnotation;
 import org.molgenis.genotype.plink.datatypes.MapEntry;
 import org.molgenis.genotype.plink.datatypes.PedEntry;
 import org.molgenis.genotype.plink.writers.MapFileWriter;
@@ -17,23 +20,14 @@ import org.molgenis.genotype.plink.writers.PedFileWriter;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
 
-public class PedMapGenotypeWriter
+public class PedMapGenotypeWriter implements GenotypeWriter
 {
 	private static Logger LOG = Logger.getLogger(PedMapGenotypeWriter.class);
 	private GenotypeData genotypeData;
-	private String fatherSampleAnnotionId;
-	private String motherSampleAnnotionId;
-	private String sexSampleAnnotionId;
-	private String phenoSampleAnnotionId;
 
-	public PedMapGenotypeWriter(GenotypeData genotypeData, String fatherSampleAnnotionId,
-			String motherSampleAnnotionId, String sexSampleAnnotionId, String phenoSampleAnnotionId)
+	public PedMapGenotypeWriter(GenotypeData genotypeData)
 	{
 		this.genotypeData = genotypeData;
-		this.fatherSampleAnnotionId = fatherSampleAnnotionId;
-		this.motherSampleAnnotionId = motherSampleAnnotionId;
-		this.sexSampleAnnotionId = sexSampleAnnotionId;
-		this.phenoSampleAnnotionId = phenoSampleAnnotionId;
 	}
 
 	public void write(String basePath) throws IOException, NotASnpException
@@ -111,6 +105,10 @@ public class PedMapGenotypeWriter
 			LOG.info("All samples written");
 
 		}
+		catch (IndexOutOfBoundsException e)
+		{
+			throw new GenotypeDataException(e);
+		}
 		finally
 		{
 			IOUtils.closeQuietly(writer);
@@ -125,12 +123,8 @@ public class PedMapGenotypeWriter
 
 	private String getFather(Sample sample)
 	{
-		if (fatherSampleAnnotionId == null)
-		{
-			return "0";
-		}
 
-		Object value = sample.getAnnotationValues().get(fatherSampleAnnotionId);
+		Object value = sample.getAnnotationValues().get(GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME);
 		if (value == null)
 		{
 			return "0";
@@ -141,12 +135,8 @@ public class PedMapGenotypeWriter
 
 	private String getMother(Sample sample)
 	{
-		if (motherSampleAnnotionId == null)
-		{
-			return "0";
-		}
 
-		Object value = sample.getAnnotationValues().get(motherSampleAnnotionId);
+		Object value = sample.getAnnotationValues().get(GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME);
 		if (value == null)
 		{
 			return "0";
@@ -157,33 +147,22 @@ public class PedMapGenotypeWriter
 
 	private byte getSex(Sample sample)
 	{
-		if (sexSampleAnnotionId == null)
-		{
-			return 0;
-		}
 
-		Object value = sample.getAnnotationValues().get(sexSampleAnnotionId);
+		Object value = sample.getAnnotationValues().get(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME);
 		if (value == null)
 		{
 			return 0;
 		}
 
-		if (value instanceof Byte)
-		{
-			return (Byte) value;
-		}
+		SexAnnotation sex = (SexAnnotation) value;
 
-		return Byte.valueOf(value.toString());
+		return sex.getPlinkSex();
 	}
 
 	private double getPhenotype(Sample sample)
 	{
-		if (phenoSampleAnnotionId == null)
-		{
-			return -9;
-		}
 
-		Object value = sample.getAnnotationValues().get(phenoSampleAnnotionId);
+		Object value = sample.getAnnotationValues().get(GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME);
 		if (value == null)
 		{
 			return -9;

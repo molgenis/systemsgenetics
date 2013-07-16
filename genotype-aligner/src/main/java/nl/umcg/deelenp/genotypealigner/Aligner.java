@@ -39,7 +39,7 @@ public class Aligner {
 			
 			++iterationCounter;
 			
-			if(iterationCounter % 10000 == 0){
+			if(iterationCounter % 1000 == 0){
 				LOGGER.info("Iteration 1 - " + iterationCounter + " variants processed");
 				System.out.println("Iteration 1 - " + iterationCounter + " variants processed");
 			}
@@ -102,7 +102,7 @@ public class Aligner {
 					studyVariant.swap();
 					//no need to check if there is a match now. We would not have gotten here if alleles where not comparable.
 					if(LOGGER.isDebugEnabled()){
-						LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on LD. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
+						LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on non ambiguous alleles. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
 					}
 				}
 				
@@ -118,7 +118,8 @@ public class Aligner {
 			
 		}
 		
-		LOGGER.info("Iteration 1 - completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
+		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
+		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
 		
 		int removedSnpsBasedOnLdCheck = 0;
 		
@@ -133,9 +134,17 @@ public class Aligner {
 		//This we give use the most optimal results for the alignment of GC and AT SNPs.
 		if(ldCheck){
 			
+			iterationCounter = 0;
+			
 			//Optional second loop
 			for(int variantIndex = 0 ; variantIndex < studyVariantList.size() ; ++variantIndex){
 			
+				++iterationCounter;
+				
+				if(iterationCounter % 1000 == 0){
+					LOGGER.info("Iteration 2 - " + iterationCounter + " variants processed");
+					System.out.println("Iteration 2 - " + iterationCounter + " variants processed");
+				}
 				
 				ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
 				GeneticVariant refVariant = refVariantList.get(variantIndex);
@@ -169,12 +178,14 @@ public class Aligner {
 				
 			}
 			
-			LOGGER.info("Iteration 2 completed - Non AT and non GC SNPs are LD checked ");
+			LOGGER.info("Iteration 2 - Completed, non AT and non GC SNPs are LD checked");
+			System.out.println("Iteration 2 - Completed, non AT and non GC SNPs are LD checked ");
 			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " non AT and non GC SNPs based on inconsistencies in LD pattern");
 			
 			
 		} else {
-			LOGGER.info("Iteration 2 skipped - Non AT and non GC SNPs are not LD checked ");
+			System.out.println("Iteration 2 - Skipped, non AT and non GC SNPs are not LD checked ");
+			LOGGER.info("Iteration 2 - Skipped, non AT and non GC SNPs are not LD checked ");
 		}
 		
 		
@@ -182,15 +193,16 @@ public class Aligner {
 		iterationCounter = 0;
 		int GcAtSnpsEncountered = 0;
 		int swapBasedOnLdCount = 0;
+		removedSnpsBasedOnLdCheck = 0;
 		
 		//Third loop over the included variants. Now that the other variants are fixed we can focus on the GC and AT SNPs.
 		for(int variantIndex = 0 ; variantIndex < studyVariantList.size() ; ++variantIndex){
 			 
 			++iterationCounter;
 			
-			if(iterationCounter % 10000 == 0){
+			if(iterationCounter % 1000 == 0){
 				LOGGER.info("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered +  " GC or AT SNPs checked)");
-				System.out.println("Iteration 3 - " + iterationCounter + " variants processed");
+				System.out.println("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered +  " GC or AT SNPs checked)");
 			}
 			
 			ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
@@ -254,20 +266,20 @@ public class Aligner {
 		}
 		
 		if(ldCheck){
-			LOGGER.info("Iteration 3 completed - Non AT and non GC SNPs are aligned and LD check afterwards");
-			System.out.println("Iteration 3 completed - Non AT and non GC SNPs are aligned and LD check afterwards");
+			LOGGER.info("Iteration 3 - Completed, non AT and non GC SNPs are aligned and LD check afterwards");
+			System.out.println("Iteration 3 - Completed, non AT and non GC SNPs are aligned and LD check afterwards");
 		}
 		else {
-			LOGGER.info("Iteration 3 completed - Non AT and non GC SNPs are aligned. Extra LD check skipped");
-			System.out.println("Iteration 3 completed - Non AT and non GC SNPs are aligned. Extra LD check skipped");
+			LOGGER.info("Iteration 3 - Completed, non AT and non GC SNPs are aligned. Extra LD check skipped");
+			System.out.println("Iteration 3 - Completed, non AT and non GC SNPs are aligned. Extra LD check skipped");
 		}
 			
 		if(ldCheck){
-			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " variants based on LD patterns");
-			System.out.println("Excluded " + removedSnpsBasedOnLdCheck + " variants based on LD patterns");
+			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " AT or GC variants based on LD patterns");
+			System.out.println("Excluded " + removedSnpsBasedOnLdCheck + " AT or GC variants based on LD patterns");
 		}
-		LOGGER.info("Swapped " + swapBasedOnLdCount + " out " + GcAtSnpsEncountered + " variants based on LD patterns");
-		System.out.println("Swapped " + swapBasedOnLdCount + " variants based on LD patterns");
+		LOGGER.info("Swapped " + swapBasedOnLdCount + " out " + GcAtSnpsEncountered + " AT or GC variants based on LD patterns");
+		System.out.println("Swapped " + swapBasedOnLdCount + " AT or GC variants based on LD patterns");
 		
 		return aligendStudyData;
 
@@ -278,7 +290,7 @@ public class Aligner {
 			ArrayList<ModifiableGeneticVariant> studyVariantList,
 			ArrayList<GeneticVariant> refVariantList, int variantIndex,
 			GeneticVariant snpStudyVariant, GeneticVariant refVariant)
-			throws LdCalculatorException {
+			{
 		
 		int posCor = 0;
 		int negCor = 0;
@@ -306,8 +318,18 @@ public class Aligner {
 			
 			GeneticVariant otherRefVariant = refVariantList.get(otherVariantIndex);
 			
-			Ld ldStudy = LdCalculator.calculateLd(snpStudyVariant, otherSnpStudyVariant);
-			Ld ldRef = LdCalculator.calculateLd(refVariant, otherRefVariant);
+			Ld ldStudy;
+			Ld ldRef;
+			try
+			{
+				ldStudy = LdCalculator.calculateLd(snpStudyVariant, otherSnpStudyVariant);
+				ldRef = LdCalculator.calculateLd(refVariant, otherRefVariant);
+			}
+			catch (LdCalculatorException e)
+			{
+				LOGGER.warn("Error in LD calculation, skipping this comparsion when comparing haplotype structure. Following error occured: " + e.getMessage());
+				continue;
+			}
 			
 			//only use SNPs with min R2 in both study as ref
 			if(ldStudy.getR2() >= minLdToIncludeAlignBase && ldRef.getR2() >= minLdToIncludeAlignBase){
@@ -319,33 +341,8 @@ public class Aligner {
 				double[] studyHapFreqArray = createDoubleArrayFromCollection(studyHapFreq.values());
 				double[] refHapFreqArray = createDoubleArrayFromCollection(refHapFreq.values());
 				
-				
-				
 				//Correlate study haplotypes to ref haplotypes.
 				double correlation = JSci.maths.ArrayMath.correlation(studyHapFreqArray, refHapFreqArray);
-				
-				//TODO remove
-				if(snpStudyVariant.getPrimaryVariantId().equals("rs1210711")){
-					
-					ArrayList<String> studyHap = new ArrayList<String>(studyHapFreq.keySet());
-					ArrayList<String> refHap = new ArrayList<String>(refHapFreq.keySet());
-					
-					LOGGER.debug("-------------------");
-					
-					LOGGER.debug("Study snp alleles: " + snpStudyVariant.getVariantAlleles() + " maf: " + snpStudyVariant.getMinorAlleleFrequency() + " (" + snpStudyVariant.getMinorAllele() + ") ref allele: "+ snpStudyVariant.getRefAllele() + " id: " + snpStudyVariant.getPrimaryVariantId());
-					LOGGER.debug("Study snp other alleles: " + otherSnpStudyVariant.getVariantAlleles() + " maf: " + otherSnpStudyVariant.getMinorAlleleFrequency() + " (" + otherSnpStudyVariant.getMinorAllele() + ") ref allele: "+ otherSnpStudyVariant.getRefAllele() + " id: " + otherSnpStudyVariant.getPrimaryVariantId());
-					LOGGER.debug("Ref snp alleles: " + refVariant.getVariantAlleles() + " maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ") ref allele: "+ refVariant.getRefAllele() + " id: " + refVariant.getPrimaryVariantId());
-					LOGGER.debug("Ref snp other alleles: " + otherRefVariant.getVariantAlleles() + " maf: " + otherRefVariant.getMinorAlleleFrequency() + " (" + otherRefVariant.getMinorAllele() + ") ref allele: "+ otherRefVariant.getRefAllele() + " id: " + otherRefVariant.getPrimaryVariantId());
-					
-					LOGGER.debug("Haps:");
-					for(int i = 0 ; i < studyHapFreq.size() ; ++i){
-						LOGGER.debug(studyHap.get(i) + " (" + studyHapFreqArray[i] + ") " + refHap.get(i) + " (" + refHapFreqArray[i] + ")");
-					}
-					LOGGER.debug("LD study: " + ldStudy.getR2());
-					LOGGER.debug("LD ref: " + ldRef.getR2());
-					LOGGER.debug("Correlation: " + correlation);
-					
-				}
 				
 				if(correlation < 0){
 					++negCor;

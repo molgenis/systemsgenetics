@@ -15,12 +15,12 @@ import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
+import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SampleAnnotation.SampleAnnotationType;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
-import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 /**
  * Export a GenotypeData object to an impute2 haps/sample files
@@ -30,7 +30,7 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
  * @author erwin
  * 
  */
-public class Impute2GenotypeWriter
+public class Impute2GenotypeWriter implements GenotypeWriter
 {
 	public static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	public static final String LINE_ENDING = "\n";
@@ -223,9 +223,8 @@ public class Impute2GenotypeWriter
 			sb.append(SEPARATOR);
 			sb.append(allele1);
 
-			SampleVariantsProvider variantsProvider = variant.getSampleVariantsProvider();
-			List<Alleles> sampleAlleles = variantsProvider.getSampleVariants(variant);
-			List<Boolean> phasing = variantsProvider.getSamplePhasing(variant);
+			List<Alleles> sampleAlleles = variant.getSampleVariants();
+			List<Boolean> phasing = variant.getSamplePhasing();
 
 			if ((sampleAlleles != null) && !sampleAlleles.isEmpty())
 			{

@@ -212,6 +212,12 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 		}
 
 		@Override
+		public List<Boolean> getSamplePhasing()
+		{
+			return null;
+		}
+
+		@Override
 		public SampleVariantsProvider getSampleVariantsProvider()
 		{
 

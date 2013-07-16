@@ -11,16 +11,17 @@ public class ModifiableGeneticVariantIterator<E extends GeneticVariant> implemen
 
 	private final Iterator<GeneticVariant> originalIterator;
 	private final ModifiableGenotypeData modifiableGenotypeData;
-	private final HashSet<GeneticVariant> excludeList;
+	private final HashSet<ModifiableGeneticVariant> excludeList;
 	private ModifiableGeneticVariant next;
 
 	public ModifiableGeneticVariantIterator(Iterator<GeneticVariant> originalIterator,
-			ModifiableGenotypeData modifiableGenotypeData, HashSet<GeneticVariant> excludeList)
+			ModifiableGenotypeData modifiableGenotypeData, HashSet<ModifiableGeneticVariant> excludeList)
 	{
 		super();
 		this.originalIterator = originalIterator;
 		this.modifiableGenotypeData = modifiableGenotypeData;
 		this.excludeList = excludeList;
+
 		goToNext();
 	}
 
@@ -58,13 +59,15 @@ public class ModifiableGeneticVariantIterator<E extends GeneticVariant> implemen
 	{
 		while (originalIterator.hasNext())
 		{
-			GeneticVariant originalNext = originalIterator.next();
+			ModifiableGeneticVariant originalNext = new ModifiableGeneticVariant(originalIterator.next(),
+					modifiableGenotypeData);
+
 			if (excludeList.contains(originalNext))
 			{
 				// skip variants on exclude list
 				continue;
 			}
-			next = new ModifiableGeneticVariant(originalNext, modifiableGenotypeData);
+			next = originalNext;
 			return;
 		}
 		// We do a return if we find a non excluded next. So if we get here it
@@ -86,7 +89,7 @@ public class ModifiableGeneticVariantIterator<E extends GeneticVariant> implemen
 	 */
 	public static Iterable<ModifiableGeneticVariant> createModifiableGeneticVariantIterable(
 			Iterator<GeneticVariant> originalIterator, ModifiableGenotypeData modifiableGenotypeData,
-			HashSet<GeneticVariant> excludeList)
+			HashSet<ModifiableGeneticVariant> excludeList)
 	{
 		return new ModifiableGeneticVariantIterable<ModifiableGeneticVariant>(
 				new ModifiableGeneticVariantIterator<ModifiableGeneticVariant>(originalIterator,
@@ -105,7 +108,7 @@ public class ModifiableGeneticVariantIterator<E extends GeneticVariant> implemen
 	 */
 	public static Iterable<GeneticVariant> createGeneticVariantIterableBackByModifiable(
 			Iterator<GeneticVariant> originalIterator, ModifiableGenotypeData modifiableGenotypeData,
-			HashSet<GeneticVariant> excludeList)
+			HashSet<ModifiableGeneticVariant> excludeList)
 	{
 		return new ModifiableGeneticVariantIterable<GeneticVariant>(
 				new ModifiableGeneticVariantIterator<GeneticVariant>(originalIterator, modifiableGenotypeData,

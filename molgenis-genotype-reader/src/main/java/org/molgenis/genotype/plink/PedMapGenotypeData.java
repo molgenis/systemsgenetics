@@ -23,6 +23,7 @@ import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
+import org.molgenis.genotype.annotation.SexAnnotation;
 import org.molgenis.genotype.plink.datatypes.MapEntry;
 import org.molgenis.genotype.plink.datatypes.PedEntry;
 import org.molgenis.genotype.plink.drivers.PedFileDriver;
@@ -37,10 +38,6 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider
 {
-	public static final String FATHER_SAMPLE_ANNOTATION_NAME = "father";
-	public static final String MOTHER_SAMPLE_ANNOTATION_NAME = "mother";
-	public static final String SEX_SAMPLE_ANNOTATION_NAME = "sex";
-	public static final String PHENOTYPE_SAMPLE_ANNOTATION_NAME = "phenotype";
 	private static final Logger LOG = Logger.getLogger(PedMapGenotypeData.class);
 	private final int sampleVariantProviderUniqueId;
 
@@ -94,8 +91,8 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 		sampleAnnotations = PlinkSampleAnnotations.getSampleAnnotations();
 
-		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(1000000);
-		this.dosageCache = new Cache<GeneticVariant, float[]>(10000000);
+		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(100);
+		this.dosageCache = new Cache<GeneticVariant, float[]>(100);
 
 	}
 
@@ -207,8 +204,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
 				annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, pedEntry.getFather());
 				annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, pedEntry.getMother());
-				annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, pedEntry.getSex());
-				annotationValues.put(PHENOTYPE_SAMPLE_ANNOTATION_NAME, pedEntry.getPhenotype());
+				annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME,
+						SexAnnotation.getSexAnnotationForPlink(pedEntry.getSex()));
+				annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, pedEntry.getPhenotype());
 
 				samples.add(new Sample(pedEntry.getIndividual(), pedEntry.getFamily(), annotationValues));
 			}

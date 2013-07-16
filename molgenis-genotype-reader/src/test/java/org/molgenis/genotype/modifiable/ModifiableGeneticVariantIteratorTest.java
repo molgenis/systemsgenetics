@@ -13,6 +13,8 @@ import org.testng.annotations.Test;
 public class ModifiableGeneticVariantIteratorTest
 {
 
+	public static final ModifiableGenotypeData dummyModifiableGenotypeData = new ModifiableGenotypeDataInMemory(null);
+
 	@Test
 	public void createModifiableGeneticVariantIterable()
 	{
@@ -22,10 +24,10 @@ public class ModifiableGeneticVariantIteratorTest
 		variants.add(variant1);
 		variants.add(variant2);
 
-		HashSet<GeneticVariant> excludeList = new HashSet<GeneticVariant>();
+		HashSet<ModifiableGeneticVariant> excludeList = new HashSet<ModifiableGeneticVariant>();
 
 		Iterable<ModifiableGeneticVariant> modifiableVariants = ModifiableGeneticVariantIterator
-				.createModifiableGeneticVariantIterable(variants.iterator(), null, excludeList);
+				.createModifiableGeneticVariantIterable(variants.iterator(), dummyModifiableGenotypeData, excludeList);
 
 		Iterator<ModifiableGeneticVariant> modifiableVariantsIterator = modifiableVariants.iterator();
 
@@ -45,11 +47,11 @@ public class ModifiableGeneticVariantIteratorTest
 		variants.add(variant1);
 		variants.add(variant2);
 
-		HashSet<GeneticVariant> excludeList = new HashSet<GeneticVariant>();
-		excludeList.add(variant1);
+		HashSet<ModifiableGeneticVariant> excludeList = new HashSet<ModifiableGeneticVariant>();
+		excludeList.add(new ModifiableGeneticVariant(variant1, dummyModifiableGenotypeData));
 
 		Iterable<ModifiableGeneticVariant> modifiableVariants = ModifiableGeneticVariantIterator
-				.createModifiableGeneticVariantIterable(variants.iterator(), null, excludeList);
+				.createModifiableGeneticVariantIterable(variants.iterator(), dummyModifiableGenotypeData, excludeList);
 
 		Iterator<ModifiableGeneticVariant> modifiableVariantsIterator = modifiableVariants.iterator();
 
@@ -68,11 +70,11 @@ public class ModifiableGeneticVariantIteratorTest
 		variants.add(variant1);
 		variants.add(variant2);
 
-		HashSet<GeneticVariant> excludeList = new HashSet<GeneticVariant>();
-		excludeList.add(variant2);
+		HashSet<ModifiableGeneticVariant> excludeList = new HashSet<ModifiableGeneticVariant>();
+		excludeList.add(new ModifiableGeneticVariant(variant2, dummyModifiableGenotypeData));
 
 		Iterable<ModifiableGeneticVariant> modifiableVariants = ModifiableGeneticVariantIterator
-				.createModifiableGeneticVariantIterable(variants.iterator(), null, excludeList);
+				.createModifiableGeneticVariantIterable(variants.iterator(), dummyModifiableGenotypeData, excludeList);
 
 		Iterator<ModifiableGeneticVariant> modifiableVariantsIterator = modifiableVariants.iterator();
 
@@ -98,12 +100,12 @@ public class ModifiableGeneticVariantIteratorTest
 		variants.add(variant4);
 		variants.add(variant5);
 
-		HashSet<GeneticVariant> excludeList = new HashSet<GeneticVariant>();
-		excludeList.add(variant2);
-		excludeList.add(variant3);
+		HashSet<ModifiableGeneticVariant> excludeList = new HashSet<ModifiableGeneticVariant>();
+		excludeList.add(new ModifiableGeneticVariant(variant3, dummyModifiableGenotypeData));
+		excludeList.add(new ModifiableGeneticVariant(variant2, dummyModifiableGenotypeData));
 
 		Iterable<ModifiableGeneticVariant> modifiableVariants = ModifiableGeneticVariantIterator
-				.createModifiableGeneticVariantIterable(variants.iterator(), null, excludeList);
+				.createModifiableGeneticVariantIterable(variants.iterator(), dummyModifiableGenotypeData, excludeList);
 
 		Iterator<ModifiableGeneticVariant> modifiableVariantsIterator = modifiableVariants.iterator();
 
