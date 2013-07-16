@@ -2,6 +2,7 @@ package org.molgenis.genotype.plink.readers;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -62,7 +63,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 	// sample phasing
 	private final List<Boolean> phasing;
 
-	public BedBimFamReader(File bed, File bim, File fam) throws Exception
+	public BedBimFamReader(File bed, File bim, File fam) throws IOException
 	{
 		bedfd = new BedFileDriver(bed);
 		bimfd = new BimFileDriver(bim);
@@ -78,20 +79,20 @@ public class BedBimFamReader implements SampleVariantsProvider
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
 
-	public void setIndividuals() throws Exception
+	public void setIndividuals() throws IOException
 	{
 		List<String> individualNames = new ArrayList<String>();
 		List<FamEntry> famEntries = famfd.getAllEntries();
 		if (famEntries.size() != nrOfIndividuals)
 		{
-			throw new Exception("Problem with FAM file: scanned number of elements (" + nrOfIndividuals
+			throw new GenotypeDataException("Problem with FAM file: scanned number of elements (" + nrOfIndividuals
 					+ ") does not match number of parsed elements (" + famEntries.size() + ")");
 		}
 		for (FamEntry fe : famEntries)
 		{
 			if (individualNames.contains(fe.getIndividual()))
 			{
-				throw new Exception("Problem with FAM file: Individual '" + fe.getIndividual() + "' is not unique!");
+				throw new GenotypeDataException("Problem with FAM file: Individual '" + fe.getIndividual() + "' is not unique!");
 			}
 			individualNames.add(fe.getIndividual());
 		}
@@ -99,7 +100,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 		this.famEntries = famEntries;
 	}
 
-	public void setSnps() throws Exception
+	public void setSnps() throws IOException
 	{
 		nrOfSnps = bimfd.getNrOfElements();
 		List<String> snpNames = new ArrayList<String>();
@@ -107,7 +108,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 		List<BimEntry> bimEntries = bimfd.getAllEntries();
 		if (bimEntries.size() != nrOfSnps)
 		{
-			throw new Exception(
+			throw new GenotypeDataException(
 					"Problem with BIM file: scanned number of elements does not match number of parsed elements");
 		}
 		this.bimEntries = bimEntries;
@@ -117,7 +118,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 		{
 			if (snpCoding.containsKey(be.getSNP()))
 			{
-				throw new Exception("Problem with BIM file: SNP '" + be.getSNP() + "' is not unique!");
+				throw new GenotypeDataException("Problem with BIM file: SNP '" + be.getSNP() + "' is not unique!");
 			}
 			snpCoding.put(be.getSNP(), be.getBiallele());
 			snpNames.add(be.getSNP());
@@ -281,7 +282,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 				}
 				else
 				{
-					b = null;
+					b = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 				}
 				bialleles.add(b);
 			}
