@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package umcg.genetica.methylation;
+package umcg.genetica.math.matrix;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,13 +12,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
  *
  * @author Marc Jan
  */
-public class CleanDoubleMatrix {
+public class MatrixHandeling {
 
     /**
      * Remove columns with to many missing values
@@ -39,10 +38,10 @@ public class CleanDoubleMatrix {
             }
             if (nrMissing >= maxMissingValuesPerColumn) {
                 System.out.println("Excluding:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + nrMissing);
-            } else if(nrMissing >0){
+            } else if (nrMissing > 0) {
                 //System.out.println("Missing values in:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + nrMissing);
                 columnsToInclude.add(dataset.colObjects.get(c));
-            }  else {
+            } else {
                 columnsToInclude.add(dataset.colObjects.get(c));
             }
         }
@@ -91,10 +90,10 @@ public class CleanDoubleMatrix {
             }
             if (nrMissing >= maxMissingValuesPerRow) {
                 System.out.println("Excluding:\t" + r + "\t" + rowNames[r] + "\t" + nrMissing);
-            } else if(nrMissing >0){
+            } else if (nrMissing > 0) {
                 //System.out.println("Missing values in:\t" + r + "\t" + rowNames[r] + "\t" + nrMissing);
                 hashRowsToInclude.put(rowNames[r], null);
-            }  else {
+            } else {
                 hashRowsToInclude.put(rowNames[r], null);
             }
         }
@@ -162,7 +161,7 @@ public class CleanDoubleMatrix {
                     }
                 }
             }
-            
+
             dataset.colObjects = Arrays.asList(newColumnNames);
             dataset.nrCols = newSize;
             dataset.rawData = newRawData;
@@ -184,7 +183,7 @@ public class CleanDoubleMatrix {
                 newSize++;
             }
         }
-        
+
 
         double[][] newRawData = new double[newSize][dataset.nrCols];
         String[] newRowNames = new String[newSize];
@@ -206,13 +205,13 @@ public class CleanDoubleMatrix {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
-    
+
     /**
      * Remove rows without correct mapping known on forehand
      *
      * @param dataset DoubleMatrixDataset containing the matrix of interest
-     * @param probesToKeep ArrayList<String> with identifiers of probes
-     * that should be removed
+     * @param probesToKeep ArrayList<String> with identifiers of probes that
+     * should be removed
      */
     public static void FilterRows(DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToKeep) {
         int newSize = 0;
@@ -242,7 +241,7 @@ public class CleanDoubleMatrix {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
-    
+
     /**
      * Remove probes without correct mapping known on forehand
      *
@@ -289,8 +288,8 @@ public class CleanDoubleMatrix {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
-    
-       /**
+
+    /**
      * Remove samples on forehand
      *
      * @param dataset DoubleMatrixDataset containing the matrix of interest
@@ -302,7 +301,7 @@ public class CleanDoubleMatrix {
     }
 
     /**
-     * Order rows 
+     * Order rows
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
@@ -310,19 +309,19 @@ public class CleanDoubleMatrix {
         HashMap<String, Integer> originalRowMap = (HashMap<String, Integer>) doubleMatrixDataset.hashRows;
         ArrayList<String> rowNames = new ArrayList<String>(doubleMatrixDataset.rowObjects);
         HashMap<String, Integer> newRowMap = new HashMap<String, Integer>();
-        
+
         Collections.sort(rowNames);
-        
-        for(int i=0; i<rowNames.size(); ++i){
+
+        for (int i = 0; i < rowNames.size(); ++i) {
             newRowMap.put(rowNames.get(i), i);
         }
-        
+
         double[][] newRawData = new double[doubleMatrixDataset.nrRows][doubleMatrixDataset.nrCols];
 
         for (String rName : rowNames) {
             int originalprobeId = originalRowMap.get(rName);
             int newprobeId = newRowMap.get(rName);
-            
+
             newRawData[newprobeId] = doubleMatrixDataset.rawData[originalprobeId];
 
         }
@@ -330,10 +329,11 @@ public class CleanDoubleMatrix {
         doubleMatrixDataset.rowObjects = rowNames;
         doubleMatrixDataset.rawData = newRawData;
         doubleMatrixDataset.recalculateHashMaps();
-         
+
     }
+
     /**
-     * Order columns 
+     * Order columns
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
@@ -341,19 +341,19 @@ public class CleanDoubleMatrix {
         HashMap<String, Integer> originalColMap = (HashMap<String, Integer>) doubleMatrixDataset.hashCols;
         ArrayList<String> colNames = new ArrayList<String>(doubleMatrixDataset.colObjects);
         HashMap<String, Integer> newColMap = new HashMap<String, Integer>();
-        
+
         Collections.sort(colNames);
-        
-        for(int i=0; i<colNames.size(); ++i){
+
+        for (int i = 0; i < colNames.size(); ++i) {
             newColMap.put(colNames.get(i), i);
         }
-        
+
         double[][] newRawData = new double[doubleMatrixDataset.nrRows][doubleMatrixDataset.nrCols];
 
         for (String cName : colNames) {
             int originalSampleId = originalColMap.get(cName);
             int newSampleId = newColMap.get(cName);
-            
+
             for (int r = 0; r < doubleMatrixDataset.nrRows; ++r) {
                 newRawData[r][newSampleId] = doubleMatrixDataset.rawData[r][originalSampleId];
             }
@@ -362,16 +362,16 @@ public class CleanDoubleMatrix {
         doubleMatrixDataset.colObjects = colNames;
         doubleMatrixDataset.rawData = newRawData;
         doubleMatrixDataset.recalculateHashMaps();
-         
+
     }
-    
+
     /**
-     * Order rows to a index 
+     * Order rows to a index
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      * @param hashRowsToInclude Ids of rowss to include
      */
-    public static void ReorderRows(DoubleMatrixDataset<String, String> dataset, HashMap<String, Integer> mappingIndex) {       
+    public static void ReorderRows(DoubleMatrixDataset<String, String> dataset, HashMap<String, Integer> mappingIndex) {
 
         double[][] newRawData = new double[mappingIndex.size()][dataset.nrCols];
         String[] newRowNames = new String[mappingIndex.size()];
@@ -387,7 +387,7 @@ public class CleanDoubleMatrix {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
-    
+
     /**
      * Replace missing values in the double matrix per sample. Using either the
      * mean if useMedian is false or the median is useMedian is true.
@@ -428,19 +428,19 @@ public class CleanDoubleMatrix {
             }
         }
     }
-    
+
     /**
      * Method to apply all QC steps.
-     * 
-     * 
+     *
+     *
      * @param dataset
      * @param probesToBeRemoved
      * @param samplesToBeRemoved
      * @param replaceKnownOutOfRangeValues
      * @param maxMissingSamplesMissingAProbe
-     * @param maxMissingProbesMissingPerSample 
+     * @param maxMissingProbesMissingPerSample
      */
-    public static void performQC(DoubleMatrixDataset<String, String> dataset, ArrayList<String> probesToBeRemoved, ArrayList<String> samplesToBeRemoved, boolean replaceKnownOutOfRangeValues,  int maxMissingSamplesMissingAProbe, int maxMissingProbesMissingPerSample) {
+    public static void performQC(DoubleMatrixDataset<String, String> dataset, ArrayList<String> probesToBeRemoved, ArrayList<String> samplesToBeRemoved, boolean replaceKnownOutOfRangeValues, int maxMissingSamplesMissingAProbe, int maxMissingProbesMissingPerSample) {
 
         int originalNumberSamples = dataset.nrCols;
         int originalNumberProbes = dataset.nrRows;
@@ -453,11 +453,11 @@ public class CleanDoubleMatrix {
         System.out.println(originalNumberSamples);
         RemoveProbes(dataset, new HashSet(probesToBeRemoved));
         System.out.println(originalNumberProbes - dataset.nrRows);
-        
+
         RemoveSamples(dataset, new HashSet(probesToBeRemoved));
-        
+
         ArrayList<String> extraSamplesToBeRemoved = checkMinAndMaxPerSample(dataset, replaceKnownOutOfRangeValues);
-        
+
         RemoveSamples(dataset, new HashSet(probesToBeRemoved));
 
         RemoveColumnsWithToManyMissingValues(dataset, maxMissingProbesMissingPerSample);
@@ -470,49 +470,52 @@ public class CleanDoubleMatrix {
     }
 
     /**
-     * Check if all probe values are actually between 0 and 1.
-     * If replaceCheckedValuesOutOfRange is true values that are known to be allowed are replaced.
-     * With 0 if between -0.1 and 0 (Due to background correction).
-     * With -999 if either 9 or -3.4E38.
-     * 
+     * Check if all probe values are actually between 0 and 1. If
+     * replaceCheckedValuesOutOfRange is true values that are known to be
+     * allowed are replaced. With 0 if between -0.1 and 0 (Due to background
+     * correction). With -999 if either 9 or -3.4E38.
+     *
      * If not kick out sample
-     * 
+     *
      * @param dataset
-     * @param replaceCheckedValuesOutOfRange 
-     * @return 
+     * @param replaceCheckedValuesOutOfRange
+     * @return
      */
     public static ArrayList<String> checkMinAndMaxPerSample(DoubleMatrixDataset<String, String> dataset, boolean replaceCheckedValuesOutOfRange) {
-        
+
         ArrayList<String> columnsToExclude = new ArrayList<String>();
 
         for (int c = 0; c < dataset.nrCols; ++c) {
-            ArrayDoubleList tmp  = new ArrayDoubleList();
+            ArrayDoubleList tmp = new ArrayDoubleList();
             for (int r = 0; r < dataset.nrRows; ++r) {
-                if( !(dataset.rawData[r][c] >= 0 && dataset.rawData[r][c] <= 1 ) && dataset.rawData[r][c] != -999){
-                    if(replaceCheckedValuesOutOfRange){
-                        if(dataset.rawData[r][c] >= -0.01 && dataset.rawData[r][c] <= 1){
-                           dataset.rawData[r][c] = 0; 
-                        } else if((dataset.rawData[r][c] == (-3.4*Math.pow(10,38)))||(dataset.rawData[r][c] == 9) ) {
-                            dataset.rawData[r][c] = -999; 
-                        } else{
-                            tmp.add(dataset.rawData[r][c]);
+                if (!(dataset.rawData[r][c] >= 0 && dataset.rawData[r][c] <= 1) && dataset.rawData[r][c] != -999) {
+                    if (replaceCheckedValuesOutOfRange) {
+                        if (dataset.rawData[r][c] >= -0.01 && dataset.rawData[r][c] <= 1) {
+                            dataset.rawData[r][c] = 0;
+                        } else if (dataset.rawData[r][c] == (-3.4d * Math.pow(10, 38))) {
+                            dataset.rawData[r][c] = -999;
+                        } else if ((dataset.rawData[r][c] == 9)) {
+                            dataset.rawData[r][c] = -999;
+                        } else {
+                            System.out.println("This shouldn't be reached");
+                            System.out.println("This value reached it though: "+ dataset.rawData[r][c]);
+                            System.exit(-1);
                         }
-                    }
-                    else{
+                    } else {
                         tmp.add(dataset.rawData[r][c]);
                     }
-                } 
+                }
             }
-            if (tmp.size()!=0) {
-                if(tmp.size()>100){
+            if (tmp.size() != 0) {
+                if (tmp.size() > 100) {
                     System.out.println("Excluding due to min and max values probe:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + tmp.size());
-                }else {
-                    System.out.println("Excluding due to min and max values probe:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + tmp.size()+ "\t" + tmp.toString());
+                } else {
+                    System.out.println("Excluding due to min and max values probe:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + tmp.size() + "\t" + tmp.toString());
                 }
                 columnsToExclude.add(dataset.colObjects.get(c));
             }
         }
-        return(columnsToExclude);
+        return (columnsToExclude);
 
     }
 
