@@ -30,9 +30,12 @@ import umcg.genetica.io.trityper.util.TriTyperGenotypeDataMerger;
 public class ImputationTool {
 
 	public static final Pattern SEMI_COLON_PATTERN = Pattern.compile(";");
+	public static final String VERSION = ImputationTool.class.getPackage().getImplementationVersion();
 	
     public static void main(String[] args) throws Exception {
 
+		System.out.println("ImputationTool " + VERSION + "\n\n");
+		
         try {
             ImputationTool t = new ImputationTool();
 
@@ -260,7 +263,6 @@ public class ImputationTool {
     }
 
     public void printUsage() {
-        System.out.println("ImputationTool v0.2\n\n");
 
         System.out.println("------------------------\nPreProcessing\n------------------------\n");
         System.out.println("# Create random batches of cases and controls from a TriTyper dataset. Creates a file called batches.txt in outdir.\n"
