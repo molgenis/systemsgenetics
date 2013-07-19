@@ -2,6 +2,7 @@ package org.molgenis.genotype;
 
 import java.util.Collections;
 import java.util.Map;
+import org.molgenis.genotype.annotation.SexAnnotation;
 
 public class Sample
 {
@@ -29,6 +30,14 @@ public class Sample
 	public Map<String, ?> getAnnotationValues()
 	{
 		return Collections.unmodifiableMap(annotationValues);
+	}
+	
+	public SexAnnotation getSex(){
+		if(annotationValues.containsKey(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME)){
+			return (SexAnnotation) annotationValues.get(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME);
+		} else {
+			return SexAnnotation.UNKNOWN;
+		}
 	}
 
 	@Override

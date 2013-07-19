@@ -1,8 +1,11 @@
 package umcg.genetica.methylation;
 
 import JSci.maths.ArrayMath;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,6 +23,7 @@ import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.Heterogeneity;
 import umcg.genetica.math.stats.TTest;
 import umcg.genetica.math.stats.ZScores;
+import static umcg.genetica.methylation.ParseTcgaFile.ENCODING;
 
 /*
  * To change this template, choose Tools | Templates
@@ -132,7 +136,7 @@ public class MethylationAssociatoingAnnotationWithValues {
         HashMap<String, SoftfileAnnotation> sampleInfo = new HashMap<String, SoftfileAnnotation>();
 
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(fileWithAnnotation)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileWithAnnotation)), ENCODING), 8096);
             String str = in.readLine();
 
             String[] headers = SPLIT_ON_TAB.split(str);
@@ -557,7 +561,7 @@ public class MethylationAssociatoingAnnotationWithValues {
     private static void associateAnovaScoreAndItemOfInterest(DoubleMatrixDataset<String, String> doubleMatrix, HashMap<String, HashMap<String, String>> interestSets) {
         //System.out.println(eigenVectors.nrCols);
         //System.out.println(eigenVectors.nrRows);
-        HashMap<String, Double> scorePerGse = new HashMap<String, Double>();
+        //HashMap<String, Double> scorePerGse = new HashMap<String, Double>();
         HashMap<String, Integer> indeces = new HashMap<String, Integer>();
 
         for (Entry<String, HashMap<String, String>> set : interestSets.entrySet()) {
@@ -609,7 +613,7 @@ public class MethylationAssociatoingAnnotationWithValues {
     }
 
     private static LinkedHashMap<String, HashMap<String, String>> splitInterstingSetInPortions(LinkedHashMap<String, HashMap<String, String>> interestSets, int maxSize) {
-        HashMap<String, Integer> setsToSplit = new HashMap<String, Integer>();
+        //HashMap<String, Integer> setsToSplit = new HashMap<String, Integer>();
         
         LinkedHashMap<String, HashMap<String, String>> newInterestingSets = new LinkedHashMap<String, HashMap<String, String>>();
         

@@ -104,7 +104,7 @@ public class EQTLMappingPipelineConsole {
 		
         System.out.println("\n"
                 + ConsoleGUIElems.DOUBLELINE
-                + "Version: " + Main.VERSION + " March 2013\n"
+                + "Version: " + Main.VERSION + "\n"
                 + "Department of Genetics, University Medical Centre Groningen\n"
                 + "Harm-Jan Westra, Lude Franke, Marjolein Peters, Tonu Esko, Claudia Schurmann\n"
                 + ConsoleGUIElems.LINE

@@ -3,6 +3,7 @@ package org.molgenis.genotype.plink.drivers;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import org.molgenis.genotype.GenotypeDataException;
 
 /**
  * Driver to query BED (binary Plink genotype) files. See:
@@ -46,7 +47,7 @@ public class BedFileDriver
 	 * @param bedFile
 	 * @throws Exception
 	 */
-	public BedFileDriver(File bedFile) throws Exception
+	public BedFileDriver(File bedFile) throws IOException
 	{
 		RandomAccessFile raf = new RandomAccessFile(bedFile, "r");
 		try
@@ -62,7 +63,7 @@ public class BedFileDriver
 			}
 			else
 			{
-				throw new Exception("Invalid Plink magic number");
+				throw new GenotypeDataException("Invalid Plink magic number");
 			}
 
 			byte bmode = raf.readByte();
@@ -74,11 +75,11 @@ public class BedFileDriver
 			else if (bmode == 0) // assumed... bit code 00000000
 			{
 				// System.out.println("mode 0: individual-major");
-				throw new Exception("BED file individual-major mode not yet supported!");
+				throw new GenotypeDataException("BED file individual-major mode not yet supported!");
 			}
 			else
 			{
-				throw new Exception("Mode not recognized: " + bmode);
+				throw new GenotypeDataException("Mode not recognized: " + bmode);
 			}
 
 			this.mode = bmode;

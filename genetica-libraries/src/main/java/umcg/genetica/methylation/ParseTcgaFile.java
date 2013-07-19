@@ -4,8 +4,11 @@
  */
 package umcg.genetica.methylation;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -21,7 +24,8 @@ import umcg.genetica.math.matrix.DoubleMatrixDataset;
 public class ParseTcgaFile {
 
     private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
-
+    protected static final String ENCODING = "ISO-8859-1";
+    
     /**
      * Read Level 1 data from TGCA a single DoubleMatrixDatasets containing beta
      * values. Beta values are calculated as : M/U+M (Non-bead studio / genome
@@ -51,7 +55,7 @@ public class ParseTcgaFile {
         int nrProbes = 0;
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader((File) vecFiles.get(0)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
             String str = in.readLine();
             str = in.readLine();
             while ((str = in.readLine()) != null) {
@@ -76,10 +80,10 @@ public class ParseTcgaFile {
             //dataset3.probeNames[p * 2 + 1] = "U-" + (String) vecProbes.get(p);
         }
         for (int f = 0; f < nrSamples; f++) {
-            File currentFile = (File) vecFiles.get(f);
+            File currentFile = vecFiles.get(f);
             //System.out.println("Processing:\t" + f + "\t" + currentFile.getAbsolutePath());
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = in.readLine();
                 String[] data = SPLIT_ON_TAB.split(str);
                 dataset3.colObjects.set(f, data[1]);
@@ -180,7 +184,7 @@ public class ParseTcgaFile {
         int nrProbes = 0;
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader((File) vecFiles.get(0)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
             String str = in.readLine();
             str = in.readLine();
             while ((str = in.readLine()) != null) {
@@ -318,7 +322,7 @@ public class ParseTcgaFile {
         int nrProbes = 0;
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader((File) vecFiles.get(0)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
             String str = in.readLine();
             str = in.readLine();
             while ((str = in.readLine()) != null) {
@@ -347,10 +351,10 @@ public class ParseTcgaFile {
             //dataset3.probeNames[p * 2 + 1] = "U-" + (String) vecProbes.get(p);
         }
         for (int f = 0; f < nrSamples; f++) {
-            File currentFile = (File) vecFiles.get(f);
+            File currentFile = vecFiles.get(f);
             System.out.println("Processing:\t" + f + "\t" + currentFile.getAbsolutePath());
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = in.readLine();
                 String[] data = SPLIT_ON_TAB.split(str);
                 dataset1.colObjects.set(f, data[1]);
@@ -468,7 +472,7 @@ public class ParseTcgaFile {
         int nrP = 0;
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader((File) vecFiles.get(0)));
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
             String str = in.readLine();
             str = in.readLine();
             while ((str = in.readLine()) != null) {
@@ -496,7 +500,7 @@ public class ParseTcgaFile {
             File currentFile = vecFiles.get(f);
             System.out.println("Processing:\t" + f + "\t" + currentFile.getAbsolutePath());
             try {
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(currentFile));
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(currentFile), ENCODING), 8096);
                 String str = in.readLine();
                 String[] data = str.split("\t");
                 dataset1.colObjects.set(f, data[1]);
