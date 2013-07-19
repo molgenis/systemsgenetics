@@ -265,13 +265,103 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
 
     @SuppressWarnings("element-type-mismatch") // generics don't work too well here with text files if the row/col id's are just plain text (use gson or something to represent objects if needed)
     private void loadExpressionData(String fileName, String delimiter) throws IOException {
+        Pattern p = Pattern.compile(delimiter);
         this.fileName = fileName;
 
+        int sampleOffset = 1;
+        int[] sampleIndex = null;
+        TextFile in = new TextFile(fileName, TextFile.R);
+        String str = in.readLine();
+        String[] data = p.split(str);
+
+        if (colsToInclude != null) {
+            nrCols = 0;
+            colObjects = new ArrayList<U>();
+            List<Integer> colIndicesToInclude = new ArrayList<Integer>();
+            for (int s = 0; s < data.length - sampleOffset; s++) {
+                if (colsToInclude.contains(data[s + sampleOffset])) {
+                    colObjects.add((U) data[s + sampleOffset]);
+                    hashCols.put(colObjects.get(nrCols), s);
+                    colIndicesToInclude.add(s);
+                    nrCols++;
+                }
+            }
+            sampleIndex = new int[nrCols];
+            for (int i = 0, len = colIndicesToInclude.size(); i < len; i++) {
+                sampleIndex[i] = colIndicesToInclude.get(i);
+            }
+        } else {
+            nrCols = data.length - sampleOffset;
+            colObjects = new ArrayList<U>(nrCols);
+            sampleIndex = new int[nrCols];
+            for (int s = 0; s < nrCols; s++) {
+                colObjects.add((U) data[s + sampleOffset]);
+                hashCols.put(colObjects.get(s), s);
+                sampleIndex[s] = s;
+            }
+        }
+
+        nrRows = 0;
+        while ((str = in.readLine()) != null) {
+            if (rowsToInclude == null) {
+                nrRows++;
+            } else {
+                String[] split = p.split(str);
+                if (rowsToInclude.contains(split[0])) {
+                    nrRows++;
+                }
+            }
+        }
+        in.close();
+
+        rawData = new double[nrRows][nrCols];
+        rowObjects = new ArrayList<T>(nrRows);
+        in.open();
+        str = in.readLine(); // read header
+        int row = 0;
+
+        boolean correctData = true;
+        while ((str = in.readLine()) != null) {
+            data = p.split(str);
+            if (rowsToInclude == null || rowsToInclude.contains(data[0])) {
+                rowObjects.add((T) new String(data[0].getBytes()));
+                hashRows.put(rowObjects.get(row), row);
+                for (int s = 0; s < nrCols; s++) {
+                    String cell = data[sampleIndex[s] + sampleOffset];
+                    Double d = Double.NaN;
+                    try {
+                        d = Double.parseDouble(cell);
+                    } catch (NumberFormatException e) {
+                        correctData = false;
+                    }
+                    rawData[row][s] = d;
+                }
+                row++;
+            }
+            if (row > 0 && row % 1000 == 0) {
+                System.out.println(row);
+            }
+        }
+        if (!correctData) {
+            LOGGER.warning("Your data contains NaN/unparseable values!");
+        }
+        in.close();
+        recalculateHashMaps();
+        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
+    }
+
+    
+    @SuppressWarnings("element-type-mismatch") // generics don't work too well here with text files if the row/col id's are just plain text (use gson or something to represent objects if needed)
+    private void loadExpressionDataParallel(String fileName, String delimiter) throws IOException {
+        Pattern p = Pattern.compile(delimiter);
+        
+        this.fileName = fileName;
+        
         columnOffset = 1;
         int[] colIndex = null;
         TextFile in = new TextFile(fileName, TextFile.R);
         String str = in.readLine(); // header
-        String[] data = str.split(delimiter); // split header
+        String[] data = p.split(str); // split header
 
 
         if (colsToInclude == null) {
@@ -310,13 +400,11 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
 
         }
 
-
-
         nrRows = 0;
 
         ArrayList<String> rowNames = new ArrayList<String>();
         while ((str = in.readLine()) != null) {
-            String[] split = str.split(delimiter);
+            String[] split = p.split(str);
             if (rowsToInclude == null) {
                 rowNames.add(split[0]);
                 nrRows++;
@@ -332,6 +420,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
         rowObjects = new ArrayList<T>(nrRows);
         for (int i = 0; i < rowNames.size(); i++) {
             rowObjects.add((T) rowNames.get(i));
+            hashRows.put((T) rowNames.get(i), i);
         }
 
         rawData = new double[nrRows][nrCols];
@@ -344,12 +433,10 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
         ExecutorService threadPool = Executors.newFixedThreadPool(nrprocs);
         CompletionService<Triple<Integer, String, double[]>> pool = new ExecutorCompletionService<Triple<Integer, String, double[]>>(threadPool);
 
-        boolean correctData = true;
+//        boolean correctData = true;
         int tasksSubmitted = 0;
         int returnedResults = 0;
         int lnctr = 0;
-
-        Pattern p = Pattern.compile(delimiter);
 
 //        str = in.readLine(); // first header
         while ((str = in.readLine()) != null) {
@@ -419,7 +506,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
         threadPool.shutdown();
 
         in.close();
-        recalculateHashMaps();
+//        recalculateHashMaps();
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
     }
 

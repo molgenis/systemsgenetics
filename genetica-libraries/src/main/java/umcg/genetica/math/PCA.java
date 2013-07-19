@@ -9,60 +9,58 @@ package umcg.genetica.math;
  * @author harmjan
  */
 public class PCA {
-    public void PCA(){
-        
+
+    public void PCA() {
     }
-    
-    public static Jama.EigenvalueDecomposition eigenValueDecomposition(double[][] data) {  
+
+    public static Jama.EigenvalueDecomposition eigenValueDecomposition(double[][] data) {
 //        System.out.println("Matrix is: "+data.length+"x"+data[data.length-1].length);
-        Jama.Matrix m = new Jama.Matrix(data);                                                                                                                                                                                                                                                                                                                                                                                        
+        Jama.Matrix m = new Jama.Matrix(data);
 //        System.out.println("Performing decomposition");
-        Jama.EigenvalueDecomposition eig = m.eig();    
-        return eig;                                                                                                                                                                                                                                                                                                                                                                                                                   
-    }       
-    
-    public static double[] getRealEigenvalues(Jama.EigenvalueDecomposition eig){
+        Jama.EigenvalueDecomposition eig = m.eig();
+        return eig;
+    }
+
+    public static double[] getRealEigenvalues(Jama.EigenvalueDecomposition eig) {
         return eig.getRealEigenvalues();
     }
-                                                                                                                                                                                                                                                                                                                                                                                                                                      
-    public static double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {                                                                                                                                                                                                                                                                                                                                
-        Jama.Matrix eigenValueMatrix = eig.getV();                                                                                                                                                                                                                                                                                                                                                                                    
-        double[][] eigenValueMat = eigenValueMatrix.getArray();                                                                                                                                                                                                                                                                                                                                                                       
-        double[] eigenVector = new double[eigenValueMat.length];                                                                                                                                                                                                                                                                                                                                                                      
-        for (int i = 0; i < eigenValueMat.length; i++) {                                                                                                                                                                                                                                                                                                                                                                              
+
+    public static double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {
+        Jama.Matrix eigenValueMatrix = eig.getV();
+        double[][] eigenValueMat = eigenValueMatrix.getArray();
+        double[] eigenVector = new double[eigenValueMat.length];
+        for (int i = 0; i < eigenValueMat.length; i++) {
             eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);                                                                                                                                                                                                                                                                                             
-        }                                                                                                                                                                                                                                                                                                                                                                                                                             
-        return eigenVector;                                                                                                                                                                                                                                                                                                                                                                                                           
-    }                                                                                                                                                                                                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                                                                                                                                                                      
-    public static double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {                                                                                                                                                                                                                                                                                                                                                      
-        Jama.Matrix eigenValueMatrix = eig.getV();                                                                                                                                                                                                                                                                                                                                                                                    
-        double[][] eigenValueMat = eigenValueMatrix.getArray();                                                                                                                                                                                                                                                                                                                                                                       
-        double[] eigenVector = new double[eigenValueMat.length];                                                                                                                                                                                                                                                                                                                                                                      
-        for (int i = 0; i < eigenValueMat.length; i++) {                                                                                                                                                                                                                                                                                                                                                                              
+        }
+        return eigenVector;
+    }
+
+    public static double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {
+        Jama.Matrix eigenValueMatrix = eig.getV();
+        double[][] eigenValueMat = eigenValueMatrix.getArray();
+        double[] eigenVector = new double[eigenValueMat.length];
+        for (int i = 0; i < eigenValueMat.length; i++) {
             eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);                                                                                                                                                                                                                                                                                             
-        }                                                                                                                                                                                                                                                                                                                                                                                                                             
-        return eigenVector;                                                                                                                                                                                                                                                                                                                                                                                                           
-    }                                                                                                                                                                                                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                                                                                                                                                                      
-                                                                                                                                                                                                                                                                                                                                                                                                                                      
-    public static double getEigenValueVar(double[] eigenValues, int pca) {                                                                                                                                                                                                                                                                                                                                                                  
-        double sumEigenvalues = 0.0;                                                                                                                                                                                                                                                                                                                                                                                                  
-        for (Double d : eigenValues) {                                                                                                                                                                                                                                                                                                                                                                                                
-            sumEigenvalues += Math.abs(d);                                                                                                                                                                                                                                                                                                                                                                                            
-        }                                                                                                                                                                                                                                                                                                                                                                                                                             
-        double result = eigenValues[eigenValues.length - 1 - pca] / sumEigenvalues;                                                                                                                                                                                                                                                                                                                                                   
-        return result;                                                                                                                                                                                                                                                                                                                                                                                                                
-    }                                                                                                                                                                                                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                                                                                                                                                                      
-    public static double[] getEigenVectorSVD(Jama.SingularValueDecomposition svd, double[] singularValues, int pca) {                                                                                                                                                                                                                                                                                                                       
-        Jama.Matrix eigenValueMatrix = svd.getV();                                                                                                                                                                                                                                                                                                                                                                                    
-        double[][] eigenValueMat = eigenValueMatrix.getArray();                                                                                                                                                                                                                                                                                                                                                                       
-        double[] eigenVector = new double[eigenValueMat.length];                                                                                                                                                                                                                                                                                                                                                                      
-        for (int i = 0; i < eigenValueMat.length; i++) {                                                                                                                                                                                                                                                                                                                                                                              
-            eigenVector[i] = eigenValueMat[i][pca] * Math.sqrt(singularValues[pca]);                                                                                                                                                                                                                                                                                                                                                  
-        }                                                                                                                                                                                                                                                                                                                                                                                                                             
-        return eigenVector;                                                                                                                                                                                                                                                                                                                                                                                                           
-    }                                                                                                                                                                                                                                                                                                                                                                                                                                 
-  
+        }
+        return eigenVector;
+    }
+
+    public static double getEigenValueVar(double[] eigenValues, int pca) {
+        double sumEigenvalues = 0.0;
+        for (Double d : eigenValues) {
+            sumEigenvalues += Math.abs(d);
+        }
+        double result = eigenValues[eigenValues.length - 1 - pca] / sumEigenvalues;
+        return result;
+    }
+
+    public static double[] getEigenVectorSVD(Jama.SingularValueDecomposition svd, double[] singularValues, int pca) {
+        Jama.Matrix eigenValueMatrix = svd.getV();
+        double[][] eigenValueMat = eigenValueMatrix.getArray();
+        double[] eigenVector = new double[eigenValueMat.length];
+        for (int i = 0; i < eigenValueMat.length; i++) {
+            eigenVector[i] = eigenValueMat[i][pca] * Math.sqrt(singularValues[pca]);
+        }
+        return eigenVector;
+    }
 }
