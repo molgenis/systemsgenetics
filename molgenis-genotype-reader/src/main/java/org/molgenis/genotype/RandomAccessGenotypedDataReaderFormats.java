@@ -6,43 +6,37 @@ import java.io.IOException;
 import org.molgenis.genotype.impute2.Impute2GenotypeData;
 import org.molgenis.genotype.multipart.IncompetibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
+import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
-public enum RandomAccessGenotypedDataReaderFormats
-{
+public enum RandomAccessGenotypedDataReaderFormats {
 
-	PED_MAP("PED / MAP file", "plink PED MAP files gziped with tabix index."), VCF("VCF file",
-			"gziped vcf with tabix index file"), VCF_FOLDER("VCF folder",
-			"Matches all gziped vcf files + tabix index in a folder"), SHAPEIT2(
-			"Shapeit2 output",
-			".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index");
-
+	PED_MAP("PED / MAP file", "plink PED MAP files"), VCF("VCF file",
+	"gziped vcf with tabix index file"), VCF_FOLDER("VCF folder",
+	"Matches all gziped vcf files + tabix index in a folder"), SHAPEIT2(
+	"Shapeit2 output",
+	".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"), PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files");
 	private final String name;
 	private final String description;
 
-	RandomAccessGenotypedDataReaderFormats(String name, String description)
-	{
+	RandomAccessGenotypedDataReaderFormats(String name, String description) {
 		this.name = name;
 		this.description = description;
 	}
 
-	public String getName()
-	{
+	public String getName() {
 		return name;
 	}
 
-	public String getDescription()
-	{
+	public String getDescription() {
 		return description;
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize) throws IOException,
-			IncompetibleMultiPartGenotypeDataException
-	{
+			IncompetibleMultiPartGenotypeDataException {
 
-		switch (this)
-		{
+		switch (this) {
 			case PED_MAP:
 				return new PedMapGenotypeData(new File(path + ".ped"), new File(path + ".map"));
 			case VCF:
@@ -52,6 +46,8 @@ public enum RandomAccessGenotypedDataReaderFormats
 			case SHAPEIT2:
 				return new Impute2GenotypeData(new File(path + ".haps.gz"), new File(path + ".haps.gz.tbi"), new File(
 						path + ".sample"), cacheSize);
+			case PLINK_BED:
+				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}

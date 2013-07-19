@@ -28,18 +28,30 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 	private final BedBimFamReader reader;
 	private Map<String, SampleAnnotation> sampleAnnotations;
 
-	public BedBimFamGenotypeData(File bedFile, File bimFile, File famFile) throws Exception
+	public BedBimFamGenotypeData(File bedFile, File bimFile, File famFile) throws IOException
 	{
 
-		if (bedFile == null) throw new IllegalArgumentException("BedFile is null");
-		if (bimFile == null) throw new IllegalArgumentException("BimFile is null");
-		if (famFile == null) throw new IllegalArgumentException("FamFile is null");
+		if (bedFile == null) {
+			throw new IllegalArgumentException("BedFile is null");
+		}
+		if (bimFile == null) {
+			throw new IllegalArgumentException("BimFile is null");
+		}
+		if (famFile == null) {
+			throw new IllegalArgumentException("FamFile is null");
+		}
 
-		if (!bedFile.isFile()) throw new FileNotFoundException("BED index file not found at "
-				+ bedFile.getAbsolutePath());
-		if (!bedFile.canRead()) throw new IOException("BED index file not found at " + bedFile.getAbsolutePath());
+		if (!bedFile.isFile()) {
+			throw new FileNotFoundException("BED index file not found at "
++ bedFile.getAbsolutePath());
+		}
+		if (!bedFile.canRead()) {
+			throw new IOException("BED index file not found at " + bedFile.getAbsolutePath());
+		}
 
-		if (!bimFile.isFile()) throw new FileNotFoundException("BIM file not found at " + bimFile.getAbsolutePath());
+		if (!bimFile.isFile()) {
+			throw new FileNotFoundException("BIM file not found at " + bimFile.getAbsolutePath());
+		}
 		if (!bimFile.canRead()) throw new IOException("BIM file not found at " + bimFile.getAbsolutePath());
 
 		if (!famFile.isFile()) throw new FileNotFoundException("FAM file not found at " + famFile.getAbsolutePath());

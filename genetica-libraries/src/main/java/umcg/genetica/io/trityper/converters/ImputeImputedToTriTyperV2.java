@@ -19,7 +19,7 @@ public class ImputeImputedToTriTyperV2 {
 
     public void importImputedDataWithProbabilityInformationImpute(String inputDir, String outputDir, int nrSamples) throws Exception {
 
-        System.out.println("This version will procces files complying to this pattern: chr_#");
+        System.out.println("This version will procces files complying to this pattern: chr# and chr_#");
 
 
         ArrayList<String> Snps = new ArrayList<String>();
@@ -190,9 +190,12 @@ public class ImputeImputedToTriTyperV2 {
             //if(files[i].equals("chr_"+chr+"_")){
 //            System.out.println(files[i]);
             String[] split = files[i].split("\\.");
-            if(split.length > 1){
+			if(files[i].equals("chr" + chr)){
+				filelist.add(files[i]);
+			}
+			else if(split.length > 1){
 //                System.out.println(split[0]);
-                if(split[0].equals("chr_" + chr)){
+                if(split[0].equals("chr_" + chr) || split[0].equals("chr" + chr)){
                     filelist.add(files[i]);
                 }
             }
