@@ -8,7 +8,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  * @author erwin
  * 
  */
-public interface Sequence extends Iterable<GeneticVariant>
+public interface Sequence
 {
 	String getName();
 
