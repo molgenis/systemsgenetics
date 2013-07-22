@@ -142,4 +142,16 @@ abstract public class AbstractGeneticVariant implements GeneticVariant
 	{
 		return !(this.getSequenceName().equals("0") && this.getStartPos() == 0);
 	}
+	
+	@Override
+	public double getCallRate() {
+		//TODO
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public double getHwePvalue() {
+		//TODO
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
 }

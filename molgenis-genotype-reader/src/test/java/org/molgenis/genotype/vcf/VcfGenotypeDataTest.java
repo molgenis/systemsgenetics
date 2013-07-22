@@ -70,7 +70,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 		assertNotNull(sequence);
 		assertEquals(sequence.getName(), "2");
 
-		List<GeneticVariant> variants = Utils.iteratorToList(sequence.iterator());
+		List<GeneticVariant> variants = Utils.iteratorToList(genotypeData.getSequenceGeneticVariants(sequence.getName()).iterator());
 
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
