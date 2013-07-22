@@ -90,10 +90,17 @@ public class Allele implements Comparable<Allele>
 
 	public static Allele create(String alleleString)
 	{
+		
+		if(alleleString == null){
+			return ZERO;
+		}
+		
+		if(alleleString.isEmpty()){
+			return ZERO;
+		}
 
 		if (pool.containsKey(alleleString))
 		{
-
 			return pool.get(alleleString);
 		}
 		else
@@ -114,6 +121,10 @@ public class Allele implements Comparable<Allele>
 	public static Allele create(char alleleChar)
 	{
 
+		if(alleleChar == '\0'){
+			return Allele.ZERO;
+		}
+		
 		if (snpPool.containsKey(alleleChar))
 		{
 

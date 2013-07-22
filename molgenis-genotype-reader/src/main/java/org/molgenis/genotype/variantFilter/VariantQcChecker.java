@@ -40,14 +40,14 @@ public class VariantQcChecker {
 			return false;
 		}
 	
-		//TODO implement
-//		if(variant.getCallRate() < callRate){
-//			return false;
-//		}
-//		
-//		if(variant.getHwePvalue() < hwe){
-//			return false;
-//		}
+		
+		if(variant.getCallRate() < callRate){
+			return false;
+		}
+		
+		if(variant.getHwePvalue() < hwe){
+			return false;
+		}
 		
 		return true;
 		
