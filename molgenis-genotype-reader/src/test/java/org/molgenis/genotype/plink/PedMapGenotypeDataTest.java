@@ -54,7 +54,7 @@ public class PedMapGenotypeDataTest extends ResourceTest
 		assertNotNull(sequence);
 		assertEquals(sequence.getName(), "22");
 
-		List<GeneticVariant> variants = Utils.iteratorToList(sequence.iterator());
+		List<GeneticVariant> variants = Utils.iteratorToList(genotypeData.getSequenceGeneticVariants(sequence.getName()).iterator());
 		assertNotNull(variants);
 		assertEquals(variants.size(), 9);
 		GeneticVariant variant = variants.get(0);
