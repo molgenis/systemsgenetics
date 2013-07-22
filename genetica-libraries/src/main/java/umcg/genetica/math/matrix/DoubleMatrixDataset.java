@@ -317,7 +317,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
         rawData = new double[nrRows][nrCols];
         rowObjects = new ArrayList<T>(nrRows);
         in.open();
-        str = in.readLine(); // read header
+        in.readLine(); // read header
         int row = 0;
 
         boolean correctData = true;
@@ -328,11 +328,12 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
                 hashRows.put(rowObjects.get(row), row);
                 for (int s = 0; s < nrCols; s++) {
                     String cell = data[sampleIndex[s] + sampleOffset];
-                    Double d = Double.NaN;
+                    double d;
                     try {
                         d = Double.parseDouble(cell);
                     } catch (NumberFormatException e) {
                         correctData = false;
+                        d = Double.NaN;
                     }
                     rawData[row][s] = d;
                 }

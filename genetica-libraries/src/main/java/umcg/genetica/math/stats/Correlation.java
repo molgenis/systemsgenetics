@@ -109,29 +109,57 @@ public class Correlation {
         return correlation;
     }
 
+//    public static double correlate(double[] x, double[] y) {
+//        
+//        double[] xNew = new double[x.length];
+//        double[] yNew = new double[y.length];
+//        for (int a=0; a<x.length; a++) {
+//            xNew[a] = x[a];
+//            yNew[a] = y[a];
+//        }
+//        
+//        double meanX = Descriptives.mean(xNew);
+//
+//        double varX = Descriptives.variance(xNew, meanX);
+//
+//        double meanY = Descriptives.mean(yNew);
+//        double varY = Descriptives.variance(yNew, meanY);
+//        for (int i = 0; i < xNew.length; i++) {
+//            xNew[i] -= meanX;
+//            yNew[i] -= meanY;
+//        }
+//        return correlate(xNew, yNew, varX, varY);
+//    }
+    
     public static double correlate(double[] x, double[] y) {
         
-        double[] xNew = new double[x.length];
-        double[] yNew = new double[y.length];
-        for (int a=0; a<x.length; a++) {
-            xNew[a] = x[a];
-            yNew[a] = y[a];
-        }
-             
+        double meanX = Descriptives.mean(x);
+        double meanY = Descriptives.mean(y);
         
-        double meanX = Descriptives.mean(xNew);
-
-        double varX = Descriptives.variance(xNew, meanX);
-
-        double meanY = Descriptives.mean(yNew);
-        double varY = Descriptives.variance(yNew, meanY);
-        for (int i = 0; i < xNew.length; i++) {
-            xNew[i] -= meanX;
-            yNew[i] -= meanY;
+        double varX = 0;
+        double varY = 0;
+        
+        double covarianceInterim = 0;
+        
+        for (int a=0; a<x.length; a++) {
+            double varXT = (x[a]-meanX);
+            double varYT = (y[a]-meanY);
+            
+            covarianceInterim += varXT * varYT;
+            
+            varX += varXT * varXT;
+            varY += varYT * varYT;
         }
-        return correlate(xNew, yNew, varX, varY);
+        
+        varY = varY / (y.length-1);
+        varX = varX / (x.length-1);
+        
+        double denominator = Math.sqrt(varX * varY);
+        double covariance = covarianceInterim / (x.length - 1);
+        double correlation = covariance / denominator;
+        return correlation;
     }
-
+    
     public static double convertCorrelationToZScore(int length, double correlation) {
         int correlationIndex = (int) Math.round(((correlation + 1.0d) * 1000d));
 
