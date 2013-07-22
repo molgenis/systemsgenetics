@@ -242,10 +242,19 @@ public class Normalizer {
         DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawdata, traitData.rowObjects, traitData.colObjects);
         fileNamePrefix += ".CovariatesRemoved";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
+        
+        
+        
         return fileNamePrefix;
     }
-
-    public double[][] correlateSamples(DoubleMatrixDataset<String, String> dataset) {
+    
+    /**
+     * Calculate correlation over columns in DoubleMatrixDataset. 
+     * WARNING: this method assumes that SD == 1 and mean == 0 (which makes the covariance equal to the correlation).
+     * @param dataset
+     * @return 
+     */
+    private double[][] correlateSamples(DoubleMatrixDataset<String, String> dataset) {
         double[][] correlationMatrix = new double[dataset.colObjects.size()][dataset.colObjects.size()];
         double probeCountMinusOne = dataset.rowObjects.size() - 1;
 
