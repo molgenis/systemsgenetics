@@ -163,4 +163,8 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 
 	public boolean isMapped();
 
+	public double getCallRate();
+
+	public double getHwePvalue();
+
 }
