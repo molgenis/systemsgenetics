@@ -20,10 +20,11 @@ public class GWASTrait {
     HashSet<GWASLocus> loci = new HashSet<GWASLocus>();
     HashSet<GWASPublication> publishedIn = new HashSet<GWASPublication>();
     HashSet<GWASSNP> snps = new HashSet<GWASSNP>();
+    HashSet<GWASSNP> strongestSNPAssociation = new HashSet<GWASSNP>();
     GWASSNP[] snpArray = null;
     HashSet<String> reportedGenes = new HashSet<String>();
     HashSet<String> mappedGenes = new HashSet<String>();
-  
+
     public String getName() {
         return name;
     }
@@ -34,8 +35,7 @@ public class GWASTrait {
 
     public GWASSNP[] getSNPs() {
         if (snpArray == null) {
-            snpArray = new GWASSNP[snps.size()];
-            snps.toArray(snpArray);
+            snpArray = snps.toArray(new GWASSNP[0]);
         }
         return snpArray;
     }
@@ -54,7 +54,7 @@ public class GWASTrait {
         }
         return limited.toArray(new GWASSNP[0]);
     }
-    
+
     public HashSet<String> getReportedGenes() {
         return reportedGenes;
     }
@@ -62,7 +62,7 @@ public class GWASTrait {
     public void setReportedGenes(HashSet<String> reportedGenes) {
         this.reportedGenes = reportedGenes;
     }
-    
+
     public void appendReportedGenes(HashSet<String> reportedGenes) {
         this.reportedGenes.addAll(reportedGenes);
     }
@@ -74,13 +74,26 @@ public class GWASTrait {
     public void setMappedGenes(HashSet<String> mappedGenes) {
         this.mappedGenes = mappedGenes;
     }
-    
+
     public void appendMappedGenes(HashSet<String> mappedGenes) {
         this.mappedGenes.addAll(reportedGenes);
     }
-    
+
     @Override
     public String toString() {
         return name;
+    }
+
+    public void addTopSNP(GWASSNP gwasTopSNPObj) {
+        this.strongestSNPAssociation.add(gwasTopSNPObj);
+        this.snps.add(gwasTopSNPObj);
+    }
+    
+    public GWASSNP[] getTopAssociations(){
+        return strongestSNPAssociation.toArray(new GWASSNP[0]);
+    }
+    
+    public boolean isTopAssociation(GWASSNP snp){
+        return strongestSNPAssociation.contains(snp);
     }
 }
