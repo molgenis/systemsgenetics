@@ -66,7 +66,7 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	private static boolean areAlleleCharsAtOrGc(List<Allele> alleles)
 	{
 
-		if (alleles.size() == 0)
+		if (alleles.isEmpty())
 		{
 			return false;
 		}
