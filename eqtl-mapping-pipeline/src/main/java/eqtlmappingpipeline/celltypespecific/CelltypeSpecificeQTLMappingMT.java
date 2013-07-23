@@ -386,11 +386,7 @@ public class CelltypeSpecificeQTLMappingMT {
         System.out.println("For the next step, you can use the following file as raw expression data (--inexpraw): " + rawExpressionFileToUseForNextStep);
         System.out.println("For the cell count proxy file, please use the following file for the next step (--cellcounts): " + tfOutCellSpecific.getFileName());
         System.out.println("");
-        System.out.println("Done. Have a nice day.");
-
-
-
-
+  
     }
 
     public void runCelltypeSpecificEQTLMapping(String inExpPCCorrected, String inExpRaw, String ingt, String gte, String snpprobecombinationfile, String cellCountFile, Integer nrThreads, String out) throws IOException, Exception {
