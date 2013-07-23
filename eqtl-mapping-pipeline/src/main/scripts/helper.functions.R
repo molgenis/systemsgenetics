@@ -6,6 +6,16 @@
 # first written Jun, 2013
 #
 
+read.harmjan.zscores <- function(){
+  if(file.exists("metaRes.Rdata")){
+    load("metaRes.Rdata")
+  }else{
+    metaRes <- read.csv("MetaAnalysisZScoreMatrix-Ensembl.txt",sep='\t',row.names=1)
+    save(metaRes, file="metaRes.Rdata")
+  }
+  return(metaRes)
+}
+
 read.illumina.celltypes <- function(){
   CellTypeDATA <- read.table("E-TABM-633/HaemAtlasMKEBNormalizedIntensities.csv",sep='\t',row.names=1,header=TRUE)
   CellTypeDATA <- CellTypeDATA[-1,]
@@ -15,9 +25,14 @@ read.illumina.celltypes <- function(){
   return(CellTypeDATA)
 }
 
-add.illumina.probes.information <- function(CellTypeDATA){
+read.illumina.probes.information <- function(){
   ProbeAnnotation <- read.csv("GPL6102-11574.txt",sep="\t",skip=27) # Probe annotation
   ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
+  return(ProbeAnnotation)
+}
+
+add.illumina.probes.information <- function(CellTypeDATA){
+  ProbeAnnotation <- read.illumina.probes.information()
   inAnnot <- which(rownames(CellTypeDATA) %in% ProbeAnnotation[,1])
   CellTypeDATA <- CellTypeDATA[inAnnot,]
   sortAnnot <- match(rownames(CellTypeDATA), ProbeAnnotation[,1]) # Align
@@ -46,7 +61,16 @@ match.annotated.affy.rnaseq <- function(Neutr, RNASeq){
   return(Neutr)
 }
 
-annotate.affy.neutrohils <- function(Neutr, translation){
+add.metares.to.tmatrix <- function(metaRes, tscores_Annotated){
+  # Bind the tscores_Annotated columns Neutrophil, Bcell and Tcell to the MetaAnalysis data
+  metaRes <- metaRes[which(rownames(metaRes) %in% tscores_Annotated[,1]),]     # match MetaRes
+  tscores_Annotated <- tscores_Annotated[which(tscores_Annotated[,1] %in% rownames(metaRes)),] # match ResVector
+  sortRes <- match(rownames(metaRes), tscores_Annotated[,1]) # Align
+  metaRes <- cbind(tscores_Annotated[sortRes, 3:7], metaRes)
+  return(metaRes)
+}
+
+annotate.affy.by.rownames <- function(Neutr, translation){
   inTrans <- which(rownames(Neutr) %in% translation[,1])
   Neutr <- Neutr[inTrans,]
   sortTrans <- match(rownames(Neutr), translation[,1]) # Align

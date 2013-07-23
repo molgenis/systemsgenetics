@@ -16,7 +16,7 @@ RNASeq      <- read.csv("expression_table.genes.exonic_v69.0.3.rawCounts_Named.t
 Neutr       <- read.csv("GPL570_Neutrophil_Good.txt", sep='\t', row.names=1)
 translation <- read.affy.translation()
 
-Neutr <- annotate.affy.neutrohils(Neutr, translation)
+Neutr       <- annotate.affy.by.rownames(Neutr, translation)
 NeutrRNASeq <- match.annotated.affy.rnaseq(Neutr, RNASeq)
 
 # LOG2 transform the RNA Seq data
@@ -45,7 +45,7 @@ for(gene in rownames(NeutrRNASeq)){
   AffyRowID <- which(rownames(NeutrRNASeq)==gene)
   RnaAffyIllu <- rbind(RnaAffyIllu, c(gene, IlluMean, NeutrRNASeq[AffyRowID,-8]))
 }
-
+colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
 # Write the full table
 write.table(RnaAffyIllu,"NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep='\t', quote=FALSE)
 
