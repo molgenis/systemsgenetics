@@ -152,6 +152,7 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	@Override
 	protected Map<String, Annotation> getVariantAnnotationsMap()
 	{
+        // TODO: is this the correct annotation map that is returned?????
 		if (sampleAnnotationsMap == null)
 		{
 			List<VcfInfo> infos = reader.getInfos();
@@ -197,7 +198,7 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 		List<Sample> samples = new ArrayList<Sample>(sampleNames.size());
 		for (String sampleName : sampleNames)
 		{
-			Sample sample = new Sample(sampleName, null, Collections.<String, SampleAnnotation> emptyMap());
+			Sample sample = new Sample(sampleName, null, null);
 			samples.add(sample);
 		}
 
