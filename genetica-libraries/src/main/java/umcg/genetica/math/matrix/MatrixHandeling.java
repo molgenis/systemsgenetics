@@ -547,4 +547,17 @@ public class MatrixHandeling {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
+
+    public static void appendStringToColnames(DoubleMatrixDataset<String, String> in, String tissueSource) {
+        ArrayList<String> newColObjects = new ArrayList<String>();
+        for(String t : in.colObjects){
+            StringBuilder colName = new StringBuilder();
+            colName.append(tissueSource);
+            colName.append("_");
+            colName.append(t);
+            newColObjects.add(colName.toString());
+        }
+        in.colObjects = newColObjects;
+        in.recalculateHashMaps();
+    }
 }
