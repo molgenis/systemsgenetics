@@ -15,11 +15,13 @@ import umcg.genetica.math.stats.Correlation;
 public class ConcurrentCorrelationTask implements Callable<Pair<Integer, double[]>> {
 
     private final int x;
+    private final double[] meanOfSamples;
     private final double[][] matrix1;
 
     // correlate rows on matrix1
-    public ConcurrentCorrelationTask(double[][] matrix1, int x) {
+    public ConcurrentCorrelationTask(double[][] matrix1, double[] meanOfSamples, int x) {
         this.matrix1 = matrix1;
+        this.meanOfSamples = meanOfSamples;
         this.x = x;
     }
 
@@ -32,7 +34,7 @@ public class ConcurrentCorrelationTask implements Callable<Pair<Integer, double[
         double[] xarr = matrix1[x];
         for (int i = x+1; i < matrix1.length; i++) {
             double[] yarr = matrix1[i];
-            double r = Correlation.correlate(xarr, yarr);
+            double r = Correlation.correlate(meanOfSamples[x], meanOfSamples[i], xarr, yarr);
             results[i] = r;
         }
         results[x] = 1;

@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
+import umcg.genetica.math.stats.Descriptives;
 
 /**
  *
@@ -29,9 +30,14 @@ public class ConcurrentCorrelation {
     public double[][] pairwiseCorrelation(double[][] in) {
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
         CompletionService<Pair<Integer, double[]>> pool = new ExecutorCompletionService<Pair<Integer, double[]>>(threadPool);
-
+        double meanOfSamples[] = new double[in.length];
+        
+        for(int i=0; i<meanOfSamples.length; ++i){
+            meanOfSamples[i] = Descriptives.mean(in[i]);
+        }
+        
         for (int i = 0; i < in.length; i++) {
-            ConcurrentCorrelationTask task = new ConcurrentCorrelationTask(in, i);
+            ConcurrentCorrelationTask task = new ConcurrentCorrelationTask(in, meanOfSamples, i);
             pool.submit(task);
         }
 
