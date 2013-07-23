@@ -34,6 +34,10 @@ public class GWASCatalog {
     public GWASCatalog(String gwasCatalogLoc) throws IOException {
         this.read(gwasCatalogLoc);
     }
+    
+    public GWASCatalog(String gwasCatalogLoc, double pvaluethreshold) throws IOException {
+        this.read(gwasCatalogLoc);
+    }
 
     public void read(String calatogloc) throws IOException {
         TextFile tf = new TextFile(calatogloc, TextFile.R);
@@ -50,7 +54,7 @@ public class GWASCatalog {
         int samplesizeCol = -1;
         int samplesizeReplicationCol = -1;
 
-        int snpriskalleleCol = -1;
+        int topSNPCol = -1;
         int snpCol = -1;
 
         int pvalCol = -1;
@@ -81,7 +85,7 @@ public class GWASCatalog {
             } else if (e.equals("Replication Sample Size")) {
                 samplesizeReplicationCol = col;
             } else if (e.equals("Strongest SNP-Risk Allele")) {
-                snpriskalleleCol = col;
+                topSNPCol = col;
             } else if (e.equals("SNPs")) {
                 snpCol = col;
             } else if (e.equals("p-Value")) {
@@ -110,8 +114,8 @@ public class GWASCatalog {
 
                 String trait = elems[diseaseCol].trim();
                 String cleanedTrait = trait.replaceAll(" ", "_").replaceAll("[^a-zA-Z0-9\\-_]+", "");
-                String snp = elems[snpCol].trim();
-                String[] snpelems = elems[snpriskalleleCol].split("-");
+                String otherSNPs = elems[snpCol].trim();
+                String[] topSNPElems = elems[topSNPCol].split("-");
                 String riskallele = null;
 
                 String mGene = elems[mappedGeneCol];
@@ -150,93 +154,122 @@ public class GWASCatalog {
                 } catch (NumberFormatException ex) {
                     //System.out.println("Chromosome and/or position unparseable for trait: " + trait + " associated with SNP " + snp + ": chr: " + elems[chrCol] + ", pos: " + elems[chrPosCol]);
                 }
-                if (snpelems.length > 1) {
-                    riskallele = snpelems[1];
+                if (topSNPElems.length > 1) {
+                    riskallele = topSNPElems[1];
                     if (riskallele.equals("?")) {
                         riskallele = null;
                     }
                 }
 
 
-                if (snp.equals("NR")) {
-                    // System.out.println(snp + "\t" + riskallele + "\t" + trait + "\t" + pubname);
-                } else {
-                    GWASPublication pub = publicationToObj.get(pubname);
-                    if (pub == null) {
-                        pub = new GWASPublication();
-                        pub.id = numpubs;
-                        pub.name = pubname;
-
-                        numpubs++;
-                    }
-
-                    GWASTrait gwasTraitObj = traitToObj.get(trait);
-                    if (gwasTraitObj == null) {
-                        gwasTraitObj = new GWASTrait();
-                        gwasTraitObj.name = trait;
-                        gwasTraitObj.cleanName = cleanedTrait;
-                        gwasTraitObj.id = numtraits;
-                        gwasTraitObj.setMappedGenes(mappedGenes);
-                        gwasTraitObj.setReportedGenes(reportedGenes);
-                        traitToObj.put(trait, gwasTraitObj);
-                        cleanTraitToObj.put(cleanedTrait, gwasTraitObj);
-                        traits.add(gwasTraitObj);
-                        numtraits++;
-                    }
-
-                    String[] separatesnps = snp.split(",");
-                    for (int s = 0; s < separatesnps.length; s++) {
-
-                        String snpname = separatesnps[s].trim();
-                        while (snpname.startsWith(" ")) {
-                            snpname = snpname.substring(1);
-                        }
-
-                        GWASSNP gwasSNPObj = snpToObj.get(snpname);
-                        if (gwasSNPObj == null) {
-                            gwasSNPObj = new GWASSNP();
-                            gwasSNPObj.setName(snpname);
-                            gwasSNPObj.setId(numsnps);
-                            gwasSNPObj.setChr(chr);
-                            gwasSNPObj.setPosition(chrPos);
-                            snpToObj.put(snpname, gwasSNPObj);
-                            snps.add(gwasSNPObj);
-                            numsnps++;
-                        }
-
-                        Double pval = null;
-                        try {
-                            pval = Double.parseDouble(elems[pvalCol]);
-                        } catch (NumberFormatException e) {
-                            //System.out.println("P-value unparseable for trait: " + gwasTraitObj.getName() + " associated with SNP " + gwasSNPObj.getName() + ": " + elems[pvalCol]);
-                        }
-                        gwasSNPObj.getAssociatedTraits().add(gwasTraitObj);
-
-
-
-                        gwasSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, pval);
-                        gwasSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
-
-                        gwasTraitObj.snps.add(gwasSNPObj);
-                        pub.snps.add(gwasSNPObj);
-                        gwasSNPObj.getPublishedIn().add(pub);
-                    }
-
-                    gwasTraitObj.appendMappedGenes(mappedGenes);
-                    gwasTraitObj.appendReportedGenes(reportedGenes);
-
-                    gwasTraitObj.publishedIn.add(pub);
-
-
-                    pub.traits.add(gwasTraitObj);
-
-
+//                if (otherSNPs.equals("NR")) {
+//                    // System.out.println(snp + "\t" + riskallele + "\t" + trait + "\t" + pubname);
+//                } else {
+                GWASPublication pub = publicationToObj.get(pubname);
+                if (pub == null) {
+                    pub = new GWASPublication();
+                    pub.id = numpubs;
+                    pub.name = pubname;
+                    numpubs++;
                 }
 
+                GWASTrait gwasTraitObj = traitToObj.get(trait);
+                if (gwasTraitObj == null) {
+                    gwasTraitObj = new GWASTrait();
+                    gwasTraitObj.name = trait;
+                    gwasTraitObj.cleanName = cleanedTrait;
+                    gwasTraitObj.id = numtraits;
+                    gwasTraitObj.setMappedGenes(mappedGenes);
+                    gwasTraitObj.setReportedGenes(reportedGenes);
+                    traitToObj.put(trait, gwasTraitObj);
+                    cleanTraitToObj.put(cleanedTrait, gwasTraitObj);
+                    traits.add(gwasTraitObj);
+                    numtraits++;
+                }
 
+                // parse the top SNP: remove whitespace..
+                String topSNP = topSNPElems[0];
+                topSNP = topSNP.trim();
+                while (topSNP.startsWith(" ")) {
+                    topSNP = topSNP.substring(1);
+                }
+
+                GWASSNP gwasTopSNPObj = snpToObj.get(topSNP);
+                if (gwasTopSNPObj == null) {
+                    gwasTopSNPObj = new GWASSNP();
+                    gwasTopSNPObj.setName(topSNP);
+                    gwasTopSNPObj.setId(numsnps);
+                    gwasTopSNPObj.setChr(chr);
+                    gwasTopSNPObj.setPosition(chrPos);
+                    snpToObj.put(topSNP, gwasTopSNPObj);
+                    snps.add(gwasTopSNPObj);
+                    numsnps++;
+                }
+
+                Double topSNPAssocPVal = null;
+                try {
+                    topSNPAssocPVal = Double.parseDouble(elems[pvalCol]);
+                } catch (NumberFormatException e) {
+                    // Sometimes the pvalue is unreported...
+                    // System.out.println("P-value unparseable for trait: " + gwasTraitObj.getName() + " associated with SNP " + gwasSNPObj.getName() + ": " + elems[pvalCol]);
+                }
+                gwasTopSNPObj.getAssociatedTraits().add(gwasTraitObj);
+                gwasTraitObj.addTopSNP(gwasTopSNPObj);
+                Double previousP = gwasTopSNPObj.getPValueAssociatedWithTrait(gwasTraitObj);
+                if (previousP == null || previousP > topSNPAssocPVal) {
+                    gwasTopSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, topSNPAssocPVal);
+                }
+                gwasTopSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
+
+                // parse all the other reported SNPs..
+                String[] otherSNPElems = otherSNPs.split(",");
+                for (int s = 0; s < otherSNPElems.length; s++) {
+
+                    String snpname = otherSNPElems[s].trim();
+                    while (snpname.startsWith(" ")) {
+                        snpname = snpname.substring(1);
+                    }
+
+                    GWASSNP gwasSNPObj = snpToObj.get(snpname);
+                    if (gwasSNPObj == null) {
+                        gwasSNPObj = new GWASSNP();
+                        gwasSNPObj.setName(snpname);
+                        gwasSNPObj.setId(numsnps);
+                        gwasSNPObj.setChr(chr);
+                        gwasSNPObj.setPosition(chrPos);
+                        snpToObj.put(snpname, gwasSNPObj);
+                        snps.add(gwasSNPObj);
+                        numsnps++;
+                    }
+
+                    // The GWAS Catalog only publishes a single p-value for often a couple of SNPs. 
+                    // We'll assume that all the reported SNPs have an LD ~ 1.0
+                    Double pval = null;
+                    try {
+                        pval = Double.parseDouble(elems[pvalCol]);
+                    } catch (NumberFormatException e) {
+                        //System.out.println("P-value unparseable for trait: " + gwasTraitObj.getName() + " associated with SNP " + gwasSNPObj.getName() + ": " + elems[pvalCol]);
+                    }
+                    gwasSNPObj.getAssociatedTraits().add(gwasTraitObj);
+
+                    previousP = gwasSNPObj.getPValueAssociatedWithTrait(gwasTraitObj);
+                    if (previousP == null || previousP > pval) {
+                        gwasSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, pval);
+                    }
+                    gwasSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
+
+                    gwasTraitObj.snps.add(gwasSNPObj);
+                    pub.snps.add(gwasSNPObj);
+                    pub.setPValueAssociatedWithTrait(gwasSNPObj, gwasTraitObj, pval);
+                    gwasSNPObj.getPublishedIn().add(pub);
+                }
+
+                gwasTraitObj.appendMappedGenes(mappedGenes);
+                gwasTraitObj.appendReportedGenes(reportedGenes);
+                gwasTraitObj.publishedIn.add(pub);
+                pub.traits.add(gwasTraitObj);
 
             }
-
             elems = tf.readLineElemsReturnReference(TextFile.tab);
         }
 
