@@ -20,6 +20,8 @@ public interface GenotypeData extends Iterable<GeneticVariant>
 	public static final String MOTHER_SAMPLE_ANNOTATION_NAME = "motherId";
 	public static final String SEX_SAMPLE_ANNOTATION_NAME = "sex_generic";
 	public static final String DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME = "phenotype";
+    public static final String BOOL_INCLUDE_SAMPLE = "sampleInclude";
+    public static final String CASE_CONTROL_SAMPLE_ANNOTATION_NAME = "caseControl";
 
 	/**
 	 * Get all possible variant annotations
