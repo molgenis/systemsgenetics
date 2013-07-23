@@ -64,6 +64,15 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
                 sampleVariantsProvider, Alleles.createBasedOnChars(allele1, allele2), null);
     }
 
+	/**
+	 * Be carefull with this create without specifing the alleles. If used in combination with dosage only file you will get a stack overflow
+	 * 
+	 * @param snpId
+	 * @param pos
+	 * @param sequenceName
+	 * @param sampleVariantsProvider
+	 * @return 
+	 */
     public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
             SampleVariantsProvider sampleVariantsProvider) {
         return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
@@ -181,16 +190,17 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
     }
 
     @Override
-    public Alleles getVariantAlleles() {
+    public final Alleles getVariantAlleles() {
+		if(alleles == null){
+			//Getting sample variants will load the alleles
+			getSampleVariants();
+		}
         return alleles;
     }
 
     @Override
     public int getAlleleCount() {
-        if (alleles == null) {
-            getSampleVariants();
-        }
-        return alleles.getAlleleCount();
+        return this.getVariantAlleles().getAlleleCount();
     }
 
     @Override
@@ -199,11 +209,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
     }
 
     @Override
-    public List<Alleles> getSampleVariants() {
+    public final List<Alleles> getSampleVariants() {
 
         List<Alleles> SampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
 
-        if (alleles == null) {
+        if (this.alleles == null) {
             //set alleles here
 
             HashSet<Allele> variantAlleles = new HashSet<Allele>(2);
@@ -214,7 +224,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
                 }
             }
 
-            this.alleles = Alleles.createAlleles(new ArrayList(variantAlleles));
+            this.alleles = Alleles.createAlleles(new ArrayList<Allele>(variantAlleles));
 
 
         }
@@ -235,7 +245,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
     public double getMinorAlleleFrequency() {
         if (mafResult == null) {
             try {
-                mafResult = MafCalculator.calculateMaf(alleles, refAllele, getSampleVariants());
+                mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants());
             } catch (NullPointerException e) {
                 throw new GenotypeDataException("NullPointerException in maf caculation. " + getVariantAlleles() + " ref: "
                         + getRefAllele(), e);
@@ -249,25 +259,19 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
     @Override
     public Allele getMinorAllele() {
         if (mafResult == null) {
-            mafResult = MafCalculator.calculateMaf(alleles, refAllele, getSampleVariants());
+            mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants());
         }
         return mafResult.getMinorAllele();
     }
 
     @Override
     public boolean isSnp() {
-        if (alleles == null) {
-            getSampleVariants();
-        }
-        return alleles.isSnp();
+        return this.getVariantAlleles().isSnp();
     }
 
     @Override
     public boolean isAtOrGcSnp() {
-        if (alleles == null) {
-            getSampleVariants();
-        }
-        return alleles.isAtOrGcSnp();
+        return this.getVariantAlleles().isAtOrGcSnp();
     }
 
     @Override
@@ -277,17 +281,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
     @Override
     public boolean isBiallelic() {
-        if (alleles == null) {
-            getSampleVariants();
-        }
-        return alleles.getAlleleCount() == 2;
+        return this.getVariantAlleles().getAlleleCount() == 2;
     }
 
     @Override
     public float[] getSampleDosages() {
-        if (alleles == null) {
-            getSampleVariants();
-        }
         return sampleVariantsProvider.getSampleDosage(this);
     }
 
@@ -298,11 +296,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
     @Override
     public byte[] getSampleCalledDosages() {
-        if (alleles == null) {
-            getSampleVariants();
-        }
         return sampleVariantsProvider.getSampleCalledDosage(this);
-
     }
 
     /**
