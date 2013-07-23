@@ -20,7 +20,7 @@ add.illumina.probes.information <- function(CellTypeDATA){
   ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
   inAnnot <- which(rownames(CellTypeDATA) %in% ProbeAnnotation[,1])
   CellTypeDATA <- CellTypeDATA[inAnnot,]
-  sortAnnot <- match(names(CellTypeDATA), ProbeAnnotation[,1]) # Align
+  sortAnnot <- match(rownames(CellTypeDATA), ProbeAnnotation[,1]) # Align
   CellTypeDATA <- cbind(as.character(ProbeAnnotation[sortAnnot,"Symbol"]), CellTypeDATA)
   return(CellTypeDATA)
 }

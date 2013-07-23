@@ -13,22 +13,24 @@ setwd("~/Github/Juha/")
 RNASeq      <- read.csv("expression_table.genes.exonic_v69.0.3.rawCounts_Named.txt", sep='\t', row.names=1)
 
 # Affy neutrophils
-Neutr       <- read.csv("GPL570_Neutrophil_Good.txt.txt", sep='\t', row.names=1)
+Neutr       <- read.csv("GPL570_Neutrophil_Good.txt", sep='\t', row.names=1)
 translation <- read.affy.translation()
-
+granulocytes
 Neutr <- annotate.affy.neutrohils(Neutr, translation)
 NeutrRNASeq <- match.annotated.affy.rnaseq(Neutr, RNASeq)
 
 # LOG2 transform the RNA Seq data
-RNASeqLog  <- log2(NeutrRNASeq[,7])
+RNASeqLog  <- log2(NeutrRNASeq[,"granulocytes"])
 tokeep      <- which(is.finite(RNASeqLog)) #Keep only the finite ones
-NeutrRNASeq <- NeutrRNASeq[keep, ]
+NeutrRNASeq <- NeutrRNASeq[tokeep, ]
 
-RNASeqLog <- log2(NeutrRNASeq[,7])   # LOG 2 transform the data
+NeutrRNASeq[,"granulocytes"] <- log2(NeutrRNASeq[,"granulocytes"])   # LOG 2 transform the data
 
 # Illumina Celltype data
+setwd("/home/danny/Github/LudeNew")
 Illu <- read.illumina.celltypes()
 Illu <- annotate.illumina.celltypes(Illu)
+Illu <- Illu[, which(colnames(Illu) == "Granulocyte")]
 Illu <- add.illumina.probes.information(Illu)
 
 inIllu <- which(Illu[,1] %in% rownames(NeutrRNASeq))
@@ -39,7 +41,7 @@ NeutrRNASeq <- NeutrRNASeq[inAffy, ]
 # Add the illumina data to the affy & RNA seq data
 RnaAffyIllu <- NULL
 for(gene in rownames(NeutrRNASeq)){
-  IlluMean <- mean(as.numeric(Illu[which(Illu[,1] == gene), 2]))
+  IlluMean <- mean(as.numeric(Illu[which(Illu[,1] == gene), 1]))
   AffyRowID <- which(rownames(NeutrRNASeq)==gene)
   RnaAffyIllu <- rbind(RnaAffyIllu, c(gene, IlluMean, NeutrRNASeq[AffyRowID,-8]))
 }
