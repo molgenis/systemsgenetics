@@ -12,7 +12,7 @@ read.illumina.celltypes <- function(){
   tmp <- apply(CellTypeDATA, 2, as.numeric)
   rownames(tmp) <- rownames(CellTypeDATA)
   CellTypeDATA  <- tmp
-  return CellTypeDATA;
+  return(CellTypeDATA)
 }
 
 add.illumina.probes.information(CellTypeDATA){
@@ -22,7 +22,7 @@ add.illumina.probes.information(CellTypeDATA){
   CellTypeDATA <- CellTypeDATA[inAnnot,]
   sortAnnot <- match(names(CellTypeDATA), ProbeAnnotation[,1]) # Align
   CellTypeDATA <- cbind(as.character(ProbeAnnotation[sortAnnot,"Symbol"]), CellTypeDATA)
-  return CellTypeDATA;
+  return(CellTypeDATA)
 }
 
 annotate.illumina.celltypes <- function(CellTypeDATA){
@@ -35,7 +35,7 @@ annotate.illumina.celltypes <- function(CellTypeDATA){
   CellTypeDATA  <- CellTypeDATA[, match(cellTypeAnnot[,1], gsub("X","",colnames(CellTypeDATA)))] # ARRANGE
 
   colnames(CellTypeDATA) <- as.character(cellTypeAnnot[,2])
-  return CellTypeDATA;
+  return(CellTypeDATA)
 }
 
 match.annotated.affy.rnaseq <- function(Neutr, RNASeq){
@@ -43,7 +43,7 @@ match.annotated.affy.rnaseq <- function(Neutr, RNASeq){
   Neutr   <- Neutr[inSeq,]
   sortSeq <- match(as.character(Neutr[,1]), rownames(RNASeq)) # Align
   Neutr <- cbind(RNASeq[sortSeq,], Neutr)
-  return Neutr;
+  return(Neutr)
 }
 
 annotate.affy.neutrohils <- function(Neutr, translation){
@@ -51,13 +51,13 @@ annotate.affy.neutrohils <- function(Neutr, translation){
   Neutr <- Neutr[inTrans,]
   sortTrans <- match(rownames(Neutr), translation[,1]) # Align
   Neutr <- cbind(translation[sortTrans,9], Neutr)
-  return Neutr;
+  return(Neutr)
 }
 
 read.affy.translation <- function(){
   translation <- read.csv("GPL570ProbeENSGInfo+HGNC.txt",sep='\t',row.names=1)
   translation <- translation[which(translation[,9] != "-"),]
-  return translation;
+  return(translation)
 }
 
 annotate.RNASeq <- function(){
