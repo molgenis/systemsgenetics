@@ -339,9 +339,9 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
                 }
                 row++;
             }
-            if (row > 0 && row % 1000 == 0) {
-                System.out.println(row);
-            }
+//            if (row > 0 && row % Math.floor(nrRows/100) == 0) {
+//                System.out.println(row);
+//            }
         }
         if (!correctData) {
             LOGGER.warning("Your data contains NaN/unparseable values!");

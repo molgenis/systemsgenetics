@@ -4,6 +4,8 @@
  */
 package umcg.genetica.math.stats;
 
+import umcg.genetica.containers.Pair;
+
 /**
  *
  * @author harmjan
@@ -93,6 +95,24 @@ public class Descriptives {
             sum += v[k];
         }
         return (sum / (double) v.length);
+    }
+    
+    /**
+     * Simultainiusly calculates mean for two double[] of the same lengths
+     * Warning: Does not check if the lenght is identical!
+     * 
+     * @param v
+     * @param w
+     * @return 
+     */
+    public static Pair<Double, Double> mean(double[] v, double[] w) {
+        double sumV = 0;
+        double sumW = 0;
+        for (int k = 0; k < v.length; k++) {
+            sumV += v[k];
+            sumW += w[k];
+        }
+        return (new Pair<Double, Double>((sumV / (double) v.length),(sumW / (double) v.length)));
     }
 
     public static double variance(double[] v) {

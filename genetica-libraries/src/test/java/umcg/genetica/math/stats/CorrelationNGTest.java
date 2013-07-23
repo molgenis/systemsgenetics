@@ -49,6 +49,7 @@ public class CorrelationNGTest {
         double[] arrayY = {4.0d, 3.0d, 3.5d, 3.9d, 4.0d};
         double[] arrayZ = {15.0d, 1.0d, 28.5d, 1.9d, 2.0d};
         double[] arrayA = {81.0d, 83.0d, 0.5d, 53.9d, 6.0d};
+        double[] arrayB = {0.0d, 0.0d, 0.0d, 0.0d, 0.0d};
         
         double cor = Correlation.correlate(arrayX, arrayY);
 
@@ -69,6 +70,46 @@ public class CorrelationNGTest {
         cor = Correlation.correlate(arrayX, arrayA);
         
         assertEquals(cor, -0.2448009d, 0.000001);
+        
+        cor = Correlation.correlate(arrayB, arrayA);
+        
+        assertEquals(Double.isNaN(cor), true);
+    }
+    
+    /**
+     * Test of covariate method, of class Correlation.
+     */
+    @org.testng.annotations.Test
+    public void testCovariate_doubleArr_doubleArr() {
+        double[] arrayX = {2.0d, 1.0d, 1.5d, 1.9d, 2.0d};
+        double[] arrayY = {4.0d, 3.0d, 3.5d, 3.9d, 4.0d};
+        double[] arrayZ = {15.0d, 1.0d, 28.5d, 1.9d, 2.0d};
+        double[] arrayA = {81.0d, 83.0d, 0.5d, 53.9d, 6.0d};
+        double[] arrayB = {0.0d, 0.0d, 0.0d, 0.0d, 0.0d};
+        
+        double cov = Correlation.covariate(arrayX, arrayY);
+
+        assertEquals(cov, 0.187d, 0.000001);
+
+        cov = Correlation.covariate(arrayY, arrayX);
+
+        assertEquals(cov, 0.187d, 0.000001);
+
+        cov = Correlation.covariate(arrayY, arrayZ);
+
+        assertEquals(cov, 0.012d, 0.000001);
+        
+        cov = Correlation.covariate(arrayZ, arrayA);
+        
+        assertEquals(cov, -186.383, 0.000001);
+        
+        cov = Correlation.covariate(arrayX, arrayA);
+        
+        assertEquals(cov, -4.208d, 0.000001);
+        
+        cov = Correlation.covariate(arrayB, arrayA);
+        
+        assertEquals(cov, 0.0d, 0.000001);
     }
 
     /**
