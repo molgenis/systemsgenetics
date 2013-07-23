@@ -15,7 +15,7 @@ read.illumina.celltypes <- function(){
   return(CellTypeDATA)
 }
 
-add.illumina.probes.information(CellTypeDATA){
+add.illumina.probes.information <- functions(CellTypeDATA){
   ProbeAnnotation <- read.csv("GPL6102-11574.txt",sep="\t",skip=27) # Probe annotation
   ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
   inAnnot <- which(rownames(CellTypeDATA) %in% ProbeAnnotation[,1])
