@@ -52,6 +52,19 @@ public class TextFile {
         }
         open();
     }
+    
+     public TextFile(File locFile, boolean mode) throws IOException {
+        this.loc = locFile.getAbsolutePath();
+        if (loc.trim().length() == 0) {
+            throw new IOException("Could not find file: no file specified");
+        }
+        this.writeable = mode;
+        
+        if (loc.endsWith(".gz")) {
+            gzipped = true;
+        }
+        open();
+    }
 
     public TextFile(String loc, boolean mode, int buffersize) throws IOException {
         if (loc.trim().length() == 0) {

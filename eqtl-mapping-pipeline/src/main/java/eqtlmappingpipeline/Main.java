@@ -21,9 +21,6 @@ public class Main {
 
         EQTLMappingPipelineConsole app = new EQTLMappingPipelineConsole();
         app.main(args);
-
-
-        System.out.println("Have a nice day :)");
         System.exit(0);
         
     }
