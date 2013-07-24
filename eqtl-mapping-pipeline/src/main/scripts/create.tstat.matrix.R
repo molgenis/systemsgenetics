@@ -24,7 +24,9 @@ RBC        <- read.csv("GPL570_RBC.txt", sep='\t', row.names=1)
 translation <- read.affy.translation()
 
 # Load the probe annotation for Illumina, remove probes not targetting a genes
+setwd("/home/danny/Github/LudeNew")
 ivectorAnn <- read.illumina.probes.information()
+setwd("~/Github/Juha/")
 
 # Load the vector from Lude and the interaction vector (from Harm-Jan)
 LudeVec <- read.csv("NeutrophilVectorLude.txt",sep="\t")
