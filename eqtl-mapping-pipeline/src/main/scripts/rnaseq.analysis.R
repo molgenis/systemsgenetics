@@ -38,7 +38,6 @@ inAffy <- which(rownames(NeutrRNASeq) %in% Illu[,1])
 Illu <- Illu[inIllu, ]
 NeutrRNASeq <- NeutrRNASeq[inAffy, ]
 
-
 setwd("/home/danny/Github/Juha")
 RnaAffyIllu <- NULL
 if(!file.exists("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt")){
@@ -68,4 +67,6 @@ RnaAffyIlluAnnotated <- cbind(geneAnnotations[inAnnot,],RnaAffyIllu)
 
 XYgenes <- which(!(RnaAffyIlluAnnotated[,"Chromosome.Name"]== "X"| RnaAffyIlluAnnotated[,"Chromosome.Name"]== "Y"))
 
-plot.AffyIllu(RnaAffyIllu,XYgenes)
+plot.AffyIllu(RnaAffyIllu, XYgenes)
+
+

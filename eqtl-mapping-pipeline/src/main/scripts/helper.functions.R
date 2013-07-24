@@ -88,7 +88,7 @@ plot.AffyIllu <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
   AffyMean  <- apply(RnaAffyIllu[selection,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
   IlluMean  <- as.numeric(RnaAffyIllu[selection,2])
   RNASeqLog  <- log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
-  op <- par(mfrow=c(1,3))
+  #op <- par(mfrow=c(1,3))
   CorAffyRNASeqMean <- round(cor(AffyMean, as.numeric(RNASeqLog), method="spearman"), d = 2)
   plot(AffyMean, RNASeqLog, xlab = "Affy", ylab = "RNAseq", main=paste0("Mean Cor: ",CorAffyRNASeqMean), cex=0.7)
 
