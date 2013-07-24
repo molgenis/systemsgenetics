@@ -84,10 +84,22 @@ read.affy.translation <- function(){
   return(translation)
 }
 
+get.affy.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
+  apply(RnaAffyIllu[selection,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
+}
+
+get.illu.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
+  as.numeric(RnaAffyIllu[selection,2])
+}
+
+get.rnaseq.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
+  log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+}
+
 plot.AffyIllu <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
-  AffyMean  <- apply(RnaAffyIllu[selection,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
-  IlluMean  <- as.numeric(RnaAffyIllu[selection,2])
-  RNASeqLog  <- log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+  AffyMean  <- get.affy.mean(RnaAffyIllu, selection)
+  IlluMean  <- get.illu.mean(RnaAffyIllu, selection)
+  RNASeqLog <- get.rnaseq.mean(RnaAffyIllu, selection)
   #op <- par(mfrow=c(1,3))
   CorAffyRNASeqMean <- round(cor(AffyMean, as.numeric(RNASeqLog), method="spearman"), d = 2)
   plot(AffyMean, RNASeqLog, xlab = "Affy", ylab = "RNAseq", main=paste0("Mean Cor: ",CorAffyRNASeqMean), cex=0.7)
@@ -104,6 +116,10 @@ annotate.RNASeq <- function(){
   sampleNames      <- read.csv("SampleDetails.txt", sep='\t', row.names=1)
   colnames(RNASeq) <- sampleNames[,1]
   write.table(RNASeq,file="expression_table.genes.exonic_v69.0.3.rawCounts_Named.txt",sep='\t',quote=FALSE)
+}
+
+is.outlier <- function(d1, d2, cutoff = 0.3){
+  as.numeric(abs(d1/max(d1) - d2/max(d2)) > cutoff)+1
 }
 
 remove.bad.Neutrophils <- function(){

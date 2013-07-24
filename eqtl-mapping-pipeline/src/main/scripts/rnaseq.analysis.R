@@ -69,4 +69,10 @@ XYgenes <- which(!(RnaAffyIlluAnnotated[,"Chromosome.Name"]== "X"| RnaAffyIlluAn
 
 plot.AffyIllu(RnaAffyIllu, XYgenes)
 
+AffyMean  <- get.affy.mean(RnaAffyIllu, selection)
+IlluMean  <- get.illu.mean(RnaAffyIllu, selection)
+RNASeqLog <- get.rnaseq.mean(RnaAffyIllu, selection)
+
+is.outlier(AffyMea, RNASeqLog)
+is.outlier(IlluMean, RNASeqLog)
 
