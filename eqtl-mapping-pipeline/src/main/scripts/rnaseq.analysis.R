@@ -52,9 +52,9 @@ if(!file.exists("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt")){
   }
   colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
   # Write the full table
-  write.table(RnaAffyIllu,"NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep='\t', quote=FALSE)
+  write.table(RnaAffyIllu,"NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep = '\t', quote = FALSE)
 }else{
-  RnaAffyIllu <- read.csv("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt",sep='\t',row.names=1)
+  RnaAffyIllu <- read.csv("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep = '\t', row.names = 1)
   colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
 }
 
@@ -69,10 +69,11 @@ XYgenes <- which(!(RnaAffyIlluAnnotated[,"Chromosome.Name"]== "X"| RnaAffyIlluAn
 
 plot.AffyIllu(RnaAffyIllu, XYgenes)
 
-AffyMean  <- get.affy.mean(RnaAffyIllu, selection)
-IlluMean  <- get.illu.mean(RnaAffyIllu, selection)
-RNASeqLog <- get.rnaseq.mean(RnaAffyIllu, selection)
+AffyMean  <- get.affy.mean(RnaAffyIllu, XYgenes)
+IlluMean  <- get.illu.mean(RnaAffyIllu, XYgenes)
+RNASeqLog <- get.rnaseq.mean(RnaAffyIllu, XYgenes)
 
-is.outlier(AffyMea, RNASeqLog)
+aa <- is.outlier(AffyMean, RNASeqLog)
+cor(AffyMean, RNASeqLog,use='spearman')
 is.outlier(IlluMean, RNASeqLog)
 

@@ -85,15 +85,21 @@ read.affy.translation <- function(){
 }
 
 get.affy.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
-  apply(RnaAffyIllu[selection,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
+  res <- apply(RnaAffyIllu[selection,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
+  names(res) <- RnaAffyIllu[selection,"HUGO"]
+  res
 }
 
 get.illu.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
-  as.numeric(RnaAffyIllu[selection,2])
+  res <- as.numeric(RnaAffyIllu[selection,2])
+  names(res) <- RnaAffyIllu[selection,"HUGO"]
+  res
 }
 
 get.rnaseq.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
-  log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+  res <- log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+  names(res) <- RnaAffyIllu[selection,"HUGO"]
+  res
 }
 
 plot.AffyIllu <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
@@ -119,7 +125,9 @@ annotate.RNASeq <- function(){
 }
 
 is.outlier <- function(d1, d2, cutoff = 0.3){
-  as.numeric(abs(d1/max(d1) - d2/max(d2)) > cutoff)+1
+  res <- as.numeric(abs((d1/max(d1)) - (d2/max(d2))) > cutoff)+1
+  names(res) <- names(d1)
+  res
 }
 
 remove.bad.Neutrophils <- function(){
