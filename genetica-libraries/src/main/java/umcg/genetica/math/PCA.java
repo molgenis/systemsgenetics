@@ -10,6 +10,9 @@ package umcg.genetica.math;
  */
 public class PCA {
 
+    private Jama.EigenvalueDecomposition eig;
+    private double[][] eigenVectors;
+
     public void PCA() {
     }
 
@@ -62,5 +65,33 @@ public class PCA {
             eigenVector[i] = eigenValueMat[i][pca] * Math.sqrt(singularValues[pca]);
         }
         return eigenVector;
+    }
+
+    public void eigenValueDecomposition(double[][] data, int numPCAs) {
+        Jama.Matrix m = new Jama.Matrix(data);
+        eig = m.eig();
+        //Performe eigenvalue decomposition:
+
+        eigenVectors = new double[data.length][data.length];
+        for (int pca = 0; pca < numPCAs; pca++) {
+            eigenVectors[pca] = getEigenVector(eig, pca);
+        }
+    }
+
+    public double[][] getDataMatrixPCScores(double[][] dataMatrix, int size, int sampleCount) {
+        double[][] dataMatrixPCScores = new double[size][sampleCount];
+        for (int sample = 0; sample < sampleCount; sample++) {
+            for (int p = 0; p < size; p++) {
+                for (int snp = 0; snp < size; snp++) {
+                    double probeCoefficient = eigenVectors[p][snp];
+                    dataMatrixPCScores[p][sample] += dataMatrix[snp][sample] * probeCoefficient;
+                }
+            }
+        }
+        return dataMatrixPCScores;
+    }
+
+    public double[] getRealEigenvalues() {
+        return eig.getRealEigenvalues();
     }
 }
