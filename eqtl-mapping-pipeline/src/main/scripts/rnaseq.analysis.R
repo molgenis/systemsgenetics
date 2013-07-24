@@ -26,11 +26,11 @@ NeutrRNASeq <- NeutrRNASeq[tokeep, ]
 
 NeutrRNASeq[,"granulocytes"] <- log2(NeutrRNASeq[,"granulocytes"])   # LOG 2 transform the data
 
-# Illumina Celltype data
+# Load the Illumina celltype data
 setwd("/home/danny/Github/LudeNew")
 Illu <- read.illumina.celltypes()
 Illu <- annotate.illumina.celltypes(Illu)
-Illu <- Illu[, which(colnames(Illu) == "Granulocyte")]
+Illu <- Illu[, which(colnames(Illu) == "Granulocyte")]    # Take only the Granulocytes
 Illu <- add.illumina.probes.information(Illu)
 
 inIllu <- which(Illu[,1] %in% rownames(NeutrRNASeq))
@@ -38,24 +38,34 @@ inAffy <- which(rownames(NeutrRNASeq) %in% Illu[,1])
 Illu <- Illu[inIllu, ]
 NeutrRNASeq <- NeutrRNASeq[inAffy, ]
 
-# Add the illumina data to the affy & RNA seq data
+
+setwd("/home/danny/Github/Juha")
 RnaAffyIllu <- NULL
-for(gene in rownames(NeutrRNASeq)){
-  IlluMean <- mean(as.numeric(Illu[which(Illu[,1] == gene), 2]))
-  AffyRowID <- which(rownames(NeutrRNASeq)==gene)
-  RnaAffyIllu <- rbind(RnaAffyIllu, c(gene, IlluMean, NeutrRNASeq[AffyRowID,-8]))
+if(!file.exists("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt")){
+  # Add the illumina data to the affy & RNA seq data
+  cnt <- 0; n <- length(rownames(NeutrRNASeq))
+  for(gene in rownames(NeutrRNASeq)){
+    IlluMean <- mean(as.numeric(Illu[which(Illu[,1] == gene), 2]))
+    AffyRowID <- which(rownames(NeutrRNASeq)==gene)
+    RnaAffyIllu <- rbind(RnaAffyIllu, c(gene, IlluMean, NeutrRNASeq[AffyRowID,-8]))
+    if(cnt %% 500 == 0)cat("Done",cnt,"out of",n,"\n")
+    cnt <- cnt+1
+  }
+  colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
+  # Write the full table
+  write.table(RnaAffyIllu,"NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep='\t', quote=FALSE)
+}else{
+  RnaAffyIllu <- read.csv("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt",sep='\t',row.names=1)
+  colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
 }
-colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
-# Write the full table
-write.table(RnaAffyIllu,"NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep='\t', quote=FALSE)
 
-AffyMean  <- apply(RnaAffyIllu[,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
-IlluMean  <- as.numeric(RnaAffyIllu[,2])
-RNASeqLog  <- as.numeric(RnaAffyIllu[,"granulocytes"])
+plot.AffyIllu(RnaAffyIllu)
 
-CorAffyRNASeqMean <- round(cor(AffyMean, as.numeric(RNASeqLog), method="spearman"), d = 2)
-plot(AffyMean, RNASeqLog, xlab = "Affy", ylab = "RNAseq", main=paste0("Mean Cor: ",CorAffyRNASeqMean), cex=0.7)
+geneAnnotations <- read.csv("EnsemblGeneAnnotation.txt",sep='\t')
+RnaAffyIllu <- RnaAffyIllu[which(RnaAffyIllu[,1] %in% geneAnnotations[,2]),]
+inAnnot <- match(RnaAffyIllu[,1],geneAnnotations[,2])
+RnaAffyIlluAnnotated <- cbind(geneAnnotations[inAnnot,],RnaAffyIllu)
 
-CorIlluRNASeqMean <- round(cor(IlluMean, as.numeric(RNASeqLog), method="spearman"), d = 2)
-plot(IlluMean, RNASeqLog, xlab = "Illu", ylab = "RNAseq", main=paste0("Mean Cor: ",CorIlluRNASeqMean), cex=0.7)
+XYgenes <- which(!(RnaAffyIlluAnnotated[,"Chromosome.Name"]== "X"| RnaAffyIlluAnnotated[,"Chromosome.Name"]== "Y"))
 
+plot.AffyIllu(RnaAffyIllu,XYgenes)

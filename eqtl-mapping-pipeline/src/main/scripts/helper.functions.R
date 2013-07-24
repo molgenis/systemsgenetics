@@ -84,6 +84,21 @@ read.affy.translation <- function(){
   return(translation)
 }
 
+plot.AffyIllu <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
+  AffyMean  <- apply(RnaAffyIllu[selection,10:ncol(Neutr)], 1, function(x){mean(as.numeric(x))})
+  IlluMean  <- as.numeric(RnaAffyIllu[selection,2])
+  RNASeqLog  <- log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+  op <- par(mfrow=c(1,3))
+  CorAffyRNASeqMean <- round(cor(AffyMean, as.numeric(RNASeqLog), method="spearman"), d = 2)
+  plot(AffyMean, RNASeqLog, xlab = "Affy", ylab = "RNAseq", main=paste0("Mean Cor: ",CorAffyRNASeqMean), cex=0.7)
+
+  CorIlluRNASeqMean <- round(cor(IlluMean, as.numeric(RNASeqLog), method="spearman"), d = 2)
+  plot(IlluMean, RNASeqLog, xlab = "Illu", ylab = "RNAseq", main=paste0("Mean Cor: ",CorIlluRNASeqMean), cex=0.7)
+
+  CorIlluAffyMean <- round(cor(IlluMean, AffyMean, method="spearman"), d = 2)
+  plot(IlluMean, AffyMean, xlab = "Illu", ylab = "Affy", main=paste0("Mean Cor: ",CorIlluAffyMean), cex=0.7)
+}
+
 annotate.RNASeq <- function(){
   RNASeq           <- read.csv("expression_table.genes.exonic_v69.0.3.rawCounts_Named.txt", sep='\t', row.names=1)
   sampleNames      <- read.csv("SampleDetails.txt", sep='\t', row.names=1)
