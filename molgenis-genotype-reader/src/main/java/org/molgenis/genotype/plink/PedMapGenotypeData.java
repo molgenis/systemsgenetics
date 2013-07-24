@@ -45,9 +45,8 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	private Map<Integer, List<Alleles>> sampleAllelesBySnpIndex = new HashMap<Integer, List<Alleles>>();
 
 	private GeneticVariantTreeSet<GeneticVariant> snps = new GeneticVariantTreeSet<GeneticVariant>();
-	private Map<String, Integer> snpIndexById = new HashMap<String, Integer>(1000000);
+	private Map<String, Integer> snpIndexById = new HashMap<String, Integer>(1000);
 	private Map<String, List<GeneticVariant>> snpBySequence = new TreeMap<String, List<GeneticVariant>>();
-	private Map<GeneticVariant, List<Boolean>> samplePhasing = new HashMap<GeneticVariant, List<Boolean>>();
 	private Map<String, SampleAnnotation> sampleAnnotations;
 
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
@@ -293,13 +292,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public List<Boolean> getSamplePhasing(GeneticVariant variant)
 	{
-		if (samplePhasing.containsKey(variant))
-		{
-			return samplePhasing.get(variant);
-		}
 
 		List<Boolean> phasing = Collections.nCopies(getSampleVariants(variant).size(), false);
-		samplePhasing.put(variant, phasing);
+
 		return phasing;
 	}
 

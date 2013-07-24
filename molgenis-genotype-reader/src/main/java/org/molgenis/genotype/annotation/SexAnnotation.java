@@ -32,5 +32,18 @@ public enum SexAnnotation
 				return SexAnnotation.UNKNOWN;
 		}
 	}
+    
+    public static SexAnnotation getSexAnnotationForTriTyper(String ttSex)
+	{
+		if(ttSex == null){
+            return SexAnnotation.UNKNOWN;
+        } else if(ttSex.toLowerCase().equals("female")){
+            return SexAnnotation.FEMALE;
+        } else if(ttSex.toLowerCase().equals("male")){
+            return SexAnnotation.MALE;
+        } else {
+            return SexAnnotation.UNKNOWN;
+        }
+	}
 
 }
