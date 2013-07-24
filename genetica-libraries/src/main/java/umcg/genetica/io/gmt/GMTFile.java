@@ -32,7 +32,7 @@ public class GMTFile {
     private void read(String gmtfile) throws IOException {
         System.out.println("Reading GMT file: " + gmtfile);
         TextFile tfpathway = new TextFile(gmtfile, TextFile.R);
-        String[] pwelems = null;
+        String[] pwelems;
         while ((pwelems = tfpathway.readLineElems(TextFile.tab)) != null) {
             if (pwelems.length > 2) {
                 pathways.add(pwelems[0]);

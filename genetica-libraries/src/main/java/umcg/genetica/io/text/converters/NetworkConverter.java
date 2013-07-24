@@ -68,7 +68,8 @@ public class NetworkConverter {
 
     public static void writeGMTFileBasedOnGeneSetFileAndMappingFileRemovingDuplicateGeneSets(String genesetfile, String mappingfile, String mappingdelimiter, String gmtfile) throws IOException {
         TextFile in = new TextFile(mappingfile, TextFile.R);
-        String line = in.readLine();
+        String line;
+        in.readLine();
         Map<String, String> code2name = new HashMap<String, String>();
         while ((line = in.readLine()) != null) {
             String[] split = line.split(mappingdelimiter);
@@ -118,7 +119,7 @@ public class NetworkConverter {
 
     public static void convertGMTFileToPlainTextBinaryNetwork(String infile, String outfile, boolean hasIds, boolean isActuallyGMT) throws IOException {
         TextFile in = new TextFile(infile, TextFile.R);
-        String line = null;
+        String line;
         Map<String, Integer> hashItems = new HashMap<String, Integer>();
         Map<String, Set<Integer>> hashSetIndices = new HashMap<String, Set<Integer>>();
         List<String> sets = new ArrayList<String>();
