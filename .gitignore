@@ -6,6 +6,8 @@ target/
 *.iml
 *.ipr
 *.iws
+*.pdf
+*.png
 git.properties
 molgenis-compute-core/test-output
 data/
