@@ -16,6 +16,7 @@ import umcg.genetica.math.stats.Log2Transform;
 import umcg.genetica.math.stats.QuantileNormalization;
 import umcg.genetica.math.stats.Regression;
 import umcg.genetica.math.stats.concurrent.ConcurrentCorrelation;
+import umcg.genetica.math.stats.concurrent.ConcurrentCovariation;
 import umcg.genetica.methylation.ConvertBetaToMvalue;
 
 /**
@@ -163,11 +164,12 @@ public class Normalizer {
                     covariateDataset.getRawData()[p][s] /= stdev;
                 }
             }
-//            covariateDataset.transposeDataset();
+            
+            //Covariation on a centered and scaled matrix equels the correlation.
+            //Covariation is faster to compute.
+            ConcurrentCovariation c = new ConcurrentCovariation(2);
+            double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawDataTransposed());
 
-            ConcurrentCorrelation c = new ConcurrentCorrelation(2);
-            double[][] correlationMatrix = c.pairwiseCorrelation(covariateDataset.getRawDataTransposed());
-//            double[][] correlationMatrix = correlateSamples(covariateDataset);
 //            DoubleMatrixDataset<String, String> correlationMatrixDs = new DoubleMatrixDataset<String, String>(correlationMatrix, covariateDataset.colObjects, covariateDataset.colObjects);
 //            correlationMatrixDs.save(covariatesToRemove+"-CorrelationMatrix.txt");
 
