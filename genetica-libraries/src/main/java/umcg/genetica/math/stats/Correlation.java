@@ -4,6 +4,7 @@
  */
 package umcg.genetica.math.stats;
 
+import umcg.genetica.containers.Pair;
 import umcg.genetica.util.RankDoubleArray;
 
 /**
@@ -131,33 +132,152 @@ public class Correlation {
 //        return correlate(xNew, yNew, varX, varY);
 //    }
     
+    /**
+     * Fast correlation of two double[]
+     * 
+     * @param x
+     * @param y
+     * @return 
+     */
     public static double correlate(double[] x, double[] y) {
-        
-        double meanX = Descriptives.mean(x);
-        double meanY = Descriptives.mean(y);
-        
-        double varX = 0;
-        double varY = 0;
-        
-        double covarianceInterim = 0;
-        
-        for (int a=0; a<x.length; a++) {
-            double varXT = (x[a]-meanX);
-            double varYT = (y[a]-meanY);
-            
-            covarianceInterim += varXT * varYT;
-            
-            varX += varXT * varXT;
-            varY += varYT * varYT;
+        if(x.length == y.length){
+            Pair<Double, Double> tmpMean = Descriptives.mean(x, y);
+            double meanX = tmpMean.getLeft();
+            double meanY = tmpMean.getRight();
+
+            double varX = 0;
+            double varY = 0;
+
+            double covarianceInterim = 0;
+
+            for (int a=0; a<x.length; a++) {
+                double varXT = (x[a]-meanX);
+                double varYT = (y[a]-meanY);
+
+                covarianceInterim += varXT * varYT;
+
+                varX += varXT * varXT;
+                varY += varYT * varYT;
+            }
+
+            varY = varY / (y.length-1);
+            varX = varX / (x.length-1);
+
+            double denominator = Math.sqrt(varX * varY);
+            double covariance = covarianceInterim / (x.length - 1);
+            double correlation = covariance / denominator;
+            return correlation;
+        } else {
+            System.out.println("Warning two arrays of non identical length are put in for correlation.");
+            System.out.println("Returning NaN");
+            return(Double.NaN);
         }
         
-        varY = varY / (y.length-1);
-        varX = varX / (x.length-1);
+    }
+    
+    /**
+     * Fast correlation of two double[] with their mean values
+     * 
+     * @param x
+     * @param y
+     * @param meanX
+     * @param meanY
+     * @return 
+     */
+    public static double correlate(double meanX, double meanY, double[] x, double[] y) {
+        if(x.length == y.length){
+            double varX = 0;
+            double varY = 0;
+
+            double covarianceInterim = 0;
+
+            for (int a=0; a<x.length; a++) {
+                double varXT = (x[a]-meanX);
+                double varYT = (y[a]-meanY);
+
+                covarianceInterim += varXT * varYT;
+
+                varX += varXT * varXT;
+                varY += varYT * varYT;
+            }
+
+            varY = varY / (y.length-1);
+            varX = varX / (x.length-1);
+
+            double denominator = Math.sqrt(varX * varY);
+            double covariance = covarianceInterim / (x.length - 1);
+            double correlation = covariance / denominator;
+            return correlation;
+        } else {
+            System.out.println("Warning two arrays of non identical length are put in for correlation.");
+            System.out.println("Returning NaN");
+            return(Double.NaN);
+        }
         
-        double denominator = Math.sqrt(varX * varY);
-        double covariance = covarianceInterim / (x.length - 1);
-        double correlation = covariance / denominator;
-        return correlation;
+    }
+    
+    /**
+     * Fast covariation of two double[]
+     * ToDo change correlate code to covariate code!
+     * ToDo add test
+     * @param x
+     * @param y
+     * @return 
+     */
+    public static double covariate(double[] x, double[] y) {
+        if(x.length == y.length){
+            Pair<Double, Double> tmpMean = Descriptives.mean(x, y);
+            double meanX = tmpMean.getLeft();
+            double meanY = tmpMean.getRight();
+
+            double covarianceInterim = 0;
+
+            for (int a=0; a<x.length; a++) {
+                double varXT = (x[a]-meanX);
+                double varYT = (y[a]-meanY);
+
+                covarianceInterim += varXT * varYT;
+            }
+
+            double covariance = covarianceInterim / (x.length - 1);
+            return covariance;
+        } else {
+            System.out.println("Warning two arrays of non identical length are put in for correlation.");
+            System.out.println("Returning NaN");
+            return(Double.NaN);
+        }
+        
+    }
+    
+    /**
+     * Fast covariation of two double[] with their mean values
+     * ToDo change correlate code to covariate code!
+     * ToDo add test
+     * @param x
+     * @param y
+     * @param meanX
+     * @param meanY
+     * @return 
+     */
+    public static double covariate(double meanX, double meanY, double[] x, double[] y) {
+        if(x.length == y.length){
+            double covarianceInterim = 0;
+
+            for (int a=0; a<x.length; a++) {
+                double varXT = (x[a]-meanX);
+                double varYT = (y[a]-meanY);
+
+                covarianceInterim += varXT * varYT;
+            }
+
+            double covariance = covarianceInterim / (x.length - 1);
+            return covariance;
+        } else {
+            System.out.println("Warning two arrays of non identical length are put in for correlation.");
+            System.out.println("Returning NaN");
+            return(Double.NaN);
+        }
+        
     }
     
     public static double convertCorrelationToZScore(int length, double correlation) {

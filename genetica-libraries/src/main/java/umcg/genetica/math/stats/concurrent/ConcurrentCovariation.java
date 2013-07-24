@@ -14,20 +14,20 @@ import umcg.genetica.math.stats.Descriptives;
 
 /**
  *
- * @author harmjan
+ * @author marc jan
  */
-public class ConcurrentCorrelation {
+public class ConcurrentCovariation {
 
     private static int nrThreads = Runtime.getRuntime().availableProcessors();
 
-    public ConcurrentCorrelation() {
+    public ConcurrentCovariation() {
     }
 
-    public ConcurrentCorrelation(int nrProcs) {
+    public ConcurrentCovariation(int nrProcs) {
         nrThreads = nrProcs;
     }
 
-    public double[][] pairwiseCorrelation(double[][] in) {
+    public double[][] pairwiseCovariation(double[][] in) {
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
         CompletionService<Pair<Integer, double[]>> pool = new ExecutorCompletionService<Pair<Integer, double[]>>(threadPool);
         double meanOfSamples[] = new double[in.length];
@@ -37,14 +37,14 @@ public class ConcurrentCorrelation {
         }
         
         for (int i = 0; i < in.length; i++) {
-            ConcurrentCorrelationTask task = new ConcurrentCorrelationTask(in, meanOfSamples, i);
+            ConcurrentCovariationTask task = new ConcurrentCovariationTask(in, meanOfSamples, i);
             pool.submit(task);
         }
 
         int returned = 0;
 
-        double[][] correlationMatrix = new double[in.length][0];
-        ProgressBar pb = new ProgressBar(in.length, "Calculation of correlation matrix: " + in.length + " x " + in.length);
+        double[][] covariationMatrix = new double[in.length][0];
+        ProgressBar pb = new ProgressBar(in.length, "Calculation of covariation matrix: " + in.length + " x " + in.length);
         while (returned < in.length) {
             try {
                 Pair<Integer, double[]> result = pool.take().get();
@@ -52,7 +52,7 @@ public class ConcurrentCorrelation {
                     int rownr = result.getLeft(); //  < 0 when row is not to be included because of hashProbesToInclude.
                     if (rownr >= 0) {
                         double[] doubles = result.getRight();
-                        correlationMatrix[rownr] = doubles;
+                        covariationMatrix[rownr] = doubles;
                     }
                     result = null;
                     returned++;
@@ -62,13 +62,13 @@ public class ConcurrentCorrelation {
                 e.printStackTrace();
             }
         }
-        for(int r=1;r<correlationMatrix.length; r++){
+        for(int r=1;r<covariationMatrix.length; r++){
             for(int c=0; c<r; c++){
-                correlationMatrix[r][c] = correlationMatrix[c][r];
+                covariationMatrix[r][c] = covariationMatrix[c][r];
             }
         }
         threadPool.shutdown();
         pb.close();
-        return correlationMatrix;
+        return covariationMatrix;
     }
 }
