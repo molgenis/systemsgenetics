@@ -21,11 +21,11 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author MarcJan
  */
-public class DoubleMatatrixDataset_v2 {
+public class DoubleMatatrixDataset_v2<T, U> {
 
     private static final Logger LOGGER = Logger.getLogger(DoubleMatatrixDataset_v2.class.getName());
-    private LinkedHashMap<String, Integer> hashRows = null;
-    private LinkedHashMap<String, Integer> hashCols = null;
+    private LinkedHashMap<T, Integer> hashRows = null;
+    private LinkedHashMap<U, Integer> hashCols = null;
     private int nrRows;
     private int nrCols;
     private DenseDoubleMatrix2D Matrix = null;
@@ -44,8 +44,8 @@ public class DoubleMatatrixDataset_v2 {
         this.nrRows = nrRows;
         this.nrCols = nrCols;
         // runtime type of the arrays will be Object[] but they can only contain T and U elements
-        this.hashRows = new LinkedHashMap<String, Integer>((int) Math.ceil(nrRows / 0.75));
-        this.hashCols = new LinkedHashMap<String, Integer>((int) Math.ceil(nrCols / 0.75));
+        this.hashRows = new LinkedHashMap<T, Integer>((int) Math.ceil(nrRows / 0.75));
+        this.hashCols = new LinkedHashMap<U, Integer>((int) Math.ceil(nrCols / 0.75));
         
         this.Matrix = new DenseDoubleMatrix2D(nrRows, nrCols);
         
@@ -67,20 +67,20 @@ public class DoubleMatatrixDataset_v2 {
 
         int columnOffset = 1;
 
-        int[] colIndex = null;
+        int[] colIndex;
         TextFile in = new TextFile(fileName, TextFile.R);
         String str = in.readLine(); // header
         String[] data = splitPatern.split(str);
 
         nrCols = data.length - columnOffset;
 
-        hashCols = new LinkedHashMap<String, Integer>((int) Math.ceil(nrCols / 0.75));
+        hashCols = new LinkedHashMap<U, Integer>((int) Math.ceil(nrCols / 0.75));
 
         colIndex = new int[nrCols];
         for (int s = 0; s < nrCols; s++) {
             String colName = data[s + columnOffset];
-            if(!hashCols.containsKey(colName)){
-                hashCols.put(colName, s);
+            if(!hashCols.containsKey((U)colName)){
+                hashCols.put((U)colName, s);
             } else {
                 LOGGER.warning("Duplicated column name!");
                 System.exit(0);
@@ -100,14 +100,14 @@ public class DoubleMatatrixDataset_v2 {
         in.readLine(); // read header
         int row = 0;
 
-        hashRows = new LinkedHashMap<String, Integer>((int) Math.ceil(nrRows / 0.75));
+        hashRows = new LinkedHashMap<T, Integer>((int) Math.ceil(nrRows / 0.75));
 
         boolean correctData = true;
         while ((str = in.readLine()) != null) {
             data = splitPatern.split(str);
             
-            if(!hashRows.containsKey(data[0])){
-                hashRows.put(data[0], row);
+            if(!hashRows.containsKey((T)data[0])){
+                hashRows.put((T) data[0], row);
             } else {
                 LOGGER.warning("Duplicated row name!");
                 System.exit(0);
@@ -132,11 +132,6 @@ public class DoubleMatatrixDataset_v2 {
 
         Matrix = new DenseDoubleMatrix2D(initialMatrix);
 
-        initialMatrix = null;
-        System.gc();
-        System.gc();
-        System.gc();
-
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
     }
 
@@ -145,20 +140,20 @@ public class DoubleMatatrixDataset_v2 {
 
         int columnOffset = 1;
 
-        int[] colIndex = null;
+        int[] colIndex;
         TextFile in = new TextFile(fileName, TextFile.R);
         String str = in.readLine(); // header
         String[] data = splitPatern.split(str);
 
         nrCols = data.length - columnOffset;
 
-        hashCols = new LinkedHashMap<String, Integer>((int) Math.ceil(nrCols / 0.75));
+        hashCols = new LinkedHashMap<U, Integer>((int) Math.ceil(nrCols / 0.75));
 
         colIndex = new int[nrCols];
         for (int s = 0; s < nrCols; s++) {
             String colName = data[s + columnOffset];
-            if(!hashCols.containsKey(colName)){
-                hashCols.put(colName, s);
+            if(!hashCols.containsKey((U) colName)){
+                hashCols.put((U) colName, s);
             } else {
                 LOGGER.warning("Duplicated column name!");
                 System.exit(0);
@@ -179,7 +174,7 @@ public class DoubleMatatrixDataset_v2 {
         in.readLine(); // read header
         int row = 0;
 
-        hashRows = new LinkedHashMap<String, Integer>((int) Math.ceil(nrRows / 0.75));
+        hashRows = new LinkedHashMap<T, Integer>((int) Math.ceil(nrRows / 0.75));
 
         boolean correctData = true;
 
@@ -198,8 +193,8 @@ public class DoubleMatatrixDataset_v2 {
                     Matrix.setQuick(row, col, d);
                 } else {
                     String key = st.nextToken();
-                    if(!hashRows.containsKey(key)){
-                        hashRows.put(key, row);
+                    if(!hashRows.containsKey((T) key)){
+                        hashRows.put((T)key, row);
                     } else {
                         LOGGER.warning("Duplicated row name!");
                         System.exit(0);
@@ -212,11 +207,6 @@ public class DoubleMatatrixDataset_v2 {
             LOGGER.warning("Your data contains NaN/unparseable values!");
         }
         in.close();
-
-        System.gc();
-        System.gc();
-        System.gc();
-
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
     }
 
@@ -225,12 +215,18 @@ public class DoubleMatatrixDataset_v2 {
         nrRows = Matrix.rows();
         nrCols = Matrix.columns();
         
-        LinkedHashMap<String, Integer> tmp  = new LinkedHashMap<String, Integer>();
-        for(Entry<String, Integer> entry : hashCols.entrySet()){
-            tmp.put(entry.getKey(), entry.getValue());
+        LinkedHashMap<U, Integer> tmp  = new LinkedHashMap<U, Integer>((int) Math.ceil(nrRows / 0.75));
+        for(Entry<U, Integer> entry : hashCols.entrySet()){
+            tmp.put((U) entry.getKey(), entry.getValue());
         }
-        hashCols = hashRows;
-        hashRows = tmp;
+        
+        LinkedHashMap<T, Integer> tmp2  = new LinkedHashMap<T, Integer>((int) Math.ceil(nrCols / 0.75));
+        for(Entry<T, Integer> entry : hashRows.entrySet()){
+            tmp2.put((T) entry.getKey(), entry.getValue());
+        }
+        
+        hashCols = (LinkedHashMap<U, Integer>) tmp2;
+        hashRows = (LinkedHashMap<T, Integer>) tmp;
         
     }
 
@@ -290,30 +286,30 @@ public class DoubleMatatrixDataset_v2 {
     }   
     
     //Getters and setters
-    public LinkedHashMap<String, Integer> getHashRows() {
+    public LinkedHashMap<T, Integer> getHashRows() {
         return hashRows;
     }
 
-    public void setHashRows(LinkedHashMap<String, Integer> hashRows) {
+    public void setHashRows(LinkedHashMap<T, Integer> hashRows) {
         this.hashRows = hashRows;
     }
 
-    public LinkedHashMap<String, Integer> getHashCols() {
+    public LinkedHashMap<U, Integer> getHashCols() {
         return hashCols;
     }
 
-    public void setHashCols(LinkedHashMap<String, Integer> hashCols) {
+    public void setHashCols(LinkedHashMap<U, Integer> hashCols) {
         this.hashCols = hashCols;
     }
 
-    public ArrayList<String> getRowObjects() {
-        return new ArrayList<String>(hashRows.keySet());
+    public ArrayList<T> getRowObjects() {
+        return new ArrayList<T>(hashRows.keySet());
     }
     
-    public void setRowObjects(ArrayList<String> arrayList) {
-        LinkedHashMap<String, Integer> newHashRows = new LinkedHashMap<String, Integer>((int) Math.ceil(arrayList.size() / 0.75));
+    public void setRowObjects(ArrayList<T> arrayList) {
+        LinkedHashMap<T, Integer> newHashRows = new LinkedHashMap<T, Integer>((int) Math.ceil(arrayList.size() / 0.75));
         int i = 0;
-        for(String s: arrayList){
+        for(T s: arrayList){
             if(!newHashRows.containsKey(s)){
                 newHashRows.put(s, i);
             } else {
@@ -326,14 +322,14 @@ public class DoubleMatatrixDataset_v2 {
         this.hashRows = newHashRows;
     }
 
-    public ArrayList<String> getColObjects() {
-        return new ArrayList<String>(hashCols.keySet());
+    public ArrayList<U> getColObjects() {
+        return new ArrayList<U>(hashCols.keySet());
     }
     
-    public void setColObjects(ArrayList<String> arrayList) {
-        LinkedHashMap<String, Integer> newHashCols = new LinkedHashMap<String, Integer>((int) Math.ceil(arrayList.size() / 0.75));
+    public void setColObjects(ArrayList<U> arrayList) {
+        LinkedHashMap<U, Integer> newHashCols = new LinkedHashMap<U, Integer>((int) Math.ceil(arrayList.size() / 0.75));
         int i = 0;
-        for(String s: arrayList){
+        for(U s: arrayList){
             if(!newHashCols.containsKey(s)){
                 newHashCols.put(s, i);
             } else {
