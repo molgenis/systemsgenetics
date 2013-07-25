@@ -17,7 +17,7 @@ read.harmjan.zscores <- function(){
 }
 
 read.illumina.celltypes <- function(){
-  CellTypeDATA <- read.table("E-TABM-633/HaemAtlasMKEBNormalizedIntensities.csv",sep='\t',row.names=1,header=TRUE)
+  CellTypeDATA <- read.table("HaemAtlasMKEBNormalizedIntensities.csv",sep='\t',row.names=1,header=TRUE)
   CellTypeDATA <- CellTypeDATA[-1,]
   tmp <- apply(CellTypeDATA, 2, as.numeric)
   rownames(tmp) <- rownames(CellTypeDATA)
@@ -41,7 +41,7 @@ add.illumina.probes.information <- function(CellTypeDATA){
 }
 
 annotate.illumina.celltypes <- function(CellTypeDATA){
-  CellTypeAnnotation <- read.csv("dataDescr/E-TABM-633.txt",sep="\t", header=TRUE)
+  CellTypeAnnotation <- read.csv("E-TABM-633.txt",sep="\t", header=TRUE)
   cellTypeNames <- as.character(CellTypeAnnotation[, "Hybridization.Name"])
   cellTypeTypes <- as.character(CellTypeAnnotation[, "Extract.Name"])
   cellTypes     <- unlist(lapply(strsplit(cellTypeTypes,"-"),"[",3))

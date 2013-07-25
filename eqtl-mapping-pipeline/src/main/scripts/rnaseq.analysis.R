@@ -27,7 +27,6 @@ NeutrRNASeq <- NeutrRNASeq[tokeep, ]
 NeutrRNASeq[,"granulocytes"] <- log2(NeutrRNASeq[,"granulocytes"])   # LOG 2 transform the data
 
 # Load the Illumina celltype data
-setwd("/home/danny/Github/LudeNew")
 Illu <- read.illumina.celltypes()
 Illu <- annotate.illumina.celltypes(Illu)
 Illu <- Illu[, which(colnames(Illu) == "Granulocyte")]    # Take only the Granulocytes
