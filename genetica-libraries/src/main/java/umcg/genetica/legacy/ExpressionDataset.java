@@ -2,18 +2,18 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package umcg.genetica.io;
+package umcg.genetica.legacy;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import umcg.genetica.containers.Triple;
-import umcg.genetica.io.concurrent.DoubleParseTask;
-import umcg.genetica.io.text.TextFile;
-import umcg.genetica.util.RunTimer;
+//import java.io.*;
+//import java.util.*;
+//import java.util.concurrent.CompletionService;
+//import java.util.concurrent.ExecutorCompletionService;
+//import java.util.concurrent.ExecutorService;
+//import java.util.concurrent.Executors;
+//import umcg.genetica.containers.Triple;
+//import umcg.genetica.io.concurrent.DoubleParseTask;
+//import umcg.genetica.io.text.TextFile;
+//import umcg.genetica.util.RunTimer;
 
 /**
  *

@@ -731,6 +731,7 @@ public class EQTL implements Comparable<EQTL> {
         return out.toString();
     }
 
+    @Override
     public int compareTo(EQTL o) {
         if (useAbsoluteZScore) {
             if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {

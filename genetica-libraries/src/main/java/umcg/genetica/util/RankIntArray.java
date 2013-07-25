@@ -13,7 +13,7 @@ public class RankIntArray {
     public int[] x = null;
     public int[] y = null;
     public cern.colt.Swapper swapper = null;
-    public cern.colt.function.IntComparator comp = null;
+    public cern.colt.function.tint.IntComparator comp = null;
 
     public RankIntArray() {
         swapper = new cern.colt.Swapper() {
@@ -30,7 +30,7 @@ public class RankIntArray {
             }
         };
 
-        comp = new cern.colt.function.IntComparator() {
+        comp = new cern.colt.function.tint.IntComparator() {
 
             public int compare(int a, int b) {
                 return x[a] == x[b] ? 0 : (x[a] < x[b] ? -1 : 1);

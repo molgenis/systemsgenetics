@@ -92,11 +92,9 @@ public class DoubleParseTask implements Callable<Triple<Integer, String, double[
                 }
             }
             this.stringData = null;
-            splitData = null;
             return new Triple<Integer, String, double[]>(row, rowname, output);
         } else {
             this.stringData = null;
-            splitData = null;
             return new Triple<Integer, String, double[]>(-1, null, null);
         }
 
