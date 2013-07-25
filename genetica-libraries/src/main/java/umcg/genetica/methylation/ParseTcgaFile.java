@@ -56,8 +56,9 @@ public class ParseTcgaFile {
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
-            String str = in.readLine();
-            str = in.readLine();
+            String str;
+            in.readLine();
+            in.readLine();
             while ((str = in.readLine()) != null) {
                 String[] data = SPLIT_ON_TAB.split(str);
                 vecProbes.add(data[0]);
@@ -65,7 +66,6 @@ public class ParseTcgaFile {
             }
             in.close();
         } catch (IOException e) {
-            e.printStackTrace();
             System.out.println(e.getMessage());
             System.exit(-1);
         }
@@ -133,7 +133,6 @@ public class ParseTcgaFile {
                 }
                 in.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 System.out.println(e.getMessage());
                 System.exit(-1);
             }
@@ -185,8 +184,9 @@ public class ParseTcgaFile {
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
-            String str = in.readLine();
-            str = in.readLine();
+            String str;
+            in.readLine();
+            in.readLine();
             while ((str = in.readLine()) != null) {
                 String[] data = SPLIT_ON_TAB.split(str);
                 vecProbes.add(data[0]);
@@ -194,7 +194,6 @@ public class ParseTcgaFile {
             }
             in.close();
         } catch (IOException e) {
-            e.printStackTrace();
             System.out.println(e.getMessage());
             System.exit(-1);
         }
@@ -211,9 +210,6 @@ public class ParseTcgaFile {
                 position++;
             }
         }
-        
-        vecProbes = null;
-        probeList = null;
 
         for (int f = 0; f < nrSamples; f++) {
             String currentFile = vecFiles.get(f).getAbsolutePath();
@@ -228,7 +224,7 @@ public class ParseTcgaFile {
                 String str = in.readLine();
                 String[] data = SPLIT_ON_TAB.split(str);
                 dataset3.colObjects.set(f, data[1]);
-                str = in.readLine();
+                in.readLine();
 
                 //System.out.println(columnM + "\t" + columnU);
                 int nrSet = 0;
@@ -238,8 +234,8 @@ public class ParseTcgaFile {
                     if (probeIndex.containsKey(data[0])) {
                         nrSet++;
                         int p = probeIndex.get(data[0]);
-                        double methylatedSignal = 0d;
-                        double unmethylatedSignal = 0d;
+                        double methylatedSignal;
+                        double unmethylatedSignal;
                         if (data[columnM].equals("NA") || data[columnM].equals("NaN")) {
                             methylatedSignal = -999d;
                         } else {
@@ -271,7 +267,6 @@ public class ParseTcgaFile {
                 }
                 in.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 System.out.println(e.getMessage());
                 System.exit(-1);
             }
@@ -323,8 +318,9 @@ public class ParseTcgaFile {
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
-            String str = in.readLine();
-            str = in.readLine();
+            String str;
+            in.readLine();
+            in.readLine();
             while ((str = in.readLine()) != null) {
                 String[] data = SPLIT_ON_TAB.split(str);
                 vecProbes.add(data[0]);
@@ -332,7 +328,6 @@ public class ParseTcgaFile {
             }
             in.close();
         } catch (IOException e) {
-            e.printStackTrace();
             System.out.println(e.getMessage());
             System.exit(-1);
         }
@@ -408,7 +403,6 @@ public class ParseTcgaFile {
                 }
                 in.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 System.out.println(e.getMessage());
                 System.exit(-1);
             }
@@ -473,8 +467,9 @@ public class ParseTcgaFile {
         ArrayList<String> vecProbes = new ArrayList<String>();
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(vecFiles.get(0)), ENCODING), 8096);
-            String str = in.readLine();
-            str = in.readLine();
+            String str;
+            in.readLine();
+            in.readLine();
             while ((str = in.readLine()) != null) {
                 String[] data = str.split("\t");
                 vecProbes.add(data[0]);
@@ -482,7 +477,6 @@ public class ParseTcgaFile {
             }
             in.close();
         } catch (IOException e) {
-            e.printStackTrace();
             System.out.println(e.getMessage());
             System.exit(-1);
         }
@@ -504,8 +498,7 @@ public class ParseTcgaFile {
                 String str = in.readLine();
                 String[] data = str.split("\t");
                 dataset1.colObjects.set(f, data[1]);
-                str = in.readLine();
-                data = str.split("\t");
+                in.readLine();
 
                 int p = 0;
                 while ((str = in.readLine()) != null) {
@@ -527,7 +520,6 @@ public class ParseTcgaFile {
                 }
                 in.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 System.out.println(e.getMessage());
                 System.exit(-1);
             }

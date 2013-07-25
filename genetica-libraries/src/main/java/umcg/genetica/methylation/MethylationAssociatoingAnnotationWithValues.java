@@ -582,7 +582,7 @@ public class MethylationAssociatoingAnnotationWithValues {
 
         for (int i = 0; i < doubleMatrix.nrCols; ++i) {
             //System.out.println(doubleMatrix.colObjects.get(i));
-            ArrayList<String> keyList = new ArrayList<String>();
+            //ArrayList<String> keyList = new ArrayList<String>();
             ArrayList<double[]> valueSets = new ArrayList<double[]>();
 
             for (Entry<String, HashMap<String, String>> set : interestSets.entrySet()) {
@@ -593,7 +593,7 @@ public class MethylationAssociatoingAnnotationWithValues {
                 }
 
                 if (valueSet.size() > 2) {
-                    keyList.add(set.getKey());
+                    //keyList.add(set.getKey());
                     valueSets.add(valueSet.toArray(new double[0]));
                 }
 

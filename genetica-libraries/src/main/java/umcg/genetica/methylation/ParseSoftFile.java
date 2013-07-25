@@ -29,7 +29,7 @@ public class ParseSoftFile {
 
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileLocation)), ENCODING), 8096);
-            String str = "";
+            String str;
             while ((str = in.readLine()) != null) {
                 if (str.startsWith("^SAMPLE")) {
                     String sampleName = SPLIT_ON_EQUALS.split(str)[1];
@@ -113,7 +113,7 @@ public class ParseSoftFile {
 
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileLocation)), ENCODING), 8096);
-            String str = "";
+            String str;
             while ((str = in.readLine()) != null) {
                 if (str.startsWith("^")) {
 
@@ -176,7 +176,7 @@ public class ParseSoftFile {
 
                                     if (valueHeaderColumn != -1) {
                                         data = SPLIT_ON_TAB.split(str);
-                                        double value = 0;
+                                        double value;
                                         if (data.length <= valueHeaderColumn || data[valueHeaderColumn] == null || data[valueHeaderColumn].length() == 0 || data[valueHeaderColumn].equalsIgnoreCase("null")) {
                                             value = -999;
                                             nrMissingValues++;
@@ -254,7 +254,7 @@ public class ParseSoftFile {
 
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fileLocation)), ENCODING), 8096);
-            String str = "";
+            String str;
             while ((str = in.readLine()) != null) {
                 if (str.startsWith("^")) {
 
@@ -328,7 +328,7 @@ public class ParseSoftFile {
 
                                     if (valueHeaderColumn != -1) {
                                         data = SPLIT_ON_TAB.split(str);
-                                        double value = 0;
+                                        double value;
                                         if (data.length <= valueHeaderColumn || data[valueHeaderColumn] == null || data[valueHeaderColumn].length() == 0 || data[valueHeaderColumn].equalsIgnoreCase("null")) {
                                             value = -999;
                                             nrMissingValues++;

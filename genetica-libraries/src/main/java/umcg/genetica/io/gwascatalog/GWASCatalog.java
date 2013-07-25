@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import umcg.genetica.containers.Pair;
 import umcg.genetica.io.text.TextFile;
 
 /**

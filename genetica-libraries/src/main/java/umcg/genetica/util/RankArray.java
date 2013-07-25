@@ -36,11 +36,11 @@ public class RankArray {
     public double[] xdouble = null;
     public int[] ydouble = null;
     public cern.colt.Swapper swapperdouble = null;
-    public cern.colt.function.IntComparator compdouble = null;
+    public cern.colt.function.tint.IntComparator compdouble = null;
     public float[] x = null;
     public int[] y = null;
     public cern.colt.Swapper swapper = null;
-    public cern.colt.function.IntComparator comp = null;
+    public cern.colt.function.tint.IntComparator comp = null;
 
     public RankArray() {
         swapperdouble = new cern.colt.Swapper() {
@@ -57,7 +57,7 @@ public class RankArray {
             }
         };
 
-        compdouble = new cern.colt.function.IntComparator() {
+        compdouble = new cern.colt.function.tint.IntComparator() {
             @Override
             public int compare(int a, int b) {
                 return xdouble[a] == xdouble[b] ? 0 : (xdouble[a] < xdouble[b] ? -1 : 1);
@@ -78,7 +78,7 @@ public class RankArray {
             }
         };
 
-        comp = new cern.colt.function.IntComparator() {
+        comp = new cern.colt.function.tint.IntComparator() {
             @Override
             public int compare(int a, int b) {
                 return x[a] == x[b] ? 0 : (x[a] < x[b] ? -1 : 1);
