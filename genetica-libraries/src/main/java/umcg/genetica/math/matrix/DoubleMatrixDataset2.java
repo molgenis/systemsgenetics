@@ -21,9 +21,9 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author MarcJan
  */
-public class DoubleMatatrixDataset_v2<T, U> {
+public class DoubleMatrixDataset2<T, U> {
 
-    private static final Logger LOGGER = Logger.getLogger(DoubleMatatrixDataset_v2.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset2.class.getName());
     private LinkedHashMap<T, Integer> hashRows = null;
     private LinkedHashMap<U, Integer> hashCols = null;
     private int nrRows;
@@ -32,14 +32,14 @@ public class DoubleMatatrixDataset_v2<T, U> {
     private Pattern splitPatern;
 
     // we need this constructor to be able to use the handy save function of this class :D
-    public DoubleMatatrixDataset_v2() {
+    public DoubleMatrixDataset2() {
     }
 
-    public DoubleMatatrixDataset_v2(int nrRows, int nrCols) {
+    public DoubleMatrixDataset2(int nrRows, int nrCols) {
         this(nrRows, nrCols, null);
     }
 
-    public DoubleMatatrixDataset_v2(int nrRows, int nrCols, Double initialValue) {
+    public DoubleMatrixDataset2(int nrRows, int nrCols, Double initialValue) {
 
         this.nrRows = nrRows;
         this.nrCols = nrCols;
@@ -54,11 +54,11 @@ public class DoubleMatatrixDataset_v2<T, U> {
         }
     }
 
-    public DoubleMatatrixDataset_v2(String fileName) throws IOException {
+    public DoubleMatrixDataset2(String fileName) throws IOException {
         this(fileName, "\t");
     }
 
-    public DoubleMatatrixDataset_v2(String fileName, String ll) throws IOException {
+    public DoubleMatrixDataset2(String fileName, String ll) throws IOException {
         loadExpressionData(fileName, ll);
     }
 
