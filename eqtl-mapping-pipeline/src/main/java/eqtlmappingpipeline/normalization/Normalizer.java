@@ -1,15 +1,10 @@
 package eqtlmappingpipeline.normalization;
 
-import eqtlmappingpipeline.metaqtl4.WorkPackage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -20,7 +15,8 @@ import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Log2Transform;
 import umcg.genetica.math.stats.QuantileNormalization;
 import umcg.genetica.math.stats.Regression;
-import umcg.genetica.math.stats.concurrent.ConcurrentCorrelationTask;
+import umcg.genetica.math.stats.concurrent.ConcurrentCorrelation;
+import umcg.genetica.math.stats.concurrent.ConcurrentCovariation;
 import umcg.genetica.methylation.ConvertBetaToMvalue;
 
 /**
@@ -74,8 +70,9 @@ public class Normalizer {
             adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, orthogonalizecovariates, 1E-10);
         }
 
-        if (runPCA) {
-            double[][] correlationMatrix = correlateSamples(dataset);
+        if (runPCA) {            
+            ConcurrentCorrelation c = new ConcurrentCorrelation(2);
+            double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
             expressionFileName = expressionFile.replace(parentDir, "");
             //outputFileNamePrefix = outdir + expressionFileName;
             Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
@@ -167,10 +164,12 @@ public class Normalizer {
                     covariateDataset.getRawData()[p][s] /= stdev;
                 }
             }
-            covariateDataset.transposeDataset();
+            
+            //Covariation on a centered and scaled matrix equels the correlation.
+            //Covariation is faster to compute.
+            ConcurrentCovariation c = new ConcurrentCovariation(2);
+            double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawDataTransposed());
 
-
-            double[][] correlationMatrix = correlateSamples(covariateDataset);
 //            DoubleMatrixDataset<String, String> correlationMatrixDs = new DoubleMatrixDataset<String, String>(correlationMatrix, covariateDataset.colObjects, covariateDataset.colObjects);
 //            correlationMatrixDs.save(covariatesToRemove+"-CorrelationMatrix.txt");
 
@@ -382,7 +381,7 @@ public class Normalizer {
     }
 
     public void correctDataForPCs(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput,
-            DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs, DoubleMatrixDataset<String, String> datasetEV) throws IOException {
+        DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs, DoubleMatrixDataset<String, String> datasetEV) throws IOException {
         String expressionFile = fileNamePrefix;
         System.out.println("\nInitializing residual gene expression matrix");
         DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(dataset.rowObjects.size(), dataset.colObjects.size());

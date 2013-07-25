@@ -406,7 +406,8 @@ public class AssociatingPcasWithAnnotation {
     public static String[] readGeneNamesForProbes(String filename, List<String> probes) throws IOException {
         String[] geneNames = new String[probes.size()];
         TextFile in = new TextFile(filename, TextFile.R);
-        String line = in.readLine();
+        String line;
+        in.readLine();
         while ((line = in.readLine()) != null) {
             String[] split = SPLIT_ON_TAB.split(line);
             int indexOf = probes.indexOf(split[0]);
