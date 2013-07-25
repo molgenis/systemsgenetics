@@ -3,6 +3,7 @@ package org.molgenis.genotype;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.molgenis.genotype.annotation.CaseControlAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
 
 public class Sample {
@@ -45,6 +46,22 @@ public class Sample {
             return SexAnnotation.UNKNOWN;
         }
     }
+	
+	public boolean isIncluded() {
+		if(annotationValues.containsKey(GenotypeData.BOOL_INCLUDE_SAMPLE)){
+			return (Boolean) annotationValues.get(GenotypeData.BOOL_INCLUDE_SAMPLE);
+		} else {
+			return true;
+		}
+	}
+	
+	public CaseControlAnnotation getCaseControlAnnotation() {
+		if (annotationValues.containsKey(GenotypeData.CASE_CONTROL_SAMPLE_ANNOTATION_NAME)) {
+            return (CaseControlAnnotation) annotationValues.get(GenotypeData.CASE_CONTROL_SAMPLE_ANNOTATION_NAME);
+        } else {
+            return CaseControlAnnotation.UNKNOWN;
+        }
+	}
 
     @Override
     public String toString() {
