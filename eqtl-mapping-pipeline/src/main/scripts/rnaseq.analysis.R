@@ -39,23 +39,20 @@ NeutrRNASeq <- NeutrRNASeq[inAffy, ]
 
 setwd("/home/danny/Github/Juha")
 RnaAffyIllu <- NULL
-if(!file.exists("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt")){
+fn <- "NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt"
+if(!file.exists(fn)){
   # Add the illumina data to the affy & RNA seq data
+  cat("HUGO","Illumina(G)", unlist(colnames(NeutrRNASeq)[-8]),"\n",sep='\t', file = fn)
   cnt <- 0; n <- length(rownames(NeutrRNASeq))
   for(gene in rownames(NeutrRNASeq)){
-    IlluMean <- mean(as.numeric(Illu[which(Illu[,1] == gene), 2]))
+    IlluMean <- mean(as.numeric(Illu[which(Illu[,1] == gene), -1]))
     AffyRowID <- which(rownames(NeutrRNASeq)==gene)
-    RnaAffyIllu <- rbind(RnaAffyIllu, c(gene, IlluMean, NeutrRNASeq[AffyRowID,-8]))
+    cat(gene, IlluMean, unlist(NeutrRNASeq[AffyRowID,-8]),"\n", file=fn, append=TRUE, sep='\t')
     if(cnt %% 500 == 0)cat("Done",cnt,"out of",n,"\n")
     cnt <- cnt+1
   }
-  colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
-  # Write the full table
-  write.table(RnaAffyIllu,"NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep = '\t', quote = FALSE)
-}else{
-  RnaAffyIllu <- read.csv("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep = '\t', row.names = 1)
-  colnames(RnaAffyIllu)[1:2] <- c("HUGO","Illumina(G)")
 }
+RnaAffyIllu <- read.csv("NeutrophilIllumina_AllRNAseq_AllNeutroAffy_ByHUGO.txt", sep = '\t')
 
 plot.AffyIllu(RnaAffyIllu)
 
