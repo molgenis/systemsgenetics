@@ -10,7 +10,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class VariantQcChecker {
+public class VariantQcChecker implements VariantFilter{
 	
 	private double maf;
 	private double callRate;
@@ -34,7 +34,8 @@ public class VariantQcChecker {
 		this.callRate = callRate;
 	}
 	
-	public boolean doesVairantPass(GeneticVariant variant){
+	@Override
+	public boolean doesVariantPassFilter(GeneticVariant variant){
 		
 		if(variant.getMinorAlleleFrequency() < maf){
 			return false;
