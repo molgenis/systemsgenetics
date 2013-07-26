@@ -4,9 +4,8 @@
  */
 package umcg.genetica.math.matrix;
 
-import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.impl.DenseDoubleMatrix2D;
-import cern.colt.matrix.linalg.Algebra;
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -47,7 +46,7 @@ public class DoubleMatrixDataset2<T, U> {
         this.hashRows = new LinkedHashMap<T, Integer>((int) Math.ceil(nrRows / 0.75));
         this.hashCols = new LinkedHashMap<U, Integer>((int) Math.ceil(nrCols / 0.75));
         
-        this.Matrix = new DenseDoubleMatrix2D(nrRows, nrCols);
+            this.Matrix = new DenseDoubleMatrix2D(nrRows, nrCols);
         
         if(initialValue!=null){
             Matrix.assign(initialValue);
@@ -210,8 +209,11 @@ public class DoubleMatrixDataset2<T, U> {
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
     }
 
+    //Dit is allemaal al geimporteerd.
+    
     public void transposeDataset() {
-        this.Matrix = (DenseDoubleMatrix2D) Algebra.DEFAULT.transpose(Matrix);
+        this.Matrix = (DenseDoubleMatrix2D) Matrix.viewDice();
+        
         nrRows = Matrix.rows();
         nrCols = Matrix.columns();
         
@@ -283,7 +285,7 @@ public class DoubleMatrixDataset2<T, U> {
         }
         out.close();
         out.close();
-    }   
+    }
     
     //Getters and setters
     public LinkedHashMap<T, Integer> getHashRows() {
