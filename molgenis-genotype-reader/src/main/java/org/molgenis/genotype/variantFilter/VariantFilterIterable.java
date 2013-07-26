@@ -11,11 +11,11 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class VariantQcIterable implements Iterable<GeneticVariant> {
+public class VariantFilterIterable implements Iterable<GeneticVariant> {
 
 	private final Iterator<GeneticVariant> iterator;
 
-	public VariantQcIterable(Iterator<GeneticVariant> iterator) {
+	public VariantFilterIterable(Iterator<GeneticVariant> iterator) {
 		this.iterator = iterator;
 	}
 	

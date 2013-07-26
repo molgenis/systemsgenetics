@@ -40,9 +40,9 @@ public class ProbeAnnotation {
         chrEnd = new int[probeNum];
 
 
-        String[] elems = in.readLineElemsReturnReference(TextFile.tab);
+        in.readLine();
         probeIndex = new HashMap<String, Integer>();
-        elems = in.readLineElemsReturnReference(TextFile.tab);
+        String[] elems = in.readLineElemsReturnReference(TextFile.tab);
         int i = 0;
         while (elems != null) {
             if (elems.length >= 6) {

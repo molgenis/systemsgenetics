@@ -59,7 +59,7 @@ public class Descriptives {
         double[] zScoreToPValue = new double[300001];
         for (int z = 0; z <= 300000; z++) {
             double zScore = ((double) z - 150000d) / 5000d;
-            double pValue = 0;
+            double pValue;
             //Avoid complementation:
             if (zScore > 0) {
                 pValue = normDist.cumulative(-zScore);
