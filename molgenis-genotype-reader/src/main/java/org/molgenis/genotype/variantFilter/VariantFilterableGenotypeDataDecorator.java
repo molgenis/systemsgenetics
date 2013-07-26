@@ -14,39 +14,24 @@ import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
- * View of orginal genotype data only including variants conforming to set
- * filter values
- *
  *
  * @author Patrick Deelen
  */
-public class RandomAccessGenotypeDataVariantQc implements RandomAccessGenotypeData {
-
+public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenotypeData, VariantFilterableGenotypeData {
+	
 	private final RandomAccessGenotypeData originalGenotypeData;
-	private final VariantQcChecker qcChecker;
+	private final VariantFilter variantFilter;
 
-	public RandomAccessGenotypeDataVariantQc(RandomAccessGenotypeData originalGenotypeData, VariantQcChecker qcChecker) {
+	public VariantFilterableGenotypeDataDecorator(RandomAccessGenotypeData originalGenotypeData, VariantFilter variantFilter) {
+		
+		if(variantFilter == null){
+			throw new IllegalArgumentException("Variant filter can not be null");
+		}
+		
 		this.originalGenotypeData = originalGenotypeData;
-		this.qcChecker = qcChecker;
+		this.variantFilter = variantFilter;
 	}
 	
-	public RandomAccessGenotypeDataVariantQc(RandomAccessGenotypeData originalGenotypeData){
-		this.originalGenotypeData = originalGenotypeData;
-		this.qcChecker = new VariantQcChecker(1, 0, 0);
-	}
-	
-	public void setMafCutoff(float maf){
-		this.qcChecker.setMafCutoff(maf);
-	}
-
-	public void setHweCutoff(double hwe) {
-		this.qcChecker.setHweCutoff(hwe);
-	}
-
-	public void setCallRateCutoff(double callRate) {
-		this.qcChecker.setCallRateCutoff(callRate);
-	}
-
 	@Override
 	public List<String> getSeqNames() {
 		return originalGenotypeData.getSeqNames();
@@ -75,7 +60,7 @@ public class RandomAccessGenotypeDataVariantQc implements RandomAccessGenotypeDa
 			return null;
 		}
 		
-		if(qcChecker.doesVariantPassFilter(variant)){
+		if(variantFilter.doesVariantPassFilter(variant)){
 			return variant;
 		} else {
 			return null;
@@ -123,7 +108,21 @@ public class RandomAccessGenotypeDataVariantQc implements RandomAccessGenotypeDa
 	}
 	
 	private Iterable<GeneticVariant> createQcIterable(Iterable<GeneticVariant> originalIterable){
-		return new VariantFilterIterable(new VariantFilterIterator(originalIterable.iterator(), qcChecker));
+		return new VariantFilterIterable(new VariantFilterIterator(originalIterable.iterator(), variantFilter));
+	}
+
+	@Override
+	public void setFilter(VariantFilter filter) {
+		
+		if(variantFilter == null){
+			throw new IllegalArgumentException("Variant filter can not be null");
+		}
+	
+	}
+
+	@Override
+	public VariantFilter getFilter() {
+		return variantFilter;
 	}
 	
 }
