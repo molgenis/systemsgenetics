@@ -97,9 +97,14 @@ get.illu.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
 }
 
 get.rnaseq.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
-  res <- log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+  res <- as.numeric(RnaAffyIllu[selection,"granulocytes"])
   names(res) <- RnaAffyIllu[selection,"HUGO"]
   res
+}
+
+plot.single <- function(M1, M2, N1 = "Affy", N2 = "RNAseq", col = rep(1, length(M1))){
+  corrr <- round(cor(M1, as.numeric(M2), method="spearman"), d = 2)
+  plot(M1, M2, xlab = N1, ylab = N2, main=paste0("Mean Cor: ",corrr), cex=0.7, col=col)
 }
 
 plot.AffyIllu <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
@@ -125,7 +130,9 @@ annotate.RNASeq <- function(){
 }
 
 is.outlier <- function(d1, d2, cutoff = 0.3){
-  res <- as.numeric(abs((d1/max(d1)) - (d2/max(d2))) > cutoff)+1
+  up <- as.numeric((d1/max(d1)) - (d2/max(d2)) > cutoff)
+  down <- as.numeric((d1/max(d1)) - (d2/max(d2)) < -cutoff)
+  res <- up+(2*down) +1
   names(res) <- names(d1)
   res
 }

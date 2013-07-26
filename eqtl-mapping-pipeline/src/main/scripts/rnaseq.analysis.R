@@ -68,11 +68,19 @@ XYgenes <- which(!(RnaAffyIlluAnnotated[,"Chromosome.Name"]== "X"| RnaAffyIlluAn
 
 plot.AffyIllu(RnaAffyIllu, XYgenes)
 
-AffyMean  <- get.affy.mean(RnaAffyIllu, XYgenes)
-IlluMean  <- get.illu.mean(RnaAffyIllu, XYgenes)
-RNASeqLog <- get.rnaseq.mean(RnaAffyIllu, XYgenes)
+highRNAseq <- which(RnaAffyIllu[,"granulocytes"] > 3)
+plot.AffyIllu(RnaAffyIllu, highRNAseq)
 
-aa <- is.outlier(AffyMean, RNASeqLog)
+AffyMean  <- get.affy.mean(RnaAffyIllu, highRNAseq)
+IlluMean  <- get.illu.mean(RnaAffyIllu, highRNAseq)
+RNASeqLog <- get.rnaseq.mean(RnaAffyIllu, highRNAseq)
+
+aa <- is.outlier(AffyMean, RNASeqLog, 0.2)
+plot.single(AffyMean, RNASeqLog, col=aa)
+
+aa <- is.outlier(AffyMean, IlluMean, 0.2)
+plot.single(AffyMean, IlluMean, col=aa)
+
 cor(AffyMean, RNASeqLog,use='spearman')
 is.outlier(IlluMean, RNASeqLog)
 
