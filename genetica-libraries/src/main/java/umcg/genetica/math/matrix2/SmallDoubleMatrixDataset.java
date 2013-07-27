@@ -5,6 +5,7 @@
 package umcg.genetica.math.matrix2;
 
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.io.IOException;
@@ -234,4 +235,45 @@ public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C>{
     //Specific methods
     protected  void loadDoubleData(){}
     protected void loadExpressionDataTokenizer(){}
+	
+	@Override
+	public double[] elements() {
+		return matrix.elements();
+	}
+
+	@Override
+	public double getQuick(int i, int i1) {
+		return getQuick(i, i1);
+	}
+
+	@Override
+	public DoubleMatrix2D like(int i, int i1) {
+		return matrix.like(i, i1);
+	}
+
+	@Override
+	public DoubleMatrix1D like1D(int i) {
+		return matrix.like1D(i);
+	}
+
+	@Override
+	public void setQuick(int i, int i1, double d) {
+		matrix.setQuick(i, i1, d);
+	}
+
+	@Override
+	public DoubleMatrix1D vectorize() {
+		return matrix.vectorize();
+	}
+
+	@Override
+	protected DoubleMatrix1D like1D(int i, int i1, int i2) {
+		return like1D(i, i1, i2);
+	}
+
+	@Override
+	protected DoubleMatrix2D viewSelectionLike(int[] ints, int[] ints1) {
+		//this cannot be implemented
+		throw new InternalError();
+	}
 }
