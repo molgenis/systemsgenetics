@@ -5,9 +5,9 @@
 package umcg.genetica.math.stats;
 
 import JSci.maths.statistics.NormalDistribution;
-import cern.jet.random.StudentT;
-import cern.jet.random.engine.DRand;
-import cern.jet.random.engine.RandomEngine;
+import cern.jet.random.tdouble.StudentT;
+//import cern.jet.random.tdouble.engine.DRand;
+//import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.Probability;
 
 /**

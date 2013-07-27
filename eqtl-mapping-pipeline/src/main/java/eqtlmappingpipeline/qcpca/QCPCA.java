@@ -322,7 +322,7 @@ public class QCPCA {
 
                     // sqrt[(1—r2)/(N—2)]
 
-                    cern.jet.random.StudentT tDistColt = new cern.jet.random.StudentT(df, (new cern.jet.random.engine.DRand()));
+                    cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(df, (new cern.jet.random.tdouble.engine.DRand()));
 
                     double tTestPValue1 = tDistColt.cdf(t);
                     if (tTestPValue1 < bonferroni) {
