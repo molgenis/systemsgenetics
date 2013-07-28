@@ -9,7 +9,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import umcg.genetica.io.text.TextFile;
@@ -21,42 +20,21 @@ import umcg.genetica.io.text.TextFile;
 public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
 
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
-    private LinkedHashMap<R, Integer> hashRows = null;
-    private LinkedHashMap<C, Integer> hashCols = null;
-    private Pattern splitPatern;
+    protected LinkedHashMap<R, Integer> hashRows;
+    protected LinkedHashMap<C, Integer> hashCols;
+    protected Pattern splitPatern;
 
     public DoubleMatrixDataset(){
-    };
-    
-    protected abstract void transposeDoubleMatrix2D();
+		hashRows = new LinkedHashMap<R, Integer>();
+		hashCols = new LinkedHashMap<C, Integer>();
+    }
+
+	public DoubleMatrixDataset(LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+		this.hashRows = hashRows;
+		this.hashCols = hashCols;
+	}
 
     public abstract DoubleMatrix2D getMatrix();
-   
-    public void transposeDataset() {
-
-        transposeDoubleMatrix2D();
-
-		//Already handeled when doing the transpose
-//        int nrColsOld = columns;
-//        columns = rows;
-//        rows = nrColsOld;
-
-		
-        LinkedHashMap<C, Integer> tmp = new LinkedHashMap<C, Integer>((int) Math.ceil(rows / 0.75));
-        for (Map.Entry<C, Integer> entry : hashCols.entrySet()) {
-            tmp.put((C) entry.getKey(), entry.getValue());
-        }
-
-        LinkedHashMap<R, Integer> tmp2 = new LinkedHashMap<R, Integer>((int) Math.ceil(columns / 0.75));
-        for (Map.Entry<R, Integer> entry : hashRows.entrySet()) {
-            tmp2.put((R) entry.getKey(), entry.getValue());
-        }
-
-		//TODO this cannot not work properly.
-        hashCols = (LinkedHashMap<C, Integer>) tmp2;
-        hashRows = (LinkedHashMap<R, Integer>) tmp;
-
-    }
 
     public void saveLowMemory(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
@@ -169,19 +147,13 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
         this.hashCols = newHashCols;
     }
 
-    public int getNrRows() {
-        return rows;
-    }
-
     public void setNrRows(int nrRows) {
+		// TODO is this correct ????? I think this function should be removed
         this.rows = nrRows;
     }
 
-    public int getNrCols() {
-        return columns;
-    }
-
     public void setNrCols(int nrCols) {
+		// TODO is this correct ????? I think this function should be removed
         this.columns = nrCols;
     }
 
