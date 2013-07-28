@@ -147,16 +147,8 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
         this.hashCols = newHashCols;
     }
 
-    public int getNrRows() {
-        return rows;
-    }
-
     public void setNrRows(int nrRows) {
         this.rows = nrRows;
-    }
-
-    public int getNrCols() {
-        return columns;
     }
 
     public void setNrCols(int nrCols) {
