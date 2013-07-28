@@ -18,13 +18,11 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author MarcJan
  */
-public abstract class DoubleMatrixDataset<R, C> {
+public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
 
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
     private LinkedHashMap<R, Integer> hashRows = null;
     private LinkedHashMap<C, Integer> hashCols = null;
-    private int nrRows;
-    private int nrCols;
     private Pattern splitPatern;
 
     public DoubleMatrixDataset(){
@@ -33,26 +31,28 @@ public abstract class DoubleMatrixDataset<R, C> {
     protected abstract void transposeDoubleMatrix2D();
 
     public abstract DoubleMatrix2D getMatrix();
-    
-    
+   
     public void transposeDataset() {
 
         transposeDoubleMatrix2D();
 
-        int nrColsOld = nrCols;
-        nrCols = nrRows;
-        nrRows = nrColsOld;
+		//Already handeled when doing the transpose
+//        int nrColsOld = columns;
+//        columns = rows;
+//        rows = nrColsOld;
 
-        LinkedHashMap<C, Integer> tmp = new LinkedHashMap<C, Integer>((int) Math.ceil(nrRows / 0.75));
+		
+        LinkedHashMap<C, Integer> tmp = new LinkedHashMap<C, Integer>((int) Math.ceil(rows / 0.75));
         for (Map.Entry<C, Integer> entry : hashCols.entrySet()) {
             tmp.put((C) entry.getKey(), entry.getValue());
         }
 
-        LinkedHashMap<R, Integer> tmp2 = new LinkedHashMap<R, Integer>((int) Math.ceil(nrCols / 0.75));
+        LinkedHashMap<R, Integer> tmp2 = new LinkedHashMap<R, Integer>((int) Math.ceil(columns / 0.75));
         for (Map.Entry<R, Integer> entry : hashRows.entrySet()) {
             tmp2.put((R) entry.getKey(), entry.getValue());
         }
 
+		//TODO this cannot not work properly.
         hashCols = (LinkedHashMap<C, Integer>) tmp2;
         hashRows = (LinkedHashMap<R, Integer>) tmp;
 
@@ -65,13 +65,13 @@ public abstract class DoubleMatrixDataset<R, C> {
         ArrayList<String> rowObjects = (ArrayList<String>) hashRows.keySet();
 
         out.append('-');
-        for (int s = 0; s < nrCols; s++) {
+        for (int s = 0; s < columns; s++) {
             out.append('\t');
             out.append(colObjects.get(s));
         }
         out.append('\n');
 
-        for (int r = 0; r < nrRows; r++) {
+        for (int r = 0; r < rows; r++) {
             out.append(rowObjects.get(r));
             DoubleMatrix1D rowInfo = getMatrix().viewRow(r);
             for (int s = 0; s < rowInfo.size(); s++) {
@@ -170,19 +170,19 @@ public abstract class DoubleMatrixDataset<R, C> {
     }
 
     public int getNrRows() {
-        return nrRows;
+        return rows;
     }
 
     public void setNrRows(int nrRows) {
-        this.nrRows = nrRows;
+        this.rows = nrRows;
     }
 
     public int getNrCols() {
-        return nrCols;
+        return columns;
     }
 
     public void setNrCols(int nrCols) {
-        this.nrCols = nrCols;
+        this.columns = nrCols;
     }
 
     public abstract void setMatrix(double[][] Matrix);
