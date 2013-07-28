@@ -21,10 +21,16 @@ import umcg.genetica.io.text.TextFile;
 public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
     private DenseLargeDoubleMatrix2D matrix;
-    private Pattern splitPatern;
 
+	
+	
     public LargeDoubleMatrixDataset() {
     }
+
+	public LargeDoubleMatrixDataset(DenseLargeDoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+		super(hashRows, hashCols);
+		this.matrix = matrix;
+	}
 
     public LargeDoubleMatrixDataset(int nrRows, int nrCols) {
         this(nrRows, nrCols, null);
@@ -43,6 +49,15 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
             this.matrix.assign(initialValue);
         }
     }
+
+	public LargeDoubleMatrixDataset(DenseLargeDoubleMatrix2D matrix) {
+		this.matrix = matrix;
+	}
+	
+	@Override
+	public LargeDoubleMatrixDataset<C, R> viewDice(){
+		return new LargeDoubleMatrixDataset<C, R>((DenseLargeDoubleMatrix2D) matrix.viewDice(), hashCols, hashRows);
+	}
 
     public LargeDoubleMatrixDataset(String fileName) throws IOException {
         this(fileName, "\t");
@@ -201,12 +216,6 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         }
         in.close();
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, this.getNrRows(), this.getNrCols()});
-    }
-
-    //Overrides
-    @Override
-    protected void transposeDoubleMatrix2D() {
-        matrix = (DenseLargeDoubleMatrix2D) matrix.viewDice();
     }
 
     @Override

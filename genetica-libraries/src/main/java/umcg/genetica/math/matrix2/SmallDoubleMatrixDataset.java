@@ -8,6 +8,7 @@ package umcg.genetica.math.matrix2;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.StringTokenizer;
@@ -22,7 +23,6 @@ import umcg.genetica.io.text.TextFile;
 public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C>{
 
     private DenseDoubleMatrix2D matrix;
-    private Pattern splitPatern;
     
     public SmallDoubleMatrixDataset(){
         
@@ -204,11 +204,10 @@ public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C>{
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, this.getNrRows(), this.getNrCols()});
     }
 
-    //Overrides
-    @Override
-    protected void transposeDoubleMatrix2D() {
-        matrix = (DenseDoubleMatrix2D) matrix.viewDice();
-    }
+	@Override
+	public LargeDoubleMatrixDataset<C, R> viewDice(){
+		return new LargeDoubleMatrixDataset<C, R>((DenseLargeDoubleMatrix2D) matrix.viewDice(), hashCols, hashRows);
+	}
 
     @Override
     public DoubleMatrix2D getMatrix() {
