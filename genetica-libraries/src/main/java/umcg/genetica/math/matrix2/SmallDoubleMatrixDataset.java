@@ -27,6 +27,11 @@ public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C>{
     public SmallDoubleMatrixDataset(){
         
     }
+
+	public SmallDoubleMatrixDataset(DenseDoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+		super(hashRows, hashCols);
+		this.matrix = matrix;
+	}
     
     public SmallDoubleMatrixDataset(int nrRows, int nrCols) {
         this(nrRows, nrCols, null);
@@ -205,8 +210,8 @@ public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C>{
     }
 
 	@Override
-	public LargeDoubleMatrixDataset<C, R> viewDice(){
-		return new LargeDoubleMatrixDataset<C, R>((DenseLargeDoubleMatrix2D) matrix.viewDice(), hashCols, hashRows);
+	public SmallDoubleMatrixDataset<C, R> viewDice(){
+		return new SmallDoubleMatrixDataset<C, R>((DenseDoubleMatrix2D) matrix.viewDice(), hashCols, hashRows);
 	}
 
     @Override
