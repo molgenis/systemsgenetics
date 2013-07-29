@@ -5,7 +5,7 @@
 
 package umcg.genetica.math.stats;
 
-import cern.jet.random.StudentT;
+import cern.jet.random.tdouble.StudentT;
 import cern.jet.stat.Probability;
 
 /**
@@ -32,7 +32,7 @@ public class TTest {
 
         double t = (mean1 - mean2) / var12;
         double df = vals1.length + vals2.length - 2;
-        StudentT tDistColt = new StudentT(df, (new cern.jet.random.engine.DRand()));
+        StudentT tDistColt = new StudentT(df, (new cern.jet.random.tdouble.engine.DRand()));
 
         tTestPValue1 = tDistColt.cdf(t);
 
@@ -63,7 +63,7 @@ public class TTest {
         double t = (mean1 - mean2) / var12;
         
         double df = vals1.length + vals2.length - 2;
-        StudentT tDistColt = new StudentT(df, (new cern.jet.random.engine.DRand()));
+        StudentT tDistColt = new StudentT(df, (new cern.jet.random.tdouble.engine.DRand()));
         
         double p;
         
