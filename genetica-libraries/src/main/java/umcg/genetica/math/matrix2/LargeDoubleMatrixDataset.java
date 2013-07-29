@@ -37,8 +37,8 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
     }
 
     public LargeDoubleMatrixDataset(int nrRows, int nrCols, Double initialValue) {
-        this.setNrRows(nrRows);
-        this.setNrCols(nrCols);
+//        this.setNrRows(nrRows);
+//        this.setNrCols(nrCols);
         // runtime type of the arrays will be Object[] but they can only contain T and U elements
         this.setHashRows(new LinkedHashMap<R, Integer>((int) Math.ceil(nrRows / 0.75)));
         this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(nrCols / 0.75)));
@@ -77,7 +77,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         String str = in.readLine(); // header
         String[] data = splitPatern.split(str);
 
-        this.setNrCols(data.length - columnOffset);
+//        this.setNrCols(data.length - columnOffset);
 
         this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(this.columns() / 0.75)));
 
@@ -99,7 +99,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
             tmpNrRows++;
         }
         in.close();
-        this.setNrRows(tmpNrRows);
+//        this.setNrRows(tmpNrRows);
 
         double[][] initialMatrix = new double[this.rows()][this.columns()];
         in.open();
@@ -152,7 +152,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         String str = in.readLine(); // header
         String[] data = splitPatern.split(str);
 
-        this.setNrCols(data.length - columnOffset);
+//        this.setNrCols(data.length - columnOffset);
 
         this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(this.columns() / 0.75)));
 
@@ -174,7 +174,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
             tmpNrRows++;
         }
         in.close();
-        this.setNrRows(tmpNrRows);
+//        this.setNrRows(tmpNrRows);
 
         matrix = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
 
@@ -229,8 +229,8 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
     @Override
     public void setMatrix(double[][] Matrix) {
-        setNrCols(Matrix[0].length);
-        setNrRows(Matrix.length);
+//        setNrCols(Matrix[0].length);
+//        setNrRows(Matrix.length);
 
         matrix = new DenseLargeDoubleMatrix2D(rows(), columns());
         matrix.assign(Matrix);
@@ -238,8 +238,8 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
     
     public void setMatrix(DenseLargeDoubleMatrix2D Matrix) {
         this.matrix = Matrix;
-        setNrCols(Matrix.columns());
-        setNrRows(Matrix.rows());
+//        setNrCols(Matrix.columns());
+//        setNrRows(Matrix.rows());
     }
 
     //Specific methods
