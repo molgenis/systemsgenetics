@@ -21,10 +21,16 @@ import umcg.genetica.io.text.TextFile;
 public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
     private DenseLargeDoubleMatrix2D matrix;
-    private Pattern splitPatern;
 
+	
+	
     public LargeDoubleMatrixDataset() {
     }
+
+	public LargeDoubleMatrixDataset(DenseLargeDoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+		super(hashRows, hashCols);
+		this.matrix = matrix;
+	}
 
     public LargeDoubleMatrixDataset(int nrRows, int nrCols) {
         this(nrRows, nrCols, null);
@@ -43,6 +49,15 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
             this.matrix.assign(initialValue);
         }
     }
+
+	public LargeDoubleMatrixDataset(DenseLargeDoubleMatrix2D matrix) {
+		this.matrix = matrix;
+	}
+	
+	@Override
+	public LargeDoubleMatrixDataset<C, R> viewDice(){
+		return new LargeDoubleMatrixDataset<C, R>((DenseLargeDoubleMatrix2D) matrix.viewDice(), hashCols, hashRows);
+	}
 
     public LargeDoubleMatrixDataset(String fileName) throws IOException {
         this(fileName, "\t");
@@ -64,10 +79,10 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
         this.setNrCols(data.length - columnOffset);
 
-        this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(this.getNrCols() / 0.75)));
+        this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(this.columns() / 0.75)));
 
-        colIndex = new int[this.getNrCols()];
-        for (int s = 0; s < this.getNrCols(); s++) {
+        colIndex = new int[this.columns()];
+        for (int s = 0; s < this.columns(); s++) {
             String colName = data[s + columnOffset];
             if (!this.getHashCols().containsKey((C) colName)) {
                 this.getHashCols().put((C) colName, s);
@@ -86,12 +101,12 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         in.close();
         this.setNrRows(tmpNrRows);
 
-        double[][] initialMatrix = new double[this.getNrRows()][this.getNrCols()];
+        double[][] initialMatrix = new double[this.rows()][this.columns()];
         in.open();
         in.readLine(); // read header
         int row = 0;
 
-        this.setHashRows(new LinkedHashMap<R, Integer>((int) Math.ceil(this.getNrRows() / 0.75)));
+        this.setHashRows(new LinkedHashMap<R, Integer>((int) Math.ceil(this.rows() / 0.75)));
 
         boolean correctData = true;
         while ((str = in.readLine()) != null) {
@@ -104,7 +119,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
                 System.exit(0);
             }
 
-            for (int s = 0; s < this.getNrCols(); s++) {
+            for (int s = 0; s < this.columns(); s++) {
                 double d;
                 try {
                     d = Double.parseDouble(data[s + columnOffset]);
@@ -121,10 +136,10 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         }
         in.close();
 
-        matrix = new DenseLargeDoubleMatrix2D(this.getNrRows(), this.getNrCols());
+        matrix = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
         matrix.assign(initialMatrix);
 
-        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, this.getNrRows(), this.getNrCols()});
+        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, this.rows(), this.columns()});
     }
 
     private void loadExpressionDataTokenizer(String fileName, String delimiter) throws IOException {
@@ -139,10 +154,10 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
         this.setNrCols(data.length - columnOffset);
 
-        this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(this.getNrCols() / 0.75)));
+        this.setHashCols(new LinkedHashMap<C, Integer>((int) Math.ceil(this.columns() / 0.75)));
 
-        colIndex = new int[this.getNrCols()];
-        for (int s = 0; s < this.getNrCols(); s++) {
+        colIndex = new int[this.columns()];
+        for (int s = 0; s < this.columns(); s++) {
             String colName = data[s + columnOffset];
             if (!this.getHashCols().containsKey((C) colName)) {
                 this.getHashCols().put((C) colName, s);
@@ -161,13 +176,13 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         in.close();
         this.setNrRows(tmpNrRows);
 
-        matrix = new DenseLargeDoubleMatrix2D(this.getNrRows(), this.getNrCols());
+        matrix = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
 
         in.open();
         in.readLine(); // read header
         int row = 0;
 
-        this.setHashRows(new LinkedHashMap<R, Integer>((int) Math.ceil(this.getNrRows() / 0.75)));
+        this.setHashRows(new LinkedHashMap<R, Integer>((int) Math.ceil(this.rows() / 0.75)));
 
         boolean correctData = true;
 
@@ -200,13 +215,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
             LOGGER.warning("Your data contains NaN/unparseable values!");
         }
         in.close();
-        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, this.getNrRows(), this.getNrCols()});
-    }
-
-    //Overrides
-    @Override
-    protected void transposeDoubleMatrix2D() {
-        matrix = (DenseLargeDoubleMatrix2D) matrix.viewDice();
+        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, this.rows(), this.columns()});
     }
 
     @Override
@@ -223,7 +232,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         setNrCols(Matrix[0].length);
         setNrRows(Matrix.length);
 
-        matrix = new DenseLargeDoubleMatrix2D(getNrRows(), getNrCols());
+        matrix = new DenseLargeDoubleMatrix2D(rows(), columns());
         matrix.assign(Matrix);
     }
     
