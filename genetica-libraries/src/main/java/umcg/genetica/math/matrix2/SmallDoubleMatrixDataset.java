@@ -27,6 +27,7 @@ public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C>{
     public SmallDoubleMatrixDataset(){
         
     }
+
     public SmallDoubleMatrixDataset(DenseDoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
 		super(hashRows, hashCols);
 		this.matrix = matrix;
