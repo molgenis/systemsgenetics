@@ -43,8 +43,6 @@ row <- 0
 signLVL <- 0.05/nrow(wholeblood)
 tscores <- t(apply(wholeblood, 1, function(x){      # Using basis T statistics
   row <<- row + 1
-  meanWB <- mean(x)
-  sdWB <- sd(x)
 
   tNeutr  <- t.test(as.numeric(Neutr[row,]), x)
   sNeutr  <- tNeutr$statistic

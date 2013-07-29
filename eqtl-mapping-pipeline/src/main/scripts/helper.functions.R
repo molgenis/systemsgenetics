@@ -16,6 +16,41 @@ read.harmjan.zscores <- function(){
   return(metaRes)
 }
 
+read.illumina.dir <- function(folder, annotation){
+  data <- NULL
+  for(x in paste0(folder, "/", annotation[,1], ".txt")){
+    cat(x,"\n")
+    m <- read.csv(x, header=TRUE, row.names=1,sep="\t")
+    data <- cbind(data, apply(m,2,as.numeric)[,2])
+  }
+  rownames(data) <- rownames(m)
+  data <- cbind(m[,1], data)
+  colnames(data) <- c("Array_Address_Id", annotation[,1])
+  invisible(data)
+}
+
+read.illumina.wb <- function(){
+  GSE19790DATA    <- read.csv("GSE19790/GSE19790_non-normalized.txt",sep="\t",row.names=1)
+  GSE19790DATA    <- GSE19790DATA[, grep("AVG_Signal", colnames(GSE19790DATA))]
+  colnames(GSE19790DATA) <- gsub(".AVG_Signal","", colnames(GSE19790DATA))
+  colnames(GSE19790DATA) <- gsub("X","Ind", colnames(GSE19790DATA))
+
+  GSE24757DATA <- read.csv("GSE24757/GSE24757_non-normalized_data.txt",sep="\t",row.names=1, skip=4,header=TRUE)
+  sortGSE24757 <- match(rownames(GSE19790DATA), rownames(GSE24757DATA))
+  ALL <- cbind(GSE24757DATA[sortGSE24757,], GSE19790DATA)
+
+  GSE13255A <- read.csv("dataDescr/GSE13255.txt", sep="\t", header=FALSE, colClasses=("character")) # Annotation
+  GSE13255DATA <- read.illumina.dir("GSE13255", GSE13255A)
+
+  GSE13255DATA <- GSE13255DATA[which(rownames(GSE13255DATA) %in% rownames(ALL)),]
+  ALL <- ALL[which(rownames(ALL) %in% rownames(GSE13255DATA)),]
+
+  sortGSE13255 <- match(rownames(ALL), rownames(GSE13255DATA))
+
+  ALL <- cbind(GSE13255DATA[sortGSE13255,-1], ALL)
+  return(ALL)
+}
+
 read.illumina.celltypes <- function(){
   CellTypeDATA <- read.table("HaemAtlasMKEBNormalizedIntensities.csv",sep='\t',row.names=1,header=TRUE)
   CellTypeDATA <- CellTypeDATA[-1,]
@@ -37,6 +72,7 @@ add.illumina.probes.information <- function(CellTypeDATA){
   CellTypeDATA <- CellTypeDATA[inAnnot,]
   sortAnnot <- match(rownames(CellTypeDATA), ProbeAnnotation[,1]) # Align
   CellTypeDATA <- cbind(as.character(ProbeAnnotation[sortAnnot,"Symbol"]), CellTypeDATA)
+  colnames(CellTypeDATA)[1] <- "Symbol"
   return(CellTypeDATA)
 }
 
