@@ -146,24 +146,6 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
         }
         this.hashCols = newHashCols;
     }
-
-//    public void setNrRows(int nrRows) {
-//		// TODO is this correct ????? I think this function should be removed
-//        this.rows = nrRows;
-//    }
-//
-//    public void setNrCols(int nrCols) {
-//		// TODO is this correct ????? I think this function should be removed
-//        this.columns = nrCols;
-//    }
-//
-//        public long getNrRows() {
-//        return(this.rows);
-//    }
-//
-//    public long getNrCols() {
-//        return(this.columns);
-//    }
     
     public abstract void setMatrix(double[][] Matrix);
 }
