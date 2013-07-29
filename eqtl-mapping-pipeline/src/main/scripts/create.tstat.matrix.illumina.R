@@ -15,5 +15,29 @@ Illu <- annotate.illumina.celltypes(Illu)
 
 WB <- read.illumina.wb()
 WBAnnot <- add.illumina.probes.information(WB)
-WBMean  <- apply(AllAnnot[,-1], 1, mean)
+
+WBAnnot <- WBAnnot[which(rownames(WBAnnot) %in% rownames(Illu)),]
+Illu <- Illu[which(rownames(Illu) %in% rownames(WBAnnot)),]
+
+IlluSort <- match(rownames(WBAnnot), rownames(Illu))
+Illu <- Illu[IlluSort,]
+
+cellTypes <- unique(colnames(Illu))
+
+signLVL <- 0.05/nrow(Illu)
+full <- NULL
+for(p in 1:nrow(Illu)){
+  data <- NULL  
+  for(celltype in cellTypes){
+    cols <-  which(colnames(Illu)==celltype)
+    tC  <- t.test(unlist(Illu[p,cols]), log2(unlist(WBAnnot[p,-1])))
+    sC  <- tC$statistic
+    if(tC$p.value > signLVL) sC  <- NA
+    data <- cbind(data, sC)
+  }
+  if(p %% 100 == 0) cat("Done",p,"Out of",nrow(Illu),"\n")
+  full <- rbind(full,data)
+  colnames(full) <- cellTypes
+  rownames(full) <- rownames(Illu)[1:p]
+}
 
