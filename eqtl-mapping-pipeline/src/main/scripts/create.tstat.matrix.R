@@ -65,6 +65,7 @@ if(!file.exists("tstat.matrix.affymetrix.txt")){
     if(row %% 500 == 0)cat("Done: ", 5 * row," t-tests\n")
     return( c(sNeutr,sBcell,sTcell,sNKcell,sRBC) )
   })
+  tscores <- t(tscores)
   colnames(tscores) <- c("Neutrophil", "Bcell", "Tcell", "NKcell", "RBC")
   write.table(tscores, file="tstat.matrix.affymetrix.txt", quote = FALSE, sep='\t')
 }else{

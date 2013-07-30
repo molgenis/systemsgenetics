@@ -33,7 +33,7 @@ if(!file.exists("tstat.matrix.illumina.txt")){
       cols <-  which(colnames(Illu)==celltype)
       tC  <- t.test(unlist(Illu[p,cols]), log2(unlist(WBAnnot[p,-1])))
       sC  <- tC$statistic
-      if(tC$p.value > signLVL) sC  <- NA
+#      if(tC$p.value > signLVL) sC  <- NA
       data <- cbind(data, sC)
     }
     if(p %% 100 == 0) cat("Done",p,"Out of",nrow(Illu),"\n")
