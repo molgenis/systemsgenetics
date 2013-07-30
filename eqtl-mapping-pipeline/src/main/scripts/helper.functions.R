@@ -62,7 +62,7 @@ read.illumina.celltypes <- function(){
 
 read.illumina.probes.information <- function(){
   ProbeAnnotation <- read.csv("GPL6102-11574.txt",sep="\t",skip=27) # Probe annotation
-  ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
+  #ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
   return(ProbeAnnotation)
 }
 
@@ -95,6 +95,17 @@ match.annotated.affy.rnaseq <- function(Neutr, RNASeq){
   sortSeq <- match(as.character(Neutr[,1]), rownames(RNASeq)) # Align
   Neutr <- cbind(RNASeq[sortSeq,], Neutr)
   return(Neutr)
+}
+
+getTvector.affy <- function(cellType, wholeblood){
+  NeutrVector <- NULL
+  for(x in 1:nrow(wholeblood)){
+    tNeutr  <- t.test(as.numeric(cellType[x,]), as.numeric(wholeblood[x,]))
+    sNeutr  <- tNeutr$statistic
+    if(tNeutr$p.value > signLVL) sNeutr  <- NA
+    NeutrVector <- c(NeutrVector,sNeutr)
+  }
+  return(NeutrVector)
 }
 
 add.metares.to.tmatrix <- function(metaRes, tscores_Annotated){

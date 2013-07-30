@@ -48,5 +48,4 @@ if(!file.exists("tstat.matrix.illumina.txt")){
 
 onlyonce <- which(apply(full,1,function(x){ sum(!is.na(x)) })==1)
 onceCell <- full[onlyonce,]
-apply(onceCell,2,function(x){sum(!is.na(x))})
 

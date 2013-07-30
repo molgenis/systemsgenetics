@@ -42,7 +42,8 @@ IntrVec <- IntrVec[which(as.character(IntrVec[,1]) %in% as.character(ivectorAnn[
 if(!file.exists("tstat.matrix.affymetrix.txt")){
   row <- 0
   signLVL <- 0.05/nrow(wholeblood)
-  tscores <- t(apply(wholeblood, 1, function(x){      # Using basis T statistics
+
+  tscores <- apply(wholeblood, 1, function(x){      # Using basis T statistics
     row <<- row + 1
 
     tNeutr  <- t.test(as.numeric(Neutr[row,]), x)
@@ -62,8 +63,8 @@ if(!file.exists("tstat.matrix.affymetrix.txt")){
     if(tNKcell$p.value > signLVL)   sNKcell <- NA
     if(tRBC$p.value > signLVL)      sRBC    <- NA
     if(row %% 500 == 0)cat("Done: ", 5 * row," t-tests\n")
-    return( cbind(sNeutr,sBcell,sTcell,sNKcell,sRBC) )
-  }))
+    return( c(sNeutr,sBcell,sTcell,sNKcell,sRBC) )
+  })
   colnames(tscores) <- c("Neutrophil", "Bcell", "Tcell", "NKcell", "RBC")
   write.table(tscores, file="tstat.matrix.affymetrix.txt", quote = FALSE, sep='\t')
 }else{

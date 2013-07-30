@@ -20,8 +20,14 @@ getUnique <- function(matrix, nTypes = 1){
   return(matrix[onlyonce,])
 }
 
+affymetrix <- annotate.affy.by.rownames(affymetrix, affyTrans)
+illumina <- add.illumina.probes.information(illumina)
+
+
 affyUni <- getUnique(affymetrix)
 illuUni <- getUnique(illumina)
 
-affyUni <- annotate.affy.by.rownames(affyUni, affyTrans)
-illuUni <- add.illumina.probes.information(illuUni)
+
+IlluGenes <- apply(illuUni[,-1], 2, function(x){ illuUni[which(!is.na(x)),1] })
+AffyGenes <- apply(affyUni[,-1], 2, function(x){ affyUni[which(!is.na(x)),1] })
+
