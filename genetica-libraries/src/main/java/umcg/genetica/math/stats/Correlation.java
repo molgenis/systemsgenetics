@@ -44,7 +44,7 @@ public class Correlation {
 //                System.out.println("Length: "+m_correlationToZScore.length+"\treq: "+maxNrSamples);
 //            }
             double[][] correlationToZScore = new double[maxNrSamples + 1][2001];
-            cern.jet.random.engine.RandomEngine randomEngine = new cern.jet.random.engine.DRand();
+            cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
 
             for (int nrSamples = 0; nrSamples <= maxNrSamples; nrSamples++) {
                 if (nrSamples < 3) {
@@ -52,7 +52,7 @@ public class Correlation {
                         correlationToZScore[nrSamples][sc] = 0;
                     }
                 } else {
-                    cern.jet.random.StudentT tDistColt = new cern.jet.random.StudentT(nrSamples - 2, randomEngine);
+                    cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(nrSamples - 2, randomEngine);
                     //JSci.maths.statistics.TDistribution tDist = new JSci.maths.statistics.TDistribution(nrSamples - 2);
                     for (int s = 0; s <= 2000; s++) {
 

@@ -63,8 +63,8 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
         Integer nrGenotypesCalled = null;
 
         org.apache.commons.math3.distribution.FDistribution fDist = null;
-        cern.jet.random.engine.RandomEngine randomEngine = null;
-        cern.jet.random.StudentT tDistColt = null;
+        cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
+        cern.jet.random.tdouble.StudentT tDistColt = null;
 
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         OLSMultipleLinearRegression regressionFullWithInteraction = new OLSMultipleLinearRegression();
@@ -152,8 +152,8 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                     // Changed this to apache maths 3, was apache maths 1.0
                     if (fDist == null) {
                         fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
-                        randomEngine = new cern.jet.random.engine.DRand();
-                        tDistColt = new cern.jet.random.StudentT(olsY.length - 4, randomEngine);
+                        randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                        tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
                     }
 
                     double anovaFTestP = -1;
