@@ -31,11 +31,11 @@ public class TriTyperAlleleAnnotation {
             case G: 
                 return Allele.G;
             case U:
-                return Allele.ZERO;
+                return Allele.create('U');
             case I:
-                return Allele.ZERO;
+                return Allele.create('I');
             case N:
-                return Allele.ZERO;
+                return Allele.create('N');
             default:
                 return Allele.ZERO;
         }

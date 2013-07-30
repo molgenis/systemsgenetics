@@ -42,8 +42,7 @@ public class GWASTrait {
 
     public GWASSNP[] getSNPs(double pThreshold) {
         if (snpArray == null) {
-            snpArray = new GWASSNP[snps.size()];
-            snps.toArray(snpArray);
+            snpArray = snps.toArray(new GWASSNP[0]);
         }
         List<GWASSNP> limited = new ArrayList<GWASSNP>();
         for (GWASSNP snp : snpArray) {

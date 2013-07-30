@@ -341,8 +341,13 @@ public class eQTLFileCompare {
         if (valsX.length > 2) {
             double correlation = JSci.maths.ArrayMath.correlation(valsX, valsY);
             double r2 = correlation * correlation;
-            cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
-            cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(valsX.length - 2, randomEngine);
+            
+            /*
+             * randomEngine = new cern.jet.random.engine.DRand();
+                        tDistColt = new cern.jet.random.StudentT(olsY.length - 4, randomEngine);
+             */
+            cern.jet.random.engine.RandomEngine randomEngine = new cern.jet.random.engine.DRand();
+            cern.jet.random.StudentT  tDistColt = new cern.jet.random.StudentT(valsX.length - 2, randomEngine);
             double pValuePearson = 1;
             double tValue = correlation / (Math.sqrt((1 - r2) / (double) (valsX.length - 2)));
             if (tValue < 0) {
