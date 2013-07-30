@@ -72,7 +72,7 @@ add.illumina.probes.information <- function(CellTypeDATA){
   CellTypeDATA <- CellTypeDATA[inAnnot,]
   sortAnnot <- match(rownames(CellTypeDATA), ProbeAnnotation[,1]) # Align
   CellTypeDATA <- cbind(as.character(ProbeAnnotation[sortAnnot,"Symbol"]), CellTypeDATA)
-  colnames(CellTypeDATA)[1] <- "Symbol"
+  colnames(CellTypeDATA)[1] <- "HUGO"
   return(CellTypeDATA)
 }
 
@@ -111,6 +111,7 @@ annotate.affy.by.rownames <- function(Neutr, translation){
   Neutr <- Neutr[inTrans,]
   sortTrans <- match(rownames(Neutr), translation[,1]) # Align
   Neutr <- cbind(translation[sortTrans,9], Neutr)
+  colnames(Neutr)[1] <- "HUGO"
   return(Neutr)
 }
 

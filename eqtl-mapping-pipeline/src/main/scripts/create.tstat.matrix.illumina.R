@@ -24,20 +24,29 @@ Illu <- Illu[IlluSort,]
 
 cellTypes <- unique(colnames(Illu))
 
-signLVL <- 0.05/nrow(Illu)
-full <- NULL
-for(p in 1:nrow(Illu)){
-  data <- NULL  
-  for(celltype in cellTypes){
-    cols <-  which(colnames(Illu)==celltype)
-    tC  <- t.test(unlist(Illu[p,cols]), log2(unlist(WBAnnot[p,-1])))
-    sC  <- tC$statistic
-    if(tC$p.value > signLVL) sC  <- NA
-    data <- cbind(data, sC)
+if(!file.exists("tstat.matrix.illumina.txt")){
+  signLVL <- 0.05/nrow(Illu)
+  full <- NULL
+  for(p in 1:nrow(Illu)){
+    data <- NULL  
+    for(celltype in cellTypes){
+      cols <-  which(colnames(Illu)==celltype)
+      tC  <- t.test(unlist(Illu[p,cols]), log2(unlist(WBAnnot[p,-1])))
+      sC  <- tC$statistic
+      if(tC$p.value > signLVL) sC  <- NA
+      data <- cbind(data, sC)
+    }
+    if(p %% 100 == 0) cat("Done",p,"Out of",nrow(Illu),"\n")
+    full <- rbind(full,data)
+    colnames(full) <- cellTypes
+    rownames(full) <- rownames(Illu)[1:p]
   }
-  if(p %% 100 == 0) cat("Done",p,"Out of",nrow(Illu),"\n")
-  full <- rbind(full,data)
-  colnames(full) <- cellTypes
-  rownames(full) <- rownames(Illu)[1:p]
+  write.table(full, file="tstat.matrix.illumina.txt", sep = '\t',quote=FALSE)
+}else{
+  full <- read.csv("tstat.matrix.illumina.txt", sep='\t', row.names = 1)
 }
+
+onlyonce <- which(apply(full,1,function(x){ sum(!is.na(x)) })==1)
+onceCell <- full[onlyonce,]
+apply(onceCell,2,function(x){sum(!is.na(x))})
 

@@ -39,32 +39,36 @@ Tcell  <- Tcell[,-which(apply(cor(Tcell), 2, median) < 0.9)] # Use correlation f
 #Only take the interaction vector elements that match the Illumina annotation
 IntrVec <- IntrVec[which(as.character(IntrVec[,1]) %in% as.character(ivectorAnn[,6])),]
 
-row <- 0
-signLVL <- 0.05/nrow(wholeblood)
-tscores <- t(apply(wholeblood, 1, function(x){      # Using basis T statistics
-  row <<- row + 1
+if(!file.exists("tstat.matrix.affymetrix.txt")){
+  row <- 0
+  signLVL <- 0.05/nrow(wholeblood)
+  tscores <- t(apply(wholeblood, 1, function(x){      # Using basis T statistics
+    row <<- row + 1
 
-  tNeutr  <- t.test(as.numeric(Neutr[row,]), x)
-  sNeutr  <- tNeutr$statistic
-  tBcell  <- t.test(as.numeric(Bcell[row,]), x) 
-  sBcell  <- tBcell$statistic
-  tTcell  <- t.test(as.numeric(Tcell[row,]), x)
-  sTcell  <- tTcell$statistic
-  tNKcell <- t.test(as.numeric(NKcell[row,]),x)
-  sNKcell <- tNKcell$statistic
-  tRBC    <- t.test(as.numeric(RBC[row,])   ,x)
-  sRBC    <- tRBC$statistic
+    tNeutr  <- t.test(as.numeric(Neutr[row,]), x)
+    sNeutr  <- tNeutr$statistic
+    tBcell  <- t.test(as.numeric(Bcell[row,]), x) 
+    sBcell  <- tBcell$statistic
+    tTcell  <- t.test(as.numeric(Tcell[row,]), x)
+    sTcell  <- tTcell$statistic
+    tNKcell <- t.test(as.numeric(NKcell[row,]),x)
+    sNKcell <- tNKcell$statistic
+    tRBC    <- t.test(as.numeric(RBC[row,])   ,x)
+    sRBC    <- tRBC$statistic
 
-  if(tNeutr$p.value > signLVL)    sNeutr  <- NA
-  if(tBcell$p.value > signLVL)    sBcell  <- NA
-  if(tTcell$p.value > signLVL)    sTcell  <- NA
-  if(tNKcell$p.value > signLVL)   sNKcell <- NA
-  if(tRBC$p.value > signLVL)      sRBC    <- NA
-  if(row %% 500 == 0)cat("Done: ", 5 * row," t-tests\n")
-  return( cbind(sNeutr,sBcell,sTcell,sNKcell,sRBC) )
-}))
-colnames(tscores) <- c("Neutrophil", "Bcell", "Tcell", "NKcell", "RBC")
-write.table(tscores, file="TScores5CellTypes_SignOnly.txt", quote = FALSE, sep='\t')
+    if(tNeutr$p.value > signLVL)    sNeutr  <- NA
+    if(tBcell$p.value > signLVL)    sBcell  <- NA
+    if(tTcell$p.value > signLVL)    sTcell  <- NA
+    if(tNKcell$p.value > signLVL)   sNKcell <- NA
+    if(tRBC$p.value > signLVL)      sRBC    <- NA
+    if(row %% 500 == 0)cat("Done: ", 5 * row," t-tests\n")
+    return( cbind(sNeutr,sBcell,sTcell,sNKcell,sRBC) )
+  }))
+  colnames(tscores) <- c("Neutrophil", "Bcell", "Tcell", "NKcell", "RBC")
+  write.table(tscores, file="tstat.matrix.affymetrix.txt", quote = FALSE, sep='\t')
+}else{
+  tscores <- read.csv("tstat.matrix.affymetrix.txt", sep='\t', row.names = 1)
+}
 
 scores <- annotate.affy.by.rownames(tscores, translation)
 
