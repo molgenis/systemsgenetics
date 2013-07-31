@@ -36,6 +36,7 @@ import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
+import org.molgenis.genotype.variantFilter.VariantFilter;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
@@ -66,13 +67,20 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
     private final int sampleVariantProviderUniqueId;
     private HashMap<String, SampleAnnotation> sampleAnnotationMap;
     private HashMap<String, Sequence> sequences;
+	private final VariantFilter variantFilter;
 
     public TriTyperGenotypeData(String location) throws IOException {
         this(location, 1024);
     }
 
-    public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
+	public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
+		this(location, cacheSize, null);
+	}	
 
+    public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter) throws IOException {
+
+		this.variantFilter = variantFilter;
+		
         if (cacheSize <= 0) {
             variantProvider = this;
         } else {
@@ -271,7 +279,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
         }
         tfSNPMap.close();
 
-        snpToIndex = new HashMap<GeneticVariant, Integer>(allSNPs.size());
+        snpToIndex = new HashMap<GeneticVariant, Integer>();
 
 
         int index = 0;
@@ -298,9 +306,14 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
             } else {
                 variant = new ReadOnlyGeneticVariantTriTyper(snp, 0, "0", variantProvider);
             }
-            snps.add(variant);
-            snpToIndex.put(variant, index);
-            index++;
+			
+			if(variantFilter == null || variantFilter.doesVariantPassFilter(variant)){
+				snps.add(variant);
+				snpToIndex.put(variant, index);
+			}
+			
+			index++;
+            
         }
         tf.close();
 
