@@ -6,6 +6,8 @@ package umcg.genetica.graphics;
 
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfTemplate;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -47,6 +49,7 @@ public class ScatterPlot {
     private String outfilename;
     private com.lowagie.text.Document document = null;
     private com.lowagie.text.pdf.PdfWriter writer = null;
+    private PdfContentByte cb;
 
     public enum OUTPUTFORMAT {
 
@@ -102,19 +105,23 @@ public class ScatterPlot {
         if (format == OUTPUTFORMAT.PDF) {
             Rectangle rectangle = new Rectangle(graphWidth, graphHeight);
             document = new com.lowagie.text.Document(rectangle);
+            
             if (!outfilename.toLowerCase().endsWith(".pdf")) {
                 outfilename += ".pdf";
             }
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outfilename));
+                
             } catch (DocumentException e) {
                 e.printStackTrace();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
-            //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            cb = writer.getDirectContent();
+            cb.saveState();
+            
+//            com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(graphWidth, graphHeight);
         } else {
             bi = new java.awt.image.BufferedImage(graphWidth, graphHeight, java.awt.image.BufferedImage.TYPE_INT_RGB);
@@ -180,6 +187,7 @@ public class ScatterPlot {
 
     private void draw() {
         try {
+            g2d.dispose();
             if (format == OUTPUTFORMAT.JPG) {
                 if (!outfilename.toLowerCase().endsWith(".jpg")) {
                     outfilename += ".jpg";
@@ -191,6 +199,7 @@ public class ScatterPlot {
                 }
                 javax.imageio.ImageIO.write(bi, "png", new File(outfilename));
             } else {
+                cb.restoreState();
                 document.close();
                 writer.close();
             }
@@ -404,7 +413,7 @@ public class ScatterPlot {
 
 
         remainder = Math.abs(minY) % unitY; // -8 , unit == 10, remainder = 8 // diff = 2
-        System.out.println(remainder);
+//        System.out.println(remainder);
         if (remainder > 0d && minY != 0) {
             double diff = unitY - remainder;
             minY -= diff;

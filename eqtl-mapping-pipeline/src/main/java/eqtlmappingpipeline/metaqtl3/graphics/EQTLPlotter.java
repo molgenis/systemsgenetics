@@ -167,22 +167,26 @@ public class EQTLPlotter {
         Graphics2D g2d = null;
         BufferedImage bi = null;
         com.lowagie.text.Document document = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.lowagie.text.pdf.PdfWriter writer = null;
         if (outputPlotsFileType == FILE_TYPE_PNG) {
             bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
             g2d = bi.createGraphics();
         } else {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
-            com.lowagie.text.pdf.PdfWriter writer = null;
+            
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(file));
+                document.open();
+                cb = writer.getDirectContent();
+                cb.saveState();
+                g2d = cb.createGraphics(width, height);
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + file.getAbsolutePath());
                 System.exit(-1);
             }
-            document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
-            g2d = cb.createGraphics(width, height);
+
         }
 
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -468,7 +472,7 @@ public class EQTLPlotter {
                 double[] bbArr = toArray(valsBB);
 
                 if (bbArr.length > 0) {
-                    
+
                     boxplotter.drawBoxPlot(g2d, margin + d * 200 + 100 - 5, minYBB, 25, (maxYBB - minYBB), bbArr, Primitives.min(bbArr), Primitives.max(bbArr), false, true);
                 }
 
@@ -614,8 +618,11 @@ public class EQTLPlotter {
                 System.out.println(e.getStackTrace());
             }
         } else {
+            
             g2d.dispose();
+            cb.restoreState();
             document.close();
+            writer.close();
         }
 
 

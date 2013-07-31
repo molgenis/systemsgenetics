@@ -63,6 +63,7 @@ public class EQTLDotPlot {
         Graphics2D g2d = null;
         com.lowagie.text.Document document = null;
         com.lowagie.text.pdf.PdfWriter writer = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
         BufferedImage bi = null;
         if (output == Output.PDF) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
@@ -70,7 +71,8 @@ public class EQTLDotPlot {
             writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFile));
 
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+             cb = writer.getDirectContent();
+             cb.saveState();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
@@ -197,6 +199,8 @@ public class EQTLDotPlot {
 
         //Save image:
         if (output == Output.PDF) {
+            g2d.dispose();
+            cb.restoreState();
             document.close();
             writer.close();
         } else {

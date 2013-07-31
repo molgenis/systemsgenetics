@@ -33,7 +33,7 @@ public class GWASCatalog {
     public GWASCatalog(String gwasCatalogLoc) throws IOException {
         this.read(gwasCatalogLoc);
     }
-    
+
     public GWASCatalog(String gwasCatalogLoc, double pvaluethreshold) throws IOException {
         this.read(gwasCatalogLoc);
     }
@@ -108,6 +108,7 @@ public class GWASCatalog {
         while (elems != null) {
             if (elems.length > 11) {
                 String pubname = elems[pubMedidCol] + "; " + elems[firstAuthorCol] + "; " + elems[publishDateCol] + "; " + elems[journalCol] + "; " + elems[studyCol];
+//                String pubname = elems[pubMedidCol];
 //	    int studysize = Integer.parseInt(elems[samplesizeCol]);
 //	    int studySizeReplication = Integer.parseInt(elems[samplesizeReplicationCol]);
 
@@ -160,15 +161,12 @@ public class GWASCatalog {
                     }
                 }
 
-
-//                if (otherSNPs.equals("NR")) {
-//                    // System.out.println(snp + "\t" + riskallele + "\t" + trait + "\t" + pubname);
-//                } else {
                 GWASPublication pub = publicationToObj.get(pubname);
                 if (pub == null) {
                     pub = new GWASPublication();
                     pub.id = numpubs;
                     pub.name = pubname;
+                    publicationToObj.put(pubname, pub);
                     numpubs++;
                 }
 
@@ -214,12 +212,14 @@ public class GWASCatalog {
                 }
                 gwasTopSNPObj.getAssociatedTraits().add(gwasTraitObj);
                 gwasTraitObj.addTopSNP(gwasTopSNPObj);
-                Double previousP = gwasTopSNPObj.getPValueAssociatedWithTrait(gwasTraitObj);
-                if (previousP == null || previousP > topSNPAssocPVal) {
-                    gwasTopSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, topSNPAssocPVal);
-                }
-                gwasTopSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
 
+                if (topSNPAssocPVal != null) {
+                    Double previousP = gwasTopSNPObj.getPValueAssociatedWithTrait(gwasTraitObj);
+                    if (previousP == null || previousP > topSNPAssocPVal) {
+                        gwasTopSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, topSNPAssocPVal);
+                        gwasTopSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
+                    }
+                }
                 // parse all the other reported SNPs..
                 String[] otherSNPElems = otherSNPs.split(",");
                 for (int s = 0; s < otherSNPElems.length; s++) {
@@ -241,7 +241,7 @@ public class GWASCatalog {
                         numsnps++;
                     }
 
-                    // The GWAS Catalog only publishes a single p-value for often a couple of SNPs. 
+                    // The GWAS Catalog often only publishes a single p-value for a couple of SNPs. 
                     // We'll assume that all the reported SNPs have an LD ~ 1.0
                     Double pval = null;
                     try {
@@ -251,11 +251,13 @@ public class GWASCatalog {
                     }
                     gwasSNPObj.getAssociatedTraits().add(gwasTraitObj);
 
-                    previousP = gwasSNPObj.getPValueAssociatedWithTrait(gwasTraitObj);
-                    if (previousP == null || previousP > pval) {
-                        gwasSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, pval);
+                    if (pval != null) {
+                        Double previousP = gwasSNPObj.getPValueAssociatedWithTrait(gwasTraitObj);
+                        if (previousP == null || previousP > pval) {
+                            gwasSNPObj.setPValueAssociatedWithTrait(gwasTraitObj, pval);
+                            gwasSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
+                        }
                     }
-                    gwasSNPObj.getRiskAllele().put(gwasTraitObj, riskallele);
 
                     gwasTraitObj.snps.add(gwasSNPObj);
                     pub.snps.add(gwasSNPObj);

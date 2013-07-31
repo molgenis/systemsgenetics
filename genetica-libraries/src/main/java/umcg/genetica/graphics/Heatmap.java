@@ -64,6 +64,7 @@ public class Heatmap {
         Graphics2D g2d = null;
         com.lowagie.text.Document document = null;
         com.lowagie.text.pdf.PdfWriter writer = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
         BufferedImage bi = null;
         if (output == Output.PDF) {
             Rectangle rectangle = new Rectangle(width, height);
@@ -71,8 +72,9 @@ public class Heatmap {
             writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
 
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+            cb = writer.getDirectContent();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            cb.saveState();
             g2d = cb.createGraphics(width, height);
         } else {
             bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -167,6 +169,7 @@ public class Heatmap {
 
         g2d.dispose();
         if (output == Output.PDF) {
+            cb.restoreState();
             document.close();
             writer.close();
         } else {
@@ -202,6 +205,7 @@ public class Heatmap {
         Graphics2D g2d = null;
         com.lowagie.text.Document document = null;
         com.lowagie.text.pdf.PdfWriter writer = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
         BufferedImage bi = null;
         if (output == Output.PDF) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
@@ -209,7 +213,8 @@ public class Heatmap {
             writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
 
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+            cb = writer.getDirectContent();
+            cb.saveState();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
@@ -305,6 +310,7 @@ public class Heatmap {
 
         g2d.dispose();
         if (output == Output.PDF) {
+            cb.restoreState();
             document.close();
             writer.close();
         } else {
