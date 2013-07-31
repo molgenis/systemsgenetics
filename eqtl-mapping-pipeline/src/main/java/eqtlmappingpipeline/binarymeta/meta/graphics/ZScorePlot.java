@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.binarymeta.meta.graphics;
 
 import com.lowagie.text.Document;
+import com.lowagie.text.pdf.PdfContentByte;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -35,6 +36,8 @@ public class ZScorePlot {
     private boolean pdfOutput = false;
     private String outfilename = "";
     private Document document;
+    private PdfContentByte cb;
+    private com.lowagie.text.pdf.PdfWriter writer;
 
     public void init(int numdatasets, String[] datasets, boolean pdf, String filename) {
 
@@ -57,16 +60,18 @@ public class ZScorePlot {
         if (pdfOutput) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
-            com.lowagie.text.pdf.PdfWriter writer = null;
+            writer = null;
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
+                document.open();
+                cb = writer.getDirectContent();
+                cb.saveState();
+                g2d = cb.createGraphics(width, height);
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + filename);
                 System.exit(-1);
             }
-            document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
-            g2d = cb.createGraphics(width, height);
+
         } else {
             bimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             g2d = bimage.createGraphics();
@@ -197,7 +202,9 @@ public class ZScorePlot {
 
         if (pdfOutput) {
             g2d.dispose();
+            cb.restoreState();
             document.close();
+            writer.close();
         } else {
             javax.imageio.ImageIO.write(bimage, "png", new File(outputFile + "-ZScoreComparison.png"));
         }

@@ -107,25 +107,18 @@ public class Dependifier {
                 }
                 // if there are any snps to test within maxdistance
                 if (!allSNPsWithinMaxDistance.isEmpty()) {
-//                        System.out.println("\t" + snp + " is in reference: \t" + snpIdInReference + "\tpossible proxies:\t" + allSNPsWithinMaxDistance.size());
                     loader.loadGenotypes(snpObj);
-
                     for (Integer i : allSNPsWithinMaxDistance) {
                         SNP snpObj2 = genotypeData.getSNPObject(i);
                         loader.loadGenotypes(snpObj2);
-
                         if (snpObj.getMAF() > 0 && snpObj2.getMAF() > 0) {
                             double r2 = ldCalc.getRSquared(snpObj, snpObj2, genotypeData, DetermineLD.RETURN_R_SQUARED, DetermineLD.INCLUDE_CASES_AND_CONTROLS, false);
-
                             if (!Double.isNaN(r2) && r2 >= proxyldthreshold) {
                                 proxies.add(snpObj2.getName());
                             }
                         }
-
-//                            System.out.println("\t\t" + snpObj.getName() + "\t" + snpObj2.getName() + "\t" + r2 + "\t" + Math.abs(snpObj.getChrPos() - snpObj2.getChrPos()));
                         snpObj2.clearGenotypes();
                     }
-
                     snpObj.clearGenotypes();
                 }
             }

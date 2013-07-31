@@ -9,6 +9,11 @@ public class ResourceTest
 	{
 		return new File(this.getClass().getResource(name).toURI());
 	}
+    
+    protected File getTriTyperFolder() throws URISyntaxException
+	{
+		return getTestResourceFile("/TriTyper");
+	}
 
 	protected File getTestVcfGz() throws URISyntaxException
 	{

@@ -23,7 +23,7 @@ public class eQTLFileCompare {
 
     public void compareOverlapAndZScoreDirectionTwoEQTLFiles(String file1, String file2, String outputFile, boolean matchOnGeneName) throws IOException, Exception {
 
-        
+
         double filterOnFDR = -1; //Do we want to use another FDR measure? When set to -1 this is not used at all.
 
         HashMap<String, String> hashConvertProbeNames = new HashMap<String, String>(); //When comparing two eQTL files, run on different platforms, we can convert the probe names from one platform to the other, accommodating this comparison, example: hashConvertProbeNames.put(probeNameInFile1, equivalentProbeNameInFile2);
@@ -108,7 +108,7 @@ public class eQTLFileCompare {
         TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
         int lineno = 1;
         String[] data = in.readLineElemsReturnObjects(TextFile.tab);
-        TextFile identicalOut = new TextFile(outputFile+"-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
+        TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
         while (data != null) {
 
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
@@ -341,6 +341,11 @@ public class eQTLFileCompare {
         if (valsX.length > 2) {
             double correlation = JSci.maths.ArrayMath.correlation(valsX, valsY);
             double r2 = correlation * correlation;
+
+            /*
+             * randomEngine = new cern.jet.random.engine.DRand();
+             tDistColt = new cern.jet.random.StudentT(olsY.length - 4, randomEngine);
+             */
             cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
             cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(valsX.length - 2, randomEngine);
             double pValuePearson = 1;

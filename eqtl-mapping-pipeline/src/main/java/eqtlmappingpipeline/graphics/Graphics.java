@@ -31,6 +31,7 @@ public class Graphics {
     protected int FILE_TYPE;
     protected com.lowagie.text.pdf.PdfContentByte cb;
     protected String outputLoc = "";
+    protected com.lowagie.text.pdf.PdfWriter writer;
     
     public Graphics(){
         bi      = new java.awt.image.BufferedImage(100, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
@@ -45,12 +46,14 @@ public class Graphics {
             com.lowagie.text.pdf.PdfWriter writer = null;
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
+                document.open();
+            cb = writer.getDirectContent();
+            cb.saveState();
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + outputLoc);
                 System.exit(-1);
             }
-            document.open();
-            cb = writer.getDirectContent();
+            
            
             this.usePDF = true;
         }
@@ -69,12 +72,14 @@ public class Graphics {
             com.lowagie.text.pdf.PdfWriter writer = null;
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
+                document.open();
+            cb = writer.getDirectContent();
+            cb.saveState();
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + outputLoc);
                 System.exit(-1);
             }
-            document.open();
-            cb = writer.getDirectContent();
+            
            
             this.usePDF = true;
         }
@@ -115,7 +120,9 @@ public class Graphics {
 
         if(usePDF){
             g2d.dispose();
+            cb.restoreState();
             document.close();
+            writer.close();
         } else {
             try {
                 javax.imageio.ImageIO.write(bi, "png", new File(outputFile));

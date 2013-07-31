@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.containers.Pair;
-import umcg.genetica.containers.Triple;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.util.BaseAnnot;
@@ -46,6 +45,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
         this.expressionDataRaw = expressionDataRaw;
     }
 
+    @Override
     public CellTypeSpecificeQTLMappingResults call() throws Exception {
 
 
@@ -63,6 +63,8 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
         Integer nrGenotypesCalled = null;
 
         org.apache.commons.math3.distribution.FDistribution fDist = null;
+        
+        
         cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
         cern.jet.random.tdouble.StudentT tDistColt = null;
 
@@ -165,11 +167,10 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                     } catch (Exception err) {
                     }
 
-
+                    
                     // Get the regression parameters and R-square value and print it.
                     double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
                     double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
-
 
                     double betaInteraction = regressionParameters[3];
                     double seInteraction = regressionStandardErrors[3];

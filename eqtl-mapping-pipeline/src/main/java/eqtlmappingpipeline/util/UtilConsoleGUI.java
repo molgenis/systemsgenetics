@@ -150,10 +150,20 @@ public class UtilConsoleGUI {
                         if (in == null || out == null) {
                             System.out.println("Usage: --util --convertbinarymatrix --in /path/to/matrix.binary --out /path/to/textoutput.txt");
                         } else {
-                            DoubleMatrixDataset<String, String> ds = new DoubleMatrixDataset<String, String>();
-                            ds.save(out);
+                            if (in.endsWith(".txt")) {
+                                System.out.println("The file provided with --in is already a text file: " + in);
+                            } else {
+                                if (in.endsWith(".dat")) {
+                                    in = in.substring(0, in.length() - 4);
+                                }
+                                System.out.println("Converting: " + in);
+                                DoubleMatrixDataset<String, String> ds = new DoubleMatrixDataset<String, String>(in);
+                                ds.save(out);
+                            }
                         }
                         break;
+
+
                     case REGRESS:
 
                         RegressCisEffectsFromGeneExpressionData r = new RegressCisEffectsFromGeneExpressionData(args);

@@ -21,8 +21,8 @@ public class GWASSNP {
     private byte chr;
     private int position;
     private String locus;
-    private HashMap<GWASTrait, Double> pvalPerTrait;
-
+    private HashMap<GWASTrait, Double> pvalPerTrait = new HashMap<GWASTrait, Double>();
+    
     public String getName() {
         return name;
     }
@@ -37,8 +37,6 @@ public class GWASSNP {
     public HashSet<GWASTrait> getAssociatedTraits() {
         return associatedTraits;
     }
-
-
 
     public GWASTrait[] getAssociatedTraitsArray() {
         GWASTrait[] r = new GWASTrait[associatedTraits.size()];
@@ -145,16 +143,13 @@ public class GWASSNP {
     }
 
     public void setPValueAssociatedWithTrait(GWASTrait gwasTraitObj, Double pval) {
-	if(pvalPerTrait == null){
-	    pvalPerTrait = new HashMap<GWASTrait, Double>();
-	}
-	pvalPerTrait.put(gwasTraitObj, pval);
+        pvalPerTrait.put(gwasTraitObj, pval);
     }
 
-    public Double getPValueAssociatedWithTrait(GWASTrait t){
-	return pvalPerTrait.get(t);
+    public Double getPValueAssociatedWithTrait(GWASTrait t) {
+        return pvalPerTrait.get(t);
     }
-    
+
     @Override
     public String toString() {
         return name;

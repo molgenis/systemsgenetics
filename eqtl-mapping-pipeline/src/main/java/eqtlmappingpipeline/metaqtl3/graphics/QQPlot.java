@@ -49,6 +49,8 @@ public class QQPlot {
         Graphics2D g2d = null;
         BufferedImage bi = null;
         com.lowagie.text.Document document = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.lowagie.text.pdf.PdfWriter writer = null;
         if (outputPlotsFileType==FILE_TYPE_PNG) {
             bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
             g2d = bi.createGraphics();
@@ -56,16 +58,18 @@ public class QQPlot {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
 
             document = new com.lowagie.text.Document(rectangle);
-            com.lowagie.text.pdf.PdfWriter writer = null;
+            
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(fileQQPlot));
+                document.open();
+            cb = writer.getDirectContent();
+            cb.saveState();
+            g2d = cb.createGraphics(width, height);
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + fileQQPlot.getAbsolutePath());
                 System.exit(-1);
             }
-            document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
-            g2d = cb.createGraphics(width, height);
+            
         }
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setColor(new Color(255, 255, 255));
@@ -159,7 +163,9 @@ public class QQPlot {
             }
         } else {
             g2d.dispose();
+            cb.restoreState();
             document.close();
+            writer.close();
         }
     }
 
