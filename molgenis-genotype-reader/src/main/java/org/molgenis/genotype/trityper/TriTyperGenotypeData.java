@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
-import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import static org.molgenis.genotype.GenotypeData.BOOL_INCLUDE_SAMPLE;
@@ -33,6 +32,7 @@ import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -290,13 +290,13 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
                     chr = sequences.get(chrPos.chr).getName();
                 }
 
-                variant = ReadOnlyGeneticVariant.createSnp(snp, chrPos.pos, chr, variantProvider);
+				variant = new ReadOnlyGeneticVariantTriTyper(snp, chrPos.getPos(), chr, variantProvider);
 
 
 
                 numberOfSNPsWithAnnotation++;
             } else {
-                variant = ReadOnlyGeneticVariant.createSnp(snp, 0, "" + 0, variantProvider);
+                variant = new ReadOnlyGeneticVariantTriTyper(snp, 0, "0", variantProvider);
             }
             snps.add(variant);
             snpToIndex.put(variant, index);
@@ -345,7 +345,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
     @Override
     public List<Alleles> getSampleVariants(GeneticVariant variant) {
-        Integer index = snpToIndex.get(variant.getPrimaryVariantId());
+        Integer index = snpToIndex.get(variant);
         if (index == null) {
             throw new GenotypeDataException("Variant " + variant.getPrimaryVariantId() + " does not exist.");
         }
