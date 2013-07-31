@@ -16,6 +16,41 @@ read.harmjan.zscores <- function(){
   return(metaRes)
 }
 
+read.illumina.dir <- function(folder, annotation){
+  data <- NULL
+  for(x in paste0(folder, "/", annotation[,1], ".txt")){
+    cat(x,"\n")
+    m <- read.csv(x, header=TRUE, row.names=1,sep="\t")
+    data <- cbind(data, apply(m,2,as.numeric)[,2])
+  }
+  rownames(data) <- rownames(m)
+  data <- cbind(m[,1], data)
+  colnames(data) <- c("Array_Address_Id", annotation[,1])
+  invisible(data)
+}
+
+read.illumina.wb <- function(){
+  GSE19790DATA    <- read.csv("GSE19790/GSE19790_non-normalized.txt",sep="\t",row.names=1)
+  GSE19790DATA    <- GSE19790DATA[, grep("AVG_Signal", colnames(GSE19790DATA))]
+  colnames(GSE19790DATA) <- gsub(".AVG_Signal","", colnames(GSE19790DATA))
+  colnames(GSE19790DATA) <- gsub("X","Ind", colnames(GSE19790DATA))
+
+  GSE24757DATA <- read.csv("GSE24757/GSE24757_non-normalized_data.txt",sep="\t",row.names=1, skip=4,header=TRUE)
+  sortGSE24757 <- match(rownames(GSE19790DATA), rownames(GSE24757DATA))
+  ALL <- cbind(GSE24757DATA[sortGSE24757,], GSE19790DATA)
+
+  GSE13255A <- read.csv("dataDescr/GSE13255.txt", sep="\t", header=FALSE, colClasses=("character")) # Annotation
+  GSE13255DATA <- read.illumina.dir("GSE13255", GSE13255A)
+
+  GSE13255DATA <- GSE13255DATA[which(rownames(GSE13255DATA) %in% rownames(ALL)),]
+  ALL <- ALL[which(rownames(ALL) %in% rownames(GSE13255DATA)),]
+
+  sortGSE13255 <- match(rownames(ALL), rownames(GSE13255DATA))
+
+  ALL <- cbind(GSE13255DATA[sortGSE13255,-1], ALL)
+  return(ALL)
+}
+
 read.illumina.celltypes <- function(){
   CellTypeDATA <- read.table("HaemAtlasMKEBNormalizedIntensities.csv",sep='\t',row.names=1,header=TRUE)
   CellTypeDATA <- CellTypeDATA[-1,]
@@ -27,8 +62,32 @@ read.illumina.celltypes <- function(){
 
 read.illumina.probes.information <- function(){
   ProbeAnnotation <- read.csv("GPL6102-11574.txt",sep="\t",skip=27) # Probe annotation
-  ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
+  #ProbeAnnotation <- ProbeAnnotation[which(ProbeAnnotation[,"Symbol"] != ""),]
   return(ProbeAnnotation)
+}
+
+illuProbeToArrayID <- function(probes = "ILMN_1809034", annotation){ # Annotation GPL6102-11574.txt
+  ids <- NULL
+  avail <- as.character(annotation[,1])
+  for(p in probes){
+    row <- which(avail ==  as.character(p))
+    ids <- rbind(ids, c(p, annotation[row,"Array_Address_Id"]))
+  }
+  return(ids)
+}
+
+# Annotation: 2013-07-18-ProbeAnnotationFile.txt
+ArrayIdToHugo <- function(arrayids = 20605, annotation, type = "HT12v3.txt"){ 
+  ids <- NULL
+    cnt <- 1
+  avail <- as.character(annotation[,type])
+  for(arrayid in arrayids){
+    row <- which(avail == as.character(arrayid))
+    cat(cnt," ", row," ",as.character(annotation[row,"Gene"]),"\n")
+    ids <- rbind(ids, c(arrayid, as.character(annotation[row,"Gene"])))
+    cnt <- cnt+1
+  }
+  return(ids)
 }
 
 add.illumina.probes.information <- function(CellTypeDATA){
@@ -37,6 +96,7 @@ add.illumina.probes.information <- function(CellTypeDATA){
   CellTypeDATA <- CellTypeDATA[inAnnot,]
   sortAnnot <- match(rownames(CellTypeDATA), ProbeAnnotation[,1]) # Align
   CellTypeDATA <- cbind(as.character(ProbeAnnotation[sortAnnot,"Symbol"]), CellTypeDATA)
+  colnames(CellTypeDATA)[1] <- "HUGO"
   return(CellTypeDATA)
 }
 
@@ -61,6 +121,17 @@ match.annotated.affy.rnaseq <- function(Neutr, RNASeq){
   return(Neutr)
 }
 
+getTvector.affy <- function(cellType, wholeblood){
+  NeutrVector <- NULL
+  for(x in 1:nrow(wholeblood)){
+    tNeutr  <- t.test(as.numeric(cellType[x,]), as.numeric(wholeblood[x,]))
+    sNeutr  <- tNeutr$statistic
+    if(tNeutr$p.value > signLVL) sNeutr  <- NA
+    NeutrVector <- c(NeutrVector,sNeutr)
+  }
+  return(NeutrVector)
+}
+
 add.metares.to.tmatrix <- function(metaRes, tscores_Annotated){
   # Bind the tscores_Annotated columns Neutrophil, Bcell and Tcell to the MetaAnalysis data
   metaRes <- metaRes[which(rownames(metaRes) %in% tscores_Annotated[,1]),]     # match MetaRes
@@ -75,6 +146,7 @@ annotate.affy.by.rownames <- function(Neutr, translation){
   Neutr <- Neutr[inTrans,]
   sortTrans <- match(rownames(Neutr), translation[,1]) # Align
   Neutr <- cbind(translation[sortTrans,9], Neutr)
+  colnames(Neutr)[1] <- "HUGO"
   return(Neutr)
 }
 
@@ -97,9 +169,14 @@ get.illu.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
 }
 
 get.rnaseq.mean <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
-  res <- log2(as.numeric(RnaAffyIllu[selection,"granulocytes"]))
+  res <- as.numeric(RnaAffyIllu[selection,"granulocytes"])
   names(res) <- RnaAffyIllu[selection,"HUGO"]
   res
+}
+
+plot.single <- function(M1, M2, N1 = "Affy", N2 = "RNAseq", col = rep(1, length(M1))){
+  corrr <- round(cor(M1, as.numeric(M2), method="spearman"), d = 2)
+  plot(M1, M2, xlab = N1, ylab = N2, main=paste0("Mean Cor: ",corrr), cex=0.7, col=col)
 }
 
 plot.AffyIllu <- function(RnaAffyIllu, selection = 1:nrow(RnaAffyIllu)){
@@ -125,7 +202,9 @@ annotate.RNASeq <- function(){
 }
 
 is.outlier <- function(d1, d2, cutoff = 0.3){
-  res <- as.numeric(abs((d1/max(d1)) - (d2/max(d2))) > cutoff)+1
+  up <- as.numeric((d1/max(d1)) - (d2/max(d2)) > cutoff)
+  down <- as.numeric((d1/max(d1)) - (d2/max(d2)) < -cutoff)
+  res <- up+(2*down) +1
   names(res) <- names(d1)
   res
 }
