@@ -130,13 +130,15 @@ public class ForestPlot {
         height = (yAxisNames.length * textpadding) + (2 * textpadding) + (fontheight * yAxisNames.length) + (topMargin * 2) + geneNameMargin + fontheight + topMargin;
         System.out.println(height);
         // initialize plot
+        com.lowagie.text.pdf.PdfContentByte cb = null;
         if (output == ForestPlot.Output.PDF) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
             writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
 
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+            cb = writer.getDirectContent();
+            cb.saveState();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
@@ -485,6 +487,8 @@ public class ForestPlot {
 
         g2d.dispose();
         if (output == ForestPlot.Output.PDF) {
+            g2d.dispose();
+            cb.restoreState();
             document.close();
             writer.close();
         } else {

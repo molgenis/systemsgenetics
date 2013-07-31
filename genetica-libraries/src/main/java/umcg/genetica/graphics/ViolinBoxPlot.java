@@ -43,6 +43,8 @@ public class ViolinBoxPlot {
         Graphics2D g2d = null;
         com.lowagie.text.Document document = null;
         com.lowagie.text.pdf.PdfWriter writer = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
+        
         BufferedImage bi = null;
         bi = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
         g2d = bi.createGraphics();
@@ -59,7 +61,8 @@ public class ViolinBoxPlot {
                 throw new IOException(e.fillInStackTrace());
             }
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+            cb = writer.getDirectContent();
+            cb.saveState();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width + marginLeft, height);
         } else {
@@ -178,6 +181,7 @@ public class ViolinBoxPlot {
 
         g2d.dispose();
         if (output == Output.PDF) {
+            cb.restoreState();
             document.close();
             writer.close();
         } else {
@@ -201,14 +205,15 @@ public class ViolinBoxPlot {
         bi = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
         g2d = bi.createGraphics();
 
-
+com.lowagie.text.pdf.PdfContentByte cb = null;
         if (output == Output.PDF) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
             writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFileName));
 
             document.open();
-            com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+            cb =  writer.getDirectContent();
+            cb.saveState();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
@@ -255,6 +260,7 @@ public class ViolinBoxPlot {
 
         g2d.dispose();
         if (output == Output.PDF) {
+            cb.restoreState();
             document.close();
             writer.close();
         } else {
