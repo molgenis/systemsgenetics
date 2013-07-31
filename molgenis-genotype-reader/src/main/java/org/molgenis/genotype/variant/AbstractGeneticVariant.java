@@ -1,17 +1,23 @@
 package org.molgenis.genotype.variant;
 
+import java.util.Collections;
+import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.ChromosomeComparator;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
+import org.molgenis.genotype.util.Ld;
+import org.molgenis.genotype.util.LdCalculator;
+import org.molgenis.genotype.util.LdCalculatorException;
 
 abstract public class AbstractGeneticVariant implements GeneticVariant
 {
 
 	private static final ChromosomeComparator chrComparator = new ChromosomeComparator();
+	
 
 	@Override
-	public int compareTo(GeneticVariant other)
+	public final int compareTo(GeneticVariant other)
 	{
 		if (other == null)
 		{
@@ -37,7 +43,7 @@ abstract public class AbstractGeneticVariant implements GeneticVariant
 			// same sequence
 			if (this.getStartPos() != other.getStartPos())
 			{
-				return this.getStartPos() - other.getStartPos();
+				return this.getStartPos()<other.getStartPos() ? -1 : (this.getStartPos()==other.getStartPos() ? 0 : 1);
 			}
 			else
 			{
@@ -59,6 +65,28 @@ abstract public class AbstractGeneticVariant implements GeneticVariant
 				}
 
 				if (GeneticVariantTreeSet.getDummyGeneticVariantClass().isInstance(other))
+				{
+					return -1;
+
+				}
+				
+				if (ReadOnlyGeneticVariantTriTyper.class.isInstance(this))
+				{
+
+					if (!ReadOnlyGeneticVariantTriTyper.class.isInstance(other))
+					{
+						return 1;
+					}
+					else
+					{
+						//Both are ReadOnlyGeneticVariantTriTyper
+						return this.getSampleVariantsProvider().getSampleVariantProviderUniqueId()
+							- other.getSampleVariantsProvider().getSampleVariantProviderUniqueId();
+					}
+
+				}
+
+				if (ReadOnlyGeneticVariantTriTyper.class.isInstance(other))
 				{
 					return -1;
 
@@ -123,9 +151,13 @@ abstract public class AbstractGeneticVariant implements GeneticVariant
 		}
 		else if (!getSequenceName().equals(other.getSequenceName())) return false;
 		if (getStartPos() != other.getStartPos()) return false;
-
+		
 		// If we get here pos and sequence are identical
 
+		if(!other.getClass().equals(obj.getClass())){
+			return false;
+		}
+		
 		if (getVariantAlleles() == null)
 		{
 			if (other.getVariantAlleles() != null) return false;
@@ -258,4 +290,26 @@ abstract public class AbstractGeneticVariant implements GeneticVariant
         return p_hwe;
 		
 	}
+	
+	@Override
+    public boolean isSnp() {
+        return this.getVariantAlleles().isSnp();
+    }
+
+    @Override
+    public boolean isAtOrGcSnp() {
+        return this.getVariantAlleles().isAtOrGcSnp();
+    }
+
+    @Override
+    public Ld calculateLd(GeneticVariant other) throws LdCalculatorException {
+        return LdCalculator.calculateLd(this, other);
+    }
+
+    @Override
+    public boolean isBiallelic() {
+        return this.getVariantAlleles().getAlleleCount() == 2;
+    }
+
+	
 }

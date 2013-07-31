@@ -77,7 +77,7 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 	 * @author Patrick Deelen
 	 * 
 	 */
-	private static class DummyGenticVariant extends AbstractGeneticVariant
+	protected static class DummyGenticVariant extends AbstractGeneticVariant
 	{
 
 		private final String sequenceName;
