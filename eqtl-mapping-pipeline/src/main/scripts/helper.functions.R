@@ -71,7 +71,7 @@ illuProbeToArrayID <- function(probes = "ILMN_1809034", annotation){ # Annotatio
   avail <- as.character(annotation[,1])
   for(p in probes){
     row <- which(avail ==  as.character(p))
-    ids <- c(ids, annotation[row,"Array_Address_Id"])
+    ids <- rbind(ids, c(p, annotation[row,"Array_Address_Id"]))
   }
   return(ids)
 }
@@ -79,10 +79,13 @@ illuProbeToArrayID <- function(probes = "ILMN_1809034", annotation){ # Annotatio
 # Annotation: 2013-07-18-ProbeAnnotationFile.txt
 ArrayIdToHugo <- function(arrayids = 20605, annotation, type = "HT12v3.txt"){ 
   ids <- NULL
+    cnt <- 1
   avail <- as.character(annotation[,type])
   for(arrayid in arrayids){
     row <- which(avail == as.character(arrayid))
-    ids <- c(ids, as.character(annotation[row,"Gene"]))
+    cat(cnt," ", row," ",as.character(annotation[row,"Gene"]),"\n")
+    ids <- rbind(ids, c(arrayid, as.character(annotation[row,"Gene"])))
+    cnt <- cnt+1
   }
   return(ids)
 }
