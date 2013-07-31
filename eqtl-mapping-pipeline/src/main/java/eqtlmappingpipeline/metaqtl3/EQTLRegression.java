@@ -26,28 +26,27 @@ import umcg.genetica.math.stats.Regression;
 public class EQTLRegression {
 
     TriTyperGeneticalGenomicsDataset[] gg;
-
     EQTL[] eqtlsToRegressOut;
-    
+
     public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
         this.gg = gg;
-        
-        
-        
+
+
+
         this.eqtlsToRegressOut = new EQTL[eqtls.size()];
-        for(int q=0;q<eqtls.size(); q++){
+        for (int q = 0; q < eqtls.size(); q++) {
             eqtlsToRegressOut[q] = new EQTL();
             eqtlsToRegressOut[q].setRsName(eqtls.get(q).getLeft());
             eqtlsToRegressOut[q].setProbe(eqtls.get(q).getRight());
         }
-        System.out.println("About to regress out: "+eqtls.size()+" QTLs from data.");
+        System.out.println("About to regress out: " + eqtls.size() + " QTLs from data.");
         regressOutEQTLEffects();
     }
-    
+
     public void regressOutEQTLEffects(EQTL[] eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
         this.gg = gg;
         this.eqtlsToRegressOut = eqtls;
-        System.out.println("About to regress out: "+eqtls.length+" QTLs from data.");
+        System.out.println("About to regress out: " + eqtls.length + " QTLs from data.");
         regressOutEQTLEffects();
     }
 
@@ -69,7 +68,7 @@ public class EQTLRegression {
      * the eQTL to be removed
      */
     private void regressOutEQTLEffects() throws IOException {
-        
+
         //Inventorize whether for a particular probe there are multiple SNPs that we want to regress out:
         HashMap<String, ArrayList<EQTL>> hashProbesCovariates = new HashMap<String, ArrayList<EQTL>>();
         HashMap<EQTL, Integer> hashEQTLIds = new HashMap<EQTL, Integer>();
@@ -102,7 +101,7 @@ public class EQTLRegression {
         System.out.println("Removing eQTLs:");
         int[] nrEQTLsRegressedOut = new int[gg.length];
         int[][] explainedVariancePerEQTLProbe = new int[gg.length][101];
-        
+
 
 
         SNPLoader[] ggSNPLoaders = new SNPLoader[gg.length];
@@ -185,7 +184,7 @@ public class EQTLRegression {
                         SNP currentSNP = snpsForProbe.get(0);
                         Integer SNPId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
 
-                        int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
+                        int[] expressionToGenotypeId = currentDataset.getExpressionToGenotypeIdArray();
                         double[] x = xs.get(0);
                         double meanX = meanxs.get(0);
                         double varianceX = varxs.get(0);
@@ -196,11 +195,11 @@ public class EQTLRegression {
                         double varianceY = 0;
 
                         //Check what the number of samples is with genotype data available:
-                        int nrSamplesWData = currentSNP.nrCalled;
+                        int nrSamplesWGenotypeData = x.length;
 
-                        double[] y = new double[nrSamplesWData];
+                        double[] y = new double[nrSamplesWGenotypeData];
                         int totalGGSamples = currentDataset.getTotalGGSamples();
-                        if (nrSamplesWData == totalGGSamples) {
+                        if (nrSamplesWGenotypeData == totalGGSamples) {
                             //All genotypes have been succesfully called, use quick approach:
                             meanY = currentDataset.getExpressionData().getProbeMean()[p];
                             varianceY = currentDataset.getExpressionData().getProbeVariance()[p];
@@ -211,13 +210,13 @@ public class EQTLRegression {
 
                             //Not all genotypes have been succesfully called, use slow approach:
                             int itr = 0;
-
-                            for (int s = 0; s < totalGGSamples; s++) {
-                                int ind = indWGA[s];
-                                if (ind != -1) {
-                                    int valX = currentSNP.getGenotypes()[ind];
-                                    if (valX != -1) {
-                                        y[itr] = rawData[p][s];
+                            for (int s = 0; s < rawData[p].length; s++) {
+                                int genotypeId = expressionToGenotypeId[s];
+                                if (genotypeId != -1) {
+                                    byte genotype = currentSNP.getGenotypes()[genotypeId];
+                                    if (genotype != -1 && currentDataset.getGenotypeData().getIsIncluded()[genotypeId]) {
+                                        double dVal = rawData[p][s];
+                                        y[itr] = dVal;
                                         itr++;
                                     }
                                 }
@@ -244,7 +243,7 @@ public class EQTLRegression {
                         //Make copy of this particular eQTL:
                         double[] rawDataUpdated = new double[totalGGSamples];
 
-                        if (nrSamplesWData == totalGGSamples) {
+                        if (nrSamplesWGenotypeData == totalGGSamples) {
 
                             //Regress out eQTL affect in linear regression way:
                             for (int s = 0; s < totalGGSamples; s++) {
@@ -257,7 +256,7 @@ public class EQTLRegression {
                             //Correct for missing genotypes, first determine average genotype of called samples:
 //                           int[] indWGA = currentDataset.getWGAGenotypeIDs();
                             for (int s = 0; s < totalGGSamples; s++) {
-                                int ind = indWGA[s];
+                                int ind = expressionToGenotypeId[s];
                                 if (ind != -1) {
                                     double valX = currentSNP.getGenotypes()[ind];
                                     if (valX == -1) {
@@ -453,14 +452,14 @@ public class EQTLRegression {
         System.out.println("\n");
         System.out.println("eQTLs regressed per dataset:");
         for (int d = 0; d < gg.length; d++) {
-            System.out.println(gg[d].getSettings().name + "\t"+nrEQTLsRegressedOut[d]);
+            System.out.println(gg[d].getSettings().name + "\t" + nrEQTLsRegressedOut[d]);
         }
-        
+
         String output = "";
         System.out.println("\n");
         System.out.println("Proportion explained variance of genotypic variation on eQTLs per dataset:");
-        
-        
+
+
         output = "r2";
 
         for (int d = 0; d < gg.length; d++) {
