@@ -23,17 +23,16 @@ arrayIDs   <- illuProbeToArrayID(rownames(illumina), ProbeAnnotation)
 HUGOsIllu  <- ArrayIdToHugo(arrayIDs, IlluminaMapping, "HumanWG.6v3.txt")
 HUGOsCCM   <- ArrayIdToHugo(rownames(CCM), IlluminaMapping)
 
-getUnique <- function(matrix, nTypes = 1){
-  onlyonce <- which(apply(matrix,1,function(x){ sum(!is.na(x)) }) == nTypes)
-  return(matrix[onlyonce,])
-}
+#getUnique <- function(matrix, nTypes = 1){
+#  onlyonce <- which(apply(matrix,1,function(x){ sum(!is.na(x)) }) == nTypes)
+#  return(matrix[onlyonce,])
+#}
 
 affymetrix <- annotate.affy.by.rownames(affymetrix, affyTrans)
 illumina <- add.illumina.probes.information(illumina)
 
-
-affyUni <- getUnique(affymetrix)
-illuUni <- getUnique(illumina)
+#affyUni <- getUnique(affymetrix)
+#illuUni <- getUnique(illumina)
 
 
 IlluGenes <- apply(illuUni[,-1], 2, function(x){ illuUni[which(!is.na(x)),1] })

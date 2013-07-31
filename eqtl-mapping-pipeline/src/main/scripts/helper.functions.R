@@ -77,12 +77,12 @@ illuProbeToArrayID <- function(probes = "ILMN_1809034", annotation){ # Annotatio
 }
 
 # Annotation: 2013-07-18-ProbeAnnotationFile.txt
-ArrayIdToHugo <- function(arrayid = 20605, annotation, type = "HT12v3.txt"){ 
+ArrayIdToHugo <- function(arrayids = 20605, annotation, type = "HT12v3.txt"){ 
   ids <- NULL
   avail <- as.character(annotation[,type])
-  for(p in probes){
+  for(arrayid in arrayids){
     row <- which(avail == as.character(arrayid))
-    ids <- c(ids, annotation[row,"Gene"])
+    ids <- c(ids, as.character(annotation[row,"Gene"]))
   }
   return(ids)
 }
