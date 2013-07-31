@@ -2,10 +2,8 @@ package org.molgenis.genotype.variant;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -22,16 +20,15 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
     private final GeneticVariantId variantId;
     private final int startPos;
     private final String sequenceName;
-    private Map<String, ?> annotationValues = null;
     private final SampleVariantsProvider sampleVariantsProvider;
-    private Alleles alleles;
+    private final Alleles alleles;
     private final Allele refAllele;
     private MafResult mafResult = null;
+	protected final Map<String, ?> annotationValues;
 
     private ReadOnlyGeneticVariant(GeneticVariantId variantId, int startPos, String sequenceName,
             Map<String, ?> annotationValues, SampleVariantsProvider sampleVariantsProvider, Alleles alleles,
             Allele refAllele) {
-        super();
 
         if (refAllele != null) {
             if (!alleles.contains(refAllele)) {
@@ -55,28 +52,14 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
         this.sampleVariantsProvider = sampleVariantsProvider;
         this.alleles = alleles;
         this.refAllele = refAllele;
-        this.annotationValues = annotationValues != null ? annotationValues : Collections.<String, Object>emptyMap();
+		this.annotationValues = annotationValues != null ? annotationValues : Collections.<String, Object>emptyMap();
+ 
     }
 
     public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
             SampleVariantsProvider sampleVariantsProvider, char allele1, char allele2) {
         return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
                 sampleVariantsProvider, Alleles.createBasedOnChars(allele1, allele2), null);
-    }
-
-	/**
-	 * Be carefull with this create without specifing the alleles. If used in combination with dosage only file you will get a stack overflow
-	 * 
-	 * @param snpId
-	 * @param pos
-	 * @param sequenceName
-	 * @param sampleVariantsProvider
-	 * @return 
-	 */
-    public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
-            SampleVariantsProvider sampleVariantsProvider) {
-        return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
-                sampleVariantsProvider, null, null);
     }
 
     public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
@@ -191,10 +174,6 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
     @Override
     public final Alleles getVariantAlleles() {
-		if(alleles == null){
-			//Getting sample variants will load the alleles
-			getSampleVariants();
-		}
         return alleles;
     }
 
@@ -210,25 +189,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
     @Override
     public final List<Alleles> getSampleVariants() {
-
-        List<Alleles> SampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
-
-        if (this.alleles == null) {
-            //set alleles here
-
-            HashSet<Allele> variantAlleles = new HashSet<Allele>(2);
-
-            for (Alleles alleles2 : SampleVariantAlleles) {
-                for (Allele allele : alleles2) {
-                    variantAlleles.add(allele);
-                }
-            }
-
-            this.alleles = Alleles.createAlleles(new ArrayList<Allele>(variantAlleles));
-
-
-        }
-        return SampleVariantAlleles;
+        return Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
     }
 
     @Override
@@ -265,26 +226,6 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
     }
 
     @Override
-    public boolean isSnp() {
-        return this.getVariantAlleles().isSnp();
-    }
-
-    @Override
-    public boolean isAtOrGcSnp() {
-        return this.getVariantAlleles().isAtOrGcSnp();
-    }
-
-    @Override
-    public Ld calculateLd(GeneticVariant other) throws LdCalculatorException {
-        return LdCalculator.calculateLd(this, other);
-    }
-
-    @Override
-    public boolean isBiallelic() {
-        return this.getVariantAlleles().getAlleleCount() == 2;
-    }
-
-    @Override
     public float[] getSampleDosages() {
         return sampleVariantsProvider.getSampleDosage(this);
     }
@@ -299,10 +240,4 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
         return sampleVariantsProvider.getSampleCalledDosage(this);
     }
 
-    /**
-     * @param annotationValues the annotationValues to set
-     */
-    public void setAnnotationValues(Map<String, ?> annotationValues) {
-        this.annotationValues = annotationValues;
-    }
 }

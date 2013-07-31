@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
-import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import static org.molgenis.genotype.GenotypeData.BOOL_INCLUDE_SAMPLE;
@@ -33,9 +32,11 @@ import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
+import org.molgenis.genotype.variantFilter.VariantFilter;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
@@ -66,13 +67,20 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
     private final int sampleVariantProviderUniqueId;
     private HashMap<String, SampleAnnotation> sampleAnnotationMap;
     private HashMap<String, Sequence> sequences;
+	private final VariantFilter variantFilter;
 
     public TriTyperGenotypeData(String location) throws IOException {
         this(location, 1024);
     }
 
-    public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
+	public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
+		this(location, cacheSize, null);
+	}	
 
+    public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter) throws IOException {
+
+		this.variantFilter = variantFilter;
+		
         if (cacheSize <= 0) {
             variantProvider = this;
         } else {
@@ -271,7 +279,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
         }
         tfSNPMap.close();
 
-        snpToIndex = new HashMap<GeneticVariant, Integer>(allSNPs.size());
+        snpToIndex = new HashMap<GeneticVariant, Integer>();
 
 
         int index = 0;
@@ -290,17 +298,22 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
                     chr = sequences.get(chrPos.chr).getName();
                 }
 
-                variant = ReadOnlyGeneticVariant.createSnp(snp, chrPos.pos, chr, variantProvider);
+				variant = new ReadOnlyGeneticVariantTriTyper(snp, chrPos.getPos(), chr, variantProvider);
 
 
 
                 numberOfSNPsWithAnnotation++;
             } else {
-                variant = ReadOnlyGeneticVariant.createSnp(snp, 0, "" + 0, variantProvider);
+                variant = new ReadOnlyGeneticVariantTriTyper(snp, 0, "0", variantProvider);
             }
-            snps.add(variant);
-            snpToIndex.put(variant, index);
-            index++;
+			
+			if(variantFilter == null || variantFilter.doesVariantPassFilter(variant)){
+				snps.add(variant);
+				snpToIndex.put(variant, index);
+			}
+			
+			index++;
+            
         }
         tf.close();
 
@@ -345,7 +358,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
     @Override
     public List<Alleles> getSampleVariants(GeneticVariant variant) {
-        Integer index = snpToIndex.get(variant.getPrimaryVariantId());
+        Integer index = snpToIndex.get(variant);
         if (index == null) {
             throw new GenotypeDataException("Variant " + variant.getPrimaryVariantId() + " does not exist.");
         }
