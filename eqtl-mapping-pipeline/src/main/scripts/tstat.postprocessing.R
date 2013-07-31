@@ -9,11 +9,19 @@ setwd("~/Github/systemsgenetics/eqtl-mapping-pipeline/src/main/scripts")
 source("helper.functions.R")
 
 setwd("~/Github/Juha/")
+ProbeAnnotation <- read.csv("GPL6102-11574.txt",sep="\t",skip=27) # Probe annotation
+IlluminaMapping <- read.csv("2013-07-18-ProbeAnnotationFile.txt",sep='\t')
+#ID = IlluminaArrayAdress HT12V3
+CCM <- read.csv("CellCountCorrelationMatrix.txtEndophenotypeVsExpressionCorrelationMatrix.txt")
 
 affyTrans <- read.affy.translation()
 
 affymetrix <- read.csv("tstat.matrix.affymetrix.txt", sep='\t', row.names = 1)
 illumina   <- read.csv("tstat.matrix.illumina.txt", sep='\t', row.names = 1)
+
+arrayIDs   <- illuProbeToArrayID(rownames(illumina), ProbeAnnotation)
+HUGOsIllu  <- ArrayIdToHugo(arrayIDs, IlluminaMapping, "HumanWG.6v3.txt")
+HUGOsCCM   <- ArrayIdToHugo(rownames(CCM), IlluminaMapping)
 
 getUnique <- function(matrix, nTypes = 1){
   onlyonce <- which(apply(matrix,1,function(x){ sum(!is.na(x)) }) == nTypes)

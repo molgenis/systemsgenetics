@@ -66,6 +66,27 @@ read.illumina.probes.information <- function(){
   return(ProbeAnnotation)
 }
 
+illuProbeToArrayID <- function(probes = "ILMN_1809034", annotation){ # Annotation GPL6102-11574.txt
+  ids <- NULL
+  avail <- as.character(annotation[,1])
+  for(p in probes){
+    row <- which(avail ==  as.character(p))
+    ids <- c(ids, annotation[row,"Array_Address_Id"])
+  }
+  return(ids)
+}
+
+# Annotation: 2013-07-18-ProbeAnnotationFile.txt
+ArrayIdTohugo <- function(arrayid = 20605, annotation, type = "HT12v3.txt"){ 
+  ids <- NULL
+  avail <- as.character(annotation[,type])
+  for(p in probes){
+    row <- which(avail == as.character(arrayid))
+    ids <- c(ids, annotation[row,"Gene"])
+  }
+  return(ids)
+}
+
 add.illumina.probes.information <- function(CellTypeDATA){
   ProbeAnnotation <- read.illumina.probes.information()
   inAnnot <- which(rownames(CellTypeDATA) %in% ProbeAnnotation[,1])
