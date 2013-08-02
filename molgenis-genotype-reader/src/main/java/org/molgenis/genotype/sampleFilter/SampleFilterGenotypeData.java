@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.sampleFilter;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -21,13 +22,17 @@ public class SampleFilterGenotypeData implements RandomAccessGenotypeData {
 
 	private final RandomAccessGenotypeData original;
 	private final int includeCount;
+	private final ArrayList<Sample> includedSamples;
 
 	public SampleFilterGenotypeData(RandomAccessGenotypeData original) {
 		this.original = original;
 
+		includedSamples = new ArrayList<Sample>();
+		
 		int count = 0;
 		for (Sample sample : original.getSamples()) {
 			if (sample.isIncluded()) {
+				includedSamples.add(sample);
 				++count;
 			}
 		}
@@ -93,7 +98,7 @@ public class SampleFilterGenotypeData implements RandomAccessGenotypeData {
 
 	@Override
 	public List<Sample> getSamples() {
-		return original.getSamples();
+		return includedSamples;
 	}
 
 	@Override
