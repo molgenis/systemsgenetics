@@ -42,6 +42,11 @@
 	  <artifactId>parallelcolt</artifactId>
 	  <version>0.10.0</version>
 	 </dependency>
+	 <dependency>
+	  <groupId>${project.groupId}</groupId>
+	  <artifactId>imputation-tool</artifactId>
+	  <version>1.0.1-SNAPSHOT</version>
+	 </dependency>
 	</dependencies>
      <build>
 		<plugins>

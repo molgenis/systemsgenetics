@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.pcaoptimum;
 
+import eqtlmappingpipeline.util.eQTLFileCompare;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
 import java.io.IOException;
