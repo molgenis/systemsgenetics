@@ -54,9 +54,14 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             String genotypeIndividual = entry.getKey();
             Integer genotypeIndividualId = genotypeData.getIndividualId(genotypeIndividual);
 
-            if (genotypeIndividualId != null && isIncluded[genotypeIndividualId]) {
+            if (genotypeIndividualId != null && isIncluded[genotypeIndividualId] != null && isIncluded[genotypeIndividualId]) {
                 includedExpressionIndividuals.add(entry.getValue());
             }
+        }
+        
+        if(includedExpressionIndividuals.isEmpty()){
+            System.err.println("ERROR: none of the expression samples will be included with your current settings.\nPlease check the links between genotype and gene expression samples and/or your PhenotypeInformation.txt");
+            System.exit(-1);
         }
 
         // load the expression data
@@ -188,12 +193,12 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
 
     public int[] getExpressionToGenotypeIdArray() {
         int[] intExpToGArr = new int[expressionToGenotypeIdArray.length];
-        for(int i=0; i<intExpToGArr.length; i++){
+        for (int i = 0; i < intExpToGArr.length; i++) {
             intExpToGArr[i] = expressionToGenotypeIdArray[i];
         }
         return intExpToGArr;
     }
-    
+
     public short[] getExpressionToGenotypeIdArrayShort() {
         return expressionToGenotypeIdArray;
     }
@@ -226,7 +231,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         }
 
         short[] indWGANew = new short[numSamples];
-        
+
         genotypeToExpressionIdArray = new short[genotypeData.getIndividuals().length];
         for (int i = 0; i < numSamples; i++) {
             if (expressionToGenotypeIdArray[i] == -1) {
@@ -234,7 +239,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             } else {
                 short genotypeId = alIndWGA.remove((int) (Math.random() * (double) alIndWGA.size()));
                 indWGANew[i] = genotypeId;
-                
+
                 genotypeToExpressionIdArray[genotypeId] = (short) i;
             }
         }

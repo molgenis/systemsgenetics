@@ -57,6 +57,12 @@ public class TriTyperGenotypeData {
         }
         t.close();
 
+        if(alInd.isEmpty()){
+            System.err.println("ERROR: your dataset does not contain any individuals.");
+            System.exit(-1);
+        }
+                
+        
         int numInds = individualToId.size();
 
         setIsFemale(new Boolean[numInds]);
@@ -122,6 +128,11 @@ public class TriTyperGenotypeData {
 
         System.out.println(numInds + " individuals detected, " + numMales + " males, " + numFemales + " females, " + numCases + " cases, " + numControls + " controls, " + numIncluded + " included");
 
+        if(numIncluded == 0){
+            System.err.println("ERROR: None of the samples in your dataset will be included. Please check your PhenotypeInformation.txt");
+            System.exit(-1);
+        }
+        
         if (Gpio.exists(loc + "SNPs.txt")) {
             t = new TextFile(loc + "SNPs.txt", TextFile.R);
         } else if (Gpio.exists(loc + "SNPs.txt.gz")) {
@@ -149,6 +160,11 @@ public class TriTyperGenotypeData {
 
         System.out.println(SNPs.length + " snps loaded");
 
+        if(SNPs.length == 0){
+            System.err.println("ERROR: no SNPs have been detected. Please check your dataset.");
+            System.exit(-1);
+        }
+        
         if (Gpio.exists(loc + "SNPMappings.txt")) {
             t = new TextFile(loc + "SNPMappings.txt", TextFile.R);
         } else if (Gpio.exists(loc + "SNPMappings.txt.gz")) {
