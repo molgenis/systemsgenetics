@@ -8,15 +8,17 @@ import org.molgenis.genotype.multipart.IncompetibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
+import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 public enum RandomAccessGenotypedDataReaderFormats {
 
-	PED_MAP("PED / MAP file", "plink PED MAP files"), VCF("VCF file",
-	"gziped vcf with tabix index file"), VCF_FOLDER("VCF folder",
-	"Matches all gziped vcf files + tabix index in a folder"), SHAPEIT2(
-	"Shapeit2 output",
-	".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"), PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files");
+	PED_MAP("PED / MAP file", "plink PED MAP files"),
+	VCF("VCF file", "gziped vcf with tabix index file"),
+	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder"), 
+	SHAPEIT2("Shapeit2 output",	".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"),
+	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files"),
+	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt. Optionally: ImputedDosageMatrix.dat");
 	private final String name;
 	private final String description;
 
@@ -48,6 +50,8 @@ public enum RandomAccessGenotypedDataReaderFormats {
 						path + ".sample"), cacheSize);
 			case PLINK_BED:
 				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
+			case TRITYPER:
+				return new TriTyperGenotypeData(path, cacheSize);
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
