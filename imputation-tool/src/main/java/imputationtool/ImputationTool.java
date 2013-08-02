@@ -29,13 +29,13 @@ import umcg.genetica.io.trityper.util.TriTyperGenotypeDataMerger;
  */
 public class ImputationTool {
 
-	public static final Pattern SEMI_COLON_PATTERN = Pattern.compile(";");
-	public static final String VERSION = ImputationTool.class.getPackage().getImplementationVersion();
-	
-    public static void main(String[] args) throws Exception {
+    public static final Pattern SEMI_COLON_PATTERN = Pattern.compile(";");
+    public static final String VERSION = ImputationTool.class.getPackage().getImplementationVersion();
 
-		System.out.println("ImputationTool " + VERSION + "\n\n");
-		
+    public static void main(String[] args) {
+
+        System.out.println("ImputationTool " + VERSION + "\n\n");
+
         try {
             ImputationTool t = new ImputationTool();
 
@@ -45,6 +45,8 @@ public class ImputationTool {
                 t.processArgs(args);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         System.exit(0);
@@ -72,7 +74,7 @@ public class ImputationTool {
         String exclude = null;
         Integer chrStart = 1;
         Integer chrEnd = 22;
-		Integer nrSamples = null;
+        Integer nrSamples = null;
 
         boolean splitbychromosome = false;
 
@@ -153,14 +155,14 @@ public class ImputationTool {
                     System.out.println("Value supplied for --threshold is not an double");
                     System.exit(-1);
                 }
-            } else if (arg.equals("--nrSamples")){
-				try {
+            } else if (arg.equals("--nrSamples")) {
+                try {
                     nrSamples = Integer.valueOf(val);
                 } catch (NumberFormatException e) {
                     System.out.println("Value supplied for --nrSamples is not an integer");
                     System.exit(-1);
                 }
-			}
+            }
         }
 
         if (mode == null) {
@@ -226,33 +228,32 @@ public class ImputationTool {
             System.out.println("in2");
             System.out.println("out");
             concatDatasets(in, in2, out, snps);
-		} else if (mode.equals("concat")) {
+        } else if (mode.equals("concat")) {
             System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
             concatDatasets(in, out);
         } else if (mode.equals("itt")) {
             System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
-			System.out.println("nrSamples:\t" + nrSamples);
+            System.out.println("nrSamples:\t" + nrSamples);
 
             convertImputeToTriTyper(in, out, nrSamples);
         } else if (mode.equals("ttvcf")) {
-			System.out.println("in:\t" + in);
+            System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
-			convertTriTyperToVcf(in, out);
-		
-		} else if (mode.equals("mmtt")) {
-			System.out.println("in:\t" + in);
+            convertTriTyperToVcf(in, out);
+
+        } else if (mode.equals("mmtt")) {
+            System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
-			convertMinimacToTriTryper(in, out);
-		
-		}
-		else if (mode.equals("mmtt2")) {
-			System.out.println("in:\t" + in);
+            convertMinimacToTriTryper(in, out);
+
+        } else if (mode.equals("mmtt2")) {
+            System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
-			convertMinimacToTriTryper2(in, out);
-		
-		}else {
+            convertMinimacToTriTryper2(in, out);
+
+        } else {
             printUsage();
         }
 //        else if (mode.equals("pmbg")) {
@@ -272,15 +273,15 @@ public class ImputationTool {
         System.out.println("------------------------\nImputation\n------------------------\n");
         System.out.println("# Convert Impute Imputed data into TriTyper\n"
                 + "--mode itt --in ImputeDir --out TriTyperDir --nrSamples numberOfSamplesInImputedData");
-		 
-		System.out.println("# Convert a dir with Minimac imputed data into TriTyper\n"
+
+        System.out.println("# Convert a dir with Minimac imputed data into TriTyper\n"
                 + "--mode mmtt --in Imputation restult dir --out TriTyperDir");
-		
-		System.out.println("# Convert a single Minimac imputed file into TriTyper\n"
+
+        System.out.println("# Convert a single Minimac imputed file into TriTyper\n"
                 + "--mode mmtt2 --in Imputation restult file prefix (.info and .dose should be present) --out TriTyperDir");
-		
-		System.out.println();
-		
+
+        System.out.println();
+
         System.out.println("------------------------\nBeagle\n------------------------\n");
         System.out.println("# Convert beagle files (one file/chromosome) to TriTyper. Filetemplate is a template for the batch filenames, The text CHROMOSOME will be replaced by the chromosome number.\n"
                 + "--mode btt --in BeagleDir --tpl template --ext ext --out TriTyperDir [--fam famfile]\n");
@@ -325,12 +326,12 @@ public class ImputationTool {
 
         System.out.println("# Merge two TriTyper datasets\n"
                 + "--mode merge --in TriTyper1Dir --in2 TryTyper2Dir --out outdir\n");
-		
-		System.out.println("# Concatinate TriTyper datasets. All should contain same number of individuals in the same order.\n"
+
+        System.out.println("# Concatinate TriTyper datasets. All should contain same number of individuals in the same order.\n"
                 + "--mode concat --in TriTyperDir1;TriTyperDir2;TriTyperDirN --out outdir\n");
-		
-		System.out.println("---------------------\nVCF\n---------------------\n");
-		System.out.println("# Convert TriTyper to VCF\n"
+
+        System.out.println("---------------------\nVCF\n---------------------\n");
+        System.out.println("# Convert TriTyper to VCF\n"
                 + "--mode ttvcf --in indir --out outdir \n");
 
         System.exit(0);
@@ -492,15 +493,15 @@ public class ImputationTool {
         }
 
     }
-	
-	private void convertTriTyperToVcf(String in, String out) throws IOException, Exception {
+
+    private void convertTriTyperToVcf(String in, String out) throws IOException, Exception {
         if (in == null || out == null) {
             System.out.println("Please provide: --in and --out for --mode ttvcf");
             System.exit(0);
         } else {
-			System.out.println("Warning! All genotypes are exported as if phased");
+            System.out.println("Warning! All genotypes are exported as if phased");
             TriTyperToVCF ttvcfConvertor = new TriTyperToVCF();
-			ttvcfConvertor.convert(in, out, null);
+            ttvcfConvertor.convert(in, out, null);
         }
 
     }
@@ -530,44 +531,44 @@ public class ImputationTool {
 //        PedAndMapToBeagle pmbg = new PedAndMapToBeagle(in, batch);
 //    }
 
-	private void convertMinimacToTriTryper(String in, String out) throws IOException {
-		if (in == null || out == null) {
+    private void convertMinimacToTriTryper(String in, String out) throws IOException {
+        if (in == null || out == null) {
             System.out.println("Please provide: --in and --out for --mode mmtt");
             System.exit(-1);
         } else {
-			MinimacImputedToTriTyper.convertMinimacImputedToTriTyper(in, out);
+            MinimacImputedToTriTyper.convertMinimacImputedToTriTyper(in, out);
         }
-	}
-	
-	private void convertMinimacToTriTryper2(String in, String out) throws IOException {
-		if (in == null || out == null) {
+    }
+
+    private void convertMinimacToTriTryper2(String in, String out) throws IOException {
+        if (in == null || out == null) {
             System.out.println("Please provide: --in and --out for --mode mmtt2");
             System.exit(-1);
         } else {
-			MinimacImputedToTriTyper.convertSingleFileMinimacImputedToTriTyper(in, out);
+            MinimacImputedToTriTyper.convertSingleFileMinimacImputedToTriTyper(in, out);
         }
-	}
+    }
 
-	private void concatDatasets(String in, String out) throws IOException, FileNotFoundException, Exception {
-		if (in == null || out == null) {
+    private void concatDatasets(String in, String out) throws IOException, FileNotFoundException, Exception {
+        if (in == null || out == null) {
             System.out.println("Please provide: --in and --out for --mode concat");
             System.exit(-1);
         } else {
-			
-			TriTyperConcatDatasets triTyperConcatDatasets = new TriTyperConcatDatasets(out);
-			
-			String[] inputDatasets = SEMI_COLON_PATTERN.split(in);
-			
-			for(String inputDataset : inputDatasets){
-				if(inputDataset.length() == 0){
-					//allow ; at begin of end of the string
-					continue;
-				}
-				triTyperConcatDatasets.addDatasetToConcat(inputDataset);
-			}
-			
-			triTyperConcatDatasets.writeConcatedDataset();
-			
-		}
-	}
+
+            TriTyperConcatDatasets triTyperConcatDatasets = new TriTyperConcatDatasets(out);
+
+            String[] inputDatasets = SEMI_COLON_PATTERN.split(in);
+
+            for (String inputDataset : inputDatasets) {
+                if (inputDataset.length() == 0) {
+                    //allow ; at begin of end of the string
+                    continue;
+                }
+                triTyperConcatDatasets.addDatasetToConcat(inputDataset);
+            }
+
+            triTyperConcatDatasets.writeConcatedDataset();
+
+        }
+    }
 }

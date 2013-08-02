@@ -52,7 +52,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
                 mapEQTLs();
             } else {
                 // check whether there were significant results in the previous iteration
-                String efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + ".txt";
+                String efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + "-ProbeLevel.txt";
                 if (!Gpio.exists(efilename)) {
                     System.err.println("Previous iteration (" + (iteration - 1) + ") did not have any significant results.");
                     System.err.println("File: " + efilename + " does not exist.");
@@ -169,7 +169,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
         HashSet<Pair<String, String>> eqtls = new HashSet<Pair<String, String>>();
         for (int iteration = 1; iteration < currentIteration; iteration++) {
-            String iterationFile = origOutputDir + "/Iteration" + iteration + "/eQTLProbesFDR" + fdr + ".txt";
+            String iterationFile = origOutputDir + "/Iteration" + iteration + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt";
             TextFile tf = new TextFile(iterationFile, TextFile.R);
             tf.readLineElems(TextFile.tab);
             String[] elems = tf.readLineElems(TextFile.tab);
@@ -187,7 +187,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
     private HashSet<String> collectEQTLProbes(String origOutputDir, int currentIteration, double fdr) throws IOException {
 
         HashSet<String> output = new HashSet<String>();
-        String iterationFile = origOutputDir + "/Iteration" + (currentIteration-1) + "/eQTLProbesFDR" + fdr + ".txt";
+        String iterationFile = origOutputDir + "/Iteration" + (currentIteration-1) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt";
         TextFile tf = new TextFile(iterationFile, TextFile.R);
         tf.readLineElems(TextFile.tab);
         String[] elems = tf.readLineElems(TextFile.tab);

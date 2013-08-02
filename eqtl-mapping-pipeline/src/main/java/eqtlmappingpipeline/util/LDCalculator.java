@@ -22,29 +22,6 @@ import umcg.genetica.io.trityper.util.DetermineLD;
  */
 public class LDCalculator {
 
-    public static void main(String[] args) {
-        try {
-            LDCalculator calc = new LDCalculator();
-            calc.calculatePairwiseLD("/Volumes/iSnackHD/SkyDrive2/SkyDrive/Rebuttal2/FineMapping/SNPsWoLD.txt",
-                    "/Volumes/iSnackHD/Data/GeneticalGenomicsDatasets/BloodHT12/BloodHT12ImputeTriTyper/",
-                    "/Volumes/iSnackHD/SkyDrive2/SkyDrive/Rebuttal2/FineMapping/SNPsWoLD-LD.txt");
-
-//            LDCalculator.proxyLookUpInReferenceDataset("/Volumes/iSnackHD/Data/SNPReferenceData/1000G-20110521-TriTyper/Merged/", "/Volumes/iSnackHD/Data/Projects/Isis/2012-09-20-topSNPs_GWAS.txt", 0.05, 0.001, 0.95, 0.8, 
-//                    "/Volumes/iSnackHD/Data/Projects/Isis/2012-09-20-topSNPs_GWAS-WithProxies-R2-0.8.txt", 500000);
-
-//            LDCalculator.proxyLookUpInReferenceDataset(
-//                    "/Volumes/iSnackHD/Data/SNPReferenceData/1000G-20110521-TriTyper/Merged/", 
-//                    "/Data/GeneticalGenomicsDatasets/BloodHT12ImputeTriTyper/", 
-//                    "/Volumes/iSnackHD/Data/Projects/Isis/2012-09-20-topSNPs_GWAS.txt", 
-//                    0.05, 0.001, 0.95, 0.1, 
-//                    "/Volumes/iSnackHD/Data/Projects/Isis/2012-09-20-topSNPs_GWAS-WithProxies-R2-0.8.txt", 
-//                    500000
-//                    );
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void calculatePairwiseLD(String snpfile, String dataset, String output) throws IOException {
         if (snpfile == null) {
             throw new IllegalArgumentException("Error: snp file location should be provided");
@@ -161,7 +138,7 @@ public class LDCalculator {
             if (refDatasetId == null) {
                 // this SNP is useless, we cannot find a proxy for a SNP we have no data for.
                 outputStr += "\t-\tNo proxy available - Not present in reference";
-            } else if (refDatasetId != null) {
+            } else {
                 // possibly there is a proxy in our reference.
                 Triple<String, Double, Integer> proxy = proxyLookUpInReferenceDataAlone(refDataset, refLoader, refDatasetId, r2threshold, mafThreshold, crthreshold, hwepthreshold, maxdistance);
                 if (proxy == null) {
@@ -363,8 +340,8 @@ public class LDCalculator {
             if (refDataset.getChr(s) == chromosomeOfStartSNP && !refDatasetSNPId.equals(s)) {
                 // now check whether the SNP is actually in the in dataset.
                 String snpName = snpsInReference[s];
-                Integer chrPos = refDataset.getChrPos(s);
-                if (chrPos != null) {
+                int chrPos = refDataset.getChrPos(s);
+                if (chrPos != -1) {
                     int distance = Math.abs(refDataset.getChrPos(s) - refDataset.getChrPos(refDatasetSNPId));
                     if (distance < maxdistance) {
                         snpsToSort.add(new SortableSNP(snpName, s, chromosomeOfStartSNP, refDataset.getChrPos(s), SortableSNP.SORTBY.CHRPOS));
@@ -400,11 +377,14 @@ public class LDCalculator {
             SNP nextSNPObj = refDataset.getSNPObject(nextSNP);
             refLoader.loadGenotypes(nextSNPObj);
 
-            double r2 = ldcalc.getRSquared(startSNPObj, nextSNPObj, refDataset, DetermineLD.RETURN_R_SQUARED, DetermineLD.INCLUDE_CASES_AND_CONTROLS, false);
-            double dp = ldcalc.getRSquared(startSNPObj, nextSNPObj, refDataset, DetermineLD.RETURN_D_PRIME, DetermineLD.INCLUDE_CASES_AND_CONTROLS, false);
+            Pair<Double, Double> ld = ldcalc.getLD(startSNPObj, nextSNPObj, refDataset, DetermineLD.INCLUDE_CASES_AND_CONTROLS, false);
+            
+            double r2 = ld.getLeft();
+            double dp = ld.getRight();
+            
             int distance = nextSNPObj.getChrPos() - startSNPObj.getChrPos();
 
-            System.out.println(startSNPObj.getName() + "\t" + nextSNPObj.getName() + "\t" + distance + "\t" + r2 + "\t" + dp);
+//            System.out.println(startSNPObj.getName() + "\t" + nextSNPObj.getName() + "\t" + distance + "\t" + r2 + "\t" + dp);
 
             if (r2 >= r2threshold) {
                 // possible candidate. Now check for MAF, CR and HWEP in the real dataset.

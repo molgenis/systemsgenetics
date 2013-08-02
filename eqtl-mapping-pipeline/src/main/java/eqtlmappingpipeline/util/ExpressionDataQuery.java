@@ -17,9 +17,6 @@ import umcg.genetica.io.trityper.TriTyperSNPMappings;
  */
 public class ExpressionDataQuery {
 
-    public static void getExpressionValuesForGene(String gene, String probeTranslation) {
-    }
-
     public static void getProbesAroundSNPs(String probeAnnotationFile, String snplistfile, String snpAnnotationFile, int eqtlwindow, String outfile) throws IOException {
         HashSet<String> querySNPs = null;
 
