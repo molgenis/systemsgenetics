@@ -41,22 +41,6 @@ public class Graphics {
     public Graphics(int width, int height, boolean outputPDF, String outputLoc) {
         usePDF = outputPDF;
         this.outputLoc = outputLoc;
-//            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-//            document = new com.lowagie.text.Document(rectangle);
-//            writer = null;
-//            try {
-//                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
-//                document.open();
-//                cb = writer.getDirectContent();
-//                cb.saveState();
-//            } catch (Exception e) {
-//                System.out.println("Cannot write to PDF file!:\t" + outputLoc);
-//                System.exit(-1);
-//            }
-//
-//
-//            this.usePDF = true;
-//        }
         init(width, height);
     }
 
