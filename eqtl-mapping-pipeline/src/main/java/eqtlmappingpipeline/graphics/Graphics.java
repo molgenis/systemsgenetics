@@ -43,7 +43,7 @@ public class Graphics {
             this.outputLoc = outputLoc;
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
-            com.lowagie.text.pdf.PdfWriter writer = null;
+            writer = null;
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
                 document.open();
