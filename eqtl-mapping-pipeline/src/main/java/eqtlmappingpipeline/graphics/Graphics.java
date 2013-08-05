@@ -32,31 +32,15 @@ public class Graphics {
     protected com.lowagie.text.pdf.PdfContentByte cb;
     protected String outputLoc = "";
     protected com.lowagie.text.pdf.PdfWriter writer;
-    
-    public Graphics(){
-        bi      = new java.awt.image.BufferedImage(100, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
-        g2d     = bi.createGraphics();
+
+    public Graphics() {
+        bi = new java.awt.image.BufferedImage(100, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        g2d = bi.createGraphics();
     }
 
-    public Graphics(int width, int height, boolean outputPDF, String outputLoc){
-        if(outputPDF){
-            this.outputLoc = outputLoc;
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
-            writer = null;
-            try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
-                document.open();
-            cb = writer.getDirectContent();
-            cb.saveState();
-            } catch (Exception e) {
-                System.out.println("Cannot write to PDF file!:\t" + outputLoc);
-                System.exit(-1);
-            }
-            
-           
-            this.usePDF = true;
-        }
+    public Graphics(int width, int height, boolean outputPDF, String outputLoc) {
+        usePDF = outputPDF;
+        this.outputLoc = outputLoc;
         init(width, height);
     }
 
@@ -64,41 +48,41 @@ public class Graphics {
         init(width, height);
     }
 
-    protected void init(int width, int height){
-        
-        if(usePDF){
+    protected void init(int width, int height) {
+
+        if (usePDF) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
-            com.lowagie.text.pdf.PdfWriter writer = null;
+            writer = null;
             try {
                 writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
                 document.open();
-            cb = writer.getDirectContent();
-            cb.saveState();
+                cb = writer.getDirectContent();
+                cb.saveState();
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + outputLoc);
                 System.exit(-1);
             }
-            
-           
+
+
             this.usePDF = true;
         }
 
         graphHeight = height;
-        graphWidth  = width;
+        graphWidth = width;
 
-        drawWidth   = width;
-        drawHeight  = height;
-        
-        if(usePDF){
-             g2d     = cb.createGraphics(width, height);
+        drawWidth = width;
+        drawHeight = height;
+
+        if (usePDF) {
+            g2d = cb.createGraphics(width, height);
         } else {
-             bi      = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
-             g2d     = bi.createGraphics();
+            bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            g2d = bi.createGraphics();
         }
 
-        color   = new Color(255, 255, 255);
-        font    = new Font("Georgia", Font.PLAIN, 10);
+        color = new Color(255, 255, 255);
+        font = new Font("Georgia", Font.PLAIN, 10);
 
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
@@ -106,10 +90,10 @@ public class Graphics {
         g2d.setColor(color);
         g2d.fillRect(0, 0, graphWidth, graphHeight);
 
-        marginTop       = 0;
-        marginBottom    = 0;
-        marginLeft      = 0;
-        marginRight     = 0;
+        marginTop = 0;
+        marginBottom = 0;
+        marginLeft = 0;
+        marginRight = 0;
 
         scalingX = 1;
         scalingY = 1;
@@ -118,7 +102,7 @@ public class Graphics {
     // draw (device)
     public void draw(String outputFile) {
 
-        if(usePDF){
+        if (usePDF) {
             g2d.dispose();
             cb.restoreState();
             document.close();
@@ -133,9 +117,9 @@ public class Graphics {
         }
     }
 
-    public void close(){
-	g2d	    = null;
-	document    = null;
+    public void close() {
+        g2d = null;
+        document = null;
     }
 
     // protected functions
@@ -151,7 +135,7 @@ public class Graphics {
         g2d.setColor(color);
     }
 
-    protected void setColor(Color newColor){
+    protected void setColor(Color newColor) {
         color = newColor;
         g2d.setColor(color);
     }
@@ -177,20 +161,18 @@ public class Graphics {
         calcDrawArea();
     }
 
-
-
-    public void setTitle(String title){
-        if(marginTop > 0){
+    public void setTitle(String title) {
+        if (marginTop > 0) {
             Font oldFont = font;
             Color oldColor = color;
-            
-            setColor(126,126,126,255);
-            setFont(20,Font.BOLD, "Georgia");
 
-            int height  = getStringHeight(title);
-            int ymid    = (int) Math.floor(marginTop / 2);
+            setColor(126, 126, 126, 255);
+            setFont(20, Font.BOLD, "Georgia");
 
-            if(height <= marginTop){
+            int height = getStringHeight(title);
+            int ymid = (int) Math.floor(marginTop / 2);
+
+            if (height <= marginTop) {
                 drawText(marginLeft, ymid, title);
             }
 
@@ -199,21 +181,21 @@ public class Graphics {
         }
     }
 
-    public void setSubTitle(String title){
-        if(marginTop > 0){
+    public void setSubTitle(String title) {
+        if (marginTop > 0) {
             Font oldFont = font;
             Color oldColor = color;
 
-            setColor(126,126,126,255);
+            setColor(126, 126, 126, 255);
 
-            setFont(20,Font.PLAIN, "Georgia");
-            int titleheight  = getStringHeight("AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789[]./';.,{}");
+            setFont(20, Font.PLAIN, "Georgia");
+            int titleheight = getStringHeight("AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789[]./';.,{}");
 
-            setFont(12,Font.PLAIN, "Georgia");
-            int height  = getStringHeight(title);
-            int ymid    = marginTop - (int) Math.floor(height/2) ;
+            setFont(12, Font.PLAIN, "Georgia");
+            int height = getStringHeight(title);
+            int ymid = marginTop - (int) Math.floor(height / 2);
 
-            if(height <= marginTop){
+            if (height <= marginTop) {
                 drawText(marginLeft, ymid, title);
             }
 
@@ -224,40 +206,40 @@ public class Graphics {
 
     public void setAxisLabels(String xlab, String ylab) {
 
-        if( marginBottom > 0 && marginRight > 0){
+        if (marginBottom > 0 && marginRight > 0) {
             Font oldFont = font;
             Color oldColor = color;
 
-            setColor(126,126,126,255);
+            setColor(126, 126, 126, 255);
 
-            setFont(15, Font.BOLD,  "Georgia");
+            setFont(15, Font.BOLD, "Georgia");
 
             // x label
-            int width   = (int) Math.floor((double) getStringWidth(xlab) / 2);
-            int xmid    = (int) Math.floor(drawWidth / 2);
-            int xpos    = marginLeft + xmid - width;
+            int width = (int) Math.floor((double) getStringWidth(xlab) / 2);
+            int xmid = (int) Math.floor(drawWidth / 2);
+            int xpos = marginLeft + xmid - width;
 
-            int height  = getStringHeight(xlab);
-            int ymid    = (int) Math.floor(marginBottom / 2);
-            int ypos    = graphHeight - (ymid - height);
+            int height = getStringHeight(xlab);
+            int ymid = (int) Math.floor(marginBottom / 2);
+            int ypos = graphHeight - (ymid - height);
 
-            if(height <= marginBottom){
+            if (height <= marginBottom) {
                 drawText(xpos, ypos, xlab);
             }
 
             // y label
-            width   = (int) Math.floor((double) getStringWidth(ylab) / 2);
-            ymid    = (int) Math.floor(drawHeight / 2);
-            ypos    = marginTop + ymid + (width);
+            width = (int) Math.floor((double) getStringWidth(ylab) / 2);
+            ymid = (int) Math.floor(drawHeight / 2);
+            ypos = marginTop + ymid + (width);
 
-            height  = getStringHeight(ylab);
-            xmid    = (int) Math.floor(marginLeft / 2);
-            xpos    = xmid-(xmid - height);
+            height = getStringHeight(ylab);
+            xmid = (int) Math.floor(marginLeft / 2);
+            xpos = xmid - (xmid - height);
 
-            if(height <= marginRight){
+            if (height <= marginRight) {
                 drawText(xpos, ypos, -90, ylab);
             }
-           
+
             setFont(oldFont);
             setColor(oldColor);
         }
@@ -282,7 +264,7 @@ public class Graphics {
         g2d.setFont(font);
     }
 
-    protected void setFont(Font newFont){
+    protected void setFont(Font newFont) {
         font = newFont;
         g2d.setFont(font);
     }
@@ -438,10 +420,10 @@ public class Graphics {
         return size;
     }
 
-    protected int getMaxStringLength(String[] data){
+    protected int getMaxStringLength(String[] data) {
         int max = Integer.MIN_VALUE;
-        for(int i=0; i<data.length; i++){
-            if(getStringWidth(data[i]) > max){
+        for (int i = 0; i < data.length; i++) {
+            if (getStringWidth(data[i]) > max) {
                 max = getStringWidth(data[i]);
             }
         }
