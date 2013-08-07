@@ -70,7 +70,7 @@ public class Normalizer {
             adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, orthogonalizecovariates, 1E-10);
         }
 
-        if (runPCA) {            
+        if (runPCA) {
             ConcurrentCorrelation c = new ConcurrentCorrelation(2);
             double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
             expressionFileName = expressionFile.replace(parentDir, "");
@@ -164,7 +164,7 @@ public class Normalizer {
                     covariateDataset.getRawData()[p][s] /= stdev;
                 }
             }
-            
+
             //Covariation on a centered and scaled matrix equels the correlation.
             //Covariation is faster to compute.
             ConcurrentCovariation c = new ConcurrentCovariation(2);
@@ -241,17 +241,19 @@ public class Normalizer {
         DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawdata, traitData.rowObjects, traitData.colObjects);
         fileNamePrefix += ".CovariatesRemoved";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
-        
-        
-        
+
+
+
         return fileNamePrefix;
     }
-    
+
     /**
-     * Calculate correlation over columns in DoubleMatrixDataset. 
-     * WARNING: this method assumes that SD == 1 and mean == 0 (which makes the covariance equal to the correlation).
+     * Calculate correlation over columns in DoubleMatrixDataset. WARNING: this
+     * method assumes that SD == 1 and mean == 0 (which makes the covariance
+     * equal to the correlation).
+     *
      * @param dataset
-     * @return 
+     * @return
      */
     private double[][] correlateSamples(DoubleMatrixDataset<String, String> dataset) {
         double[][] correlationMatrix = new double[dataset.colObjects.size()][dataset.colObjects.size()];
@@ -381,7 +383,7 @@ public class Normalizer {
     }
 
     public void correctDataForPCs(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput,
-        DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs, DoubleMatrixDataset<String, String> datasetEV) throws IOException {
+            DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs, DoubleMatrixDataset<String, String> datasetEV) throws IOException {
         String expressionFile = fileNamePrefix;
         System.out.println("\nInitializing residual gene expression matrix");
         DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(dataset.rowObjects.size(), dataset.colObjects.size());
@@ -416,105 +418,107 @@ public class Normalizer {
 
     }
 
-    public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, boolean covariatesremoved) throws IOException {
+    public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
 
+
+//        boolean fileFound = true;
+//        String startExpressionFileName = expressionFile;
+
+
+        String parentDir = Gpio.getParentDir(expressionFile);
+        String[] files = Gpio.getListOfFiles(parentDir);
+
+//        
+//
+//
+//        File f = new File(startExpressionFileName);
+//        if (!f.exists()) {
+//            f = new File(expressionFile);
+//
+//            if (f.exists()) {
+////                startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt";
+////                if (covariatesremoved) {
+////                    startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt";
+////                }
+//
+//
+//                fileFound = false;
+//            } else {
+//                System.out.println("Error! Could not find " + startExpressionFileName + " or " + startExpressionFileName + ".gz");
+////                System.exit(0);
+//            }
+//        }
+//
+//        // try to find another file with that contains these terms
+//        if (!fileFound) {
+//            System.out.println("Could not find file: Log2Transformed, ProbeCentered, SampleZTransformed");
+//            System.exit(0);
+//        }
+
+        String startExpressionFileName = expressionFile;
+
+        // strip the parent dir name
+        parentDir += "/";
+        String minimalFilename = startExpressionFileName.replaceAll(parentDir, "");
+        String[] expressionFileNameElems = minimalFilename.split("\\.");
+        String eigenvectorFile = null;
+        String principalComponentsFile = null;
+
+
+
+        for (String file : files) {
+            if (file.length() < minimalFilename.length() && file.contains(expressionFileNameElems[0])) {
+                minimalFilename = file;
+            } else if (file.toLowerCase().contains("pcaoversampleseigenvectors")) {
+                eigenvectorFile = parentDir + "" + file;
+            } else if (file.toLowerCase().contains("pcaoversamplesprincipalcomponents")) {
+                principalComponentsFile = parentDir + "" + file;
+            }
+        }
 
         boolean fileFound = true;
-        String startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt.gz";
-        if (covariatesremoved) {
-            startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt.gz";
-        }
-        File f = new File(startfile1);
-        if (!f.exists()) {
-            f = new File(expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt");
-            if (covariatesremoved) {
-                f = new File(expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt");
-            }
-            if (f.exists()) {
-//                startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt";
-//                if (covariatesremoved) {
-//                    startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt";
-//                }
-
-
-                fileFound = false;
-            } else {
-                System.out.println("Error! Could not find " + startfile1 + " or " + startfile1 + ".gz");
-//                System.exit(0);
-            }
+        if (eigenvectorFile == null) {
+            System.err.println("Could not find file containing 'PCAOverSamplesEigenvectors' in directory: " + parentDir);
+            fileFound = false;
         }
 
-        // try to find another file with that contains these terms
-        if (!fileFound) {
-            String indir = Gpio.getParentDir(expressionFile);
-            String[] filesInDir = Gpio.getListOfFiles(indir);
-            for (String file : filesInDir) {
-                if (file.contains("Log2Transformed.ProbesCentered.SamplesZTransformed")) {
-                    startfile1 = file;
-                    fileFound = true;
-                }
-            }
+        if (eigenvectorFile == null) {
+            System.err.println("Could not find file containing 'PCAOverSamplesPrincipalComponents' in directory: " + parentDir);
+            fileFound = false;
         }
 
         if (!fileFound) {
-            System.out.println("Could not find file: Log2Transformed, ProbeCentered, SampleZTransformed");
             System.exit(0);
         }
 
+        System.out.println("Detected core file name to be: " + minimalFilename);
 
-        System.out.println("Starting out with gene expression file:" + startfile1);
+        DoubleMatrixDataset<String, String> expressionDataset = new DoubleMatrixDataset<String, String>(startExpressionFileName);
+        DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(principalComponentsFile);
+        DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(eigenvectorFile);
 
-        String startfile2 = expressionFile + ".PCAOverSamplesPrincipalComponents.txt.gz";
-        File f2 = new File(startfile1);
-        if (!f2.exists()) {
-            f2 = new File(expressionFile + ".PCAOverSamplesPrincipalComponents.txt");
-            if (f2.exists()) {
-                startfile2 = expressionFile + ".PCAOverSamplesPrincipalComponents.txt";
-            } else {
-                System.out.println("Error! Could not find " + startfile2 + " or " + startfile2 + ".gz");
-                System.exit(0);
-            }
-        }
-
-        String startfile3 = expressionFile + ".PCAOverSamplesEigenvectors.txt.gz";
-        File f3 = new File(startfile3);
-        if (!f3.exists()) {
-            f3 = new File(expressionFile + ".PCAOverSamplesEigenvectors.txt");
-            if (f3.exists()) {
-                startfile1 = expressionFile + ".PCAOverSamplesEigenvectors.txt";
-            } else {
-                System.out.println("Error! Could not find " + startfile3 + " or " + startfile3 + ".gz");
-                System.exit(0);
-            }
+        if (expressionDataset.colObjects.size() < nrPCAsOverSamplesToRemove) {
+            int remainder = expressionDataset.colObjects.size() % nrIntermediatePCAsOverSamplesToRemoveToOutput;
+            nrPCAsOverSamplesToRemove = expressionDataset.colObjects.size() - remainder;
         }
 
 
-        DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(startfile1);
-        DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(startfile2);
-        DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(startfile3);
+        DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(expressionDataset.rowObjects.size(), expressionDataset.colObjects.size());
+        datasetResidualExpressionBasedOnPCAOverSamples.rowObjects = expressionDataset.rowObjects;
+        datasetResidualExpressionBasedOnPCAOverSamples.colObjects = expressionDataset.colObjects;
 
-        if (dataset.colObjects.size() < nrPCAsOverSamplesToRemove) {
-            int remainder = dataset.colObjects.size() % nrIntermediatePCAsOverSamplesToRemoveToOutput;
-            nrPCAsOverSamplesToRemove = dataset.colObjects.size() - remainder;
-        }
-
-
-        DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(dataset.rowObjects.size(), dataset.colObjects.size());
-        datasetResidualExpressionBasedOnPCAOverSamples.rowObjects = dataset.rowObjects;
-        datasetResidualExpressionBasedOnPCAOverSamples.colObjects = dataset.colObjects;
-
-        for (int p = 0; p < dataset.rowObjects.size(); p++) {
-            System.arraycopy(dataset.getRawData()[p], 0, datasetResidualExpressionBasedOnPCAOverSamples.getRawData()[p], 0, dataset.colObjects.size());
+        for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
+            System.arraycopy(expressionDataset.getRawData()[p], 0, datasetResidualExpressionBasedOnPCAOverSamples.getRawData()[p], 0, expressionDataset.colObjects.size());
         }
 
 
         for (int t = 0; t < nrPCAsOverSamplesToRemove; t++) {
             if (!pcasNotToRemove.contains(t + 1)) {
 
-                for (int p = 0; p < dataset.rowObjects.size(); p++) {
-                    for (int s = 0; s < dataset.colObjects.size(); s++) {
+                for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
+                    for (int s = 0; s < expressionDataset.colObjects.size(); s++) {
                         //datasetResidualExpressionBasedOnPCAOverSamples.rawData[p][s]-= datasetPCAOverSamplesPCAs.rawData[p][t] * datasetEV.rawData[s][t];
-                        dataset.getRawData()[p][s] -= datasetPCAOverSamplesPCAs.getRawData()[p][t] * datasetEV.getRawData()[s][t];
+                        expressionDataset.getRawData()[p][s] -= datasetPCAOverSamplesPCAs.getRawData()[p][t] * datasetEV.getRawData()[s][t];
                     }
                 }
             } else {
@@ -524,13 +528,13 @@ public class Normalizer {
             int nrPCAs = t + 1;
             if (nrIntermediatePCAsOverSamplesToRemoveToOutput > 0 && nrPCAs % nrIntermediatePCAsOverSamplesToRemoveToOutput == 0) {
                 //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt");
-                dataset.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
-                System.out.println("Removed\t" + nrPCAs + "\tPCs. File:\t" + expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
+                expressionDataset.save(minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
+                System.out.println("Removed\t" + nrPCAs + "\tPCs. File:\t" + minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
             }
 
         }
         //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved.txt");
-        dataset.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
+        expressionDataset.save(minimalFilename + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
 
         System.out.println("Done\n");
     }
