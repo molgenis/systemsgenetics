@@ -419,42 +419,8 @@ public class Normalizer {
     }
 
     public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
-
-
-//        boolean fileFound = true;
-//        String startExpressionFileName = expressionFile;
-
-
         String parentDir = Gpio.getParentDir(expressionFile);
         String[] files = Gpio.getListOfFiles(parentDir);
-
-//        
-//
-//
-//        File f = new File(startExpressionFileName);
-//        if (!f.exists()) {
-//            f = new File(expressionFile);
-//
-//            if (f.exists()) {
-////                startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt";
-////                if (covariatesremoved) {
-////                    startfile1 = expressionFile + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt";
-////                }
-//
-//
-//                fileFound = false;
-//            } else {
-//                System.out.println("Error! Could not find " + startExpressionFileName + " or " + startExpressionFileName + ".gz");
-////                System.exit(0);
-//            }
-//        }
-//
-//        // try to find another file with that contains these terms
-//        if (!fileFound) {
-//            System.out.println("Could not find file: Log2Transformed, ProbeCentered, SampleZTransformed");
-//            System.exit(0);
-//        }
-
         String startExpressionFileName = expressionFile;
 
         // strip the parent dir name
@@ -463,8 +429,6 @@ public class Normalizer {
         String[] expressionFileNameElems = minimalFilename.split("\\.");
         String eigenvectorFile = null;
         String principalComponentsFile = null;
-
-
 
         for (String file : files) {
             if (file.length() < minimalFilename.length() && file.contains(expressionFileNameElems[0])) {
