@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.molgenis.genotype.impute2.Impute2GenotypeData;
-import org.molgenis.genotype.multipart.IncompetibleMultiPartGenotypeDataException;
+import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
@@ -36,7 +36,7 @@ public enum RandomAccessGenotypedDataReaderFormats {
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize) throws IOException,
-			IncompetibleMultiPartGenotypeDataException {
+			IncompatibleMultiPartGenotypeDataException {
 
 		switch (this) {
 			case PED_MAP:

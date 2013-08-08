@@ -37,13 +37,13 @@ public class MultiPartGenotypeData implements RandomAccessGenotypeData
 	private Set<RandomAccessGenotypeData> genotypeDataCollection;
 
 	public MultiPartGenotypeData(Collection<RandomAccessGenotypeData> genotypeDataCollection)
-			throws IncompetibleMultiPartGenotypeDataException
+			throws IncompatibleMultiPartGenotypeDataException
 	{
 		this(new HashSet<RandomAccessGenotypeData>(genotypeDataCollection));
 	}
 
 	public MultiPartGenotypeData(HashSet<RandomAccessGenotypeData> genotypeDataCollection)
-			throws IncompetibleMultiPartGenotypeDataException
+			throws IncompatibleMultiPartGenotypeDataException
 	{
 		for (RandomAccessGenotypeData genotypeData : genotypeDataCollection)
 		{
@@ -51,7 +51,7 @@ public class MultiPartGenotypeData implements RandomAccessGenotypeData
 			{
 				if (!genotypeData.getSamples().equals(samples))
 				{
-					throw new IncompetibleMultiPartGenotypeDataException(
+					throw new IncompatibleMultiPartGenotypeDataException(
 							"Incompatible multi part genotype data. All files should contain identical samples in same order.");
 				}
 			}
@@ -64,7 +64,7 @@ public class MultiPartGenotypeData implements RandomAccessGenotypeData
 			{
 				if (genotypeDatasets.containsKey(seqName))
 				{
-					throw new IncompetibleMultiPartGenotypeDataException(
+					throw new IncompatibleMultiPartGenotypeDataException(
 							"Incompatible multi part genotype data. A seq/chr can not be present in multiple files.");
 				}
 				genotypeDatasets.put(seqName, genotypeData);
@@ -91,7 +91,7 @@ public class MultiPartGenotypeData implements RandomAccessGenotypeData
 	 *             If multiple files for one chr found
 	 */
 	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize) throws IOException,
-			IncompetibleMultiPartGenotypeDataException
+			IncompatibleMultiPartGenotypeDataException
 	{
 
 		Set<RandomAccessGenotypeData> genotypeDataSets = new HashSet<RandomAccessGenotypeData>();
