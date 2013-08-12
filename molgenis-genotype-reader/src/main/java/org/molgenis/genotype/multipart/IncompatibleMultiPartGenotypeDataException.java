@@ -2,10 +2,10 @@ package org.molgenis.genotype.multipart;
 
 import org.molgenis.genotype.GenotypeDataException;
 
-public class IncompetibleMultiPartGenotypeDataException extends GenotypeDataException
+public class IncompatibleMultiPartGenotypeDataException extends GenotypeDataException
 {
 
-	public IncompetibleMultiPartGenotypeDataException(String message)
+	public IncompatibleMultiPartGenotypeDataException(String message)
 	{
 		super(message);
 	}
