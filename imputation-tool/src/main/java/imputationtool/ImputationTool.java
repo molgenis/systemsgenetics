@@ -75,6 +75,8 @@ public class ImputationTool {
         Integer chrStart = 1;
         Integer chrEnd = 22;
         Integer nrSamples = null;
+        String sampleFile = null;
+        String sampleFileToInclude = null;
 
         boolean splitbychromosome = false;
 
@@ -162,6 +164,10 @@ public class ImputationTool {
                     System.out.println("Value supplied for --nrSamples is not an integer");
                     System.exit(-1);
                 }
+            } else if (arg.equals("--samples")) {
+                sampleFile = val;
+            } else if (arg.equals("--samplestoinclude")) {
+                sampleFileToInclude = val;
             }
         }
 
@@ -237,7 +243,7 @@ public class ImputationTool {
             System.out.println("out:\t" + out);
             System.out.println("nrSamples:\t" + nrSamples);
 
-            convertImputeToTriTyper(in, out, nrSamples);
+            convertImputeToTriTyper(in, out, nrSamples, sampleFile, sampleFileToInclude);
         } else if (mode.equals("ttvcf")) {
             System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
@@ -272,7 +278,7 @@ public class ImputationTool {
 
         System.out.println("------------------------\nImputation\n------------------------\n");
         System.out.println("# Convert Impute Imputed data into TriTyper\n"
-                + "--mode itt --in ImputeDir --out TriTyperDir --nrSamples numberOfSamplesInImputedData");
+                + "--mode itt --in ImputeDir --out TriTyperDir --nrSamples numberOfSamplesInImputedData [--samples samplelistfile.txt] [--samplestoinclude samplelistfiletoinclude.txt]");
 
         System.out.println("# Convert a dir with Minimac imputed data into TriTyper\n"
                 + "--mode mmtt --in Imputation restult dir --out TriTyperDir");
@@ -483,13 +489,13 @@ public class ImputationTool {
         }
     }
 
-    private void convertImputeToTriTyper(String in, String out, Integer nrSamples) throws IOException, Exception {
+    private void convertImputeToTriTyper(String in, String out, Integer nrSamples, String samplesFile, String samplesToIncludeFile) throws IOException, Exception {
         if (in == null || out == null || nrSamples == null) {
             System.out.println("Please provide: --in, --nrSamples and --out for --mode itt");
             System.exit(0);
         } else {
             ImputeImputedToTriTyperV2 t = new ImputeImputedToTriTyperV2();
-            t.importImputedDataWithProbabilityInformationImpute(in, out, nrSamples);
+            t.importImputedDataWithProbabilityInformationImpute(in, out, nrSamples, samplesFile, samplesToIncludeFile);
         }
 
     }
