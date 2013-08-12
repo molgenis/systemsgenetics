@@ -7,6 +7,7 @@ package eqtlmappingpipeline.pcaoptimum;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.Gpio;
 
@@ -129,21 +130,31 @@ public class PCAOptimumConsoleGUI {
 
                     //MJ
                     String[] fileList = Gpio.getListOfFiles(in);
-                    ArrayList<Integer> pcs = new ArrayList<Integer>();
+                    HashSet<Integer> pcsHash = new HashSet<Integer>();
+                    String endStr = "PCAsRemoved";
                     for (String f : fileList) {
-
-                        if (f.endsWith("PCAsRemoved")) {
+                        if (f.endsWith(endStr)) {
                             File t = new File(f);
                             String tmp = t.getName();
-                            tmp = tmp.replace("Cis-", "");
-                            tmp = tmp.replace("Trans-", "");
-                            tmp = tmp.replace("PCAsRemoved", "");
-
-                            pcs.add(Integer.parseInt(tmp));
+                            if (tmp.startsWith("Cis-")) {
+                                cis = true;
+                                tmp = tmp.replace("Cis-", "");
+                            } else if (tmp.startsWith("Trans-")) {
+                                trans = true;
+                                tmp = tmp.replace("Trans-", "");
+                            }
+                            tmp = tmp.replace(endStr, "");
+                            pcsHash.add(Integer.parseInt(tmp));
                         }
-                        //System.out.println(f);
                     }
+
+                    ArrayList<Integer> pcs = new ArrayList<Integer>();
+                    pcs.addAll(pcsHash);
                     Collections.sort(pcs);
+
+                    for (int i = 0; i < pcs.size(); i++) {
+                        System.out.println("Detected folder for: " + pcs.get(i) + " PCs.");
+                    }
 
                     int max = 0;
                     int stepSize = 0;
@@ -162,21 +173,33 @@ public class PCAOptimumConsoleGUI {
 
                     if (pcs.isEmpty()) {
                         System.out.println("No PCA corrected files."
-                                + "\n Please first run the normalization procedure.");
+                                + "\nPlease first run the normalization procedure.");
                         System.exit(0);
                     }
 
-                    if ((((double) stepSize / (pcs.size() - 1)) % 1) != 0) {
-                        System.out.println("Step size is invalid."
-                                + "\n Please look in to the input directory for missing files");
-                        System.out.println((((double) stepSize / (pcs.size() - 1)) % 1));
-                        System.out.println("Determined max: " + max);
-                        System.out.println("Determined stepsize: " + stepSize);
+                    if (pcs.size() == 1) {
+                        System.out.println("Only detected folder for: " + pcs.get(0) + " PCs removed."
+                                + "\nWe need more data to make a comparison.");
                         System.exit(0);
                     }
-                    stepSize = (int) ((double) stepSize / (pcs.size() - 1));
 
-                    //MJ
+                    // the minimal size for this array is 2: one for 0 PCs removed and one for n PCs removed.. 
+                    if (pcs.size() > 2) {
+                        if ((((double) stepSize / (pcs.size() - 1)) % 1) != 0) {
+                            System.out.println("Step size is invalid."
+                                    + "\nPlease look in to the input directory for missing files");
+                            System.out.println((((double) stepSize / (pcs.size() - 1)) % 1));
+                            System.exit(0);
+                        }
+                        stepSize = (int) ((double) stepSize / (pcs.size() - 1));
+                    } else {
+                        stepSize = pcs.get(1);
+                        max = pcs.get(1);
+                    }
+
+                    System.out.println("Stepsize: " + stepSize);
+                    System.out.println("Max: " + max);
+
 
                     if (!inventorizepcqtl) {
                         p.inventory(in, cis, trans, max, stepSize);
