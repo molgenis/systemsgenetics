@@ -79,6 +79,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	public TriTyperGenotypeData(String location) throws IOException {
 		this(location, 1024);
 	}
+	
+	public TriTyperGenotypeData(File location) throws IOException {
+		this(location, 1024, null, false);
+	}
 
 	public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
 		this(location, cacheSize, null);
