@@ -88,6 +88,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.1</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -97,7 +98,26 @@
 					</execution>
 				</executions>
 				<configuration>
-					<finalName>${artifactId}-${version}-dep</finalName>
+					<finalName>${artifactId}-${version}-dependencies</finalName>
+					<shadedArtifactAttached>true</shadedArtifactAttached>
+					<shadedClassifierName>stand-alone</shadedClassifierName>
+					<filters>
+						<filter>
+							<!--
+        Exclude files that sign a jar
+        (one or multiple of the dependencies).
+        One may not repack a signed jar without
+        this, or you will get a
+        SecurityException at program start.
+       -->
+							<artifact>*:*</artifact>
+							<excludes>
+								<exclude>META-INF/*.SF</exclude>
+								<exclude>META-INF/*.RSA</exclude>
+								<exclude>META-INF/*.INF</exclude> <!-- This one may not be required -->
+							</excludes>
+						</filter>
+					</filters>
 				</configuration>
 			</plugin>
 		</plugins>
