@@ -59,6 +59,8 @@ public class ImputeImputedToTriTyperV2 {
                         System.out.println("WARNING: the number of samples in " + listOfSamplesToIncludeFile + " is larger than the actual number of samples in the imputed data (according to your specification).");
                     }
 
+                    System.out.println("About to include: " + samplesToInclude.size() + "\t out of " + allSamples.size());
+
                     // give each sample a new ID..
                     int ctr = 0;
                     sampleToId = new int[allSamples.size()];
@@ -75,6 +77,7 @@ public class ImputeImputedToTriTyperV2 {
 
                     if (nrSamplesToInclude == 0) {
                         System.err.println("ERROR: none of the samples will be included. Check the sample identifier overlap between " + sampleListFile + " and " + listOfSamplesToIncludeFile);
+                        System.exit(-1);
                     }
 
                     System.out.println("Total number of samples that will be eventually included: " + nrSamplesToInclude);
