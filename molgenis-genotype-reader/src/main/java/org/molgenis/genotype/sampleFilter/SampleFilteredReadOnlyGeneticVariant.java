@@ -87,7 +87,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(original.getSampleVariants());
 
 		Iterator<Alleles> sampleAllelesIterator = sampleAlleles.iterator();
-		Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			while (sampleAllelesIterator.hasNext()) {
@@ -145,7 +145,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		float[] unfilteredDosages = original.getSampleDosages();
 		float[] includedSamplesDosages = new float[genotypeData.getIncludeCount()];
 
-		Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			int i = 0;
@@ -169,7 +169,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		byte[] unfilteredDosages = original.getSampleCalledDosages();
 		byte[] includedSamplesDosages = new byte[genotypeData.getIncludeCount()];
 
-		Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			int i = 0;
@@ -193,7 +193,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		ArrayList<Boolean> samplePhasing = new ArrayList<Boolean>(original.getSamplePhasing());
 
 		Iterator<Boolean> samplePhasingIterator = samplePhasing.iterator();
-		Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			while (samplePhasingIterator.hasNext()) {

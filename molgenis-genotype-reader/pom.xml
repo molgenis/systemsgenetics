@@ -66,11 +66,11 @@
 			<artifactId>jsr305</artifactId>
 			<version>1.3.2</version>
 		</dependency>
-	 <dependency>
-	  <groupId>${project.groupId}</groupId>
-	  <artifactId>genetica-libraries</artifactId>
-	  <version>1.0.0-SNAPSHOT</version>
-	 </dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>genetica-libraries</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -85,7 +85,43 @@
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<finalName>${artifactId}-${version}-dependencies</finalName>
+					<shadedArtifactAttached>true</shadedArtifactAttached>
+					<shadedClassifierName>stand-alone</shadedClassifierName>
+					<filters>
+						<filter>
+							<!--
+        Exclude files that sign a jar
+        (one or multiple of the dependencies).
+        One may not repack a signed jar without
+        this, or you will get a
+        SecurityException at program start.
+       -->
+							<artifact>*:*</artifact>
+							<excludes>
+								<exclude>META-INF/*.SF</exclude>
+								<exclude>META-INF/*.RSA</exclude>
+								<exclude>META-INF/*.INF</exclude> <!-- This one may not be required -->
+							</excludes>
+						</filter>
+					</filters>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
+
 
 </project>
