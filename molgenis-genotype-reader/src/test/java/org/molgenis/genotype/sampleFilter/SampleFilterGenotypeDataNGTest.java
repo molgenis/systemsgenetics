@@ -5,6 +5,7 @@
 package org.molgenis.genotype.sampleFilter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
@@ -222,7 +223,34 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 		
 		assertEquals(sampleAlleles, expectedAlleles);
 		
+		float[] expectedDosage = {2, 1, 0, 2, 2, 2, 1, 1};
 		
+		assertEqualsFloatArray(sampleDosage, expectedDosage);
+		
+		byte[] expectedCalledDosage = {2, 1, 0, 2, 2, 2, 1, 1};
+		
+		assertEqualsByteArray(sampleCalledDosage, expectedCalledDosage);
+		
+				
+	}
+	
+	private void assertEqualsFloatArray(float[] d1, float[] d2){
+		
+		assertEquals(d1.length, d2.length);
+		
+		for(int i = 0 ; i < d1.length ; ++i){
+			assertEquals(d1[i], d2[i]);
+		}
+		
+	}
+	
+	private void assertEqualsByteArray(byte[] d1, byte[] d2){
+		
+		assertEquals(d1.length, d2.length);
+		
+		for(int i = 0 ; i < d1.length ; ++i){
+			assertEquals(d1[i], d2[i]);
+		}
 		
 	}
 	
