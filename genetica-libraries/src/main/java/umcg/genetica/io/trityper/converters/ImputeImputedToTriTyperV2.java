@@ -7,8 +7,7 @@ package umcg.genetica.io.trityper.converters;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Set;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.WGAFileMatrixGenotype;
 import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
@@ -21,7 +20,7 @@ public class ImputeImputedToTriTyperV2 {
 
     public void importImputedDataWithProbabilityInformationImpute(String inputDir, String outputDir, int nrSamples, String sampleListFile, String listOfSamplesToIncludeFile) throws Exception {
 
-        System.out.println("This converter will process files complying to the following pattern: chr# and chr_#");
+        System.out.println("This converter will process files containing the following patterns: chr#, chr_# and chr-#");
         ArrayList<String> snps = new ArrayList<String>();
         ArrayList<String> snpMappings = new ArrayList<String>();
 
@@ -35,6 +34,7 @@ public class ImputeImputedToTriTyperV2 {
                 TextFile tf = new TextFile(sampleListFile, TextFile.R);
                 allSamples = tf.readAsArrayList();
                 tf.close();
+                System.out.println(sampleListFile + "\tcontains identifiers for " + allSamples.size() + " individuals");
                 if (allSamples.size() != nrSamples) {
                     System.err.println("The number of samples you specified in " + sampleListFile + " does not correspond to the number of samples you have specified using --nrSamples.");
                     System.exit(-1);
@@ -50,14 +50,11 @@ public class ImputeImputedToTriTyperV2 {
                 System.exit(-1);
             } else {
                 try {
-                    HashSet<String> samplesToInclude = null;
-                    TextFile tf = new TextFile(sampleListFile, TextFile.R);
-                    samplesToInclude = new HashSet<String>(tf.readAsArrayList());
+                    Set<String> samplesToInclude = null;
+                    TextFile tf = new TextFile(listOfSamplesToIncludeFile, TextFile.R);
+                    samplesToInclude = tf.readAsSet(0, TextFile.tab);
                     tf.close();
-                    if (allSamples.size() != nrSamples) {
-                        System.err.println("The number of samples you specified in " + sampleListFile + " does not correspond to the number of samples you have specified using --nrSamples");
-                        System.exit(-1);
-                    }
+
                     if (samplesToInclude.size() > allSamples.size()) {
                         System.out.println("WARNING: the number of samples in " + listOfSamplesToIncludeFile + " is larger than the actual number of samples in the imputed data (according to your specification).");
                     }
@@ -69,17 +66,18 @@ public class ImputeImputedToTriTyperV2 {
                         String sample = allSamples.get(i);
                         if (samplesToInclude.contains(sample)) {
                             sampleToId[i] = ctr;
+                            ctr++;
                         } else {
                             sampleToId[i] = -1;
                         }
                     }
                     nrSamplesToInclude = ctr;
 
-                    if (ctr == 0) {
+                    if (nrSamplesToInclude == 0) {
                         System.err.println("ERROR: none of the samples will be included. Check the sample identifier overlap between " + sampleListFile + " and " + listOfSamplesToIncludeFile);
                     }
 
-                    System.out.println("Total number of samples that will be eventually included: " + nrSamples);
+                    System.out.println("Total number of samples that will be eventually included: " + nrSamplesToInclude);
 
                 } catch (IOException e) {
                     System.err.println("Error: could not find or read file: " + listOfSamplesToIncludeFile);
@@ -300,7 +298,7 @@ public class ImputeImputedToTriTyperV2 {
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].toLowerCase().endsWith(".txt.gz") || files[i].toLowerCase().endsWith(".txt") || files[i].toLowerCase().endsWith(".gz")) {
-                if (files[i].toLowerCase().startsWith("chr" + chr) || files[i].toLowerCase().startsWith("chr_" + chr) || files[i].toLowerCase().startsWith("chr-" + chr)) {
+                if (files[i].toLowerCase().contains("chr" + chr) || files[i].toLowerCase().contains("chr_" + chr) || files[i].toLowerCase().contains("chr-" + chr)) {
                     filelist.add(files[i]);
                 }
             }
