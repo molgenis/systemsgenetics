@@ -109,4 +109,8 @@ public class SampleFilterGenotypeData implements RandomAccessGenotypeData {
 	public int getIncludeCount() {
 		return includeCount;
 	}
+	
+	public List<Sample> getOriginalSampleList(){
+		return original.getSamples();
+	}
 }
