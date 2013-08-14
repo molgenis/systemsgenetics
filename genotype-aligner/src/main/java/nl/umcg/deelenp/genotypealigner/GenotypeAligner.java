@@ -20,7 +20,7 @@ import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
-import org.molgenis.genotype.multipart.IncompetibleMultiPartGenotypeDataException;
+import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.util.LdCalculatorException;
 
 @SuppressWarnings("static-access")
@@ -340,7 +340,7 @@ class GenotypeAligner {
 			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
 			System.exit(1);
 			return;
-		} catch (IncompetibleMultiPartGenotypeDataException e) {
+		} catch (IncompatibleMultiPartGenotypeDataException e) {
 			System.err.println("Error combining the impute genotype data files: " + e.getMessage());
 			LOGGER.fatal("Error combining the impute genotype data files: " + e.getMessage(), e);
 			System.exit(1);
@@ -357,7 +357,7 @@ class GenotypeAligner {
 			LOGGER.fatal("Error reading reference data: " + e.getMessage(), e);
 			System.exit(1);
 			return;
-		} catch (IncompetibleMultiPartGenotypeDataException e) {
+		} catch (IncompatibleMultiPartGenotypeDataException e) {
 			System.err.println("Error combining the reference genotype data files: " + e.getMessage());
 			LOGGER.fatal("Error combining the reference genotype data files: " + e.getMessage(), e);
 			System.exit(1);

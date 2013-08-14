@@ -7,6 +7,7 @@ package eqtlmappingpipeline.pcaoptimum;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.Gpio;
 
@@ -81,13 +82,6 @@ public class PCAOptimumConsoleGUI {
                 inventorizepcqtl = true;
             } else if (arg.equals("--covariatesremoved")) {
                 covariatesremoved = true;
-            } else if (arg.equals("--cis")) {
-                cis = true;
-            } else if (arg.equals("--cistrans")) {
-                cis = true;
-                trans = true;
-            } else if (arg.equals("--trans")) {
-                trans = true;
             } else if (arg.equals("--transsnps")) {
                 transsnps = val;
             } else if (arg.equals("--cissnps")) {
@@ -136,21 +130,31 @@ public class PCAOptimumConsoleGUI {
 
                     //MJ
                     String[] fileList = Gpio.getListOfFiles(in);
-                    ArrayList<Integer> pcs = new ArrayList<Integer>();
+                    HashSet<Integer> pcsHash = new HashSet<Integer>();
+                    String endStr = "PCAsRemoved";
                     for (String f : fileList) {
-
-                        if (f.endsWith("PCAsRemoved")) {
+                        if (f.endsWith(endStr)) {
                             File t = new File(f);
                             String tmp = t.getName();
-                            tmp = tmp.replace("Cis-", "");
-                            tmp = tmp.replace("Trans-", "");
-                            tmp = tmp.replace("PCAsRemoved", "");
-
-                            pcs.add(Integer.parseInt(tmp));
+                            if (tmp.startsWith("Cis-")) {
+                                cis = true;
+                                tmp = tmp.replace("Cis-", "");
+                            } else if (tmp.startsWith("Trans-")) {
+                                trans = true;
+                                tmp = tmp.replace("Trans-", "");
+                            }
+                            tmp = tmp.replace(endStr, "");
+                            pcsHash.add(Integer.parseInt(tmp));
                         }
-                        //System.out.println(f);
                     }
+
+                    ArrayList<Integer> pcs = new ArrayList<Integer>();
+                    pcs.addAll(pcsHash);
                     Collections.sort(pcs);
+
+                    for (int i = 0; i < pcs.size(); i++) {
+                        System.out.println("Detected folder for: " + pcs.get(i) + " PCs.");
+                    }
 
                     int max = 0;
                     int stepSize = 0;
@@ -167,23 +171,35 @@ public class PCAOptimumConsoleGUI {
                         stepSize += pcs.get(i + 1) - pcs.get(i);
                     }
 
-                    if(pcs.isEmpty()){
+                    if (pcs.isEmpty()) {
                         System.out.println("No PCA corrected files."
-                                + "\n Please first run the normalization procedure.");
+                                + "\nPlease first run the normalization procedure.");
                         System.exit(0);
                     }
 
-                    if ((((double) stepSize / (pcs.size() - 1)) % 1) != 0) {
-                        System.out.println("Step size is invalid."
-                                + "\n Please look in to the input directory for missing files");
-                        System.out.println((((double) stepSize / (pcs.size() - 1)) % 1));
-                        System.out.println("Determined max: "+max);
-                        System.out.println("Determined stepsize: "+stepSize);
+                    if (pcs.size() == 1) {
+                        System.out.println("Only detected folder for: " + pcs.get(0) + " PCs removed."
+                                + "\nWe need more data to make a comparison.");
                         System.exit(0);
                     }
-                    stepSize = (int) ((double) stepSize / (pcs.size() - 1));
 
-                    //MJ
+                    // the minimal size for this array is 2: one for 0 PCs removed and one for n PCs removed.. 
+                    if (pcs.size() > 2) {
+                        if ((((double) stepSize / (pcs.size() - 1)) % 1) != 0) {
+                            System.out.println("Step size is invalid."
+                                    + "\nPlease look in to the input directory for missing files");
+                            System.out.println((((double) stepSize / (pcs.size() - 1)) % 1));
+                            System.exit(0);
+                        }
+                        stepSize = (int) ((double) stepSize / (pcs.size() - 1));
+                    } else {
+                        stepSize = pcs.get(1);
+                        max = pcs.get(1);
+                    }
+
+                    System.out.println("Stepsize: " + stepSize);
+                    System.out.println("Max: " + max);
+
 
                     if (!inventorizepcqtl) {
                         p.inventory(in, cis, trans, max, stepSize);
@@ -195,41 +211,24 @@ public class PCAOptimumConsoleGUI {
                 if (settingsfile == null && (in == null || inexp == null || out == null)) {
                     System.out.println("ERROR: Please supply settings file (--settings settings.xml) or --in, --out and --inexp");
                     printUsage();
-                } else if (cissnps == null || transsnps == null || !Gpio.exists(cissnps) || !Gpio.exists(transsnps)) {
-                    if (cissnps == null || transsnps == null) {
-                        System.out.println("ERROR: you must supply your set of SNPs to test for the optimal number of PCs to remove. ");
-                        System.out.println("Defined values: ");
-                        System.out.println("--cissnps: " + cissnps);
-                        System.out.println("--transsnps: " + transsnps);
-                    } else {
-                        if (!Gpio.exists(cissnps)) {
-                            System.out.println("Could not find file: " + cissnps);
-                        }
-
-                        if (!Gpio.exists(transsnps)) {
-                            System.out.println("Could not find file: " + transsnps);
-                        }
-                    }
+                } else if (cissnps == null && transsnps == null) {
+                    System.out.println("ERROR: please specify SNPs to test (using --cissnps and/or --transsnps).");
                 } else {
-                    if (performEigenvectorQTLMapping) {
-                        if (runonlypcqtlnormalization) {
-                            runOnlyNumPCsRemoved = null;
-                        }
-
-                        PCAOptimumGeneticVectors p = new PCAOptimumGeneticVectors();
-
-                        p.setSNPSets(cissnps, transsnps);
-                        p.setCovariatesRemoved(covariatesremoved);
-                        p.run(settingsfile, settingstexttoreplace, settingstexttoreplacewith,
-                                in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, snpfile, threads, runonlypcqtlnormalization, runOnlyNumPCsRemoved);
-                    } else {
-                        PCAOptimum p = new PCAOptimum();
-                        p.setSNPSets(cissnps, transsnps);
-                        p.setCovariatesRemoved(covariatesremoved);
-                        p.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, snpfile, threads, nrEQTLsToOutput, null, null);
+                    if (cissnps != null && !Gpio.exists(cissnps)) {
+                        System.out.println("ERROR: cissnps specified but could not be found:");
+                        System.out.println(cissnps);
+                        System.exit(-1);
                     }
-
-
+                    if (transsnps != null && !Gpio.exists(transsnps)) {
+                        System.out.println("ERROR: cissnps specified but could not be found:");
+                        System.out.println(cissnps);
+                        System.exit(-1);
+                    }
+                    PCAOptimum p = new PCAOptimum();
+                    p.setSNPSets(cissnps, transsnps);
+                    p.setPerformpcqtlNormalization(performEigenvectorQTLMapping);
+                    p.setCovariatesRemoved(covariatesremoved);
+                    p.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, snpfile, threads, nrEQTLsToOutput, null, null);
                 }
             }
         } catch (Exception e) {
@@ -247,23 +246,16 @@ public class PCAOptimumConsoleGUI {
                 + "--inexpplatform\t\tstring\t\tGene expression platform\n"
                 + "--inexpannot\t\tstring\t\tLocation of annotation file for gene expression data\n"
                 + "--gte\t\t\tstring\t\tLocation of genotype to expression coupling file\n"
-                + "--cis\t\t\tstring\t\tDo a cis analysis (default)\n"
-                + "--trans\t\t\tstring\t\tDo a trans analysis\n"
-                + "--cistrans\t\tstring\t\tDo both a cis and a trans analysis\n"
                 + "--threads\t\tinteger\t\tNumber of threads to calculate with. Default is number of processors.\n"
                 + "--pcqtl\t\t\t\t\tPerform QTL mapping on eigenvectors, repeat PCA removal, and don't remove eigenvectors under genetic control\n"
                 + "--inventorize\t\tdir\t\tSummarize the PC optimum results for a certain outputdirectory\n"
                 + "--inventorize-pcqtl\tdir\t\tSummarize the PC optimum results for a certain outputdirectory\n"
                 + "--cissnps\t\tstring\t\tList of SNPs to test in cis\n"
                 + "--transsnps\t\tstring\t\tList of SNPs to test in trans\n"
-                
-                +"\nSpecific options for --pcqtl:\n"
+                + "\nSpecific options for --pcqtl:\n"
                 + "--covariatesremoved\t\t\tIndicate whether covariates were removed\n"
                 + "--onlynormalize\t\t\t\tOnly perform the pcqtl mapping and subsequent normalization\n"
-                + "--maponpc\t\tInteger\t\tOnly perform the eQTL mapping on the nth PC removed\n"
-                );
+                + "--maponpc\t\tInteger\t\tOnly perform the eQTL mapping on the nth PC removed\n");
         System.out.println("");
     }
-    
-    
 }

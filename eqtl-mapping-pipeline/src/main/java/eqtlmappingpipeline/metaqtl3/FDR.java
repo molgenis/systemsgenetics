@@ -694,6 +694,7 @@ public class FDR {
                     output = Strings.concat(data, Strings.tab) + "\t" + fdr;
                     if (fdr <= fdrcutoff) {
                         outSignificant.writeln(output);
+                        nrSignificantEQTLs++;
                     }
                     previousIndex = pIndex;
                 }

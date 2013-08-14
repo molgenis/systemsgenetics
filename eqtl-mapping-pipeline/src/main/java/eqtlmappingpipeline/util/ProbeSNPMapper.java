@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.util;
 
-import eqtlmappingpipeline.qcpca.SortableSNP;
+import umcg.genetica.containers.SortableSNP;
 import java.util.ArrayList;
 import java.util.HashMap;
 import umcg.genetica.io.text.TextFile;

@@ -10,7 +10,6 @@ import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.cis.CisAnalysis;
 import eqtlmappingpipeline.binarymeta.util.SNPAlleleCheck;
 import eqtlmappingpipeline.metaqtl3.FDR;
-import eqtlmappingpipeline.util.LDCalc;
 import java.io.IOException;
 
 /**
