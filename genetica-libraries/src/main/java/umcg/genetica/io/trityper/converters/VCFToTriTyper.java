@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
@@ -83,14 +82,12 @@ public class VCFToTriTyper {
 		String[] files = Gpio.getListOfFiles(dir);
 		ArrayList<String> finalFiles = new ArrayList<String>();
 		for (String file : files) {
-			if (file.endsWith(".vcf")) {
+			if (file.endsWith(".vcf") || file.endsWith(".vcf.gz")) {
 				finalFiles.add(file);
 			}
 		}
 
 		files = finalFiles.toArray(new String[0]);
-
-
 
 		System.out.println("Found " + files.length + " vcf files");
 		if (files.length == 0) {
@@ -111,8 +108,9 @@ public class VCFToTriTyper {
 
 		String chrNum = "";
 		for (String f : fileNameElems) {
-			if (f.startsWith("chr")) {
-				chrNum = "Chr" + f.substring(3);
+            String lowerCaseF = f.toLowerCase();
+			if (lowerCaseF.contains("chr")) {
+				chrNum = "Chr" + lowerCaseF.replaceAll("[^\\d.]", "");
 			}
 
 		}

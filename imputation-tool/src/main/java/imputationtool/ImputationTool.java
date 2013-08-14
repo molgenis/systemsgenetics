@@ -20,6 +20,7 @@ import umcg.genetica.io.trityper.converters.TriTyperReferenceConcordantPedAndMap
 import umcg.genetica.io.trityper.converters.TriTyperToPedAndMapConverter;
 import umcg.genetica.io.trityper.converters.TriTyperToPlinkDosage;
 import umcg.genetica.io.trityper.converters.TriTyperToVCF;
+import umcg.genetica.io.trityper.converters.VCFToTriTyper;
 import umcg.genetica.io.trityper.util.TriTyperConcatDatasets;
 import umcg.genetica.io.trityper.util.TriTyperGenotypeDataMerger;
 
@@ -77,6 +78,7 @@ public class ImputationTool {
         Integer nrSamples = null;
         String sampleFile = null;
         String sampleFileToInclude = null;
+        String pattern = null;
 
         boolean splitbychromosome = false;
 
@@ -96,6 +98,8 @@ public class ImputationTool {
                 in = val;
             } else if (arg.equals("--name")) {
                 inName = val;
+            } else if (arg.equals("--pattern")) {
+                pattern = val;
             } else if (arg.equals("--in2")) {
                 in2 = val;
             } else if (arg.equals("--name2")) {
@@ -249,6 +253,12 @@ public class ImputationTool {
             System.out.println("out:\t" + out);
             convertTriTyperToVcf(in, out);
 
+        } else if (mode.equals("vcftt")) {
+            System.out.println("in:\t" + in);
+            System.out.println("out:\t" + out);
+            System.out.println("pattern:\t" + pattern);
+            convertVCFToTriTyper(in, out, pattern);
+
         } else if (mode.equals("mmtt")) {
             System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
@@ -337,8 +347,9 @@ public class ImputationTool {
                 + "--mode concat --in TriTyperDir1;TriTyperDir2;TriTyperDirN --out outdir\n");
 
         System.out.println("---------------------\nVCF\n---------------------\n");
-        System.out.println("# Convert TriTyper to VCF\n"
-                + "--mode ttvcf --in indir --out outdir \n");
+        System.out.println("# Convert TriTyper to VCF and vice versa\n"
+                + "--mode ttvcf --in indir --out outdir \n"
+                + "--mode vcftt --in infile --out outdir [--pattern pattern]\n");
 
         System.exit(0);
     }
@@ -508,6 +519,18 @@ public class ImputationTool {
             System.out.println("Warning! All genotypes are exported as if phased");
             TriTyperToVCF ttvcfConvertor = new TriTyperToVCF();
             ttvcfConvertor.convert(in, out, null);
+        }
+
+    }
+
+    private void convertVCFToTriTyper(String in, String out, String pattern) throws IOException, Exception {
+        if (in == null || out == null) {
+            System.out.println("Please provide: --in and --out for --mode vcftt");
+            System.exit(0);
+        } else {
+
+            VCFToTriTyper tt = new VCFToTriTyper();
+            tt.parse(in, out, pattern);
         }
 
     }
