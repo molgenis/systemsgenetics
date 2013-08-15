@@ -28,9 +28,9 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
 	private final GeneticVariant original;
-	private final SampleFilterGenotypeData genotypeData;
+	private final SampleFilterableGenotypeData genotypeData;
 
-	public SampleFilteredReadOnlyGeneticVariant(GeneticVariant original, SampleFilterGenotypeData genotypeData) {
+	public SampleFilteredReadOnlyGeneticVariant(GeneticVariant original, SampleFilterableGenotypeData genotypeData) {
 		this.original = original;
 		this.genotypeData = genotypeData;
 	}
@@ -92,7 +92,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		try {
 			while (sampleAllelesIterator.hasNext()) {
 				sampleAllelesIterator.next();
-				if (!sampleIterator.next().isIncluded()) {
+				if (!genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
 					sampleAllelesIterator.remove();
 				}
 			}
@@ -143,14 +143,14 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	public float[] getSampleDosages() {
 
 		float[] unfilteredDosages = original.getSampleDosages();
-		float[] includedSamplesDosages = new float[genotypeData.getIncludeCount()];
+		float[] includedSamplesDosages = new float[genotypeData.getIncludedSampleCount()];
 
 		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			int i = 0;
 			for (float dosage : unfilteredDosages) {
-				if (sampleIterator.next().isIncluded()) {
+				if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
 					includedSamplesDosages[i] = dosage;
 					++i;
 				}
@@ -167,14 +167,14 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	public byte[] getSampleCalledDosages() {
 
 		byte[] unfilteredDosages = original.getSampleCalledDosages();
-		byte[] includedSamplesDosages = new byte[genotypeData.getIncludeCount()];
+		byte[] includedSamplesDosages = new byte[genotypeData.getIncludedSampleCount()];
 
 		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			int i = 0;
 			for (byte dosage : unfilteredDosages) {
-				if (sampleIterator.next().isIncluded()) {
+				if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
 					includedSamplesDosages[i] = dosage;
 					++i;
 				}
@@ -198,7 +198,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		try {
 			while (samplePhasingIterator.hasNext()) {
 				samplePhasingIterator.next();
-				if (!sampleIterator.next().isIncluded()) {
+				if (!genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
 					samplePhasingIterator.remove();
 				}
 			}

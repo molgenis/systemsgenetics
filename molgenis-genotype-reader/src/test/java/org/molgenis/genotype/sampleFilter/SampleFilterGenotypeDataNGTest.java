@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	
 	private RandomAccessGenotypeData genotypeDataOriginal;
-	private SampleFilterGenotypeData genotypeDataFiltered;
+	private SampleFilterableGenotypeData genotypeDataFiltered;
 	
 	public SampleFilterGenotypeDataNGTest() {
 	}
@@ -37,7 +37,7 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	public void setUpMethod() throws Exception {
 		
 		genotypeDataOriginal = new TriTyperGenotypeData(getTriTyperFolder().getAbsolutePath());
-		genotypeDataFiltered = new SampleFilterGenotypeData(genotypeDataOriginal);
+		genotypeDataFiltered = new SampleFilterableGenotypeDataDecorator(genotypeDataOriginal, new SampleIncludedFilter());
 		
 	}
 
@@ -192,11 +192,11 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	}
 
 	/**
-	 * Test of getIncludeCount method, of class SampleFilterGenotypeData.
+	 * Test of getIncludedSampleCount method, of class SampleFilterGenotypeData.
 	 */
 	@Test
 	public void testGetIncludeCount() {
-		assertEquals(genotypeDataFiltered.getIncludeCount(), 8);
+		assertEquals(genotypeDataFiltered.getIncludedSampleCount(), 8);
 	}
 	
 	private void testFilteredRs11089130(GeneticVariant rs11089130){

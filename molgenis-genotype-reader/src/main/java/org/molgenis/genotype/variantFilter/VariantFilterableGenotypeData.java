@@ -9,9 +9,8 @@ package org.molgenis.genotype.variantFilter;
  * @author Patrick Deelen
  */
 public interface VariantFilterableGenotypeData {
-	
+
 	public void setFilter(VariantFilter filter);
-	
+
 	public VariantFilter getFilter();
-	
 }
