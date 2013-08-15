@@ -14,9 +14,9 @@ import org.molgenis.genotype.variant.GeneticVariant;
 public class ConvertToSampleFilterIterable implements Iterable<GeneticVariant> {
 
 	private final Iterable<GeneticVariant> originalIterable;
-	private final SampleFilterGenotypeData genotypeData;
+	private final SampleFilterableGenotypeData genotypeData;
 
-	public ConvertToSampleFilterIterable(Iterable<GeneticVariant> originalIterable, SampleFilterGenotypeData genotypeData) {
+	public ConvertToSampleFilterIterable(Iterable<GeneticVariant> originalIterable, SampleFilterableGenotypeData genotypeData) {
 		this.originalIterable = originalIterable;
 		this.genotypeData = genotypeData;
 	}
