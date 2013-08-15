@@ -14,13 +14,13 @@ import org.molgenis.genotype.variant.GeneticVariant;
 public class ConvertToSampleFilterIterator implements Iterator<GeneticVariant> {
 
 	private final Iterator<GeneticVariant> originalIterator;
-	private final SampleFilterGenotypeData genotypeData;
+	private final SampleFilterableGenotypeData genotypeData;
 
-	public ConvertToSampleFilterIterator(Iterator<GeneticVariant> originalIterator, SampleFilterGenotypeData genotypeData) {
+	public ConvertToSampleFilterIterator(Iterator<GeneticVariant> originalIterator, SampleFilterableGenotypeData genotypeData) {
 		this.originalIterator = originalIterator;
 		this.genotypeData = genotypeData;
 	}
-	
+
 	@Override
 	public boolean hasNext() {
 		return originalIterator.hasNext();
@@ -35,6 +35,4 @@ public class ConvertToSampleFilterIterator implements Iterator<GeneticVariant> {
 	public void remove() {
 		throw new UnsupportedOperationException("Not supported. Use modifiable genotype data to remove individual variants or use gc genotype data");
 	}
-
-	
 }

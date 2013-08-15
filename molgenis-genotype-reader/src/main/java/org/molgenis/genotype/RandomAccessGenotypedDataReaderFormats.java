@@ -8,7 +8,11 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
+import org.molgenis.genotype.sampleFilter.SampleFilter;
+import org.molgenis.genotype.sampleFilter.SampleFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
+import org.molgenis.genotype.variantFilter.VariantFilter;
+import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 public enum RandomAccessGenotypedDataReaderFormats {
@@ -55,5 +59,33 @@ public enum RandomAccessGenotypedDataReaderFormats {
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
+	}
+
+	/**
+	 * Samples are filtered first then the variant filter is applied.
+	 * 
+	 * @param path
+	 * @param cacheSize
+	 * @param variantFilter
+	 * @param sampleFilter
+	 * @return
+	 * @throws IOException 
+	 */
+	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException{
+		
+		switch (this) {
+			case TRITYPER:
+				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
+			default:
+				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize);
+				if(sampleFilter != null){
+					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
+				}
+				if(variantFilter != null){
+					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
+				}
+				return genotypeData;
+		}
+		
 	}
 }

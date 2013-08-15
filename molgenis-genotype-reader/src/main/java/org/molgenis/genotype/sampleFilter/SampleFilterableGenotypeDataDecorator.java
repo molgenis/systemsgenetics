@@ -18,25 +18,23 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class SampleFilterGenotypeData implements RandomAccessGenotypeData {
-
-	private final RandomAccessGenotypeData original;
-	private final int includeCount;
+public class SampleFilterableGenotypeDataDecorator  implements RandomAccessGenotypeData, SampleFilterableGenotypeData{
+	
+		private final RandomAccessGenotypeData original;
 	private final ArrayList<Sample> includedSamples;
+	private final SampleFilter sampleFilter;
 
-	public SampleFilterGenotypeData(RandomAccessGenotypeData original) {
+	public SampleFilterableGenotypeDataDecorator(RandomAccessGenotypeData original, SampleFilter sampleFilter) {
 		this.original = original;
+		this.sampleFilter = sampleFilter;
 
 		includedSamples = new ArrayList<Sample>();
-		
-		int count = 0;
+
 		for (Sample sample : original.getSamples()) {
-			if (sample.isIncluded()) {
+			if (sampleFilter.doesSamplePassFilter(sample)) {
 				includedSamples.add(sample);
-				++count;
 			}
 		}
-		includeCount = count;
 
 	}
 
@@ -106,11 +104,19 @@ public class SampleFilterGenotypeData implements RandomAccessGenotypeData {
 		return new ConvertToSampleFilterIterable(original, this).iterator();
 	}
 
-	public int getIncludeCount() {
-		return includeCount;
+	@Override
+	public int getIncludedSampleCount() {
+		return includedSamples.size();
 	}
-	
-	public List<Sample> getOriginalSampleList(){
+
+	@Override
+	public List<Sample> getOriginalSampleList() {
 		return original.getSamples();
 	}
+
+	@Override
+	public SampleFilter getSampleFilter() {
+		return sampleFilter;
+	}
+	
 }
