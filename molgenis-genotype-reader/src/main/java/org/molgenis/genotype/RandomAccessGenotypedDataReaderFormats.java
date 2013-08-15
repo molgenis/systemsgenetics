@@ -61,6 +61,16 @@ public enum RandomAccessGenotypedDataReaderFormats {
 		}
 	}
 
+	/**
+	 * Samples are filtered first then the variant filter is applied.
+	 * 
+	 * @param path
+	 * @param cacheSize
+	 * @param variantFilter
+	 * @param sampleFilter
+	 * @return
+	 * @throws IOException 
+	 */
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException{
 		
 		switch (this) {
