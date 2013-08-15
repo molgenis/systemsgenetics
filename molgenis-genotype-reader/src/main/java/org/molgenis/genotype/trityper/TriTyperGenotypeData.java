@@ -28,10 +28,11 @@ import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.CaseControlAnnotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
+import org.molgenis.genotype.sampleFilter.SampleFilter;
+import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
@@ -68,7 +69,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private HashMap<String, SampleAnnotation> sampleAnnotationMap;
 	private HashMap<String, Sequence> sequences;
 	private final VariantFilter variantFilter;
-	private final boolean readOnlyIncludedIndividuals;
+	private final SampleFilter sampleFilter;
 	/**
 	 * These are the samples as visible to the outside.
 	 * readOnlyIncludedIndividuals is true then a subset of all samples in
@@ -77,25 +78,29 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private ArrayList<Sample> includedSamples;
 
 	public TriTyperGenotypeData(String location) throws IOException {
-		this(location, 1024);
+		this(new File(location), 1024, null, null);
 	}
-	
+
 	public TriTyperGenotypeData(File location) throws IOException {
-		this(location, 1024, null, false);
+		this(location, 1024, null, null);
 	}
 
 	public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
-		this(location, cacheSize, null);
+		this(new File(location), cacheSize, null, null);
 	}
 
 	public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter) throws IOException {
-		this(new File(location), cacheSize, variantFilter, false);
+		this(new File(location), cacheSize, variantFilter, null);
 	}
 
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
+		this(location, cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
+	}
+
+	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
 		this.variantFilter = variantFilter;
-		this.readOnlyIncludedIndividuals = readOnlyIncludedIndividuals;
+		this.sampleFilter = sampleFilter;
 
 		if (cacheSize <= 0) {
 			variantProvider = this;
@@ -251,10 +256,12 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		t.close();
 		LOG.info("Loaded " + samples.size() + " samples.\n" + visitedSamples.size() + " samples have annotation: " + numIncluded + " included, " + numFemale + " female, " + numMale + " male, " + numUnknownSex + " with unknown sex");
 
-		if (readOnlyIncludedIndividuals) {
+		if (sampleFilter != null) {
 			includedSamples = new ArrayList<Sample>(numIncluded);
 			for (Sample sample : samples) {
-				includedSamples.add(sample);
+				if (sampleFilter.doesSamplePassFilter(sample)) {
+					includedSamples.add(sample);
+				}
 			}
 		} else {
 			includedSamples = samples;
@@ -402,7 +409,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		List<Alleles> alleles = new ArrayList<Alleles>(includedSamples.size());
 		byte[] bufferArr = buffer.array();
 		for (int i = 0; i < numIndividuals; i++) {
-			if (!readOnlyIncludedIndividuals || samples.get(i).isIncluded()) {
+			if (sampleFilter == null || sampleFilter.doesSamplePassFilter(samples.get(i))) {
 				int allele2Pos = numIndividuals + i;
 				Alleles a = Alleles.createAlleles(TriTyperAlleleAnnotation.convertByteToAllele(bufferArr[i]), TriTyperAlleleAnnotation.convertByteToAllele(bufferArr[allele2Pos]));
 				alleles.add(a);
@@ -458,7 +465,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			}
 			float[] dosageValuesFloat = new float[includedSamples.size()];
 			for (int i = 0, j = 0; i < dosageValues.length; i++) {
-				if (!readOnlyIncludedIndividuals || samples.get(i).isIncluded()) {
+				if (sampleFilter == null || sampleFilter.doesSamplePassFilter(samples.get(i))) {
 					dosageValuesFloat[j] = ((float) (-Byte.MIN_VALUE + dosageValues[ i])) / 100;
 					++j;
 				}
