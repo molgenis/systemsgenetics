@@ -80,9 +80,9 @@ public class ResultProcessorThread extends Thread {
         m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
 
         int tmpbuffersize = m_maxResults / 4;
-        if(tmpbuffersize == 0){
+        if (tmpbuffersize == 0) {
             tmpbuffersize = 10;
-        } else if(tmpbuffersize > 250000){
+        } else if (tmpbuffersize > 250000) {
             tmpbuffersize = 250000;
         }
         tmpEQTLBuffer = new EQTL[tmpbuffersize];
@@ -185,9 +185,9 @@ public class ResultProcessorThread extends Thread {
                                 if (alleles == null) {
                                     System.err.println("SNP has null alleles: ");
                                     for (int d = 0; d < snps.length; d++) {
-                                        
+
                                         if (snps[d] != null) {
-                                            
+
                                             allele = snps[d].getMinorAllele();
                                             System.err.println(allele);
                                             alleles = snps[d].getAlleles();
@@ -227,6 +227,18 @@ public class ResultProcessorThread extends Thread {
 
             progressbar.close();
 
+            if (nrInFinalBuffer == 0) {
+                
+                if (m_createBinaryFiles) {
+                    for (int d = 0; d < m_gg.length; d++) {
+                        m_dsSNPSummary[d].close();
+                        m_dsZScoreMatrix[d].flush();
+                        m_dsZScoreMatrix[d].close();
+                    }
+                }
+                throw new IllegalStateException("QTL mapping did not yield any results");
+            }
+
             if (m_createBinaryFiles) {
                 for (int d = 0; d < m_gg.length; d++) {
                     m_dsSNPSummary[d].close();
@@ -234,6 +246,7 @@ public class ResultProcessorThread extends Thread {
                     m_dsZScoreMatrix[d].close();
                 }
             }
+
 
 
             System.out.println(totalcounter);
@@ -309,17 +322,17 @@ public class ResultProcessorThread extends Thread {
         e.pid = pid;
         e.sid = sid;
         //if (!m_permuting) {
-            e.alleleAssessed = assessedAllele;
-            e.zscore = zscore;
-            e.alleles = alleles;
-            e.datasetZScores = zscores;
-            e.datasetsSamples = numSamples;
-            e.correlations = correlations;
-            e.datasetfc = fc;
-            e.datasetbeta = beta;
-            e.datasetbetase = betase;
-            e.finalbeta = finalbeta;
-            e.finalbetase = finalbetase;
+        e.alleleAssessed = assessedAllele;
+        e.zscore = zscore;
+        e.alleles = alleles;
+        e.datasetZScores = zscores;
+        e.datasetsSamples = numSamples;
+        e.correlations = correlations;
+        e.datasetfc = fc;
+        e.datasetbeta = beta;
+        e.datasetbetase = betase;
+        e.finalbeta = finalbeta;
+        e.finalbetase = finalbetase;
         //}
         tmpEQTLBuffer[m_eQTLBufferCounter] = e;
 
@@ -354,7 +367,7 @@ public class ResultProcessorThread extends Thread {
         } else {
             finalEQTLs = new EQTL[m_maxResults];
             System.arraycopy(tmp, 0, finalEQTLs, 0, m_maxResults);
-            for(int i=m_maxResults; i<tmp.length; i++){
+            for (int i = m_maxResults; i < tmp.length; i++) {
                 tmp[i].cleanUp();
                 tmp[i] = null;
             }

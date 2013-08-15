@@ -43,7 +43,7 @@ public class ZScores {
         weightedZ /= Math.sqrt(sampleSizeSum);
         return weightedZ;
     }
-    
+
     /**
      *
      * Calculates a weighted Z-score according to Whitlock's paper:
@@ -63,7 +63,7 @@ public class ZScores {
         for (int j = 0; j < zScores.length; j++) {
             if (!Double.isNaN(zScores[j])) {
                 weightedZ += Math.sqrt(sampleSizes[j]) * weights[j] * zScores[j];
-                sampleSizeSum += (sampleSizes[j]*weights[j]);
+                sampleSizeSum += (sampleSizes[j] * weights[j]);
             }
         }
         weightedZ /= Math.sqrt(sampleSizeSum);
@@ -108,11 +108,12 @@ public class ZScores {
     public static double pToZ(double p) {
         return Probability.normalInverse(p);
     }
-    
+
     /**
-     * 
-     * Returns the Z-score for a given correlation coefficient from Student's t distribution.
-     * 
+     *
+     * Returns the Z-score for a given correlation coefficient from Student's t
+     * distribution.
+     *
      * @param correlation correlation coefficient (r)
      * @param nrSamples number of samples used
      * @return Z-score
@@ -137,11 +138,12 @@ public class ZScores {
         }
         return zScore;
     }
-    
+
     /**
-     * 
-     * Returns the two-sided p-value for a given correlation coefficient from Student's t distribution.
-     * 
+     *
+     * Returns the two-sided p-value for a given correlation coefficient from
+     * Student's t distribution.
+     *
      * @param correlation correlation coefficient (r)
      * @param nrSamples number of samples used
      * @return Z-score
@@ -163,7 +165,6 @@ public class ZScores {
         }
         return pValue;
     }
-    
 //    private static void zScoreToCorrelation(int nrSamples) {
 //        if (m_zScoreToCorrelation == null || m_zScoreToCorrelation.length != nrSamples) {
 //            //Fast look-up service to determine P-Value for individual Spearman correlation coefficient, given sample size:
@@ -322,8 +323,8 @@ public class ZScores {
         }
         return x;
     }
-    
-    public static double betaToZ(double b, double se, double n){
-        return b/(se*Math.sqrt(n));
+
+    public static double betaToZ(double b, double se, double n) {
+        return b / (se * Math.sqrt(n));
     }
 }
