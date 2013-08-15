@@ -2,11 +2,13 @@ molgenis-genotype-reader
 ========================
 
 **Downloading latested jar**
+
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$molgenis-genotype-reader/lastBuild/
 
 Make sure to download the stand alone jar: molgenis-genotype-reader-******-stand-alone.jar	
 
 **Examples**
+
 The org.molgenis.genotype.examples package contains some basic examples. This should get you started
 
 
