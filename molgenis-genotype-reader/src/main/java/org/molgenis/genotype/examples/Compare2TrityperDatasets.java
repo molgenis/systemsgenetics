@@ -16,7 +16,9 @@ import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
- *
+ * Untested example.
+ * 
+ * 
  * @author Patrick Deelen
  */
 public class Compare2TrityperDatasets {
@@ -85,7 +87,7 @@ public class Compare2TrityperDatasets {
 				Alleles x = dataset1VariantAlleles.get(dataset1SampleMap.get(sharedSample));
 				Alleles y = dataset2VariantAlleles.get(dataset2SampleMap.get(sharedSample));
 				
-				//Compare if same alleles. In this case AT == TA
+				//Compare if same alleles. In this case AT == TA.
 				if(x.sameAlleles(y)){
 					++countIdentical;
 				} else {
