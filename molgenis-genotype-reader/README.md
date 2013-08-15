@@ -1,13 +1,19 @@
 molgenis-genotype-reader
 ========================
 
+**Downloading latested jar**
+http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$molgenis-genotype-reader/lastBuild/
+
+Make sure to download the stand alone jar: molgenis-genotype-reader-******-stand-alone.jar	
+
+**Examples**
+The org.molgenis.genotype.examples package contains some basic examples. This should get you started
+
+
 **How to build**
 <ul>
 	<li>Install Maven (http://maven.apache.org/) if you haven't done so already</li>
-	<li>Clone the molgenis-core git repo (https://github.com/molgenis/molgenis-core.git)</li>
-	<li>
-		Build molgenis-core with the following command: <code>mvn clean install</code> (in de molgenis-core root 		folder)
-	</li>
+	<li>Follow instructions in the general systemsgenetics repro on how to instal local jars</li>
 	<li>Build molgenis-genotype-reader (<code>mvn clean install)</code></li>
 </ul>
 <br/>
