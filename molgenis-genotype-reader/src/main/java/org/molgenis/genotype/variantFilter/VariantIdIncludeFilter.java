@@ -5,6 +5,7 @@
 package org.molgenis.genotype.variantFilter;
 
 import java.util.HashSet;
+import java.util.Set;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
@@ -13,9 +14,9 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class VariantIdIncludeFilter implements VariantFilter{
 
-	private final HashSet<String> include;
+	private final Set<String> include;
 
-	public VariantIdIncludeFilter(HashSet<String> include) {
+	public VariantIdIncludeFilter(Set<String> include) {
 		this.include = include == null ? new HashSet<String>() : include;
 	}
 

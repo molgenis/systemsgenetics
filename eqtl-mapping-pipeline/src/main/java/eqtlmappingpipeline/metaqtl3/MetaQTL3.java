@@ -836,6 +836,7 @@ public class MetaQTL3 {
             for (int d = 0; d < snploaders.length; d++) {
                 snploaders[d].close();
             }
+            System.exit(-1);
         }
 
 
