@@ -31,6 +31,11 @@ public class SNP {
     private byte[] alleles;
     public int nrCalled;
     private int[] genotypeFreq;
+    private byte alleleItr;
+
+    public byte getAlleleItr() {
+        return alleleItr;
+    }
 
     public void setChr(byte chr) {
         this.chr = chr;
@@ -70,7 +75,7 @@ public class SNP {
         genotypes = new byte[allele1.length];
         alleles = new byte[3];
 
-        byte alleleItr = 0;
+        alleleItr = 0;
         int missingGenotypes = 0;
         genotypeFreq = new int[3];
         int nrTotal = 0;

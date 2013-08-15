@@ -95,7 +95,7 @@ class WorkPackageProducer extends Thread {
 
                 ln = "SNP";
                 for (int d = 0; d < m_gg.length; d++) {
-                    ln += "\tSNPId\tFreqAA\tFreqAB\tFreqBB\tCR\tMAF\tHWE\tPassesQC";
+                    ln += "\tSNPId\tAlleles\tFreqAA\tFreqAB\tFreqBB\tCR\tMAF\tHWE\tPassesQC";
                 }
                 snplog.writeln(ln);
             }
@@ -153,7 +153,7 @@ class WorkPackageProducer extends Thread {
 
                         if (dSNP != null) {
                             loader.loadGenotypes(dSNP);
-                            if (!dSNP.passesQC() || dSNP.getCR() < m_callratethreshold || dSNP.getMAF() < m_mafthreshold || dSNP.getHWEP() < m_hwethreshold) {
+                            if (!dSNP.passesQC() || dSNP.getCR() < m_callratethreshold || dSNP.getMAF() < m_mafthreshold || dSNP.getHWEP() < m_hwethreshold || dSNP.getAlleleItr() > 2) {
                                 snps[d].setPassesQC(false);
                             } else {
                                 short dsPassingQC = wp.getDatasetsPassingQC();
@@ -164,10 +164,9 @@ class WorkPackageProducer extends Thread {
                             if (!m_permuting) {
                                 Integer snpid = m_gg[d].getGenotypeData().getSnpToSNPId().get(dSNP.getName());
                                 qcBuffer[i].append("\t").
-                                        append(snpid).append("\t").
-                                        append(dSNP.getGenotypeFreq()[0]).
-                                        append(" (").append(BaseAnnot.toString(dSNP.getAlleles()[0])).append(BaseAnnot.toString(dSNP.getAlleles()[0])).append(")").append("\t").append(dSNP.getGenotypeFreq()[1]).
-                                        append(" (").append(BaseAnnot.toString(dSNP.getAlleles()[0])).append(BaseAnnot.toString(dSNP.getAlleles()[1])).append(")").append("\t").
+                                        append(snpid).append("\t").append(BaseAnnot.getAllelesDescription(dSNP.getAlleles())).append("\t").
+                                        append(dSNP.getGenotypeFreq()[0]).append(" (").append(BaseAnnot.toString(dSNP.getAlleles()[0])).append(BaseAnnot.toString(dSNP.getAlleles()[0])).append(")").append("\t").
+                                        append(dSNP.getGenotypeFreq()[1]).append(" (").append(BaseAnnot.toString(dSNP.getAlleles()[0])).append(BaseAnnot.toString(dSNP.getAlleles()[1])).append(")").append("\t").
                                         append(dSNP.getGenotypeFreq()[2]).append(" (").append(BaseAnnot.toString(dSNP.getAlleles()[1])).append(BaseAnnot.toString(dSNP.getAlleles()[1])).append(")").append("\t").
                                         append(dSNP.getCR()).append("\t").append(dSNP.getMAF()).append("\t").append(dSNP.getHWEP()).append("\t").append(dSNP.passesQC());
                             }
@@ -242,7 +241,7 @@ class WorkPackageProducer extends Thread {
                 }
             }
 
-            if (!m_permuting) {
+            if (!m_permuting && snplog != null) {
                 snplog.close();
             }
         } catch (IOException e) {
