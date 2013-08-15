@@ -5,6 +5,7 @@
 package org.molgenis.genotype.sampleFilter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
@@ -27,7 +28,7 @@ import org.testng.annotations.Test;
 public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	
 	private RandomAccessGenotypeData genotypeDataOriginal;
-	private SampleFilterGenotypeData genotypeDataFiltered;
+	private SampleFilterableGenotypeData genotypeDataFiltered;
 	
 	public SampleFilterGenotypeDataNGTest() {
 	}
@@ -36,7 +37,7 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	public void setUpMethod() throws Exception {
 		
 		genotypeDataOriginal = new TriTyperGenotypeData(getTriTyperFolder().getAbsolutePath());
-		genotypeDataFiltered = new SampleFilterGenotypeData(genotypeDataOriginal);
+		genotypeDataFiltered = new SampleFilterableGenotypeDataDecorator(genotypeDataOriginal, new SampleIncludedFilter());
 		
 	}
 
@@ -191,11 +192,11 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	}
 
 	/**
-	 * Test of getIncludeCount method, of class SampleFilterGenotypeData.
+	 * Test of getIncludedSampleCount method, of class SampleFilterGenotypeData.
 	 */
 	@Test
 	public void testGetIncludeCount() {
-		assertEquals(genotypeDataFiltered.getIncludeCount(), 8);
+		assertEquals(genotypeDataFiltered.getIncludedSampleCount(), 8);
 	}
 	
 	private void testFilteredRs11089130(GeneticVariant rs11089130){
@@ -222,7 +223,34 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 		
 		assertEquals(sampleAlleles, expectedAlleles);
 		
+		float[] expectedDosage = {2, 1, 0, 2, 2, 2, 1, 1};
 		
+		assertEqualsFloatArray(sampleDosage, expectedDosage);
+		
+		byte[] expectedCalledDosage = {2, 1, 0, 2, 2, 2, 1, 1};
+		
+		assertEqualsByteArray(sampleCalledDosage, expectedCalledDosage);
+		
+				
+	}
+	
+	private void assertEqualsFloatArray(float[] d1, float[] d2){
+		
+		assertEquals(d1.length, d2.length);
+		
+		for(int i = 0 ; i < d1.length ; ++i){
+			assertEquals(d1[i], d2[i]);
+		}
+		
+	}
+	
+	private void assertEqualsByteArray(byte[] d1, byte[] d2){
+		
+		assertEquals(d1.length, d2.length);
+		
+		for(int i = 0 ; i < d1.length ; ++i){
+			assertEquals(d1[i], d2[i]);
+		}
 		
 	}
 	
