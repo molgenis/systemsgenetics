@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.variantFilter;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -124,6 +125,10 @@ public class RandomAccessGenotypeDataVariantQc implements RandomAccessGenotypeDa
 	
 	private Iterable<GeneticVariant> createQcIterable(Iterable<GeneticVariant> originalIterable){
 		return new VariantFilterIterable(new VariantFilterIterator(originalIterable.iterator(), qcChecker));
+	}
+
+	@Override
+	public void close() throws IOException {
 	}
 	
 }

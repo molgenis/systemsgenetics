@@ -335,5 +335,10 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
 	}
+	
+	@Override
+	public void close() throws IOException {
+		reader.close();
+	}
 
 }

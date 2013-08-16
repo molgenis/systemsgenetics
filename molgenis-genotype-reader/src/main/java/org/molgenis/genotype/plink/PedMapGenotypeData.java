@@ -347,4 +347,8 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 		return dosage;
 
 	}
+
+	@Override
+	public void close() throws IOException {
+	}
 }
