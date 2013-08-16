@@ -712,6 +712,7 @@ public class MetaQTL3 {
             permEnd = permStart + m_settings.nrPermutationsFDR + 1;
         }
 
+        boolean hasResults = true;
 
         for (int permutationRound = permStart; permutationRound < permEnd; permutationRound++) {
             RunTimer permtime = new RunTimer();
@@ -825,11 +826,8 @@ public class MetaQTL3 {
             }
             tf.close();
             if (lnCounter == 0) {
-                System.err.println("ERROR: QTL Mapping did not yield any results.");
-                for (int d = 0; d < snploaders.length; d++) {
-                    snploaders[d].close();
-                }
-                System.exit(-1);
+                System.err.println("WARNING: QTL Mapping did not yield any results.");
+                hasResults = false;
             }
 
 
@@ -840,7 +838,7 @@ public class MetaQTL3 {
             snploaders[d].close();
         }
 
-        if (!m_settings.runOnlyPermutations) {
+        if (!m_settings.runOnlyPermutations && hasResults) {
             if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
                 System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
                 FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null);
