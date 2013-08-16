@@ -44,7 +44,7 @@ public class ViolinBoxPlot {
         com.lowagie.text.Document document = null;
         com.lowagie.text.pdf.PdfWriter writer = null;
         com.lowagie.text.pdf.PdfContentByte cb = null;
-        
+
         BufferedImage bi = null;
         bi = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
         g2d = bi.createGraphics();
@@ -205,14 +205,14 @@ public class ViolinBoxPlot {
         bi = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
         g2d = bi.createGraphics();
 
-com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.lowagie.text.pdf.PdfContentByte cb = null;
         if (output == Output.PDF) {
             com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
             document = new com.lowagie.text.Document(rectangle);
             writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFileName));
 
             document.open();
-            cb =  writer.getDirectContent();
+            cb = writer.getDirectContent();
             cb.saveState();
             //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
@@ -276,73 +276,78 @@ com.lowagie.text.pdf.PdfContentByte cb = null;
 
         int nrVals = vals.length;
 
-        //Determine range of values:
-        double minVals = JSci.maths.ArrayMath.min(vals);
-        double maxVals = JSci.maths.ArrayMath.max(vals);
 
-        //Make frequency distribution:
-        int nrBins = 1 + (int) Math.round(Math.sqrt(nrVals) / 2d);
-        int[] binCount = new int[nrBins];
-        for (int n = 0; n < nrBins; n++) {
-            double lower = minVals + (maxVals - minVals) * (double) n / (double) nrBins;
-            double upper = minVals + (maxVals - minVals) * (double) (n + 1) / (double) nrBins;
-            for (int v = 0; v < nrVals; v++) {
-                if (vals[v] >= lower && vals[v] < upper) {
-                    binCount[n]++;
-                }
-            }
-        }
+        if (nrVals > 0) {
+            //Determine range of values:
+            double minVals = JSci.maths.ArrayMath.min(vals);
+            double maxVals = JSci.maths.ArrayMath.max(vals);
 
-        //Smooth the distribution:
-        int posYMin = y + height - (int) Math.round((double) height * (maxVals - minValue) / (maxValue - minValue));
-        int posYMax = y + height - (int) Math.round((double) height * (minVals - minValue) / (maxValue - minValue));
-        double[] posVal = new double[posYMax - posYMin + 1];
-        for (int pos = posYMin; pos <= posYMax; pos++) {
-            double value = (((-pos + y + height) * (maxValue - minValue)) / (double) height) + minValue;
+            //Make frequency distribution:
+            int nrBins = 1 + (int) Math.round(Math.sqrt(nrVals) / 2d);
+            int[] binCount = new int[nrBins];
             for (int n = 0; n < nrBins; n++) {
                 double lower = minVals + (maxVals - minVals) * (double) n / (double) nrBins;
                 double upper = minVals + (maxVals - minVals) * (double) (n + 1) / (double) nrBins;
-                if (value >= lower && value < upper) {
-                    posVal[pos - posYMin] = binCount[n];
-                }
-
-            }
-        }
-        double kernelWidth = 10;
-        double[] kernelWeights = new double[201];
-        for (int d = -100; d <= 100; d++) {
-            double weight = java.lang.Math.pow(java.lang.Math.E, -((double) d / (double) kernelWidth) * ((double) d / (double) kernelWidth) / 2);
-            kernelWeights[d + 100] = weight;
-        }
-        double[] posValSmoothed = new double[posYMax - posYMin + 1];
-        for (int pos = posYMin; pos <= posYMax; pos++) {
-            double valSmoothed = 0;
-            double sumWeights = 0;
-            for (int q = pos - 100; q <= pos + 100; q++) {
-                if (q >= posYMin && q <= posYMax) {
-                    sumWeights += kernelWeights[100 + q - pos];
-                    valSmoothed += kernelWeights[100 + q - pos] * posVal[q - posYMin];
+                for (int v = 0; v < nrVals; v++) {
+                    if (vals[v] >= lower && vals[v] < upper) {
+                        binCount[n]++;
+                    }
                 }
             }
-            posValSmoothed[pos - posYMin] = valSmoothed / sumWeights;
-        }
-        double maxSmoothedVal = JSci.maths.ArrayMath.max(posValSmoothed);
-        for (int pos = posYMin; pos <= posYMax; pos++) {
-            posValSmoothed[pos - posYMin] /= maxSmoothedVal;
+
+            //Smooth the distribution:
+            int posYMin = y + height - (int) Math.round((double) height * (maxVals - minValue) / (maxValue - minValue));
+            int posYMax = y + height - (int) Math.round((double) height * (minVals - minValue) / (maxValue - minValue));
+            double[] posVal = new double[posYMax - posYMin + 1];
+            for (int pos = posYMin; pos <= posYMax; pos++) {
+                double value = (((-pos + y + height) * (maxValue - minValue)) / (double) height) + minValue;
+                for (int n = 0; n < nrBins; n++) {
+                    double lower = minVals + (maxVals - minVals) * (double) n / (double) nrBins;
+                    double upper = minVals + (maxVals - minVals) * (double) (n + 1) / (double) nrBins;
+                    if (value >= lower && value < upper) {
+                        posVal[pos - posYMin] = binCount[n];
+                    }
+
+                }
+            }
+            double kernelWidth = 10;
+            double[] kernelWeights = new double[201];
+            for (int d = -100; d <= 100; d++) {
+                double weight = java.lang.Math.pow(java.lang.Math.E, -((double) d / (double) kernelWidth) * ((double) d / (double) kernelWidth) / 2);
+                kernelWeights[d + 100] = weight;
+            }
+            double[] posValSmoothed = new double[posYMax - posYMin + 1];
+            for (int pos = posYMin; pos <= posYMax; pos++) {
+                double valSmoothed = 0;
+                double sumWeights = 0;
+                for (int q = pos - 100; q <= pos + 100; q++) {
+                    if (q >= posYMin && q <= posYMax) {
+                        sumWeights += kernelWeights[100 + q - pos];
+                        valSmoothed += kernelWeights[100 + q - pos] * posVal[q - posYMin];
+                    }
+                }
+                posValSmoothed[pos - posYMin] = valSmoothed / sumWeights;
+            }
+            double maxSmoothedVal = JSci.maths.ArrayMath.max(posValSmoothed);
+            for (int pos = posYMin; pos <= posYMax; pos++) {
+                posValSmoothed[pos - posYMin] /= maxSmoothedVal;
+            }
+
+            //Draw shape:
+            GeneralPath path = new GeneralPath();
+            path.moveTo(x + width / 2, posYMin);
+            for (int pos = posYMin; pos <= posYMax; pos++) {
+                path.lineTo(x + width / 2 - posValSmoothed[pos - posYMin] * width / 2d - 1, pos);
+            }
+            for (int pos = posYMax; pos >= posYMin; pos--) {
+                path.lineTo(x + width / 2 + posValSmoothed[pos - posYMin] * width / 2d + 1, pos);
+            }
+            path.closePath();
+            g2d.draw(path);
+            g2d.fill(path);
         }
 
-        //Draw shape:
-        GeneralPath path = new GeneralPath();
-        path.moveTo(x + width / 2, posYMin);
-        for (int pos = posYMin; pos <= posYMax; pos++) {
-            path.lineTo(x + width / 2 - posValSmoothed[pos - posYMin] * width / 2d - 1, pos);
-        }
-        for (int pos = posYMax; pos >= posYMin; pos--) {
-            path.lineTo(x + width / 2 + posValSmoothed[pos - posYMin] * width / 2d + 1, pos);
-        }
-        path.closePath();
-        g2d.draw(path);
-        g2d.fill(path);
+
 
 
     }

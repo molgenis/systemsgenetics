@@ -712,132 +712,152 @@ public class MetaQTL3 {
             permEnd = permStart + m_settings.nrPermutationsFDR + 1;
         }
 
-        try {
-            for (int permutationRound = permStart; permutationRound < permEnd; permutationRound++) {
-                RunTimer permtime = new RunTimer();
 
-                if (permutationRound > 0) {
-                    System.out.print("Permuting data, round: " + permutationRound + " of " + m_settings.nrPermutationsFDR + "\n" + ConsoleGUIElems.LINE);
+        for (int permutationRound = permStart; permutationRound < permEnd; permutationRound++) {
+            RunTimer permtime = new RunTimer();
 
-                    for (int d = 0; d < m_gg.length; d++) {
-                        int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
-                        m_gg[d].permuteSampleLables();
+            if (permutationRound > 0) {
+                System.out.print("Permuting data, round: " + permutationRound + " of " + m_settings.nrPermutationsFDR + "\n" + ConsoleGUIElems.LINE);
 
-                        int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
-                        int identical = 0;
-                        for (int i = 0; i < indWGAPerm.length; i++) {
-                            if (indWGAOriginal[i] == indWGAPerm[i]) {
-                                identical++;
-                            }
+                for (int d = 0; d < m_gg.length; d++) {
+                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
+                    m_gg[d].permuteSampleLables();
+
+                    int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
+                    int identical = 0;
+                    for (int i = 0; i < indWGAPerm.length; i++) {
+                        if (indWGAOriginal[i] == indWGAPerm[i]) {
+                            identical++;
                         }
+                    }
 
 //                    System.out.println("After permuting: " + identical + " unchanged, " + indWGAOriginal.length + " total");
-                    }
-                    permuting = true;
-                } else {
-                    System.out.print("Running real eQTL analysis\n" + ConsoleGUIElems.LINE);
+                }
+                permuting = true;
+            } else {
+                System.out.print("Running real eQTL analysis\n" + ConsoleGUIElems.LINE);
+            }
+
+            int[][] expressionToGenotypeIds = new int[m_gg.length][0];
+            for (int d = 0; d < m_gg.length; d++) {
+                expressionToGenotypeIds[d] = m_gg[d].getExpressionToGenotypeIdArray();
+            }
+
+            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(100);
+            ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
+                    m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
+            resultthread.setName("ResultProcessorThread");
+            resultthread.start();
+
+            // start production in advance
+            LinkedBlockingQueue<WorkPackage> packageQueue = new LinkedBlockingQueue<WorkPackage>(100000);
+            WorkPackageProducer producer = new WorkPackageProducer(packageQueue, m_workPackages, m_snpList, m_probeList, m_probeTranslationTable, m_snpTranslationTable, m_gg, snploaders, m_settings, permuting);
+            producer.setName("WorkPackageProducerThread");
+            producer.start();
+
+            // run calculations
+            for (int tnum = 0; tnum < pool.length; tnum++) {
+                EQTLPlotter plotter = null;
+                if (!permuting) {
+                    plotter = new EQTLPlotter(m_gg, m_settings, m_probeList, m_probeTranslationTable);
                 }
 
-                int[][] expressionToGenotypeIds = new int[m_gg.length][0];
-                for (int d = 0; d < m_gg.length; d++) {
-                    expressionToGenotypeIds[d] = m_gg[d].getExpressionToGenotypeIdArray();
-                }
+                pool[tnum] = new CalculationThread(permutationRound, packageQueue, resultQueue, expressiondata, m_probeTranslationTable,
+                        expressionToGenotypeIds, m_settings, plotter, m_settings.createBinaryOutputFiles);
+                pool[tnum].setName("CalcThread-" + tnum);
+                pool[tnum].start();
 
-                LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(100);
-                ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
-                        m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
-                resultthread.setName("ResultProcessorThread");
-                resultthread.start();
+            }
 
-                // start production in advance
-                LinkedBlockingQueue<WorkPackage> packageQueue = new LinkedBlockingQueue<WorkPackage>(100000);
-                WorkPackageProducer producer = new WorkPackageProducer(packageQueue, m_workPackages, m_snpList, m_probeList, m_probeTranslationTable, m_snpTranslationTable, m_gg, snploaders, m_settings, permuting);
-                producer.setName("WorkPackageProducerThread");
-                producer.start();
+            // kill the threads
+            try {
 
-                // run calculations
-                for (int tnum = 0; tnum < pool.length; tnum++) {
-                    EQTLPlotter plotter = null;
-                    if (!permuting) {
-                        plotter = new EQTLPlotter(m_gg, m_settings, m_probeList, m_probeTranslationTable);
-                    }
-
-                    pool[tnum] = new CalculationThread(permutationRound, packageQueue, resultQueue, expressiondata, m_probeTranslationTable,
-                            expressionToGenotypeIds, m_settings, plotter, m_settings.createBinaryOutputFiles);
-                    pool[tnum].setName("CalcThread-" + tnum);
-                    pool[tnum].start();
-
-                }
-
-                // kill the threads
-                try {
-
-                    producer.join();
+                producer.join();
 
 
 
 //                System.out.println("Joining calculation threads");
-                    for (int threadNum = 0; threadNum < m_settings.nrThreads; threadNum++) {
-                        pool[threadNum].join();
-                    }
-
-                    WorkPackage poison = new WorkPackage();
-                    poison.results = new Result(true);
-                    resultQueue.put(poison);
-                    resultthread.join();
-
-                } catch (InterruptedException e) {
-                    System.err.println("Exception: Thread main interrupted.");
-                }
-                System.out.print(ConsoleGUIElems.LINE);
-                System.out.println("Round done. Elapsed time:\t" + permtime.getTimeDesc());
-                System.out.println("");
-                resultQueue.clear();
-                packageQueue.clear();
-
-                resultQueue = null;
-                packageQueue = null;
-                permtime = null;
-                producer = null;
-                resultthread = null;
-                expressionToGenotypeIds = null;
-                for (int i = 0; i < pool.length; i++) {
-                    pool[i] = null;
+                for (int threadNum = 0; threadNum < m_settings.nrThreads; threadNum++) {
+                    pool[threadNum].join();
                 }
 
+                WorkPackage poison = new WorkPackage();
+                poison.results = new Result(true);
+                resultQueue.put(poison);
+                resultthread.join();
 
+            } catch (InterruptedException e) {
+                System.err.println("Exception: Main Thread interrupted.");
+            }
+            System.out.print(ConsoleGUIElems.LINE);
+            System.out.println("Round done. Elapsed time:\t" + permtime.getTimeDesc());
+            System.out.println("");
+            resultQueue.clear();
+            packageQueue.clear();
 
+            resultQueue = null;
+            packageQueue = null;
+            permtime = null;
+            producer = null;
+            resultthread = null;
+            expressionToGenotypeIds = null;
+            for (int i = 0; i < pool.length; i++) {
+                pool[i] = null;
             }
 
-            for (int d = 0; d < snploaders.length; d++) {
-                snploaders[d].close();
+            // check whether there were results..
+            String fileName;
+            if (permutationRound > 0) {
+                fileName = m_settings.outputReportsDir + "PermutedEQTLsPermutationRound" + permutationRound + ".txt.gz";
+            } else {
+                fileName = m_settings.outputReportsDir + "eQTLs.txt.gz";
             }
-
-            if (!m_settings.runOnlyPermutations) {
-                if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
-                    System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
-                    FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null);
-
-                    if (m_settings.createDotPlot) {
-                        EQTLDotPlot edp = new EQTLDotPlot();
-                        try {
-                            edp.draw(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt", m_settings.outputReportsDir + "/DotPlot-FDR" + m_settings.fdrCutOff + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
-                        } catch (DocumentException ex) {
-                            Logger.getLogger(MetaQTL3.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                        edp = null;
-                    }
-
+            TextFile tf = new TextFile(fileName, TextFile.R);
+            tf.readLine(); // skip header
+            int lnCounter = 0;
+            String line = tf.readLine();
+            while (line != null) {
+                lnCounter++;
+                if (lnCounter > 1) {
+                    break;
                 }
+                line = tf.readLine();
+            }
+            tf.close();
+            if (lnCounter == 0) {
+                System.err.println("ERROR: QTL Mapping did not yield any results.");
+                for (int d = 0; d < snploaders.length; d++) {
+                    snploaders[d].close();
+                }
+                System.exit(-1);
             }
 
-        } catch (IllegalStateException e) {
-            System.err.println(e.getMessage());
-            for (int d = 0; d < snploaders.length; d++) {
-                snploaders[d].close();
-            }
-            System.exit(-1);
+
+
         }
+
+        for (int d = 0; d < snploaders.length; d++) {
+            snploaders[d].close();
+        }
+
+        if (!m_settings.runOnlyPermutations) {
+            if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
+                System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
+                FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null);
+
+                if (m_settings.createDotPlot) {
+                    EQTLDotPlot edp = new EQTLDotPlot();
+                    try {
+                        edp.draw(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt", m_settings.outputReportsDir + "/DotPlot-FDR" + m_settings.fdrCutOff + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
+                    } catch (DocumentException ex) {
+                        Logger.getLogger(MetaQTL3.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    edp = null;
+                }
+
+            }
+        }
+
 
 
 
