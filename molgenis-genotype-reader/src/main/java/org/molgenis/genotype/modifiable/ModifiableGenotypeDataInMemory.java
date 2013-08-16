@@ -1,5 +1,6 @@
 package org.molgenis.genotype.modifiable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -345,6 +346,10 @@ public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
 	{
 		return ModifiableGeneticVariantIterator.createGeneticVariantIterableBackByModifiable(sourceGenotypeData
 				.getVariantsByRange(seqName, rangeStart, rangeEnd).iterator(), this, filteredOutVariants);
+	}
+
+	@Override
+	public void close() throws IOException {
 	}
 
 }

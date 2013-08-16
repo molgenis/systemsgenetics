@@ -516,7 +516,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		return cacheSize;
 	}
 
-	public void close() {
+	@Override
+	public void close() throws IOException {
 		try {
 			if (imputedDosageDataFile != null) {
 				dosageChannel.close();
