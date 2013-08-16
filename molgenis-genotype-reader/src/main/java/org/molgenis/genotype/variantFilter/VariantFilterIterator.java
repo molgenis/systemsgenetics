@@ -15,13 +15,14 @@ import org.molgenis.genotype.variant.GeneticVariant;
 public class VariantFilterIterator implements Iterator<GeneticVariant> {
 	
 	private final Iterator<GeneticVariant> originalIterator;
-	private final VariantFilter qcChecker;
+	private final VariantFilter variantFilter;
 			
 	private GeneticVariant next;
 
-	public VariantFilterIterator(Iterator<GeneticVariant> originalIterator, VariantFilter qcChecker) {
+	public VariantFilterIterator(Iterator<GeneticVariant> originalIterator, VariantFilter variantFilter) {
 		this.originalIterator = originalIterator;
-		this.qcChecker = qcChecker;
+		this.variantFilter = variantFilter;
+		goToNext();
 	}
 	
 	@Override
@@ -52,7 +53,7 @@ public class VariantFilterIterator implements Iterator<GeneticVariant> {
 		{
 			GeneticVariant originalNext = originalIterator.next();
 
-			if (!qcChecker.doesVariantPassFilter(originalNext))
+			if (!variantFilter.doesVariantPassFilter(originalNext))
 			{
 				// skip variants on exclude list
 				continue;

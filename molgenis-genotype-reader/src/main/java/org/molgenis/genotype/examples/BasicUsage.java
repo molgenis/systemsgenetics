@@ -11,7 +11,7 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -31,7 +31,7 @@ public class BasicUsage {
 	 */
 	public static void main(String[] args) {
 		
-		//According to RandomAccessGenotypedDataReaderFormats (VCF or PED_MAP etc)
+		//According to RandomAccessGenotypeDataReaderFormats (VCF or PED_MAP etc)
 		String datasetType = args[0];
 		String datasetPath = args[1];
 		
@@ -39,7 +39,7 @@ public class BasicUsage {
 		
 		try {
 			//Here we read the dataset of the specified type using the auto loader
-			genotypeData = RandomAccessGenotypedDataReaderFormats.valueOf(datasetType.toUpperCase()).createGenotypeData(datasetPath, 1000);
+			genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(datasetType.toUpperCase()).createGenotypeData(datasetPath, 1000);
 		} catch (IOException ex) {
 			LOGGER.fatal("IO error: " + ex.getMessage());
 			System.exit(1);

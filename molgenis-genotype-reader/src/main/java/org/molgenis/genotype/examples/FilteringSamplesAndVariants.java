@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashSet;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.sampleFilter.SampleFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
@@ -74,7 +74,7 @@ public class FilteringSamplesAndVariants {
 		String type = "ped_map";
 		String path = "/";
 
-		RandomAccessGenotypedDataReaderFormats datasetFormat = RandomAccessGenotypedDataReaderFormats.valueOf(type.toUpperCase());
+		RandomAccessGenotypeDataReaderFormats datasetFormat = RandomAccessGenotypeDataReaderFormats.valueOf(type.toUpperCase());
 
 		//Note: first samples are filtered and then the variants are filted. 
 		datasetFormat.createFilteredGenotypeData(path, 100, combinedFilter, new SampleIdIncludeFilter(includedSsamples));

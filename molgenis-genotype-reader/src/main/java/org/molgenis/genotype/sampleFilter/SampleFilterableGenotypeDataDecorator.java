@@ -122,6 +122,7 @@ public class SampleFilterableGenotypeDataDecorator  implements RandomAccessGenot
 
 	@Override
 	public void close() throws IOException {
+		original.close();
 	}
 	
 }
