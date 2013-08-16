@@ -101,6 +101,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		this.variantFilter = variantFilter;
 		this.sampleFilter = sampleFilter;
+		this.sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 
 		if (cacheSize <= 0) {
 			variantProvider = this;
@@ -180,8 +181,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
 		genotypeChannel = genotypeHandle.getChannel();
-
-		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 
 	}
 
@@ -339,9 +338,14 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				variant = new ReadOnlyGeneticVariantTriTyper(snp, 0, "0", variantProvider);
 			}
 
+			//First save in index otherwise variant filter can't use genotype data.
+			snpToIndex.put(variant, index);
+			
 			if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
 				snps.add(variant);
-				snpToIndex.put(variant, index);
+			} else {
+				//remove snp from index since it this variant included
+				snpToIndex.remove(variant);
 			}
 
 			index++;
