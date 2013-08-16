@@ -1,7 +1,7 @@
 Molgenis Genotype Reader
 ========================
 
-The molgenis genotype reader is a java package that allows accessing genotype data form difference sources in a uniform and fast way.
+The molgenis genotype reader is a java library that allows accessing genotype data form difference sources in a uniform and fast way.
 
 Downloading latested jar
 ------------------------
