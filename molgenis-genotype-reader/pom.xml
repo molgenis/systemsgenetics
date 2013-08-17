@@ -11,7 +11,7 @@
 	</parent>
 	<dependencies>
 		<dependency>
-			<groupId>nl.systemsgenetics</groupId>
+			<groupId>org.molgenis</groupId>
 			<artifactId>molgenis-core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
@@ -26,9 +26,9 @@
 			<version>2.4</version>
 		</dependency>
 		<dependency>
-			<groupId>net.sf</groupId>
-			<artifactId>samtools</artifactId>
-			<version>1.83</version>
+			<groupId>org.utgenome.thirdparty</groupId>
+			<artifactId>picard</artifactId>
+			<version>1.86.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.testng</groupId>

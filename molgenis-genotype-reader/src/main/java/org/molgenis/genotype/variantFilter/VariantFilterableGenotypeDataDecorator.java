@@ -50,7 +50,7 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return createQcIterable(originalGenotypeData.getVariantsByPos(seqName, startPos));
+		return createFilterIterable(originalGenotypeData.getVariantsByPos(seqName, startPos));
 	}
 
 	@Override
@@ -70,12 +70,12 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return createQcIterable(originalGenotypeData.getSequenceGeneticVariants(seqName));
+		return createFilterIterable(originalGenotypeData.getSequenceGeneticVariants(seqName));
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return createQcIterable(originalGenotypeData.getVariantsByRange(seqName, rangeStart, rangeEnd));
+		return createFilterIterable(originalGenotypeData.getVariantsByRange(seqName, rangeStart, rangeEnd));
 	}
 
 	@Override
@@ -105,10 +105,10 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 
 	@Override
 	public Iterator<GeneticVariant> iterator() {
-		return createQcIterable(originalGenotypeData).iterator();
+		return createFilterIterable(originalGenotypeData).iterator();
 	}
 	
-	private Iterable<GeneticVariant> createQcIterable(Iterable<GeneticVariant> originalIterable){
+	private Iterable<GeneticVariant> createFilterIterable(Iterable<GeneticVariant> originalIterable){
 		return new VariantFilterIterable(new VariantFilterIterator(originalIterable.iterator(), variantFilter));
 	}
 
@@ -128,6 +128,7 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 	
 	@Override
 	public void close() throws IOException {
+		originalGenotypeData.close();
 	}
 	
 }

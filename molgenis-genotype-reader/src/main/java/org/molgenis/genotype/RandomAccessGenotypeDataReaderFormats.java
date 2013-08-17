@@ -15,7 +15,7 @@ import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
-public enum RandomAccessGenotypedDataReaderFormats {
+public enum RandomAccessGenotypeDataReaderFormats {
 
 	PED_MAP("PED / MAP file", "plink PED MAP files"),
 	VCF("VCF file", "gziped vcf with tabix index file"),
@@ -26,7 +26,7 @@ public enum RandomAccessGenotypedDataReaderFormats {
 	private final String name;
 	private final String description;
 
-	RandomAccessGenotypedDataReaderFormats(String name, String description) {
+	RandomAccessGenotypeDataReaderFormats(String name, String description) {
 		this.name = name;
 		this.description = description;
 	}

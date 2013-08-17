@@ -15,7 +15,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 public class VariantIdIncludeFilter implements VariantFilter{
 
 	private final Set<String> include;
-
+	
 	public VariantIdIncludeFilter(Set<String> include) {
 		this.include = include == null ? new HashSet<String>() : include;
 	}
