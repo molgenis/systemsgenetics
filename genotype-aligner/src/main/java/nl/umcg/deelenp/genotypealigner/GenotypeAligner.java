@@ -18,7 +18,7 @@ import org.apache.log4j.SimpleLayout;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -211,10 +211,10 @@ class GenotypeAligner {
 
 
 		final String inputBasePath = commandLine.getOptionValue('i');
-		final RandomAccessGenotypedDataReaderFormats inputType;
+		final RandomAccessGenotypeDataReaderFormats inputType;
 
 		try {
-			inputType = RandomAccessGenotypedDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+			inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --inputType \"" + commandLine.getOptionValue('I') + "\" is not a valid input data format");
 			System.exit(1);
@@ -223,9 +223,9 @@ class GenotypeAligner {
 
 		final String refBasePath = commandLine.getOptionValue('r');
 
-		final RandomAccessGenotypedDataReaderFormats refType;
+		final RandomAccessGenotypeDataReaderFormats refType;
 		try {
-			refType = RandomAccessGenotypedDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+			refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
 			System.exit(1);
@@ -407,8 +407,8 @@ class GenotypeAligner {
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypedDataReaderFormats inputType,
-			String refBasePath, RandomAccessGenotypedDataReaderFormats refType, String outputBasePath,
+	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType,
+			String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath,
 			GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider,
 			double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId) {
 
