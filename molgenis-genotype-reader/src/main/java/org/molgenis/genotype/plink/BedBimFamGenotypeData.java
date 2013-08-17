@@ -166,4 +166,8 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public void close() throws IOException {
+	}
+
 }

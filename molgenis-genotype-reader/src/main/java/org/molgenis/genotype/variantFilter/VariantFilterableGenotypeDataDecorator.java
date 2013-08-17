@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.variantFilter;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -123,6 +124,10 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 	@Override
 	public VariantFilter getFilter() {
 		return variantFilter;
+	}
+	
+	@Override
+	public void close() throws IOException {
 	}
 	
 }

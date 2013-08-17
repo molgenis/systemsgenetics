@@ -236,4 +236,8 @@ public class MultiPartGenotypeData implements RandomAccessGenotypeData
 			return null;
 		}
 	}
+
+	@Override
+	public void close() throws IOException {
+	}
 }

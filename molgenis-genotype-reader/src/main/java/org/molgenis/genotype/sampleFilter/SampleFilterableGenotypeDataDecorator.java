@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.sampleFilter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -117,6 +118,10 @@ public class SampleFilterableGenotypeDataDecorator  implements RandomAccessGenot
 	@Override
 	public SampleFilter getSampleFilter() {
 		return sampleFilter;
+	}
+
+	@Override
+	public void close() throws IOException {
 	}
 	
 }

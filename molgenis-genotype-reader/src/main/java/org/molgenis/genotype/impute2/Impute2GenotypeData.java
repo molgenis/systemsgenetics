@@ -404,4 +404,9 @@ public class Impute2GenotypeData extends IndexedGenotypeData implements SampleVa
 		}
 
 	}
+
+	@Override
+	public void close() throws IOException {
+
+	}
 }
