@@ -62,6 +62,12 @@ public class Aligner {
 				continue studyVariants;
 			}
 			
+			if (! (studyVariant.getMinorAlleleFrequency() > 0)){
+				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " has a MAF of 0 in the study data");
+				studyVariant.exclude();
+				continue studyVariants;
+			}
+			
 			Iterable<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos());
 			
 			GeneticVariant refVariant;
@@ -80,6 +86,12 @@ public class Aligner {
 					studyVariant.exclude();
 					continue studyVariants;
 				}
+			}
+			
+			if (! (refVariant.getMinorAlleleFrequency() > 0)){
+				LOGGER.warn("Excluding variant: " + refVariant.getPrimaryVariantId() + " has a MAF of 0 in the reference data");
+				studyVariant.exclude();
+				continue studyVariants;
 			}
 			
 			//If we get here we have found a variant is our reference data on the same position with comparable alleles.
