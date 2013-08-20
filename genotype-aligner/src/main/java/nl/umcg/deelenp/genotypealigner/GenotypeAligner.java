@@ -2,7 +2,6 @@ package nl.umcg.deelenp.genotypealigner;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
