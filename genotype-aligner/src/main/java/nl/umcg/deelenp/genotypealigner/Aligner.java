@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeMap;
-
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
@@ -62,6 +61,7 @@ public class Aligner {
 				continue studyVariants;
 			}
 			
+			//We have to exclude maf of zero otherwise we can not do LD calculation
 			if (! (studyVariant.getMinorAlleleFrequency() > 0)){
 				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " has a MAF of 0 in the study data");
 				studyVariant.exclude();
@@ -88,6 +88,7 @@ public class Aligner {
 				}
 			}
 			
+			//We have to exclude maf of zero otherwise we can not do LD calculation
 			if (! (refVariant.getMinorAlleleFrequency() > 0)){
 				LOGGER.warn("Excluding variant: " + refVariant.getPrimaryVariantId() + " has a MAF of 0 in the reference data");
 				studyVariant.exclude();
