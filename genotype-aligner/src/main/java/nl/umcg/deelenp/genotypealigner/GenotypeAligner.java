@@ -123,7 +123,7 @@ class GenotypeAligner {
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
 				.withDescription("The reference data type. \n"
-				+ "* PED_MAP - plink PED MAP files gziped with tabix index.\n"
+				+ "* PED_MAP - plink PED MAP files. \n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes.")
 				.withLongOpt("outputType")
 				.isRequired()
