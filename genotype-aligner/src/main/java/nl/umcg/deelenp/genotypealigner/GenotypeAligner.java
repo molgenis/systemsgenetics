@@ -176,7 +176,7 @@ class GenotypeAligner {
 	 * @throws InterruptedException
 	 * @throws UserFriendlyException
 	 */
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String... args) throws InterruptedException {
 
 		System.out.println(HEADER);
 		System.out.println();
