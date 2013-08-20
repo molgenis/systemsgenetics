@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -18,11 +17,11 @@ import umcg.genetica.io.text.TextFile;
  * @author MarcJan
  */
 public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
-
+    static final Exception doubleMatrixDatasetNonUniqueHeaderException = new Exception("Tried to use a non-unique header set in an identifier HashMap");
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
     protected LinkedHashMap<R, Integer> hashRows;
     protected LinkedHashMap<C, Integer> hashCols;
-    protected Pattern splitPatern;
+    
 
     public DoubleMatrixDataset(){
 		hashRows = new LinkedHashMap<R, Integer>();
@@ -39,18 +38,18 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
     public void saveLowMemory(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
 
-        ArrayList<String> colObjects = (ArrayList<String>) hashCols.keySet();
-        ArrayList<String> rowObjects = (ArrayList<String>) hashRows.keySet();
+        ArrayList<C> colObjects = new ArrayList<C>(hashCols.keySet());
+        ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
 
         out.append('-');
         for (int s = 0; s < columns; s++) {
             out.append('\t');
-            out.append(colObjects.get(s));
+            out.append(colObjects.get(s).toString());
         }
         out.append('\n');
-
+        
         for (int r = 0; r < rows; r++) {
-            out.append(rowObjects.get(r));
+            out.append(rowObjects.get(r).toString());
             DoubleMatrix1D rowInfo = getMatrix().viewRow(r);
             for (int s = 0; s < rowInfo.size(); s++) {
                 out.append('\t');
@@ -64,13 +63,13 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
     public void save(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
 
-        ArrayList<String> colObjects = new ArrayList(hashCols.keySet());
-        ArrayList<String> rowObjects = new ArrayList(hashRows.keySet());
+        ArrayList<C> colObjects = new ArrayList<C>(hashCols.keySet());
+        ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
 
         out.append('-');
         for (int s = 0; s < getMatrix().columns(); s++) {
             out.append('\t');
-            out.append(colObjects.get(s));
+            out.append(colObjects.get(s).toString());
         }
         out.append('\n');
         double[][] rawData = getMatrix().toArray();
@@ -112,7 +111,7 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
         return new ArrayList<R>(hashRows.keySet());
     }
 
-    public void setRowObjects(ArrayList<R> arrayList) {
+    public void setRowObjects(ArrayList<R> arrayList) throws Exception {
         LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<R, Integer>((int) Math.ceil(arrayList.size() / 0.75));
         int i = 0;
         for (R s : arrayList) {
@@ -120,7 +119,7 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
                 newHashRows.put(s, i);
             } else {
                 System.out.println("Error, new row names contains dupilcates.");
-                System.exit(-1);
+                throw(doubleMatrixDatasetNonUniqueHeaderException);
             }
             i++;
         }
@@ -132,15 +131,15 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
         return new ArrayList<C>(hashCols.keySet());
     }
 
-    public void setColObjects(ArrayList<C> arrayList) {
+    public void setColObjects(ArrayList<C> arrayList) throws Exception {
         LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<C, Integer>((int) Math.ceil(arrayList.size() / 0.75));
         int i = 0;
         for (C s : arrayList) {
             if (!newHashCols.containsKey(s)) {
                 newHashCols.put(s, i);
             } else {
-                System.out.println("Error, new row names contains dupilcates.");
-                System.exit(-1);
+                System.out.println("Error, new column names contains dupilcates.");
+                throw(doubleMatrixDatasetNonUniqueHeaderException);
             }
             i++;
         }

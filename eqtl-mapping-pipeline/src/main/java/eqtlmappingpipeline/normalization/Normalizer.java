@@ -320,7 +320,7 @@ public class Normalizer {
         double[] eigenValues = eig.getRealEigenvalues();
         System.out.println("Eigenvalue results:");
 
-        System.out.println("PCA\tPCANr\tEigenValue\t\tExplainedVariance");
+        System.out.println("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
 
         TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.W);
         double cumExpVarPCA = 0;
@@ -336,9 +336,9 @@ public class Normalizer {
             }
             int pcaNr = pca + 1;
             cumExpVarPCA += expVarPCA;
-            out.write(pcaNr + "\t" + expVarPCA + "\t" + cumExpVarPCA + "\n");
+            out.write(pcaNr + "\t" + eigenValues[eigenValues.length - 1 - pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA + "\n");
             datasetEV.colObjects.set(pca, "Comp" + String.valueOf(pcaNr));
-            System.out.println("PCA:\t" + pcaNr + "\t" + eigenValues[eigenValues.length - 1 - pca] + "\t" + expVarPCA);
+            System.out.println("PCA:\t" + pcaNr + "\t" + eigenValues[eigenValues.length - 1 - pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA);
         }
         out.close();
 
