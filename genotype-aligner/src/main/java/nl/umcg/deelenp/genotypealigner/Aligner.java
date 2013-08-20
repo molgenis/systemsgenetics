@@ -307,7 +307,7 @@ public class Aligner {
 			GeneticVariant otherSnpStudyVariant = studyVariantList.get(otherVariantIndex);
 			
 			//Only use variants on same chromosome
-			if(snpStudyVariant.getSequenceName().equals(otherSnpStudyVariant)){
+			if(!snpStudyVariant.getSequenceName().equals(otherSnpStudyVariant.getSequenceName())){
 				continue otherVariantsLoop;
 			}
 			
@@ -417,7 +417,7 @@ public class Aligner {
 		
 	}
 	
-	private class correlationResults{
+	private static class correlationResults{
 		
 		private final int posCor;
 		private final int negCor;
