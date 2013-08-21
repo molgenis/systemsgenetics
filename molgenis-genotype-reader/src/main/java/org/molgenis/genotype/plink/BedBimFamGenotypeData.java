@@ -28,6 +28,10 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 	private final BedBimFamReader reader;
 	private Map<String, SampleAnnotation> sampleAnnotations;
 
+	public BedBimFamGenotypeData(String basePath) throws IOException{
+		this(new File(basePath + ".bed"), new File(basePath + ".bim"), new File(basePath + ".fam"));
+	}
+	
 	public BedBimFamGenotypeData(File bedFile, File bimFile, File famFile) throws IOException
 	{
 
