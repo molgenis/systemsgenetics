@@ -7,11 +7,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -46,11 +46,13 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	private GeneticVariantTreeSet<GeneticVariant> snps = new GeneticVariantTreeSet<GeneticVariant>();
 	private Map<String, Integer> snpIndexById = new HashMap<String, Integer>(1000);
-	private Map<String, List<GeneticVariant>> snpBySequence = new TreeMap<String, List<GeneticVariant>>();
 	private Map<String, SampleAnnotation> sampleAnnotations;
 
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
+	
+	private ArrayList<Sample> samples = new ArrayList<Sample>();
+	private HashSet<String> seqNames = new HashSet<String>();
 
 	public PedMapGenotypeData(String basePath) throws FileNotFoundException, IOException
 	{
@@ -100,6 +102,16 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 		int count = 0;
 		for (PedEntry entry : pedFileDriver)
 		{
+			
+			Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
+			annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, entry.getFather());
+			annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, entry.getMother());
+			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME,
+					SexAnnotation.getSexAnnotationForPlink(entry.getSex()));
+			annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, entry.getPhenotype());
+
+			samples.add(new Sample(entry.getIndividual(), entry.getFamily(), annotationValues));
+			
 			int index = 0;
 			for (Alleles biallele : entry)
 			{
@@ -131,6 +143,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 		{
 			String id = entry.getSNP();
 			String sequenceName = entry.getChromosome();
+			
+			seqNames.add(sequenceName);
+			
 			int startPos = (int) entry.getBpPos();
 
 			List<Alleles> sampleAlleles = sampleAllelesBySnpIndex.get(index);
@@ -155,14 +170,6 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 			snps.add(snp);
 			snpIndexById.put(snp.getPrimaryVariantId(), index);
-
-			List<GeneticVariant> seqGeneticVariants = snpBySequence.get(sequenceName);
-			if (seqGeneticVariants == null)
-			{
-				seqGeneticVariants = new ArrayList<GeneticVariant>();
-				snpBySequence.put(sequenceName, seqGeneticVariants);
-			}
-			seqGeneticVariants.add(snp);
 
 			index++;
 
@@ -192,30 +199,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public List<Sample> getSamples()
 	{
-		PedFileDriver pedFileDriver = null;
-
-		try
-		{
-			pedFileDriver = new PedFileDriver(pedFile);
-			List<Sample> samples = new ArrayList<Sample>();
-			for (PedEntry pedEntry : pedFileDriver)
-			{
-				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
-				annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, pedEntry.getFather());
-				annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, pedEntry.getMother());
-				annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME,
-						SexAnnotation.getSexAnnotationForPlink(pedEntry.getSex()));
-				annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, pedEntry.getPhenotype());
-
-				samples.add(new Sample(pedEntry.getIndividual(), pedEntry.getFamily(), annotationValues));
-			}
-
-			return samples;
-		}
-		finally
-		{
-			IOUtils.closeQuietly(pedFileDriver);
-		}
+		return samples;
 	}
 
 	@Override
@@ -248,15 +232,13 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public List<String> getSeqNames()
 	{
-		return new ArrayList<String>(snpBySequence.keySet());
+		return new ArrayList<String>(seqNames);
 	}
 
 	@Override
 	public List<GeneticVariant> getVariantsByPos(String seqName, int startPos)
 	{
-		List<GeneticVariant> variants = new ArrayList<GeneticVariant>(snps.getSequencePosVariants(seqName, startPos));
-
-		return variants;
+		return new ArrayList(snps.getSequencePosVariants(seqName, startPos));
 	}
 
 	@Override
@@ -268,15 +250,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName)
 	{
-		// TODO remove snpBySequence this makes no sense now that we have the
-		// treset
-		List<GeneticVariant> variants = snpBySequence.get(seqName);
-		if (variants == null)
-		{
-			throw new IllegalArgumentException("Unknown sequence [" + seqName + "]");
-		}
-
-		return variants;
+		return snps.getSequenceVariants(seqName);
 	}
 
 	@Override

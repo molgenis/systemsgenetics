@@ -16,13 +16,4 @@ public class UtilsTest
 		List<String> list = Arrays.asList("1", "2", null);
 		assertEquals(Utils.iteratorToList(list.iterator()), list);
 	}
-
-	@Test
-	public void swapSnpStrand()
-	{
-		char[] snps = new char[]
-		{ 'A', 'G', 'C', 'T', '0' };
-		assertEquals(Utils.swapSnpStrand(snps), new char[]
-		{ 'T', 'C', 'G', 'A', '0' });
-	}
 }

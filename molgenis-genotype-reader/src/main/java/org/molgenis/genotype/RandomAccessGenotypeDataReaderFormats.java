@@ -46,7 +46,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			case PED_MAP:
 				return new PedMapGenotypeData(new File(path + ".ped"), new File(path + ".map"));
 			case VCF:
-				return new VcfGenotypeData(new File(path), cacheSize);
+				return new VcfGenotypeData(new File(path + ".vcf.gz"), cacheSize);
 			case VCF_FOLDER:
 				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
 			case SHAPEIT2:
