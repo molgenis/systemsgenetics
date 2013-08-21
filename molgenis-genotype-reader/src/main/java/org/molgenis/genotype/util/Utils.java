@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.molgenis.genotype.GenotypeDataException;
 
 /**
  * General Uilities
@@ -61,28 +62,13 @@ public class Utils
 		return true;
 	}
 
-	/**
-	 * Swap a strand of snp's
-	 * 
-	 * so CT -> GA
-	 * 
-	 * @param alleles
-	 * @return
-	 */
-	public static char[] swapSnpStrand(char[] alleles)
-	{
-		char[] swapped = new char[alleles.length];
-		for (int i = 0; i < alleles.length; i++)
-		{
-			swapped[i] = COMPLEMENTAL_NUCLEOTIDES.get(alleles[i]);
-		}
-
-		return swapped;
-	}
-
 	public static char getComplementNucleotide(char allele)
 	{
-		return COMPLEMENTAL_NUCLEOTIDES.get(allele);
+		Character complementAllele = COMPLEMENTAL_NUCLEOTIDES.get(allele);
+		if(complementAllele == null){
+			throw new GenotypeDataException("Failed to get comlpement for allele: " + allele);
+		}
+		return complementAllele;
 	}
 
 }
