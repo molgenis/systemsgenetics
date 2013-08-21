@@ -210,7 +210,7 @@ public class Aligner {
 		
 		//Third loop over the included variants. Now that the other variants are fixed we can focus on the GC and AT SNPs.
 		for(int variantIndex = 0 ; variantIndex < studyVariantList.size() ; ++variantIndex){
-			 
+				
 			++iterationCounter;
 			
 			if(iterationCounter % 1000 == 0){
@@ -220,7 +220,7 @@ public class Aligner {
 			
 			ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
 			GeneticVariant refVariant = refVariantList.get(variantIndex);
-
+			
 			//Only do LD alignment on AT and GC SNPs.
 			if( studyVariant.isAtOrGcSnp()){
 				
@@ -270,11 +270,15 @@ public class Aligner {
 					
 				}
 				
+				else if(LOGGER.isDebugEnabled()){
+					LOGGER.debug("Did not swapped strand of AT or GC SNP: " + studyVariant.getPrimaryVariantId() + " based on LD. Study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
+				}
+				
 				//No need for LD check here. If it would not have matched it would have gotten in the swapping part.
 				//LD is checked again after swapping if requested.
 				
 				
-			}
+			} 
 			
 		}
 		
