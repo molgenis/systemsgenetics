@@ -5,7 +5,7 @@ The Genotype Aligner is an easy to use commandline tool that allows harmonizatio
 stored using different fileformats with different and potentially unknown strands. 
 
 LD patterns are used to determine the correct strand GC and AT SNPs and by using 
-the Molgenis Genotype Reader we can import and export differnt file format.
+the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export differnt file format.
 
 Getting started
 ----------------
@@ -71,6 +71,17 @@ tabix -p vcf example.vcf.gz
 ### Shapeit2 output
 TODO
 
+Typical usage scenarios
+----------------
+
+### Preparing data for genotype imputation
+
+TODO
+
+### Merging data from different genotyping platforms
+
+TODO
+
 Arguments overview
 ----------------
 
@@ -103,7 +114,7 @@ tar -zxvf hapmap3_r2_b36_fwd.consensus.qc.poly.ped.bz2
 awk '$7 == "CEU" {print $1,$2}' relationships_w_pops_041510.txt > ceuSamples.txt
 
 #Extract first 6Mb of chr20 for CEU samples
-plink --noweb --chr 20 --file ../hapmap3_r3_b36_fwd.consensus.qc.poly --out hapmap3CeuChr20B36Mb6 --from-mb 0 --to-mb 6  --recode --keep ceuSamples.txt
+plink --noweb --chr 20 --file ../hapmap3_r3_b36_fwd.consensus.qc.poly --out hapmap3CeuChr20B36Mb6 --from-mb 0 --to-mb 6 --recode --keep ceuSamples.txt
 
 # - liftover to b37 - 
 
