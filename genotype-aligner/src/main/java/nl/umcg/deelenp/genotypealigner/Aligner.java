@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeMap;
-
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
@@ -62,6 +61,13 @@ public class Aligner {
 				continue studyVariants;
 			}
 			
+			//We have to exclude maf of zero otherwise we can not do LD calculation
+			if (! (studyVariant.getMinorAlleleFrequency() > 0)){
+				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " has a MAF of 0 in the study data");
+				studyVariant.exclude();
+				continue studyVariants;
+			}
+			
 			Iterable<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos());
 			
 			GeneticVariant refVariant;
@@ -80,6 +86,13 @@ public class Aligner {
 					studyVariant.exclude();
 					continue studyVariants;
 				}
+			}
+			
+			//We have to exclude maf of zero otherwise we can not do LD calculation
+			if (! (refVariant.getMinorAlleleFrequency() > 0)){
+				LOGGER.warn("Excluding variant: " + refVariant.getPrimaryVariantId() + " has a MAF of 0 in the reference data");
+				studyVariant.exclude();
+				continue studyVariants;
 			}
 			
 			//If we get here we have found a variant is our reference data on the same position with comparable alleles.
@@ -197,7 +210,7 @@ public class Aligner {
 		
 		//Third loop over the included variants. Now that the other variants are fixed we can focus on the GC and AT SNPs.
 		for(int variantIndex = 0 ; variantIndex < studyVariantList.size() ; ++variantIndex){
-			 
+				
 			++iterationCounter;
 			
 			if(iterationCounter % 1000 == 0){
@@ -207,7 +220,7 @@ public class Aligner {
 			
 			ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
 			GeneticVariant refVariant = refVariantList.get(variantIndex);
-
+			
 			//Only do LD alignment on AT and GC SNPs.
 			if( studyVariant.isAtOrGcSnp()){
 				
@@ -257,11 +270,15 @@ public class Aligner {
 					
 				}
 				
+				else if(LOGGER.isDebugEnabled()){
+					LOGGER.debug("Did not swapped strand of AT or GC SNP: " + studyVariant.getPrimaryVariantId() + " based on LD. Study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
+				}
+				
 				//No need for LD check here. If it would not have matched it would have gotten in the swapping part.
 				//LD is checked again after swapping if requested.
 				
 				
-			}
+			} 
 			
 		}
 		
