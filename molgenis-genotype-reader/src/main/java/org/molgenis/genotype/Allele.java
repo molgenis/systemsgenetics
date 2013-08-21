@@ -135,7 +135,9 @@ public class Allele implements Comparable<Allele>
 			Allele newAllele = new Allele(alleleChar);
 			snpPool.put(alleleChar, newAllele);
 			pool.put(newAllele.getAlleleAsString(), newAllele);
-			newAllele.addComplement(Allele.create(Utils.getComplementNucleotide(alleleChar)));
+			if (newAllele.isSnpAllele()){
+				newAllele.addComplement(Allele.create(Utils.getComplementNucleotide(alleleChar)));
+			}
 			return newAllele;
 		}
 
