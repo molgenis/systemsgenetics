@@ -7,7 +7,7 @@ Test data
 ----------------
 The genotype aligener contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by or Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
 
 ### HapMap3 data
 
