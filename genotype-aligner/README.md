@@ -42,7 +42,7 @@ Java -jar genotype-aligner-***-jar-with-dependencies.jar \
 
 Note: this is a single commandline command. The `\` is only for readabily.
 
-For this example to work `/data/demoInputData.map` and `/data/demoInputData.ped` should exist and ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` should exist.
+In case of this example the programm exprects that `/data/demoInputData.map` and `/data/demoInputData.ped` exist and that ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` exist.
 
 `/data/demoOuput.map`, `/data/demoOuput.ped` and `/data/demoOuput.log` will be created.
 
@@ -82,7 +82,7 @@ This chapter is not relevant for the usage of the program but allows reproducibi
 
 The genotype aligener contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by or Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
 
 ### HapMap3 data
 
