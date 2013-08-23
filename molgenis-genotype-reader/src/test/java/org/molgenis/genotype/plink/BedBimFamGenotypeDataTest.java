@@ -2,6 +2,7 @@ package org.molgenis.genotype.plink;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
@@ -118,6 +119,20 @@ public class BedBimFamGenotypeDataTest extends ResourceTest
 		GeneticVariant variant = genotypeData.getSnpVariantByPos("23", pos);
 		assertNotNull(variant);
 		assertEquals(variant.getStartPos(), pos);
+	}
+	
+	@Test
+	public void testGetSnpVariantByPos2(){
+		int pos = 14434961;
+		GeneticVariant variant = genotypeData.getSnpVariantByPos("23", pos);
+		assertNull(variant);
+	}
+	
+	@Test
+	public void testGetSnpVariantByPos3(){
+		int pos = 14434961;
+		GeneticVariant variant = genotypeData.getSnpVariantByPos("24", pos);
+		assertNull(variant);
 	}
 
 }
