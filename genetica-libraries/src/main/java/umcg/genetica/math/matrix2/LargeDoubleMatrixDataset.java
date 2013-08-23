@@ -115,13 +115,4 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
         //implemented as in wrapper double matrix 2d. Only has protected access.
         throw new InternalError(); // should never be called
     }
-
-    @Override
-    public void setMatrix(DoubleMatrix2D Matrix) throws Exception{
-        if(Matrix instanceof DenseLargeDoubleMatrix2D){
-            this.matrix = (DenseLargeDoubleMatrix2D) Matrix;
-        } else {
-            throw new Exception("Incompatible type of DoubleMatrix2D");
-        }
-    }
 }
