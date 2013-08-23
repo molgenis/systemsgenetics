@@ -183,13 +183,13 @@ public class BedFileDriver
 			throw new Exception("nrOfIndividuals + paddingIndividuals) % 4 must be 0");
 		}
 
-		int bytesPerIndividual = (nrOfIndividualsInFAMfile + paddingIndividuals) / 4;
+		int bytesPerVariant = (nrOfIndividualsInFAMfile + paddingIndividuals) / 4;
 
 		// inclusive: read this byte index
 		// add 3 because of the reserved bytes in plink format
-		long startByte = (index * bytesPerIndividual) + 3;
+		long startByte = (index * bytesPerVariant) + 3;
 
-		long stopByte = startByte + bytesPerIndividual;
+		long stopByte = startByte + bytesPerVariant;
 
 		byte[] res = new byte[(int) (stopByte - startByte)];
 
@@ -216,7 +216,7 @@ public class BedFileDriver
 				{
 					if (byteString.charAt(j) != '0')
 					{
-						throw new IOException("Fatal error: padding 0's not present where expected!");
+						throw new IOException("Fatal error: padding 0's not present where expected! Expected padding indviduals: " + paddingIndividuals + " none zero padding at pos " + j + " of last byte. Variant index: " + index);
 					}
 				}
 				toBit -= (paddingIndividuals * 2);

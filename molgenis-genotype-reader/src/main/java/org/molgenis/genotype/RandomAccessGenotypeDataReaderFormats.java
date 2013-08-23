@@ -17,7 +17,7 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 public enum RandomAccessGenotypeDataReaderFormats {
 
-	PED_MAP("PED / MAP file", "plink PED MAP files"),
+	PED_MAP("PED / MAP files", "plink PED / MAP files"),
 	VCF("VCF file", "gziped vcf with tabix index file"),
 	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder"), 
 	SHAPEIT2("Shapeit2 output",	".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"),
