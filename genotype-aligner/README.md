@@ -1,17 +1,104 @@
 Genotype Aligner
 ================
 
+The Genotype Aligner is an easy to use commandline tool that allows harmonization of genotype data 
+stored using different fileformats with different and potentially unknown strands. 
 
+LD patterns are used to determine the correct strand GC and AT SNPs and by using 
+the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export differnt file format.
+
+Getting started
+----------------
+
+### Downloading the Genotype Aligner
+The last build from the genotype aligner can be downloaded here:
+http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
+
+Click on `genotype-aligner-***-jar-with-dependencies.jar` to download
+
+In case of succesfull build there will a blue circel before the `Build #`. 
+It is possible that you visit the website when a new build is in progress, please try again in a few minutes or feel free to download an older build http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/changes
+
+### Running the Genotype Aligner
+type `java -jar genotype-aligner-***-jar-with-dependencies.jar` to run. You will now get an overview of the different commandline options
+
+### Basic usage
+In the most basic usage scenario you need to define:
+
+* A dataset that you want to align and the type of this dataset
+* A dataset that you want to use as refernce and the type of this dataset
+* The output path and type where you want to write the aliged data to
+
+You command will look like this:
+```
+Java -jar genotype-aligner-***-jar-with-dependencies.jar \
+	--input /data/demoInputData \
+	--inputType PED_MAP \
+	--ref /data/demoRefData \
+	--refType VCF \
+	--output /data/demoOuput \
+	--outputType PED_MAP \
+```
+
+Note: this is a single commandline command. The `\` is only for readabily.
+
+In case of this example the programm exprects that `/data/demoInputData.map` and `/data/demoInputData.ped` exist and that ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` exist.
+
+`/data/demoOuput.map`, `/data/demoOuput.ped` and `/data/demoOuput.log` will be created.
+
+### Advanced options
+TODO
+
+### Using VCF files
+Before VCF files can be used they need to be compressed using bgzip and indexed with a tabix. This prevents having to read all data into memory yet still allows quick access.
+
+#### Installing tabix and bgzip
+
+```bash
+wget http://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2
+tar -jxvf tabix-0.2.6.tar.bz2
+cd tabix-0.2.6/
+make
+```
+
+#### Preparing a VCF file
+
+```bash
+bgzip example.vcf > example.vcf.gz
+tabix -p vcf example.vcf.gz
+```
+
+### Shapeit2 output
+TODO
+
+Typical usage scenarios
+----------------
+
+### Preparing data for genotype imputation
+
+TODO
+
+### Merging data from different genotyping platforms
+
+TODO
+
+Arguments overview
+----------------
+
+TODO
 
 Test data
 ----------------
+This chapter is not relevant for the usage of the program but allows reproducibility of the test data
+
 The genotype aligener contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by or Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
 
 ### HapMap3 data
 
 The following tools are needed for this script:
+
 * plink
 * ucsc liftover + chain hg18ToHg19
 
@@ -27,7 +114,7 @@ tar -zxvf hapmap3_r2_b36_fwd.consensus.qc.poly.ped.bz2
 awk '$7 == "CEU" {print $1,$2}' relationships_w_pops_041510.txt > ceuSamples.txt
 
 #Extract first 6Mb of chr20 for CEU samples
-plink --noweb --chr 20 --file ../hapmap3_r3_b36_fwd.consensus.qc.poly --out hapmap3CeuChr20B36Mb6 --from-mb 0 --to-mb 6  --recode --keep ceuSamples.txt
+plink --noweb --chr 20 --file ../hapmap3_r3_b36_fwd.consensus.qc.poly --out hapmap3CeuChr20B36Mb6 --from-mb 0 --to-mb 6 --recode --keep ceuSamples.txt
 
 # - liftover to b37 - 
 
@@ -65,6 +152,7 @@ plink --noweb --bfile hapmap3CeuChr20B37Mb6 --make-bed --flip flipList.txt --out
 ### 1000G
 
 The following tools are needed for this script:
+
 * vcftools
 * tabix
 

@@ -115,8 +115,12 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 	@Override
 	public List<GeneticVariant> getVariantsByPos(String seqName, int startPos)
 	{
-		int index = this.reader.getSnpIndexByPosition(seqName, startPos);
-		return this.reader.loadVariantsForIndex(index);
+		Integer index = this.reader.getSnpIndexByPosition(seqName, startPos);
+		if(index == null){
+			return Collections.emptyList();
+		} else {
+			return this.reader.loadVariantsForIndex(index);
+		}
 	}
 
 	@Override
