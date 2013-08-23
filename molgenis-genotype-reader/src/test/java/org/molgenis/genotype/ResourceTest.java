@@ -55,6 +55,21 @@ public class ResourceTest
 		return getTestResourceFile("/test.fam");
 	}
 	
+	protected File getTestBed6() throws URISyntaxException
+	{
+		return getTestResourceFile("/test6.bed");
+	}
+
+	protected File getTestBim6() throws URISyntaxException
+	{
+		return getTestResourceFile("/test6.bim");
+	}
+
+	protected File getTestFam6() throws URISyntaxException
+	{
+		return getTestResourceFile("/test6.fam");
+	}
+	
 	protected File getTestBed7() throws URISyntaxException
 	{
 		return getTestResourceFile("/test7.bed");
