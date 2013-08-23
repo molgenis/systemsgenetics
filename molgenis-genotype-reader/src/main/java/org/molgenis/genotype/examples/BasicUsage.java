@@ -22,6 +22,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  * 
  * @author Patrick Deelen
  */
+@edu.umd.cs.findbugs.annotations.SuppressWarnings(value="UCF_USELESS_CONTROL_FLOW_NEXT_LINE", justification="It is just an example")
 public class BasicUsage {
 
 	private static Logger LOGGER = Logger.getLogger(BasicUsage.class);

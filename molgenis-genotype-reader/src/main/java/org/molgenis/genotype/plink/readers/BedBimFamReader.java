@@ -225,9 +225,14 @@ public class BedBimFamReader implements SampleVariantsProvider
 		return sequences;
 	}
 
-	public int getSnpIndexByPosition(String seq, long pos)
+	public Integer getSnpIndexByPosition(String seq, long pos)
 	{
-		return snpIndexByPosition.get(seq).get(pos);
+		if(snpIndexByPosition.containsKey(seq)){
+			return snpIndexByPosition.get(seq).get(pos);
+		} else {
+			return null;
+		}
+		
 	}
 
 	public static void main(String[] args) throws Exception
@@ -314,8 +319,11 @@ public class BedBimFamReader implements SampleVariantsProvider
 		return phasing;
 	}
 
-	public List<GeneticVariant> loadVariantsForIndex(int index)
+	public List<GeneticVariant> loadVariantsForIndex(Integer index)
 	{
+		if(index == null){
+			throw new NullPointerException("Error in index accessing binary plink data");
+		}
 		BimEntry be = bimEntries.get(index);
 		List<GeneticVariant> variants = new ArrayList<GeneticVariant>();
 		Alleles alleles = be.getBiallele();
