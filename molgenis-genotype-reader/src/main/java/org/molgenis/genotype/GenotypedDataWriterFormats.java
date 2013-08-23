@@ -6,7 +6,7 @@ import org.molgenis.genotype.plink.PedMapGenotypeWriter;
 public enum GenotypedDataWriterFormats
 {
 
-	PED_MAP("ped / map file"), SHAPEIT2("Impute2 haplotypes haps / sample files");
+	PED_MAP("PED / MAP files"), SHAPEIT2("Impute2 haplotypes haps / sample files");
 
 	private final String name;
 
