@@ -212,7 +212,7 @@ public class BedFileDriver
 										// padding 0's
 			{
 				// At the end, the string is padded with 0's -> check
-				for (int j = paddingIndividuals * 2; j < 8; j++)
+				for (int j = 8 - (paddingIndividuals * 2); j < 8; j++)
 				{
 					if (byteString.charAt(j) != '0')
 					{

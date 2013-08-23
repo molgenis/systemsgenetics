@@ -22,14 +22,14 @@ import org.testng.annotations.Test;
  * @author jvelde
  * 
  */
-public class BedBimFamGenotypeDataTest extends ResourceTest
+public class BedBimFamGenotypeDataTest9 extends ResourceTest
 {
 	private BedBimFamGenotypeData genotypeData;
 
 	@BeforeClass
 	public void beforeClass() throws Exception
 	{
-		genotypeData = new BedBimFamGenotypeData(getTestBed(), getTestBim(), getTestFam());
+		genotypeData = new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9());
 	}
 
 	@Test

@@ -40,19 +40,49 @@ public class ResourceTest
 		return getTestResourceFile("/test.ped");
 	}
 
-	protected File getTestBed() throws URISyntaxException
+	protected File getTestBed9() throws URISyntaxException
 	{
 		return getTestResourceFile("/test.bed");
 	}
 
-	protected File getTestBim() throws URISyntaxException
+	protected File getTestBim9() throws URISyntaxException
 	{
 		return getTestResourceFile("/test.bim");
 	}
 
-	protected File getTestFam() throws URISyntaxException
+	protected File getTestFam9() throws URISyntaxException
 	{
 		return getTestResourceFile("/test.fam");
+	}
+	
+	protected File getTestBed7() throws URISyntaxException
+	{
+		return getTestResourceFile("/test7.bed");
+	}
+
+	protected File getTestBim7() throws URISyntaxException
+	{
+		return getTestResourceFile("/test7.bim");
+	}
+
+	protected File getTestFam7() throws URISyntaxException
+	{
+		return getTestResourceFile("/test7.fam");
+	}
+	
+	protected File getTestBed8() throws URISyntaxException
+	{
+		return getTestResourceFile("/test8.bed");
+	}
+
+	protected File getTestBim8() throws URISyntaxException
+	{
+		return getTestResourceFile("/test8.bim");
+	}
+
+	protected File getTestFam8() throws URISyntaxException
+	{
+		return getTestResourceFile("/test8.fam");
 	}
 
 	protected File getTestImpute2Gz() throws URISyntaxException
