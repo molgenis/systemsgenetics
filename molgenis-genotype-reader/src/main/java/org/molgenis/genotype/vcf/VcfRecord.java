@@ -45,7 +45,7 @@ public class VcfRecord
 
 		for (int i = 0; i < values.length; i++)
 		{
-			((WritableTuple) record).set(columnNames.get(i), new String(values[i]));
+			((WritableTuple) record).set(columnNames.get(i), values[i]);
 		}
 
 	}
