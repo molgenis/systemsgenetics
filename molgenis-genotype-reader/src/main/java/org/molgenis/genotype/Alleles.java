@@ -206,7 +206,7 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 			throw new RuntimeException("Not a snp");
 		}
 
-		return allelesAsChar;
+		return allelesAsChar.clone();
 	}
 
 	@Override

@@ -257,12 +257,12 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 		{
 			@Override
 			@Nullable
-			public Boolean apply(@Nullable
+			public Boolean apply(
 			VcfSampleGenotype input)
 			{
 				if (input == null)
 				{
-					return null;
+					return false;
 				}
 
 				return input.getPhasing().get(0);

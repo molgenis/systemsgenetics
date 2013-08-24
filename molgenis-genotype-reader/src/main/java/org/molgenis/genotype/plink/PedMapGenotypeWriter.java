@@ -176,7 +176,7 @@ public class PedMapGenotypeWriter implements GenotypeWriter
 		return Double.valueOf(value.toString());
 	}
 
-	private class BialleleIterator implements Iterator<Alleles>
+	private static class BialleleIterator implements Iterator<Alleles>
 	{
 		private Iterator<GeneticVariant> variantsIterator;
 		private int sampleIndex;

@@ -104,8 +104,10 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 					case FLOAT:
 						colNames.add(annotation.getId());
 						dataTypes.add("C");
+						break;
 					default:
 						LOG.warn("Unsupported covariate datatype [" + annotation.getType() + "]");
+						break;
 				}
 			}
 			else if (annotation.getSampleAnnotationType() == SampleAnnotationType.PHENOTYPE)
