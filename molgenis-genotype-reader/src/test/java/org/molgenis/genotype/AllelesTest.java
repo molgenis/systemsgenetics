@@ -1,6 +1,7 @@
 package org.molgenis.genotype;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 
 import java.util.Arrays;
@@ -135,8 +136,10 @@ public class AllelesTest
 		assertEquals(alleles1.getAllelesAsString() == alleles2.getAllelesAsString(), true);
 		assertEquals(alleles1.getAllelesAsString() == alleles3.getAllelesAsString(), false);
 
-		assertEquals(alleles1.getAllelesAsChars() == alleles2.getAllelesAsChars(), true);
-		assertEquals(alleles1.getAllelesAsChars() == alleles3.getAllelesAsChars(), false);
+		assertEquals(alleles1.getAllelesAsChars()[0], alleles2.getAllelesAsChars()[0]);
+		assertEquals(alleles1.getAllelesAsChars()[1], alleles2.getAllelesAsChars()[1]);
+		assertNotEquals(alleles1.getAllelesAsChars()[0], alleles3.getAllelesAsChars()[0]);
+		assertNotEquals(alleles1.getAllelesAsChars()[1], alleles3.getAllelesAsChars()[1]);
 
 		assertEquals(alleles1.getAllelesAsString() == alleles3.getAllelesAsString(), false);
 		assertEquals(alleles1.getAllelesAsString() == alleles4.getAllelesAsString(), false);
