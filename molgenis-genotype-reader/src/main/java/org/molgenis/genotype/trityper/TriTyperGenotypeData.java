@@ -386,7 +386,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 	}
 
-	private class PosChr {
+	private static class PosChr {
 
 		private final String chr;
 		private final int pos;
