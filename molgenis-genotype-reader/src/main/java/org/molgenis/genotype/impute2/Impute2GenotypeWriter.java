@@ -121,8 +121,10 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 					case FLOAT:
 						colNames.add(annotation.getId());
 						dataTypes.add("P");
+						break;
 					default:
 						LOG.warn("Unsupported phenotype datatype [" + annotation.getType() + "]");
+						break;
 				}
 			}
 			else
