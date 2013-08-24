@@ -24,7 +24,7 @@ public class MultiPartSequencesIterable implements Iterable<Sequence>
 		return new MultiPartSequencesIterator(datasets);
 	}
 
-	private class MultiPartSequencesIterator implements Iterator<Sequence>
+	private static class MultiPartSequencesIterator implements Iterator<Sequence>
 	{
 
 		private Iterator<RandomAccessGenotypeData> datasetIterator;
