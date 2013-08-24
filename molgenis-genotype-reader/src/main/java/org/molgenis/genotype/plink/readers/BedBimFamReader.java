@@ -6,10 +6,12 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -58,7 +60,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 
 	// first lookup is on sequence (usually chromosome, ie. "chr1" ), second on
 	// position (basepair, ie. 9345352)
-	private Map<String, Map<Long, Integer>> snpIndexByPosition = new HashMap<String, Map<Long, Integer>>();
+	private Map<String, TreeMap<Long, Integer>> snpIndexByPosition = new HashMap<String, TreeMap<Long, Integer>>();
 
 	// sample phasing
 	private final List<Boolean> phasing;
@@ -132,7 +134,7 @@ public class BedBimFamReader implements SampleVariantsProvider
 			// sequence (or 'chromosome')
 			if (snpIndexByPosition.get(be.getChromosome()) == null)
 			{
-				Map<Long, Integer> mapForThisSequence = new HashMap<Long, Integer>();
+				TreeMap<Long, Integer> mapForThisSequence = new TreeMap<Long, Integer>();
 				snpIndexByPosition.put(be.getChromosome(), mapForThisSequence);
 			}
 			snpIndexByPosition.get(be.getChromosome()).put(be.getBpPos(), index);
@@ -234,6 +236,16 @@ public class BedBimFamReader implements SampleVariantsProvider
 		}
 		
 	}
+	
+	public Collection<Integer> getSnpIndexByPosition(String seq, long startRange, long endRange)
+	{
+		if(snpIndexByPosition.containsKey(seq)){
+			return snpIndexByPosition.get(seq).subMap(startRange, true, endRange, false).values();
+		} else {
+			return null;
+		}
+		
+	}
 
 	public static void main(String[] args) throws Exception
 	{
@@ -330,6 +342,24 @@ public class BedBimFamReader implements SampleVariantsProvider
 		GeneticVariant snp = ReadOnlyGeneticVariant.createVariant(be.getSNP(), (int) be.getBpPos(), be.getChromosome(),
 				this, alleles);
 		variants.add(snp);
+		return variants;
+	}
+	
+	public List<GeneticVariant> loadVariantsForIndex(Collection<Integer> index)
+	{
+		if(index == null){
+			throw new NullPointerException("Error in index accessing binary plink data");
+		}
+		
+		List<GeneticVariant> variants = new ArrayList<GeneticVariant>();
+		
+		for(Integer i : index){
+			BimEntry be = bimEntries.get(i);
+			Alleles alleles = be.getBiallele();
+			GeneticVariant snp = ReadOnlyGeneticVariant.createVariant(be.getSNP(), (int) be.getBpPos(), be.getChromosome(),
+					this, alleles);
+			variants.add(snp);
+		}
 		return variants;
 	}
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -171,7 +172,12 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd)
 	{
-		throw new UnsupportedOperationException();
+		Collection<Integer> index = this.reader.getSnpIndexByPosition(seqName, rangeStart, rangeEnd);
+		if(index == null){
+			return Collections.emptyList();
+		} else {
+			return this.reader.loadVariantsForIndex(index);
+		}
 	}
 
 	@Override
