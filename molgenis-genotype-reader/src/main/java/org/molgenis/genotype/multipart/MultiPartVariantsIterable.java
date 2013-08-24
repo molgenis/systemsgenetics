@@ -24,7 +24,7 @@ public class MultiPartVariantsIterable implements Iterable<GeneticVariant>
 		return new MultiPartVariantIterator(datasets);
 	}
 
-	private class MultiPartVariantIterator implements Iterator<GeneticVariant>
+	private static class MultiPartVariantIterator implements Iterator<GeneticVariant>
 	{
 
 		private Iterator<RandomAccessGenotypeData> datasetIterator;

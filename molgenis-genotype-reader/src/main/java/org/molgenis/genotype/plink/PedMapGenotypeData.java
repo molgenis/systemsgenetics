@@ -238,7 +238,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public List<GeneticVariant> getVariantsByPos(String seqName, int startPos)
 	{
-		return new ArrayList(snps.getSequencePosVariants(seqName, startPos));
+		return new ArrayList<GeneticVariant>(snps.getSequencePosVariants(seqName, startPos));
 	}
 
 	@Override

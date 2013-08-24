@@ -1,8 +1,9 @@
 package org.molgenis.genotype.util;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
-public class ChromosomeComparator implements Comparator<String>
+public class ChromosomeComparator implements Comparator<String>, Serializable
 {
 
 	@Override

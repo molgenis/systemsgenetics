@@ -195,7 +195,9 @@ public class BedFileDriver
 
 		RandomAccessFile raf = new RandomAccessFile(bedFile, "r");
 		raf.seek(startByte);
-		raf.read(res);
+		if(raf.read(res) != res.length){
+			throw new GenotypeDataException("Error reading BED file, file shorted than expected");
+		}
 		raf.close();
 
 		String[] result = new String[nrOfIndividualsInFAMfile];
@@ -216,7 +218,7 @@ public class BedFileDriver
 				{
 					if (byteString.charAt(j) != '0')
 					{
-						throw new IOException("Fatal error: padding 0's not present where expected! Expected padding indviduals: " + paddingIndividuals + " none zero padding at pos " + j + " of last byte. Variant index: " + index);
+						throw new GenotypeDataException("Fatal error: padding 0's not present where expected! Expected padding indviduals: " + paddingIndividuals + " none zero padding at pos " + j + " of last byte. Variant index: " + index);
 					}
 				}
 				toBit -= (paddingIndividuals * 2);
@@ -328,7 +330,9 @@ public class BedFileDriver
 															// individuals
 		RandomAccessFile raf = new RandomAccessFile(bedFile, "r");
 		raf.seek(start);
-		raf.read(res);
+		if(raf.read(res) != res.length){
+			throw new GenotypeDataException("Error reading BED file, file shorted than expected");
+		}
 		raf.close();
 
 		for (int i = 0; i < res.length; i++)
