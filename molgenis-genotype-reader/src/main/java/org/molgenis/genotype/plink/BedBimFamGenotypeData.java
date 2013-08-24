@@ -156,10 +156,6 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName)
 	{
 		List<GeneticVariant> variants = reader.loadVariantsForSequence(seqName);
-		if (variants == null)
-		{
-			throw new IllegalArgumentException("Unknown sequence [" + seqName + "]");
-		}
 		return variants;
 	}
 
