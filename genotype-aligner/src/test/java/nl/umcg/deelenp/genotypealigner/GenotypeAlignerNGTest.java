@@ -73,11 +73,11 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PED_MAP", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test", "--refType", "VCF", "-ref", refData);
+		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test", "--refType", "VCF", "-ref", refData);
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new PedMapGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test");
+		RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test");
 		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
 		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
