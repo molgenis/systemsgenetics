@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.text.DecimalFormat;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.plink.PlinkFileParser;
@@ -17,6 +18,7 @@ public class PedFileWriter implements PlinkFileParser
 {
 	private final BufferedWriter writer;
 	private final char separator;
+	private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");
 
 	public PedFileWriter(File pedFile) throws IOException
 	{
@@ -47,7 +49,7 @@ public class PedFileWriter implements PlinkFileParser
 		writer.write(separator);
 		writer.write(Byte.toString(ped.getSex()));
 		writer.write(separator);
-		writer.write(Double.toString(ped.getPhenotype()));
+		writer.write(PHENO_FORMATTER.format(ped.getPhenotype()));
 
 		for (Alleles biallele : ped)
 		{
