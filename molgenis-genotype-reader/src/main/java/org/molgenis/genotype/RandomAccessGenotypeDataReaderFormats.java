@@ -53,7 +53,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				return new Impute2GenotypeData(new File(path + ".haps.gz"), new File(path + ".haps.gz.tbi"), new File(
 						path + ".sample"), cacheSize);
 			case PLINK_BED:
-				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
+				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"), cacheSize);
 			case TRITYPER:
 				return new TriTyperGenotypeData(path, cacheSize);
 			default:

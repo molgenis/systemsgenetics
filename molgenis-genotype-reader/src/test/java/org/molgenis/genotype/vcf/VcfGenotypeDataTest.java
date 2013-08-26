@@ -8,8 +8,11 @@ import static org.testng.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.molgenis.genotype.Allele;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
@@ -18,6 +21,7 @@ import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.VcfAnnotation;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -180,4 +184,27 @@ public class VcfGenotypeDataTest extends ResourceTest
 		GeneticVariant variant = genotypeData.getVariantsByPos("1", 565286).iterator().next();
 		assertEquals(genotypeData.getSamplePhasing(variant), Arrays.asList(false));
 	}
+	
+	@Test
+	public void getVariantIdMap(){
+		HashMap<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
+		
+		assertEquals(variantMap.size(), 7);
+		
+		assertTrue(variantMap.containsKey("rs35434908"));
+		
+		assertEquals(variantMap.get("rs35434908").getVariantAlleles().get(1), Allele.create("GTTTCA"));
+		
+		HashSet<String> snps = new HashSet<String>();
+		snps.add("rs35434908");
+		snps.add("rs1578391");
+		variantMap = genotypeData.getVariantIdMap(new VariantIdIncludeFilter(snps));
+
+		assertEquals(variantMap.size(), 2);
+		
+		assertTrue(variantMap.containsKey("rs35434908"));
+		assertTrue(variantMap.containsKey("rs1578391"));
+		
+	}
+	
 }

@@ -48,7 +48,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
         this.variantId = variantId;
         this.startPos = startPos;
-        this.sequenceName = sequenceName;
+        this.sequenceName = sequenceName.intern();
         this.sampleVariantsProvider = sampleVariantsProvider;
         this.alleles = alleles;
         this.refAllele = refAllele;

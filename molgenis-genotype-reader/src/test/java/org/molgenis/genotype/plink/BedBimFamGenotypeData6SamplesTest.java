@@ -5,6 +5,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
@@ -22,14 +23,14 @@ import org.testng.annotations.Test;
  * @author jvelde
  * 
  */
-public class BedBimFamGenotypeDataTest8 extends ResourceTest
+public class BedBimFamGenotypeData6SamplesTest extends ResourceTest
 {
 	private BedBimFamGenotypeData genotypeData;
 
 	@BeforeClass
 	public void beforeClass() throws Exception
 	{
-		genotypeData = new BedBimFamGenotypeData(getTestBed8(), getTestBim8(), getTestFam8());
+		genotypeData = new BedBimFamGenotypeData(getTestBed6(), getTestBim6(), getTestFam6(), 100);
 	}
 
 	@Test
@@ -45,9 +46,13 @@ public class BedBimFamGenotypeDataTest8 extends ResourceTest
 	@Test
 	public void testGetSequences()
 	{
-		List<Sequence> sequences = genotypeData.getSequences();
+		Iterable<Sequence> sequences = genotypeData.getSequences();
 		assertNotNull(sequences);
-		assertEquals(sequences.size(), 2);
+		int count = 0;
+		for(Sequence s : sequences){
+			++count;
+		}
+		assertEquals(count, 2);
 	}
 
 	@Test
@@ -75,7 +80,7 @@ public class BedBimFamGenotypeDataTest8 extends ResourceTest
 
 		List<Alleles> sampleVariants = variant.getSampleVariants();
 		assertNotNull(sampleVariants);
-		assertEquals(sampleVariants.size(), 8);
+		assertEquals(sampleVariants.size(), 6);
 		assertNotNull(sampleVariants.get(0).getAllelesAsChars());
 		assertEquals(sampleVariants.get(0).getAlleles().size(), 2);
 		assertEquals(sampleVariants.get(0).getAllelesAsChars()[0], 'C');
@@ -95,7 +100,7 @@ public class BedBimFamGenotypeDataTest8 extends ResourceTest
 	{
 		List<Sample> samples = genotypeData.getSamples();
 		assertNotNull(samples);
-		assertEquals(samples.size(), 8);
+		assertEquals(samples.size(), 6);
 		assertEquals(samples.get(0).getId(), "1042");
 		assertEquals(samples.get(0).getFamilyId(), "F1042");
 	}
@@ -103,12 +108,14 @@ public class BedBimFamGenotypeDataTest8 extends ResourceTest
 	@Test
 	public void testGetSamplePhasing()
 	{
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
-		assertEquals(variants.size(), 1);
-		// TODO fix
-		// assertEquals(variants.get(0),
-		// Arrays.asList(false, false, false, false, false, false, false, false,
-		// false));
+		Iterable<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
+		
+		int count = 0;
+		for(GeneticVariant variant : variants){
+			assertEquals(variant.getSamplePhasing(), Arrays.asList(false, false, false, false, false, false));
+			++count;
+		}
+		assertEquals(count, 1);
 	}
 
 	@Test

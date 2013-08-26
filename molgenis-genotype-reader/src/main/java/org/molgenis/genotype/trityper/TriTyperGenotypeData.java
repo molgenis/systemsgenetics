@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
@@ -536,12 +537,12 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 
 	@Override
-	protected Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return sampleAnnotationMap;
 	}
 
 	@Override
-	protected Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
 		return Collections.emptyMap();
 	}
 
@@ -569,4 +570,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
 		return snps.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
 	}
+
+	@Override
+	public Iterator<GeneticVariant> iterator() {
+		return snps.iterator();
+	}
+	
+	
 }

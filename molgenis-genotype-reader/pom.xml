@@ -98,7 +98,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<finalName>${artifactId}-${version}-dependencies</finalName>
+					<finalName>${project.artifactId}-${{project.version}-dependencies</finalName>
 					<shadedArtifactAttached>true</shadedArtifactAttached>
 					<shadedClassifierName>stand-alone</shadedClassifierName>
 					<filters>
