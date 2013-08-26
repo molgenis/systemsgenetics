@@ -2,7 +2,6 @@ package org.molgenis.genotype.plink;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
@@ -23,14 +22,14 @@ import org.testng.annotations.Test;
  * @author jvelde
  * 
  */
-public class BedBimFamGenotypeDataTest9 extends ResourceTest
+public class BedBimFamGenotypeData7SamplesTest extends ResourceTest
 {
 	private BedBimFamGenotypeData genotypeData;
 
 	@BeforeClass
 	public void beforeClass() throws Exception
 	{
-		genotypeData = new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9());
+		genotypeData = new BedBimFamGenotypeData(getTestBed7(), getTestBim7(), getTestFam7());
 	}
 
 	@Test
@@ -76,7 +75,7 @@ public class BedBimFamGenotypeDataTest9 extends ResourceTest
 
 		List<Alleles> sampleVariants = variant.getSampleVariants();
 		assertNotNull(sampleVariants);
-		assertEquals(sampleVariants.size(), 9);
+		assertEquals(sampleVariants.size(), 7);
 		assertNotNull(sampleVariants.get(0).getAllelesAsChars());
 		assertEquals(sampleVariants.get(0).getAlleles().size(), 2);
 		assertEquals(sampleVariants.get(0).getAllelesAsChars()[0], 'C');
@@ -96,7 +95,7 @@ public class BedBimFamGenotypeDataTest9 extends ResourceTest
 	{
 		List<Sample> samples = genotypeData.getSamples();
 		assertNotNull(samples);
-		assertEquals(samples.size(), 9);
+		assertEquals(samples.size(), 7);
 		assertEquals(samples.get(0).getId(), "1042");
 		assertEquals(samples.get(0).getFamilyId(), "F1042");
 	}
@@ -119,20 +118,6 @@ public class BedBimFamGenotypeDataTest9 extends ResourceTest
 		GeneticVariant variant = genotypeData.getSnpVariantByPos("23", pos);
 		assertNotNull(variant);
 		assertEquals(variant.getStartPos(), pos);
-	}
-	
-	@Test
-	public void testGetSnpVariantByPos2(){
-		int pos = 14434961;
-		GeneticVariant variant = genotypeData.getSnpVariantByPos("23", pos);
-		assertNull(variant);
-	}
-	
-	@Test
-	public void testGetSnpVariantByPos3(){
-		int pos = 14434961;
-		GeneticVariant variant = genotypeData.getSnpVariantByPos("24", pos);
-		assertNull(variant);
 	}
 
 }

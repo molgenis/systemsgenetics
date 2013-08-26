@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.text.DecimalFormat;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -35,8 +36,9 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	private static final int HOMOZYGOTE_SECOND_BITMASK = 192;
 	private static final int HETEROZYGOTE_BITMASK = 128;
 	private static final int MISSING_BIT_MASK = 64;
-	public static final Charset FILE_ENCODING = Charset.forName("UTF-8");
-	public static final char SEPARATOR = ' ';
+	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
+	private static final char SEPARATOR = ' ';
+	private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");
 	private final GenotypeData genotypeData;
 	private int writtenSamplesCounter = 0;
 	private int writtenVariantsCounter = 0;
@@ -69,9 +71,9 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 		writeBedFile(bedFile);
 
 		LOGGER.info("Binary plink data write completed.\n"
-				+ "Number of samples: " + writtenSamplesCounter + "\n"
-				+ "Number of SNPs: " + writtenVariantsCounter + "\n"
-				+ "Excluded non biallelic SNPs: " + excludedVariantsCounter);
+				+ " - Number of samples: " + writtenSamplesCounter + "\n"
+				+ " - Number of SNPs: " + writtenVariantsCounter + "\n"
+				+ " - Excluded non biallelic SNPs: " + excludedVariantsCounter);
 
 
 	}
@@ -125,7 +127,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 			famFileWriter.append(SEPARATOR);
 			famFileWriter.append(Byte.toString(sample.getSex().getPlinkSex()));
 			famFileWriter.append(SEPARATOR);
-			famFileWriter.append(Double.toString(getPhenotype(sample)));
+			famFileWriter.append(PHENO_FORMATTER.format(getPhenotype(sample)));
 			famFileWriter.append('\n');
 
 			++writtenSamplesCounter;
@@ -161,7 +163,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 			Alleles homozygoteFirst = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
 			Alleles homozygoteSecond = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
 
-			int currentByte = 0; //Bit operations are on int level
+			int currentByte = 0; //Bit operations are on int level, but we only write the last byte
 			byte counterCurrentByte = 0;
 
 			for (Alleles alleles : variant.getSampleVariants()) {
@@ -169,10 +171,10 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 					//Do nothing, already 00
 				} else if (alleles == homozygoteSecond) {
 					currentByte = currentByte | HOMOZYGOTE_SECOND_BITMASK;
-				} else if (alleles.sameAlleles(variantAlleles)) {
-					currentByte = currentByte | HETEROZYGOTE_BITMASK;
 				} else if (alleles.contains(Allele.ZERO)) {
 					currentByte = currentByte | MISSING_BIT_MASK;
+				} else if (alleles.sameAlleles(variantAlleles)) {
+					currentByte = currentByte | HETEROZYGOTE_BITMASK;
 				} else {
 					throw new GenotypeDataException("Trying to write alleles " + alleles.getAllelesAsString() + " for " + variantAlleles + " SNP");
 				}
