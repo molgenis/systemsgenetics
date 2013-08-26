@@ -13,6 +13,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,12 +154,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	}
 
 	@Override
-	protected Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return sampleAnnotations;
 	}
 
-	@Override
-	protected Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
 		return Collections.emptyMap();
 	}
 
@@ -340,5 +340,12 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		bimFileReader.close();
 		
 	}
+
+	@Override
+	public Iterator<GeneticVariant> iterator() {
+		return snps.iterator();
+	}
+	
+	
 
 }

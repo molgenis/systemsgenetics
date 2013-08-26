@@ -224,7 +224,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	protected Map<String, Annotation> getVariantAnnotationsMap()
+	public Map<String, Annotation> getVariantAnnotationsMap()
 	{
 		return Collections.emptyMap();
 	}
@@ -279,7 +279,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	protected Map<String, SampleAnnotation> getSampleAnnotationsMap()
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap()
 	{
 		return sampleAnnotations;
 	}
