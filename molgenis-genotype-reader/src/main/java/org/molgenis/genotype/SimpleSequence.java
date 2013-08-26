@@ -20,7 +20,7 @@ public class SimpleSequence implements Sequence
 
 	public SimpleSequence(String name, Integer length, RandomAccessGenotypeData genotypeData)
 	{
-		this.name = name;
+		this.name = name.intern();
 		this.length = length;
 		this.genotypeData = genotypeData;
 	}
