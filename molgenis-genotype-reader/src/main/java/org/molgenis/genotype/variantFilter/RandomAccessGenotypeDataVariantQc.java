@@ -7,6 +7,8 @@ package org.molgenis.genotype.variantFilter;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -21,7 +23,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class RandomAccessGenotypeDataVariantQc implements RandomAccessGenotypeData {
+public class RandomAccessGenotypeDataVariantQc extends AbstractRandomAccessGenotypeData {
 
 	private final RandomAccessGenotypeData originalGenotypeData;
 	private final VariantQcChecker qcChecker;
@@ -129,6 +131,16 @@ public class RandomAccessGenotypeDataVariantQc implements RandomAccessGenotypeDa
 
 	@Override
 	public void close() throws IOException {
+	}
+
+	@Override
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+		return originalGenotypeData.getVariantAnnotationsMap();
+	}
+
+	@Override
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+		return originalGenotypeData.getSampleAnnotationsMap();
 	}
 	
 }

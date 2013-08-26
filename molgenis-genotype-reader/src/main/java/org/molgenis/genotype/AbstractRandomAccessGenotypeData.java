@@ -1,9 +1,10 @@
 package org.molgenis.genotype;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variantFilter.VariantFilter;
 
 public abstract class AbstractRandomAccessGenotypeData extends AbstractGenotypeData implements RandomAccessGenotypeData
 {
@@ -37,6 +38,25 @@ public abstract class AbstractRandomAccessGenotypeData extends AbstractGenotypeD
 
 		return null;
 
+	}
+
+	public HashMap<String, GeneticVariant> getVariantIdMap() {
+		return getVariantIdMap(null);
+	}
+	
+	@Override
+	public HashMap<String, GeneticVariant> getVariantIdMap(VariantFilter filter) {
+		
+		HashMap<String, GeneticVariant> variantIdMap = new HashMap<String, GeneticVariant>();
+		
+		for(GeneticVariant variant : this){
+			if( variant.getVariantId().getPrimairyId() != null && !variant.getPrimaryVariantId().equals("") && (filter == null || filter.doesVariantPassFilter(variant))){
+				variantIdMap.put(variant.getPrimaryVariantId(), variant);
+			}
+		}
+		
+		return variantIdMap;
+		
 	}
 
 	@Override
@@ -86,6 +106,8 @@ public abstract class AbstractRandomAccessGenotypeData extends AbstractGenotypeD
 		{
 			throw new UnsupportedOperationException();
 		}
+		
+		
 
 	}
 }

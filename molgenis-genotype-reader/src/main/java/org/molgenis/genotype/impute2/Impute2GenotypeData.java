@@ -190,13 +190,13 @@ public class Impute2GenotypeData extends IndexedGenotypeData implements SampleVa
 	}
 
 	@Override
-	protected Map<String, Annotation> getVariantAnnotationsMap()
+	public Map<String, Annotation> getVariantAnnotationsMap()
 	{
 		return Collections.emptyMap();
 	}
 
 	@Override
-	protected Map<String, SampleAnnotation> getSampleAnnotationsMap()
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap()
 	{
 		return sampleAnnotations;
 	}

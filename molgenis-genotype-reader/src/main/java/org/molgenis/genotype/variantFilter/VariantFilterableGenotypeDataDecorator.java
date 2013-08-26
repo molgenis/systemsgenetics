@@ -7,6 +7,8 @@ package org.molgenis.genotype.variantFilter;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -18,7 +20,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenotypeData, VariantFilterableGenotypeData {
+public class VariantFilterableGenotypeDataDecorator extends AbstractRandomAccessGenotypeData implements VariantFilterableGenotypeData {
 	
 	private final RandomAccessGenotypeData originalGenotypeData;
 	private final VariantFilter variantFilter;
@@ -129,6 +131,16 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 	@Override
 	public void close() throws IOException {
 		originalGenotypeData.close();
+	}
+
+	@Override
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+		return originalGenotypeData.getVariantAnnotationsMap();
+	}
+
+	@Override
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+		return originalGenotypeData.getSampleAnnotationsMap();
 	}
 	
 }
