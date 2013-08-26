@@ -81,7 +81,7 @@ public class PedFileWriterTest
 				IOUtils.closeQuietly(fileWriter);
 			}
 
-			String expected = "1 1 0 0 1 1 A A G T\n2 1 0 0 1 1.0 A C T G\n";
+			String expected = "1 1 0 0 1 1 A A G T\n2 1 0 0 1 1 A C T G\n";
 			Assert.assertEquals(FileUtils.readFileToString(file0, Charset.forName("UTF-8")), expected);
 		}
 		finally
