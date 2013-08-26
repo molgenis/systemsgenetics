@@ -22,14 +22,14 @@ import org.testng.annotations.Test;
  * @author jvelde
  * 
  */
-public class BedBimFamGenotypeDataTest7 extends ResourceTest
+public class BedBimFamGenotypeData6SamplesTest extends ResourceTest
 {
 	private BedBimFamGenotypeData genotypeData;
 
 	@BeforeClass
 	public void beforeClass() throws Exception
 	{
-		genotypeData = new BedBimFamGenotypeData(getTestBed7(), getTestBim7(), getTestFam7());
+		genotypeData = new BedBimFamGenotypeData(getTestBed6(), getTestBim6(), getTestFam6());
 	}
 
 	@Test
@@ -75,7 +75,7 @@ public class BedBimFamGenotypeDataTest7 extends ResourceTest
 
 		List<Alleles> sampleVariants = variant.getSampleVariants();
 		assertNotNull(sampleVariants);
-		assertEquals(sampleVariants.size(), 7);
+		assertEquals(sampleVariants.size(), 6);
 		assertNotNull(sampleVariants.get(0).getAllelesAsChars());
 		assertEquals(sampleVariants.get(0).getAlleles().size(), 2);
 		assertEquals(sampleVariants.get(0).getAllelesAsChars()[0], 'C');
@@ -95,7 +95,7 @@ public class BedBimFamGenotypeDataTest7 extends ResourceTest
 	{
 		List<Sample> samples = genotypeData.getSamples();
 		assertNotNull(samples);
-		assertEquals(samples.size(), 7);
+		assertEquals(samples.size(), 6);
 		assertEquals(samples.get(0).getId(), "1042");
 		assertEquals(samples.get(0).getFamilyId(), "F1042");
 	}
