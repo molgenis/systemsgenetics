@@ -5,6 +5,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
@@ -29,7 +30,7 @@ public class BedBimFamGenotypeData8SamplesTest extends ResourceTest
 	@BeforeClass
 	public void beforeClass() throws Exception
 	{
-		genotypeData = new BedBimFamGenotypeData(getTestBed8(), getTestBim8(), getTestFam8());
+		genotypeData = new BedBimFamGenotypeData(getTestBed8(), getTestBim8(), getTestFam8(),2);
 	}
 
 	@Test
@@ -45,9 +46,13 @@ public class BedBimFamGenotypeData8SamplesTest extends ResourceTest
 	@Test
 	public void testGetSequences()
 	{
-		List<Sequence> sequences = genotypeData.getSequences();
+		Iterable<Sequence> sequences = genotypeData.getSequences();
 		assertNotNull(sequences);
-		assertEquals(sequences.size(), 2);
+		int count = 0;
+		for(Sequence s : sequences){
+			++count;
+		}
+		assertEquals(count, 2);
 	}
 
 	@Test
@@ -103,12 +108,14 @@ public class BedBimFamGenotypeData8SamplesTest extends ResourceTest
 	@Test
 	public void testGetSamplePhasing()
 	{
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
-		assertEquals(variants.size(), 1);
-		// TODO fix
-		// assertEquals(variants.get(0),
-		// Arrays.asList(false, false, false, false, false, false, false, false,
-		// false));
+		Iterable<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
+		
+		int count = 0;
+		for(GeneticVariant variant : variants){
+			assertEquals(variant.getSamplePhasing(), Arrays.asList(false, false, false, false, false, false, false, false));
+			++count;
+		}
+		assertEquals(count, 1);
 	}
 
 	@Test

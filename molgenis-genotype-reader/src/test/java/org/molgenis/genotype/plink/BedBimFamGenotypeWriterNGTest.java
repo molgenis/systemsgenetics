@@ -60,7 +60,7 @@ public class BedBimFamGenotypeWriterNGTest extends ResourceTest {
 	 */
 	@Test
 	public void testWrite_String() throws Exception {
-		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed6(), getTestBim6(), getTestFam6());
+		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed6(), getTestBim6(), getTestFam6(), 0);
 
 		BedBimFamGenotypeWriter writer = new BedBimFamGenotypeWriter(genotypeData);
 
@@ -77,7 +77,7 @@ public class BedBimFamGenotypeWriterNGTest extends ResourceTest {
 	 */
 	@Test
 	public void testWrite_String2() throws Exception {
-		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed7(), getTestBim7(), getTestFam7());
+		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed7(), getTestBim7(), getTestFam7(), 0);
 
 		BedBimFamGenotypeWriter writer = new BedBimFamGenotypeWriter(genotypeData);
 
@@ -94,7 +94,7 @@ public class BedBimFamGenotypeWriterNGTest extends ResourceTest {
 	 */
 	@Test
 	public void testWrite_String3() throws Exception {
-		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed8(), getTestBim8(), getTestFam8());
+		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed8(), getTestBim8(), getTestFam8(), 0);
 
 		BedBimFamGenotypeWriter writer = new BedBimFamGenotypeWriter(genotypeData);
 
@@ -111,7 +111,7 @@ public class BedBimFamGenotypeWriterNGTest extends ResourceTest {
 	 */
 	@Test
 	public void testWrite_String4() throws Exception {
-		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9());
+		GenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9(), 0);
 
 		BedBimFamGenotypeWriter writer = new BedBimFamGenotypeWriter(genotypeData);
 
@@ -120,11 +120,15 @@ public class BedBimFamGenotypeWriterNGTest extends ResourceTest {
 		GenotypeData genotypeDataWritten = RandomAccessGenotypeDataReaderFormats.PLINK_BED.createGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test9samples", 0);
 
 		assertTrue(GenotypeDataCompareTool.same(genotypeData, genotypeDataWritten));
+		
+		genotypeData.close();
+		genotypeDataWritten.close();
 
 	}
 
 	@AfterTest
 	public void removeTempFiles() {
+		
 		System.out.println("Removing tmp dir and files");
 		System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
 		tmpOutputFolder.deleteOnExit();
