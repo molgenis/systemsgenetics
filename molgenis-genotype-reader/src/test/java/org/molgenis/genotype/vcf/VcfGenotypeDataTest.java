@@ -195,10 +195,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 		
 		assertEquals(variantMap.get("rs35434908").getVariantAlleles().get(1), Allele.create("GTTTCA"));
 		
-		HashSet<String> snps = new HashSet<String>();
-		snps.add("rs35434908");
-		snps.add("rs1578391");
-		variantMap = genotypeData.getVariantIdMap(new VariantIdIncludeFilter(snps));
+		variantMap = genotypeData.getVariantIdMap(new VariantIdIncludeFilter("rs35434908", "rs1578391"));
 
 		assertEquals(variantMap.size(), 2);
 		
