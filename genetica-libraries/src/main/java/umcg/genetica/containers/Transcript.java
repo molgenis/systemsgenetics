@@ -49,7 +49,7 @@ public class Transcript {
      * @param exons the exons to set
      */
     public void setExons(HashMap<String, Exon> exons) {
-        this.setExons(exons);
+        this.exons = exons;
     }
 
     /**

@@ -18,7 +18,7 @@ import umcg.genetica.math.stats.Descriptives;
  */
 public class ConcurrentCorrelation {
 
-    private static int nrThreads = Runtime.getRuntime().availableProcessors();
+    private int nrThreads = Runtime.getRuntime().availableProcessors();
 
     public ConcurrentCorrelation() {
     }
