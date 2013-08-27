@@ -38,7 +38,7 @@ public class Aligner {
 			
 			++iterationCounter;
 			
-			if(iterationCounter % 1000 == 0){
+			if(iterationCounter % 10000 == 0){
 				LOGGER.info("Iteration 1 - " + iterationCounter + " variants processed");
 				System.out.println("Iteration 1 - " + iterationCounter + " variants processed");
 			}
@@ -154,7 +154,7 @@ public class Aligner {
 			
 				++iterationCounter;
 				
-				if(iterationCounter % 1000 == 0){
+				if(iterationCounter % 10000 == 0){
 					LOGGER.info("Iteration 2 - " + iterationCounter + " variants processed");
 					System.out.println("Iteration 2 - " + iterationCounter + " variants processed");
 				}
@@ -213,7 +213,7 @@ public class Aligner {
 				
 			++iterationCounter;
 			
-			if(iterationCounter % 1000 == 0){
+			if(iterationCounter % 10000 == 0){
 				LOGGER.info("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered +  " GC or AT SNPs checked)");
 				System.out.println("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered +  " GC or AT SNPs checked)");
 			}

@@ -19,6 +19,13 @@ public class VariantIdIncludeFilter implements VariantFilter{
 	public VariantIdIncludeFilter(Set<String> include) {
 		this.include = include == null ? new HashSet<String>() : include;
 	}
+	
+	public VariantIdIncludeFilter(String... ids){
+		this.include = new HashSet<String>();
+		for(String id : ids){
+			include.add(id);
+		}
+	}
 
 	@Override
 	public boolean doesVariantPassFilter(GeneticVariant variant) {
