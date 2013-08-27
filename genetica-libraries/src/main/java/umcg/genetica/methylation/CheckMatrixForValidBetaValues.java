@@ -57,7 +57,7 @@ public class CheckMatrixForValidBetaValues {
                     if (replaceCheckedValuesOutOfRange) {
                         if (dataset.rawData[r][c] >= -0.01 && dataset.rawData[r][c] <= 1) {
                             dataset.rawData[r][c] = 0;
-                        } else if (dataset.rawData[r][c] == (-3.4d * Math.pow(10, 38))) {
+                        } else if (Math.abs(dataset.rawData[r][c] - (-3.4d * Math.pow(10, 38))) < .0000001) {
                             dataset.rawData[r][c] = -999;
                         } else if ((dataset.rawData[r][c] == 9)) {
                             dataset.rawData[r][c] = -999;
