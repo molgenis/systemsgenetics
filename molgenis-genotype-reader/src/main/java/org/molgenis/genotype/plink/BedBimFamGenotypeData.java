@@ -6,10 +6,13 @@ package org.molgenis.genotype.plink;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,6 +58,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private static final int MISSING = 1;
 	private static final Alleles BI_ALLELIC_MISSING = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(BedBimFamGenotypeWriter.class);
+	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
@@ -297,7 +301,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	private void readFamFile(File famFile) throws FileNotFoundException, IOException {
 		
-		BufferedReader famFileReader = new BufferedReader(new FileReader(famFile));
+		BufferedReader famFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(famFile), FILE_ENCODING));
 		
 		String line;
 		while( (line = famFileReader.readLine()) != null ){
@@ -322,7 +326,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	private int readBimFile(File bimFile) throws FileNotFoundException, IOException {
 		
-		BufferedReader bimFileReader = new BufferedReader(new FileReader(bimFile));
+		BufferedReader bimFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(bimFile), FILE_ENCODING));
 		
 		String line;
 		int snpIndex = 0;
