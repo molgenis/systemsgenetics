@@ -54,6 +54,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private static final int HETEROZYGOTE = 2;
 	private static final int MISSING = 1;
 	private static final Alleles BI_ALLELIC_MISSING = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
+	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(BedBimFamGenotypeWriter.class);
 	
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
@@ -66,6 +67,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final int cacheSize;
 	private final List<Boolean> phasing;
 	private final int bytesPerVariant;
+	
+	/**
+	 * The orignal SNP count in the data regardless of number of read SNPs
+	 */
+	private final int originalSnpCount;
 
 	public BedBimFamGenotypeData(String basePath) throws IOException {
 		this(basePath, 100);
@@ -127,13 +133,13 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		snpIndexces = new HashMap<GeneticVariant, Integer>();
 		snps = new GeneticVariantTreeSet<GeneticVariant>();
 		sequences = new HashMap<String, Sequence>();
-		readBimFile(bimFile);
+		originalSnpCount = readBimFile(bimFile);
 		
 		bytesPerVariant = samples.size() % 4 == 0 ? samples.size() / 4 : (samples.size() / 4 + 1);
 		
 		//Check file size of bed file
-		if(bedFile.length() != (bytesPerVariant * snpIndexces.size() + 3) ){
-			throw new GenotypeDataException("Invalid plink BED file not the expected file size. " + bedFile.getAbsolutePath());
+		if(bedFile.length() != ( (long) bytesPerVariant * (long) originalSnpCount + 3) ){
+			throw new GenotypeDataException("Invalid plink BED file not the expected file size. " + bedFile.getAbsolutePath() + " expected: " + ( (long) bytesPerVariant * (long) snpIndexces.size() + 3) + " found: " + bedFile.length() + " bytes per variant: " + bytesPerVariant + " snps: " + originalSnpCount);
 		}
 		
 		//Check first two bytes for magic number
@@ -307,11 +313,13 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			
 		}
 		
+		LOGGER.info("Read " + samples.size() + " from " + famFile.getAbsolutePath());
+		
 		famFileReader.close();
 		
 	}
 
-	private void readBimFile(File bimFile) throws FileNotFoundException, IOException {
+	private int readBimFile(File bimFile) throws FileNotFoundException, IOException {
 		
 		BufferedReader bimFileReader = new BufferedReader(new FileReader(bimFile));
 		
@@ -329,15 +337,24 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			
 			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(elements[1], Integer.parseInt(elements[3]), sequenceName, sampleVariantProvider, elements[4], elements[5]);
 			
-			snps.add(variant);
+			if(snpIndexces.containsKey(variant)){
+				LOGGER.warn("Found two SNPs at " + sequenceName + ":" + variant.getStartPos() + " Only first is read!");
+			} else {
+				snps.add(variant);
+				snpIndexces.put(variant, snpIndex);
+			}
 			
-			snpIndexces.put(variant, snpIndex);
+			
 			
 			++snpIndex;
 			
 		}
 		
+		LOGGER.info("Read " + snpIndex + " from " + bimFile.getAbsolutePath());
+		
 		bimFileReader.close();
+		
+		return snpIndex;
 		
 	}
 
