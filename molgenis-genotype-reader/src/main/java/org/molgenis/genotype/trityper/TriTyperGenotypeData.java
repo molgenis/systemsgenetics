@@ -542,7 +542,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 
 	@Override
-	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return Collections.emptyMap();
 	}
 

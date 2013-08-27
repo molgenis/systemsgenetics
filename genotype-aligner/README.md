@@ -16,8 +16,8 @@ http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-
 
 Click on `genotype-aligner-***-jar-with-dependencies.jar` to download
 
-In case of succesfull build there will a blue circel before the `Build #`. 
-It is possible that you visit the website when a new build is in progress, please try again in a few minutes or feel free to download an older build http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/changes
+In case of succesfull build there will a green circel before the `Build #`. 
+It is possible that you visit the website when a new build is in progress, please try again in a few minutes.
 
 ### Running the Genotype Aligner
 type `java -jar genotype-aligner-***-jar-with-dependencies.jar` to run. You will now get an overview of the different commandline options
@@ -46,9 +46,6 @@ In case of this example the programm exprects that `/data/demoInputData.map` and
 
 `/data/demoOuput.map`, `/data/demoOuput.ped` and `/data/demoOuput.log` will be created.
 
-### Advanced options
-TODO
-
 ### Using VCF files
 Before VCF files can be used they need to be compressed using bgzip and indexed with a tabix. This prevents having to read all data into memory yet still allows quick access.
 
@@ -69,6 +66,7 @@ tabix -p vcf example.vcf.gz
 ```
 
 ### Shapeit2 output
+
 TODO
 
 Typical usage scenarios
@@ -76,7 +74,9 @@ Typical usage scenarios
 
 ### Preparing data for genotype imputation
 
-TODO
+When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
+
+In combination with the --update-id option the Genotype Aligner is a convineant preperation of genotype data before imputation. 
 
 ### Merging data from different genotyping platforms
 
@@ -85,7 +85,58 @@ TODO
 Arguments overview
 ----------------
 
-TODO
+| Short | Long           | Description                                                                                                                          |
+|-------|----------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| -i    | --input        | The base path of the data to align. The extensions are determined based on the input data type.|
+| -I    | --inputType    | The input data type. (see inputeType options) |
+| -r    | --ref          | The base path of the reference data used for alignment. The extensions are determined based on the input data type.|
+| -R    | --refType      | The input data type. (see refType options) |
+| -o    | --output       | The base path of the output data. |
+| -O    | --outputType   | The output data type. (--outputType options) |
+| -id   | --update-id    | Update the variant identifiers using the reference data. The identifiers of the output data will be the same as the reference data |
+| -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants |
+| -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment |
+| -s    | --variants     | Number of flanking variants to consider |
+| -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
+| -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
+
+####--inputeType /--refType options
+
+Base path refers to either --input or --ref 
+
+* PED_MAP
+ * Expects plink PED file at: `${base path}.ped`
+ * Expects plink MAP file at: `${base path}.map`
+* VCF
+ * Expects VCF file at: `${base path}.vcf.gz`
+ * Must be compresed usign bgzip. (see chapter: Preparing a VCF file)
+ * Expects tabix file at: `${base path}.vcf.gz.tbi` (see chapter: Preparing a VCF file)
+* PLINK_BED
+ * Expects plink BED file at: `${base path}.bed`
+ * Expects plink BIM file at: `${base path}.bim`
+ * Expects plink FAM file at: `${base path}.fam`
+ * Must be in SNP major mode. This is the default of  plink 1.07.
+* VCFFOLDER
+ * Matches all vcf.gz files in the folder specified with the bash path.
+* SHAPEIT2
+ * TODO
+
+#####--outputType options
+
+Base path refers to --output
+
+Regardless of the output type a log file will always be created at: `${base path}.log`
+
+* PED_MAP
+ * Writes plink PED file to: `${base path}.ped`
+ * Writes plink MAP file to: `${base path}.map`
+* PLINK_BED
+ * Writes plink BED file to: `${base path}.bed`
+ * Writes plink BIM file to: `${base path}.bim`
+ * Writes plink FAM file to: `${base path}.fam`
+ * Data is written in SNP major mode
+* SHAPEIT2
+ * TODO
 
 Test data
 ----------------
