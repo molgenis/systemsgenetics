@@ -34,7 +34,7 @@ public class MatrixHandeling {
         for (int c = 0; c < dataset.columns(); ++c) {
             int nrMissing = 0;
             for (int r = 0; r < dataset.rows(); ++r) {
-                if (dataset.getMatrix().get(r, c) == missingValue || dataset.getMatrix().get(r, c) == Double.NaN) {
+                if (dataset.getMatrix().get(r, c) == missingValue || Double.isNaN(dataset.getMatrix().get(r, c))) {
                     nrMissing++;
                 }
             }
@@ -64,7 +64,7 @@ public class MatrixHandeling {
         for (int r = 0; r < dataset.rows(); ++r) {
             int nrMissing = 0;
             for (int c = 0; c < dataset.columns(); ++c) {
-                if (dataset.getMatrix().get(r, c) == missingValue || dataset.getMatrix().get(r, c) == Double.NaN) {
+                if (dataset.getMatrix().get(r, c) == missingValue || Double.isNaN(dataset.getMatrix().get(r, c))) {
                     nrMissing++;
                 }
             }
@@ -117,7 +117,7 @@ public class MatrixHandeling {
      * @param probesToBeRemoved ArrayList<String> with identifiers of probes
      * that should be removed
      */
-    public static void RemoveRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
+    public static DoubleMatrixDataset<String, String> RemoveRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
 
@@ -154,6 +154,7 @@ public class MatrixHandeling {
             matrix.assign(newRawData);
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
+        return(dataset);
     }
 
     /**
@@ -175,7 +176,7 @@ public class MatrixHandeling {
      * @param samplesToBeRemoved ArrayList<String> with identifiers of probes
      * that should be removed
      */
-    public static void RemoveColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> samplesToBeRemoved) {
+    public static DoubleMatrixDataset<String, String> RemoveColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> samplesToBeRemoved) {
         
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
@@ -214,6 +215,7 @@ public class MatrixHandeling {
             matrix.assign(newRawData);
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
+        return(dataset);
     }
 
     /**
@@ -424,7 +426,7 @@ public class MatrixHandeling {
      * @param probesToKeep ArrayList<String> with identifiers of probes that
      * should be removed
      */
-    public static void FilterRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToKeep) {
+    public static DoubleMatrixDataset<String, String> FilterRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToKeep) {
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
 
@@ -461,6 +463,7 @@ public class MatrixHandeling {
             matrix.assign(newRawData);
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
+        return(dataset);
     }
 
     /**
@@ -470,7 +473,7 @@ public class MatrixHandeling {
      * @param dataset
      * @param keepCols
      */
-    public static void FilterCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> keepCols) {
+    public static DoubleMatrixDataset<String, String> FilterCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> keepCols) {
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
 
@@ -508,6 +511,7 @@ public class MatrixHandeling {
             matrix.assign(newRawData);
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
+        return(dataset);
     }
 
     /**
