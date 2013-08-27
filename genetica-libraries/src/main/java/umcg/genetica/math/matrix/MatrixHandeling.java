@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
+import umcg.genetica.methylation.CheckMatrixForValidBetaValues;
 
 /**
  *
@@ -456,7 +457,7 @@ public class MatrixHandeling {
 
         RemoveSamples(dataset, new HashSet(probesToBeRemoved));
 
-        ArrayList<String> extraSamplesToBeRemoved = checkMinAndMaxPerSample(dataset, replaceKnownOutOfRangeValues);
+        ArrayList<String> extraSamplesToBeRemoved = CheckMatrixForValidBetaValues.checkMinAndMaxPerSample(dataset, replaceKnownOutOfRangeValues);
 
         RemoveSamples(dataset, new HashSet(probesToBeRemoved));
 
@@ -466,56 +467,6 @@ public class MatrixHandeling {
         RemoveRowsWithToManyMissingValues(dataset, maxMissingSamplesMissingAProbe);
         System.out.println("Number of probes removed: " + (originalNumberProbes - dataset.rawData.length));
 
-
-    }
-
-    /**
-     * Check if all probe values are actually between 0 and 1. If
-     * replaceCheckedValuesOutOfRange is true values that are known to be
-     * allowed are replaced. With 0 if between -0.1 and 0 (Due to background
-     * correction). With -999 if either 9 or -3.4E38.
-     *
-     * If not kick out sample
-     *
-     * @param dataset
-     * @param replaceCheckedValuesOutOfRange
-     * @return
-     */
-    public static ArrayList<String> checkMinAndMaxPerSample(DoubleMatrixDataset<String, String> dataset, boolean replaceCheckedValuesOutOfRange) {
-
-        ArrayList<String> columnsToExclude = new ArrayList<String>();
-
-        for (int c = 0; c < dataset.nrCols; ++c) {
-            ArrayDoubleList tmp = new ArrayDoubleList();
-            for (int r = 0; r < dataset.nrRows; ++r) {
-                if (!(dataset.rawData[r][c] >= 0 && dataset.rawData[r][c] <= 1) && dataset.rawData[r][c] != -999) {
-                    if (replaceCheckedValuesOutOfRange) {
-                        if (dataset.rawData[r][c] >= -0.01 && dataset.rawData[r][c] <= 1) {
-                            dataset.rawData[r][c] = 0;
-                        } else if (dataset.rawData[r][c] == (-3.4d * Math.pow(10, 38))) {
-                            dataset.rawData[r][c] = -999;
-                        } else if ((dataset.rawData[r][c] == 9)) {
-                            dataset.rawData[r][c] = -999;
-                        } else {
-                            System.out.println("This shouldn't be reached");
-                            System.out.println("This value reached it though: "+ dataset.rawData[r][c]);
-                            System.exit(-1);
-                        }
-                    } else {
-                        tmp.add(dataset.rawData[r][c]);
-                    }
-                }
-            }
-            if (tmp.size() != 0) {
-                if (tmp.size() > 100) {
-                    System.out.println("Excluding due to min and max values probe:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + tmp.size());
-                } else {
-                    System.out.println("Excluding due to min and max values probe:\t" + c + "\t" + dataset.colObjects.get(c) + "\t" + tmp.size() + "\t" + tmp.toString());
-                }
-                columnsToExclude.add(dataset.colObjects.get(c));
-            }
-        }
-        return (columnsToExclude);
 
     }
 

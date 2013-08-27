@@ -20,28 +20,29 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author MarcJan
  */
-public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
+public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D {
+
     static final Exception doubleMatrixDatasetNonUniqueHeaderException = new Exception("Tried to use a non-unique header set in an identifier HashMap");
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
     protected LinkedHashMap<R, Integer> hashRows;
     protected LinkedHashMap<C, Integer> hashCols;
 
-    public DoubleMatrixDataset(){
-		hashRows = new LinkedHashMap<R, Integer>();
-		hashCols = new LinkedHashMap<C, Integer>();
+    public DoubleMatrixDataset() {
+        hashRows = new LinkedHashMap<R, Integer>();
+        hashCols = new LinkedHashMap<C, Integer>();
     }
 
-	public DoubleMatrixDataset(LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
-		this.hashRows = hashRows;
-		this.hashCols = hashCols;
-	}
+    public DoubleMatrixDataset(LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+        this.hashRows = hashRows;
+        this.hashCols = hashCols;
+    }
 
     public abstract DoubleMatrix2D getMatrix();
-    
+
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException, Exception {
         return loadDoubleData(fileName, "\t");
     }
-    
+
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName, String delimiter) throws IOException, Exception {
 
         Pattern splitPatern = Pattern.compile(delimiter);
@@ -111,28 +112,29 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
             LOGGER.warning("Your data contains NaN/unparseable values!");
         }
         in.close();
-        
+
         DoubleMatrixDataset<String, String> dataset;
-        
-        if((tmpRows * tmpCols) < (Integer.MAX_VALUE-2) ){
+
+        if ((tmpRows * tmpCols) < (Integer.MAX_VALUE - 2)) {
             dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(initialMatrix), rowMap, colMap);
         } else {
             DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
+            matrix.assign(initialMatrix);
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
-        }        
+        }
 
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.rows(), dataset.columns()});
         return dataset;
     }
 
-    public static DoubleMatrixDataset<String, String> createMatrixDataset(int rows, int cols){
-        if((rows * cols) < (Integer.MAX_VALUE-2) ){
+    public static DoubleMatrixDataset<String, String> createMatrixDataset(int rows, int cols) {
+        if ((rows * cols) < (Integer.MAX_VALUE - 2)) {
             return new SmallDoubleMatrixDataset<String, String>();
         } else {
             return new LargeDoubleMatrixDataset<String, String>();
-        }  
+        }
     }
-            
+
     public void saveLowMemory(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
 
@@ -145,7 +147,7 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
             out.append(colObjects.get(s).toString());
         }
         out.append('\n');
-        
+
         for (int r = 0; r < rows; r++) {
             out.append(rowObjects.get(r).toString());
             DoubleMatrix1D rowInfo = getMatrix().viewRow(r);
@@ -217,7 +219,7 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
                 newHashRows.put(s, i);
             } else {
                 System.out.println("Error, new row names contains dupilcates.");
-                throw(doubleMatrixDatasetNonUniqueHeaderException);
+                throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
             i++;
         }
@@ -237,14 +239,12 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D{
                 newHashCols.put(s, i);
             } else {
                 System.out.println("Error, new column names contains dupilcates.");
-                throw(doubleMatrixDatasetNonUniqueHeaderException);
+                throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
             i++;
         }
         this.hashCols = newHashCols;
     }
-    
-    public abstract void setMatrix(double[][] Matrix);
 
-    public abstract void setMatrix(DoubleMatrix2D Matrix) throws Exception;
+    public abstract void setMatrix(double[][] Matrix);
 }
