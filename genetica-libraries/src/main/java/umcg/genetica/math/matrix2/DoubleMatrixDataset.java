@@ -247,4 +247,9 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D {
     }
 
     public abstract void setMatrix(double[][] Matrix);
+    
+    //Fixed like in parallel colt.
+    protected DoubleMatrix1D like1D(int size, int offset, int stride) {
+        throw new InternalError(); // should never get called
+    }
 }
