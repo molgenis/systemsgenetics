@@ -164,7 +164,8 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		return sampleAnnotations;
 	}
 
-	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	@Override
+	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return Collections.emptyMap();
 	}
 
