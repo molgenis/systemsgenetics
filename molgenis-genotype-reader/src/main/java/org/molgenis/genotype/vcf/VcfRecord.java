@@ -45,7 +45,7 @@ public class VcfRecord
 
 		for (int i = 0; i < values.length; i++)
 		{
-			((WritableTuple) record).set(columnNames.get(i), new String(values[i]));
+			((WritableTuple) record).set(columnNames.get(i), values[i]);
 		}
 
 	}
@@ -185,20 +185,25 @@ public class VcfRecord
 		{
 			infoMap = new LinkedHashMap<String, List<String>>();
 
-			String[] keyvalues = getInfo().split(";");
-			for (String keyvalue : keyvalues)
-			{
-				String[] kv = keyvalue.split("=");
-				if (kv.length == 1)
+			String infoString = getInfo();
+			
+			if(infoString != null){
+
+				String[] keyvalues = infoString.split(";");
+				for (String keyvalue : keyvalues)
 				{
-					infoMap.put(kv[0], Arrays.asList(new String[]
-					{ "TRUE" }));
-				}
-				else
-				{
-					if (VcfUtils.checkNullValue(kv[1]) != null)
+					String[] kv = keyvalue.split("=");
+					if (kv.length == 1)
 					{
-						infoMap.put(kv[0], Arrays.asList(kv[1].split(",")));
+						infoMap.put(kv[0], Arrays.asList(new String[]
+						{ "TRUE" }));
+					}
+					else
+					{
+						if (VcfUtils.checkNullValue(kv[1]) != null)
+						{
+							infoMap.put(kv[0], Arrays.asList(kv[1].split(",")));
+						}
 					}
 				}
 			}

@@ -34,14 +34,4 @@ public abstract class AbstractGenotypeData implements GenotypeData
 		return getVariantAnnotationsMap().get(annotationId);
 	}
 
-	/**
-	 * Get variant annotations by id
-	 */
-	protected abstract Map<String, SampleAnnotation> getSampleAnnotationsMap();
-
-	/**
-	 * Get variant annotations by id
-	 */
-	protected abstract Map<String, ? extends Annotation> getVariantAnnotationsMap();
-
 }

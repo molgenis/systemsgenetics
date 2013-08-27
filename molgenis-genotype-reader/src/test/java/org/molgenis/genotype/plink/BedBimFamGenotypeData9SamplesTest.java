@@ -2,9 +2,11 @@ package org.molgenis.genotype.plink;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
@@ -22,14 +24,14 @@ import org.testng.annotations.Test;
  * @author jvelde
  * 
  */
-public class BedBimFamGenotypeDataTest extends ResourceTest
+public class BedBimFamGenotypeData9SamplesTest extends ResourceTest
 {
 	private BedBimFamGenotypeData genotypeData;
 
 	@BeforeClass
 	public void beforeClass() throws Exception
 	{
-		genotypeData = new BedBimFamGenotypeData(getTestBed(), getTestBim(), getTestFam());
+		genotypeData = new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9(), 0);
 	}
 
 	@Test
@@ -45,9 +47,13 @@ public class BedBimFamGenotypeDataTest extends ResourceTest
 	@Test
 	public void testGetSequences()
 	{
-		List<Sequence> sequences = genotypeData.getSequences();
+		Iterable<Sequence> sequences = genotypeData.getSequences();
 		assertNotNull(sequences);
-		assertEquals(sequences.size(), 2);
+		int count = 0;
+		for(Sequence s : sequences){
+			++count;
+		}
+		assertEquals(count, 2);
 	}
 
 	@Test
@@ -103,12 +109,14 @@ public class BedBimFamGenotypeDataTest extends ResourceTest
 	@Test
 	public void testGetSamplePhasing()
 	{
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
-		assertEquals(variants.size(), 1);
-		// TODO fix
-		// assertEquals(variants.get(0),
-		// Arrays.asList(false, false, false, false, false, false, false, false,
-		// false));
+		Iterable<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
+		
+		int count = 0;
+		for(GeneticVariant variant : variants){
+			assertEquals(variant.getSamplePhasing(), Arrays.asList(false, false, false, false, false, false, false, false, false));
+			++count;
+		}
+		assertEquals(count, 1);
 	}
 
 	@Test
@@ -118,6 +126,20 @@ public class BedBimFamGenotypeDataTest extends ResourceTest
 		GeneticVariant variant = genotypeData.getSnpVariantByPos("23", pos);
 		assertNotNull(variant);
 		assertEquals(variant.getStartPos(), pos);
+	}
+	
+	@Test
+	public void testGetSnpVariantByPos2(){
+		int pos = 14434961;
+		GeneticVariant variant = genotypeData.getSnpVariantByPos("23", pos);
+		assertNull(variant);
+	}
+	
+	@Test
+	public void testGetSnpVariantByPos3(){
+		int pos = 14434961;
+		GeneticVariant variant = genotypeData.getSnpVariantByPos("24", pos);
+		assertNull(variant);
 	}
 
 }

@@ -4,9 +4,12 @@
  */
 package org.molgenis.genotype.sampleFilter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -18,9 +21,9 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class SampleFilterableGenotypeDataDecorator  implements RandomAccessGenotypeData, SampleFilterableGenotypeData{
+public class SampleFilterableGenotypeDataDecorator extends AbstractRandomAccessGenotypeData implements SampleFilterableGenotypeData{
 	
-		private final RandomAccessGenotypeData original;
+	private final RandomAccessGenotypeData original;
 	private final ArrayList<Sample> includedSamples;
 	private final SampleFilter sampleFilter;
 
@@ -117,6 +120,21 @@ public class SampleFilterableGenotypeDataDecorator  implements RandomAccessGenot
 	@Override
 	public SampleFilter getSampleFilter() {
 		return sampleFilter;
+	}
+
+	@Override
+	public void close() throws IOException {
+		original.close();
+	}
+
+	@Override
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+		return original.getSampleAnnotationsMap();
+	}
+
+	@Override
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+		return original.getVariantAnnotationsMap();
 	}
 	
 }

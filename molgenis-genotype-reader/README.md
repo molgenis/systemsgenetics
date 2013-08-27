@@ -80,7 +80,6 @@ The `org.molgenis.genotype.examples` package contains some basic examples. This 
 Working with the code
 ------------------------
 * Install Maven (http://maven.apache.org/) if you haven't done so already
-* Follow instructions in the global systemsgenetics readme.md on how to instal local jars
 * Build molgenis-genotype-reader (`mvn clean install`)
 
 ### How to open in Eclipse

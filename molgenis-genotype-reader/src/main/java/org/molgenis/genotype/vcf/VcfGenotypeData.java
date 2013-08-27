@@ -150,7 +150,7 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	protected Map<String, Annotation> getVariantAnnotationsMap()
+	public Map<String, Annotation> getVariantAnnotationsMap()
 	{
         // TODO: is this the correct annotation map that is returned?????
 		if (sampleAnnotationsMap == null)
@@ -257,12 +257,12 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 		{
 			@Override
 			@Nullable
-			public Boolean apply(@Nullable
+			public Boolean apply(
 			VcfSampleGenotype input)
 			{
 				if (input == null)
 				{
-					return null;
+					return false;
 				}
 
 				return input.getPhasing().get(0);
@@ -317,7 +317,7 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	protected Map<String, SampleAnnotation> getSampleAnnotationsMap()
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap()
 	{
 		return Collections.emptyMap();
 	}
@@ -334,6 +334,11 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	{
 		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
+	}
+	
+	@Override
+	public void close() throws IOException {
+		reader.close();
 	}
 
 }

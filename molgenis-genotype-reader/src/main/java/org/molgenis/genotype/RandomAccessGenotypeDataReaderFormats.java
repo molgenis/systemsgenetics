@@ -15,9 +15,9 @@ import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
-public enum RandomAccessGenotypedDataReaderFormats {
+public enum RandomAccessGenotypeDataReaderFormats {
 
-	PED_MAP("PED / MAP file", "plink PED MAP files"),
+	PED_MAP("PED / MAP files", "plink PED / MAP files"),
 	VCF("VCF file", "gziped vcf with tabix index file"),
 	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder"), 
 	SHAPEIT2("Shapeit2 output",	".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"),
@@ -26,7 +26,7 @@ public enum RandomAccessGenotypedDataReaderFormats {
 	private final String name;
 	private final String description;
 
-	RandomAccessGenotypedDataReaderFormats(String name, String description) {
+	RandomAccessGenotypeDataReaderFormats(String name, String description) {
 		this.name = name;
 		this.description = description;
 	}
@@ -46,14 +46,14 @@ public enum RandomAccessGenotypedDataReaderFormats {
 			case PED_MAP:
 				return new PedMapGenotypeData(new File(path + ".ped"), new File(path + ".map"));
 			case VCF:
-				return new VcfGenotypeData(new File(path), cacheSize);
+				return new VcfGenotypeData(new File(path + ".vcf.gz"), cacheSize);
 			case VCF_FOLDER:
 				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
 			case SHAPEIT2:
 				return new Impute2GenotypeData(new File(path + ".haps.gz"), new File(path + ".haps.gz.tbi"), new File(
 						path + ".sample"), cacheSize);
 			case PLINK_BED:
-				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
+				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"), cacheSize);
 			case TRITYPER:
 				return new TriTyperGenotypeData(path, cacheSize);
 			default:

@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashSet;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.sampleFilter.SampleFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
@@ -26,6 +26,7 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
  *
  * @author Patrick Deelen
  */
+@edu.umd.cs.findbugs.annotations.SuppressWarnings(value="DLS_DEAD_LOCAL_STORE", justification="It is just an example")
 public class FilteringSamplesAndVariants {
 
 	/**
@@ -60,6 +61,7 @@ public class FilteringSamplesAndVariants {
 		VariantFilter combinedFilter = new VariantCombinedFilter(new VariantQcChecker(0.05f, 0.95f, 0.001d), new VariantFilterBiAllelic());
 
 		//Now we also do some QC of the variants after the samples are filtered. maf 0.05, call rate 0.95 and hwe-p 0.001
+		
 		RandomAccessGenotypeData genotypeData3 = new VariantFilterableGenotypeDataDecorator(genotypeData2, combinedFilter);
 
 		//Note: although it posible to stack variant filters as done above it is more efficient to this at once.
@@ -74,7 +76,7 @@ public class FilteringSamplesAndVariants {
 		String type = "ped_map";
 		String path = "/";
 
-		RandomAccessGenotypedDataReaderFormats datasetFormat = RandomAccessGenotypedDataReaderFormats.valueOf(type.toUpperCase());
+		RandomAccessGenotypeDataReaderFormats datasetFormat = RandomAccessGenotypeDataReaderFormats.valueOf(type.toUpperCase());
 
 		//Note: first samples are filtered and then the variants are filted. 
 		datasetFormat.createFilteredGenotypeData(path, 100, combinedFilter, new SampleIdIncludeFilter(includedSsamples));

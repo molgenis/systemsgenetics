@@ -2,7 +2,6 @@ package nl.umcg.deelenp.genotypealigner;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -18,7 +17,7 @@ import org.apache.log4j.SimpleLayout;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.RandomAccessGenotypedDataReaderFormats;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -60,7 +59,7 @@ class GenotypeAligner {
 	/**
 	 * The default minimum LD before using a SNP for LD alignment
 	 */
-	private static final double DEFAULT_MIN_LD_TO_INCLUDE_ALIGN = 0.1;
+	private static final double DEFAULT_MIN_LD_TO_INCLUDE_ALIGN = 0.3;
 
 	static {
 
@@ -124,7 +123,8 @@ class GenotypeAligner {
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
 				.withDescription("The reference data type. \n"
-				+ "* PED_MAP - plink PED MAP files gziped with tabix index.\n"
+				+ "* PED_MAP - plink PED MAP files. \n"
+				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes.")
 				.withLongOpt("outputType")
 				.isRequired()
@@ -147,7 +147,7 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("int")
 				.hasArg()
-				.withDescription("Minimum number of SNPs to above ld-cutoff do LD alignment. SNPs that do not meet this requerement are excluded. Defaults to " + DEFAULT_MIN_SNPS_TO_ALIGN_ON + ". Min value: " + MIN_MIN_SNPS_TO_ALIGN_ON)
+				.withDescription("Minimum number of SNPs above ld-cutoff to do LD alignment. SNPs that do not meet this requerement are excluded. Defaults to " + DEFAULT_MIN_SNPS_TO_ALIGN_ON + ". Min value: " + MIN_MIN_SNPS_TO_ALIGN_ON)
 				.withLongOpt("min-snps")
 				.create("m");
 		OPTIONS.addOption(option);
@@ -177,7 +177,7 @@ class GenotypeAligner {
 	 * @throws InterruptedException
 	 * @throws UserFriendlyException
 	 */
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String... args) throws InterruptedException {
 
 		System.out.println(HEADER);
 		System.out.println();
@@ -211,10 +211,10 @@ class GenotypeAligner {
 
 
 		final String inputBasePath = commandLine.getOptionValue('i');
-		final RandomAccessGenotypedDataReaderFormats inputType;
+		final RandomAccessGenotypeDataReaderFormats inputType;
 
 		try {
-			inputType = RandomAccessGenotypedDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+			inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --inputType \"" + commandLine.getOptionValue('I') + "\" is not a valid input data format");
 			System.exit(1);
@@ -223,9 +223,9 @@ class GenotypeAligner {
 
 		final String refBasePath = commandLine.getOptionValue('r');
 
-		final RandomAccessGenotypedDataReaderFormats refType;
+		final RandomAccessGenotypeDataReaderFormats refType;
 		try {
-			refType = RandomAccessGenotypedDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+			refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
 			System.exit(1);
@@ -382,8 +382,8 @@ class GenotypeAligner {
 		System.out.println("Alignment complete");
 		LOGGER.info("Alignment complete");
 
-		System.out.println("Removed in total " + aligedInputData.getExcludedVariantCount() + " variants");
-		LOGGER.info("Removed in total " + aligedInputData.getExcludedVariantCount() + " variants");
+		System.out.println("Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
+		LOGGER.info("Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
 
 		System.out.println("Writing results");
 
@@ -407,8 +407,8 @@ class GenotypeAligner {
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypedDataReaderFormats inputType,
-			String refBasePath, RandomAccessGenotypedDataReaderFormats refType, String outputBasePath,
+	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType,
+			String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath,
 			GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider,
 			double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId) {
 

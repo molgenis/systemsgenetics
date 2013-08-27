@@ -9,9 +9,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
@@ -21,7 +23,7 @@ import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
-public class MultiPartGenotypeData implements RandomAccessGenotypeData
+public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 {
 
 	private List<Sample> samples = null;
@@ -235,5 +237,19 @@ public class MultiPartGenotypeData implements RandomAccessGenotypeData
 		{
 			return null;
 		}
+	}
+
+	@Override
+	public void close() throws IOException {
+	}
+
+	@Override
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+		return getVariantAnnotationsMap();
+	}
+
+	@Override
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+		return getSampleAnnotationsMap();
 	}
 }

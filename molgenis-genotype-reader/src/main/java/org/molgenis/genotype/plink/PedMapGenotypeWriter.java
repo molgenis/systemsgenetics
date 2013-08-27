@@ -23,13 +23,14 @@ import org.molgenis.genotype.variant.NotASnpException;
 public class PedMapGenotypeWriter implements GenotypeWriter
 {
 	private static Logger LOG = Logger.getLogger(PedMapGenotypeWriter.class);
-	private GenotypeData genotypeData;
+	private final GenotypeData genotypeData;
 
 	public PedMapGenotypeWriter(GenotypeData genotypeData)
 	{
 		this.genotypeData = genotypeData;
 	}
 
+	@Override
 	public void write(String basePath) throws IOException, NotASnpException
 	{
 		write(new File(basePath + ".ped"), new File(basePath + ".map"));
@@ -176,7 +177,7 @@ public class PedMapGenotypeWriter implements GenotypeWriter
 		return Double.valueOf(value.toString());
 	}
 
-	private class BialleleIterator implements Iterator<Alleles>
+	private static class BialleleIterator implements Iterator<Alleles>
 	{
 		private Iterator<GeneticVariant> variantsIterator;
 		private int sampleIndex;

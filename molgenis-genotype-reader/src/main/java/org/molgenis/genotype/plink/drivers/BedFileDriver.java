@@ -183,19 +183,21 @@ public class BedFileDriver
 			throw new Exception("nrOfIndividuals + paddingIndividuals) % 4 must be 0");
 		}
 
-		int bytesPerIndividual = (nrOfIndividualsInFAMfile + paddingIndividuals) / 4;
+		int bytesPerVariant = (nrOfIndividualsInFAMfile + paddingIndividuals) / 4;
 
 		// inclusive: read this byte index
 		// add 3 because of the reserved bytes in plink format
-		long startByte = (index * bytesPerIndividual) + 3;
+		long startByte = (index * bytesPerVariant) + 3;
 
-		long stopByte = startByte + bytesPerIndividual;
+		long stopByte = startByte + bytesPerVariant;
 
 		byte[] res = new byte[(int) (stopByte - startByte)];
 
 		RandomAccessFile raf = new RandomAccessFile(bedFile, "r");
 		raf.seek(startByte);
-		raf.read(res);
+		if(raf.read(res) != res.length){
+			throw new GenotypeDataException("Error reading BED file, file shorted than expected");
+		}
 		raf.close();
 
 		String[] result = new String[nrOfIndividualsInFAMfile];
@@ -212,11 +214,11 @@ public class BedFileDriver
 										// padding 0's
 			{
 				// At the end, the string is padded with 0's -> check
-				for (int j = paddingIndividuals * 2; j < 8; j++)
+				for (int j = 8 - (paddingIndividuals * 2); j < 8; j++)
 				{
 					if (byteString.charAt(j) != '0')
 					{
-						throw new IOException("Fatal error: padding 0's not present where expected!");
+						throw new GenotypeDataException("Fatal error: padding 0's not present where expected! Expected padding indviduals: " + paddingIndividuals + " none zero padding at pos " + j + " of last byte. Variant index: " + index);
 					}
 				}
 				toBit -= (paddingIndividuals * 2);
@@ -328,7 +330,9 @@ public class BedFileDriver
 															// individuals
 		RandomAccessFile raf = new RandomAccessFile(bedFile, "r");
 		raf.seek(start);
-		raf.read(res);
+		if(raf.read(res) != res.length){
+			throw new GenotypeDataException("Error reading BED file, file shorted than expected");
+		}
 		raf.close();
 
 		for (int i = 0; i < res.length; i++)

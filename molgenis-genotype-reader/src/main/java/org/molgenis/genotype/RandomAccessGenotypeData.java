@@ -1,7 +1,9 @@
 package org.molgenis.genotype;
 
+import java.util.HashMap;
 import java.util.List;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variantFilter.VariantFilter;
 
 
 public interface RandomAccessGenotypeData extends GenotypeData {
@@ -64,4 +66,18 @@ public interface RandomAccessGenotypeData extends GenotypeData {
 	 * @return
 	 */
 	Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd);
+	
+	/**
+	 * Get a HashMap with the variants that have a primairy ID.
+	 * 
+	 * Variants without an ID will always be ignored.
+	 * 
+	 * If multiple variants have the same ID an arbritary variant is selected.
+	 * 
+	 * It is possible to supply a variant filter to select a subset of variants
+	 * 
+	 * @param filter
+	 * @return 
+	 */
+	HashMap<String, GeneticVariant> getVariantIdMap(VariantFilter filter);
 }

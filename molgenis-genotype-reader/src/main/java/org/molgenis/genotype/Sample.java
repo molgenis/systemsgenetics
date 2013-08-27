@@ -62,7 +62,33 @@ public class Sample {
             return CaseControlAnnotation.UNKNOWN;
         }
 	}
+	
+	/**
+	 * Get the ID of the father. "0" if not set. 
+	 *
+	 * @return 
+	 */
+	public String getFatherId(){
+		if(annotationValues.containsKey(GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME)){
+			return (String) annotationValues.get(GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME);
+		} else {
+			return "0";
+		}
+	}
 
+	/**
+	 * Get the ID of the father. "0" if not set. 
+	 *
+	 * @return 
+	 */
+	public String getMotherId(){
+		if(annotationValues.containsKey(GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME)){
+			return (String) annotationValues.get(GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME);
+		} else {
+			return "0";
+		}
+	}
+	
     @Override
     public String toString() {
         return "Sample [id=" + id + ", familyId=" + familyId + ", annotationValues=" + annotationValues + "]";

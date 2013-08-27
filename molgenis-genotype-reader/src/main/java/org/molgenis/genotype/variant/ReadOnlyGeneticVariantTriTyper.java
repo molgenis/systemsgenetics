@@ -30,7 +30,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 	public ReadOnlyGeneticVariantTriTyper(String variantId, int startPos, String sequenceName, SampleVariantsProvider sampleVariantsProvider) {
 		this.variantId = GeneticVariantId.createVariantId(variantId);
 		this.startPos = startPos;
-		this.sequenceName = sequenceName;
+		this.sequenceName = sequenceName.intern();
 		this.sampleVariantsProvider = sampleVariantsProvider;
 	}
 

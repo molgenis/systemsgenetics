@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Alleles implements Iterable<Allele>, Comparable<Alleles>
-{
+{	
 	private static final Map<List<Allele>, Alleles> pool = new HashMap<List<Allele>, Alleles>();
 
 	private final List<Allele> alleles;
@@ -206,7 +206,7 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 			throw new RuntimeException("Not a snp");
 		}
 
-		return allelesAsChar;
+		return allelesAsChar.clone();
 	}
 
 	@Override

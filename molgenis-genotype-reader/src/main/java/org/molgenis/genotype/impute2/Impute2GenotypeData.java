@@ -190,13 +190,13 @@ public class Impute2GenotypeData extends IndexedGenotypeData implements SampleVa
 	}
 
 	@Override
-	protected Map<String, Annotation> getVariantAnnotationsMap()
+	public Map<String, Annotation> getVariantAnnotationsMap()
 	{
 		return Collections.emptyMap();
 	}
 
 	@Override
-	protected Map<String, SampleAnnotation> getSampleAnnotationsMap()
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap()
 	{
 		return sampleAnnotations;
 	}
@@ -402,6 +402,11 @@ public class Impute2GenotypeData extends IndexedGenotypeData implements SampleVa
 			default:
 				throw new GenotypeDataException("[" + sample + "] is an invalid value for a haps sample value");
 		}
+
+	}
+
+	@Override
+	public void close() throws IOException {
 
 	}
 }

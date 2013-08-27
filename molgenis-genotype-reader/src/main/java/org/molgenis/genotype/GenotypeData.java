@@ -1,8 +1,9 @@
 package org.molgenis.genotype;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-
+import java.util.Map;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -13,7 +14,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  * @author erwin
  * 
  */
-public interface GenotypeData extends Iterable<GeneticVariant>
+public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 {
 
 	public static final String FATHER_SAMPLE_ANNOTATION_NAME = "fatherId";
@@ -61,5 +62,15 @@ public interface GenotypeData extends Iterable<GeneticVariant>
 	 * @return
 	 */
 	List<Sample> getSamples();
+	
+	/**
+	 * Get variant annotations by id
+	 */
+	Map<String, ? extends Annotation> getVariantAnnotationsMap();
+	
+	/**
+	 * Get variant annotations by id
+	 */
+	Map<String, SampleAnnotation> getSampleAnnotationsMap();
 
 }

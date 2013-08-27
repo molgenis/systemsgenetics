@@ -79,8 +79,7 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	public Allele getRefAllele();
 
 	/**
-	 * Returns list sample variants. The list of variants can contain null !!!!
-	 * if unknown
+	 * Returns list sample variants.
 	 */
 	public List<Alleles> getSampleVariants();
 

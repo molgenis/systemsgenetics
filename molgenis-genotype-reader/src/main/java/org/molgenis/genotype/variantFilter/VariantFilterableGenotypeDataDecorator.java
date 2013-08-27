@@ -4,8 +4,11 @@
  */
 package org.molgenis.genotype.variantFilter;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -17,7 +20,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenotypeData, VariantFilterableGenotypeData {
+public class VariantFilterableGenotypeDataDecorator extends AbstractRandomAccessGenotypeData implements VariantFilterableGenotypeData {
 	
 	private final RandomAccessGenotypeData originalGenotypeData;
 	private final VariantFilter variantFilter;
@@ -49,7 +52,7 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return createQcIterable(originalGenotypeData.getVariantsByPos(seqName, startPos));
+		return createFilterIterable(originalGenotypeData.getVariantsByPos(seqName, startPos));
 	}
 
 	@Override
@@ -69,12 +72,12 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return createQcIterable(originalGenotypeData.getSequenceGeneticVariants(seqName));
+		return createFilterIterable(originalGenotypeData.getSequenceGeneticVariants(seqName));
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return createQcIterable(originalGenotypeData.getVariantsByRange(seqName, rangeStart, rangeEnd));
+		return createFilterIterable(originalGenotypeData.getVariantsByRange(seqName, rangeStart, rangeEnd));
 	}
 
 	@Override
@@ -104,10 +107,10 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 
 	@Override
 	public Iterator<GeneticVariant> iterator() {
-		return createQcIterable(originalGenotypeData).iterator();
+		return createFilterIterable(originalGenotypeData).iterator();
 	}
 	
-	private Iterable<GeneticVariant> createQcIterable(Iterable<GeneticVariant> originalIterable){
+	private Iterable<GeneticVariant> createFilterIterable(Iterable<GeneticVariant> originalIterable){
 		return new VariantFilterIterable(new VariantFilterIterator(originalIterable.iterator(), variantFilter));
 	}
 
@@ -123,6 +126,21 @@ public class VariantFilterableGenotypeDataDecorator implements RandomAccessGenot
 	@Override
 	public VariantFilter getFilter() {
 		return variantFilter;
+	}
+	
+	@Override
+	public void close() throws IOException {
+		originalGenotypeData.close();
+	}
+
+	@Override
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+		return originalGenotypeData.getVariantAnnotationsMap();
+	}
+
+	@Override
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+		return originalGenotypeData.getSampleAnnotationsMap();
 	}
 	
 }

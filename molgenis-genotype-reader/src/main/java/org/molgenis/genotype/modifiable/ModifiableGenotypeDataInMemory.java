@@ -1,10 +1,13 @@
 package org.molgenis.genotype.modifiable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -20,7 +23,7 @@ import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.molgenis.genotype.variant.sampleProvider.SwappingSampleVariantsProvider;
 
-public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
+public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotypeData implements ModifiableGenotypeData
 {
 
 	private final RandomAccessGenotypeData sourceGenotypeData;
@@ -345,6 +348,20 @@ public class ModifiableGenotypeDataInMemory implements ModifiableGenotypeData
 	{
 		return ModifiableGeneticVariantIterator.createGeneticVariantIterableBackByModifiable(sourceGenotypeData
 				.getVariantsByRange(seqName, rangeStart, rangeEnd).iterator(), this, filteredOutVariants);
+	}
+
+	@Override
+	public void close() throws IOException {
+	}
+
+	@Override
+	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+		return sourceGenotypeData.getVariantAnnotationsMap();
+	}
+
+	@Override
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
+		return sourceGenotypeData.getSampleAnnotationsMap();
 	}
 
 }
