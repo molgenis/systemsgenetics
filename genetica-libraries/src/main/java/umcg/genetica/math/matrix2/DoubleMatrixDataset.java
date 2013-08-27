@@ -175,11 +175,8 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D {
         double[][] rawData = getMatrix().toArray();
 
         for (int p = 0; p < rawData.length; p++) {
-            if (rowObjects == null) {
-                out.append("");
-            } else {
-                out.append(rowObjects.get(p).toString());
-            }
+            out.append(rowObjects.get(p).toString());
+            
             for (int s = 0; s < rawData[p].length; s++) {
                 out.append('\t');
                 out.append(String.valueOf(rawData[p][s]));
@@ -249,7 +246,13 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D {
     public abstract void setMatrix(double[][] Matrix);
     
     //Fixed like in parallel colt.
+    @Override
     protected DoubleMatrix1D like1D(int size, int offset, int stride) {
         throw new InternalError(); // should never get called
+    }
+    
+    @Override
+    public int hashCode() {
+        return 1;
     }
 }
