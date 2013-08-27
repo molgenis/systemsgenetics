@@ -79,7 +79,7 @@ public class Heterogeneity {
         double weightedZ = 0;
         int totalSample = 0;
         for (int d = 0; d < datasetZ.length; d++) {
-            if (datasetZ[d] != Double.NaN) {
+            if (!Double.isNaN(datasetZ[d])) {
                 weightedZ += Math.sqrt(datasetWeights[d]) * datasetZ[d];
                 totalSample += datasetWeights[d];
             }
