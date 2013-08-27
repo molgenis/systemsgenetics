@@ -44,11 +44,12 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	private int writtenVariantsCounter = 0;
 	private int excludedVariantsCounter = 0;
 
+	private static final Logger LOGGER = Logger.getLogger(BedBimFamGenotypeWriter.class);
+	
 	public BedBimFamGenotypeWriter(GenotypeData genotypeData) {
 		this.genotypeData = genotypeData;
 	}
-	private static final Logger LOGGER = Logger.getLogger(BedBimFamGenotypeWriter.class);
-
+	
 	@Override
 	public void write(String path) throws IOException, NotASnpException {
 		write(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
