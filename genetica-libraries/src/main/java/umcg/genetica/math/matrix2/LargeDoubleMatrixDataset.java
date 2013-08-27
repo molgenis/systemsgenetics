@@ -82,7 +82,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
     @Override
     public double getQuick(int i, int i1) {
-        return getQuick(i, i1);
+        return matrix.getQuick(i, i1);
     }
 
     @Override
@@ -103,11 +103,6 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
     @Override
     public DoubleMatrix1D vectorize() {
         return matrix.vectorize();
-    }
-
-    @Override
-    protected DoubleMatrix1D like1D(int i, int i1, int i2) {
-        return like1D(i, i1, i2);
     }
 
     @Override
