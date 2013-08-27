@@ -83,7 +83,7 @@ public class VennDiagram {
 //        Color grey = new Color(255, 255, 255, 125);
         Color black = new Color(137, 142, 216);
         Color grey = new Color(73, 78, 134, 125);
-        Color white = new Color(220, 220, 220);//, 125);
+//        Color white = new Color(220, 220, 220);//, 125);
 
         int totaldistance = distancepixels + (int) Math.ceil(radius1) + (int) Math.floor(radius2);
         int remaining = width - totaldistance;
@@ -109,7 +109,7 @@ public class VennDiagram {
 
         g2d.setColor(black);
         int originX1 = (int) Math.ceil(marginx + radius1);
-        int originY1 = (int) Math.ceil(height / 2);
+        int originY1 = (int) Math.ceil(height / 2.0d);
 
 //        System.out.println(margin);
 
@@ -205,7 +205,7 @@ public class VennDiagram {
         double allowed_difference = overlap / 100;
 
         int i = 0;
-        while (lower != upper) {
+        while (Math.abs(lower - upper) < .0000001 ) {
             testpos = (lower + upper) / 2;
             circleOverlap = calc_overlap(r1, r2, testpos);
             if (Math.abs(circleOverlap - overlap) <= allowed_difference) {

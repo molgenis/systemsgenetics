@@ -250,7 +250,8 @@ public class TextFile {
     }
     
     public ArrayList<String> readAsArrayList(int col, Pattern p) throws IOException {
-        ArrayList<String> data = (ArrayList<String>) Arrays.asList(readAsArray(col, p));
+        ArrayList<String> data = new ArrayList<String>();
+        Collections.addAll(data, readAsArray(col, p));
         return data;
     }
 
