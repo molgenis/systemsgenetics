@@ -73,7 +73,7 @@ public class ProgressBar {
 
         if (printEvery > 0) {
             StringBuilder out = new StringBuilder(maxwidth);
-            int numToPrint = (int) Math.ceil(iterations / printEvery);
+            int numToPrint = (int) Math.ceil(iterations / (double) printEvery);
             if (numToPrint > width) {
                 numToPrint = width;
             }
