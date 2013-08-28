@@ -69,7 +69,7 @@ public class FinalReportToTriTyper {
         TextFile in = new TextFile(inputFile, TextFile.R);
 
         //If this is an Illumina Final Report file, first process the irrelevant header:
-        String str = null;
+        String str;
         if (isIlluminaFinalReportFile) {
             int countIlluminaFinalReport = 0;
             while ((str = in.readLine()) != null) {
@@ -411,10 +411,10 @@ public class FinalReportToTriTyper {
         int previousSNPID = -1;
         while ((str = in.readLine()) != null) {
             if (str.indexOf("\"") != -1) {
-                str.replaceAll("\"", "");
+                str = str.replaceAll("\"", "");
             }
             if (str.indexOf("\'") != -1) {
-                str.replaceAll("\'", "");
+                str = str.replaceAll("\'", "");
             }
             data = str.split(delimiter);
             String snp = data[columnSNP];
@@ -560,10 +560,10 @@ public class FinalReportToTriTyper {
 
             //Remove quotes, if they exist:
             if (str.indexOf("\"") != -1) {
-                str.replaceAll("\"", "");
+                str = str.replaceAll("\"", "");
             }
             if (str.indexOf("\'") != -1) {
-                str.replaceAll("\'", "");
+                str = str.replaceAll("\'", "");
             }
 
             //Get individual values:

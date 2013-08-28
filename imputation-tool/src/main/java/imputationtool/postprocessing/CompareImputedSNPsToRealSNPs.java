@@ -107,9 +107,9 @@ public class CompareImputedSNPsToRealSNPs {
         
         
         String[] ind1 = ggDataset1.getIndividuals();
-        String[] ind2 = ggDataset2.getIndividuals();
+        //String[] ind2 = ggDataset2.getIndividuals();
         int[] ids1 = new int[ind1.length];
-        int[] ids2 = new int[ind1.length];
+//        int[] ids2 = new int[ind1.length];
         for (int i = 0; i < ids1.length; i++) {
             String name1 = ind1[i];
             Integer id2 = ggDataset2.getIndividualId(name1);

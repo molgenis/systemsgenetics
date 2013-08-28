@@ -13,6 +13,7 @@ import java.util.logging.Logger;
  *
  * @author lude, juha
  */
+@Deprecated
 public class DoubleMatrixDatasetRA<T, U> extends DoubleMatrixDatasetAC {
 
     private static final Logger LOGGER = Logger.getLogger(DoubleMatrixDatasetRA.class.getName());

@@ -10,6 +10,7 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +21,7 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author MarcJan
  */
-public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D {
+public abstract class DoubleMatrixDataset<R extends Comparable, C extends Comparable> extends DoubleMatrix2D {
 
     static final Exception doubleMatrixDatasetNonUniqueHeaderException = new Exception("Tried to use a non-unique header set in an identifier HashMap");
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
@@ -242,8 +243,49 @@ public abstract class DoubleMatrixDataset<R, C> extends DoubleMatrix2D {
         }
         this.hashCols = newHashCols;
     }
+    
+    /**
+     * Order columns
+     *
+     * @param dataset DoubleMatrixDataset Expression matrix
+     */
+    public void OrderOnColumns(DoubleMatrixDataset<R, C> doubleMatrixDataset) {
+        LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(doubleMatrixDataset.columns() / 0.75));
+        ArrayList<C> names = doubleMatrixDataset.getColObjects();
+        Collections.sort(names);
+        
+        int pos = 0;
+        for(C name : names){
+            newColHash.put(name, pos);
+            pos++;
+        }
+        reorderCols(newColHash);
+    }
+    
+    /**
+     * Order rows
+     *
+     * @param dataset DoubleMatrixDataset Expression matrix
+     */
+    public void OrderOnRows(DoubleMatrixDataset<R, C> doubleMatrixDataset) {
+        LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(doubleMatrixDataset.rows() / 0.75));
+        ArrayList<R> names = doubleMatrixDataset.getRowObjects();
+        Collections.sort(names);
+        
+        int pos = 0;
+        for(R name : names){
+            newRowHash.put(name, pos);
+            pos++;
+        }
+        reorderRows(newRowHash);
+
+    }
 
     public abstract void setMatrix(double[][] Matrix);
+    
+    public abstract void reorderRows(LinkedHashMap<R, Integer> mappingIndex);
+    
+    public abstract void reorderCols(LinkedHashMap<C, Integer> mappingIndex);
     
     //Fixed like in parallel colt.
     @Override
