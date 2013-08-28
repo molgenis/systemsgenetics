@@ -11,6 +11,8 @@ import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -92,22 +94,112 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
             if (!rowMap.containsKey(data[0])) {
                 rowMap.put(data[0], row);
+                for (int s = 0; s < tmpCols; s++) {
+                    double d;
+                    try {
+                        d = Double.parseDouble(data[s + columnOffset]);
+                    } catch (NumberFormatException e) {
+                        correctData = false;
+                        d = Double.NaN;
+                    }
+                    initialMatrix[row][s] = d;
+                }
+                row++;
+            } else {
+                LOGGER.warning("Duplicated row name!");
+                throw (doubleMatrixDatasetNonUniqueHeaderException);
+            }           
+        }
+        if (!correctData) {
+            LOGGER.warning("Your data contains NaN/unparseable values!");
+        }
+        in.close();
+
+        DoubleMatrixDataset<String, String> dataset;
+
+        if ((tmpRows * tmpCols) < (Integer.MAX_VALUE - 2)) {
+            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(initialMatrix), rowMap, colMap);
+        } else {
+            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
+            matrix.assign(initialMatrix);
+            dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+        }
+
+        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.rows(), dataset.columns()});
+        return dataset;
+    }
+    
+    public static DoubleMatrixDataset<String, String> loadSubsetOfDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException, Exception {
+        
+        LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
+        
+        Pattern splitPatern = Pattern.compile(delimiter);
+
+        int columnOffset = 1;
+
+        int[] colIndex;
+        TextFile in = new TextFile(fileName, TextFile.R);
+        String str = in.readLine(); // header
+        String[] data = splitPatern.split(str);
+
+        int tmpCols = (data.length - columnOffset);
+
+        LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
+
+        colIndex = new int[tmpCols];
+        int storedCols = 0;
+        for (int s = 0; s < tmpCols; s++) {
+            String colName = data[s + columnOffset];
+            if (!colMap.containsKey(colName) && desiredCols.contains(colName)) {
+                colMap.put(colName, storedCols);
+                desiredColPos.add(storedCols);
+                storedCols++;
+            } else {
+                LOGGER.warning("Duplicated column name!");
+                throw (doubleMatrixDatasetNonUniqueHeaderException);
+            }
+            colIndex[s] = s + columnOffset;
+        }
+
+        int tmpRows = 0;
+
+        while (in.readLine() != null) {
+            String[] info = splitPatern.split(str);
+            if(desiredCols.contains(info[0])){
+                tmpRows++;
+            }
+        }
+        in.close();
+
+        double[][] initialMatrix = new double[tmpRows][storedCols];
+
+        in.open();
+        in.readLine(); // read header
+        int row = 0;
+
+        LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
+
+        boolean correctData = true;
+        while ((str = in.readLine()) != null) {
+            data = splitPatern.split(str);
+            
+            if (!rowMap.containsKey(data[0]) && desiredCols.contains(data[0])) {
+                rowMap.put(data[0], row);
+                for (int s : desiredColPos) {
+                    double d;
+                    try {
+                        d = Double.parseDouble(data[s + columnOffset]);
+                    } catch (NumberFormatException e) {
+                        correctData = false;
+                        d = Double.NaN;
+                    }
+                    initialMatrix[row][s] = d;
+                }
+                row++;
             } else {
                 LOGGER.warning("Duplicated row name!");
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
-
-            for (int s = 0; s < tmpCols; s++) {
-                double d;
-                try {
-                    d = Double.parseDouble(data[s + columnOffset]);
-                } catch (NumberFormatException e) {
-                    correctData = false;
-                    d = Double.NaN;
-                }
-                initialMatrix[row][s] = d;
-            }
-            row++;
         }
         if (!correctData) {
             LOGGER.warning("Your data contains NaN/unparseable values!");
