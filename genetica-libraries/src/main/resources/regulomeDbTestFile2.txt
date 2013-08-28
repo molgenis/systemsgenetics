@@ -1,0 +1,1 @@
+chr1	96560	rs3871782	Chromatin_Structure|DNase-seq|Ag09309	5
