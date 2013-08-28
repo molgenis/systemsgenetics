@@ -323,8 +323,8 @@ public class CubicSpline {
                                         }
                                     } else {
                                         if (this.y[jj + 1] > this.y[jj]) {
-                                            //ToDo check this. Twice the same comparison.
-                                            if (this.y[jj + 1] > this.y[ii - 1] && this.y[jj + 1] > this.y[ii - 1]) {
+                                            //ToDo check this. This was the original: if (this.y[jj + 1] > this.y[ii - 1] && this.y[jj + 1] > this.y[ii - 1]) {
+                                            if (this.y[jj + 1] > this.y[ii - 1]) {
                                                 check = stay(ii, jj, sepn);
                                             }
                                         } else {
