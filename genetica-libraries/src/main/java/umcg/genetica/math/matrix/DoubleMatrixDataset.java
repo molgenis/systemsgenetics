@@ -34,6 +34,8 @@ import umcg.genetica.math.matrix.DoubleMatrixDatasetAC.LoadLabels;
  *
  * @author lude, juha
  */
+
+@Deprecated
 public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
 //    public enum LoadLabels {
 //
