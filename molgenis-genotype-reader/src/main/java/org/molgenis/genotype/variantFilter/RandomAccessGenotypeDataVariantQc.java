@@ -134,7 +134,7 @@ public class RandomAccessGenotypeDataVariantQc extends AbstractRandomAccessGenot
 	}
 
 	@Override
-	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return originalGenotypeData.getVariantAnnotationsMap();
 	}
 

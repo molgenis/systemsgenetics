@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -28,6 +29,8 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 	private List<Sample> samples = null;
 	private static final Pattern VCF_PATTERN = Pattern.compile("vcf.gz$", Pattern.CASE_INSENSITIVE);
+	private final Map<String, Annotation> variantAnnotationsMap;
+	private final Map<String, SampleAnnotation> sampleAnnotationsMap;
 
 	/**
 	 * Can map multiple times to same genotype dataset if a genotype dataset
@@ -47,6 +50,10 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	public MultiPartGenotypeData(HashSet<RandomAccessGenotypeData> genotypeDataCollection)
 			throws IncompatibleMultiPartGenotypeDataException
 	{
+		
+		variantAnnotationsMap = new HashMap<String, Annotation>();
+		sampleAnnotationsMap = new HashMap<String, SampleAnnotation>();
+		
 		for (RandomAccessGenotypeData genotypeData : genotypeDataCollection)
 		{
 			if (samples != null)
@@ -71,9 +78,12 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 				}
 				genotypeDatasets.put(seqName, genotypeData);
 			}
+			
+			variantAnnotationsMap.putAll(genotypeData.getVariantAnnotationsMap());
+			sampleAnnotationsMap.putAll(genotypeData.getSampleAnnotationsMap());
 
 		}
-
+		
 		this.genotypeDataCollection = genotypeDataCollection;
 	}
 
@@ -244,8 +254,8 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	}
 
 	@Override
-	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
-		return getVariantAnnotationsMap();
+	public Map<String, Annotation> getVariantAnnotationsMap() {
+		return variantAnnotationsMap;
 	}
 
 	@Override

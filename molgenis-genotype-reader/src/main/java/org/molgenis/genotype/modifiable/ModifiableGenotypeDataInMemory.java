@@ -355,7 +355,7 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 	}
 
 	@Override
-	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return sourceGenotypeData.getVariantAnnotationsMap();
 	}
 

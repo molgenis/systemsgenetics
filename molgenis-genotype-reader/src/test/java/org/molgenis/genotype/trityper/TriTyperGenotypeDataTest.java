@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sample;
@@ -123,6 +124,23 @@ public class TriTyperGenotypeDataTest extends ResourceTest {
 		assertEquals(phasing,
 				Arrays.asList(false, false, false, false, false, false, false, false, false));
 	}
+	
+	/**
+	 * Test of iterator method, of class SampleFilterGenotypeData.
+	 */
+	@Test
+	public void testIterator() {
+		int counter = 0;
+		for(GeneticVariant variant : genotypeData){
+			
+			if(variant.getPrimaryVariantId().equals("rs11089130")){
+				testFilteredRs11089130(variant);				
+			}
+			
+			++counter;
+		}
+		assertEquals(counter, 10);
+	}
 
 	@Test
 	public void testGetSnpVariantByPos()
@@ -153,5 +171,60 @@ public class TriTyperGenotypeDataTest extends ResourceTest {
 
 	}
 
+	private void testFilteredRs11089130(GeneticVariant rs11089130){
+		
+		List<Alleles> sampleAlleles = rs11089130.getSampleVariants();
+		float[] sampleDosage = rs11089130.getSampleDosages();
+		byte[] sampleCalledDosage = rs11089130.getSampleCalledDosages();
+		List<Boolean> samplePhasing = rs11089130.getSamplePhasing();
+		
+		assertEquals(sampleAlleles.size(), 9);
+		assertEquals(sampleDosage.length, 9);
+		assertEquals(sampleCalledDosage.length, 9);
+		assertEquals(samplePhasing.size(), 9);
+		
+		ArrayList<Alleles> expectedAlleles = new ArrayList<Alleles>(9);
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.G));
+		expectedAlleles.add(Alleles.createAlleles(Allele.G, Allele.G));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.G));
+		expectedAlleles.add(Alleles.createAlleles(Allele.C, Allele.G));
+		
+		assertEquals(sampleAlleles, expectedAlleles);
+		
+		float[] expectedDosage = {2, 1, 0, 2, 2, 2, 2, 1, 1};
+		
+		assertEqualsFloatArray(sampleDosage, expectedDosage);
+		
+		byte[] expectedCalledDosage = {2, 1, 0, 2, 2, 2, 2, 1, 1};
+		
+		assertEqualsByteArray(sampleCalledDosage, expectedCalledDosage);
+		
+				
+	}
+	
+		private void assertEqualsFloatArray(float[] d1, float[] d2){
+		
+		assertEquals(d1.length, d2.length);
+		
+		for(int i = 0 ; i < d1.length ; ++i){
+			assertEquals(d1[i], d2[i]);
+		}
+		
+	}
+	
+	private void assertEqualsByteArray(byte[] d1, byte[] d2){
+		
+		assertEquals(d1.length, d2.length);
+		
+		for(int i = 0 ; i < d1.length ; ++i){
+			assertEquals(d1[i], d2[i]);
+		}
+		
+	}
     
 }

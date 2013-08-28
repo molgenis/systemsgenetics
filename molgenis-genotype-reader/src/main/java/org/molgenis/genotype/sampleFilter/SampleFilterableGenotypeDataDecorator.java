@@ -133,7 +133,7 @@ public class SampleFilterableGenotypeDataDecorator extends AbstractRandomAccessG
 	}
 
 	@Override
-	public Map<String, ? extends Annotation> getVariantAnnotationsMap() {
+	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return original.getVariantAnnotationsMap();
 	}
 	
