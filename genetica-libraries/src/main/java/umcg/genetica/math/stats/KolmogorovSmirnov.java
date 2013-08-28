@@ -62,7 +62,7 @@ public class KolmogorovSmirnov {
         en2 = vals2.length;
 
         while (j1 < en1 && j2 < en2) {
-            if (vals1[j1] == Double.NaN || vals2[j2] == Double.NaN) {
+            if (Double.isNaN(vals1[j1]) || Double.isNaN(vals2[j2])) {
                 throw new IllegalArgumentException("No NaNs allowed!");
             }
             if ((d1 = vals1[j1]) <= (d2 = vals2[j2])) {

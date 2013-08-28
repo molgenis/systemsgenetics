@@ -82,7 +82,7 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
 
     @Override
     public double getQuick(int i, int i1) {
-        return getQuick(i, i1);
+        return matrix.getQuick(i, i1);
     }
 
     @Override
@@ -106,22 +106,8 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
     }
 
     @Override
-    protected DoubleMatrix1D like1D(int i, int i1, int i2) {
-        return like1D(i, i1, i2);
-    }
-
-    @Override
     protected DoubleMatrix2D viewSelectionLike(int[] ints, int[] ints1) {
         //implemented as in wrapper double matrix 2d. Only has protected access.
         throw new InternalError(); // should never be called
-    }
-
-    @Override
-    public void setMatrix(DoubleMatrix2D Matrix) throws Exception{
-        if(Matrix instanceof DenseLargeDoubleMatrix2D){
-            this.matrix = (DenseLargeDoubleMatrix2D) Matrix;
-        } else {
-            throw new Exception("Incompatible type of DoubleMatrix2D");
-        }
     }
 }

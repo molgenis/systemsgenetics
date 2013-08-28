@@ -46,16 +46,16 @@ class GenotypeAligner {
 	 * The default minimum number of SNPs that must have LD above minimum LD
 	 * before doing alignment based on LD
 	 */
-	private static final int DEFAULT_MIN_SNPS_TO_ALIGN_ON = 3;
+	private static final int DEFAULT_MIN_VARIANTS_TO_ALIGN_ON = 3;
 	/**
 	 * The default number of SNPs on either flank to consider for LD alignment.
 	 * Only SNPs with LD above minimum LD will be used
 	 */
-	private static final int DEFAULT_FLANK_SNPS_TO_CONSIDER = 50;
+	private static final int DEFAULT_FLANK_VARIANTS_TO_CONSIDER = 50;
 	/**
 	 * The lowest allowed minimum for the number of SNPs needed to align on
 	 */
-	private static final int MIN_MIN_SNPS_TO_ALIGN_ON = 3;
+	private static final int MIN_MIN_VARIANTS_TO_ALIGN_ON = 3;
 	/**
 	 * The default minimum LD before using a SNP for LD alignment
 	 */
@@ -122,7 +122,7 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The reference data type. \n"
+				.withDescription("The output data type. \n"
 				+ "* PED_MAP - plink PED MAP files. \n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes.")
@@ -133,27 +133,27 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("int")
 				.hasArg()
-				.withDescription("Number of SNPs on either flank to consider using for LD-strand alignment. Must be equal or larger than --min-snps. Defaults to " + DEFAULT_FLANK_SNPS_TO_CONSIDER)
-				.withLongOpt("snps")
-				.create("s");
+				.withDescription("Number of variants on either flank to consider using for LD-strand alignment. Must be equal or larger than --min-variants. Defaults to " + DEFAULT_FLANK_VARIANTS_TO_CONSIDER)
+				.withLongOpt("variants")
+				.create("v");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
-				.withDescription("Minum LD between SNPs to align or check and a flanking SNP in both input as reference. Defaults to 0.1. It is NOT recommend to set this to zero")
+				.withDescription("Minum LD between variant to align or check and a flanking variants in both input as reference. Defaults to " + DEFAULT_MIN_LD_TO_INCLUDE_ALIGN + ". It is NOT recommend to set this to zero")
 				.withLongOpt("min-ld")
 				.create("l");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("int")
 				.hasArg()
-				.withDescription("Minimum number of SNPs above ld-cutoff to do LD alignment. SNPs that do not meet this requerement are excluded. Defaults to " + DEFAULT_MIN_SNPS_TO_ALIGN_ON + ". Min value: " + MIN_MIN_SNPS_TO_ALIGN_ON)
-				.withLongOpt("min-snps")
+				.withDescription("Minimum number of variants above ld-cutoff to do LD alignment. Variants that do not meet this requerement are excluded. Defaults to " + DEFAULT_MIN_VARIANTS_TO_ALIGN_ON + ". Min value: " + MIN_MIN_VARIANTS_TO_ALIGN_ON)
+				.withLongOpt("min-variants")
 				.create("m");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("boolean")
-				.withDescription("Check ld structure of all SNPs after alignment and exclude SNPs that deviate")
+				.withDescription("Check ld structure of all variants after alignment and exclude variants that deviate")
 				.withLongOpt("check-ld")
 				.create("c");
 		OPTIONS.addOption(option);
@@ -168,6 +168,12 @@ class GenotypeAligner {
 				.withDescription("Update variants IDs of study data to match reference data")
 				.withLongOpt("update-id")
 				.create("id");
+		OPTIONS.addOption(option);
+		
+		option = OptionBuilder.withArgName("boolean")
+				.withDescription("Keep variants not present in reference data")
+				.withLongOpt("keep")
+				.create("k");
 		OPTIONS.addOption(option);
 
 	}
@@ -251,17 +257,17 @@ class GenotypeAligner {
 		final double minLdToIncludeAlign;
 
 		try {
-			minSnpsToAlignOn = commandLine.hasOption('s') ? Integer.parseInt(commandLine.getOptionValue('s')) : DEFAULT_MIN_SNPS_TO_ALIGN_ON;
+			minSnpsToAlignOn = commandLine.hasOption('v') ? Integer.parseInt(commandLine.getOptionValue('s')) : DEFAULT_MIN_VARIANTS_TO_ALIGN_ON;
 		} catch (NumberFormatException e) {
-			System.err.println("Error parsing --snps \"" + commandLine.getOptionValue('s') + "\" is not an int");
+			System.err.println("Error parsing --variants \"" + commandLine.getOptionValue('s') + "\" is not an int");
 			System.exit(1);
 			return;
 		}
 
 		try {
-			flankSnpsToConsider = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_FLANK_SNPS_TO_CONSIDER;
+			flankSnpsToConsider = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_FLANK_VARIANTS_TO_CONSIDER;
 		} catch (NumberFormatException e) {
-			System.err.println("Error parsing --min-snps \"" + commandLine.getOptionValue('s') + "\" is not an int");
+			System.err.println("Error parsing --min-variants \"" + commandLine.getOptionValue('s') + "\" is not an int");
 			System.exit(1);
 			return;
 		}
@@ -275,6 +281,7 @@ class GenotypeAligner {
 		}
 
 		final boolean ldCheck = commandLine.hasOption('c');
+		final boolean keep = commandLine.hasOption('k');
 
 		File logFile = new File(outputBasePath + ".log");
 		if (!logFile.getParentFile().isDirectory()) {
@@ -307,17 +314,17 @@ class GenotypeAligner {
 		System.out.println("Started logging");
 		System.out.println();
 
-		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId);
+		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep);
 
 
-		if (minSnpsToAlignOn < MIN_MIN_SNPS_TO_ALIGN_ON) {
-			LOGGER.fatal("the specified --min-snps < " + MIN_MIN_SNPS_TO_ALIGN_ON);
-			System.err.println("the specified --min-snps < " + MIN_MIN_SNPS_TO_ALIGN_ON);
+		if (minSnpsToAlignOn < MIN_MIN_VARIANTS_TO_ALIGN_ON) {
+			LOGGER.fatal("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
+			System.err.println("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
 		}
 
 		if (flankSnpsToConsider < minLdToIncludeAlign) {
-			LOGGER.fatal("--snps < --min-snps");
-			System.err.println("--snps < --min-snps");
+			LOGGER.fatal("--variants < --min-variants");
+			System.err.println("--variants < --min-variants");
 		}
 
 		if (inputBasePath.equals(refBasePath)) {
@@ -347,6 +354,7 @@ class GenotypeAligner {
 			return;
 		}
 
+		System.out.println("Input data loaded");
 		LOGGER.info("Input data loaded");
 
 		final RandomAccessGenotypeData refData;
@@ -363,6 +371,7 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
+		System.out.println("Reference data loaded");
 		LOGGER.info("Reference data loaded");
 
 		Aligner aligner = new Aligner();
@@ -371,7 +380,7 @@ class GenotypeAligner {
 
 		try {
 			System.out.println("Beginning alignment");
-			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId);
+			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
 		} catch (LdCalculatorException e) {
 			System.err.println("Error in LD caculation" + e.getMessage());
 			LOGGER.fatal("Error in LD caculation" + e.getMessage(), e);
@@ -386,6 +395,7 @@ class GenotypeAligner {
 		LOGGER.info("Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
 
 		System.out.println("Writing results");
+		LOGGER.info("Writing results");
 
 
 		GenotypeWriter inputDataWriter = outputType.createGenotypeWriter(aligedInputData);
@@ -398,7 +408,13 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
-
+		try {
+			inputData.close();
+			refData.close();
+		} catch (IOException ex) {
+			
+		}
+				
 		LOGGER.info("Output data writen");
 		LOGGER.info("Program complete");
 
@@ -407,10 +423,7 @@ class GenotypeAligner {
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType,
-			String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath,
-			GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider,
-			double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId) {
+	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep) {
 
 
 		System.out.println("Interpreted arugments: ");
@@ -426,16 +439,18 @@ class GenotypeAligner {
 		LOGGER.info("Output base path: " + outputBasePath);
 		System.out.println(" - Output data type: " + outputType.getName());
 		LOGGER.info("Output data type: " + outputType.getName());
-		System.out.println(" - Number of flank SNPs to consider for LD alignment: " + flankSnpsToConsider);
-		LOGGER.info("Number of flank SNPs to consider for LD alignment: " + flankSnpsToConsider);
-		System.out.println(" - Minimum LD of flanking SNPs before using for LD alignment: " + minLdToIncludeAlign);
-		LOGGER.info("Minimum LD of flanking SNPs before using for LD alignment: " + minLdToIncludeAlign);
-		System.out.println(" - Minimum number of SNPs needed to for LD aligment: " + minSnpsToAlignOn);
-		LOGGER.info("Minimum number of SNPs needed to for LD aligment: " + minSnpsToAlignOn);
+		System.out.println(" - Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
+		LOGGER.info("Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
+		System.out.println(" - Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
+		LOGGER.info("Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
+		System.out.println(" - Minimum number of variants needed to for LD aligment: " + minSnpsToAlignOn);
+		LOGGER.info("Minimum number of variants needed to for LD aligment: " + minSnpsToAlignOn);
 		System.out.println(" - LD checker " + (ldCheck ? "on" : "off"));
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
 		LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
+		System.out.println(" - Keep variant not in reference data: " + (keep ? "yes" : "no"));
+		LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		System.out.println(" - Debug mode: " + (debugMode ? "on" : "off"));
 		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
 		
