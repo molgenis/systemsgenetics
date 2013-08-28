@@ -358,8 +358,8 @@ public class Heatmap {
     }
 
     private Rectangle getScaleGradient(int width, int height) {
-        java.awt.Rectangle r = new java.awt.Rectangle(width, height);
-        return null;
+        com.lowagie.text.Rectangle r = new com.lowagie.text.Rectangle(width, height);
+        return r;
 
     }
 
