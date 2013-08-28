@@ -66,7 +66,7 @@ public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 	/**
 	 * Get variant annotations by id
 	 */
-	Map<String, ? extends Annotation> getVariantAnnotationsMap();
+	Map<String, Annotation> getVariantAnnotationsMap();
 	
 	/**
 	 * Get variant annotations by id
