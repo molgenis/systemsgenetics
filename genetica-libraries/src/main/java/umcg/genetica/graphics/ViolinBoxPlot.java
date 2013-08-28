@@ -20,7 +20,6 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
-import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.stats.WilcoxonMannWhitney;
 
 /**
@@ -184,30 +183,34 @@ public class ViolinBoxPlot {
                 }
             }
 
-            sortedPValuesPerDataset.add(new Pair<Double, Integer>(minPvalueForDs, dataset));
+            sortedPValuesPerDataset.add(new Pair<Double, Integer>(minPvalueForDs, dataset, Pair.SORTBY.LEFT));
 
         }
 
-        Collections.sort(sortedPValuesPerDataset);
-        Collections.sort(sortedPValuesPerCategory);
+        Collections.sort(sortedPValuesPerDataset, Collections.reverseOrder());
+        Collections.sort(sortedPValuesPerCategory, Collections.reverseOrder());
+
+
 
         int datasetCounter = 0;
         int deltaX = 0;
         for (Pair<Double, Integer> pvalueDatasetPair : sortedPValuesPerDataset) {
-            Integer datasetNumber = pvalueDatasetPair.getRight();
 
+            Integer datasetNumber = pvalueDatasetPair.getRight();
             int datasetwidth = datasetWitdths[datasetNumber];
+
             // draw the gradient
             g2d.setComposite(alphaComposite100);
             int x = marginLeft + deltaX;
             int height = innerHeight;
             java.awt.GradientPaint gradient = new java.awt.GradientPaint(0, marginTop, new Color(230, 230, 230), 0, height, new Color(250, 250, 250));
             g2d.setPaint(gradient);
-            g2d.fillRect(x - individualPlotMarginLeft / 2, marginTop - 90, individualPlotWidth + individualPlotMarginRight / 2 + individualPlotMarginLeft / 2, height + 90);
+            g2d.fillRect(x - individualPlotMarginLeft / 2, marginTop - 90, datasetwidth, height + 90);
 
             // now get the sorted results per category within this dataset
             ArrayList<Triple<Integer, Integer, Integer>> sortedPValuesForDataset = new ArrayList<Triple<Integer, Integer, Integer>>();
             for (Pair<Double, Triple<Integer, Integer, Integer>> pvalueTriplePair : sortedPValuesPerCategory) {
+                System.out.println(pvalueTriplePair.toString());
                 if (pvalueTriplePair.getRight().getLeft().equals(datasetNumber)) {
                     // this result belongs to this dataset
                     sortedPValuesForDataset.add(pvalueTriplePair.getRight());
@@ -248,6 +251,7 @@ public class ViolinBoxPlot {
             // now we can plot the combinations between the categories (and their pvalues and aucs, yay!)
             int[] categoryIndex = new int[vals[datasetNumber].length];
             int categoryCounter = 0;
+            int plotStart = x + individualPlotMarginLeft;
             for (Integer category : categoryOrder) {
                 double[] vals1 = vals[datasetNumber][category];
                 categoryIndex[category] = categoryCounter;
@@ -256,33 +260,40 @@ public class ViolinBoxPlot {
                 g2d.setComposite(alphaComposite25);
                 g2d.setColor(new Color(223, 36, 20));
 
-                int xpos = x + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * categoryCounter;
-
-                drawViolinPlot(g2d, xpos, y, individualPlotWidth, height, vals1, minValue, maxValue);
+                int xposViolin = plotStart + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * categoryCounter;
+                int xposBoxPlot = xposViolin; // + (individualPlotWidth / 2 - 3) / 2;
+                drawViolinPlot(g2d, xposViolin, y, individualPlotWidth, height, vals1, minValue, maxValue);
                 g2d.setComposite(alphaComposite100);
                 g2d.setColor(new Color(0, 0, 0));
-                drawBoxPlot(g2d, xpos, y, individualPlotWidth / 2 - 3, height, vals1, minValue, maxValue, false);
+                drawBoxPlot(g2d, xposBoxPlot, y, individualPlotWidth, height, vals1, minValue, maxValue, false);
 
                 // Draw bottom discrimator between candidate genes and other genes:
                 double minVal1 = JSci.maths.ArrayMath.min(vals1);
 
                 int posY1 = y + height - (int) Math.round((double) height * (minVal1 - minValue) / (maxValue - minValue));
 
+
+                int linePos = xposViolin + (individualPlotWidth / 2);
                 g2d.setComposite(alphaComposite25);
                 g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 2.0f, new float[]{2.0f}, 0.0f));
                 g2d.setColor(new Color(223, 36, 20));
-                g2d.drawLine(xpos, posY1 + 5, xpos, docHeight - marginBottom + 15);
+                g2d.drawLine(linePos, posY1 + 5, linePos, docHeight - marginBottom + 15);
 
                 g2d.setComposite(alphaComposite100);
                 g2d.setFont(fontBoldSmall);
                 g2d.setColor(new Color(223, 36, 20));
-                g2d.drawString(xLabels2[datasetNumber][category], xpos - (int) Math.round(getWidth("Candidate", g2d.getFont()) / 2), docHeight - marginBottom + 25);
+
+                g2d.drawString(xLabels2[datasetNumber][category],
+                        linePos - (int) Math.round(getWidth(xLabels2[datasetNumber][category], g2d.getFont()) / 2),
+                        docHeight - marginBottom + 25);
 
                 categoryCounter++;
             }
 
             // plot the wilcoxon result lines..
             int comboCounter = 0;
+
+            int previousHeight = 0;
 
             for (Triple<Integer, Integer, Integer> datasetCategoryCombo : sortedPValuesForDataset) {
                 Integer category1 = datasetCategoryCombo.getMiddle();
@@ -291,30 +302,41 @@ public class ViolinBoxPlot {
                 int category1Index1 = categoryIndex[category1];
                 int category1Index2 = categoryIndex[category2];
 
-                int xpos1 = x + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * category1Index1;
-                int xpos2 = x + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * category1Index2;
+                int xpos1 = plotStart + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * category1Index1 + (individualPlotWidth / 2);
+                int xpos2 = plotStart + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * category1Index2 + (individualPlotWidth / 2);
 
                 double maxVal1 = JSci.maths.ArrayMath.max(vals[datasetNumber][category1]);
                 double maxVal2 = JSci.maths.ArrayMath.max(vals[datasetNumber][category2]);
                 int posY1 = y + height - (int) Math.round((double) height * (maxVal1 - minValue) / (maxValue - minValue));
                 int posY2 = y + height - (int) Math.round((double) height * (maxVal2 - minValue) / (maxValue - minValue));
+                
+                int horizontalLineYPos = 0;
+                if(posY1 < posY2){
+                    horizontalLineYPos = posY1 - 25;
+                } else {
+                    horizontalLineYPos = posY2 - 25;
+                }
+                
                 g2d.setComposite(alphaComposite100);
                 g2d.setColor(new Color(100, 100, 100));
 
-                int comboMargin = comboCounter * 5;
+                int comboMargin = comboCounter * 20;
 
-                g2d.drawLine(xpos1, posY1 - 5 - comboMargin, xpos1, y - 5 - comboMargin); // vertical line 1
-                g2d.drawLine(xpos1, y - 5 - comboMargin, xpos2, y - 5 - comboMargin); // horizontal line
-                g2d.drawLine(xpos2, y - 5 - comboMargin, xpos2, posY2 - 5 - comboMargin); // vertical line 2
+                g2d.drawLine(xpos1, posY1, xpos1, horizontalLineYPos); // vertical line 1
+                g2d.drawLine(xpos1, horizontalLineYPos, xpos2, horizontalLineYPos); // horizontal line
+                g2d.drawLine(xpos2, posY2, xpos2, horizontalLineYPos); // vertical line 2
 
-                int midpos = (xpos2 - xpos1) / 2;
+                int midpos = xpos1 + ((xpos2 - xpos1) / 2);
+
+
 
                 double pValueWilcoxon = pvals[datasetNumber][category1][category2];
                 String pValueWilcoxonString = (new java.text.DecimalFormat("0.#E0", new java.text.DecimalFormatSymbols(java.util.Locale.US))).format(pValueWilcoxon);
                 if (pValueWilcoxon > 0.001) {
                     pValueWilcoxonString = (new java.text.DecimalFormat("##.###;-##.###", new java.text.DecimalFormatSymbols(java.util.Locale.US))).format(pValueWilcoxon);
                 }
-                g2d.drawString(pValueWilcoxonString, midpos - (int) Math.round(getWidth(pValueWilcoxonString, g2d.getFont()) / 2), y - 10);
+                //  + midpos 
+                g2d.drawString(pValueWilcoxonString, midpos - (int) Math.round(getWidth(pValueWilcoxonString, g2d.getFont()) / 2), horizontalLineYPos - 5);
 
                 comboCounter++;
             }
