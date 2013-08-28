@@ -9,7 +9,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -45,7 +44,7 @@ public class MatrixHandeling {
             }
         }
 
-        FilterCols(dataset, columnsToInclude);
+        CreatSubsetBasedOnColumns(dataset, columnsToInclude, true);
 
     }
 
@@ -74,7 +73,7 @@ public class MatrixHandeling {
                 hashRowsToInclude.add(rowNames[r]);
             }
         }
-        FilterRows(dataset, hashRowsToInclude);
+        CreatSubsetBasedOnRows(dataset, hashRowsToInclude, false);
     }
 
     /**
@@ -109,273 +108,23 @@ public class MatrixHandeling {
             RemoveColumns(dataset, removeEntry);
         }
     }
-
-    /**
-     * Remove rows without correct mapping known on forehand
-     *
-     * @param dataset DoubleMatrixDataset containing the matrix of interest
-     * @param probesToBeRemoved ArrayList<String> with identifiers of probes
-     * that should be removed
-     */
-    public static DoubleMatrixDataset<String, String> RemoveRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
-        int newSize = 0;
-        HashSet<String> removeList = new HashSet<String>();
-
-        for (String t : dataset.getRowObjects()) {
-            if (!probesToBeRemoved.contains(t)) {
-                newSize++;
-            } else {
-                removeList.add(t);
-            }
-        }
-
-        double[][] newRawData = new double[newSize][dataset.columns()];
-
-        int probeId = -1;
-        ArrayList<String> rowObj = dataset.getRowObjects();
-
-        for (int p = 0; p < dataset.rows(); ++p) {
-            if (!(probesToBeRemoved.contains(rowObj.get(p)))) {
-                probeId++;
-                for (int s = 0; s < dataset.columns(); ++s) {
-                    newRawData[probeId][s] = dataset.getMatrix().get(p, s);
-                }
-            }
-        }
-
-        for (String r : removeList) {
-            dataset.hashRows.remove(r);
-        }
-
-        if ((dataset.columns() * newRawData.length) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(newRawData), dataset.hashRows, dataset.hashCols);
-        } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(newRawData.length, dataset.columns());
-            matrix.assign(newRawData);
-            dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
-        }
-        return(dataset);
-    }
-
-    /**
-     * Remove probes without correct mapping known on forehand
-     *
-     * @param dataset DoubleMatrixDataset containing the matrix of interest
-     * @param probesToBeRemoved ArrayList<String> with identifiers of probes
-     * that should be removed
-     */
-    public static void RemoveProbes(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
-        RemoveRows(dataset, probesToBeRemoved);
-    }
-
     
     /**
-     * Remove samples on forehand
+     * Append a static prefix to the column names
      *
-     * @param dataset DoubleMatrixDataset containing the matrix of interest
-     * @param samplesToBeRemoved ArrayList<String> with identifiers of probes
-     * that should be removed
+     * @param in
+     * @param prefix
      */
-    public static DoubleMatrixDataset<String, String> RemoveColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> samplesToBeRemoved) {
-        
-        int newSize = 0;
-        HashSet<String> removeList = new HashSet<String>();
-
-        for (String t : dataset.getColObjects()) {
-            if (!samplesToBeRemoved.contains(t)) {
-                newSize++;
-            } else {
-                removeList.add(t);
-            }
+    public static void appendPrefixToColnames(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> in, String prefix) {
+        LinkedHashMap<String, Integer> newColObjects = new LinkedHashMap<String, Integer>();
+        for (Entry<String, Integer> t : in.getHashCols().entrySet()) {
+            StringBuilder colName = new StringBuilder();
+            colName.append(prefix);
+            colName.append("_");
+            colName.append(t);
+            newColObjects.put(colName.toString(), t.getValue());
         }
-
-        double[][] newRawData = new double[dataset.rows()][newSize];
-
-        int sampleId = -1;
-
-        ArrayList<String> colObj = dataset.getColObjects();
-
-        for (int s = 0; s < dataset.columns(); ++s) {
-            if (!(samplesToBeRemoved.contains(colObj.get(s)))) {
-                sampleId++;
-                for (int p = 0; p < dataset.rows(); ++p) {
-                    newRawData[p][sampleId] = dataset.getMatrix().get(p, s);
-                }
-            }
-        }
-
-        for (String r : removeList) {
-            dataset.hashCols.remove(r);
-        }
-
-        if ((dataset.rows() * newRawData[0].length) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(newRawData), dataset.hashRows, dataset.hashCols);
-        } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(dataset.rows(), newRawData[0].length);
-            matrix.assign(newRawData);
-            dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
-        }
-        return(dataset);
-    }
-
-    /**
-     * Remove samples on forehand
-     *
-     * @param dataset DoubleMatrixDataset containing the matrix of interest
-     * @param samplesToBeRemoved ArrayList<String> with identifiers of probes
-     * that should be removed
-     */
-    public static void RemoveSamples(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> samplesToBeRemoved) {
-        RemoveColumns(dataset, samplesToBeRemoved);
-    }
-    
-    /**
-     * Order cols to a index
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     * @param hashRowsToInclude Ids of rowss to include
-     */
-    public static void ReorderCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, LinkedHashMap<String, Integer> mappingIndex) {
-        if(dataset instanceof SmallDoubleMatrixDataset){
-            ReorderColsSmall((SmallDoubleMatrixDataset)dataset, mappingIndex);
-        } else if(dataset instanceof LargeDoubleMatrixDataset){
-            ReorderColsLarge((LargeDoubleMatrixDataset)dataset, mappingIndex);
-        } else{
-            throw new UnsupportedOperationException("Type of matrix not supported.");
-        }
-    }
-    
-    /**
-     * Order cols to a index
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     * @param hashRowsToInclude Ids of rowss to include
-     */
-    public static void ReorderColsSmall(umcg.genetica.math.matrix2.SmallDoubleMatrixDataset<String, String> dataset, LinkedHashMap<String, Integer> mappingIndex) {
-        DenseDoubleMatrix2D newRawData = new DenseDoubleMatrix2D(dataset.rows(), dataset.columns());
-        
-        for (Entry<String, Integer> ent : mappingIndex.entrySet() ){
-            int pos = dataset.getHashCols().get(ent.getKey());
-            for (int p = 0; p < dataset.rows(); ++p) {
-                newRawData.set(p, ent.getValue(), dataset.get(p, pos));
-            }
-        }
-        dataset.setHashCols(mappingIndex);
-        dataset.setMatrix(newRawData);
-    }
-
-    /**
-     * Order cols to a index
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     * @param hashRowsToInclude Ids of rowss to include
-     */
-    public static void ReorderColsLarge(umcg.genetica.math.matrix2.LargeDoubleMatrixDataset<String, String> dataset, LinkedHashMap<String, Integer> mappingIndex) {
-        DenseLargeDoubleMatrix2D newRawData = new DenseLargeDoubleMatrix2D(dataset.rows(), dataset.columns());
-        
-        for (Entry<String, Integer> ent : mappingIndex.entrySet() ){
-            int pos = dataset.getHashCols().get(ent.getKey());
-            for (int p = 0; p < dataset.rows(); ++p) {
-                newRawData.set(p, ent.getValue(), dataset.get(p, pos));
-            }
-        }
-        
-        dataset.setHashCols(mappingIndex);
-        dataset.setMatrix(newRawData);
-    }
-    
-    /**
-     * Order columns
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     */
-    public static void OrderOnColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset doubleMatrixDataset) {
-        LinkedHashMap<String, Integer> newColHash = new LinkedHashMap<String, Integer>((int) Math.ceil(doubleMatrixDataset.columns() / 0.75));
-        ArrayList<String> names = doubleMatrixDataset.getColObjects();
-        Collections.sort(names);
-        
-        int pos = 0;
-        for(String name : names){
-            newColHash.put(name, pos);
-            pos++;
-        }
-        ReorderCols(doubleMatrixDataset, newColHash);
-
-    }
-
-    /**
-     * Order rows to a index
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     * @param hashRowsToInclude Ids of rowss to include
-     */
-    public static void ReorderRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, LinkedHashMap<String, Integer> mappingIndex) {
-        if(dataset instanceof SmallDoubleMatrixDataset){
-            ReorderRowsSmall( (SmallDoubleMatrixDataset) dataset, mappingIndex);
-        } else if(dataset instanceof LargeDoubleMatrixDataset){
-            ReorderRowsLarge((LargeDoubleMatrixDataset) dataset, mappingIndex);
-        } else{
-            throw new UnsupportedOperationException("Type of matrix not supported.");
-        }
-    }
-    
-    /**
-     * Order rows to a index
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     * @param hashRowsToInclude Ids of rowss to include
-     */
-    public static void ReorderRowsSmall(umcg.genetica.math.matrix2.SmallDoubleMatrixDataset<String, String> dataset, LinkedHashMap<String, Integer> mappingIndex) {
-        DenseDoubleMatrix2D newRawData = new DenseDoubleMatrix2D(dataset.rows(), dataset.columns());
-        
-        for (Entry<String, Integer> ent : mappingIndex.entrySet() ){
-            int pos = dataset.getHashRows().get(ent.getKey());
-            for (int s = 0; s < dataset.columns(); ++s) {
-                newRawData.set(ent.getValue(), s, dataset.get(pos, s));
-            }
-        }
-        dataset.setHashRows(mappingIndex);
-        dataset.setMatrix(newRawData);
-    }
-
-    /**
-     * Order rows to a index
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     * @param hashRowsToInclude Ids of rowss to include
-     */
-    public static void ReorderRowsLarge(umcg.genetica.math.matrix2.LargeDoubleMatrixDataset<String, String> dataset, LinkedHashMap<String, Integer> mappingIndex) {
-        DenseLargeDoubleMatrix2D newRawData = new DenseLargeDoubleMatrix2D(dataset.rows(), dataset.columns());
-        
-        for (Entry<String, Integer> ent : mappingIndex.entrySet() ){
-            int pos = dataset.getHashRows().get(ent.getKey());
-            for (int s = 0; s < dataset.columns(); ++s) {
-                newRawData.set(ent.getValue(), s, dataset.get(pos, s));
-            }
-        }
-        
-        dataset.setHashRows(mappingIndex);
-        dataset.setMatrix(newRawData);
-    }
-    
-    /**
-     * Order rows
-     *
-     * @param dataset DoubleMatrixDataset Expression matrix
-     */
-    public static void OrderOnRows(umcg.genetica.math.matrix2.DoubleMatrixDataset doubleMatrixDataset) {
-        
-        LinkedHashMap<String, Integer> newRowHash = new LinkedHashMap<String, Integer>((int) Math.ceil(doubleMatrixDataset.rows() / 0.75));
-        ArrayList<String> names = doubleMatrixDataset.getRowObjects();
-        Collections.sort(names);
-        
-        int pos = 0;
-        for(String name : names){
-            newRowHash.put(name, pos);
-            pos++;
-        }
-        ReorderRows(doubleMatrixDataset, newRowHash);
-
+        in.setHashCols(newColObjects);
     }
     
     /**
@@ -386,7 +135,7 @@ public class MatrixHandeling {
      * @param useMedian
      * @param NaValue
      */
-    public static void ReplaceMissingValues(DoubleMatrix2D rawData, boolean useMedian, double NaValue) {
+    public static void ReplaceMissingValuesPerColumn(DoubleMatrix2D rawData, boolean useMedian, double NaValue) {
 
         for (int s = 0; s < rawData.columns(); ++s) {
 
@@ -418,39 +167,126 @@ public class MatrixHandeling {
             }
         }
     }
+    
+    /**
+     * Replace missing values in the double matrix per sample. Using either the
+     * mean if useMedian is false or the median is useMedian is true.
+     *
+     * @param rawData
+     * @param useMedian
+     * @param NaValue
+     */
+    public static void ReplaceMissingValuesPerRow(DoubleMatrix2D rawData, boolean useMedian, double NaValue) {
 
+        for (int p = 0; p < rawData.rows(); ++p) {
+
+            System.out.println("Processing row: " + p);
+            boolean needsReplacement = false;
+            ArrayDoubleList nonNAvalues = new ArrayDoubleList();
+            
+            for (int s = 0; s < rawData.rows(); ++s) {
+                if (rawData.get(p, s) == NaValue) {
+                    needsReplacement = true;
+                } else {
+                    nonNAvalues.add(rawData.get(p, s));
+                }
+            }
+
+            if (needsReplacement) {
+                double replacementValue;
+                if (useMedian) {
+                    replacementValue = JSci.maths.ArrayMath.median(nonNAvalues.toArray(new double[0]));
+                } else {
+                    replacementValue = JSci.maths.ArrayMath.mean(nonNAvalues.toArray(new double[0]));
+                }
+
+                for (int s = 0; s < rawData.rows(); ++s) {
+                    if (rawData.get(p, s) == NaValue) {
+                        rawData.set(p, s, replacementValue);
+                    }
+                }
+            }
+        }
+    }
+    
+    //Hier moeten we nog even aan sleutelen.
+    
+    /**
+     * Remove probes without correct mapping known on forehand
+     *
+     * @param dataset DoubleMatrixDataset containing the matrix of interest
+     * @param probesToBeRemoved ArrayList<String> with identifiers of probes
+     * that should be removed
+     */
+    public static DoubleMatrixDataset<String, String> RemoveProbes(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
+        return CreatSubsetBasedOnRows(dataset, probesToBeRemoved, true);
+    }
+    
     /**
      * Remove rows without correct mapping known on forehand
      *
      * @param dataset DoubleMatrixDataset containing the matrix of interest
-     * @param probesToKeep ArrayList<String> with identifiers of probes that
+     * @param probesToBeRemoved ArrayList<String> with identifiers of probes
+     * that should be removed
+     */
+    public DoubleMatrixDataset<String, String> RemoveRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
+        return CreatSubsetBasedOnRows(dataset, probesToBeRemoved, true);
+    }
+    
+    /**
+     * Remove or filter rows.
+     *
+     * @param dataset DoubleMatrixDataset containing the matrix of interest
+     * @param rowNames ArrayList<String> with identifiers of probes that
+     * @param removeRows, if true rows are removed if false rows are selected
      * should be removed
      */
-    public static DoubleMatrixDataset<String, String> FilterRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToKeep) {
+    public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> rowNames, boolean removeRows) {
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
-
-        for (String t : dataset.getRowObjects()) {
-            if (probesToKeep.contains(t)) {
-                newSize++;
-            } else {
-                removeList.add(t);
+        
+        if(removeRows){
+            for (String t : dataset.getRowObjects()) {
+                if (!rowNames.contains(t)) {
+                    newSize++;
+                } else {
+                    removeList.add(t);
+                }
+            }
+        } else {
+            for (String t : dataset.getRowObjects()) {
+                if (rowNames.contains(t)) {
+                    newSize++;
+                } else {
+                    removeList.add(t);
+                }
             }
         }
-
         double[][] newRawData = new double[newSize][dataset.columns()];
 
         int probeId = -1;
         ArrayList<String> rowObj = dataset.getRowObjects();
-
-        for (int p = 0; p < dataset.rows(); ++p) {
-            if ((probesToKeep.contains(rowObj.get(p)))) {
-                probeId++;
-                for (int s = 0; s < dataset.columns(); ++s) {
-                    newRawData[probeId][s] = dataset.getMatrix().get(p, s);
+        
+        if(removeRows){
+            for (int p = 0; p < dataset.rows(); ++p) {
+                if (!(rowNames.contains(rowObj.get(p)))) {
+                    probeId++;
+                    for (int s = 0; s < dataset.columns(); ++s) {
+                        newRawData[probeId][s] = dataset.getMatrix().get(p, s);
+                    }
+                }
+            }
+        } else {
+            for (int p = 0; p < dataset.rows(); ++p) {
+                if ((rowNames.contains(rowObj.get(p)))) {
+                    probeId++;
+                    for (int s = 0; s < dataset.columns(); ++s) {
+                        newRawData[probeId][s] = dataset.getMatrix().get(p, s);
+                    }
                 }
             }
         }
+        
 
         for (String r : removeList) {
             dataset.hashRows.remove(r);
@@ -467,39 +303,80 @@ public class MatrixHandeling {
     }
 
     /**
+     * Remove samples on forehand
+     *
+     * @param dataset DoubleMatrixDataset containing the matrix of interest
+     * @param samplesToBeRemoved ArrayList<String> with identifiers of probes
+     * that should be removed
+     */
+    public static DoubleMatrixDataset<String, String> RemoveSamples(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> samplesToBeRemoved) {
+        return CreatSubsetBasedOnColumns(dataset, samplesToBeRemoved, true);
+    }
+    
+    /**
+     * Remove samples on forehand
+     *
+     * @param dataset DoubleMatrixDataset containing the matrix of interest
+     * @param samplesToBeRemoved ArrayList<String> with identifiers of probes
+     * that should be removed
+     */
+    public static DoubleMatrixDataset<String, String> RemoveColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> samplesToBeRemoved) {
+        return CreatSubsetBasedOnColumns(dataset, samplesToBeRemoved, true);
+    }
+    
+    /**
      * Filter out columns.
      * Keep all columns that in in the hashset.
      *
      * @param dataset
-     * @param keepCols
+     * @param colNames
      */
-    public static DoubleMatrixDataset<String, String> FilterCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> keepCols) {
+    public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> colNames, boolean remove) {
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
-
-        for (String t : dataset.getColObjects()) {
-            if (keepCols.contains(t)) {
-                newSize++;
-            } else {
-                removeList.add(t);
+        
+        if(remove){
+            for (String t : dataset.getColObjects()) {
+                if (!colNames.contains(t)) {
+                    newSize++;
+                } else {
+                    removeList.add(t);
+                }
+            }
+        } else {
+            for (String t : dataset.getColObjects()) {
+                if (colNames.contains(t)) {
+                    newSize++;
+                } else {
+                    removeList.add(t);
+                }
             }
         }
-
+        
         double[][] newRawData = new double[dataset.rows()][newSize];
 
         int sampleId = -1;
 
         ArrayList<String> colObj = dataset.getColObjects();
-
-        for (int s = 0; s < dataset.columns(); ++s) {
-            if ((keepCols.contains(colObj.get(s)))) {
-                sampleId++;
-                for (int p = 0; p < dataset.rows(); ++p) {
-                    newRawData[p][sampleId] = dataset.getMatrix().get(p, s);
+        if(remove){
+            for (int s = 0; s < dataset.columns(); ++s) {
+                if (!(colNames.contains(colObj.get(s)))) {
+                    sampleId++;
+                    for (int p = 0; p < dataset.rows(); ++p) {
+                        newRawData[p][sampleId] = dataset.getMatrix().get(p, s);
+                    }
+                }
+            }
+        } else {
+            for (int s = 0; s < dataset.columns(); ++s) {
+                if ((colNames.contains(colObj.get(s)))) {
+                    sampleId++;
+                    for (int p = 0; p < dataset.rows(); ++p) {
+                        newRawData[p][sampleId] = dataset.getMatrix().get(p, s);
+                    }
                 }
             }
         }
-
         for (String r : removeList) {
             dataset.hashCols.remove(r);
         }
@@ -512,23 +389,5 @@ public class MatrixHandeling {
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
         return(dataset);
-    }
-
-    /**
-     * Append a static prefix to the column names
-     *
-     * @param in
-     * @param prefix
-     */
-    public static void appendPrefixToColnames(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> in, String prefix) {
-        LinkedHashMap<String, Integer> newColObjects = new LinkedHashMap<String, Integer>();
-        for (Entry<String, Integer> t : in.getHashCols().entrySet()) {
-            StringBuilder colName = new StringBuilder();
-            colName.append(prefix);
-            colName.append("_");
-            colName.append(t);
-            newColObjects.put(colName.toString(), t.getValue());
-        }
-        in.setHashCols(newColObjects);
     }
 }
