@@ -4,11 +4,10 @@
  */
 package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 //import nl.umcg.deelenp.regulomedb.RegulomeDbEntry;
 //import nl.umcg.deelenp.regulomedb.RegulomeDbFiles;
@@ -17,6 +16,9 @@ import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.EQTL;
+import umcg.genetica.io.trityper.eQTLTextFile;
 
 /**
  *
@@ -32,13 +34,6 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	 */
 	public static void main(String[] args) {
 		// TODO code application logic here
-		
-		/*
-		 * TODO:
-		 * 1. Lees de eQTLMappingPipeline resultaten voor Imputed (eQTLProbesFDR0.05-ProbeLevel.txt).
-		 * 2. Lees de RegulomeDB data in mbv de RegulomeDbReader.
-		 * 3. Lees de Bloed Genotype Data in mbv de GenotypeReader.
-		 */
 	}
 	
 	
@@ -46,98 +41,78 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	 * Constructor that calls the other methods. The current code will change later.
 	 */
 	public EQtlPermutationTranscriptionFactorAnalysis()throws IOException{
-		ArrayList<EQtl> eQtlResultData = this.readEQtlResultData("");
+		EQTL[] eQtlResultData = this.readEQtlResultData("");
 		//ArrayList<RegulomeDbEntry> regulomeDbData = readRegulomeDbData("");
 		eQtlGenotypeData = readEQtlGenotypeData("");
 	}
 	
 	
 	
-	public ArrayList<EQtl> readEQtlResultData(String eQtlResultsFile)throws IOException{
-		
-		ArrayList<EQtl> eqtldata = new ArrayList<EQtl>();
-		String fileLine;
-		String[] fileLineData;
-		int n = 0;
-		
-		
-		BufferedReader br = new BufferedReader( new FileReader(eQtlResultsFile) );
-		while( (fileLine = br.readLine())!=null ){
-			if(n != 0){
-				fileLineData = TAB_PATTERN.split(fileLine);
-				eqtldata.add(new EQtl(Double.valueOf(fileLineData[0]), fileLineData[1],
-						fileLineData[2], Integer.parseInt(fileLineData[3]), fileLineData[4],
-						Double.valueOf(fileLineData[10])));
-			}
-			n++;
-		}
-		br.close();
-		
-		return eqtldata;
-		
-		
-		/*
-		 * fileLineData[0] = pvalue
-		 * fileLineData[1] = eQtlName
-		 * fileLineData[2] = eQtlChr
-		 * fileLineData[3] = eQtlChrPos
-		 * fileLineData[4] = probeName
-		 * fileLineData[10] = ZScore
-		 */
+	public EQTL[] readEQtlResultData(String eqtlFileLocation) throws IOException{
+		eQTLTextFile eqtlData = new eQTLTextFile(eqtlFileLocation, false);
+		return eqtlData.read();
 	}
-	
-	
-	/*
-	public ArrayList<RegulomeDbEntry> readRegulomeDbData(String regulomeDbFilesPath)throws IOException{
-		
-		ArrayList<File> regulomeDbFiles = new ArrayList<File>();
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category1.txt") );
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category2.txt") );
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category3.txt") );
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category4.txt") );
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category5.txt") );
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category6.txt") );
-		regulomeDbFiles.add( new File(regulomeDbFilesPath + "\\RegulomeDB.dbSNP132.Category7.txt") );
-		
-		
-		ArrayList<RegulomeDbEntry> regulomedbdata = new ArrayList<RegulomeDbEntry>();
-		RegulomeDbFiles rdbfs = new RegulomeDbFiles(regulomeDbFiles);
-		
-		
-		Iterator<RegulomeDbEntry> rdbfIterator = rdbfs.iterator();
-		while(rdbfIterator.hasNext()){
-			RegulomeDbEntry rdbe = rdbfIterator.next();
-			regulomedbdata.add(rdbe);
-		}
-		
-		return regulomedbdata;
-	}
-	*/
 	
 	
 	public RandomAccessGenotypeData readEQtlGenotypeData(String genotypeData) throws IOException{
-		
-		//RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData) );
-		//return gonlImputedBloodGenotypeData;
-		return null;
+		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData) );
+		return gonlImputedBloodGenotypeData;
 	}
 	
 	
 	
-	public void calculateLd(){
+	public void performAnalysisStep(EQTL[] eqtlData, int windowSize, String outputFilePath) throws IOException{
+		HashMap<String, ArrayList<Ld>> calculateLd = calculateLd(eqtlData, windowSize, outputFilePath, 0.90);
+	}
+	
+	
+	public HashMap<String, ArrayList<Ld>> calculateLd(EQTL[] eqtlData, int windowSize, String outputFilePath, double r2CutOff)throws IOException{
 		//Use a window size of 250k: eQTL pos - 250k and eQTL pos + 250k
-		
-		/*
-		 * Loop through the list of genetic variants (the eQTLs) and 
-		 */
-		
-		
+		Ld ld = null;
+		HashMap<String, ArrayList<Ld>> ldResultsMap = new HashMap<String, ArrayList<Ld>>();
+		TextFile outputFile = new TextFile(outputFilePath, true);
+		outputFile.write("SNP\tSNP2\tR2\tDPrime");
 		
 		
+		for(EQTL eqtl : eqtlData){
+			GeneticVariant eQtlSnp = this.eQtlGenotypeData.getSnpVariantByPos(eqtl.getRsChr().toString(), eqtl.getRsChrPos());
+			
+			for(GeneticVariant gv : this.eQtlGenotypeData.getVariantsByRange(eqtl.getRsChr().toString(), 0, windowSize)){
+				try {
+					ld = eQtlSnp.calculateLd(gv);
+				} catch (LdCalculatorException ex) {
+					System.out.println("Error in LD calculation: " + ex.getMessage());
+					System.exit(1);
+				}
+				GeneticVariant variant1 = ld.getVariant1();
+				GeneticVariant variant2 = ld.getVariant2();
+				
+				//Write results to a file.
+				outputFile.write( variant1.getPrimaryVariantId() + "\t" + variant2.getPrimaryVariantId() + "\t" + ld.getR2());
+				
+				
+				//Place results in a convenient structure for later.
+				ArrayList<Ld> tmp;
+				if(ldResultsMap.containsKey(variant1.getPrimaryVariantId())){
+					tmp = ldResultsMap.get(variant1.getPrimaryVariantId());
+					tmp.add(ld);
+				}
+
+				else{
+					tmp = new ArrayList<Ld>();
+					tmp.add(ld);
+					ldResultsMap.put(variant1.getPrimaryVariantId(), tmp);
+				}
+			}
+		}
+		outputFile.close();
+		
+		return ldResultsMap;
 	}
 	
-	private Iterable<GeneticVariant> getNearByVariants(String chr, int windowSize){
-		return this.eQtlGenotypeData.getVariantsByRange(chr, 0, windowSize);
+	
+	public void findSnpsInRegulomeDb(ArrayList<String> regulomeDbFileLocations){
+		
 	}
 	
 	
@@ -153,27 +128,11 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	}
 	
 	
-	
-	
-	public void performAnalysisStep(ArrayList<EQtl> eqtlData, int windowSize){
-		Ld ld = null;
-		
-		for(EQtl eqtl : eqtlData){
-			GeneticVariant eQtlSnp = this.eQtlGenotypeData.getSnpVariantByPos(eqtl.getEQtlChr(), eqtl.getEQtlChrPos());
-			
-			for(GeneticVariant gv : this.eQtlGenotypeData.getVariantsByRange(eqtl.getEQtlChr(), 0, windowSize)){
-				try {
-					ld = eQtlSnp.calculateLd(gv);
-				} catch (LdCalculatorException ex) {
-					System.out.println("Error in LD calculation: " + ex.getMessage());
-					System.exit(1);
-				}
-				ld.getR2();
-				ld.getDPrime();
-				
-				//Write results to a file.
-				//Place results in a convenient structure for later.
-			}
-		}
+	public RandomAccessGenotypeData getGenotypeData(){
+		return this.eQtlGenotypeData;
 	}
+	
+	private Iterable<GeneticVariant> getNearByVariants(String chr, int windowSize){
+		return this.eQtlGenotypeData.getVariantsByRange(chr, 0, windowSize);
+	} 
 }
