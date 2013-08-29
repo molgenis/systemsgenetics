@@ -23,7 +23,7 @@ import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.Heterogeneity;
 import umcg.genetica.math.stats.TTest;
 import umcg.genetica.math.stats.ZScores;
-import static umcg.genetica.methylation.ParseTcgaFile.ENCODING;
+import static umcg.genetica.methylation.ParseTcgaMethylationFile.ENCODING;
 
 /*
  * To change this template, choose Tools | Templates

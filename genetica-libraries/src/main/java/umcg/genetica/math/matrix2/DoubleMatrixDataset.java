@@ -52,7 +52,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
         int columnOffset = 1;
 
-        int[] colIndex;
         TextFile in = new TextFile(fileName, TextFile.R);
         String str = in.readLine(); // header
         String[] data = splitPatern.split(str);
@@ -61,7 +60,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
         LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
 
-        colIndex = new int[tmpCols];
         for (int s = 0; s < tmpCols; s++) {
             String colName = data[s + columnOffset];
             if (!colMap.containsKey(colName)) {
@@ -70,7 +68,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                 LOGGER.warning("Duplicated column name!");
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
-            colIndex[s] = s + columnOffset;
         }
 
         int tmpRows = 0;
@@ -137,7 +134,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
         int columnOffset = 1;
 
-        int[] colIndex;
         TextFile in = new TextFile(fileName, TextFile.R);
         String str = in.readLine(); // header
         String[] data = splitPatern.split(str);
@@ -146,7 +142,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
         LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
 
-        colIndex = new int[tmpCols];
         int storedCols = 0;
         for (int s = 0; s < tmpCols; s++) {
             String colName = data[s + columnOffset];
@@ -158,7 +153,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                 LOGGER.warning("Duplicated column name!");
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
-            colIndex[s] = s + columnOffset;
         }
 
         int tmpRows = 0;

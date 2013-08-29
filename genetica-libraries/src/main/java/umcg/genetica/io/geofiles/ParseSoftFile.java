@@ -2,13 +2,13 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package umcg.genetica.methylation;
+package umcg.genetica.io.geofiles;
 
 import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
-import static umcg.genetica.methylation.ParseTcgaFile.ENCODING;
+import umcg.genetica.methylation.SoftfileAnnotation;
 
 /**
  *
@@ -18,6 +18,7 @@ public class ParseSoftFile {
 
     private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
     private static Pattern SPLIT_ON_EQUALS = Pattern.compile(" = ");
+    protected static final String ENCODING = "ISO-8859-1";
 
     public static HashMap<String, SoftfileAnnotation> importAnnotationFromSOFTFile(String fileLocation) throws Exception {
 
