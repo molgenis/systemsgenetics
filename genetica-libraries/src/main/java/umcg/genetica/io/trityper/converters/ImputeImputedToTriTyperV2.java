@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.WGAFileMatrixGenotype;
 import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
@@ -18,9 +20,18 @@ import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
  */
 public class ImputeImputedToTriTyperV2 {
 
-    public void importImputedDataWithProbabilityInformationImpute(String inputDir, String outputDir, int nrSamples, String sampleListFile, String listOfSamplesToIncludeFile) throws Exception {
+    public void importImputedDataWithProbabilityInformationImpute(String inputDir, String outputDir, Integer nrSamples, String sampleListFile, String listOfSamplesToIncludeFile, String fileMatchRegex) throws Exception {
 
-        System.out.println("This converter will process files containing the following patterns: chr#, chr_# and chr-#");
+		Pattern fileMatchRegEx = null;
+		
+		if(fileMatchRegex == null){
+			System.out.println("This converter will process files containing the following patterns: chr#, chr_# and chr-#");
+		} else {
+			fileMatchRegEx = Pattern.compile(fileMatchRegex, Pattern.CASE_INSENSITIVE);
+			System.out.println("Using this regex to match files: " + fileMatchRegEx.pattern());
+			System.out.println("First capture group should be chr");
+		}
+        
         ArrayList<String> snps = new ArrayList<String>();
         ArrayList<String> snpMappings = new ArrayList<String>();
 
@@ -95,7 +106,7 @@ public class ImputeImputedToTriTyperV2 {
         boolean proceed = true;
         for (int chr = 1; chr <= 22; chr++) {
             // make a file list of batches for this chr....
-            String[] fileList = makeFileList(inputDir, chr);
+            String[] fileList = makeFileList(inputDir, chr, fileMatchRegEx);
             System.out.println("Found " + fileList.length + " files for chr " + chr);
             for (int f = 0; f < fileList.length; f++) {
                 String fileName = inputDir + "/" + fileList[f];
@@ -204,7 +215,7 @@ public class ImputeImputedToTriTyperV2 {
             int snpIndex = 0;
             for (int chr = 1; chr <= 22; chr++) {
                 // make a file list of batches for this chr....
-                String[] fileList = makeFileList(inputDir, chr);
+                String[] fileList = makeFileList(inputDir, chr, fileMatchRegEx);
 
 
                 for (int f = 0; f < fileList.length; f++) {
@@ -292,19 +303,33 @@ public class ImputeImputedToTriTyperV2 {
         System.exit(0);
     }
 
-    private String[] makeFileList(String inputDir, int chr) {
+    private String[] makeFileList(String inputDir, int chr, Pattern fileMatchRegEx) {
 
         File dir = new File(inputDir);
         String[] files = dir.list();
 
         ArrayList<String> filelist = new ArrayList<String>();
+		
+		String chrAsString = null;
+		if(fileMatchRegEx != null){
+			chrAsString = String.valueOf(chr);
+		}
 
         for (int i = 0; i < files.length; i++) {
-            if (files[i].toLowerCase().endsWith(".txt.gz") || files[i].toLowerCase().endsWith(".txt") || files[i].toLowerCase().endsWith(".gz")) {
-                if (files[i].toLowerCase().contains("chr" + chr) || files[i].toLowerCase().contains("chr_" + chr) || files[i].toLowerCase().contains("chr-" + chr)) {
-                    filelist.add(files[i]);
-                }
-            }
+			if(fileMatchRegEx == null){
+				if (files[i].toLowerCase().endsWith(".txt.gz") || files[i].toLowerCase().endsWith(".txt") || files[i].toLowerCase().endsWith(".gz")) {
+					if (files[i].toLowerCase().contains("chr" + chr) || files[i].toLowerCase().contains("chr_" + chr) || files[i].toLowerCase().contains("chr-" + chr)) {
+						filelist.add(files[i]);
+					}
+				}
+			} else {
+				Matcher fileMatcher = fileMatchRegEx.matcher(files[i]);
+				if(fileMatcher.find()){
+					if(fileMatcher.group(1).equals(chrAsString)){
+						filelist.add(files[i]);
+					}
+				}
+			}
         }
 
         String[] list = new String[filelist.size()];
