@@ -46,6 +46,8 @@ In case of this example the programm exprects that `/data/demoInputData.map` and
 
 `/data/demoOuput.map`, `/data/demoOuput.ped` and `/data/demoOuput.log` will be created.
 
+**Note: it is important to make sure that both study and refernece are using the same genome build**
+
 ### Using VCF files
 Before VCF files can be used they need to be compressed using bgzip and indexed with a tabix. This prevents having to read all data into memory yet still allows quick access.
 
@@ -76,11 +78,13 @@ Typical usage scenarios
 
 When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
 
-In combination with the --update-id option the Genotype Aligner is a convineant preperation of genotype data before imputation. 
+In combination with the `--update-id` option the Genotype Aligner is a convineant preperation of genotype data before imputation. 
 
 ### Merging data from different genotyping platforms
 
-TODO
+When combining different genotype datasets, either samples ran on multiple genotyping chips or different batches of samples, it is important to have identical strands. Merge data in plink will give a warning when it detects strand issues in non AT or non GC SNPs but can not automaticly correct this. AT and GC SNP swaps are not automaticly detected. 
+
+The `--keep` option is particulary usefull here to keep the SNPs not shared by both datasets. The `--update-id` will also make merging using plink or other tools more easy.
 
 Arguments overview
 ----------------
