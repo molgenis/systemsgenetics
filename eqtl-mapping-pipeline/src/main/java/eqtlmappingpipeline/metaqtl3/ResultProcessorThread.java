@@ -227,18 +227,6 @@ public class ResultProcessorThread extends Thread {
 
             progressbar.close();
 
-            if (nrInFinalBuffer == 0) {
-                
-                if (m_createBinaryFiles) {
-                    for (int d = 0; d < m_gg.length; d++) {
-                        m_dsSNPSummary[d].close();
-                        m_dsZScoreMatrix[d].flush();
-                        m_dsZScoreMatrix[d].close();
-                    }
-                }
-                throw new IllegalStateException("QTL mapping did not yield any results");
-            }
-
             if (m_createBinaryFiles) {
                 for (int d = 0; d < m_gg.length; d++) {
                     m_dsSNPSummary[d].close();
@@ -261,8 +249,6 @@ public class ResultProcessorThread extends Thread {
             e1.printStackTrace();
         } catch (InterruptedException e2) {
             e2.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

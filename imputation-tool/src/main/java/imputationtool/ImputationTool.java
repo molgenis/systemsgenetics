@@ -349,7 +349,8 @@ public class ImputationTool {
         System.out.println("---------------------\nVCF\n---------------------\n");
         System.out.println("# Convert TriTyper to VCF and vice versa\n"
                 + "--mode ttvcf --in indir --out outdir \n"
-                + "--mode vcftt --in infile --out outdir [--pattern pattern]\n");
+                + "\n#Convert VCF to TriTyper. This program converts each VCF file in the directory defined with --in to a TriTyper dataset.\n"
+                + "--mode vcftt --in indir --out outdir [--pattern pattern]\n");
 
         System.exit(0);
     }
