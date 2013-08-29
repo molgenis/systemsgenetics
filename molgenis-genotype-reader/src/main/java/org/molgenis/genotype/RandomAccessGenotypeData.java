@@ -80,4 +80,16 @@ public interface RandomAccessGenotypeData extends GenotypeData {
 	 * @return 
 	 */
 	HashMap<String, GeneticVariant> getVariantIdMap(VariantFilter filter);
+	
+	/**
+	 * Get a HashMap with the variants that have a primairy ID.
+	 * 
+	 * Variants without an ID will always be ignored.
+	 * 
+	 * If multiple variants have the same ID an arbritary variant is selected.
+	 * 
+	 * @param 
+	 * @return 
+	 */
+	HashMap<String, GeneticVariant> getVariantIdMap();
 }
