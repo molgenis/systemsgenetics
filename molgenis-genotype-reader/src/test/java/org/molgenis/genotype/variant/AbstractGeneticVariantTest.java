@@ -43,8 +43,8 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		variant8 = ReadOnlyGeneticVariant.createVariant("rs8", 1, "X", provider1, "GG", "T");
 		variant9 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "1", provider2, 'A', 'T');
 		variant10 = ReadOnlyGeneticVariant.createSnp("rs1", 3, "1", provider2, 'T', 'T');
-		variant11 = new GeneticVariantTreeSet.DummyGenticVariant("22", Integer.MIN_VALUE);
-		variant12 = new GeneticVariantTreeSet.DummyGenticVariant("22", Integer.MAX_VALUE);
+		variant11 = new GeneticVariantTreeSet.DummyGeneticVariant("22", Integer.MIN_VALUE);
+		variant12 = new GeneticVariantTreeSet.DummyGeneticVariant("22", Integer.MAX_VALUE);
 
 	}
 
