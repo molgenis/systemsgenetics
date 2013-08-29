@@ -8,12 +8,13 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  *
  * @author MarcJan
  */
-public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
+public class LargeDoubleMatrixDataset<R extends Comparable, C extends Comparable> extends DoubleMatrixDataset<R, C> {
 
     private DenseLargeDoubleMatrix2D matrix;
 
@@ -109,5 +110,35 @@ public class LargeDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
     protected DoubleMatrix2D viewSelectionLike(int[] ints, int[] ints1) {
         //implemented as in wrapper double matrix 2d. Only has protected access.
         throw new InternalError(); // should never be called
+    }
+
+    @Override
+    public void reorderRows(LinkedHashMap<R, Integer> mappingIndex) {
+        DenseLargeDoubleMatrix2D newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
+        
+        for (Map.Entry<R, Integer> ent : mappingIndex.entrySet() ){
+            int pos = this.getHashRows().get(ent.getKey());
+            for (int s = 0; s < this.columns(); ++s) {
+                newRawData.set(ent.getValue(), s, this.getMatrix().get(pos, s));
+            }
+        }
+        
+        this.setHashRows(mappingIndex);
+        this.setMatrix(newRawData);
+    }
+
+    @Override
+    public void reorderCols(LinkedHashMap<C, Integer> mappingIndex) {
+        DenseLargeDoubleMatrix2D newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
+        
+        for (Map.Entry<C, Integer> ent : mappingIndex.entrySet() ){
+            int pos = this.getHashCols().get(ent.getKey());
+            for (int p = 0; p < this.rows(); ++p) {
+                newRawData.set(p, ent.getValue(), this.getMatrix().get(p, pos));
+            }
+        }
+        
+        this.setHashCols(mappingIndex);
+        this.setMatrix(newRawData);
     }
 }

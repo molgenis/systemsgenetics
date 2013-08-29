@@ -58,10 +58,10 @@ public class Correlation {
 
                         //Determine Spearman correlation R:
                         double spearman = (double) (s - 1000) / 1000d;
-                        if (spearman == -1.0d) {
+                        if (Math.abs(spearman - -1.0d) < .0000001) {
                             spearman = -0.9999;
                         }
-                        if (spearman == +1.0d) {
+                        if (Math.abs(spearman - 1.0d) < .0000001) {
                             spearman = +0.9999;
                         }
 

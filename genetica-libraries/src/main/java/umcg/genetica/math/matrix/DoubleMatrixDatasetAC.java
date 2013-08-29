@@ -12,6 +12,7 @@ import java.util.Map;
  *
  * @author juha
  */
+@Deprecated
 public abstract class DoubleMatrixDatasetAC<T, U> {
 
     public enum LoadLabels {
