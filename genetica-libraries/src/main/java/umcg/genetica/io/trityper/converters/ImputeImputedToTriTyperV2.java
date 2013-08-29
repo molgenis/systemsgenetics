@@ -302,7 +302,21 @@ public class ImputeImputedToTriTyperV2 {
         for (int i = 0; i < files.length; i++) {
             if (files[i].toLowerCase().endsWith(".txt.gz") || files[i].toLowerCase().endsWith(".txt") || files[i].toLowerCase().endsWith(".gz")) {
                 if (files[i].toLowerCase().contains("chr" + chr) || files[i].toLowerCase().contains("chr_" + chr) || files[i].toLowerCase().contains("chr-" + chr)) {
-                    filelist.add(files[i]);
+                    // if chromosome == 1 || chromosome == 2, make sure we don't include files for chromosome 11 or 21 for example.
+                    if (chr == 1 || chr == 2) {
+                        boolean fileIsHigherChr = false;
+                        for (int q = 0; q < 9; q++) {
+                            String combo = "chr" + chr + "" + q;
+                            if (files[i].toLowerCase().contains(combo) || files[i].toLowerCase().contains(combo) || files[i].toLowerCase().contains(combo)) {
+                                fileIsHigherChr = true;
+                            }
+                        }
+                        if (!fileIsHigherChr) {
+                            filelist.add(files[i]);
+                        }
+                    } else {
+                        filelist.add(files[i]);
+                    }
                 }
             }
         }
