@@ -18,7 +18,7 @@ import umcg.genetica.methylation.CheckMatrixForValidBetaValues;
  *
  * @author Marc Jan
  */
-public class MatrixHandeling {
+public class MatrixHandling {
 
     /**
      * Remove columns with to many missing values

@@ -18,7 +18,7 @@ import org.apache.commons.collections.primitives.ArrayDoubleList;
  *
  * @author MarcJan
  */
-public class MatrixHandeling {
+public class MatrixHandling {
 
     /**
      * Remove columns with to many missing values
