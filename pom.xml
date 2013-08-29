@@ -78,5 +78,6 @@
 
 		<module>genotype-aligner</module>
 		<module>molgenis-genotype-reader</module>
+	 <module>eqtl-functional-enrichment</module>
 	</modules>
 </project>

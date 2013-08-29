@@ -8,12 +8,13 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  *
  * @author MarcJan
  */
-public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
+public class SmallDoubleMatrixDataset<R extends Comparable, C extends Comparable> extends DoubleMatrixDataset<R, C> {
 
     private DenseDoubleMatrix2D matrix;
 
@@ -107,5 +108,33 @@ public class SmallDoubleMatrixDataset<R, C> extends DoubleMatrixDataset<R, C> {
     protected DoubleMatrix2D viewSelectionLike(int[] ints, int[] ints1) {
         //this cannot be implemented
         throw new InternalError();
+    }
+
+    @Override
+    public void reorderRows(LinkedHashMap<R, Integer> mappingIndex) {
+        DenseDoubleMatrix2D newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
+        
+        for (Map.Entry<R, Integer> ent : mappingIndex.entrySet() ){
+            int pos = this.getHashRows().get(ent.getKey());
+            for (int s = 0; s < this.columns(); ++s) {
+                newRawData.set(ent.getValue(), s, this.getMatrix().get(pos, s));
+            }
+        }
+        this.setHashRows(mappingIndex);
+        this.setMatrix(newRawData);
+    }
+
+    @Override
+    public void reorderCols(LinkedHashMap<C, Integer> mappingIndex) {
+        DenseDoubleMatrix2D newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
+        
+        for (Map.Entry<C, Integer> ent : mappingIndex.entrySet() ){
+            int pos = this.getHashCols().get(ent.getKey());
+            for (int p = 0; p < this.rows(); ++p) {
+                newRawData.set(p, ent.getValue(), this.getMatrix().get(p, pos));
+            }
+        }
+        this.setHashCols(mappingIndex);
+        this.setMatrix(newRawData);
     }
 }
