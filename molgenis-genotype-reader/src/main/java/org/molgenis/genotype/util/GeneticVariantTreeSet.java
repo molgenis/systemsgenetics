@@ -29,7 +29,7 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 	@SuppressWarnings("unchecked")
 	public NavigableSet<E> getSequenceVariants(String sequenceName)
 	{
-		return subSet((E) new DummyGenticVariant(sequenceName, Integer.MIN_VALUE), true, (E) new DummyGenticVariant(
+		return subSet((E) new DummyGeneticVariant(sequenceName, Integer.MIN_VALUE), true, (E) new DummyGeneticVariant(
 				sequenceName, Integer.MAX_VALUE), true);
 	}
 
@@ -62,13 +62,13 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 	public NavigableSet<E> getSequenceRangeVariants(String sequenceName, int rangeStart, int rangeStop)
 	{
 		// Dummy variant is always the last in the ordering at pos on a sequence
-		return subSet((E) new DummyGenticVariant(sequenceName, rangeStart - 1), false, (E) new DummyGenticVariant(
+		return subSet((E) new DummyGeneticVariant(sequenceName, rangeStart - 1), false, (E) new DummyGeneticVariant(
 				sequenceName, rangeStop - 1), false);
 	}
 
-	public static Class<DummyGenticVariant> getDummyGeneticVariantClass()
+	public static Class<DummyGeneticVariant> getDummyGeneticVariantClass()
 	{
-		return DummyGenticVariant.class;
+		return DummyGeneticVariant.class;
 	}
 
 	/**
@@ -77,13 +77,13 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 	 * @author Patrick Deelen
 	 * 
 	 */
-	protected static class DummyGenticVariant extends AbstractGeneticVariant
+	protected static class DummyGeneticVariant extends AbstractGeneticVariant
 	{
 
 		private final String sequenceName;
 		private final int startPos;
 
-		public DummyGenticVariant(String sequenceName, int startPos)
+		public DummyGeneticVariant(String sequenceName, int startPos)
 		{
 			super();
 			this.sequenceName = sequenceName;

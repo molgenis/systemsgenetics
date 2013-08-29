@@ -49,4 +49,11 @@ public class Triple<L, M, R> {
         return this.left.equals(pairo.getLeft())
                 && this.right.equals(pairo.getRight()) && this.middle.equals(pairo.getMiddle());
     }
+
+    @Override
+    public String toString() {
+        return "Triple{" + "left=" + left + ", middle=" + middle + ", right=" + right + '}';
+    }
+    
+    
 }
