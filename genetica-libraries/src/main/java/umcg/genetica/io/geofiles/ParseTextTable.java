@@ -45,7 +45,7 @@ public class ParseTextTable {
         TextFile in = new TextFile(fileInput, TextFile.R);
         String str = in.readLine(); // header
         while (str.startsWith("#") || str.startsWith("\"#") || str.matches("^\\s*$") || str.equals("") || str.startsWith("This is our raw data.") || str.matches("^GSM[0-9]+.*")
-                || str.startsWith("Illumina Inc. GenomeStudio") || str.startsWith("Array Content =") || str.startsWith("Normalization =") || str.startsWith("log2 non-normalized")) {
+                || str.startsWith("Illumina Inc. GenomeStudio") || str.startsWith("Array Content =") || str.startsWith("Normalization =") || str.startsWith("log")) {
             str = in.readLine();
             rowOffset++;
         }
@@ -145,6 +145,8 @@ public class ParseTextTable {
                     row++;
                 } else {
                     LOGGER.warning("Duplicated row name!");
+                    LOGGER.warning("Duplicated row name: "+data[columnOffset - 1]);
+                    System.out.println(str);
                     throw new IOException("Problem in reading file.");
                 }
             }
