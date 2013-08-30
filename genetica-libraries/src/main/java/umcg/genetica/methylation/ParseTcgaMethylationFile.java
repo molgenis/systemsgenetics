@@ -21,7 +21,7 @@ import umcg.genetica.math.matrix.DoubleMatrixDataset;
  *
  * @author Marc Jan and Lude
  */
-public class ParseTcgaFile {
+public class ParseTcgaMethylationFile {
 
     private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
     protected static final String ENCODING = "ISO-8859-1";
@@ -146,7 +146,7 @@ public class ParseTcgaFile {
             try {
                 dataset3.save(fileOutputFolder + "/TCGADataBeta.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaFile.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         ArrayList<DoubleMatrixDataset<String, String>> tmp = new ArrayList<DoubleMatrixDataset<String, String>>(3);
@@ -280,7 +280,7 @@ public class ParseTcgaFile {
             try {
                 dataset3.save(fileOutputFolder + "TCGA_450K-27K_DataBeta.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaFile.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         ArrayList<DoubleMatrixDataset<String, String>> tmp = new ArrayList<DoubleMatrixDataset<String, String>>(3);
@@ -416,17 +416,17 @@ public class ParseTcgaFile {
             try {
                 dataset1.save(fileOutputFolder + "/TCGADataM.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaFile.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
             }
             try {
                 dataset2.save(fileOutputFolder + "/TCGADataU.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaFile.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
             }
             try {
                 dataset3.save(fileOutputFolder + "/TCGADataBeta.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaFile.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         ArrayList<DoubleMatrixDataset<String, String>> tmp = new ArrayList<DoubleMatrixDataset<String, String>>(3);
@@ -532,7 +532,7 @@ public class ParseTcgaFile {
             try {
                 dataset1.save(fileOut);
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaFile.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         System.out.println(dataset1.colObjects.toString());
