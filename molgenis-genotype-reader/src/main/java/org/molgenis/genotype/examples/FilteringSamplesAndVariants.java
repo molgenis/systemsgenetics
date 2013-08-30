@@ -27,7 +27,7 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
  *
  * @author Patrick Deelen
  */
-@edu.umd.cs.findbugs.annotations.SuppressWarnings(value="DLS_DEAD_LOCAL_STORE", justification="It is just an example")
+@edu.umd.cs.findbugs.annotations.SuppressWarnings(value={"DLS_DEAD_LOCAL_STORE", "DMI_HARDCODED_ABSOLUTE_FILENAME"}, justification="It is just an example")
 public class FilteringSamplesAndVariants {
 
 	/**
