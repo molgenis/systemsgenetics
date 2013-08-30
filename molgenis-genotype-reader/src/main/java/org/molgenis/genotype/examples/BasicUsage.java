@@ -5,14 +5,16 @@
 package org.molgenis.genotype.examples;
 
 import java.io.IOException;
-import java.util.logging.Level;
+import java.util.HashMap;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -32,15 +34,43 @@ public class BasicUsage {
 	 */
 	public static void main(String[] args) {
 		
-		//According to RandomAccessGenotypeDataReaderFormats (VCF or PED_MAP etc)
-		String datasetType = args[0];
-		String datasetPath = args[1];
 		
-		RandomAccessGenotypeData genotypeData = null;
+		
+		String datasetPath = "/some/path/file"; //Note omition of extentions
+		
+		//Create a binary plink genotype data object
+		GenotypeData genotypeData = null;
+		try {
+			genotypeData = new BedBimFamGenotypeData(datasetPath, 1000);
+		} catch (IOException ex) {
+			LOGGER.fatal("IO error: " + ex.getMessage());
+			System.exit(1);
+		}
+		
+		for(GeneticVariant variant : genotypeData){
+			//Iterate over all variants
+			System.out.println(variant.getPrimaryVariantId());
+		}
+		
+		for(Sample sample : genotypeData.getSamples()){
+			//Note sex is an enum, to string outputs a human readable form of the gender
+			System.out.println("Sample ID: " + sample.getId() + " sex: " + sample.getSex());
+		}
+		
+		//Create a more advaced random access genotype 
+		RandomAccessGenotypeData randomAccessGenotypeData = null;
 		
 		try {
+			
 			//Here we read the dataset of the specified type using the auto loader
-			genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(datasetType.toUpperCase()).createGenotypeData(datasetPath, 1000);
+			randomAccessGenotypeData = new BedBimFamGenotypeData(datasetPath);
+			
+			//Or
+			randomAccessGenotypeData = RandomAccessGenotypeDataReaderFormats.PLINK_BED.createGenotypeData(datasetPath, 1000);
+			
+			//Or
+			randomAccessGenotypeData = RandomAccessGenotypeDataReaderFormats.valueOf("PLINK_BED").createGenotypeData(datasetPath, 1000);
+			
 		} catch (IOException ex) {
 			LOGGER.fatal("IO error: " + ex.getMessage());
 			System.exit(1);
@@ -49,28 +79,23 @@ public class BasicUsage {
 			System.exit(1);
 		}
 		
-		
-		for(String sequenceNames : genotypeData.getSeqNames()){
+		for(String sequenceNames : randomAccessGenotypeData.getSeqNames()){
 			//No a sequence can be chr or contig
 			System.out.println("Seq/Chr: " + sequenceNames);
 		}
-		
-		for(Sample sample : genotypeData.getSamples()){
-			//Note sex is an enum, to string outputs a human readable form  of the gender
-			System.out.println("Sample ID: " + sample.getId() + " sex: " + sample.getSex());
-		}
-		
-		for(GeneticVariant variant : genotypeData){
-			//Iterate over all variants in a dataset
-			System.out.println("Variant ID: " + variant.getPrimaryVariantId());
-		}
-		
-		for(GeneticVariant variant : genotypeData.getVariantsByRange("1", 1, 10)){
+			
+		for(GeneticVariant variant : randomAccessGenotypeData.getVariantsByRange("1", 1, 10)){
 			//get variants from chr 1 pos 1 to 10 (exclusive)
 			System.out.println("Variant ID: " + variant.getPrimaryVariantId());
 		}
 		
-		GeneticVariant snp = genotypeData.getSnpVariantByPos("1", 1);
+		//Create hashmap based on primary ID. 
+		//Note this takes lots of memory. 
+		//Variants without an ID will always be ignored.
+		//If multiple variants have the same ID an arbritary variant is selected.
+		HashMap<String, GeneticVariant> variantHashMap = randomAccessGenotypeData.getVariantIdMap();
+		
+		GeneticVariant snp = randomAccessGenotypeData.getSnpVariantByPos("1", 1);
 		//Get snp variant at this position. null if not present
 			
 		snp.isSnp(); //must be true since we dit getSnpVariantByPos
@@ -106,7 +131,7 @@ public class BasicUsage {
 		
 		GeneticVariant snp2 = null;
 		//There can be multiple variants at a position. 
-		for(GeneticVariant variantAtPos2 : genotypeData.getVariantsByPos("1", 2)){
+		for(GeneticVariant variantAtPos2 : randomAccessGenotypeData.getVariantsByPos("1", 2)){
 			snp2 = variantAtPos2;
 			break;
 		}

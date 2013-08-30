@@ -1,7 +1,7 @@
 Molgenis Genotype Reader
 ========================
 
-The molgenis genotype reader is a java library that allows accessing genotype data form difference sources in a uniform and fast way.
+The molgenis genotype reader is a java library that allows accessing genotype data form difference sources in a uniform and fast manner.
 
 Downloading latested jar
 ------------------------
@@ -18,13 +18,14 @@ Features
 ### Readers
 
 * Plink PED/MAP
-* Pink binary format
+* Plink binary format
 * VCF
 * TriTyper
 
 ### Writers
 
 * Plink PED/MAP
+* Plink binary format
 * IMPUTE2 phased haplotypes
 
 ### Memory efficient
@@ -74,7 +75,199 @@ tabix -p vcf example.vcf.gz
 Examples
 ------------------------
 
-The `org.molgenis.genotype.examples` package contains some basic examples. This should get you started
+### Basic genotype data
+
+The normal genotype data interface allows the iteration over variants
+
+````java
+String datasetPath = "/some/path/file"; //Note omition of extentions
+
+//Create a binary plink genotype data object
+GenotypeData genotypeData = null;
+try {
+	genotypeData = new BedBimFamGenotypeData(datasetPath, 1000);
+} catch (IOException ex) {
+	LOGGER.fatal("IO error: " + ex.getMessage());
+	System.exit(1);
+}
+
+for(GeneticVariant variant : genotypeData){
+	//Iterate over all variants
+	System.out.println(variant.getPrimaryVariantId());
+}
+
+for(Sample sample : genotypeData.getSamples()){
+	//Note sex is an enum, to string outputs a human readable form of the gender
+	System.out.println("Sample ID: " + sample.getId() + " sex: " + sample.getSex());
+}
+````
+
+###Random access genotype data
+In most cases the random access genotype reader is more usefull. 3 examples are shown on how they can be loaded.
+
+````java
+RandomAccessGenotypeData randomAccessGenotypeData = null;
+
+try {
+
+	//Here we read the dataset of the specified type using the auto loader
+	randomAccessGenotypeData = new BedBimFamGenotypeData(datasetPath);
+
+	//Or
+	randomAccessGenotypeData = RandomAccessGenotypeDataReaderFormats.PLINK_BED.createGenotypeData(datasetPath, 1000);
+
+	//Or
+	randomAccessGenotypeData = RandomAccessGenotypeDataReaderFormats.valueOf("PLINK_BED").createGenotypeData(datasetPath, 1000);
+
+} catch (IOException ex) {
+	LOGGER.fatal("IO error: " + ex.getMessage());
+	System.exit(1);
+} catch (GenotypeDataException ex) {
+	LOGGER.fatal("Genotype data error: " + ex.getMessage());
+	System.exit(1);
+}
+
+for(String sequenceNames : randomAccessGenotypeData.getSeqNames()){
+	//No a sequence can be chr or contig
+	System.out.println("Seq/Chr: " + sequenceNames);
+}
+
+for(GeneticVariant variant : randomAccessGenotypeData.getVariantsByRange("1", 1, 10)){
+	//get variants from chr 1 pos 1 to 10 (exclusive)
+	System.out.println("Variant ID: " + variant.getPrimaryVariantId());
+}
+
+//Create hashmap based on primary ID. 
+//Note this takes lots of memory. 
+//Variants without an ID will always be ignored.
+//If multiple variants have the same ID an arbritary variant is selected.
+HashMap<String, GeneticVariant> variantHashMap = randomAccessGenotypeData.getVariantIdMap();
+````
+
+###Genetic variant
+
+Some examples on what can be done with genetic variants. 
+
+````java
+GeneticVariant snp = randomAccessGenotypeData.getSnpVariantByPos("1", 1);
+//Get snp variant at this position. null if not present
+
+snp.isSnp(); //must be true since we dit getSnpVariantByPos
+
+for(Alleles sampleAlleles : snp.getSampleVariants()){
+	//Iterate over the alleles form all samples.
+	System.out.println(sampleAlleles.getAllelesAsString());
+}
+
+for(byte dosage : snp.getSampleCalledDosages()){
+	//Iterate over the dosage values of snps. (0,1,2)
+	System.out.println(dosage);
+}
+
+for(float dosage : snp.getSampleDosages()){
+	//Iterate over the dosage values of snps. range 0 - 2
+	System.out.println(dosage);
+}
+
+snp.getMinorAllele();
+snp.getMinorAlleleFrequency();
+
+snp.getCallRate();
+
+snp.getHwePvalue();
+
+snp.isBiallelic();
+
+//chr != 0 && pos != 0
+snp.isMapped();
+
+snp.isAtOrGcSnp();
+````
+
+###Alleles and Allele
+
+The Alleles object stores a collection of Allele objects
+
+````java
+Alleles snpAlleles =  snp.getVariantAlleles();
+		
+for(Allele a : snpAlleles){
+	//Print the alles found for this variant
+	System.out.println("Allele: " + a);
+}
+
+Alleles alleles1 = Alleles.createAlleles(Allele.A, Allele.C);
+Alleles alleles2 = Alleles.createAlleles(Allele.C, Allele.A);
+Alleles alleles3 = Alleles.createAlleles(Allele.A, Allele.C);
+
+if(alleles1 == alleles2){}; // false because order is different
+if(alleles1 == alleles3){}; // true because it is guaranteed that if alleles and order is endentical it is the same object
+if(alleles1.sameAlleles(alleles2)){}; // true
+````
+
+###Linkage Disequilibrium
+
+We allow easy LD calculation
+
+````java
+Ld ld = null;
+try {
+	ld = snp.calculateLd(snp2);
+} catch (LdCalculatorException ex) {
+	LOGGER.fatal("Error in LD calculation: " + ex.getMessage(), ex);
+	System.exit(1);
+}
+ld.getR2();
+ld.getDPrime();
+````
+
+###Filtering random access genotype data
+
+Filtering a dataset on variants or samples will create a new RandomAccessGenotypeData that when accessed will only reviel the included variants and samples as if the others do not even exist. Data is not copied, instead the filtered datasets are backed by the orignal
+
+####Filtering variants
+
+````java
+HashSet<String> includedSnps = new HashSet<String>();
+includedSnps.add("rs1");
+includedSnps.add("rs2");
+
+//Create filter
+VariantFilter variantFilter = new VariantIdIncludeFilter(includedSnps);
+
+//Filter to only include selected variants
+RandomAccessGenotypeData genotypeData1 = new VariantFilterableGenotypeDataDecorator(randomAccessGenotypeData, variantFilter);
+````
+
+####Filtering samples
+
+````java
+HashSet<String> includedSsamples = new HashSet<String>();
+includedSsamples.add("pietje");
+includedSsamples.add("jansje");
+
+SampleFilter sampleFilter = new SampleIdIncludeFilter(includedSsamples);
+
+//Filter the data with the selected variants to only include the selected samples
+RandomAccessGenotypeData randomAccessGenotypeDataSampleFilter = new SampleFilterableGenotypeDataDecorator(randomAccessGenotypeDataVariantFilter1, sampleFilter);
+
+//Here we define a combined variant filter consting of 2 filters. This can contain as many filters as requered
+VariantFilter combinedFilter = new VariantCombinedFilter(new VariantQcChecker(0.05f, 0.95f, 0.001d), new VariantFilterBiAllelic());
+
+//Now we also do some QC of the variants after the samples are filtered. maf 0.05, call rate 0.95 and hwe-p 0.001
+RandomAccessGenotypeData randomAccessGenotypeDataVariantFilter2 = new VariantFilterableGenotypeDataDecorator(randomAccessGenotypeDataSampleFilter, combinedFilter);
+````
+
+####Autoloader and filters
+It is also possible to use the auto loader from the basicUsage examples in combination with filters. This is faster and more memory efficient for some filetypes, like TriTyper and in the futere (or now if this is not updated) also for ped_map and binary plink.
+
+````java
+//Note: first samples are filtered and then the variants are filted. 
+RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath, 1000, combinedFilter, sampleFilter);
+````
+
+###More examples
+The `org.molgenis.genotype.examples` package contains these and other basic examples.
 
 
 Working with the code
