@@ -18,13 +18,14 @@ import org.apache.commons.collections.primitives.ArrayDoubleList;
  *
  * @author MarcJan
  */
-public class MatrixHandeling {
+public class MatrixHandling {
 
     /**
      * Remove columns with to many missing values
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      * @param hashColumnsToInclude Ids of samples to include
+     * @param missingValue, missing value to check on. If not neccesary put to double.NaN
      */
     public static void RemoveColumnsWithToManyMissingValues(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, int maxMissingValuesPerColumn, double missingValue) {
 
@@ -53,6 +54,7 @@ public class MatrixHandeling {
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      * @param hashRowsToInclude Ids of rowss to include
+     * @param missingValue, missing value to check on. If not neccesary put to double.NaN
      */
     public static void RemoveRowsWithToManyMissingValues(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, int maxMissingValuesPerRow, double missingValue) {
 
