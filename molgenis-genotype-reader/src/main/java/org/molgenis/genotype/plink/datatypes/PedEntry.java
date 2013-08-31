@@ -5,14 +5,25 @@ import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Alleles;
 
-public class PedEntry extends FamEntry implements Iterable<Alleles> {
+public class PedEntry implements Iterable<Alleles> {
 
 	// list iterates SNP's, so 1 list per individual
 	private final Iterator<Alleles> bialleles;
-
+	private final String family;
+	private final String individual;
+	private final String father;
+	private final String mother;
+	private final byte sex;
+	private final double phenotype;
+	
 	public PedEntry(String family, String individual, String father, String mother, byte sex, double phenotype,
 			Iterator<Alleles> bialleles) {
-		super(family, individual, father, mother, sex, phenotype);
+		this.family = family;
+		this.individual = individual;
+		this.father = father;
+		this.mother = mother;
+		this.sex = sex;
+		this.phenotype = phenotype;
 		this.bialleles = bialleles;
 	}
 
@@ -31,7 +42,28 @@ public class PedEntry extends FamEntry implements Iterable<Alleles> {
 		return bialleleList;
 	}
 
-	public static String[] pedHeader() {
-		return new String[]{"fam", "ind", "fa", "mo", "sex", "phen", "bial"};
+	public String getFamily() {
+		return family;
 	}
+
+	public String getIndividual() {
+		return individual;
+	}
+
+	public String getFather() {
+		return father;
+	}
+
+	public String getMother() {
+		return mother;
+	}
+
+	public byte getSex() {
+		return sex;
+	}
+
+	public double getPhenotype() {
+		return phenotype;
+	}
+	
 }
