@@ -93,7 +93,9 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 			for (Alleles alleles2 : SampleVariantAlleles) {
 				for (Allele allele : alleles2) {
-					variantAlleles.add(allele);
+					if(allele != allele.ZERO){
+						variantAlleles.add(allele);
+					}
 				}
 			}
 
