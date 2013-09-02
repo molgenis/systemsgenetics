@@ -4,8 +4,12 @@
  */
 package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.util.LdCalculatorException;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -46,7 +50,13 @@ public class EQtlPermutationTranscriptionFactorAnalysisNGTest {
 	public void testMain() {
 		System.out.println("main");
 		String[] args = null;
-		EQtlPermutationTranscriptionFactorAnalysis.main(args);
+        try {
+            EQtlPermutationTranscriptionFactorAnalysis.main(args);
+        } catch (IOException ex) {
+            Logger.getLogger(EQtlPermutationTranscriptionFactorAnalysisNGTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (LdCalculatorException ex) {
+            Logger.getLogger(EQtlPermutationTranscriptionFactorAnalysisNGTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
 		// TODO review the generated test code and remove the default call to fail.
 		fail("The test case is a prototype.");
 	}
