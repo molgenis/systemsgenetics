@@ -18,14 +18,14 @@ Features
 ### Readers
 
 * Plink PED/MAP
-* Plink binary format
+* Plink binary format BED/BIM/FAM
 * VCF
 * TriTyper
 
 ### Writers
 
 * Plink PED/MAP
-* Plink binary format
+* Plink binary format BED/BIM/FAM
 * IMPUTE2 phased haplotypes
 
 ### Memory efficient
