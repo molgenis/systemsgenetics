@@ -309,31 +309,22 @@ public class ImputeImputedToTriTyperV2 {
         String[] files = dir.list();
 
         ArrayList<String> filelist = new ArrayList<String>();
+        Pattern regex1 = null;
 
         String chrAsString = null;
         if (fileMatchRegEx != null) {
             chrAsString = String.valueOf(chr);
+        } else {
+            regex1 = Pattern.compile("chr-?_?" + chr + "\\D*");
         }
 
         for (int i = 0; i < files.length; i++) {
-
             if (fileMatchRegEx == null) {
-                if (files[i].toLowerCase().endsWith(".txt.gz") || files[i].toLowerCase().endsWith(".txt") || files[i].toLowerCase().endsWith(".gz")) {
-                    if (files[i].toLowerCase().contains("chr" + chr) || files[i].toLowerCase().contains("chr_" + chr) || files[i].toLowerCase().contains("chr-" + chr)) {
-                        // if chromosome == 1 || chromosome == 2, make sure we don't include files for chromosome 11 or 21 for example.
-                        if (chr == 1 || chr == 2) {
-                            boolean fileIsHigherChr = false;
-                            for (int q = 0; q < 9; q++) {
-                                if (files[i].toLowerCase().contains("chr" + chr + "" + q) || files[i].toLowerCase().contains("chr_" + chr + "" + q) || files[i].toLowerCase().contains("chr-" + chr + "" + q)) {
-                                    fileIsHigherChr = true;
-                                }
-                            }
-                            if (!fileIsHigherChr) {
-                                filelist.add(files[i]);
-                            }
-                        } else {
-                            filelist.add(files[i]);
-                        }
+                String lowercasefilename = files[i].toLowerCase();
+                if (lowercasefilename.endsWith(".txt.gz") || lowercasefilename.endsWith(".txt") || lowercasefilename.endsWith(".gz")) {
+                    Matcher fileMatcher = regex1.matcher(lowercasefilename);
+                    if (fileMatcher.matches()) {
+                        filelist.add(files[i]);
                     }
                 }
             } else {
