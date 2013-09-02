@@ -5,10 +5,8 @@
 package umcg.genetica.io.trityper.converters;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,7 +23,7 @@ public class TriTyperToPlinkDosage {
 
     public void outputDosageInformation(String inDir, String outputDir, String famFileLoc, boolean splitperchromosome) throws IOException {
 
-        String snpfile = "/Data/Projects/NoortjeFesten/2011-08-16-LifeLines-CommonTraitGenetics.txt";
+        String snpfile = null;
 
         TriTyperGenotypeData ds = new TriTyperGenotypeData();
         ds.load(inDir);

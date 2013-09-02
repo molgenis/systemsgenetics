@@ -196,7 +196,7 @@ public class ImputationTool {
             convertImputedBeagleToTriTyperFromBatches(in, tmp, out, size, chrStart, chrEnd);
             // --mode bttb --in indir --tpl template --out outdir --size samplesize
         } else if (mode.equals("ttpd")) {
-            convertTriTyperToPlinkDosage(in, beagle, tmp, batchdesc, out, fam, splitbychromosome);
+            convertTriTyperToPlinkDosage(in, out, fam, splitbychromosome);
             // --mode ttpd --in indir --beagle beagledir --tpl template --batchdescriptor batchdescriptor --out outdir --fam famfile
         } else if (mode.equals("ttpm")) {
             convertTriTyperToPedAndMap(in, out, fam, splitbychromosome);
@@ -315,7 +315,7 @@ public class ImputationTool {
 
 
         System.out.println("# Converts TriTyper file to Plink Dosage format. Filetemplate is a template for the batch filenames, The text CHROMOSOME will be replaced by the chromosome number, BATCH by the batchname.\n"
-                + "--mode ttpd --in indir --beagle beagledir --tpl template --batchdesc batchdescriptor --out outdir --fam famfile\n");
+                + "--mode ttpd --in indir --out outdir --fam famfile [--split]\n");
 
         System.out.println("# Converts PED and MAP files to TriTyper.\n"
                 + "--mode pmtt --in Ped+MapDir --out TriTyperDir\n");
@@ -447,7 +447,7 @@ public class ImputationTool {
 //	p.importPEDFile(dataLocation, mapdelimiter, chrcol, chrpos, snpcol, peddelimiter, outputLocation, casesToInclude);
 //    }
     // ttpd trityperdir beagledir datasetdescriptor batchdescriptor outputdir
-    private void convertTriTyperToPlinkDosage(String trityperdir, String beagledir, String datasetdescriptor, String batchdescriptor, String outputdir, String famFile, boolean splitperchr) throws IOException {
+    private void convertTriTyperToPlinkDosage(String trityperdir, String outputdir, String famFile, boolean splitperchr) throws IOException {
         // if(trityperdir == null || beagledir == null || datasetdescriptor == null || batchdescriptor == null || outputdir == null){
         if (trityperdir == null || outputdir == null) {
             System.out.println("Please supply values for TriTyper input (--in), beagle dir (--beagle), dataset descriptor (--tpl), batch descriptor (--batchdesc), and output dir (--out)\n\n");
