@@ -24,8 +24,8 @@ public class MergeDoubleMatrices {
     public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnColumns(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) {
         DoubleMatrixDataset<String, String> newMatrix = new DoubleMatrixDataset<String, String>();
 
-        MatrixHandeling.OrderOnColumns(matrixI);
-        MatrixHandeling.OrderOnColumns(matrixII);
+        MatrixHandling.OrderOnColumns(matrixI);
+        MatrixHandling.OrderOnColumns(matrixII);
 
         if (matrixI.nrCols != matrixII.nrCols) {
             HashSet<String> keepColNames1 = new HashSet<String>();
@@ -34,8 +34,8 @@ public class MergeDoubleMatrices {
             keepColNames2.addAll(matrixII.colObjects);
             keepColNames1.retainAll(keepColNames2);
 
-            MatrixHandeling.FilterCols(matrixI, keepColNames1);
-            MatrixHandeling.FilterCols(matrixII, keepColNames1);
+            MatrixHandling.FilterCols(matrixI, keepColNames1);
+            MatrixHandling.FilterCols(matrixII, keepColNames1);
         }
 
         if (matrixI.nrCols == 0 || matrixII.nrCols == 0) {
@@ -64,8 +64,8 @@ public class MergeDoubleMatrices {
         keepRowNames1.removeAll(keepRowNames2);
 
         if (keepRowNames2.size() > 0) {
-            MatrixHandeling.FilterRows(matrixI, keepRowNames1);
-            MatrixHandeling.FilterRows(matrixII, keepRowNames1);
+            MatrixHandling.FilterRows(matrixI, keepRowNames1);
+            MatrixHandling.FilterRows(matrixII, keepRowNames1);
         }
 
         keepRowNames1 = null;
@@ -117,8 +117,8 @@ public class MergeDoubleMatrices {
     public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnRows(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) {
         DoubleMatrixDataset<String, String> newMatrix = new DoubleMatrixDataset<String, String>();
 
-        MatrixHandeling.OrderOnRows(matrixI);
-        MatrixHandeling.OrderOnRows(matrixII);
+        MatrixHandling.OrderOnRows(matrixI);
+        MatrixHandling.OrderOnRows(matrixII);
 
         if (matrixI.nrRows != matrixII.nrRows) {
             HashSet<String> keepRowNames1 = new HashSet<String>();
@@ -127,8 +127,8 @@ public class MergeDoubleMatrices {
             keepRowNames2.addAll(matrixII.rowObjects);
             keepRowNames1.retainAll(keepRowNames2);
 
-            MatrixHandeling.FilterCols(matrixI, keepRowNames1);
-            MatrixHandeling.FilterCols(matrixII, keepRowNames1);
+            MatrixHandling.FilterCols(matrixI, keepRowNames1);
+            MatrixHandling.FilterCols(matrixII, keepRowNames1);
         }
 
         if (matrixI.nrRows == 0 || matrixII.nrRows == 0) {
@@ -157,8 +157,8 @@ public class MergeDoubleMatrices {
         keepColNames1.removeAll(keepColNames2);
 
         if (keepColNames2.size() > 0) {
-            MatrixHandeling.FilterCols(matrixI, keepColNames1);
-            MatrixHandeling.FilterCols(matrixII, keepColNames1);
+            MatrixHandling.FilterCols(matrixI, keepColNames1);
+            MatrixHandling.FilterCols(matrixII, keepColNames1);
         }
 
         keepColNames1 = null;

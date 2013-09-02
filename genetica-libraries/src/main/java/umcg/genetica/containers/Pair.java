@@ -16,7 +16,7 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
     private String sep = "-";
     private SORTBY sorter = SORTBY.BOTH;
 
-    public enum SORTBY {
+    public static enum SORTBY {
 
         LEFT, RIGHT, BOTH;
     }
@@ -27,6 +27,16 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
     }
 
     public Pair(L left, R right, SORTBY sorter) {
+
+        if (sorter == SORTBY.BOTH) {
+            System.out.println("Sort by both");
+        }
+        if (sorter == SORTBY.LEFT) {
+            System.out.println("Sort by left");
+        }
+        if (sorter == SORTBY.RIGHT) {
+            System.out.println("Sort by right");
+        }
         this.left = left;
         this.right = right;
         this.sorter = sorter;
@@ -36,12 +46,21 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
         this(left, right);
         this.sep = sep;
     }
-    
+
     public Pair(L left, R right, String sep, SORTBY sorter) {
         this.left = left;
         this.right = right;
         this.sorter = sorter;
         this.sep = sep;
+        if (sorter == SORTBY.BOTH) {
+            System.out.println("Sort by both");
+        }
+        if (sorter == SORTBY.LEFT) {
+            System.out.println("Sort by left");
+        }
+        if (sorter == SORTBY.RIGHT) {
+            System.out.println("Sort by right");
+        }
     }
 
     public L getLeft() {
@@ -76,47 +95,55 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
     }
 
     @Override
-    public int compareTo(Pair<L, R> t) {
-        if (this.equals(t)) {
+    public int compareTo(Pair<L, R> toCompare) {
+        if (this.equals(toCompare)) {
             return 0;
-        } else if (sorter == SORTBY.LEFT) {
-            if (t.left instanceof Double && this.left instanceof Double) {
-                return (Double) t.left > (Double) this.left ? 1 : -1;
+        } else if (sorter.equals(SORTBY.LEFT)) {
+            if (toCompare.left instanceof Double && this.left instanceof Double) {
+                return (Double) toCompare.left > (Double) this.left ? 1 : -1;
             }
-            if (t.left instanceof Integer && this.left instanceof Integer) {
-                return (Integer) t.left > (Integer) this.left ? 1 : -1;
+            if (toCompare.left instanceof Integer && this.left instanceof Integer) {
+                return (Integer) toCompare.left > (Integer) this.left ? 1 : -1;
             }
-        } else if (sorter == SORTBY.RIGHT) {
-            if (t.right instanceof Double && this.right instanceof Double) {
-                return (Double) t.right > (Double) this.right ? 1 : -1;
+        } else if (sorter.equals(SORTBY.RIGHT)) {
+            if (toCompare.right instanceof Double && this.right instanceof Double) {
+                return (Double) toCompare.right > (Double) this.right ? 1 : -1;
             }
-            if (t.right instanceof Integer && this.right instanceof Integer) {
-                return (Integer) t.right > (Integer) this.right ? 1 : -1;
+            if (toCompare.right instanceof Integer && this.right instanceof Integer) {
+                return (Integer) toCompare.right > (Integer) this.right ? 1 : -1;
             }
         } else {
-            if (t.left instanceof Double && this.left instanceof Double) {
-                if ((Double) t.left > (Double) this.left) {
+            if (toCompare.left instanceof Double && this.left instanceof Double) {
+                if ((Double) toCompare.left > (Double) this.left) {
                     return 1;
-                } else if ((Double) t.left < (Double) this.left) {
+                } else if ((Double) toCompare.left < (Double) this.left) {
                     return -1;
                 } else {
-                    return (Double) t.right > (Double) this.right ? 1 : -1;
+                    if (toCompare.right instanceof Double && this.right instanceof Double) {
+                        return (Double) toCompare.right > (Double) this.right ? 1 : -1;
+                    }
+                    if (toCompare.right instanceof Integer && this.right instanceof Integer) {
+                        return (Integer) toCompare.right > (Integer) this.right ? 1 : -1;
+                    }
                 }
             }
-            
-            if (t.left instanceof Integer && this.left instanceof Integer) {
-                if ((Integer) t.left > (Integer) this.left) {
+            if (toCompare.left instanceof Integer && this.left instanceof Integer) {
+                if ((Integer) toCompare.left > (Integer) this.left) {
                     return 1;
-                } else if ((Integer) t.left < (Integer) this.left) {
+                } else if ((Integer) toCompare.left < (Integer) this.left) {
                     return -1;
                 } else {
-                    return (Integer) t.right > (Integer) this.right ? 1 : -1;
+                    if (toCompare.right instanceof Double && this.right instanceof Double) {
+                        return (Double) toCompare.right > (Double) this.right ? 1 : -1;
+                    }
+                    if (toCompare.right instanceof Integer && this.right instanceof Integer) {
+                        return (Integer) toCompare.right > (Integer) this.right ? 1 : -1;
+                    }
                 }
             }
         }
-        
+
         // for unsupported types, don't sort at all.
         return 0;
-
     }
 }
