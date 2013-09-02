@@ -449,7 +449,7 @@ class GenotypeAligner {
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
 		LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
-		System.out.println(" - Keep variant not in reference data: " + (keep ? "yes" : "no"));
+		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		System.out.println(" - Debug mode: " + (debugMode ? "on" : "off"));
 		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
