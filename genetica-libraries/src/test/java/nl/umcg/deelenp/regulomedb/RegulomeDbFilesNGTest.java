@@ -4,6 +4,9 @@
  */
 package nl.umcg.deelenp.regulomedb;
 
+import umcg.genetica.io.regulomedb.RegulomeDbEntry;
+import umcg.genetica.io.regulomedb.RegulomeDbFile;
+import umcg.genetica.io.regulomedb.RegulomeDbFiles;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;

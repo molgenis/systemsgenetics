@@ -4,6 +4,7 @@
  */
 package nl.umcg.deelenp.regulomedb;
 
+import umcg.genetica.io.regulomedb.RegulomeDbSupportingData;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

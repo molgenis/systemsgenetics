@@ -4,6 +4,8 @@
  */
 package nl.umcg.deelenp.regulomedb;
 
+import umcg.genetica.io.regulomedb.RegulomeDbEntry;
+import umcg.genetica.io.regulomedb.RegulomeDbFile;
 import java.io.File;
 import java.util.Iterator;
 import static org.testng.Assert.*;

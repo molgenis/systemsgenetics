@@ -4,6 +4,8 @@
  */
 package nl.umcg.deelenp.regulomedb;
 
+import umcg.genetica.io.regulomedb.RegulomeDbEntry;
+import umcg.genetica.io.regulomedb.RegulomeDbSupportingData;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
