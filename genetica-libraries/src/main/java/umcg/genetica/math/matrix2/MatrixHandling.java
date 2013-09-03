@@ -240,7 +240,7 @@ public class MatrixHandling {
      *
      * @param dataset DoubleMatrixDataset containing the matrix of interest
      * @param rowNames ArrayList<String> with identifiers of probes that
-     * @param removeRows, if true rows are removed if false rows are selected
+     * @param removeRows, if true row ids in rowNames are removed if false rowNames are selected others are removed.
      * should be removed
      */
     public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> rowNames, boolean removeRows) {
@@ -332,6 +332,7 @@ public class MatrixHandling {
      *
      * @param dataset
      * @param colNames
+     * @param remove, if true col ids in colNames are removed if false colNames are selected others are removed.
      */
     public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> colNames, boolean remove) {
         int newSize = 0;
