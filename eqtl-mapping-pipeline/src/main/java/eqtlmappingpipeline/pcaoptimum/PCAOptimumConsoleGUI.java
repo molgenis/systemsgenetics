@@ -129,6 +129,8 @@ public class PCAOptimumConsoleGUI {
                     PCAOptimumInventorize p = new PCAOptimumInventorize();
 
                     //MJ
+                    
+                    //TODO check if this works for combined Cis Trans analysis.
                     String[] fileList = Gpio.getListOfFiles(in);
                     HashSet<Integer> pcsHash = new HashSet<Integer>();
                     String endStr = "PCAsRemoved";

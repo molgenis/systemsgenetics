@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import umcg.genetica.containers.Pair;
+import umcg.genetica.containers.Triple;
 import umcg.genetica.text.Strings;
 
 /**
@@ -364,6 +365,19 @@ public class TextFile {
 
     public void flush() throws IOException {
         out.flush();
+    }
+
+    public HashSet<Triple<String, String, String>> readAsTriple(int A, int B, int C) throws IOException {
+        HashSet<Triple<String, String, String>> output = new HashSet<Triple<String, String, String>>();
+        String[] elems = this.readLineElemsReturnObjects(tab);
+        
+        while (elems != null) {
+            if (elems.length > A && elems.length > B && elems.length > C) {
+                output.add(new Triple(elems[A], elems[B], elems[C]));
+            }
+            elems = this.readLineElemsReturnObjects(tab);
+        }
+        return output;
     }
 
 }
