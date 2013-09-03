@@ -124,8 +124,8 @@ public class MergeDoubleMatrices {
             keepRowNames2.addAll(matrixII.rowObjects);
             keepRowNames1.retainAll(keepRowNames2);
 
-            MatrixHandling.FilterCols(matrixI, keepRowNames1);
-            MatrixHandling.FilterCols(matrixII, keepRowNames1);
+            MatrixHandling.FilterRows(matrixI, keepRowNames1);
+            MatrixHandling.FilterRows(matrixII, keepRowNames1);
         }
 
         if (matrixI.nrRows == 0 || matrixII.nrRows == 0) {
