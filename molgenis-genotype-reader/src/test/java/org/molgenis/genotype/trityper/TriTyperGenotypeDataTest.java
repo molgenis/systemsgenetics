@@ -170,6 +170,18 @@ public class TriTyperGenotypeDataTest extends ResourceTest {
 		assertEquals(variant.getSampleCalledDosages(), expectedCalledDosage);
 
 	}
+	
+	@Test
+	public void getVariantByIdTest(){
+		
+		GeneticVariant variant = genotypeData.getVariantIdMap().get("rs7510853");
+		
+		assertEquals(variant.getPrimaryVariantId(), "rs7510853");
+		
+		assertEquals(variant.getVariantAlleles(), Alleles.createAlleles(Allele.C));
+		
+		
+	}
 
 	private void testFilteredRs11089130(GeneticVariant rs11089130){
 		
