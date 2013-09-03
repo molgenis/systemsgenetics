@@ -270,6 +270,15 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	{
 		return (alleles.contains(queryAllele));
 	}
+	
+	public boolean containsAll(Alleles queryAlleles){
+		for(Allele queryAllele : queryAlleles){
+			if(!contains(queryAllele)){
+				return false;
+			}
+		}
+		return true;
+	}
 
 	@Override
 	public int compareTo(Alleles other)
