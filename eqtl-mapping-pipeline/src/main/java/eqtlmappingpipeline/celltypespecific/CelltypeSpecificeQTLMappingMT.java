@@ -386,10 +386,10 @@ public class CelltypeSpecificeQTLMappingMT {
         System.out.println("For the next step, you can use the following file as raw expression data (--inexpraw): " + rawExpressionFileToUseForNextStep);
         System.out.println("For the cell count proxy file, please use the following file for the next step (--cellcounts): " + tfOutCellSpecific.getFileName());
         System.out.println("");
-  
+
     }
 
-    public void runCelltypeSpecificEQTLMapping(String inExpPCCorrected, String inExpRaw, String ingt, String gte, String snpprobecombinationfile, String cellCountFile, Integer nrThreads, String out) throws IOException, Exception {
+    public void runCelltypeSpecificEQTLMapping(String inExpPCCorrected, String covariateFile, String ingt, String gte, String snpprobecombinationfile, String cellCountFile, Integer nrThreads, String out, boolean matchCovariateAndExpressionDataOnMarkerName) throws IOException, Exception {
         String probeannot = null;
 
         double mafthreshold = 0.05;
@@ -399,11 +399,10 @@ public class CelltypeSpecificeQTLMappingMT {
         if (snpprobecombinationfile == null || !Gpio.exists(snpprobecombinationfile)) {
             throw new IllegalArgumentException("ERROR: please provide snpprobe combination file");
         }
-        if (cellCountFile == null || !Gpio.exists(cellCountFile)) {
-            throw new IllegalArgumentException("ERROR: please provide cell count or cell count proxy file");
-        }
+//        if (cellCountFile == null || !Gpio.exists(cellCountFile)) {
+//            throw new IllegalArgumentException("ERROR: please provide cell count or cell count proxy file");
+//        }
 
-        // 
         // 13. Map cis-eQTLs using new algorithm (Lude provided) on PC corrected and uncorrected data.
         //Calculate simple eQTL effect, without considering CTL effect:
 
@@ -424,34 +423,38 @@ public class CelltypeSpecificeQTLMappingMT {
             System.out.println(snpprobeCombos.size() + " SNP-Probe combinations loaded from: " + snpprobecombinationfile);
         }
 
-        // read cell counts
-        HashMap<String, Double> cellCountPerIndividual = new HashMap<String, Double>();
-        TextFile cellCountIn = new TextFile(cellCountFile, TextFile.R);
-        cellCountIn.readLine();
-        String[] elems = cellCountIn.readLineElems(TextFile.tab);
-        HashSet<String> includeTheseIndividuals = new HashSet<String>();
-        while (elems != null) {
-            if (elems.length > 1) {
-                Double count = null;
-                try {
-                    count = Double.parseDouble(elems[1]);
-                    if (!Double.isNaN(count)) {
-                        includeTheseIndividuals.add(elems[0]);
-                        cellCountPerIndividual.put(elems[0], count);
+        HashMap<String, Double> cellCountPerIndividual = null;
+        HashSet<String> includeTheseIndividuals = null;
+        if (cellCountFile != null) {
+            // read cell counts
+            cellCountPerIndividual = new HashMap<String, Double>();
+            TextFile cellCountIn = new TextFile(cellCountFile, TextFile.R);
+            cellCountIn.readLine();
+            String[] elems = cellCountIn.readLineElems(TextFile.tab);
+            includeTheseIndividuals = new HashSet<String>();
+            while (elems != null) {
+                if (elems.length > 1) {
+                    Double count = null;
+                    try {
+                        count = Double.parseDouble(elems[1]);
+                        if (!Double.isNaN(count)) {
+                            includeTheseIndividuals.add(elems[0]);
+                            cellCountPerIndividual.put(elems[0], count);
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("ERROR: cell count is not a number for sample: " + elems[0] + "\t" + elems[1]);
                     }
-                } catch (NumberFormatException e) {
-                    System.err.println("ERROR: cell count is not a number for sample: " + elems[0] + "\t" + elems[1]);
                 }
+                elems = cellCountIn.readLineElems(TextFile.tab);
             }
-            elems = cellCountIn.readLineElems(TextFile.tab);
-        }
-        cellCountIn.close();
+            cellCountIn.close();
 
-        if (cellCountPerIndividual.isEmpty()) {
-            System.err.println("ERROR: no cell counts loaded. Please check the format of " + cellCountFile);
-            System.exit(-1);
-        } else {
-            System.out.println("Cell counts loaded for " + cellCountPerIndividual.size() + " individuals, from: " + cellCountFile);
+            if (cellCountPerIndividual.isEmpty()) {
+                System.err.println("ERROR: no cell counts loaded. Please check the format of " + cellCountFile);
+                System.exit(-1);
+            } else {
+                System.out.println("Cell counts loaded for " + cellCountPerIndividual.size() + " individuals, from: " + cellCountFile);
+            }
         }
 
         // load dataset
@@ -476,7 +479,7 @@ public class CelltypeSpecificeQTLMappingMT {
         HashSet<String> expressionIndividualsInPCCorrectedData = new HashSet<String>();
         for (String genotypeSample : genotypeData.getIndividuals()) {
             if (gteHash.containsKey(genotypeSample)) {
-                if (includeTheseIndividuals.contains(gteHash.get(genotypeSample))) {
+                if (includeTheseIndividuals == null || includeTheseIndividuals.contains(gteHash.get(genotypeSample))) {
                     expressionIndividualsInPCCorrectedData.add(gteHash.get(genotypeSample));
                 }
             }
@@ -484,7 +487,7 @@ public class CelltypeSpecificeQTLMappingMT {
 
         // load the same individuals from the raw data....
         System.out.println("Now loading raw expression data file");
-        DoubleMatrixDataset<String, String> expressionDataRaw = new DoubleMatrixDataset<String, String>(inExpRaw, null, expressionIndividualsInPCCorrectedData);
+        DoubleMatrixDataset<String, String> covariateData = new DoubleMatrixDataset<String, String>(covariateFile, null, expressionIndividualsInPCCorrectedData);
 
         // since the number of samples has changed, we might need to reperform q-norm and log2 transform...
         // it may be a good idea to remove these last steps from the normalization step..
@@ -501,9 +504,9 @@ public class CelltypeSpecificeQTLMappingMT {
             String snp = p.getLeft();
             String probe = p.getRight();
             Integer snpId = genotypeData.getSnpToSNPId().get(snp);
-            Integer probeIdInRawData = expressionDataRaw.hashRows.get(probe);
+            Integer probeIdInRawData = covariateData.hashRows.get(probe);
             Integer probeIdInPCCorrectedData = pcCorrectedExpressionData.getProbeToId().get(probe);
-            if (probeIdInRawData != null) {
+            if (probeIdInRawData != null && matchCovariateAndExpressionDataOnMarkerName) {
                 probesToUseAsCovariate.add(probe);
             }
             if (snpId != null && probeIdInPCCorrectedData != null) {
@@ -511,10 +514,9 @@ public class CelltypeSpecificeQTLMappingMT {
                     snpProbeCombinationsToTest.add(p);
                 } else if (!snpsVisited.contains(snp)) {
                     // snp has not been seen before.. test for QC parameters.
-
                     SNP snpObj = genotypeData.getSNPObject(snpId);
                     loader.loadGenotypes(snpObj);
-                    if (snpObj.getMAF() > mafthreshold && snpObj.getHWEP() > hwepthreshold && snpObj.getCR() > crthreshold) {
+                    if (snpObj.getMAF() >= mafthreshold && snpObj.getHWEP() >= hwepthreshold && snpObj.getCR() >= crthreshold) {
                         snpsPassingQC.add(snp);
                         snpProbeCombinationsToTest.add(p);
                     } else {
@@ -529,6 +531,15 @@ public class CelltypeSpecificeQTLMappingMT {
         }
         tfOut.close();
 
+        if (matchCovariateAndExpressionDataOnMarkerName) {
+            probesToUseAsCovariate.addAll(covariateData.rowObjects);
+        }
+
+        if (probesToUseAsCovariate.isEmpty()) {
+            System.err.println("No covariates detected.");
+            System.exit(-1);
+        }
+
         if (snpProbeCombinationsToTest.isEmpty()) {
             System.err.println("None of the specified SNP-probe combinations to test are present in the dataset!");
             System.exit(-1);
@@ -538,13 +549,15 @@ public class CelltypeSpecificeQTLMappingMT {
 
         // make a base cellcount array
         String[] expInds = pcCorrectedExpressionData.getIndividuals();
-        double[] cellcounts = new double[expInds.length];
-
-        for (int i = 0; i < expInds.length; i++) {
-            if (cellCountPerIndividual.get(expInds[i]) != null) {
-                cellcounts[i] = cellCountPerIndividual.get(expInds[i]);
-            } else {
-                cellcounts[i] = Double.NaN;
+        double[] cellcounts = null;
+        if (cellCountPerIndividual != null) {
+            cellcounts = new double[expInds.length];
+            for (int i = 0; i < expInds.length; i++) {
+                if (cellCountPerIndividual.get(expInds[i]) != null) {
+                    cellcounts[i] = cellCountPerIndividual.get(expInds[i]);
+                } else {
+                    cellcounts[i] = Double.NaN;
+                }
             }
         }
 
@@ -552,18 +565,22 @@ public class CelltypeSpecificeQTLMappingMT {
         Gpio.createDir(out);
 
         String[] probesToUseAsCovariateArr = probesToUseAsCovariate.toArray(new String[0]);
-        DoubleMatrixDataset<String, String> datasetOut = new DoubleMatrixDataset<String, String>(probesToUseAsCovariateArr.length + 4, snpProbeCombinationsToTest.size());
+
+
+
+
 
         ArrayList<String> rowNames = new ArrayList<String>();
         rowNames.addAll(Arrays.asList(probesToUseAsCovariateArr));
+        if (cellcounts != null) {
+            rowNames.add("CellTypeSNPZScore");
+            rowNames.add("CellTypeZScore");
+            rowNames.add("CellTypeInteractionZScore");
+            rowNames.add("MainEffectZScore");
+        }
+        Correlation.correlationToZScore(covariateData.nrCols);
 
-        rowNames.add("CellTypeSNPZScore");
-        rowNames.add("CellTypeZScore");
-        rowNames.add("CellTypeInteractionZScore");
-        rowNames.add("MainEffectZScore");
-
-        Correlation.correlationToZScore(expressionDataRaw.nrCols);
-
+        DoubleMatrixDataset<String, String> datasetOut = new DoubleMatrixDataset<String, String>(rowNames.size(), snpProbeCombinationsToTest.size());
         datasetOut.rowObjects = rowNames;
 
         ArrayList<String> colNames = new ArrayList<String>();
@@ -571,19 +588,20 @@ public class CelltypeSpecificeQTLMappingMT {
         double[][] pcCorrectedData = pcCorrectedExpressionData.getMatrix();
         int[] wgaId = ds.getExpressionToGenotypeIdArray();
 
+
         TextFile snpFile = new TextFile(out + "SNPSummaryStatistics.txt", TextFile.W);
-        TextFile proxyEffectFile = new TextFile(out + "CelltypeSpecificEQTLEffects.txt", TextFile.W);
         snpFile.writeln("SNP\tChr\tChrPos\tAlleles\tMinorAllele\tMAF\tCallRate\tHWE\tGenotypesCalled");
+
+        TextFile proxyEffectFile = null;
+        if (cellcounts != null) {
+            proxyEffectFile = new TextFile(out + "CelltypeSpecificEQTLEffects.txt", TextFile.W);
+            proxyEffectFile.writeln("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
+        }
 
         HashSet<String> snpsWritten = new HashSet<String>();
 
-//        System.out.println("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
-        proxyEffectFile.writeln("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
         String[] snpsPassingQCArr = snpsPassingQC.toArray(new String[0]);
-
         int nrSubmitted = 0;
-
-
         if (nrThreads == null) {
             nrThreads = Runtime.getRuntime().availableProcessors();
         }
@@ -592,8 +610,6 @@ public class CelltypeSpecificeQTLMappingMT {
         CompletionService<CellTypeSpecificeQTLMappingResults> pool = new ExecutorCompletionService<CellTypeSpecificeQTLMappingResults>(threadPool);
 
         int nrInOutput = 0;
-
-        //, 
         ProgressBar pb = new ProgressBar(snpProbeCombinationsToTest.size(), "Now testing available eQTL effects for cell type specificity.");
         int maxbuffer = (nrThreads * 8);
         for (int i = 0; i < snpsPassingQCArr.length; i++) {
@@ -615,7 +631,7 @@ public class CelltypeSpecificeQTLMappingMT {
                 }
 
                 // push the actual work to thread..
-                CellTypeSpecificeQTLMappingTask t = new CellTypeSpecificeQTLMappingTask(snpObj, eQTLsForSNP, pcCorrectedData, cellcounts, probesToUseAsCovariateArr, wgaId, expInds, expressionDataRaw, pcCorrectedExpressionData);
+                CellTypeSpecificeQTLMappingTask t = new CellTypeSpecificeQTLMappingTask(snpObj, eQTLsForSNP, pcCorrectedData, cellcounts, probesToUseAsCovariateArr, wgaId, expInds, covariateData, pcCorrectedExpressionData);
                 pool.submit(t);
                 nrSubmitted++;
             }
@@ -629,8 +645,9 @@ public class CelltypeSpecificeQTLMappingMT {
 
                     try {
                         CellTypeSpecificeQTLMappingResults result = pool.take().get();
-                        proxyEffectFile.writeln(result.getCellcountInterActionOutput());
-
+                        if (proxyEffectFile != null) {
+                            proxyEffectFile.writeln(result.getCellcountInterActionOutput());
+                        }
                         double[][] interactionVectors = result.getInteractionVector();
 
                         for (int c = 0; c < interactionVectors[interactionVectors.length - 1].length; c++) {
@@ -663,7 +680,9 @@ public class CelltypeSpecificeQTLMappingMT {
                 // pick up results
                 try {
                     CellTypeSpecificeQTLMappingResults result = pool.take().get();
-                    proxyEffectFile.writeln(result.getCellcountInterActionOutput());
+                    if (proxyEffectFile != null) {
+                        proxyEffectFile.writeln(result.getCellcountInterActionOutput());
+                    }
 //                    System.out.println(result.getCellcountInterActionOutput());
                     double[][] interactionVectors = result.getInteractionVector();
 
@@ -687,15 +706,18 @@ public class CelltypeSpecificeQTLMappingMT {
         }
 
 
+        threadPool.shutdown();
 
-        proxyEffectFile.close();
+        if (proxyEffectFile != null) {
+            proxyEffectFile.close();
+        }
         snpFile.close();
         datasetOut.colObjects = colNames;
         datasetOut.recalculateHashMaps();
         datasetOut.save(out + "CellTypeSpecificityMatrix.binary");
         loader.close();
 
-        threadPool.shutdown();
+
         System.out.println("Done.");
     }
 
