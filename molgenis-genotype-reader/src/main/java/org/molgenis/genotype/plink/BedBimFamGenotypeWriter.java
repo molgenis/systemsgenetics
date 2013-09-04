@@ -21,6 +21,7 @@ import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
 
@@ -40,9 +41,9 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	private static final char SEPARATOR = ' ';
 	private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");
 	private final GenotypeData genotypeData;
-	private int writtenSamplesCounter = 0;
-	private int writtenVariantsCounter = 0;
-	private int excludedVariantsCounter = 0;
+	private int writtenSamplesCounter;
+	private int writtenVariantsCounter;
+	private int excludedVariantsCounter;
 
 	private static final Logger LOGGER = Logger.getLogger(BedBimFamGenotypeWriter.class);
 	
@@ -66,6 +67,10 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 		if (famFile == null) {
 			throw new IllegalArgumentException("No fam file specified to write to");
 		}
+		
+		writtenSamplesCounter = 0;
+		writtenVariantsCounter = 0;
+		excludedVariantsCounter = 0;	
 
 		writeBimFile(bimFile);
 		writeFamFile(famFile);
@@ -80,13 +85,13 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	}
 
 	private void writeBimFile(File bimFile) throws IOException {
-		createEmptyFile(bimFile, "bim");
+		Utils.createEmptyFile(bimFile, "bim");
 
 		BufferedWriter bimFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(bimFile), FILE_ENCODING));
 
 		for (GeneticVariant variant : genotypeData) {
 
-			if (!variant.isBiallelic() || !variant.isSnp()) {
+			if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
 				LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
 				++excludedVariantsCounter;
 				continue;
@@ -94,7 +99,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 
 			bimFileWriter.append(variant.getSequenceName());
 			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append(variant.getPrimaryVariantId());
+			bimFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
 			bimFileWriter.append(SEPARATOR);
 			bimFileWriter.append('0');
 			bimFileWriter.append(SEPARATOR);
@@ -102,7 +107,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 			bimFileWriter.append(SEPARATOR);
 			bimFileWriter.append(variant.getVariantAlleles().get(0).toString());
 			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append(variant.getVariantAlleles().get(1).toString());
+			bimFileWriter.append(variant.getAlleleCount() == 1 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(1).toString());
 			bimFileWriter.append('\n');
 
 			++writtenVariantsCounter;
@@ -113,7 +118,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	}
 
 	private void writeFamFile(File famFile) throws IOException {
-		createEmptyFile(famFile, "fam");
+		Utils.createEmptyFile(famFile, "fam");
 
 		BufferedWriter famFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(famFile), FILE_ENCODING));
 
@@ -139,7 +144,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	}
 
 	private void writeBedFile(File bedFile) throws IOException {
-		createEmptyFile(bedFile, "bed");
+		Utils.createEmptyFile(bedFile, "bed");
 
 		final DataOutputStream bedStreamWriter;
 
@@ -155,14 +160,17 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 
 		for (GeneticVariant variant : genotypeData) {
 
-			if (!variant.isBiallelic() || !variant.isSnp()) {
+			if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
 				continue; //Can only write biallelic snps to binary plink. This is logged when writing bim
 			}
 
 			Alleles variantAlleles = variant.getVariantAlleles();
 
 			Alleles homozygoteFirst = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
-			Alleles homozygoteSecond = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
+			Alleles homozygoteSecond = null;
+			if(variantAlleles.getAlleleCount() == 2){
+				homozygoteSecond = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
+			}
 
 			int currentByte = 0; //Bit operations are on int level, but we only write the last byte
 			byte counterCurrentByte = 0;
@@ -170,12 +178,12 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 			for (Alleles alleles : variant.getSampleVariants()) {
 				if (alleles == homozygoteFirst) {
 					//Do nothing, already 00
-				} else if (alleles == homozygoteSecond) {
+				} else if (variantAlleles.getAlleleCount() == 2 && alleles.sameAlleles(variantAlleles)) {
+					currentByte = currentByte | HETEROZYGOTE_BITMASK;
+				} else if (variantAlleles.getAlleleCount() == 2 && alleles == homozygoteSecond) {
 					currentByte = currentByte | HOMOZYGOTE_SECOND_BITMASK;
 				} else if (alleles.contains(Allele.ZERO)) {
 					currentByte = currentByte | MISSING_BIT_MASK;
-				} else if (alleles.sameAlleles(variantAlleles)) {
-					currentByte = currentByte | HETEROZYGOTE_BITMASK;
 				} else {
 					throw new GenotypeDataException("Trying to write alleles " + alleles.getAllelesAsString() + " for " + variantAlleles + " SNP");
 				}
@@ -199,40 +207,6 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 
 		}
 		bedStreamWriter.close();
-
-	}
-
-	private void createEmptyFile(File file, String fileName) {
-
-		if (file.exists()) {
-			if (file.isDirectory()) {
-				throw new GenotypeDataException("Can not overwrite dir with " + fileName + " file:" + file.getAbsolutePath());
-			}
-			if (file.isFile()) {
-				LOGGER.warn("Overriding " + fileName + " file" + file.getAbsolutePath());
-				if (!file.delete()) {
-					throw new GenotypeDataException("Failed to overwrite " + fileName + " file: " + file.getAbsolutePath());
-				}
-			}
-		}
-
-		if (!file.getParentFile().exists()) {
-			if (!file.getParentFile().mkdirs()) {
-				throw new GenotypeDataException("Failed to create parent dir for " + fileName + " file: " + file.getAbsolutePath());
-			}
-		}
-
-		try {
-			if (!file.createNewFile()) {
-				throw new GenotypeDataException("Error creating " + fileName + " file: " + file.getAbsolutePath());
-			}
-		} catch (IOException ex) {
-			throw new GenotypeDataException("Error creating " + fileName + " file: " + file.getAbsolutePath(), ex);
-		}
-
-		if (!file.canWrite()) {
-			throw new GenotypeDataException("Created " + fileName + " file but can not write to file: " + file.getAbsolutePath());
-		}
 
 	}
 
