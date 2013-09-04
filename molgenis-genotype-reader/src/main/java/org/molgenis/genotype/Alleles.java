@@ -1,6 +1,7 @@
 package org.molgenis.genotype;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -108,12 +109,9 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		}
 	}
 
-	public static Alleles createAlleles(Allele allele1, Allele allele2)
+	public static Alleles createAlleles(Allele... allele)
 	{
-		ArrayList<Allele> alleles = new ArrayList<Allele>(2);
-		alleles.add(allele1);
-		alleles.add(allele2);
-		return createAlleles(alleles);
+		return createAlleles(Arrays.asList(allele));
 	}
 
 	public static Alleles createBasedOnString(List<String> stringAlleles)
@@ -271,6 +269,15 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	public boolean contains(Allele queryAllele)
 	{
 		return (alleles.contains(queryAllele));
+	}
+	
+	public boolean containsAll(Alleles queryAlleles){
+		for(Allele queryAllele : queryAlleles){
+			if(!contains(queryAllele)){
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override

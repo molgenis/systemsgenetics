@@ -16,6 +16,7 @@ import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -170,7 +171,24 @@ public class TriTyperGenotypeDataTest extends ResourceTest {
 		assertEquals(variant.getSampleCalledDosages(), expectedCalledDosage);
 
 	}
+	
+	@Test
+	public void getVariantByIdTest(){
+		
+		GeneticVariant variant = genotypeData.getVariantIdMap().get("rs7510853");
+		
+		assertEquals(variant.getPrimaryVariantId(), "rs7510853");
+		
+		assertEquals(variant.getVariantAlleles(), Alleles.createAlleles(Allele.C));
+		
+		
+	}
 
+	@Test
+	public void filteredVariantIdMapTest(){
+		assertNull(genotypeData.getVariantIdMap(new VariantFilterBiAllelic()).get("rs7510853"));
+	}
+	
 	private void testFilteredRs11089130(GeneticVariant rs11089130){
 		
 		List<Alleles> sampleAlleles = rs11089130.getSampleVariants();

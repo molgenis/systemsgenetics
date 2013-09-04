@@ -5,7 +5,7 @@ The Genotype Aligner is an easy to use commandline tool that allows harmonizatio
 stored using different fileformats with different and potentially unknown strands. 
 
 LD patterns are used to determine the correct strand GC and AT SNPs and by using 
-the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export differnt file format.
+the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export different file format.
 
 Getting started
 ----------------
@@ -111,6 +111,7 @@ Base path refers to either --input or --ref
 * PED_MAP
  * Expects plink PED file at: `${base path}.ped`
  * Expects plink MAP file at: `${base path}.map`
+ * Note: it is recommened to use PLINK_BED due to the large memory usage of the current implementation
 * VCF
  * Expects VCF file at: `${base path}.vcf.gz`
  * Must be compresed usign bgzip. (see chapter: Preparing a VCF file)
@@ -134,6 +135,7 @@ Regardless of the output type a log file will always be created at: `${base path
 * PED_MAP
  * Writes plink PED file to: `${base path}.ped`
  * Writes plink MAP file to: `${base path}.map`
+ * Note: it is recommened to use PLINK_BED since the writing is much faster
 * PLINK_BED
  * Writes plink BED file to: `${base path}.bed`
  * Writes plink BIM file to: `${base path}.bim`

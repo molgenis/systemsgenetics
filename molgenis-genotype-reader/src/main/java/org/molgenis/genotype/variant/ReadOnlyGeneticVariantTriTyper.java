@@ -93,7 +93,9 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 			for (Alleles alleles2 : SampleVariantAlleles) {
 				for (Allele allele : alleles2) {
-					variantAlleles.add(allele);
+					if(allele != allele.ZERO){
+						variantAlleles.add(allele);
+					}
 				}
 			}
 
@@ -106,7 +108,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 	@Override
 	public Map<String, ?> getAnnotationValues() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return Collections.emptyMap();
 	}
 
 	@Override

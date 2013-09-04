@@ -151,6 +151,9 @@ public class Impute2GenotypeData extends IndexedGenotypeData implements SampleVa
 					{
 						switch (annotation.getType())
 						{
+							case STRING:
+								value = tuple.getString(colName);
+								break;
 							case INTEGER:
 								value = tuple.getInt(colName);
 								break;
@@ -221,7 +224,7 @@ public class Impute2GenotypeData extends IndexedGenotypeData implements SampleVa
 				SampleAnnotation annotation = null;
 				if (dataTypes.getString(i).equalsIgnoreCase("D"))
 				{
-					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.INTEGER,
+					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.STRING,
 							SampleAnnotationType.COVARIATE, false);
 
 				}
