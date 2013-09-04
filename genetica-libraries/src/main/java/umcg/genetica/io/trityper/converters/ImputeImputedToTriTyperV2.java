@@ -315,10 +315,11 @@ public class ImputeImputedToTriTyperV2 {
         if (fileMatchRegEx != null) {
             chrAsString = String.valueOf(chr);
         } else {
-            regex1 = Pattern.compile("chr-?_?" + chr + "\\D*");
+            regex1 = Pattern.compile(".*chr-?_?" + chr + "\\D+.*");
         }
 
         for (int i = 0; i < files.length; i++) {
+//            System.out.println(files[i]);
             if (fileMatchRegEx == null) {
                 String lowercasefilename = files[i].toLowerCase();
                 if (lowercasefilename.endsWith(".txt.gz") || lowercasefilename.endsWith(".txt") || lowercasefilename.endsWith(".gz")) {
