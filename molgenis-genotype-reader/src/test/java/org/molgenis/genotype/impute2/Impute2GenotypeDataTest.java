@@ -74,8 +74,8 @@ public class Impute2GenotypeDataTest extends ResourceTest
 		Map<String, ?> annotations = sample.getAnnotationValues();
 		assertEquals(annotations.size(), 7);
 		assertEquals((Double) annotations.get("missing"), 0.007d, 0.0001);
-		assertEquals(annotations.get("cov_1"), 1);
-		assertEquals(annotations.get("cov_2"), 2);
+		assertEquals(annotations.get("cov_1"), "1");
+		assertEquals(annotations.get("cov_2"), "2");
 		assertEquals((Double) annotations.get("cov_3"), 0.0019d, 0.00001);
 		assertNull(annotations.get("cov_4"));
 		assertEquals((Double) annotations.get("pheno1"), 1.233d, 0.0001);

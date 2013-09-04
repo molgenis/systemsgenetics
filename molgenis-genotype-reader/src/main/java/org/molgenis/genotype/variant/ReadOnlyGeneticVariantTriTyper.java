@@ -108,7 +108,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 	@Override
 	public Map<String, ?> getAnnotationValues() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return Collections.emptyMap();
 	}
 
 	@Override
