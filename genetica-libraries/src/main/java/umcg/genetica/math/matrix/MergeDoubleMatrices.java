@@ -33,9 +33,13 @@ public class MergeDoubleMatrices {
             HashSet<String> keepColNames2 = new HashSet<String>();
             keepColNames2.addAll(matrixII.colObjects);
             keepColNames1.retainAll(keepColNames2);
-
-            MatrixHandling.FilterCols(matrixI, keepColNames1);
-            MatrixHandling.FilterCols(matrixII, keepColNames1);
+            
+            if(keepColNames1.size() != matrixI.nrCols){
+                MatrixHandling.FilterCols(matrixI, keepColNames1);
+            }
+            if(keepColNames1.size() != matrixII.nrCols){
+                MatrixHandling.FilterCols(matrixII, keepColNames1);
+            }
         }
 
         if (matrixI.nrCols == 0 || matrixII.nrCols == 0) {
@@ -124,8 +128,13 @@ public class MergeDoubleMatrices {
             keepRowNames2.addAll(matrixII.rowObjects);
             keepRowNames1.retainAll(keepRowNames2);
 
-            MatrixHandling.FilterRows(matrixI, keepRowNames1);
-            MatrixHandling.FilterRows(matrixII, keepRowNames1);
+            if(keepRowNames1.size() != matrixI.nrRows){
+                MatrixHandling.FilterRows(matrixI, keepRowNames1);
+            }
+            if(keepRowNames1.size() != matrixII.nrRows){
+                MatrixHandling.FilterRows(matrixII, keepRowNames1);
+            }
+
         }
 
         if (matrixI.nrRows == 0 || matrixII.nrRows == 0) {

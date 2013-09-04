@@ -37,8 +37,8 @@ public class MergeDoubleMatrices {
             keepColNames2.addAll(matrixII.getColObjects());
             keepColNames1.retainAll(keepColNames2);
 
-            MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames1, false);
-            MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames1, false);
+            matrixI = MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames1, false);
+            matrixII = MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames1, false);
         }
 
         if (matrixI.columns() == 0 || matrixII.columns() == 0) {
@@ -64,8 +64,8 @@ public class MergeDoubleMatrices {
         }
 
         if (keepRowNames2.size() > 0) {
-            MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepRowNames2, false);
-            MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepRowNames2, false);
+            matrixI = MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepRowNames2, false);
+            matrixII = MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepRowNames2, false);
         }
 
         keepRowNames1 = null;
@@ -122,16 +122,19 @@ public class MergeDoubleMatrices {
             HashSet<String> keepRowNames2 = new HashSet<String>();
             keepRowNames2.addAll(matrixII.getRowObjects());
             keepRowNames1.retainAll(keepRowNames2);
-
-            MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepRowNames1, false);
-            MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepRowNames1, false);
+            if(keepRowNames1.size() != matrixI.rows()){
+                matrixI = MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepRowNames1, false);
+            }
+            if(keepRowNames1.size() != matrixII.rows()){
+                matrixII = MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepRowNames1, false);
+            }
         }
 
         if (matrixI.rows() == 0 || matrixII.rows() == 0) {
-            System.out.println("Warning invlaid merging. No shared rows");
+            System.out.println("Warning invalid merging. No shared rows");
             System.exit(-1);
         } else if (matrixI.rows() != matrixII.rows()) {
-            System.out.println("Warning invlaid merging. No equal number of rows");
+            System.out.println("Warning invalid merging. No equal number of rows");
             System.exit(-1);
         }
 
@@ -152,8 +155,8 @@ public class MergeDoubleMatrices {
         }
 
         if (keepColNames2.size() > 0) {
-            MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames2, false);
-            MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames2, false);
+            matrixI = MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames2, false);
+            matrixII = MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames2, false);
         }
 
         keepColNames1 = null;
@@ -173,9 +176,9 @@ public class MergeDoubleMatrices {
             tmpPos++;
         }
         for (int s = 0; s < matrixII.columns(); ++s) {
-            newColMap.put(matrixI.getColObjects().get(s), s + tmpPos);
+            newColMap.put(matrixII.getColObjects().get(s), s + tmpPos);
             for (int r = 0; r < matrixII.rows(); ++r) {
-                newRawData[r][s + tmpPos] = matrixI.getMatrix().get(r, s);
+                newRawData[r][s + tmpPos] = matrixII.getMatrix().get(r, s);
             }
         }
 

@@ -265,6 +265,9 @@ public class MatrixHandling {
                     removeList.add(t);
                 }
             }
+            if(newSize == dataset.rows()){
+                return(dataset);
+            }
         }
         double[][] newRawData = new double[newSize][dataset.columns()];
 
@@ -351,6 +354,9 @@ public class MatrixHandling {
                 } else {
                     removeList.add(t);
                 }
+            }
+            if(newSize == dataset.columns()){
+                return(dataset);
             }
         }
         
