@@ -48,24 +48,21 @@ public class MergeDoubleMatrices {
 
         HashSet<String> keepRowNames1 = new HashSet<String>();
         keepRowNames1.addAll(matrixI.rowObjects);
-        HashSet<String> keepRowNames2 = new HashSet<String>();
-        keepRowNames2.addAll(matrixII.rowObjects);
-        keepRowNames1.retainAll(keepRowNames2);
+        keepRowNames1.addAll(matrixII.rowObjects);
 
-        keepRowNames2 = new HashSet<String>();
+        HashSet<String> keepRowNames2 = new HashSet<String>();
 
         for (String key : keepRowNames1) {
             boolean presentMapI = matrixI.hashRows.containsKey(key);
             boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if (!(presentMapI ^ presentMapII)) {
+            if (presentMapI ^ presentMapII) {
                 keepRowNames2.add(key);
             }
         }
-        keepRowNames1.removeAll(keepRowNames2);
 
         if (keepRowNames2.size() > 0) {
-            MatrixHandling.FilterRows(matrixI, keepRowNames1);
-            MatrixHandling.FilterRows(matrixII, keepRowNames1);
+            MatrixHandling.FilterRows(matrixI, keepRowNames2);
+            MatrixHandling.FilterRows(matrixII, keepRowNames2);
         }
 
         keepRowNames1 = null;
@@ -141,24 +138,21 @@ public class MergeDoubleMatrices {
 
         HashSet<String> keepColNames1 = new HashSet<String>();
         keepColNames1.addAll(matrixI.colObjects);
-        HashSet<String> keepColNames2 = new HashSet<String>();
-        keepColNames2.addAll(matrixII.colObjects);
-        keepColNames1.retainAll(keepColNames2);
+        keepColNames1.addAll(matrixII.colObjects);
 
-        keepColNames2 = new HashSet<String>();
+        HashSet<String> keepColNames2 = new HashSet<String>();
 
         for (String key : keepColNames1) {
             boolean presentMapI = matrixI.hashRows.containsKey(key);
             boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if (!(presentMapI ^ presentMapII)) {
+            if (presentMapI ^ presentMapII) {
                 keepColNames2.add(key);
             }
         }
-        keepColNames1.removeAll(keepColNames2);
 
         if (keepColNames2.size() > 0) {
-            MatrixHandling.FilterCols(matrixI, keepColNames1);
-            MatrixHandling.FilterCols(matrixII, keepColNames1);
+            MatrixHandling.FilterCols(matrixI, keepColNames2);
+            MatrixHandling.FilterCols(matrixII, keepColNames2);
         }
 
         keepColNames1 = null;
