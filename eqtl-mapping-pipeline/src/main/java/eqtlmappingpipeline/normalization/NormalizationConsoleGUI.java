@@ -50,6 +50,7 @@ public class NormalizationConsoleGUI {
             }
             if (arg.equals("--Mtransform")) {
                 runMTransform = true;
+                fullNorm = false;
             }
             if (arg.equals("--qqnorm")) {
                 runQQNorm = true;
