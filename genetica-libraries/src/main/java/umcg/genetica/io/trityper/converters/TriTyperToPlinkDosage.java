@@ -4,12 +4,11 @@
  */
 package umcg.genetica.io.trityper.converters;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
@@ -28,32 +27,17 @@ public class TriTyperToPlinkDosage {
         TriTyperGenotypeData ds = new TriTyperGenotypeData();
         ds.load(inDir);
 
-        TextFile out = null;
-        TextFile[] outPC = null;
-
-        if (splitperchromosome) {
-            System.out.println("Splitting per chromosome");
-            outPC = new TextFile[23];
-            for (int i = 1; i < 23; i++) {
-                outPC[i] = new TextFile(outputDir + "/ImputedGenotypeDosageFormatPLINK-Chr" + i + ".dose", TextFile.W);
-            }
-        } else {
-            System.out.println("Generating a single dosage file");
-            out = new TextFile(outputDir + "/ImputedGenotypeDosageFormatPLINK.dose", TextFile.W);
-        }
-
         HashSet<String> snpsToInclude = null;
         if (snpfile != null) {
             snpsToInclude = new HashSet<String>();
 
-            BufferedReader in = new BufferedReader(new FileReader(new File(snpfile)));
+            TextFile in = new TextFile(snpfile, TextFile.R);
             String line = "";
             while ((line = in.readLine()) != null) {
                 snpsToInclude.add(line.trim());
             }
             in.close();
         }
-
 
         int nrInds = ds.getIndividuals().length;
         String[] individuals = ds.getIndividuals();
@@ -90,29 +74,12 @@ public class TriTyperToPlinkDosage {
             famFile.close();
         }
 
-        String header = "SNP\tA1\tA2";
-        for (int i = 0; i < nrSamplesIncluded; i++) {
-            String sample = individuals[samplesToOutput[i]];
-            String familyId = sampleToFamId.get(sample);
-            if (familyId == null) {
-                familyId = "1";
-            }
-
-            header += "\t" + familyId + "\t" + sample;
-        }
-
-
-
+        int startchr = -1;
+        int stopchr = 0;
         if (splitperchromosome) {
-
-            for (int chr = 1; chr < 23; chr++) {
-                outPC[chr].write(header + "\n");
-            }
-        } else {
-            out.write(header + "\n");
+            startchr = 1;
+            stopchr = 23;
         }
-
-
 
         long counter = 0;
 
@@ -120,39 +87,81 @@ public class TriTyperToPlinkDosage {
         int numSNPs = SNPs.length;
 
         SNPLoader loader = ds.createSNPLoader();
-
         java.text.DecimalFormat df = new java.text.DecimalFormat("0.00", new java.text.DecimalFormatSymbols(java.util.Locale.US));
-        for (int snpID = 0; snpID < numSNPs; snpID++) {
-            //for (int snpID = 0; snpID < 100000; snpID++) {
 
-            SNP snp = ds.getSNPObject(snpID);
-            loader.loadGenotypes(snp);
-            loader.loadDosage(snp);
+        int buffersize = 1000;
 
-            if (snpsToInclude == null || snpsToInclude.contains(snp.getName())) {
+        for (int chr = startchr; chr < stopchr; chr++) {
 
+            String fileName = outputDir + "/ImputedGenotypeDosageFormatPLINK.dose.gz";
+            if (splitperchromosome) {
+                fileName = outputDir + "/ImputedGenotypeDosageFormatPLINK-Chr" + chr + ".dose.gz";
+            }
+            TextFile out = new TextFile(fileName, TextFile.W);
+            String header = "SNP\tA1\tA2";
+            for (int i = 0; i < nrSamplesIncluded; i++) {
+                String sample = individuals[samplesToOutput[i]];
+                String familyId = sampleToFamId.get(sample);
+                if (familyId == null) {
+                    familyId = "1";
+                }
 
-                //System.out.println(snpDataObject.rsName + "\t" + snpDataObject.hweControlsAndCasesExactP + "\t" + snpDataObject.mafOverall);
+                header += "\t" + familyId + "\t" + sample;
+            }
+            out.write(header + "\n");
+
+            ArrayList<Integer> snpsToFinallyInclude = new ArrayList<Integer>();;
+            if (splitperchromosome) {
+                for (int snp = 0; snp < SNPs.length; snp++) {
+                    String snpName = SNPs[snp];
+                    if (snpsToInclude == null || snpsToInclude.contains(snpName)) {
+                        Byte chrName = ds.getChr(snp);
+                        if (chrName != null && chrName == chr) {
+                            snpsToFinallyInclude.add(snp);
+                        }
+                    }
+                }
+                System.out.println("Exporting " + snpsToFinallyInclude.size() + " SNPs for chromosome: " + chr);
+            } else {
+                for (int snp = 0; snp < SNPs.length; snp++) {
+                    String snpName = SNPs[snp];
+                    if (snpsToInclude == null || snpsToInclude.contains(snpName)) {
+                        snpsToFinallyInclude.add(snp);
+                    }
+                }
+                System.out.println("Exporting " + snpsToFinallyInclude.size() + " SNPs");
+            }
+
+            int bufferCounter = 0;
+            int snpCounter = 0;
+            StringBuilder sb = new StringBuilder();
+            ProgressBar pb = new ProgressBar(snpsToFinallyInclude.size(), "Exporting " + snpsToFinallyInclude.size() + " SNPs");
+            while (snpCounter < snpsToFinallyInclude.size()) {
+                Integer SNPIdToExport = snpsToFinallyInclude.get(snpCounter);
+                SNP snp = ds.getSNPObject(SNPIdToExport);
+                loader.loadGenotypes(snp);
 
                 if (snp.getMAF() > 0) {
 
+                    loader.loadDosage(snp);
                     boolean takeComplement = false;
+                    byte[] genotypes = snp.getGenotypes();
+                    double[] dosageValues = snp.getDosageValues();
                     for (int i = 0; i < nrSamplesIncluded; i++) {
                         int ind = samplesToOutput[i];
-
-                        double dosagevalue = snp.getDosageValues()[ind];
-                        if (snp.getGenotypes()[ind] == 0 && dosagevalue > 1) {
+                        byte genotype  = genotypes[ind];
+                        double dosagevalue = dosageValues[ind];
+                        if (genotype == 0 && dosagevalue > 1) {
                             takeComplement = true;
                             break;
                         }
-                        if (snp.getGenotypes()[ind] == 2 && dosagevalue < 1) {
+                        if (genotype == 2 && dosagevalue < 1) {
                             takeComplement = true;
                             break;
                         }
                     }
 
-
-                    StringBuilder sb = new StringBuilder(snp.getName() + "\t");
+                    sb.append(snp.getName()).append("\t");
                     byte[] alleles = snp.getAlleles();
                     if (takeComplement) {
                         sb.append((char) alleles[1]);
@@ -164,47 +173,37 @@ public class TriTyperToPlinkDosage {
                         sb.append((char) alleles[1]);
                     }
 
-
                     for (int i = 0; i < nrSamplesIncluded; i++) {
                         int ind = samplesToOutput[i];
-                        double dosage = 2 - snp.getDosageValues()[ind];
-                        String dosageString = df.format(dosage);
+                        double dosage = 2 - dosageValues[ind];
                         sb.append("\t");
-                        sb.append(dosageString);
+                        sb.append(df.format(dosage));
                     }
-
-
                     sb.append("\n");
-                    if (splitperchromosome) {
-
-                        int chr = ds.getChr(snpID);
-                        if (chr > 0 && chr < 23) {
-                            outPC[chr].write(sb.toString());
-                        }
-                    } else {
-                        out.write(sb.toString());
-                    }
-
-                    counter++;
-                    if (counter % 1000 == 0) {
-                        System.out.println("SNPs outputted:\t" + counter);
-                    }
 
                 }
+                bufferCounter++;
+                snpCounter++;
+
+                snp.clearGenotypes();
+                if (snpCounter % buffersize == 0) {
+                    out.write(sb.toString());
+                    sb = new StringBuilder();
+                    bufferCounter = 0;
+//                    System.out.println(snpCounter + " SNPs exported");
+                }
+                pb.iterate();
             }
-        }
+            pb.close();
+
+            if (bufferCounter != 0) {
+                out.write(sb.toString());
+            }
 
 
-        if (splitperchromosome) {
-            for (int chr = 1; chr < 23; chr++) {
-                outPC[chr].close();
-            }
-        } else {
             out.close();
         }
-
-
-
+        loader.close();
 
 
         System.exit(0);
