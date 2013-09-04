@@ -9,6 +9,8 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -273,18 +275,14 @@ public class MatrixHandling {
             for (int p = 0; p < dataset.rows(); ++p) {
                 if (!(rowNames.contains(rowObj.get(p)))) {
                     probeId++;
-                    for (int s = 0; s < dataset.columns(); ++s) {
-                        newRawData[probeId][s] = dataset.getMatrix().get(p, s);
-                    }
+                    newRawData[probeId] = dataset.getMatrix().viewRow(p).toArray();
                 }
             }
         } else {
             for (int p = 0; p < dataset.rows(); ++p) {
                 if ((rowNames.contains(rowObj.get(p)))) {
                     probeId++;
-                    for (int s = 0; s < dataset.columns(); ++s) {
-                        newRawData[probeId][s] = dataset.getMatrix().get(p, s);
-                    }
+                    newRawData[probeId] = dataset.getMatrix().viewRow(p).toArray();
                 }
             }
         }
@@ -392,5 +390,19 @@ public class MatrixHandling {
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
         return(dataset);
+    }
+    
+    public static void RenameCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashMap<String, String> newNames) {
+        LinkedHashMap<String, Integer> newColNames = new LinkedHashMap<String, Integer>(dataset.columns());
+        
+        for (Entry<String, Integer> e : dataset.getHashCols().entrySet()) {
+            if ((newNames.containsKey(e.getKey()))) {
+                newColNames.put(newNames.get(e.getKey()), e.getValue());
+            } else {
+                newColNames.put(e.getKey(), e.getValue());
+            }
+        }
+
+        dataset.setHashCols(newColNames);
     }
 }

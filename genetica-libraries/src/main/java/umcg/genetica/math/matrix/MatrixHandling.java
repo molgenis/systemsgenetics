@@ -231,9 +231,7 @@ public class MatrixHandling {
             if ((probesToKeep.contains(dataset.rowObjects.get(p)))) {
                 probeId++;
                 newRowNames[probeId] = dataset.rowObjects.get(p);
-                for (int s = 0; s < dataset.nrCols; ++s) {
-                    newRawData[probeId][s] = dataset.rawData[p][s];
-                }
+                newRawData[probeId] = dataset.rawData[p];
             }
         }
 
@@ -477,7 +475,7 @@ public class MatrixHandling {
                 newSize++;
             }
         }
-
+        
         double[][] newRawData = new double[dataset.nrRows][newSize];
         String[] newColNames = new String[newSize];
 
@@ -499,7 +497,23 @@ public class MatrixHandling {
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
+    
+    public static void RenameCols(DoubleMatrixDataset<String, String> dataset, HashMap<String, String> newNames) {
+        String[] newColNames = new String[dataset.nrCols];
 
+        for (int s = 0; s < dataset.nrCols; ++s) {
+            if ((newNames.containsKey(dataset.colObjects.get(s)))) {
+                newColNames[s] = newNames.get(dataset.colObjects.get(s));
+            } else {
+                newColNames[s] = dataset.colObjects.get(s);
+            }
+        }
+
+        dataset.colObjects = Arrays.asList(newColNames);
+        dataset.recalculateHashMaps();
+    }
+    
+    
     public static void appendStringToColnames(DoubleMatrixDataset<String, String> in, String tissueSource) {
         ArrayList<String> newColObjects = new ArrayList<String>();
         for(String t : in.colObjects){

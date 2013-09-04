@@ -25,7 +25,7 @@ import umcg.genetica.io.text.TextFile;
  */
 public abstract class DoubleMatrixDataset<R extends Comparable, C extends Comparable> extends DoubleMatrix2D {
 
-    static final Exception doubleMatrixDatasetNonUniqueHeaderException = new Exception("Tried to use a non-unique header set in an identifier HashMap");
+    static final IOException doubleMatrixDatasetNonUniqueHeaderException = new IOException("Tried to use a non-unique header set in an identifier HashMap");
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
     protected LinkedHashMap<R, Integer> hashRows;
     protected LinkedHashMap<C, Integer> hashCols;
@@ -145,12 +145,13 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         int storedCols = 0;
         for (int s = 0; s < tmpCols; s++) {
             String colName = data[s + columnOffset];
-            if (!colMap.containsKey(colName) && desiredCols.contains(colName)) {
+            if (!colMap.containsKey(colName) && (desiredCols == null || desiredCols.contains(colName) || desiredCols.isEmpty())) {
                 colMap.put(colName, storedCols);
                 desiredColPos.add(storedCols);
                 storedCols++;
-            } else {
+            } else if(colMap.containsKey(colName)){
                 LOGGER.warning("Duplicated column name!");
+                System.out.println("Tried to add: "+colName);
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
         }
@@ -159,7 +160,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
         while (in.readLine() != null) {
             String[] info = splitPatern.split(str);
-            if(desiredCols.contains(info[0])){
+            if(desiredRows == null || desiredRows.contains(info[0]) || desiredRows.isEmpty()){
                 tmpRows++;
             }
         }
@@ -170,14 +171,13 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         in.open();
         in.readLine(); // read header
         int row = 0;
-
         LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
 
         boolean correctData = true;
         while ((str = in.readLine()) != null) {
             data = splitPatern.split(str);
             
-            if (!rowMap.containsKey(data[0]) && desiredCols.contains(data[0])) {
+            if (!rowMap.containsKey(data[0]) && (desiredRows == null || desiredRows.contains(data[0]) || desiredRows.isEmpty())) {
                 rowMap.put(data[0], row);
                 for (int s : desiredColPos) {
                     double d;
@@ -190,8 +190,9 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                     initialMatrix[row][s] = d;
                 }
                 row++;
-            } else {
+            } else if(rowMap.containsKey(data[0])){
                 LOGGER.warning("Duplicated row name!");
+                System.out.println("Tried to add: "+data[0]);
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
         }
@@ -335,9 +336,9 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
-    public void OrderOnColumns(DoubleMatrixDataset<R, C> doubleMatrixDataset) {
-        LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(doubleMatrixDataset.columns() / 0.75));
-        ArrayList<C> names = doubleMatrixDataset.getColObjects();
+    public void OrderOnColumns() {
+        LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(this.columns() / 0.75));
+        ArrayList<C> names = this.getColObjects();
         Collections.sort(names);
         
         int pos = 0;
@@ -353,9 +354,9 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
-    public void OrderOnRows(DoubleMatrixDataset<R, C> doubleMatrixDataset) {
-        LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(doubleMatrixDataset.rows() / 0.75));
-        ArrayList<R> names = doubleMatrixDataset.getRowObjects();
+    public void OrderOnRows() {
+        LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(this.rows() / 0.75));
+        ArrayList<R> names = this.getRowObjects();
         Collections.sort(names);
         
         int pos = 0;
@@ -372,6 +373,8 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
     public abstract void reorderRows(LinkedHashMap<R, Integer> mappingIndex);
     
     public abstract void reorderCols(LinkedHashMap<C, Integer> mappingIndex);
+    
+    public abstract DoubleMatrixDataset<C,R> viewDice();
     
     //Fixed like in parallel colt.
     @Override
