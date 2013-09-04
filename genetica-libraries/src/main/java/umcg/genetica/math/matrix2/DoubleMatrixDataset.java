@@ -366,10 +366,10 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         ArrayList<R> names = this.getRowObjects();
         Collections.sort(names);
         
-        int pos = 0;
+        int pos = -1;
         for(R name : names){
-            newRowHash.put(name, pos);
             pos++;
+            newRowHash.put(name, pos);
         }
         reorderRows(newRowHash);
 

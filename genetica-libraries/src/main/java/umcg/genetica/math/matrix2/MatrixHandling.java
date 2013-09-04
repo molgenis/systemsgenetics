@@ -225,6 +225,14 @@ public class MatrixHandling {
     public static DoubleMatrixDataset<String, String> RemoveProbes(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> probesToBeRemoved) {
         return CreatSubsetBasedOnRows(dataset, probesToBeRemoved, true);
     }
+
+    private static void fixOrdering(LinkedHashMap<String, Integer> hashMap) {
+        int i=0;
+        for(Entry<String, Integer> e : hashMap.entrySet()){
+           e.setValue(i);
+           i++;
+        }
+    }
     
     /**
      * Remove rows without correct mapping known on forehand
@@ -294,6 +302,8 @@ public class MatrixHandling {
         for (String r : removeList) {
             dataset.hashRows.remove(r);
         }
+        
+        fixOrdering(dataset.hashRows);
 
         if ((dataset.columns() * newRawData.length) < (Integer.MAX_VALUE - 2)) {
             dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(newRawData), dataset.hashRows, dataset.hashCols);
@@ -387,7 +397,8 @@ public class MatrixHandling {
         for (String r : removeList) {
             dataset.hashCols.remove(r);
         }
-
+        fixOrdering(dataset.hashCols);
+        
         if ((dataset.rows() * newRawData[0].length) < (Integer.MAX_VALUE - 2)) {
             dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(newRawData), dataset.hashRows, dataset.hashCols);
         } else {
