@@ -106,19 +106,5 @@ public class Rank {
         return this.t > 0;
     }
 
-    static class Test {
-
-        public static void main(String[] paramArrayOfString) {
-            double[] arrayOfDouble1 = {5.0D, 3.0D, 0.0D, 7.0D, 5.0D, 8.0D, 9.0D, 1.0D, 5.0D, 4.0D};
-            Rank localRank = new Rank(arrayOfDouble1, 0.0D);
-            double[] arrayOfDouble2 = localRank.getRanks();
-            int[] arrayOfInt = localRank.getSortIndexes();
-            for (int i = 0; i < localRank.getN(); i++) {
-                System.out.println("Rank of " + arrayOfDouble1[i] + " is " + arrayOfDouble2[i]);
-            }
-            for (int i = 0; i < localRank.getN(); i++) {
-                System.out.println("Rank " + i + ": " + arrayOfDouble2[arrayOfInt[i]]);
-            }
-        }
-    }
 }
+
