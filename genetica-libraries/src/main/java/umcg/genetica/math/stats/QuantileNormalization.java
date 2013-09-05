@@ -157,7 +157,7 @@ public class QuantileNormalization {
             double[] vals = new double[dataset.nrRows];
             boolean needsReplacement = false;
             for (int p = 0; p < dataset.nrRows; ++p) {
-                if (dataset.rawData[p][s] == -999) {
+                if (Double.isNaN(dataset.rawData[p][s])) {
                     needsReplacement = true;
                 } else {
                     nonNAvalues.add(dataset.rawData[p][s]);
@@ -171,7 +171,7 @@ public class QuantileNormalization {
             }
             
             for (int p = 0; p < dataset.nrRows; p++) {
-                if (dataset.rawData[p][s] == -999) {
+                if (Double.isNaN(dataset.rawData[p][s])) {
                     vals[p] = replacement;
                 } else {
                     vals[p] = dataset.rawData[p][s];
@@ -196,7 +196,7 @@ public class QuantileNormalization {
             ArrayDoubleList vec1 = new ArrayDoubleList();
 
             for (int p = 0; p < dataset.nrRows; p++) {
-                if (dataset.rawData[p][s] != -999) {
+                if (!Double.isNaN(dataset.rawData[p][s])) {
                     vec1.add(dataset.rawData[p][s]);
                 }
             }
@@ -217,7 +217,7 @@ public class QuantileNormalization {
 
             int itr = 0;
             for (int p = 0; p < dataset.nrRows; p++) {
-                if (dataset.rawData[p][s] != -999) {
+                if (!Double.isNaN(dataset.rawData[p][s])) {
                     dataset.rawData[p][s] = vals1[itr];
                     itr++;
                 }
@@ -230,16 +230,21 @@ public class QuantileNormalization {
                 for (int p = 0; p < dataset.nrRows; p++) {
                     double valSum = 0;
                     int nr = 0;
+                    boolean foundNA = false;
                     for (int s = 0; s < dataset.nrCols; s++) {
-                        if (dataset.rawData[p][s] != -999) {
+                        if (!Double.isNaN(dataset.rawData[p][s])) {
                             valSum += dataset.rawData[p][s];
                             nr++;
+                        } else {
+                            foundNA = true;
                         }
                     }
-                    double mean = valSum / nr;
-                    for (int s = 0; s < dataset.nrCols; s++) {
-                        if (dataset.rawData[p][s] == -999) {
-                            dataset.rawData[p][s] = mean;
+                    if(foundNA){
+                        double mean = valSum / nr;
+                        for (int s = 0; s < dataset.nrCols; s++) {
+                            if (Double.isNaN(dataset.rawData[p][s])) {
+                                dataset.rawData[p][s] = mean;
+                            }
                         }
                     }
                 }
@@ -247,16 +252,21 @@ public class QuantileNormalization {
                 for (int s = 0; s < dataset.nrCols; s++) {
                     double valSum = 0;
                     int nr = 0;
+                    boolean foundNA = false;
                     for (int p = 0; p < dataset.nrRows; p++) {
-                        if (dataset.rawData[p][s] != -999) {
+                        if (!Double.isNaN(dataset.rawData[p][s])) {
                             valSum += dataset.rawData[p][s];
                             nr++;
+                        } else {
+                            foundNA = true;
                         }
                     }
-                    double mean = valSum / nr;
-                    for (int p = 0; p < dataset.nrRows; p++) {
-                        if (dataset.rawData[p][s] == -999) {
-                            dataset.rawData[p][s] = mean;
+                    if(foundNA){
+                        double mean = valSum / nr;
+                        for (int p = 0; p < dataset.nrRows; p++) {
+                            if (Double.isNaN(dataset.rawData[p][s])) {
+                                dataset.rawData[p][s] = mean;
+                            }
                         }
                     }
                 }
