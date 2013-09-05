@@ -36,12 +36,12 @@ public class RankArrayNGTest {
         double[] arrayOfDouble1 = {5.0d, 5.0d, 3.0d, 0.0d, 7.0d, 5.0d, 8.0d, 9.0d, 1.0d, 5.0d, 4.0d};
         
         RankArray rda = new RankArray();
-            
+        
         double[] valsRanked = rda.rank(arrayOfDouble, false);
         
         boolean correct = true;
         for(int i=0; i < ranks.length; ++i){
-            System.out.println(ranks[i]+"\t"+valsRanked[i]);
+//            System.out.println(ranks[i]+"\t"+valsRanked[i]);
             if(ranks[i]!=valsRanked[i]){
                 correct = false;
                 break;
@@ -52,7 +52,7 @@ public class RankArrayNGTest {
         double[] valsRanked2 = rda.rank(arrayOfDouble1, false);
         correct = true;
         for(int i=0; i < ranks1.length; ++i){
-            System.out.println(ranks1[i]+"\t"+valsRanked2[i]);
+//            System.out.println(ranks1[i]+"\t"+valsRanked2[i]);
             if(ranks1[i]!=valsRanked2[i]){
                 correct = false;
                 break;
@@ -64,7 +64,7 @@ public class RankArrayNGTest {
         
         correct = true;
         for(int i=0; i < ranks.length; ++i){
-            System.out.println(ranksT[i]+"\t"+valsRankedT[i]);
+//            System.out.println(ranksT[i]+"\t"+valsRankedT[i]);
             if(ranksT[i]!=valsRankedT[i]){
                 correct = false;
 //                break;
@@ -75,7 +75,7 @@ public class RankArrayNGTest {
         double[] valsRankedT2 = rda.rank(arrayOfDouble1, true);
         correct = true;
         for(int i=0; i < ranks1.length; ++i){
-            System.out.println(ranksT1[i]+"\t"+valsRankedT2[i]);
+//            System.out.println(ranksT1[i]+"\t"+valsRankedT2[i]);
             if(ranksT1[i]!=valsRankedT2[i]){
                 correct = false;
                 break;
