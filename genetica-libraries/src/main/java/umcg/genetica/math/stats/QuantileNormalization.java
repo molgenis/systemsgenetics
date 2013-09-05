@@ -211,7 +211,7 @@ public class QuantileNormalization {
             for (int v = 0; v < vals1.length; v++) {
                 double quantile = (valsRanked[v]) / ((double) vals1.length);
                 int distIndex = (int) ((quantile * (double) dataset.nrRows) - 1);
-                vals1[v] = dist[distIndex];
+                vals1[v] = dist[distIndex+1];
             }
             
             System.out.println("Normalized sample:\t" + dataset.colObjects.get(s) + "\t" + s + "\tCorrelation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(vec1.toArray(new double[0]), valsRanked) + "\tCorrelation original data and quantile normalized data:\t" + JSci.maths.ArrayMath.correlation(vec1.toArray(new double[0]), vals1)+"\t"+spearman.correlation(vec1.toArray(new double[0]), vals1));
