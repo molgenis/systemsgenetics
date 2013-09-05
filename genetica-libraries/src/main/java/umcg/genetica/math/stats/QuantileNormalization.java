@@ -202,10 +202,11 @@ public class QuantileNormalization {
             }
 
             double[] vals1 = new double[vec1.size()];
-
-            umcg.genetica.util.Rank rank = new umcg.genetica.util.Rank(vec1.toArray(new double[0]), 0d);
-
-            double[] valsRanked = rank.getRanks();
+            
+            
+            RankArray rda = new RankArray();
+            
+            double[] valsRanked = rda.rank(vec1.toArray(new double[0]), false);
 
             for (int v = 0; v < vals1.length; v++) {
                 double quantile = (valsRanked[v]) / ((double) vals1.length);
