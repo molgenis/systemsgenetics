@@ -135,9 +135,9 @@ public class RankArray {
         HashSet<Double> fixedValues = new HashSet<Double>();
         
         for(int i=0; i<x.length;++i){
-            for(int j=0; j<x.length;++j){
+            for(int j=i+1; j<x.length;++j){
                 if(x[i] == x[j] && !fixedValues.contains(x[i])){
-                    replaceRankDouble(x[i], rank, x);
+                    replaceRankDouble(x[i], i, j, rank, x);
                     fixedValues.add(x[i]);
                     break;
                 }
@@ -146,20 +146,26 @@ public class RankArray {
         
     }
     
-    private void replaceRankDouble(double d, double[] rank, double[] x) {
+    private void replaceRankDouble(double d, int i, int j, double[] rank, double[] x) {
         ArrayDoubleList t = new ArrayDoubleList();
         
-        for(int i = 0; i < x.length; i++){
-            if(x[i]==d){
-                t.add(rank[i]);
+        t.add(rank[i]);
+        t.add(rank[j]);
+        
+        for(int k = j+1; k < x.length; k++){
+            if(x[k]==d){
+                t.add(rank[k]);
             }
         }
-        
+        System.out.println(t.toString());
         double newRank = JSci.maths.ArrayMath.mean(t.toArray());
         
-        for(int i = 0; i < x.length; i++){
-            if(x[i]==d){
-                rank[i] = newRank;
+        rank[i] = newRank;
+        rank[j] = newRank;
+        
+        for(int k = j+1; k < x.length; k++){
+            if(x[k]==d){
+                rank[k] = newRank;
             }
         }
     }
@@ -168,9 +174,9 @@ public class RankArray {
         HashSet<Float> fixedValues = new HashSet<Float>();
         
         for(int i=0; i<x.length;++i){
-            for(int j=0; j<x.length;++j){
+            for(int j=i+1; j<x.length;++j){
                 if(x[i] == x[j] && !fixedValues.contains(x[i])){
-                    replaceRankFloat(x[i], rank, x);
+                    replaceRankFloat(x[i], i, j, rank, x);
                     fixedValues.add(x[i]);
                     break;
                 }
@@ -178,20 +184,26 @@ public class RankArray {
         }
     }
 
-    private void replaceRankFloat(float f, float[] rank, float[] x) {
+    private void replaceRankFloat(float f, int i, int j, float[] rank, float[] x) {
         ArrayDoubleList t = new ArrayDoubleList();
         
-        for(int i = 0; i < x.length; i++){
-            if(x[i]==f){
-                t.add(rank[i]);
+        t.add(rank[i]);
+        t.add(rank[j]);
+        
+        for(int k = j+1; k < x.length; k++){
+            if(x[k]==f){
+                t.add(rank[k]);
             }
         }
         
         double newRank = JSci.maths.ArrayMath.mean(t.toArray());
         
-        for(int i = 0; i < x.length; i++){
-            if(x[i]==f){
-                rank[i] = (float) newRank;
+        rank[i] = (float) newRank;
+        rank[j] = (float) newRank;
+        
+        for(int k = j+1; k < x.length; k++){
+            if(x[k]==f){
+                rank[k] = (float) newRank;
             }
         }
     }

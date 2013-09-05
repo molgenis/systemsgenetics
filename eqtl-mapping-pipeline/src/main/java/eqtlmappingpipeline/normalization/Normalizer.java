@@ -87,7 +87,7 @@ public class Normalizer {
         if(!MatrixTools.containsNaNs(rawData)){
             QuantileNormalization.quantilenormalize(rawData);
         } else {
-            System.out.println("Warning data contained NA values. Normalizer automaticaly replaces these NA values.");
+            System.out.println("Warning data contained NaNs, please check your data if you know that there should be no NaN's.\n Normalizer automaticaly replaces these NA values, with the sample median.");
             QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset,false,false);
         }
         
@@ -333,8 +333,7 @@ public class Normalizer {
         TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.W);
         double cumExpVarPCA = 0;
 
-
-
+        out.writeln("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
 
         for (int pca = 0; pca < nrOfPCsToCalculate; pca++) {
             double expVarPCA = PCA.getEigenValueVar(eigenValues, pca);
