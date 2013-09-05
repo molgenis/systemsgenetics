@@ -333,8 +333,7 @@ public class Normalizer {
         TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.W);
         double cumExpVarPCA = 0;
 
-
-
+        out.writeln("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
 
         for (int pca = 0; pca < nrOfPCsToCalculate; pca++) {
             double expVarPCA = PCA.getEigenValueVar(eigenValues, pca);
