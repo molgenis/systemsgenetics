@@ -27,16 +27,6 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
     }
 
     public Pair(L left, R right, SORTBY sorter) {
-
-        if (sorter == SORTBY.BOTH) {
-            System.out.println("Sort by both");
-        }
-        if (sorter == SORTBY.LEFT) {
-            System.out.println("Sort by left");
-        }
-        if (sorter == SORTBY.RIGHT) {
-            System.out.println("Sort by right");
-        }
         this.left = left;
         this.right = right;
         this.sorter = sorter;
@@ -52,15 +42,6 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
         this.right = right;
         this.sorter = sorter;
         this.sep = sep;
-        if (sorter == SORTBY.BOTH) {
-            System.out.println("Sort by both");
-        }
-        if (sorter == SORTBY.LEFT) {
-            System.out.println("Sort by left");
-        }
-        if (sorter == SORTBY.RIGHT) {
-            System.out.println("Sort by right");
-        }
     }
 
     public L getLeft() {
