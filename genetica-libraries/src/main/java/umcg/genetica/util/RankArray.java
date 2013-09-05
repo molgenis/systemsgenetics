@@ -4,6 +4,10 @@
  */
 package umcg.genetica.util;
 
+import java.util.HashSet;
+import org.apache.commons.collections.primitives.ArrayDoubleList;
+import org.apache.commons.collections.primitives.ArrayFloatList;
+
 /**
  *
  * @author harmjan
@@ -87,54 +91,108 @@ public class RankArray {
     }
 
     public double[] rank(double[] x, boolean giveTiesSameRank) {
-        if (giveTiesSameRank) {
-            umcg.genetica.util.Rank rank = new umcg.genetica.util.Rank(x, 0d);
-            x = rank.getRanks();
-            for (int i = 0; i < x.length; i++) {
-                x[i] -= 1;
-            }
-            return x;
-
+        
+        this.xdouble = x.clone();
+        ydouble = new int[x.length];
+        for (int v = 0; v < x.length; v++) {
+            ydouble[v] = v;
+        }
+        cern.colt.GenericSorting.quickSort(0, x.length, compdouble, swapperdouble);
+        double[] rank = new double[x.length];
+        for (int v = 0; v < x.length; v++) {
+            rank[ydouble[v]] = v;
+        }
+        
+        if (!giveTiesSameRank) {
+            return rank;
         } else {
-            this.xdouble = x.clone();
-            ydouble = new int[x.length];
-            for (int v = 0; v < x.length; v++) {
-                ydouble[v] = v;
-            }
-            cern.colt.GenericSorting.quickSort(0, x.length, compdouble, swapperdouble);
-            double[] rank = new double[x.length];
-            for (int v = 0; v < x.length; v++) {
-                rank[ydouble[v]] = v;
-            }
+            fixTiesDouble(rank, x);
             return rank;
         }
     }
 
     public float[] rank(float[] x, boolean giveTiesSameRank) {
-        if (giveTiesSameRank) {
-
-            double[] xcopy = new double[x.length];
-            for (int i = 0; i < xcopy.length; i++) {
-                xcopy[i] = x[i];
-            }
-            umcg.genetica.util.Rank rank = new umcg.genetica.util.Rank(xcopy, 0d);
-            xcopy = rank.getRanks();
-            for (int i = 0; i < x.length; i++) {
-                x[i] = (float) xcopy[i] - 1;
-            }
-            return x;
-        } else {
-            this.x = x.clone();
-            y = new int[x.length];
-            for (int v = 0; v < x.length; v++) {
-                y[v] = v;
-            }
-            cern.colt.GenericSorting.quickSort(0, x.length, comp, swapper);
-            float[] rank = new float[x.length];
-            for (int v = 0; v < x.length; v++) {
-                rank[y[v]] = v;
-            }
+        
+        this.x = x.clone();
+        y = new int[x.length];
+        for (int v = 0; v < x.length; v++) {
+            y[v] = v;
+        }
+        cern.colt.GenericSorting.quickSort(0, x.length, comp, swapper);
+        float[] rank = new float[x.length];
+        for (int v = 0; v < x.length; v++) {
+            rank[y[v]] = v;
+        }
+        if (!giveTiesSameRank) {
             return rank;
+        } else {
+            fixTiesFloat(rank, x);
+            return rank;
+        }
+    }
+
+    private void fixTiesDouble(double[] rank, double[] x) {
+        HashSet<Double> fixedValues = new HashSet<Double>();
+        
+        for(int i=0; i<x.length;++i){
+            for(int j=0; j<x.length;++j){
+                if(x[i] == x[j] && !fixedValues.contains(x[i])){
+                    replaceRankDouble(x[i], rank, x);
+                    fixedValues.add(x[i]);
+                    break;
+                }
+            }
+        }
+        
+    }
+    
+    private void replaceRankDouble(double d, double[] rank, double[] x) {
+        ArrayDoubleList t = new ArrayDoubleList();
+        
+        for(int i = 0; i < x.length; i++){
+            if(x[i]==d){
+                t.add(rank[i]);
+            }
+        }
+        
+        double newRank = JSci.maths.ArrayMath.mean(t.toArray());
+        
+        for(int i = 0; i < x.length; i++){
+            if(x[i]==d){
+                rank[i] = newRank;
+            }
+        }
+    }
+    
+    private void fixTiesFloat(float[] rank, float[] x) {
+        HashSet<Float> fixedValues = new HashSet<Float>();
+        
+        for(int i=0; i<x.length;++i){
+            for(int j=0; j<x.length;++j){
+                if(x[i] == x[j] && !fixedValues.contains(x[i])){
+                    replaceRankFloat(x[i], rank, x);
+                    fixedValues.add(x[i]);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void replaceRankFloat(float f, float[] rank, float[] x) {
+        ArrayDoubleList t = new ArrayDoubleList();
+        
+        for(int i = 0; i < x.length; i++){
+            if(x[i]==f){
+                t.add(rank[i]);
+            }
+        }
+        
+        double newRank = JSci.maths.ArrayMath.mean(t.toArray());
+        
+        for(int i = 0; i < x.length; i++){
+            if(x[i]==f){
+                rank[i] = (float) newRank;
+            }
         }
     }
 }
