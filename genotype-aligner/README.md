@@ -158,6 +158,8 @@ The following tools are needed for this script:
 
 * plink
 * ucsc liftover + chain hg18ToHg19
+* SHAPEIT2
+* Genetic Map (b37)
 
 ```bash
 wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/latest_phaseIII_ncbi_b36/plink_format/hapmap3_r2_b36_fwd.consensus.qc.poly.map.bz2
@@ -203,7 +205,12 @@ awk '
 ' < hapmap3CeuChr20B37Mb6.bim > flipList.txt
 
 plink --noweb --bfile hapmap3CeuChr20B37Mb6 --make-bed --flip flipList.txt --out hapmap3CeuChr20B37Mb6RandomStrand
+```
 
+We also want this data phased using SHAPEIT2, for aditional testing.
+
+```Bash
+shapeit.v2.r644.linux.x86_64 --input-bed ./hapmap3CeuChr20B37Mb6RandomStrand -M genetic_map_chr20_combined_b37.txt --output-max ./hapmap3CeuChr20B37Mb6RandomStrand --noped --thread 4
 ```
 
 ### 1000G
