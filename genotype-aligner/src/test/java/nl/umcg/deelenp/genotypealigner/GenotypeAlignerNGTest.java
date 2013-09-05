@@ -56,7 +56,7 @@ public class GenotypeAlignerNGTest {
 				System.out.println("Removing tmp dir and files");
 				for (File file : tmpOutputFolder.listFiles()) {
 					System.out.println(" - Deleting: " + file.getAbsolutePath());
-					//file.delete();
+					file.delete();
 				}
 				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
 				tmpOutputFolder.delete();
