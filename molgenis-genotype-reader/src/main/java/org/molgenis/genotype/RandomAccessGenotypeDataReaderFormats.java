@@ -19,8 +19,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 	PED_MAP("PED / MAP files", "plink PED / MAP files"),
 	VCF("VCF file", "gziped vcf with tabix index file"),
-	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder"), 
-	SHAPEIT2("Shapeit2 output",	".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"),
+	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder"),
+	SHAPEIT2("Shapeit2 output", ".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"),
 	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files"),
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt. Optionally: ImputedDosageMatrix.dat");
 	private final String name;
@@ -50,7 +50,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			case VCF_FOLDER:
 				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
 			case SHAPEIT2:
-				return new Impute2GenotypeData(new File(path + ".haps.gz"), new File(path + ".haps.gz.tbi"), new File(
+				return new Impute2GenotypeData(new File(path + ".haps"), new File(
 						path + ".sample"), cacheSize);
 			case PLINK_BED:
 				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"), cacheSize);
@@ -63,29 +63,29 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 	/**
 	 * Samples are filtered first then the variant filter is applied.
-	 * 
+	 *
 	 * @param path
 	 * @param cacheSize
 	 * @param variantFilter
 	 * @param sampleFilter
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException{
-		
+	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
+
 		switch (this) {
 			case TRITYPER:
 				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
 			default:
 				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize);
-				if(sampleFilter != null){
+				if (sampleFilter != null) {
 					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
 				}
-				if(variantFilter != null){
+				if (variantFilter != null) {
 					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
 				}
 				return genotypeData;
 		}
-		
+
 	}
 }

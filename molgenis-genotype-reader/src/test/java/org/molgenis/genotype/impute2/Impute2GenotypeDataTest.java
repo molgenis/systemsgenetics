@@ -5,7 +5,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +29,7 @@ public class Impute2GenotypeDataTest extends ResourceTest
 	@BeforeClass
 	public void beforeClass() throws IOException, URISyntaxException
 	{
-		genotypeData = new Impute2GenotypeData(getTestImpute2Gz(), getTestImpute2GzTbi(), getTestImpute2Sample());
+		genotypeData = new Impute2GenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
 	}
 
 	@Test
@@ -105,6 +107,10 @@ public class Impute2GenotypeDataTest extends ResourceTest
 				var.getSampleVariants(),
 				Arrays.asList(Alleles.createBasedOnChars('A', 'A'), Alleles.createBasedOnChars('G', 'A'),
 						Alleles.createBasedOnChars('A', 'A'), Alleles.createBasedOnChars('G', 'G')));
+		
+		List<Boolean> expectedPhasing = Arrays.asList(true,false,true,true);
+		assertEquals(var.getSamplePhasing(), expectedPhasing);
+		
 	}
 
 	@Test
@@ -120,5 +126,8 @@ public class Impute2GenotypeDataTest extends ResourceTest
 				var.getSampleVariants(),
 				Arrays.asList(Alleles.createBasedOnChars('A', 'T'), Alleles.createBasedOnChars('T', 'A'),
 						Alleles.createBasedOnChars('T', 'T'), Alleles.createBasedOnChars('T', 'T')));
+		
+		List<Boolean> expectedPhasing = Arrays.asList(true,true,true,true);
+		assertEquals(var.getSamplePhasing(), expectedPhasing);
 	}
 }
