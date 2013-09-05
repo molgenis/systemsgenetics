@@ -15,6 +15,8 @@ import java.util.Map;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.util.Utils;
@@ -129,5 +131,56 @@ public class Impute2GenotypeDataTest extends ResourceTest
 		
 		List<Boolean> expectedPhasing = Arrays.asList(true,true,true,true);
 		assertEquals(var.getSamplePhasing(), expectedPhasing);
+	}
+	
+	@Test
+	public void testForceSeqName() throws URISyntaxException, IOException{
+		
+		String testHapsPath = getTestImpute2Haps().toString();
+		String hapsBasePath = testHapsPath.substring(0, testHapsPath.length() - 5);
+		
+		RandomAccessGenotypeData genotypeDataForceSeq = RandomAccessGenotypeDataReaderFormats.SHAPEIT2.createGenotypeData(hapsBasePath, 100, "1");
+		
+		List<String> seqNames = genotypeDataForceSeq.getSeqNames();
+		assertNotNull(seqNames);
+		assertEquals(seqNames, Arrays.asList("1"));
+		
+		
+
+		
+		Iterator<GeneticVariant> it = genotypeDataForceSeq.iterator();
+		assertNotNull(it);
+
+		GeneticVariant var = it.next();
+		assertNotNull(var);
+		assertEquals(var.getPrimaryVariantId(), "SNP1");
+		assertEquals(var.getSequenceName(), "1");
+		assertEquals(var.getStartPos(), 123);
+		assertEquals(var.getAlleleCount(), 2);
+		assertEquals(var.getAllIds(), Arrays.asList("SNP1"));
+		assertEquals(var.getVariantAlleles(), Alleles.createBasedOnChars('A', 'G'));
+		assertEquals(
+				var.getSampleVariants(),
+				Arrays.asList(Alleles.createBasedOnChars('A', 'A'), Alleles.createBasedOnChars('G', 'A'),
+						Alleles.createBasedOnChars('A', 'A'), Alleles.createBasedOnChars('G', 'G')));
+		assertEquals(Utils.iteratorToList(genotypeDataForceSeq.iterator()).size(), 4);
+		
+		it = genotypeDataForceSeq.getSequenceGeneticVariants("1").iterator();
+		List<GeneticVariant> variants = Utils.iteratorToList(it);
+		assertEquals(variants.size(), 4);
+		
+		var = variants.get(0);
+		assertEquals(var.getPrimaryVariantId(), "SNP1");
+		assertEquals(var.getSequenceName(), "1");
+		assertEquals(var.getStartPos(), 123);
+		assertEquals(var.getVariantAlleles(), Alleles.createBasedOnChars('A', 'G'));
+		assertEquals(
+				var.getSampleVariants(),
+				Arrays.asList(Alleles.createBasedOnChars('A', 'A'), Alleles.createBasedOnChars('G', 'A'),
+						Alleles.createBasedOnChars('A', 'A'), Alleles.createBasedOnChars('G', 'G')));
+		
+		List<Boolean> expectedPhasing = Arrays.asList(true,false,true,true);
+		assertEquals(var.getSamplePhasing(), expectedPhasing);
+		
 	}
 }

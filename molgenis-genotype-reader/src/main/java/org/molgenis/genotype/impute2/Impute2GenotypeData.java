@@ -65,7 +65,15 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 		this(hapsFile, sampleFile, 100);
 	}
 
-	public Impute2GenotypeData(File hapsFile, File sampleFile, int cacheSize)
+	public Impute2GenotypeData(File hapsFile, File sampleFile, int cacheSize) throws IOException{
+		this(hapsFile, sampleFile, cacheSize, null);
+	}
+	
+	public Impute2GenotypeData(File hapsFile, File sampleFile, String forceSeqName) throws IOException{
+		this(hapsFile, sampleFile, 100, forceSeqName);
+	}
+	
+	public Impute2GenotypeData(File hapsFile, File sampleFile, int cacheSize, String forceSeqName)
 			throws IOException {
 		if (hapsFile == null) {
 			throw new IllegalArgumentException("hapsFile is null");
@@ -110,7 +118,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 		sequenceNames = new HashSet<String>();
 		hapsFileReader = new RandomAccessFile(hapsFile, "r");
 
-		byteToReadForSampleAlleles = loadVariants();
+		byteToReadForSampleAlleles = loadVariants(forceSeqName);
 
 	}
 
@@ -315,7 +323,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 	 * @return the number of bytes of the longest chunk of sample alleles
 	 * @throws IOException
 	 */
-	private int loadVariants() throws IOException {
+	private int loadVariants(String forceSeqName) throws IOException {
 		StringBuilder stringBuilder = new StringBuilder();
 		byte[] buffer = new byte[8192];
 		boolean eol = false;
@@ -324,7 +332,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 		String variantId = null;
 		int position = 0;
 		String allele1 = null;
-		String allele2 = null;
+		String allele2;
 
 		int longestedChunk = 0;
 		int currentChunk = 0;
@@ -351,7 +359,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 						case ' ':
 							switch (column) {
 								case 0:
-									seqName = stringBuilder.toString().intern();
+									seqName = forceSeqName == null ? stringBuilder.toString().intern() : forceSeqName;
 									sequenceNames.add(seqName);
 									++column;
 									stringBuilder = new StringBuilder();

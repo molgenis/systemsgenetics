@@ -38,23 +38,43 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	public String getDescription() {
 		return description;
 	}
-
+	
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(path, cacheSize, null);
+	}
+
+	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
 
 		switch (this) {
 			case PED_MAP:
+				if(forcedSequence != null){
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
 				return new PedMapGenotypeData(new File(path + ".ped"), new File(path + ".map"));
 			case VCF:
+				if(forcedSequence != null){
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
 				return new VcfGenotypeData(new File(path + ".vcf.gz"), cacheSize);
 			case VCF_FOLDER:
+				if(forcedSequence != null){
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
 				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
 			case SHAPEIT2:
 				return new Impute2GenotypeData(new File(path + ".haps"), new File(
-						path + ".sample"), cacheSize);
+						path + ".sample"), cacheSize, forcedSequence);
 			case PLINK_BED:
+				if(forcedSequence != null){
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
 				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"), cacheSize);
 			case TRITYPER:
+				if(forcedSequence != null){
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
 				return new TriTyperGenotypeData(path, cacheSize);
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
