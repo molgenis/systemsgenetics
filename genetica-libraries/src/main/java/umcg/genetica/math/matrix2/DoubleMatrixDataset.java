@@ -155,12 +155,12 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
         }
-
+        System.out.println(desiredColPos.size());
         LinkedHashSet<Integer> desiredRowPos = new LinkedHashSet<Integer>();
         int rowsToStore = 0;
         int totalRows = 0;
-
-        while (in.readLine() != null) {
+        //System.out.println(desiredRows.toString());
+        while ((str=in.readLine()) != null) {
             String[] info = splitPatern.split(str);
             if(desiredRows == null || desiredRows.contains(info[0]) || desiredRows.isEmpty()){
                 rowsToStore++;
@@ -169,7 +169,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             totalRows++;
         }
         in.close();
-
+        System.out.println(desiredRowPos.size());
         double[][] initialMatrix = new double[rowsToStore][storedCols];
 
         in.open();
