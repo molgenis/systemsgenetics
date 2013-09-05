@@ -53,11 +53,12 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 		RandomAccessGenotypeData eQtlGenotypeData = readEQtlGenotypeData("E:\\GroningenBloodData\\BloodHT12Combined\\");
 		
 		//Calculate the LD.
-		HashMap<String, TreeMap<Integer, ArrayList<Ld>>> eQtlLdData = this.calculateLd(eQtlResultData, 250000, 0.9, eQtlGenotypeData);
+		HashMap<String, TreeMap<Integer, ArrayList<Ld>>> eQtlLdData = this.calculateLd(eQtlResultData, 250000, 0.8, eQtlGenotypeData);
 		
 		//Find SNPs In regulomeDB
-		//Perform this step using a dummy data structure for now.
-		//this.findSnpsInRegulomeDb(null, eQtlLdData);
+		ArrayList<RegulomeDbFile> regulomeDbFiles = new ArrayList<RegulomeDbFile>();
+		regulomeDbFiles.add(new RegulomeDbFile( new File("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\RegulomeDB.dbSNP132.Category7.txt") ));
+		
 	}
 	
 	
@@ -125,7 +126,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 
 
 						if(ld.getR2() >= r2CutOff){
-							System.out.println("Found LD SNP for eQTL " + eQtlSnp.getPrimaryVariantId());
+							System.out.println("Found LD SNP " + gv.getPrimaryVariantId() + " for eQTL " + eQtlSnp.getPrimaryVariantId());
 
 							//Place results in a convenient structure for later.
 							TreeMap<Integer, ArrayList<Ld>> tmp;
@@ -160,6 +161,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 								tmp.put(variant2.getStartPos(), ldList);
 								ldResults.put(variant2.getSequenceName(), tmp);
 							}
+							System.out.println("Data: " + variant2.getPrimaryVariantId() + " , " + variant2.getStartPos());
 						}
 					}
 					else{
@@ -183,8 +185,8 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	
 	
 	public void findSnpsInRegulomeDb(ArrayList<RegulomeDbFile> regulomeDbFileLocations, HashMap<String, TreeMap<Integer, ArrayList<Ld>>> ldData) throws IOException{
-		TextFile resultsOutputFile = new TextFile("", true);
-		resultsOutputFile.write("eQTL\tLD_SNP\tRegulomeDbScore\tRegulomeData");
+		//TextFile resultsOutputFile = new TextFile("", true);
+		//resultsOutputFile.write("eQTL\tLD_SNP\tRegulomeDbScore\tRegulomeData");
 		
 		RegulomeDbFiles regulomeDbData = new RegulomeDbFiles(regulomeDbFileLocations);
 		Iterator<RegulomeDbEntry> regulomeDbDataIterator = regulomeDbData.iterator();
@@ -202,13 +204,13 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 					
 					for(Ld ld : ldList){
 						//Write results to a file. :)
-						resultsOutputFile.write( ld.getVariant1().getPrimaryVariantId() + "\t" + ld.getVariant2().getPrimaryVariantId() + "\t" + rdbe.getRegulomeDbScore() + "\t"
+						System.out.println( ld.getVariant1().getPrimaryVariantId() + "\t" + ld.getVariant2().getPrimaryVariantId() + "\t" + rdbe.getRegulomeDbScore() + "\t"
 								+ rdbe.getSupportData().values().toArray().toString());
 					}
 				}
 			}
 			
 		}
-		resultsOutputFile.close();
+		//resultsOutputFile.close();
 	}
 }
