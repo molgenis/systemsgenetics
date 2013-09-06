@@ -234,7 +234,7 @@ public class MatrixHandling {
         }
     }
 
-    public static void RenameRows(DoubleMatrixDataset<String, String> dataset, HashMap<String, String> mappedProbeList) {
+    public static void RenameRows(DoubleMatrixDataset<String, ?> dataset, HashMap<String, String> mappedProbeList) {
         LinkedHashMap<String, Integer> newRowNames = new LinkedHashMap<String, Integer>(dataset.rows());
         
         for (Entry<String, Integer> e : dataset.getHashRows().entrySet()) {
@@ -426,7 +426,7 @@ public class MatrixHandling {
         return(dataset);
     }
     
-    public static void RenameCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashMap<String, String> newNames) {
+    public static void RenameCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<?, String> dataset, HashMap<String, String> newNames) {
         LinkedHashMap<String, Integer> newColNames = new LinkedHashMap<String, Integer>(dataset.columns());
         
         for (Entry<String, Integer> e : dataset.getHashCols().entrySet()) {
