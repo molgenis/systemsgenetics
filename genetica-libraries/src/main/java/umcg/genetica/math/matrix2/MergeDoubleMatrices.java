@@ -9,6 +9,8 @@ import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -24,7 +26,7 @@ public class MergeDoubleMatrices {
      * @param removeOldMatrix
      * @return
      */
-    public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnColumns(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) {
+    public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnColumns(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) throws Exception {
         DoubleMatrixDataset<String, String> newMatrix = null;
 
         matrixI.OrderOnColumns();
@@ -43,10 +45,10 @@ public class MergeDoubleMatrices {
 
         if (matrixI.columns() == 0 || matrixII.columns() == 0) {
             System.out.println("Warning indivduals merging. No shared columns");
-            System.exit(-1);
+            throw new Exception("Warning invalid merging. No shared columns");
         } else if (matrixI.columns() != matrixII.columns()) {
             System.out.println("Warning indivduals merging. No equal number of columns");
-            System.exit(-1);
+            throw new Exception("Warning indivduals merging. No equal number of columns");
         }
 
         HashSet<String> keepRowNames1 = new HashSet<String>();
@@ -110,7 +112,7 @@ public class MergeDoubleMatrices {
      * @param removeOldMatrix
      * @return
      */
-    public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnRows(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) {
+    public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnRows(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) throws Exception {
         DoubleMatrixDataset<String, String> newMatrix = null;
 
         matrixI.OrderOnRows();
@@ -132,33 +134,32 @@ public class MergeDoubleMatrices {
 
         if (matrixI.rows() == 0 || matrixII.rows() == 0) {
             System.out.println("Warning invalid merging. No shared rows");
-            System.exit(-1);
+            throw new Exception("Warning invalid merging. No shared rows");
         } else if (matrixI.rows() != matrixII.rows()) {
             System.out.println("Warning invalid merging. No equal number of rows");
-            System.exit(-1);
+            throw new Exception("Warning invalid merging. No equal number of rows");
         }
 
+        
         HashSet<String> keepColNames1 = new HashSet<String>();
         keepColNames1.addAll(matrixI.getColObjects());
-        HashSet<String> keepColNames2 = new HashSet<String>();
-        keepColNames2.addAll(matrixII.getColObjects());
-        keepColNames1.retainAll(keepColNames2);
+        keepColNames1.addAll(matrixII.getColObjects());
 
-        keepColNames2 = new HashSet<String>();
+        HashSet<String> keepColNames2 = new HashSet<String>();
 
         for (String key : keepColNames1) {
             boolean presentMapI = matrixI.hashRows.containsKey(key);
             boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if (!(presentMapI ^ presentMapII)) {
+            if (presentMapI ^ presentMapII) {
                 keepColNames2.add(key);
             }
         }
 
         if (keepColNames2.size() > 0) {
-            matrixI = MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames2, false);
-            matrixII = MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames2, false);
+            matrixI = MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepColNames2, false);
+            matrixII = MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepColNames2, false);
         }
-
+        
         keepColNames1 = null;
         keepColNames2 = null;
 
@@ -195,18 +196,25 @@ public class MergeDoubleMatrices {
 
     /**
      * Merge a set of matrices based on row identifiers.
+     * Automatic skypping of errors merges.
      *
      * @param matrixI
      * @param matrixII
      * @param removeOldMatrix
      * @return
      */
-    public static DoubleMatrixDataset<String, String> combineBasedOnRows(ArrayList<DoubleMatrixDataset> datasets) {
+    public static DoubleMatrixDataset<String, String> combineBasedOnRows(ArrayList<DoubleMatrixDataset<String, String>> datasets) {
         DoubleMatrixDataset<String, String> newMatrix = datasets.get(0);
-
+        System.out.println(newMatrix.getColObjects().size());
+        System.out.println(newMatrix.columns());
+        
         if (datasets.size() > 1) {
             for (int i = 1; i < datasets.size(); ++i) {
-                newMatrix = mergeMatrixBasedOnRows(newMatrix, datasets.get(i), false);
+                try {
+                    newMatrix = mergeMatrixBasedOnRows(newMatrix, datasets.get(i), false);
+                } catch (Exception ex) {
+                    Logger.getLogger(MergeDoubleMatrices.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 
@@ -215,18 +223,23 @@ public class MergeDoubleMatrices {
 
     /**
      * Merge a set of matrices based on column identifiers.
+     * Automatic skypping of errors merges.
      *
      * @param matrixI
      * @param matrixII
      * @param removeOldMatrix
      * @return
      */
-    public static DoubleMatrixDataset<String, String> combineBasedOnCols(ArrayList<DoubleMatrixDataset> datasets) {
+    public static DoubleMatrixDataset<String, String> combineBasedOnCols(ArrayList<DoubleMatrixDataset<String, String>> datasets) {
         DoubleMatrixDataset<String, String> newMatrix = datasets.get(0);
 
         if (datasets.size() > 1) {
             for (int i = 1; i < datasets.size(); ++i) {
-                newMatrix = mergeMatrixBasedOnColumns(newMatrix, datasets.get(i), false);
+                try {
+                    newMatrix = mergeMatrixBasedOnColumns(newMatrix, datasets.get(i), false);
+                } catch (Exception ex) {
+                    Logger.getLogger(MergeDoubleMatrices.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 
