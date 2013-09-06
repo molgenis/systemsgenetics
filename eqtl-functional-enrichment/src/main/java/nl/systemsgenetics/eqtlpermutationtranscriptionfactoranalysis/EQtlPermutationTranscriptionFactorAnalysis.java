@@ -7,8 +7,12 @@ package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import umcg.genetica.io.regulomedb.RegulomeDbEntry;
@@ -38,27 +42,44 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	 */
 	public static void main(String[] args) throws IOException, LdCalculatorException {
 		// TODO code application logic here
-		EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
+		
+		/*
+		 * Order of commandline arguments:
+		 * 1. String: Path to eQTL or permutation data file 
+		 * 2. String: Path to folder containing genotypeMatrix data (GenotypeMatrix.dat)
+		 * 3. int: LD Search window size
+		 * 4. double: R2 cutoff value (cutoff will be used as >= cutoff value)
+		 * 5. String: Path to folder containing regulomeDB (make sure that the files are named RegulomeDB.dbSNP132.Category#.txt)
+		 * 6. String: Path for output file location.
+		 */
+		//EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
+		EQtlPermutationTranscriptionFactorAnalysis eqptfa =
+				new EQtlPermutationTranscriptionFactorAnalysis(args[0], args[1], Integer.parseInt(args[2]), Double.valueOf(args[3]), args[4], args[5]);
 	}
 	
 	
 	/*
 	 * Constructor that calls the other methods. The current code might change later.
 	 */
-	public EQtlPermutationTranscriptionFactorAnalysis()throws IOException, LdCalculatorException{
+	public EQtlPermutationTranscriptionFactorAnalysis(String eQtlFile, String genotypeData, int ldWindow, double r2cutoff, String regulomeDbFilesFolder, String outputFile)throws IOException, LdCalculatorException{
 		//Read the eQTL data (preferably from eQTLProbesFDR0.05-ProbeLevel.txt file.
-		EQTL[] eQtlResultData = this.readEQtlResultData("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\results\\Imputed\\eQTLProbesFDR0.05-ProbeLevel.txt");
+		EQTL[] eQtlResultData = this.readEQtlResultData(eQtlFile);
 		
 		//Read the GenotypeMatrix.dat data using a RandomAccessGenotypeData object.
-		RandomAccessGenotypeData eQtlGenotypeData = readEQtlGenotypeData("E:\\GroningenBloodData\\BloodHT12Combined\\");
+		RandomAccessGenotypeData eQtlGenotypeData = readEQtlGenotypeData(genotypeData);
 		
 		//Calculate the LD.
-		HashMap<String, TreeMap<Integer, ArrayList<Ld>>> eQtlLdData = this.calculateLd(eQtlResultData, 250000, 0.8, eQtlGenotypeData);
+		HashMap<String, TreeMap<Integer, ArrayList<Ld>>> eQtlLdData = this.calculateLd(eQtlResultData, ldWindow, r2cutoff, eQtlGenotypeData);
 		
 		//Find SNPs In regulomeDB
 		ArrayList<RegulomeDbFile> regulomeDbFiles = new ArrayList<RegulomeDbFile>();
-		regulomeDbFiles.add(new RegulomeDbFile( new File("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\RegulomeDB.dbSNP132.Category7.txt") ));
-		
+		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.Category1.txt") ));
+		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.Category2.txt") ));
+		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.Category3.txt") ));
+		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.Category4.txt") ));
+		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.Category5.txt") ));
+		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.Category6.txt") ));
+		findSnpsInRegulomeDb(regulomeDbFiles, eQtlLdData, outputFile);
 	}
 	
 	
@@ -145,13 +166,6 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 									ldList.add(ld);
 									tmp.put(variant2.getStartPos(), ldList);
 								}
-
-								/*
-								tmp = ldResults.get(variant2.getSequenceName());
-								//tmp.put(variant2.getStartPos(), ld);
-								ldList = tmp.get(variant2.getStartPos());
-								ldList.add(ld);
-								*/
 							}
 
 							else{
@@ -166,6 +180,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 					}
 					else{
 						System.out.println("eQTL " + eQtlSnp.getPrimaryVariantId() + " with " + gv.getPrimaryVariantId() + " are not biallelic.");
+						System.out.println(eQtlSnp.getVariantAlleles().toString() + " , " + gv.getVariantAlleles().toString() + "\n");
 					}
 					
 				}
@@ -184,9 +199,9 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	
 	
 	
-	public void findSnpsInRegulomeDb(ArrayList<RegulomeDbFile> regulomeDbFileLocations, HashMap<String, TreeMap<Integer, ArrayList<Ld>>> ldData) throws IOException{
-		//TextFile resultsOutputFile = new TextFile("", true);
-		//resultsOutputFile.write("eQTL\tLD_SNP\tRegulomeDbScore\tRegulomeData");
+	public void findSnpsInRegulomeDb(ArrayList<RegulomeDbFile> regulomeDbFileLocations, HashMap<String, TreeMap<Integer, ArrayList<Ld>>> ldData, String outputLocation) throws IOException{
+		TextFile resultsOutputFile = new TextFile(outputLocation, true);
+		resultsOutputFile.write("eQTL\tLD_SNP\tRegulomeDbScore\tRegulomeData");
 		
 		RegulomeDbFiles regulomeDbData = new RegulomeDbFiles(regulomeDbFileLocations);
 		Iterator<RegulomeDbEntry> regulomeDbDataIterator = regulomeDbData.iterator();
@@ -204,13 +219,26 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 					
 					for(Ld ld : ldList){
 						//Write results to a file. :)
-						System.out.println( ld.getVariant1().getPrimaryVariantId() + "\t" + ld.getVariant2().getPrimaryVariantId() + "\t" + rdbe.getRegulomeDbScore() + "\t"
-								+ rdbe.getSupportData().values().toArray().toString());
+						//System.out.println( ld.getVariant1().getPrimaryVariantId() + "\t" + ld.getVariant2().getPrimaryVariantId() + "\t" + rdbe.getRegulomeDbScore() + "\t"
+								//+ rdbe.getSupportData().values().toArray().toString());
+						
+						Map<String, List<RegulomeDbSupportingData>> supportData = rdbe.getSupportData();
+						System.out.println(supportData);
+						Iterator it = supportData.entrySet().iterator();
+						while(it.hasNext()){
+							//System.out.println("aap");
+							Map.Entry pairs = (Map.Entry) it.next();
+							
+							resultsOutputFile.write(ld.getVariant1().getPrimaryVariantId() + "\t" + ld.getVariant2().getPrimaryVariantId() + "\t" + rdbe.getRegulomeDbScore() + "\t"
+								+ pairs.getValue().toString());
+							//System.out.println(pairs.getValue().toString());
+						}
 					}
 				}
 			}
 			
 		}
-		//resultsOutputFile.close();
+		resultsOutputFile.close();
 	}
+	
 }
