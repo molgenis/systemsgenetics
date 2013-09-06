@@ -66,14 +66,14 @@ public class ParseTextTable {
         LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
 
         int storedCols = 0;
-
+        
         for (int s = 0; s < tmpCols; s++) {
             String colName = headerData[s + columnOffset];
             if (!colMap.containsKey(colName) && !colName.equals("") && !colName.equalsIgnoreCase("Target ID") && !colName.equalsIgnoreCase("Probe ID") && !colName.toLowerCase().contains(".p=") && !colName.toLowerCase().contains("pval") && !colName.toLowerCase().contains("detection") && !colName.toLowerCase().contains("p-val") && !colName.toLowerCase().contains("array") && !colName.toLowerCase().contains("bead")) {
                 if((nextRowData.length > (s+columnOffset))){
                     if((isNumeric(nextRowData[ s + columnOffset]))) {
                         colMap.put(colName, storedCols);
-                        desiredColPos.add(storedCols);
+                        desiredColPos.add(s+columnOffset);
                         storedCols++;
                     } else if(debug) {
                         System.out.println("In non-numeric, entry: "+nextRowData[s + columnOffset]);
@@ -132,15 +132,17 @@ public class ParseTextTable {
             if(data.length == headerData.length){
                if (!rowMap.containsKey(data[columnOffset - 1])) {
                     rowMap.put(data[0], row);
+                    int columnToPut = 0;
                     for (int s : desiredColPos) {
                         double d;
                         try {
-                            d = Double.parseDouble(data[s + columnOffset]);
+                            d = Double.parseDouble(data[s]);
                         } catch (NumberFormatException e) {
                             correctData = false;
                             d = Double.NaN;
                         }
-                        initialMatrix[row][s] = d;
+                        initialMatrix[row][columnToPut] = d;
+                        columnToPut++;
                     }
                     row++;
                 } else {

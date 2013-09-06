@@ -233,6 +233,20 @@ public class MatrixHandling {
            i++;
         }
     }
+
+    public static void RenameRows(DoubleMatrixDataset<String, String> dataset, HashMap<String, String> mappedProbeList) {
+        LinkedHashMap<String, Integer> newRowNames = new LinkedHashMap<String, Integer>(dataset.rows());
+        
+        for (Entry<String, Integer> e : dataset.getHashRows().entrySet()) {
+            if ((mappedProbeList.containsKey(e.getKey()))) {
+                newRowNames.put(mappedProbeList.get(e.getKey()), e.getValue());
+            } else {
+                newRowNames.put(e.getKey(), e.getValue());
+            }
+        }
+
+        dataset.setHashRows(newRowNames);
+    }
     
     /**
      * Remove rows without correct mapping known on forehand
@@ -254,6 +268,8 @@ public class MatrixHandling {
      * should be removed
      */
     public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> rowNames, boolean removeRows) {
+        System.out.println("Nrrows matrix: "+dataset.rows() +" nr strings in row objects: "+ dataset.getHashRows().size());
+        
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
         
@@ -397,6 +413,7 @@ public class MatrixHandling {
         for (String r : removeList) {
             dataset.hashCols.remove(r);
         }
+        
         fixOrdering(dataset.hashCols);
         
         if ((dataset.rows() * newRawData[0].length) < (Integer.MAX_VALUE - 2)) {
