@@ -11,6 +11,7 @@ import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.PCA;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import umcg.genetica.math.matrix.MatrixTools;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Log2Transform;
 import umcg.genetica.math.stats.QuantileNormalization;
@@ -82,7 +83,14 @@ public class Normalizer {
 
     public String quantileNormalize(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
         double[][] rawData = dataset.getRawData();
-        QuantileNormalization.quantilenormalize(rawData);
+        
+        if(!MatrixTools.containsNaNs(rawData)){
+            QuantileNormalization.quantilenormalize(rawData);
+        } else {
+            System.out.println("Warning data contained NaNs, please check your data if you know that there should be no NaN's.\n Normalizer automaticaly replaces these NA values, with the sample median.");
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset,false,false);
+        }
+        
         DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
         fileNamePrefix += ".QuantileNormalized";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
@@ -325,8 +333,7 @@ public class Normalizer {
         TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.W);
         double cumExpVarPCA = 0;
 
-
-
+        out.writeln("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
 
         for (int pca = 0; pca < nrOfPCsToCalculate; pca++) {
             double expVarPCA = PCA.getEigenValueVar(eigenValues, pca);
@@ -801,3 +808,4 @@ public class Normalizer {
 //        }
     }
 }
+

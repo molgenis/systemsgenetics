@@ -67,9 +67,9 @@ bgzip example.vcf > example.vcf.gz
 tabix -p vcf example.vcf.gz
 ```
 
-### Shapeit2 output
+### Using SHAPEIT2 output
 
-TODO
+The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However the actual output does not contain the chromosome on this column. `--forceChr` option forces the input data chromosome to the specified value. Note this is only valid if all variants are present on this chromosome. This feature is currently only implemented for the input data and not the reference data. Feel free to raise an issue on our github project to request this.
 
 Typical usage scenarios
 ----------------
@@ -78,7 +78,9 @@ Typical usage scenarios
 
 When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
 
-In combination with the `--update-id` option the Genotype Aligner is a convineant preperation of genotype data before imputation. 
+In combination with the `--update-id` option the Genotype Aligner is a convineant preperation of genotype data before imputation.
+
+Aligning prephased data, generated using tools like SHAPEIT2, is particulary usefull. A dataset only needs to be prephased once and can then be aligned and imputed using different reference set or different versions of reference sets.
 
 ### Merging data from different genotyping platforms
 
@@ -101,6 +103,7 @@ Arguments overview
 | -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants |
 | -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment |
 | -s    | --variants     | Number of flanking variants to consider |
+| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with `--inputType SHAPEIT2`
 | -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
 
@@ -124,7 +127,9 @@ Base path refers to either --input or --ref
 * VCFFOLDER
  * Matches all vcf.gz files in the folder specified with the bash path.
 * SHAPEIT2
- * TODO
+ * Expects haps file at: `${base path}.haps`
+ * Expects sample file at: `${base path}.sample`
+ * See also chapter on SHAPEIT2 output.
 
 #####--outputType options
 
@@ -142,7 +147,8 @@ Regardless of the output type a log file will always be created at: `${base path
  * Writes plink FAM file to: `${base path}.fam`
  * Data is written in SNP major mode
 * SHAPEIT2
- * TODO
+ * Writers haps file at: `${base path}.haps`
+ * Writers sample file at: `${base path}.sample`
 
 Test data
 ----------------
@@ -158,6 +164,8 @@ The following tools are needed for this script:
 
 * plink
 * ucsc liftover + chain hg18ToHg19
+* SHAPEIT2
+* Genetic Map (b37)
 
 ```bash
 wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/latest_phaseIII_ncbi_b36/plink_format/hapmap3_r2_b36_fwd.consensus.qc.poly.map.bz2
@@ -203,7 +211,12 @@ awk '
 ' < hapmap3CeuChr20B37Mb6.bim > flipList.txt
 
 plink --noweb --bfile hapmap3CeuChr20B37Mb6 --make-bed --flip flipList.txt --out hapmap3CeuChr20B37Mb6RandomStrand
+```
 
+We also want this data phased using SHAPEIT2, for aditional testing.
+
+```Bash
+shapeit.v2.r644.linux.x86_64 --input-bed ./hapmap3CeuChr20B37Mb6RandomStrand -M genetic_map_chr20_combined_b37.txt --output-max ./hapmap3CeuChr20B37Mb6RandomStrand --noped --thread 4
 ```
 
 ### 1000G
