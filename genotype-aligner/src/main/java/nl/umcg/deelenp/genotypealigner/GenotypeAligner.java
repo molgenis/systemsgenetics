@@ -2,6 +2,7 @@ package nl.umcg.deelenp.genotypealigner;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ResourceBundle;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -25,7 +26,7 @@ import org.molgenis.genotype.util.LdCalculatorException;
 @SuppressWarnings("static-access")
 class GenotypeAligner {
 
-	private static final String VERSION = GenotypeAligner.class.getPackage().getImplementationVersion();
+	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
 			"  /--------------------------------------\\\n"
 			+ "  |           Genotype Aligner           |\n"
@@ -297,7 +298,7 @@ class GenotypeAligner {
 		final boolean keep = commandLine.hasOption('k');
 
 		File logFile = new File(outputBasePath + ".log");
-		if (!logFile.getParentFile().isDirectory()) {
+		if (logFile.getParentFile() != null && !logFile.getParentFile().isDirectory()) {
 			if (!logFile.getParentFile().mkdirs()) {
 				System.err.println("Failed to create output folder: " + logFile.getParent());
 				System.exit(1);
@@ -476,7 +477,6 @@ class GenotypeAligner {
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
 		LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
-		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		LOGGER.info("Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
