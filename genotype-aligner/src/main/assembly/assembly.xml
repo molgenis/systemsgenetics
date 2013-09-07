@@ -73,7 +73,7 @@
 			<directory>${project.build.scriptSourceDirectory}</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>GenotypeAligner.*</include>
+				<include>*.sh</include>
 			</includes>
 		</fileSet>
 		<!-- adds jar package to the root directory of zip package -->
