@@ -33,18 +33,18 @@ You command will look like this:
 ```
 Java -jar genotype-aligner-***-jar-with-dependencies.jar \
 	--input /data/demoInputData \
-	--inputType PED_MAP \
+	--inputType PLINK_BED \
 	--ref /data/demoRefData \
 	--refType VCF \
 	--output /data/demoOuput \
-	--outputType PED_MAP \
+	--outputType PLINK_BED \
 ```
 
 Note: this is a single commandline command. The `\` is only for readabily.
 
-In case of this example the programm exprects that `/data/demoInputData.map` and `/data/demoInputData.ped` exist and that ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` exist.
+In case of this example the programm exprects that `/data/demoInputData.bed`, `/data/demoInputData.bim`  and `/data/demoInputData.fam` exist and that ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` exist.
 
-`/data/demoOuput.map`, `/data/demoOuput.ped` and `/data/demoOuput.log` will be created.
+`/data/demoOuput.bed`, `/data/demoOuput.bim`, `/data/demoOuput.fam` and `/data/demoOuput.log` will be created.
 
 **Note: it is important to make sure that both study and refernece are using the same genome build**
 
@@ -69,7 +69,7 @@ tabix -p vcf example.vcf.gz
 
 ### Using SHAPEIT2 output
 
-The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However the actual output does not contain the chromosome on this column. `--forceChr` option forces the input data chromosome to the specified value. Note this is only valid if all variants are present on this chromosome. This feature is currently only implemented for the input data and not the reference data. Feel free to raise an issue on our github project to request this.
+The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However the actual output does not contain the chromosome on this column. `--forceChr` option forces the input data chromosome to the specified value. Note this is only valid if all variants are present on this chromosome. This feature is currently only implemented for the input data and not the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
 
 Typical usage scenarios
 ----------------
@@ -149,6 +149,11 @@ Regardless of the output type a log file will always be created at: `${base path
 * SHAPEIT2
  * Writers haps file at: `${base path}.haps`
  * Writers sample file at: `${base path}.sample`
+ 
+Bug reports / feature requests
+----------------
+
+Please use the GitHub issue tracker to post feature request or to report bugs. https://github.com/molgenis/systemsgenetics/issues/new.
 
 Test data
 ----------------
