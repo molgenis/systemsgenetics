@@ -70,7 +70,7 @@ tabix -p vcf example.vcf.gz
 
 ### Using SHAPEIT2 output
 
-The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However the actual output does not contain the chromosome on this column. `--forceChr` option forces the input data chromosome to the specified value. Note this is only valid if all variants are present on this chromosome. This feature is currently only implemented for the input data and not the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
+The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However the actual output does not contain the chromosome on the first column. `--forceChr` option forces the input data chromosome to the specified value. Note this is only valid if all variants are indeed on this chromosome. This feature is currently only implemented for the input data and not for the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
 
 Typical usage scenarios
 ----------------
@@ -79,7 +79,7 @@ Typical usage scenarios
 
 When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
 
-In combination with the `--update-id` option the Genotype Aligner is a convineant preperation of genotype data before imputation.
+In combination with the `--update-id` option the Genotype Aligner is a convenient tool for preperation of genotype data before imputation.
 
 Aligning prephased data, generated using tools like SHAPEIT2, is particulary usefull. A dataset only needs to be prephased once and can then be aligned and imputed using different reference set or different versions of reference sets.
 
