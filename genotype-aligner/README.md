@@ -14,7 +14,7 @@ Getting started
 The last build from the genotype aligner can be downloaded here:
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
 
-Click on `genotype-aligner-***-jar-with-dependencies.jar` to download
+Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download
 
 In case of succesfull build there will a green circel before the `Build #`. 
 It is possible that you visit the website when a new build is in progress, please try again in a few minutes.
