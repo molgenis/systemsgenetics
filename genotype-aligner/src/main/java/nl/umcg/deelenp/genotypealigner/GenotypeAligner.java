@@ -406,6 +406,12 @@ class GenotypeAligner {
 
 		ModifiableGenotypeData aligedInputData;
 
+		if(inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED){
+			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+		}
+		
+		
 		try {
 			System.out.println("Beginning alignment");
 			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
