@@ -9,7 +9,6 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
@@ -19,6 +18,8 @@ import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SampleAnnotation.SampleAnnotationType;
+import org.molgenis.genotype.annotation.SexAnnotation;
+import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
 
@@ -56,6 +57,9 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 		LOG.info("Writing haps file [" + hapsFile.getAbsolutePath() + "] and sample file ["
 				+ sampleFile.getAbsolutePath() + "]");
 
+		Utils.createEmptyFile(hapsFile, "haps");
+		Utils.createEmptyFile(sampleFile, "sample");
+		
 		Writer hapsFileWriter = null;
 		Writer sampleFileWriter = null;
 		try
@@ -93,11 +97,24 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 
 		for (SampleAnnotation annotation : genotypeData.getSampleAnnotations())
 		{
+			if(annotation.getId().equals(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE)){
+				continue;
+			}
+			
+			
 			if (annotation.getSampleAnnotationType() == SampleAnnotationType.COVARIATE)
 			{
 				switch (annotation.getType())
 				{
 					case INTEGER:
+						colNames.add(annotation.getId());
+						dataTypes.add("D");
+						break;
+					case STRING:
+						colNames.add(annotation.getId());
+						dataTypes.add("D");
+						break;
+					case SEX:
 						colNames.add(annotation.getId());
 						dataTypes.add("D");
 						break;
@@ -165,7 +182,7 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 			sb.append(SEPARATOR);
 			sb.append(sample.getId() == null ? "NA" : sample.getId());
 			sb.append(SEPARATOR);
-			sb.append(getValue("missing", sample, "0"));
+			sb.append(getValue(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE, sample, "NA"));
 
 			for (String colName : colNames)
 			{
@@ -194,12 +211,16 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 		if (value instanceof Double || value instanceof Float)
 		{
 			String result = value.toString();
-			if (result.endsWith("0"))
+			if (result.equals("0.0"))
 			{
-				result = result.substring(0, result.length() - 1);
+				result = "0";
 			}
 
 			return result;
+		}
+		
+		if (value instanceof SexAnnotation){
+			return Byte.toString(((SexAnnotation) value).getPlinkSex());
 		}
 
 		return value.toString();

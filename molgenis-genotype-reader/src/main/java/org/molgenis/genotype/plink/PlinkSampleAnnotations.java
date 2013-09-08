@@ -16,17 +16,17 @@ public class PlinkSampleAnnotations
 		Map<String, SampleAnnotation> sampleAnnotations = new LinkedHashMap<String, SampleAnnotation>();
 
 		SampleAnnotation fatherAnno = new SampleAnnotation(GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME,
-				GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.STRING, SampleAnnotationType.OTHER,
+				GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.STRING, SampleAnnotationType.COVARIATE,
 				false);
 		sampleAnnotations.put(fatherAnno.getId(), fatherAnno);
 
 		SampleAnnotation motherAnno = new SampleAnnotation(GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME,
-				GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.STRING, SampleAnnotationType.OTHER,
+				GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.STRING, SampleAnnotationType.COVARIATE,
 				false);
 		sampleAnnotations.put(motherAnno.getId(), motherAnno);
 
 		SampleAnnotation sexAnno = new SampleAnnotation(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME,
-				GenotypeData.SEX_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.SEX, SampleAnnotationType.OTHER, false);
+				GenotypeData.SEX_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.SEX, SampleAnnotationType.COVARIATE, false);
 		sampleAnnotations.put(sexAnno.getId(), sexAnno);
 
 		SampleAnnotation phenoAnno = new SampleAnnotation(GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME,

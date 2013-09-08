@@ -5,13 +5,14 @@ GenotypeAlignDir=`dirname $0`
 cd ${GenotypeAlignDir}
 
 sh GenotypeAligner.sh \
-	--inputType PLINK_BED \
+	--inputType SHAPEIT2 \
 	--input ./exampleData/hapmap3CeuChr20B37Mb6RandomStrand \
 	--update-id \
-	--outputType PLINK_BED \
-	--output ./exampleOutput/binaryPlinkExampleOut \
+	--outputType SHAPEIT2 \
+	--output ./exampleOutput/shapeit2ExampleOut \
 	--refType VCF \
-	--ref ./exampleData/1000gCeuChr20Mb6
+	--ref ./exampleData/1000gCeuChr20Mb6 \
+	--forceChr 20
 
 
 echo ""

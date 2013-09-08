@@ -28,19 +28,19 @@ class GenotypeAligner {
 
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
-			"  /--------------------------------------\\\n"
-			+ "  |           Genotype Aligner           |\n"
-			+ "  |                                      |\n"
-			+ "  |            Patrick Deelen            |\n"
-			+ "  |       patrickdeelen@gmail.com        |\n"
-			+ "  |                                      |\n"
-			+ "  | Joeri van der Velde, Marc Jan Bonder |\n"
-			+ "  |    Erwin Winder, Harm-Jan Westra     |\n"
-			+ "  |      Lude Franke, Morris Swertz      |\n"
-			+ "  |                                      |\n"
-			+ "  |    Genomics Coordication Center      |\n"
-			+ "  | University Medical Center Groningen  |\n"
-			+ "  \\--------------------------------------/";
+			"  /---------------------------------------\\\n"
+			+ "  |            Genotype Aligner           |\n"
+			+ "  |                                       |\n"
+			+ "  |             Patrick Deelen            |\n"
+			+ "  |        patrickdeelen@gmail.com        |\n"
+			+ "  |                                       |\n"
+			+ "  | Harm-Jan Westra, Joeri van der Velde, |\n"
+			+ "  |    Marc Jan Bonder, Erwin Winder,     |\n"
+			+ "  |      Lude Franke, Morris Swertz       |\n"
+			+ "  |                                       |\n"
+			+ "  |     Genomics Coordication Center      |\n"
+			+ "  |  University Medical Center Groningen  |\n"
+			+ "  \\---------------------------------------/";
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
 	/**
@@ -197,7 +197,7 @@ class GenotypeAligner {
 		System.out.println();
 		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: github.com/PatrickDeelen/GenotypeAligner/wiki");
+		System.out.println("More information: github.com/molgenis/systemsgenetics/blob/master/genotype-aligner/README.md");
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -406,6 +406,12 @@ class GenotypeAligner {
 
 		ModifiableGenotypeData aligedInputData;
 
+		if(inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED){
+			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+		}
+		
+		
 		try {
 			System.out.println("Beginning alignment");
 			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
