@@ -14,39 +14,40 @@ Getting started
 The last build from the genotype aligner can be downloaded here:
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
 
-Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download
+Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, some test data and 2 example scripts.
 
 In case of succesfull build there will a green circel before the `Build #`. 
-It is possible that you visit the website when a new build is in progress, please try again in a few minutes.
+It is possible that you visit the website when a new build is in progress (the circel will be blinking), please try again in a few minutes.
 
 ### Running the Genotype Aligner
-type `java -jar genotype-aligner-***-jar-with-dependencies.jar` to run. You will now get an overview of the different commandline options
+type `GenotypeAligner.sh` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different commandline options.
+
+In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
 ### Basic usage
 In the most basic usage scenario you need to define:
 
 * A dataset that you want to align and the type of this dataset
-* A dataset that you want to use as refernce and the type of this dataset
+* A dataset that you want to use as reference and the type of this dataset
 * The output path and type where you want to write the aliged data to
 
-You command will look like this:
+Your command will look like this:
 ```
-Java -jar genotype-aligner-***-jar-with-dependencies.jar \
-	--input /data/demoInputData \
+GenotypeAligner.sh \
 	--inputType PLINK_BED \
-	--ref /data/demoRefData \
-	--refType VCF \
-	--output /data/demoOuput \
+	--input ./exampleData/hapmap3CeuChr20B37Mb6RandomStrand \
+	--update-id \
 	--outputType PLINK_BED \
+	--output ./exampleOutput/binaryPlinkExampleOut \
+	--refType VCF \
+	--ref ./exampleData/1000gCeuChr20Mb6
 ```
 
 Note: this is a single commandline command. The `\` is only for readabily.
 
-In case of this example the programm exprects that `/data/demoInputData.bed`, `/data/demoInputData.bim`  and `/data/demoInputData.fam` exist and that ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` exist.
+You can find the example above and an other example using SHAPEIT2 data as a script in the root of the distribution.
 
-`/data/demoOuput.bed`, `/data/demoOuput.bim`, `/data/demoOuput.fam` and `/data/demoOuput.log` will be created.
-
-**Note: it is important to make sure that both study and refernece are using the same genome build**
+**Note: it is important to make sure that both study and reference are using the same genome build**
 
 ### Using VCF files
 Before VCF files can be used they need to be compressed using bgzip and indexed with a tabix. This prevents having to read all data into memory yet still allows quick access.
@@ -157,11 +158,11 @@ Please use the GitHub issue tracker to post feature request or to report bugs. h
 
 Test data
 ----------------
-This chapter is not relevant for the usage of the program but allows reproducibility of the test data
+This chapter is not relevant for the usage of the program but allows reproducibility of the test data.
 
 The genotype aligener contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/). It is also supplied in the Genotype Aligner package to get you started.
 
 ### HapMap3 data
 
