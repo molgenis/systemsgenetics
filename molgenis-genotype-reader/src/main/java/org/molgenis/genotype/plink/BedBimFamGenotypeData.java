@@ -98,11 +98,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		}
 
 		if (!bedFile.isFile()) {
-			throw new FileNotFoundException("BED index file not found at "
+			throw new FileNotFoundException("BED file not found at "
 					+ bedFile.getAbsolutePath());
 		}
 		if (!bedFile.canRead()) {
-			throw new IOException("BED index file not found at " + bedFile.getAbsolutePath());
+			throw new IOException("BED file not found at " + bedFile.getAbsolutePath());
 		}
 
 		if (!bimFile.isFile()) {

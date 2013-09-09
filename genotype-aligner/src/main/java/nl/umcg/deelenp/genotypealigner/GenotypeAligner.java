@@ -2,6 +2,7 @@ package nl.umcg.deelenp.genotypealigner;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ResourceBundle;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -25,21 +26,21 @@ import org.molgenis.genotype.util.LdCalculatorException;
 @SuppressWarnings("static-access")
 class GenotypeAligner {
 
-	private static final String VERSION = GenotypeAligner.class.getPackage().getImplementationVersion();
+	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
-			"  /--------------------------------------\\\n"
-			+ "  |           Genotype Aligner           |\n"
-			+ "  |                                      |\n"
-			+ "  |            Patrick Deelen            |\n"
-			+ "  |       patrickdeelen@gmail.com        |\n"
-			+ "  |                                      |\n"
-			+ "  | Joeri van der Velde, Marc Jan Bonder |\n"
-			+ "  |    Erwin Winder, Harm-Jan Westra     |\n"
-			+ "  |      Lude Franke, Morris Swertz      |\n"
-			+ "  |                                      |\n"
-			+ "  |    Genomics Coordication Center      |\n"
-			+ "  | University Medical Center Groningen  |\n"
-			+ "  \\--------------------------------------/";
+			"  /---------------------------------------\\\n"
+			+ "  |            Genotype Aligner           |\n"
+			+ "  |                                       |\n"
+			+ "  |             Patrick Deelen            |\n"
+			+ "  |        patrickdeelen@gmail.com        |\n"
+			+ "  |                                       |\n"
+			+ "  | Harm-Jan Westra, Joeri van der Velde, |\n"
+			+ "  |    Marc Jan Bonder, Erwin Winder,     |\n"
+			+ "  |      Lude Franke, Morris Swertz       |\n"
+			+ "  |                                       |\n"
+			+ "  |     Genomics Coordication Center      |\n"
+			+ "  |  University Medical Center Groningen  |\n"
+			+ "  \\---------------------------------------/";
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
 	/**
@@ -196,7 +197,7 @@ class GenotypeAligner {
 		System.out.println();
 		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: github.com/PatrickDeelen/GenotypeAligner/wiki");
+		System.out.println("More information: github.com/molgenis/systemsgenetics/blob/master/genotype-aligner/README.md");
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -297,7 +298,7 @@ class GenotypeAligner {
 		final boolean keep = commandLine.hasOption('k');
 
 		File logFile = new File(outputBasePath + ".log");
-		if (!logFile.getParentFile().isDirectory()) {
+		if (logFile.getParentFile() != null && !logFile.getParentFile().isDirectory()) {
 			if (!logFile.getParentFile().mkdirs()) {
 				System.err.println("Failed to create output folder: " + logFile.getParent());
 				System.exit(1);
@@ -405,6 +406,12 @@ class GenotypeAligner {
 
 		ModifiableGenotypeData aligedInputData;
 
+		if(inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED){
+			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+		}
+		
+		
 		try {
 			System.out.println("Beginning alignment");
 			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
@@ -476,7 +483,6 @@ class GenotypeAligner {
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
 		LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
-		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		LOGGER.info("Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
