@@ -89,6 +89,14 @@ public class Sample {
 		}
 	}
 	
+	public double getMissingRate(){
+		if(annotationValues.containsKey(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE)){
+			return (Double) annotationValues.get(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE);
+		} else {
+			return Double.NaN;
+		}
+	}
+	
     @Override
     public String toString() {
         return "Sample [id=" + id + ", familyId=" + familyId + ", annotationValues=" + annotationValues + "]";

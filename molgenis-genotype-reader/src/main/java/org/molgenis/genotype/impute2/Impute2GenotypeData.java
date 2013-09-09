@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -153,13 +154,19 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 				String sampleId = tuple.getString(1);
 
 				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
-				annotationValues.put("missing", tuple.getDouble(2));
+				annotationValues.put(SAMPLE_MISSING_RATE_DOUBLE, tuple.getDouble(2));
 
+				
 				for (String colName : sampleAnnotations.keySet()) {
+					
+					if(colName.equals(SAMPLE_MISSING_RATE_DOUBLE)){
+						continue;//already done
+					}
+					
 					SampleAnnotation annotation = sampleAnnotations.get(colName);
-
+					
 					Object value = null;
-					if (!tuple.getString(colName).equalsIgnoreCase("NA")) {
+					if (!tuple.getString(annotation.getName()).equalsIgnoreCase("NA")) {
 						switch (annotation.getType()) {
 							case STRING:
 								value = tuple.getString(colName);
@@ -168,7 +175,11 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 								value = tuple.getInt(colName);
 								break;
 							case BOOLEAN:
-								value = tuple.getBoolean(colName);
+								if(tuple.getString(colName).equals("-9")){
+									value = null;
+								} else {
+									value = tuple.getBoolean(colName);
+								}
 								break;
 							case FLOAT:
 								value = tuple.getDouble(colName);
@@ -205,7 +216,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 	private void loadAnnotations(File sampleFile) throws IOException {
 		sampleAnnotations.clear();
 
-		SampleAnnotation missingAnnotation = new SampleAnnotation("missing", "missing",
+		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_DOUBLE, "missing",
 				"Missing data proportion of each individual", Annotation.Type.FLOAT, SampleAnnotationType.OTHER, false);
 		sampleAnnotations.put(missingAnnotation.getId(), missingAnnotation);
 
