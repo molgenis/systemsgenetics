@@ -205,8 +205,6 @@ public class MergeDoubleMatrices {
      */
     public static DoubleMatrixDataset<String, String> combineBasedOnRows(ArrayList<DoubleMatrixDataset<String, String>> datasets) {
         DoubleMatrixDataset<String, String> newMatrix = datasets.get(0);
-        System.out.println(newMatrix.getColObjects().size());
-        System.out.println(newMatrix.columns());
         
         if (datasets.size() > 1) {
             for (int i = 1; i < datasets.size(); ++i) {
