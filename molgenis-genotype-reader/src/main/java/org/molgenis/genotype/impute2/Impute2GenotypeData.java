@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -18,7 +17,6 @@ import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
-import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -358,12 +356,14 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 
 			if (bytesRead == -1) {
 				eol = true;
-				stringBuilder = new StringBuilder();
 			} else {
 				for (int i = 0; i < bytesRead; ++i) {
 					switch (buffer[i]) {
 						case '\n':
 						case '\r':
+							if(column != 5){
+								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information");
+							}
 							longestedChunk = longestedChunk < currentChunk ? currentChunk : longestedChunk;
 							column = 0;
 							break;
