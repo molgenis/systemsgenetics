@@ -4,7 +4,7 @@ Genotype Aligner
 The Genotype Aligner is an easy to use commandline tool that allows harmonization of genotype data 
 stored using different fileformats with different and potentially unknown strands. 
 
-LD patterns are used to determine the correct strand GC and AT SNPs and by using 
+Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
 the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export different file format.
 
 Getting started
@@ -14,7 +14,7 @@ Getting started
 The last build from the genotype aligner can be downloaded here:
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
 
-Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, some test data and 2 example scripts.
+Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, test data and 2 example scripts.
 
 In case of succesfull build there will a green circel before the `Build #`. 
 It is possible that you visit the website when a new build is in progress (the circel will be blinking), please try again in a few minutes.
@@ -22,7 +22,7 @@ It is possible that you visit the website when a new build is in progress (the c
 ### Running the Genotype Aligner
 type `GenotypeAligner.sh` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different commandline options.
 
-In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
+In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
 ### Basic usage
 In the most basic usage scenario you need to define:
@@ -70,7 +70,7 @@ tabix -p vcf example.vcf.gz
 
 ### Using SHAPEIT2 output
 
-The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However the actual output does not contain the chromosome on the first column. `--forceChr` option forces the input data chromosome to the specified value. Note this is only valid if all variants are indeed on this chromosome. This feature is currently only implemented for the input data and not for the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
+The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However, the actual output does not contain the chromosome on the first column. The `--forceChr` option forces the input data to the chromosome which is specified. Note this is only valid if all variants are indeed on this chromosome. This feature is currently only implemented for the input data and not for the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
 
 Typical usage scenarios
 ----------------

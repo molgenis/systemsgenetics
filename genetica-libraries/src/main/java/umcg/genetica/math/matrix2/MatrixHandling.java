@@ -268,7 +268,6 @@ public class MatrixHandling {
      * should be removed
      */
     public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> rowNames, boolean removeRows) {
-        System.out.println("Nrrows matrix: "+dataset.rows() +" nr strings in row objects: "+ dataset.getHashRows().size());
         
         int newSize = 0;
         HashSet<String> removeList = new HashSet<String>();
@@ -280,6 +279,9 @@ public class MatrixHandling {
                 } else {
                     removeList.add(t);
                 }
+            }
+            if(removeList.isEmpty()){
+                return(dataset);
             }
         } else {
             for (String t : dataset.getRowObjects()) {
@@ -371,6 +373,9 @@ public class MatrixHandling {
                     newSize++;
                 } else {
                     removeList.add(t);
+                }
+                if(removeList.isEmpty()){
+                    return(dataset);
                 }
             }
         } else {
