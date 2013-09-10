@@ -280,6 +280,9 @@ public class MatrixHandling {
                     removeList.add(t);
                 }
             }
+            if(removeList.isEmpty()){
+                return(dataset);
+            }
         } else {
             for (String t : dataset.getRowObjects()) {
                 if (rowNames.contains(t)) {
@@ -370,6 +373,9 @@ public class MatrixHandling {
                     newSize++;
                 } else {
                     removeList.add(t);
+                }
+                if(removeList.isEmpty()){
+                    return(dataset);
                 }
             }
         } else {

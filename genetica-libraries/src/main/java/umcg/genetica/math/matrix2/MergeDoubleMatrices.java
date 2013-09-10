@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import umcg.genetica.console.ProgressBar;
 
 /**
  *
@@ -162,8 +163,7 @@ public class MergeDoubleMatrices {
         
         keepColNames1 = null;
         keepColNames2 = null;
-
-
+        
         double[][] newRawData = new double[(matrixI.rows())][(matrixII.columns() + matrixI.columns())];
         LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
 
@@ -205,15 +205,19 @@ public class MergeDoubleMatrices {
      */
     public static DoubleMatrixDataset<String, String> combineBasedOnRows(ArrayList<DoubleMatrixDataset<String, String>> datasets) {
         DoubleMatrixDataset<String, String> newMatrix = datasets.get(0);
-        
+        datasets.set(0, null);
         if (datasets.size() > 1) {
+            ProgressBar pb = new ProgressBar(datasets.size());
             for (int i = 1; i < datasets.size(); ++i) {
                 try {
                     newMatrix = mergeMatrixBasedOnRows(newMatrix, datasets.get(i), false);
                 } catch (Exception ex) {
                     Logger.getLogger(MergeDoubleMatrices.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                datasets.set(i, null);
+                pb.iterate();
             }
+            pb.close();
         }
 
         return (newMatrix);
