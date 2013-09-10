@@ -69,7 +69,7 @@ public class ParseTextTable {
         
         for (int s = 0; s < tmpCols; s++) {
             String colName = headerData[s + columnOffset];
-            if (!colMap.containsKey(colName) && !colName.equals("") && !colName.equalsIgnoreCase("Target ID") && !colName.equalsIgnoreCase("Probe ID") && !colName.toLowerCase().contains(".p=") && !colName.toLowerCase().contains("pval") && !colName.toLowerCase().contains("detection") && !colName.toLowerCase().contains("p-val") && !colName.toLowerCase().contains("array") && !colName.toLowerCase().contains("bead")) {
+            if (!colMap.containsKey(colName) && !colName.equals("") && !colName.equalsIgnoreCase("Target ID") && !colName.equalsIgnoreCase("TargetID") && !colName.equalsIgnoreCase("Probe ID") && !colName.toLowerCase().contains(".p=") && !colName.toLowerCase().contains("pval") && !colName.toLowerCase().contains("detection") && !colName.toLowerCase().contains("p-val") && !colName.toLowerCase().contains("array") && !colName.toLowerCase().contains("bead")) {
                 if((nextRowData.length > (s+columnOffset))){
                     if((isNumeric(nextRowData[ s + columnOffset]))) {
                         colMap.put(colName, storedCols);
