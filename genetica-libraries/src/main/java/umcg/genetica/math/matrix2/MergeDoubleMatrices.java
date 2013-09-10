@@ -60,23 +60,23 @@ public class MergeDoubleMatrices {
         keepRowNames1.addAll(matrixI.getRowObjects());
         keepRowNames1.addAll(matrixII.getRowObjects());
 
-        HashSet<String> keepRowNames2 = new HashSet<String>();
+        HashSet<String> removeList = new HashSet<String>();
 
         for (String key : keepRowNames1) {
             boolean presentMapI = matrixI.hashRows.containsKey(key);
             boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if (presentMapI ^ presentMapII) {
-                keepRowNames2.add(key);
+            if (!presentMapI ^ presentMapII) {
+                removeList.add(key);
             }
         }
 
-        if (keepRowNames2.size() > 0) {
-            matrixI = MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepRowNames2, false);
-            matrixII = MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepRowNames2, false);
+        if (removeList.size() > 0) {
+            matrixI = MatrixHandling.CreatSubsetBasedOnRows(matrixI, removeList, true);
+            matrixII = MatrixHandling.CreatSubsetBasedOnRows(matrixII, removeList, true);
         }
 
         keepRowNames1 = null;
-        keepRowNames2 = null;
+        removeList = null;
 
 
         if (((matrixI.rows() + matrixII.rows()) * matrixI.columns()) < (Integer.MAX_VALUE - 2)) {
@@ -171,23 +171,23 @@ public class MergeDoubleMatrices {
         keepColNames1.addAll(matrixI.getColObjects());
         keepColNames1.addAll(matrixII.getColObjects());
 
-        HashSet<String> keepColNames2 = new HashSet<String>();
+        HashSet<String> removeList = new HashSet<String>();
 
         for (String key : keepColNames1) {
-            boolean presentMapI = matrixI.hashRows.containsKey(key);
-            boolean presentMapII = matrixII.hashRows.containsKey(key);
-            if (presentMapI ^ presentMapII) {
-                keepColNames2.add(key);
+            boolean presentMapI = matrixI.hashCols.containsKey(key);
+            boolean presentMapII = matrixII.hashCols.containsKey(key);
+            if (! presentMapI ^ presentMapII) {
+                removeList.add(key);
             }
         }
 
-        if (keepColNames2.size() > 0) {
-            matrixI = MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames2, false);
-            matrixII = MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames2, false);
+        if (removeList.size() > 0) {
+            matrixI = MatrixHandling.CreatSubsetBasedOnColumns(matrixI, removeList, true);
+            matrixII = MatrixHandling.CreatSubsetBasedOnColumns(matrixII, removeList, true);
         }
 
         keepColNames1 = null;
-        keepColNames2 = null;
+        removeList = null;
 
 
         if ((matrixI.rows() * (matrixII.columns() + matrixI.columns())) < (Integer.MAX_VALUE - 2)) {
