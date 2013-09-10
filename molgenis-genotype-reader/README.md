@@ -68,7 +68,7 @@ make
 #### Preparing a VCF file
 
 ```bash
-bgzip example.vcf > example.vcf.gz
+bgzip -c example.vcf > example.vcf.gz
 tabix -p vcf example.vcf.gz
 ```
 
