@@ -156,8 +156,8 @@ public class MergeDoubleMatrices {
         }
 
         if (keepColNames2.size() > 0) {
-            matrixI = MatrixHandling.CreatSubsetBasedOnRows(matrixI, keepColNames2, false);
-            matrixII = MatrixHandling.CreatSubsetBasedOnRows(matrixII, keepColNames2, false);
+            matrixI = MatrixHandling.CreatSubsetBasedOnColumns(matrixI, keepColNames2, false);
+            matrixII = MatrixHandling.CreatSubsetBasedOnColumns(matrixII, keepColNames2, false);
         }
         
         keepColNames1 = null;
