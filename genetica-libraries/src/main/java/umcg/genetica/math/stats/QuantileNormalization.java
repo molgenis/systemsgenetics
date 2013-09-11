@@ -164,9 +164,9 @@ public class QuantileNormalization {
                     naValueIndeces.add(p);
                 }
             }
-            double meanPerSample = JSci.maths.ArrayMath.median(nonNAvalues.toArray(new double[0]));
-
+            
             if(naValueIndeces.size()>0){
+                double meanPerSample = JSci.maths.ArrayMath.median(nonNAvalues.toArray(new double[0]));
                 for(int p : naValueIndeces.toArray()){
                     vals[p] = meanPerSample;
                 }
