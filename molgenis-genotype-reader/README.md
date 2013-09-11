@@ -259,12 +259,13 @@ RandomAccessGenotypeData randomAccessGenotypeDataVariantFilter2 = new VariantFil
 ````
 
 ####Autoloader and filters
-It is also possible to use the auto loader from the basicUsage examples in combination with filters. This is faster and more memory efficient for some filetypes, like TriTyper and in the futere (or now if this is not updated) also for ped_map and binary plink.
+It is also possible to use the auto loader from the basicUsage examples in combination with filters. This is faster and more memory efficient for some filetypes, like TriTyper and in the futere (or now if this is not updated) also for ped_map and binary plink. I is posible to use this method also on the other files types altough it does not give increased performance. It is possible to set either the variant filter or the sample filter to `null` include all variants ore samples.
 
-````java
-//Note: first samples are filtered and then the variants are filted. 
+Note that samples are filtered first and then the variant filter is applied, so a when filtering on the minor allele frequency then it will be caculated only using the included samples.
+
+```java
 RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath, 1000, combinedFilter, sampleFilter);
-````
+```
 
 ###More examples
 The `org.molgenis.genotype.examples` package contains these and other basic examples.
