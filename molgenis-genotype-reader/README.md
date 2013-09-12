@@ -10,7 +10,7 @@ Most user can simply download the latested jar and use it in there programs.
 
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$molgenis-genotype-reader/lastBuild/
 
-Make sure to download the stand alone jar: `molgenis-genotype-reader-******-stand-alone.jar`
+Make sure to download the stand alone jar: `molgenis-genotype-reader-******-jar-with-dependencies`
 
 
 Features
