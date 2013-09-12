@@ -1,3 +1,9 @@
+<!--
+
+  It is reccommend to view this file using a markdown viewer
+  or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-aligner/README.md
+
+-->
 Genotype Aligner
 ================
 
