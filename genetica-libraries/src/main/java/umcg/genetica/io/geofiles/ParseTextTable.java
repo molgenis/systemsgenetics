@@ -145,7 +145,6 @@ public class ParseTextTable {
                     }
                     row++;
                 } else {
-                    LOGGER.warning("Duplicated row name!");
                     LOGGER.warning("Duplicated row name: "+data[columnOffset - 1]);
                     System.out.println(str);
                     throw new IOException("Problem in reading file.");
