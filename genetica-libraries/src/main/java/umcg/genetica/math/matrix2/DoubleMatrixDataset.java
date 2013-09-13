@@ -42,11 +42,11 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
     public abstract DoubleMatrix2D getMatrix();
 
-    public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException, Exception {
+    public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
         return loadDoubleData(fileName, "\t");
     }
 
-    public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName, String delimiter) throws IOException, Exception {
+    public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName, String delimiter) throws IOException {
 
         Pattern splitPatern = Pattern.compile(delimiter);
 
@@ -126,7 +126,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         return dataset;
     }
     
-    public static DoubleMatrixDataset<String, String> loadSubsetOfDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException, Exception {
+    public static DoubleMatrixDataset<String, String> loadSubsetOfDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
         
         LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
         
@@ -155,7 +155,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                 throw (doubleMatrixDatasetNonUniqueHeaderException);
             }
         }
-        System.out.println(desiredColPos.size());
+        
         LinkedHashSet<Integer> desiredRowPos = new LinkedHashSet<Integer>();
         int rowsToStore = 0;
         int totalRows = 0;
@@ -169,7 +169,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             totalRows++;
         }
         in.close();
-        System.out.println(desiredRowPos.size());
+        
         double[][] initialMatrix = new double[rowsToStore][storedCols];
 
         in.open();
@@ -278,7 +278,6 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             }
             out.append('\n');
         }
-        out.close();
         out.close();
     }
 
