@@ -373,10 +373,10 @@ public class MatrixHandling {
                     newSize++;
                 } else {
                     removeList.add(t);
-                }
-                if(removeList.isEmpty()){
-                    return(dataset);
-                }
+                }   
+            }
+            if(removeList.isEmpty()){
+                return(dataset);
             }
         } else {
             for (String t : dataset.getColObjects()) {

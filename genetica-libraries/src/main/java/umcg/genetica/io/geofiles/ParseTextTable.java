@@ -60,7 +60,6 @@ public class ParseTextTable {
                 break;
             }
         }
-
         int tmpCols = (headerData.length - columnOffset);
 
         LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
@@ -131,7 +130,7 @@ public class ParseTextTable {
             String[] data = SPLIT_ON_TAB.split(str);
             if(data.length == headerData.length){
                if (!rowMap.containsKey(data[columnOffset - 1])) {
-                    rowMap.put(data[0], row);
+                    rowMap.put(data[columnOffset - 1], row);
                     int columnToPut = 0;
                     for (int s : desiredColPos) {
                         double d;
@@ -146,7 +145,6 @@ public class ParseTextTable {
                     }
                     row++;
                 } else {
-                    LOGGER.warning("Duplicated row name!");
                     LOGGER.warning("Duplicated row name: "+data[columnOffset - 1]);
                     System.out.println(str);
                     throw new IOException("Problem in reading file.");
