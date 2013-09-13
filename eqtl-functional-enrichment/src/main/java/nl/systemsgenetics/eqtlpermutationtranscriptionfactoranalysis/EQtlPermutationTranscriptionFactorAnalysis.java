@@ -34,6 +34,7 @@ import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.math.stats.FisherExactTest;
 
 /**
  *
@@ -60,13 +61,13 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 		 * 6. String: Path for output file location.
 		 */
 		//EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
-		EQtlPermutationTranscriptionFactorAnalysis eqptfa =
-				new EQtlPermutationTranscriptionFactorAnalysis(args[0], args[1], Integer.parseInt(args[2]), Double.valueOf(args[3]), args[4]);
-		
 		//EQtlPermutationTranscriptionFactorAnalysis eqptfa =
-		//		new EQtlPermutationTranscriptionFactorAnalysis("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
-		//		"E:\\GroningenBloodData\\BloodHT12Eur1000GImputed\\", 250000, 0.8,
-		//		"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\");
+		//		new EQtlPermutationTranscriptionFactorAnalysis(args[0], args[1], Integer.parseInt(args[2]), Double.valueOf(args[3]), args[4]);
+		
+		EQtlPermutationTranscriptionFactorAnalysis eqptfa =
+				new EQtlPermutationTranscriptionFactorAnalysis("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\testEqtlFile2.txt",
+				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", 250000, 0.8,
+				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\");
 		//C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\
 	}
 	
@@ -77,24 +78,49 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	public EQtlPermutationTranscriptionFactorAnalysis(String eQtlFile, String genotypeData, int ldWindow, double r2cutoff, String regulomeDbFilesFolder)throws IOException, LdCalculatorException{
 		
 		//Step 1.: Read the eQTL data.
-		System.out.println("Read the eQTL data and apply a filtering step.");
-		EQTL[] eQtlResultData = this.readEQtlResultData(eQtlFile);
+		System.out.println("[E]: Read the eQTL data and apply a filtering step.");
+		EQTL[] eQtlResultData = this.readEQtlResultData(eQtlFile);		
 		HashMap<String, EQTL> topEQtlData = filterEQtlSet(eQtlResultData);
 		Set<String> eqtlRsIdList = makeRsIdList(eQtlResultData);
+		System.out.println("[E]: Size of eQTL data top data before filtering: " + topEQtlData.size());
+		
+		//Read and filter the permutation data.
+		System.out.println("[P]: Read the permutation data");
+		EQTL[] permutationData = this.readEQtlResultData("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\testPermutationFile2.txt");
+		HashMap<String, EQTL> topPermutationData = filterEQtlSet(permutationData);
+		System.out.println("[P]: Size of permutation data top before filtering: " + topPermutationData.size());
+		
+		
+		//Filter top eQTL and top permutation data on shared probes.
+		filterOnSharedProbes(topEQtlData, topPermutationData);
+		filterOnSharedProbes(topPermutationData, topEQtlData);
+		System.out.println("[E]: Size of eQTL data top data after filtering: " + topEQtlData.size());
+		System.out.println("[P]: Size of permutation data top after filtering: " + topPermutationData.size());
 		
 		//Step 2.: Read the RandonAccess GenotypeData.
-		System.out.println("Starting to read the GenotypeMatrix data.");
+		System.out.println("[O]: Starting to read the GenotypeMatrix data.");
 		RandomAccessGenotypeData eQtlGenotypeData = readEQtlGenotypeData(genotypeData, eqtlRsIdList);
 		
 		//Step 3.: Calculate LD
-		System.out.println("Start identifying LD Snps with eQTL effects and calculate the R2.");
+		System.out.println("[E]: Start identifying LD Snps with eQTL effects and calculate the R2.");
 		HashMap<String, TreeMap<Integer, ArrayList<Ld>>> eQtlLdData = this.takeALookAtFindLdSnps(topEQtlData, ldWindow, r2cutoff, eQtlGenotypeData);
+		System.out.println("[E]: Found LD SNPs for eQTL data.");
+		HashMap<String, TreeMap<Integer, ArrayList<Ld>>> permutationLdData = this.takeALookAtFindLdSnps(topPermutationData, ldWindow, r2cutoff, eQtlGenotypeData);
+		System.out.println("[P]: Found LD SNPs for permutation data.");
 		
 		//Step 4.: Find SNPs In regulomeDB
-		System.out.println("Start searching through RegulomeDB with the LD SNPs.");
+		System.out.println("[O]: Start searching through RegulomeDB with the LD SNPs.");
 		ArrayList<RegulomeDbFile> regulomeDbFiles = new ArrayList<RegulomeDbFile>();
 		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbFilesFolder + "RegulomeDB.dbSNP132.b36.txt") ));
-		findSnpsInRegulomeDb(regulomeDbFiles, eQtlLdData);
+		HashMap<String, Integer> eQtlCounts = findSnpsInRegulomeDb(regulomeDbFiles, eQtlLdData);
+		System.out.println("[E]: Searched through regulomeDB.");
+		HashMap<String, Integer> permutationCounts = findSnpsInRegulomeDb(regulomeDbFiles, permutationLdData);
+		System.out.println("[P]: Searched through regulomeDB.");
+		
+		
+		//Step 5.: Calculate the Fisher Exact Test P-Values:
+		System.out.println("Calculate the pvalues.");
+		getFisherPvalues(eQtlCounts, permutationCounts);
 	}
 	
 	
@@ -205,7 +231,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	 */
 	
 	
-	public void findSnpsInRegulomeDb(ArrayList<RegulomeDbFile> regulomeDbFileLocations, HashMap<String, TreeMap<Integer, ArrayList<Ld>>> ldData) throws IOException{
+	public HashMap<String, Integer> findSnpsInRegulomeDb(ArrayList<RegulomeDbFile> regulomeDbFileLocations, HashMap<String, TreeMap<Integer, ArrayList<Ld>>> ldData) throws IOException{
 		HashMap<String, Integer> countsMap = new HashMap<String, Integer>();
 		HashSet<String> eQtls = new HashSet<String>();
 		int n = 1;
@@ -267,9 +293,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 			}
 			
 		}
-		printCountsMap(countsMap);
-		//System.out.println("eQTLs: " + eQtls.size());
-		//System.out.println("counts: " + countsMap.size());
+		return countsMap;
 	}
 	
 	
@@ -345,14 +369,8 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 				}
 			}
 		}
-		//System.out.println("Amount of valid things saved: " + n);
-		//System.out.println("Size of LD map: " + ldResults.size());
-		
 		return ldResults;
 	}
-	
-	
-	
 	
 	
 	
@@ -394,6 +412,45 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 			System.out.println(n + ". " + next.getKey() + ": " + next.getValue());
 			n++;
 		}
+	}
+	
+	
+	//Uber vette functie voor het filteren.
+	public void filterOnSharedProbes(HashMap<String, EQTL> eQtlData, HashMap<String, EQTL> permutationData){
+		
+		for(Iterator<Map.Entry<String, EQTL>>iter=permutationData.entrySet().iterator();iter.hasNext();){
+			Map.Entry<String, EQTL> permutationEntry = iter.next();
+			
+			if( !(eQtlData.containsKey(permutationEntry.getKey())) ){
+				iter.remove();
+			}
+		}
+	}
+	
+	
+	
+	public void getFisherPvalues(HashMap<String, Integer> eQtlCounts, HashMap<String, Integer> permutationCounts){
+		
+		//HashMap<String, Double> fisherPValues = new HashMap<String, Double>();
+		int totalEQtlCounts = eQtlCounts.values().size();
+		int totalPermutationCounts = permutationCounts.values().size();
+		
+		for(Iterator<Map.Entry<String, Integer>>iter=eQtlCounts.entrySet().iterator();iter.hasNext();){
+			Map.Entry<String, Integer> eQtlCountsEntry = iter.next();
+			
+			if( permutationCounts.containsKey(eQtlCountsEntry.getKey()) ){
+				String tf = eQtlCountsEntry.getKey();
+				int eQtlCount = eQtlCountsEntry.getValue();
+				int permutationCount = permutationCounts.get( eQtlCountsEntry.getKey() );
+				
+				//Perform Fisher Exact test.
+				FisherExactTest fet = new FisherExactTest();
+				double fisherPValue = fet.getFisherPValue(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts);
+				//fisherPValues.put(tf, fisherPValue);
+				System.out.println(tf + "\t" + fisherPValue);
+			}
+		}
+		
 	}
 	
 }
