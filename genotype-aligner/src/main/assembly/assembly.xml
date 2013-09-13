@@ -94,6 +94,7 @@
 			<outputDirectory>/</outputDirectory>
 			<includes>
 				<include>*.sh</include>
+				<include>*.bat</include>
 			</includes>
 		</fileSet>
 		<!-- adds jar package to the root directory of zip package -->
