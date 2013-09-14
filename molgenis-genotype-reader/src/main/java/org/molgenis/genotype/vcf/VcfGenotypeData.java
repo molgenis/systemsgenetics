@@ -75,33 +75,33 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 		this(bzipVcfFile, tabixIndexFile, 100);
 	}
 
-	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile, int cacheSize) throws FileNotFoundException,
+	public VcfGenotypeData(File vcfFile, File tabixIndexFile, int cacheSize) throws FileNotFoundException,
 			IOException
 	{
 
-		if (!bzipVcfFile.isFile())
+		if (!vcfFile.isFile())
 		{
-			throw new FileNotFoundException("VCF file not found at " + bzipVcfFile.getAbsolutePath());
+			throw new FileNotFoundException("VCF file not found at " + vcfFile.getAbsolutePath());
 		}
 
-		if (!bzipVcfFile.canRead())
+		if (!vcfFile.canRead())
 		{
-			throw new IOException("VCF file not found at " + bzipVcfFile.getAbsolutePath());
+			throw new IOException("VCF file not found at " + vcfFile.getAbsolutePath());
 		}
 
 		if (!tabixIndexFile.isFile())
 		{
-			throw new FileNotFoundException("VCF index file not found at " + tabixIndexFile.getAbsolutePath());
+			throw new FileNotFoundException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath());
 		}
 
 		if (!tabixIndexFile.canRead())
 		{
-			throw new IOException("VCF index file not found at " + tabixIndexFile.getAbsolutePath());
+			throw new IOException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath());
 		}
 
 		try
 		{
-			reader = new VcfReader(new BlockCompressedInputStream(bzipVcfFile));
+			reader = new VcfReader(new BlockCompressedInputStream(vcfFile));
 
 			try
 			{
@@ -110,7 +110,7 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 
 				VariantLineMapper variantLineMapper = new VcfVariantLineMapper(reader.getColNames(),
 						getVariantAnnotations(), getAltDescriptions(), sampleVariantProvider);
-				index = new TabixIndex(tabixIndexFile, bzipVcfFile, variantLineMapper);
+				index = new TabixIndex(tabixIndexFile, vcfFile, variantLineMapper);
 			}
 			finally
 			{
