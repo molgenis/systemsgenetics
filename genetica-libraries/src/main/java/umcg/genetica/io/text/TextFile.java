@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -30,7 +28,7 @@ import umcg.genetica.text.Strings;
 public class TextFile implements Iterable<String> {
 // check 1,2,3
 
-	public static final Pattern tab = Strings.tab;
+	public static final Pattern tab = Pattern.compile("\\t");//Using the \t from string.tab is technically not valid. I would not want to depend on this
 	public static final Pattern space = Strings.space;
 	public static final Pattern colon = Strings.colon;
 	public static final Pattern semicolon = Strings.semicolon;
@@ -136,6 +134,10 @@ public class TextFile implements Iterable<String> {
 	 */
 	public String[] readLineElems(Pattern p) throws IOException {
 		return readLineElemsReturnReference(p);
+	}
+
+	public Iterator<String[]> readLineElemsIterator(Pattern p) throws IOException {
+		return new TextFileIteratorElements(this, p);
 	}
 
 	/**
@@ -420,6 +422,40 @@ public class TextFile implements Iterable<String> {
 			String current = next;
 			try {
 				next = textFile.readLine();
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+			return current;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException("Not supported yet.");
+		}
+	}
+
+	private static class TextFileIteratorElements implements Iterator<String[]> {
+
+		private final TextFile textFile;
+		private final Pattern pattern;
+		String[] next;
+
+		public TextFileIteratorElements(TextFile textFile, Pattern p) throws IOException {
+			this.textFile = textFile;
+			this.pattern = p;
+			next = textFile.readLineElemsReturnObjects(this.pattern);
+		}
+
+		@Override
+		public boolean hasNext() {
+			return next != null;
+		}
+
+		@Override
+		public String[] next() {
+			String[] current = next;
+			try {
+				next = textFile.readLineElemsReturnObjects(this.pattern);
 			} catch (IOException ex) {
 				throw new RuntimeException(ex);
 			}
