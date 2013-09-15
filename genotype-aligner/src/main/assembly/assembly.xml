@@ -96,6 +96,7 @@
 				<include>*.sh</include>
 				<include>*.bat</include>
 			</includes>
+			<fileMode>0755</fileMode>		
 		</fileSet>
 		<!-- adds jar package to the root directory of zip package -->
 	</fileSets>
