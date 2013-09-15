@@ -35,5 +35,10 @@ public class VariantIdIncludeFilter implements VariantFilter{
 	public void addIdToInclude(String id){
 		include.add(id);
 	}
+
+	@Override
+	public boolean doesIdPassFilter(String id) {
+		return include.contains(id);
+	}
 	
 }

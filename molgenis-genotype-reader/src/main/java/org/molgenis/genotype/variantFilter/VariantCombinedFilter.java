@@ -45,4 +45,16 @@ public class VariantCombinedFilter implements VariantFilter {
 
 
 	}
+
+	@Override
+	public boolean doesIdPassFilter(String id) {
+		for (VariantFilter filter : variantFilters) {
+			if (!filter.doesIdPassFilter(id)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
 }
