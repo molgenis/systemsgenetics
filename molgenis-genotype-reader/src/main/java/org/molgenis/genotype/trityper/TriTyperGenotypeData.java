@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
@@ -296,9 +297,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 	private void loadSNPAnnotation() throws IOException {
 		TextFile tf = new TextFile(snpFile, TextFile.R);
-		ArrayList<String> allSNPs = tf.readAsArrayList();
-		HashSet<String> allSNPHash = new HashSet<String>();
-		allSNPHash.addAll(allSNPs);
+		LinkedHashSet<String> allSNPHash = new LinkedHashSet<String>();
+		for(String line : tf){
+			allSNPHash.add(line);
+		}
 		tf.close();
 
 		HashMap<String, PosChr> snpToChr = new HashMap<String, PosChr>();
@@ -326,7 +328,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		unfilteredSnpCount = 0;
 		int numberOfSNPsWithAnnotation = 0;
 		sequences = new HashMap<String, Sequence>();
-		for (String snp : allSNPs) {
+		for (String snp : allSNPHash) {
 			PosChr chrPos = snpToChr.get(snp);
 			GeneticVariant variant;
 			if (chrPos != null) {
@@ -364,7 +366,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		
 		tf.close();
 
-		LOG.info("Loaded " + allSNPs.size() + " SNPs, " + numberOfSNPsWithAnnotation + " have annotation.");
+		LOG.info("Loaded " + snps.size() + " out of " + allSNPHash.size() + " SNPs, " + numberOfSNPsWithAnnotation + " of all SNPs have annotation.");
 	}
 
 	private void checkFileSize() {

@@ -39,6 +39,11 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		return description;
 	}
 	
+	public RandomAccessGenotypeData createGenotypeData(String path) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(path, 1000);
+	}
+	
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
 		return createGenotypeData(path, cacheSize, null);
@@ -57,7 +62,13 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				if(forcedSequence != null){
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return new VcfGenotypeData(new File(path + ".vcf.gz"), cacheSize);
+				File vcfFile;
+				if(path.endsWith(".vcf.gz")){
+					vcfFile = new File(path);
+				} else {
+					vcfFile = new File(path + ".vcf.gz");
+				}
+				return new VcfGenotypeData(vcfFile, cacheSize);
 			case VCF_FOLDER:
 				if(forcedSequence != null){
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());

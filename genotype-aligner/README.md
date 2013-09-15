@@ -26,7 +26,7 @@ In case of succesfull build there will a green circel before the `Build #`.
 It is possible that you visit the website when a new build is in progress (the circel will be blinking), please try again in a few minutes.
 
 ### Running the Genotype Aligner
-type `GenotypeAligner.sh` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different commandline options.
+type `GenotypeAligner.sh`, `GenotypeAligner.bat` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different commandline options.
 
 In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
