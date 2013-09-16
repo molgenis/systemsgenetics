@@ -7,9 +7,6 @@ import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.util.Ld;
-import org.molgenis.genotype.util.LdCalculator;
-import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
@@ -84,6 +81,12 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
             SampleVariantsProvider sampleVariantsProvider, String allele1, String allele2) {
         return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
                 sampleVariantsProvider, Alleles.createBasedOnString(allele1, allele2), null);
+    }
+	
+	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+            SampleVariantsProvider sampleVariantsProvider, Allele allele1, Allele allele2) {
+        return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
+                sampleVariantsProvider, Alleles.createAlleles(allele1, allele2), null);
     }
 
     public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
