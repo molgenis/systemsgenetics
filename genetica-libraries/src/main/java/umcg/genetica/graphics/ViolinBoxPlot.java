@@ -133,7 +133,7 @@ public class ViolinBoxPlot {
         double minValue = Double.MAX_VALUE;
         double maxValue = -Double.MAX_VALUE;
 
-        cern.jet.random.engine.RandomEngine randomEngine = new cern.jet.random.engine.DRand();
+//        cern.jet.random.engine.RandomEngine randomEngine = new cern.jet.random.engine.DRand();
 
         WilcoxonMannWhitney wmw = new WilcoxonMannWhitney();
 

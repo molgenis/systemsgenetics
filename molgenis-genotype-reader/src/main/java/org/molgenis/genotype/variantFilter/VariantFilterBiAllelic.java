@@ -16,5 +16,10 @@ public class VariantFilterBiAllelic implements VariantFilter{
     public boolean doesVariantPassFilter(GeneticVariant variant) {
         return variant.isBiallelic();
     }
+
+	@Override
+	public boolean doesIdPassFilter(String id) {
+		return true;
+	}
     
 }

@@ -6,6 +6,7 @@ package umcg.genetica.math.stats;
 
 import java.util.Arrays;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
+import org.apache.commons.collections.primitives.ArrayIntList;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.util.RankArray;
 
@@ -145,79 +146,74 @@ public class QuantileNormalization {
     public static void QuantileNormAdressingNaValuesAfterInitialQN(DoubleMatrixDataset<String, String> dataset, boolean retainNA, boolean useRow) {
         //Quantile normalisation, allowing for missing values:
 
-        DoubleMatrixDataset datasetSorted = new DoubleMatrixDataset(dataset.nrCols, dataset.nrRows);
-        org.apache.commons.math3.stat.correlation.SpearmansCorrelation spearman = new org.apache.commons.math3.stat.correlation.SpearmansCorrelation();
-        
+        double[][] dataSorted = new double[dataset.nrRows][dataset.nrCols];
+       
         System.out.println("Quantile normalization round 1");
 
         for (int s = 0; s < dataset.nrCols; s++) {
-
-            ArrayDoubleList nonNAvalues = new ArrayDoubleList();
-
+            
+            ArrayIntList naValueIndeces = new ArrayIntList();
+            ArrayDoubleList nonNAvalues = new ArrayDoubleList();  
             double[] vals = new double[dataset.nrRows];
-            boolean needsReplacement = false;
+            
             for (int p = 0; p < dataset.nrRows; ++p) {
-                if (dataset.rawData[p][s] == -999) {
-                    needsReplacement = true;
-                } else {
+                if (!Double.isNaN(dataset.rawData[p][s])) {
                     nonNAvalues.add(dataset.rawData[p][s]);
+                    vals[p] = dataset.rawData[p][s];
+                } else {
+                    naValueIndeces.add(p);
                 }
             }
             
-            double replacement = 0;
-            
-            if (needsReplacement) {
-                replacement = JSci.maths.ArrayMath.median(nonNAvalues.toArray(new double[0]));
+            if(naValueIndeces.size()>0){
+                double meanPerSample = JSci.maths.ArrayMath.median(nonNAvalues.toArray(new double[0]));
+                for(int p : naValueIndeces.toArray()){
+                    vals[p] = meanPerSample;
+                }
             }
+            
+            Arrays.sort(vals);
             
             for (int p = 0; p < dataset.nrRows; p++) {
-                if (dataset.rawData[p][s] == -999) {
-                    vals[p] = replacement;
-                } else {
-                    vals[p] = dataset.rawData[p][s];
-                }
-            }      
-            Arrays.sort(vals);
-            datasetSorted.rawData[s] = vals;
+                dataSorted[p][s] = vals[p];
+            }
         }
-
-        datasetSorted = datasetSorted.getTransposedDataset();
 
         double[] dist = new double[dataset.nrRows];
         for (int p = 0; p < dataset.nrRows; p++) {
-            dist[p] = JSci.maths.ArrayMath.median(datasetSorted.rawData[p]);
+            dist[p] = JSci.maths.ArrayMath.median(dataSorted[p]);
         }
-        datasetSorted = null;
-
-        Arrays.sort(dist);
-
+        dataSorted = null;
+        
+        org.apache.commons.math3.stat.correlation.SpearmansCorrelation spearman = new org.apache.commons.math3.stat.correlation.SpearmansCorrelation();
+        
         for (int s = 0; s < dataset.nrCols; s++) {
 
             ArrayDoubleList vec1 = new ArrayDoubleList();
 
             for (int p = 0; p < dataset.nrRows; p++) {
-                if (dataset.rawData[p][s] != -999) {
+                if (!Double.isNaN(dataset.rawData[p][s])) {
                     vec1.add(dataset.rawData[p][s]);
                 }
             }
 
             double[] vals1 = new double[vec1.size()];
-
-            umcg.genetica.util.Rank rank = new umcg.genetica.util.Rank(vec1.toArray(new double[0]), 0d);
-
-            double[] valsRanked = rank.getRanks();
+            
+            RankArray rda = new RankArray();
+            
+            double[] valsRanked = rda.rank(vec1.toArray(new double[0]), false);
 
             for (int v = 0; v < vals1.length; v++) {
                 double quantile = (valsRanked[v]) / ((double) vals1.length);
                 int distIndex = (int) ((quantile * (double) dataset.nrRows) - 1);
-                vals1[v] = dist[distIndex];
+                vals1[v] = dist[distIndex+1];
             }
             
             System.out.println("Normalized sample:\t" + dataset.colObjects.get(s) + "\t" + s + "\tCorrelation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(vec1.toArray(new double[0]), valsRanked) + "\tCorrelation original data and quantile normalized data:\t" + JSci.maths.ArrayMath.correlation(vec1.toArray(new double[0]), vals1)+"\t"+spearman.correlation(vec1.toArray(new double[0]), vals1));
 
             int itr = 0;
             for (int p = 0; p < dataset.nrRows; p++) {
-                if (dataset.rawData[p][s] != -999) {
+                if (!Double.isNaN(dataset.rawData[p][s])) {
                     dataset.rawData[p][s] = vals1[itr];
                     itr++;
                 }
@@ -230,16 +226,21 @@ public class QuantileNormalization {
                 for (int p = 0; p < dataset.nrRows; p++) {
                     double valSum = 0;
                     int nr = 0;
+                    boolean foundNA = false;
                     for (int s = 0; s < dataset.nrCols; s++) {
-                        if (dataset.rawData[p][s] != -999) {
+                        if (!Double.isNaN(dataset.rawData[p][s])) {
                             valSum += dataset.rawData[p][s];
                             nr++;
+                        } else {
+                            foundNA = true;
                         }
                     }
-                    double mean = valSum / nr;
-                    for (int s = 0; s < dataset.nrCols; s++) {
-                        if (dataset.rawData[p][s] == -999) {
-                            dataset.rawData[p][s] = mean;
+                    if(foundNA){
+                        double mean = valSum / nr;
+                        for (int s = 0; s < dataset.nrCols; s++) {
+                            if (Double.isNaN(dataset.rawData[p][s])) {
+                                dataset.rawData[p][s] = mean;
+                            }
                         }
                     }
                 }
@@ -247,16 +248,21 @@ public class QuantileNormalization {
                 for (int s = 0; s < dataset.nrCols; s++) {
                     double valSum = 0;
                     int nr = 0;
+                    boolean foundNA = false;
                     for (int p = 0; p < dataset.nrRows; p++) {
-                        if (dataset.rawData[p][s] != -999) {
+                        if (!Double.isNaN(dataset.rawData[p][s])) {
                             valSum += dataset.rawData[p][s];
                             nr++;
+                        } else {
+                            foundNA = true;
                         }
                     }
-                    double mean = valSum / nr;
-                    for (int p = 0; p < dataset.nrRows; p++) {
-                        if (dataset.rawData[p][s] == -999) {
-                            dataset.rawData[p][s] = mean;
+                    if(foundNA){
+                        double mean = valSum / nr;
+                        for (int p = 0; p < dataset.nrRows; p++) {
+                            if (Double.isNaN(dataset.rawData[p][s])) {
+                                dataset.rawData[p][s] = mean;
+                            }
                         }
                     }
                 }

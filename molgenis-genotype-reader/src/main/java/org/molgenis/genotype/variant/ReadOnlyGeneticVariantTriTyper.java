@@ -25,13 +25,15 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 	private final int startPos;
 	private final String sequenceName;
 	private final SampleVariantsProvider sampleVariantsProvider;
+	private final int indexOfVariantInTriTyperData;
 	private Alleles alleles;
 
-	public ReadOnlyGeneticVariantTriTyper(String variantId, int startPos, String sequenceName, SampleVariantsProvider sampleVariantsProvider) {
+	public ReadOnlyGeneticVariantTriTyper(String variantId, int startPos, String sequenceName, SampleVariantsProvider sampleVariantsProvider, int indexOfVariantInTriTyperData) {
 		this.variantId = GeneticVariantId.createVariantId(variantId);
 		this.startPos = startPos;
-		this.sequenceName = sequenceName.intern();
+		this.sequenceName = sequenceName;
 		this.sampleVariantsProvider = sampleVariantsProvider;
+		this.indexOfVariantInTriTyperData = indexOfVariantInTriTyperData;
 	}
 
 	@Override
@@ -93,7 +95,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 			for (Alleles alleles2 : SampleVariantAlleles) {
 				for (Allele allele : alleles2) {
-					if(allele != allele.ZERO){
+					if (allele != allele.ZERO) {
 						variantAlleles.add(allele);
 					}
 				}
@@ -108,7 +110,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 	@Override
 	public Map<String, ?> getAnnotationValues() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return Collections.emptyMap();
 	}
 
 	@Override
@@ -177,5 +179,9 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 			return this.variantId.getPrimairyId().equals(other.getPrimaryVariantId());
 		}
 		return true;
+	}
+
+	public int getIndexOfVariantInTriTyperData() {
+		return indexOfVariantInTriTyperData;
 	}
 }

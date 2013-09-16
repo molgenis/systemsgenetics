@@ -2,7 +2,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>genotype-aligner</artifactId>
-	<version>1.0.1</version>
+	<version>1.1.2</version>
 	<name>genotype-aligner</name>
 	<packaging>jar</packaging>
 	<parent>
@@ -31,75 +31,103 @@
 			<artifactId>jsci</artifactId>
 			<version>1.2</version>
 		</dependency>
-	 <dependency>
-	  <groupId>org.testng</groupId>
-	  <artifactId>testng</artifactId>
-	  <version>6.5.2</version>
-	  <scope>test</scope>
-	 </dependency>
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>6.5.2</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/verion.properties</include>
+				</includes>
+			</resource>
+		</resources>
+		<finalName>GenotypeAligner-${project.version}</finalName>
 		<plugins>
+			<!-- The configuration of maven-assembly-plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
-				<configuration>
-					<encoding>UTF-8</encoding>
-				</configuration>
-			</plugin>
-			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<!-- The configuration of the plugin -->
 				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-					<archive>
-						<manifest>
-							<mainClass>nl.umcg.deelenp.genotypealigner.GenotypeAligner</mainClass>
-							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-						</manifest>
-					</archive>
+					<!-- Specifies the configuration file of the assembly plugin -->
+					<descriptors>
+						<descriptor>src/main/assembly/assembly.xml</descriptor>
+					</descriptors>
 				</configuration>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<id>make-assembly</id> <!-- this is used for inheritance merges -->
+						<phase>package</phase> <!-- bind to the packaging phase -->
 						<goals>
 							<goal>single</goal>
 						</goals>
 					</execution>
 				</executions>
 			</plugin>
+			<!-- The configuration of maven-jar-plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.1</version>
+				<!-- The configuration of the plugin -->
+				<configuration>
+					<!-- Configuration of the archiver -->
+					<archive>
+						<!-- Manifest specific configuration -->
+						<manifest>
+							<!-- Classpath is added to the manifest of the created jar file. -->
+							<addClasspath>true</addClasspath>
+							<!--
+        Configures the classpath prefix. This configuration option is
+        used to specify that all needed libraries are found under lib/
+        directory.
+       -->
+							<classpathPrefix>lib/</classpathPrefix>
+							<!-- Specifies the main class of the application -->
+							<mainClass>nl.umcg.deelenp.genotypealigner.GenotypeAligner</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
- <profiles>
-  <profile>
-   <id>netbeans-private-testng</id>
-   <activation>
-    <property>
-     <name>netbeans.testng.action</name>
-    </property>
-   </activation>
-   <build>
-    <plugins>
-     <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-surefire-plugin</artifactId>
-      <version>2.11</version>
-      <configuration>
-       <suiteXmlFiles>
-        <suiteXmlFile>target/nb-private/testng-suite.xml</suiteXmlFile>
-       </suiteXmlFiles>
-      </configuration>
-     </plugin>
-    </plugins>
-   </build>
-  </profile>
- </profiles>
+
+	<profiles>
+		<profile>
+			<id>netbeans-private-testng</id>
+			<activation>
+				<property>
+					<name>netbeans.testng.action</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<version>2.11</version>
+						<configuration>
+							<suiteXmlFiles>
+								<suiteXmlFile>target/nb-private/testng-suite.xml</suiteXmlFile>
+							</suiteXmlFiles>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

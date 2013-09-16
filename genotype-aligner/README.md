@@ -1,10 +1,16 @@
+<!--
+
+  It is reccommend to view this file using a markdown viewer
+  or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-aligner/README.md
+
+-->
 Genotype Aligner
 ================
 
 The Genotype Aligner is an easy to use commandline tool that allows harmonization of genotype data 
 stored using different fileformats with different and potentially unknown strands. 
 
-LD patterns are used to determine the correct strand GC and AT SNPs and by using 
+Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
 the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export different file format.
 
 Getting started
@@ -14,39 +20,40 @@ Getting started
 The last build from the genotype aligner can be downloaded here:
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
 
-Click on `genotype-aligner-***-jar-with-dependencies.jar` to download
+Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, test data and 2 example scripts.
 
 In case of succesfull build there will a green circel before the `Build #`. 
-It is possible that you visit the website when a new build is in progress, please try again in a few minutes.
+It is possible that you visit the website when a new build is in progress (the circel will be blinking), please try again in a few minutes.
 
 ### Running the Genotype Aligner
-type `java -jar genotype-aligner-***-jar-with-dependencies.jar` to run. You will now get an overview of the different commandline options
+type `GenotypeAligner.sh`, `GenotypeAligner.bat` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different commandline options.
+
+In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
 ### Basic usage
 In the most basic usage scenario you need to define:
 
 * A dataset that you want to align and the type of this dataset
-* A dataset that you want to use as refernce and the type of this dataset
+* A dataset that you want to use as reference and the type of this dataset
 * The output path and type where you want to write the aliged data to
 
-You command will look like this:
+Your command will look like this:
 ```
-Java -jar genotype-aligner-***-jar-with-dependencies.jar \
-	--input /data/demoInputData \
-	--inputType PED_MAP \
-	--ref /data/demoRefData \
+GenotypeAligner.sh \
+	--inputType PLINK_BED \
+	--input ./exampleData/hapmap3CeuChr20B37Mb6RandomStrand \
+	--update-id \
+	--outputType PLINK_BED \
+	--output ./exampleOutput/binaryPlinkExampleOut \
 	--refType VCF \
-	--output /data/demoOuput \
-	--outputType PED_MAP \
+	--ref ./exampleData/1000gCeuChr20Mb6
 ```
 
 Note: this is a single commandline command. The `\` is only for readabily.
 
-In case of this example the programm exprects that `/data/demoInputData.map` and `/data/demoInputData.ped` exist and that ` /data/demoRefData.vcf.gz` and `/data/demoRefData.vcf.gz.tbi` exist.
+You can find the example above and an other example using SHAPEIT2 data as a script in the root of the distribution.
 
-`/data/demoOuput.map`, `/data/demoOuput.ped` and `/data/demoOuput.log` will be created.
-
-**Note: it is important to make sure that both study and refernece are using the same genome build**
+**Note: it is important to make sure that both study and reference are using the same genome build**
 
 ### Using VCF files
 Before VCF files can be used they need to be compressed using bgzip and indexed with a tabix. This prevents having to read all data into memory yet still allows quick access.
@@ -63,13 +70,13 @@ make
 #### Preparing a VCF file
 
 ```bash
-bgzip example.vcf > example.vcf.gz
+bgzip -c example.vcf > example.vcf.gz
 tabix -p vcf example.vcf.gz
 ```
 
-### Shapeit2 output
+### Using SHAPEIT2 output
 
-TODO
+The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However, the actual output does not contain the chromosome on the first column. The `--forceChr` option forces the input data to the chromosome which is specified. Note this is only valid if all variants are indeed on this chromosome. This feature is currently only implemented for the input data and not for the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
 
 Typical usage scenarios
 ----------------
@@ -78,7 +85,9 @@ Typical usage scenarios
 
 When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
 
-In combination with the `--update-id` option the Genotype Aligner is a convineant preperation of genotype data before imputation. 
+In combination with the `--update-id` option the Genotype Aligner is a convenient tool for preperation of genotype data before imputation.
+
+Aligning prephased data, generated using tools like SHAPEIT2, is particulary usefull. A dataset only needs to be prephased once and can then be aligned and imputed using different reference set or different versions of reference sets.
 
 ### Merging data from different genotyping platforms
 
@@ -101,6 +110,7 @@ Arguments overview
 | -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants |
 | -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment |
 | -s    | --variants     | Number of flanking variants to consider |
+| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with `--inputType SHAPEIT2`
 | -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
 
@@ -124,7 +134,9 @@ Base path refers to either --input or --ref
 * VCFFOLDER
  * Matches all vcf.gz files in the folder specified with the bash path.
 * SHAPEIT2
- * TODO
+ * Expects haps file at: `${base path}.haps`
+ * Expects sample file at: `${base path}.sample`
+ * See also chapter on SHAPEIT2 output.
 
 #####--outputType options
 
@@ -142,15 +154,21 @@ Regardless of the output type a log file will always be created at: `${base path
  * Writes plink FAM file to: `${base path}.fam`
  * Data is written in SNP major mode
 * SHAPEIT2
- * TODO
+ * Writers haps file at: `${base path}.haps`
+ * Writers sample file at: `${base path}.sample`
+ 
+Bug reports / feature requests
+----------------
+
+Please use the GitHub issue tracker to post feature request or to report bugs. https://github.com/molgenis/systemsgenetics/issues/new.
 
 Test data
 ----------------
-This chapter is not relevant for the usage of the program but allows reproducibility of the test data
+This chapter is not relevant for the usage of the program but allows reproducibility of the test data.
 
 The genotype aligener contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/)
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/). It is also supplied in the Genotype Aligner package to get you started.
 
 ### HapMap3 data
 
@@ -158,6 +176,8 @@ The following tools are needed for this script:
 
 * plink
 * ucsc liftover + chain hg18ToHg19
+* SHAPEIT2
+* Genetic Map (b37)
 
 ```bash
 wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/latest_phaseIII_ncbi_b36/plink_format/hapmap3_r2_b36_fwd.consensus.qc.poly.map.bz2
@@ -203,7 +223,12 @@ awk '
 ' < hapmap3CeuChr20B37Mb6.bim > flipList.txt
 
 plink --noweb --bfile hapmap3CeuChr20B37Mb6 --make-bed --flip flipList.txt --out hapmap3CeuChr20B37Mb6RandomStrand
+```
 
+We also want this data phased using SHAPEIT2, for aditional testing.
+
+```Bash
+shapeit.v2.r644.linux.x86_64 --input-bed ./hapmap3CeuChr20B37Mb6RandomStrand -M genetic_map_chr20_combined_b37.txt --output-max ./hapmap3CeuChr20B37Mb6RandomStrand --noped --thread 4
 ```
 
 ### 1000G
@@ -220,7 +245,7 @@ tar xvzf phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.EUR.vcf.g
 #Create subset of data
 vcftools --gzvcf chr20.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.EUR.vcf.gz --out 1000gCeuChr20Mb6 --chr 20 --from-bp 0 --to-bp 6000000 --recode --remove-indels --remove-filtered-all
 #Comprese subset using bgzip (part of tabix package)
-gzip 1000gCeuChr20Mb6.recode.vcf > 1000gCeuChr20Mb6.vcf.gz
+bgzip 1000gCeuChr20Mb6.recode.vcf > 1000gCeuChr20Mb6.vcf.gz
 #Create index using tabix
 tabix -p vcf 1000gCeuChr20Mb6.vcf.gz
 ```

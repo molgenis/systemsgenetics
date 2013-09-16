@@ -20,7 +20,7 @@ public class Impute2GenotypeWriterTest extends ResourceTest
 	@BeforeClass
 	public void setUp() throws IOException, URISyntaxException
 	{
-		genotypeData = new Impute2GenotypeData(getTestImpute2Gz(), getTestImpute2GzTbi(), getTestImpute2Sample());
+		genotypeData = new Impute2GenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
 		writer = new Impute2GenotypeWriter(genotypeData);
 	}
 

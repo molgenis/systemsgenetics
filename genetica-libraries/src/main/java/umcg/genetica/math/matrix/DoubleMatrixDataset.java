@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.concurrent.DoubleParseTask;
 import umcg.genetica.io.text.TextFile;
@@ -123,7 +124,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
 
     // TODO txt file gson
     public DoubleMatrixDataset(String fileName, String delimiter) throws IOException {
-        if (!fileName.endsWith(".txt")) {
+        if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
             throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
         }
         LOGGER.log(Level.INFO, "Loading dataset: {0}", fileName);
@@ -323,6 +324,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
         int row = 0;
 
         boolean correctData = true;
+        ProgressBar pb = new ProgressBar(nrRows);
         while ((str = in.readLine()) != null) {
             data = p.split(str);
             if (rowsToInclude == null || rowsToInclude.contains(data[0])) {
@@ -341,10 +343,9 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
                 }
                 row++;
             }
-//            if (row > 0 && row % Math.floor(nrRows/100) == 0) {
-//                System.out.println(row);
-//            }
+            pb.iterate();
         }
+        pb.close();
         if (!correctData) {
             LOGGER.warning("Your data contains NaN/unparseable values!");
         }

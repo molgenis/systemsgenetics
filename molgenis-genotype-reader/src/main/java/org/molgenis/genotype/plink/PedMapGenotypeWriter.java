@@ -1,211 +1,184 @@
 package org.molgenis.genotype.plink;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.text.DecimalFormat;
 import java.util.Iterator;
-import java.util.List;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.Sample;
-import org.molgenis.genotype.annotation.SexAnnotation;
-import org.molgenis.genotype.plink.datatypes.MapEntry;
-import org.molgenis.genotype.plink.datatypes.PedEntry;
-import org.molgenis.genotype.plink.writers.MapFileWriter;
-import org.molgenis.genotype.plink.writers.PedFileWriter;
+import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
 
-public class PedMapGenotypeWriter implements GenotypeWriter
-{
-	private static Logger LOG = Logger.getLogger(PedMapGenotypeWriter.class);
-	private final GenotypeData genotypeData;
+public class PedMapGenotypeWriter implements GenotypeWriter {
 
-	public PedMapGenotypeWriter(GenotypeData genotypeData)
-	{
+	private static Logger LOGGER = Logger.getLogger(PedMapGenotypeWriter.class);
+	private final GenotypeData genotypeData;
+	private final char SEPARATOR = ' ';
+	private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");
+	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
+	private static final Alleles BI_ALLELIC_MISSING = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
+	private int writtenSamplesCounter;
+	private int writtenVariantsCounter;
+	private int excludedVariantsCounter;
+
+	public PedMapGenotypeWriter(GenotypeData genotypeData) {
 		this.genotypeData = genotypeData;
 	}
 
 	@Override
-	public void write(String basePath) throws IOException, NotASnpException
-	{
+	public void write(String basePath) throws IOException, NotASnpException {
 		write(new File(basePath + ".ped"), new File(basePath + ".map"));
 	}
 
-	public void write(File pedFile, File mapFile) throws IOException, NotASnpException
-	{
+	public void write(File pedFile, File mapFile) throws IOException, NotASnpException {
+
+		if (pedFile == null) {
+			throw new IllegalArgumentException("No ped file specified to write to");
+		}
+		if (mapFile == null) {
+			throw new IllegalArgumentException("No map file specified to write to");
+		}
+		
+		writtenSamplesCounter = 0;
+		writtenVariantsCounter = 0;
+		excludedVariantsCounter = 0;
+
 		writeMapFile(mapFile);
 		writePedFile(pedFile);
+
+		LOGGER.info("PED/MAP plink data write completed.\n"
+				+ " - Number of samples: " + writtenSamplesCounter + "\n"
+				+ " - Number of SNPs: " + writtenVariantsCounter + "\n"
+				+ " - Excluded non biallelic SNPs: " + excludedVariantsCounter);
+
 	}
 
-	@SuppressWarnings("resource")
-	private void writeMapFile(File mapFile) throws IOException, NotASnpException
-	{
-		LOG.info("Going to create [" + mapFile + "]");
-		MapFileWriter writer = null;
-		try
-		{
-			writer = new MapFileWriter(mapFile);
-			int count = 0;
+	private void writeMapFile(File mapFile) throws IOException {
+		Utils.createEmptyFile(mapFile, "map");
 
-			for (GeneticVariant variant : genotypeData)
-			{
-				if (!variant.isSnp())
-				{
-					throw new NotASnpException(variant);
-				}
+		BufferedWriter mapFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(mapFile), FILE_ENCODING));
 
-				MapEntry mapEntry = new MapEntry(variant.getSequenceName(), variant.getPrimaryVariantId(), 0,
-						variant.getStartPos());
-				writer.write(mapEntry);
-				count++;
-				if ((count % 100000) == 0)
-				{
-					LOG.info("Written " + count + " snps");
-				}
+		for (GeneticVariant variant : genotypeData) {
 
-			}
-			LOG.info("Total written " + count + " snps");
-
-		}
-		finally
-		{
-			IOUtils.closeQuietly(writer);
-		}
-	}
-
-	private void writePedFile(File pedFile) throws IOException
-	{
-		LOG.info("Going to create [" + pedFile + "]");
-
-		PedFileWriter writer = null;
-		try
-		{
-			writer = new PedFileWriter(pedFile);
-			final List<Sample> samples = genotypeData.getSamples();
-			int count = samples.size();
-
-			for (int i = 0; i < count; i++)
-			{
-				Sample sample = samples.get(i);
-
-				PedEntry pedEntry = new PedEntry(getFamilyId(sample), sample.getId(), getFather(sample),
-						getMother(sample), getSex(sample), getPhenotype(sample), new BialleleIterator(genotypeData, i));
-
-				writer.write(pedEntry);
-				if ((i % 100) == 0)
-				{
-					LOG.info("Written " + (i + 1) + "/" + count + " samples");
-				}
+			if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
+				LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
+				++excludedVariantsCounter;
+				continue;
 			}
 
-			LOG.info("All samples written");
+			mapFileWriter.append(variant.getSequenceName());
+			mapFileWriter.append(SEPARATOR);
+			mapFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
+			mapFileWriter.append(SEPARATOR);
+			mapFileWriter.append('0');
+			mapFileWriter.append(SEPARATOR);
+			mapFileWriter.append(String.valueOf(variant.getStartPos()));
+			mapFileWriter.append('\n');
 
+			++writtenVariantsCounter;
 		}
-		catch (IndexOutOfBoundsException e)
-		{
-			throw new GenotypeDataException(e);
-		}
-		finally
-		{
-			IOUtils.closeQuietly(writer);
-		}
+
+		mapFileWriter.close();
 
 	}
 
-	private String getFamilyId(Sample sample)
-	{
-		return sample.getFamilyId() != null ? sample.getFamilyId() : "0";
-	}
+	private void writePedFile(File pedFile) throws IOException {
+		LOGGER.info("Writing genotype data to: " + pedFile);
 
-	private String getFather(Sample sample)
-	{
+		Utils.createEmptyFile(pedFile, "bim");
 
-		Object value = sample.getAnnotationValues().get(GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME);
-		if (value == null)
-		{
-			return "0";
+		BufferedWriter pedFilewriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(pedFile), FILE_ENCODING));;
+
+		int sampleInt = 0;
+		for (Sample sample : genotypeData.getSamples()) {
+
+			if (sampleInt == 0) {
+				++writtenSamplesCounter;
+			}
+
+			pedFilewriter.append(sample.getFamilyId() != null ? sample.getFamilyId() : "0");
+			pedFilewriter.append(SEPARATOR);
+			pedFilewriter.append(sample.getId());
+			pedFilewriter.append(SEPARATOR);
+			pedFilewriter.append(sample.getFatherId());
+			pedFilewriter.append(SEPARATOR);
+			pedFilewriter.append(sample.getMotherId());
+			pedFilewriter.append(SEPARATOR);
+			pedFilewriter.append(Byte.toString(sample.getSex().getPlinkSex()));
+			pedFilewriter.append(SEPARATOR);
+			pedFilewriter.append(PHENO_FORMATTER.format(getPhenotype(sample)));
+
+			for (GeneticVariant variant : genotypeData) {
+				
+				
+
+				Alleles variantAlleles = variant.getVariantAlleles();
+
+				if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
+					continue;
+				}
+					
+				Iterator<Alleles> sampleAllelesIterator = variant.getSampleVariants().iterator();
+
+				for (int i = 0; i < sampleInt; ++i) {
+					sampleAllelesIterator.next();
+				}
+
+				Alleles sampleAlleles = sampleAllelesIterator.next();
+
+				if (sampleAlleles.contains(Allele.ZERO) || sampleAlleles.getAlleleCount() < 2) {
+					//set both alleles to missing
+					sampleAlleles = BI_ALLELIC_MISSING;
+				} else if (sampleAlleles.getAlleleCount() > 2 || !variantAlleles.containsAll(sampleAlleles)) {
+					throw new GenotypeDataException("Trying to write alleles " + sampleAlleles.getAllelesAsString() + " for " + variantAlleles + " SNP");
+				}
+
+				pedFilewriter.append(SEPARATOR);
+				pedFilewriter.append(sampleAlleles.getAlleles().get(0).toString());
+				pedFilewriter.append(SEPARATOR);
+				pedFilewriter.append(sampleAlleles.getAlleles().get(1).toString());
+
+				
+			}
+
+			pedFilewriter.append('\n');
+
+			++sampleInt;
+
+			if (sampleInt % 100 == 0) {
+				System.out.println(sampleInt + " samples writen to ped file");
+			}
+
+
 		}
 
-		return value.toString();
+		pedFilewriter.close();		
+		
+		LOGGER.info("All samples and genotypes written to ped file");
+
 	}
 
-	private String getMother(Sample sample)
-	{
-
-		Object value = sample.getAnnotationValues().get(GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME);
-		if (value == null)
-		{
-			return "0";
-		}
-
-		return value.toString();
-	}
-
-	private byte getSex(Sample sample)
-	{
-
-		Object value = sample.getAnnotationValues().get(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME);
-		if (value == null)
-		{
-			return 0;
-		}
-
-		SexAnnotation sex = (SexAnnotation) value;
-
-		return sex.getPlinkSex();
-	}
-
-	private double getPhenotype(Sample sample)
-	{
+	private double getPhenotype(Sample sample) {
 
 		Object value = sample.getAnnotationValues().get(GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME);
-		if (value == null)
-		{
+		if (value == null) {
 			return -9;
 		}
 
-		if (value instanceof Double)
-		{
+		if (value instanceof Double) {
 			return (Double) value;
 		}
 
 		return Double.valueOf(value.toString());
-	}
-
-	private static class BialleleIterator implements Iterator<Alleles>
-	{
-		private Iterator<GeneticVariant> variantsIterator;
-		private int sampleIndex;
-
-		public BialleleIterator(GenotypeData genotypeData, int sampleIndex)
-		{
-			this.variantsIterator = genotypeData.iterator();
-			this.sampleIndex = sampleIndex;
-		}
-
-		@Override
-		public boolean hasNext()
-		{
-			return variantsIterator.hasNext();
-		}
-
-		@Override
-		public Alleles next()
-		{
-			GeneticVariant variant = variantsIterator.next();
-			Alleles variantAlleles = variant.getSampleVariants().get(sampleIndex);
-			return variantAlleles;
-		}
-
-		@Override
-		public void remove()
-		{
-		}
-
 	}
 }

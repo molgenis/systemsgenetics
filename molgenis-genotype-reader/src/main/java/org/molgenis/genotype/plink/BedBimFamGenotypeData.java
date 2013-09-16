@@ -8,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
@@ -20,8 +19,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
@@ -98,11 +95,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		}
 
 		if (!bedFile.isFile()) {
-			throw new FileNotFoundException("BED index file not found at "
+			throw new FileNotFoundException("BED file not found at "
 					+ bedFile.getAbsolutePath());
 		}
 		if (!bedFile.canRead()) {
-			throw new IOException("BED index file not found at " + bedFile.getAbsolutePath());
+			throw new IOException("BED file not found at " + bedFile.getAbsolutePath());
 		}
 
 		if (!bimFile.isFile()) {
@@ -334,13 +331,14 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			
 			String[] elements = SEPARATOR_PATTERN.split(line);
 			
-			String sequenceName = elements[0];
+			String sequenceName = elements[0].intern();
 			
 			if(!sequences.containsKey(sequenceName)){
 				sequences.put(sequenceName, new SimpleSequence(sequenceName, 0, this));
 			}
 			
-			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(elements[1], Integer.parseInt(elements[3]), sequenceName, sampleVariantProvider, elements[4], elements[5]);
+			//Create new strign to make sure it is not backed by the whole line
+			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(new String(elements[1]), Integer.parseInt(elements[3]), sequenceName, sampleVariantProvider, Allele.create(elements[4]), Allele.create(elements[5]));
 			
 			if(snpIndexces.containsKey(variant)){
 				LOGGER.warn("Found two SNPs at " + sequenceName + ":" + variant.getStartPos() + " Only first is read!");

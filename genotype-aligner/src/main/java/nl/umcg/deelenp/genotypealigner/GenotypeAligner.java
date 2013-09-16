@@ -2,6 +2,7 @@ package nl.umcg.deelenp.genotypealigner;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ResourceBundle;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -25,21 +26,21 @@ import org.molgenis.genotype.util.LdCalculatorException;
 @SuppressWarnings("static-access")
 class GenotypeAligner {
 
-	private static final String VERSION = GenotypeAligner.class.getPackage().getImplementationVersion();
+	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
-			"  /--------------------------------------\\\n"
-			+ "  |           Genotype Aligner           |\n"
-			+ "  |                                      |\n"
-			+ "  |            Patrick Deelen            |\n"
-			+ "  |       patrickdeelen@gmail.com        |\n"
-			+ "  |                                      |\n"
-			+ "  | Joeri van der Velde, Marc Jan Bonder |\n"
-			+ "  |    Erwin Winder, Harm-Jan Westra     |\n"
-			+ "  |      Lude Franke, Morris Swertz      |\n"
-			+ "  |                                      |\n"
-			+ "  |    Genomics Coordication Center      |\n"
-			+ "  | University Medical Center Groningen  |\n"
-			+ "  \\--------------------------------------/";
+			"  /---------------------------------------\\\n"
+			+ "  |            Genotype Aligner           |\n"
+			+ "  |                                       |\n"
+			+ "  |             Patrick Deelen            |\n"
+			+ "  |        patrickdeelen@gmail.com        |\n"
+			+ "  |                                       |\n"
+			+ "  | Harm-Jan Westra, Joeri van der Velde, |\n"
+			+ "  |    Marc Jan Bonder, Erwin Winder,     |\n"
+			+ "  |      Lude Franke, Morris Swertz       |\n"
+			+ "  |                                       |\n"
+			+ "  |     Genomics Coordication Center      |\n"
+			+ "  |  University Medical Center Groningen  |\n"
+			+ "  \\---------------------------------------/";
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
 	/**
@@ -92,7 +93,7 @@ class GenotypeAligner {
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
-				+ "* SHAPEIT2 - shapeit2 phased haplotypes. Convert shapeit2 haps to tab separated, apply bgzip and tabix (.haps.gz, .haps.gz.tbi & .sample)")
+				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
 				.withLongOpt("inputType")
 				.isRequired()
 				.create("I");
@@ -105,7 +106,7 @@ class GenotypeAligner {
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n"
-				+ "* SHAPEIT2 - shapeit2 phased haplotypes. Convert shapeit2 haps to tab separated, apply bgzip and tabix (.haps.gz, .haps.gz.tbi & .sample)")
+				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
 				.withLongOpt("refType")
 				.isRequired()
 				.create("R");
@@ -175,6 +176,13 @@ class GenotypeAligner {
 				.withLongOpt("keep")
 				.create("k");
 		OPTIONS.addOption(option);
+		
+		option = OptionBuilder.withArgName("string")
+				.hasArg()
+				.withDescription("Shapeit2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with --inputType SHAPEIT2")
+				.withLongOpt("forceChr")
+				.create("f");
+		OPTIONS.addOption(option);
 
 	}
 
@@ -189,7 +197,7 @@ class GenotypeAligner {
 		System.out.println();
 		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: github.com/PatrickDeelen/GenotypeAligner/wiki");
+		System.out.println("More information: github.com/molgenis/systemsgenetics/blob/master/genotype-aligner/README.md");
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -279,12 +287,18 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
+		
+		final String forceSeqName;
+		
+	
+		forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
+		
 
 		final boolean ldCheck = commandLine.hasOption('c');
 		final boolean keep = commandLine.hasOption('k');
 
 		File logFile = new File(outputBasePath + ".log");
-		if (!logFile.getParentFile().isDirectory()) {
+		if (logFile.getParentFile() != null && !logFile.getParentFile().isDirectory()) {
 			if (!logFile.getParentFile().mkdirs()) {
 				System.err.println("Failed to create output folder: " + logFile.getParent());
 				System.exit(1);
@@ -314,34 +328,48 @@ class GenotypeAligner {
 		System.out.println("Started logging");
 		System.out.println();
 
-		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep);
+		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName);
 
 
 		if (minSnpsToAlignOn < MIN_MIN_VARIANTS_TO_ALIGN_ON) {
 			LOGGER.fatal("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
 			System.err.println("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
+			System.exit(1);
+			return;
 		}
 
 		if (flankSnpsToConsider < minLdToIncludeAlign) {
 			LOGGER.fatal("--variants < --min-variants");
 			System.err.println("--variants < --min-variants");
+			System.exit(1);
+			return;
 		}
 
 		if (inputBasePath.equals(refBasePath)) {
 			LOGGER.fatal("Study data and reference data cannot be the same data");
 			System.err.println("Study data and reference data cannot be the same data");
+			System.exit(1);
+			return;
 		}
 
 		if (inputBasePath.equals(outputBasePath)) {
 			LOGGER.fatal("Study input can not be the same as output");
 			System.err.println("Study input can not be the same as output");
+			System.exit(1);
+			return;
+		}
+		
+		if(forceSeqName != null && inputType != RandomAccessGenotypeDataReaderFormats.SHAPEIT2){
+			System.err.println("Error cannot force sequence name of: " + inputType.getName());
+			System.exit(1);
+			return;
 		}
 
 		int genotypeDataCache = flankSnpsToConsider * 4;
 		final RandomAccessGenotypeData inputData;
 
 		try {
-			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache);
+			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache, forceSeqName);
 		} catch (IOException e) {
 			System.err.println("Error reading input data: " + e.getMessage());
 			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
@@ -378,6 +406,12 @@ class GenotypeAligner {
 
 		ModifiableGenotypeData aligedInputData;
 
+		if(inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED){
+			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+		}
+		
+		
 		try {
 			System.out.println("Beginning alignment");
 			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
@@ -423,7 +457,7 @@ class GenotypeAligner {
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep) {
+	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName) {
 
 
 		System.out.println("Interpreted arugments: ");
@@ -449,9 +483,10 @@ class GenotypeAligner {
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
 		LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
-		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
 		LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
-		System.out.println(" - Debug mode: " + (debugMode ? "on" : "off"));
+		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
+		LOGGER.info("Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
+		System.out.println(" - Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
 		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
 		
 		
