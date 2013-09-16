@@ -10,8 +10,8 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author Patrick Deelen
  */
-public class VariantQcChecker implements VariantFilter{
-	
+public class VariantQcChecker implements VariantFilter {
+
 	private double maf;
 	private double callRate;
 	private double hwe;
@@ -21,8 +21,8 @@ public class VariantQcChecker implements VariantFilter{
 		this.callRate = callRate;
 		this.hwe = hwe;
 	}
-	
-	public void setMafCutoff(float maf){
+
+	public void setMafCutoff(float maf) {
 		this.maf = maf;
 	}
 
@@ -33,24 +33,29 @@ public class VariantQcChecker implements VariantFilter{
 	public void setCallRateCutoff(double callRate) {
 		this.callRate = callRate;
 	}
-	
+
 	@Override
-	public boolean doesVariantPassFilter(GeneticVariant variant){
-		
-		if(variant.getMinorAlleleFrequency() < maf){
+	public boolean doesVariantPassFilter(GeneticVariant variant) {
+
+		if (variant.getMinorAlleleFrequency() < maf) {
 			return false;
 		}
-	
-		
-		if(variant.getCallRate() < callRate){
+
+
+		if (variant.getCallRate() < callRate) {
 			return false;
 		}
-		
-		if(variant.getHwePvalue() < hwe){
+
+		if (variant.getHwePvalue() < hwe) {
 			return false;
 		}
-		
+
 		return true;
-		
+
+	}
+
+	@Override
+	public boolean doesIdPassFilter(String id) {
+		return true;
 	}
 }

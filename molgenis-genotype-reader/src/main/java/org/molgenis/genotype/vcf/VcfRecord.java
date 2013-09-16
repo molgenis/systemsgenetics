@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.molgenis.util.tuple.KeyValueTuple;
@@ -24,6 +25,8 @@ public class VcfRecord
 {
 	public static final String GENOTYPE_FORMAT = "GT";
 	private final Tuple record;
+	private final static Pattern TAB_PATTERN = Pattern.compile("\\t");
+	private final static Pattern COMMA_PATTERN = Pattern.compile(",");
 
 	// cache for the info map
 	private Map<String, List<String>> infoMap = null;
@@ -35,7 +38,7 @@ public class VcfRecord
 
 	public VcfRecord(String line, List<String> columnNames)
 	{
-		String[] values = line.split("	");
+		String[] values = TAB_PATTERN.split(line);
 		if (values.length != columnNames.size())
 		{
 			throw new IllegalArgumentException("The number of columns does not match the number of columnnames");
@@ -45,7 +48,8 @@ public class VcfRecord
 
 		for (int i = 0; i < values.length; i++)
 		{
-			((WritableTuple) record).set(columnNames.get(i), values[i]);
+			//Create new string that is not backed by whole line. Otherwise we keep to much of the genotype data in memory
+			((WritableTuple) record).set(columnNames.get(i), new String(values[i]));
 		}
 
 	}
@@ -84,7 +88,7 @@ public class VcfRecord
 			return Collections.emptyList();
 		}
 
-		return Collections.unmodifiableList(Arrays.asList(alt.split(",")));
+		return Collections.unmodifiableList(Arrays.asList(COMMA_PATTERN.split(alt)));
 	}
 
 	/**
@@ -202,7 +206,7 @@ public class VcfRecord
 					{
 						if (VcfUtils.checkNullValue(kv[1]) != null)
 						{
-							infoMap.put(kv[0], Arrays.asList(kv[1].split(",")));
+							infoMap.put(kv[0], Arrays.asList(COMMA_PATTERN.split(kv[1])));
 						}
 					}
 				}

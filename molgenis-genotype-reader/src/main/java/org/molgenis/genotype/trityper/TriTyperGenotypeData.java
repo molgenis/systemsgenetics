@@ -14,9 +14,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Alleles;
@@ -52,7 +52,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final List<Boolean> samplePhasing;
 	private GeneticVariantTreeSet<GeneticVariant> snps = new GeneticVariantTreeSet<GeneticVariant>();
 	private final SampleVariantsProvider variantProvider;
-	private HashMap<GeneticVariant, Integer> snpToIndex;
 	private final File genotypeDataFile;
 	private final File imputedDosageDataFile;
 	private final File snpFile;
@@ -72,17 +71,15 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final VariantFilter variantFilter;
 	private final SampleFilter sampleFilter;
 	private int unfilteredSnpCount;
-	
 	/**
-	 * These are the samples as visible to the outside.
-	 * if sample filter is used then a subset of all samples in
-	 * dataset otherwise ref to all samples arraylist.
+	 * These are the samples as visible to the outside. if sample filter is used
+	 * then a subset of all samples in dataset otherwise ref to all samples
+	 * arraylist.
 	 */
 	private ArrayList<Sample> includedSamples;
-	
 	/**
-	 * These are samlpes present in the dataset. If sample filters are used
-	 * then the it could be that there are fewer samples retured
+	 * These are samlpes present in the dataset. If sample filters are used then
+	 * the it could be that there are fewer samples retured
 	 */
 	private ArrayList<Sample> samples;
 
@@ -185,7 +182,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
 		genotypeChannel = genotypeHandle.getChannel();
-		
+
 		loadSamples();
 		samplePhasing = Collections.nCopies(samples.size(), false);
 		loadSNPAnnotation();
@@ -297,82 +294,79 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 	private void loadSNPAnnotation() throws IOException {
 		TextFile tf = new TextFile(snpFile, TextFile.R);
-		LinkedHashSet<String> allSNPHash = new LinkedHashSet<String>();
-		for(String line : tf){
-			allSNPHash.add(line);
+
+		HashMap<String, Integer> allSNPHash = new HashMap<String, Integer>();
+
+		unfilteredSnpCount = 0;
+		for (String line : tf) {
+			if (variantFilter == null || variantFilter.doesIdPassFilter(line)) {
+				allSNPHash.put(line, unfilteredSnpCount);
+			}
+			++unfilteredSnpCount;
 		}
 		tf.close();
 
-		HashMap<String, PosChr> snpToChr = new HashMap<String, PosChr>();
+
 		TextFile tfSNPMap = new TextFile(snpMapFile, TextFile.R);
-		String[] tfStrings = tfSNPMap.readLineElems(TextFile.tab);
-		while (tfStrings != null) {
-			String snp = tfStrings[2];
-			if (allSNPHash.contains(snp)) {
+
+		int numberOfIncludedSNPsWithAnnotation = 0;
+
+		sequences = new HashMap<String, Sequence>();
+
+		Iterator<String[]> snpMapIterator = tfSNPMap.readLineElemsIterator(TextFile.tab);
+		while (snpMapIterator.hasNext()) {
+			String[] chrPosId = snpMapIterator.next();
+
+			if (allSNPHash.containsKey(chrPosId[2])) {
+				String snp = chrPosId[2];
+
 				int pos = 0;
-				String chr = tfStrings[0];
+
+				String chr = chrPosId[0].intern();
+				if (!sequences.containsKey(chr)) {
+					if (!chr.equals("0")) {
+						sequences.put(chr, new SimpleSequence(chr, 0, this));
+					}
+				}
+
 				try {
-					pos = Integer.parseInt(tfStrings[1]);
+					pos = Integer.parseInt(chrPosId[1]);
 				} catch (NumberFormatException e) {
 					LOG.warn("Position defined for " + snp + " on chromosome " + chr + " is not an integer!");
 				}
-				snpToChr.put(snp, new PosChr(chr, pos));
-			}
-			tfStrings = tfSNPMap.readLineElems(TextFile.tab);
-		}
-		tfSNPMap.close();
 
-		snpToIndex = new HashMap<GeneticVariant, Integer>();
+				//Index will be removed from snp hash so we can later iterator over remaing without a mapping
+				GeneticVariant variant = new ReadOnlyGeneticVariantTriTyper(snp, pos, chr, variantProvider, allSNPHash.remove(snp));
 
-
-		unfilteredSnpCount = 0;
-		int numberOfSNPsWithAnnotation = 0;
-		sequences = new HashMap<String, Sequence>();
-		for (String snp : allSNPHash) {
-			PosChr chrPos = snpToChr.get(snp);
-			GeneticVariant variant;
-			if (chrPos != null) {
-
-				String chr;
-				if (!sequences.containsKey(chrPos.chr)) {
-					chr = chrPos.chr;
-					sequences.put(chrPos.chr, new SimpleSequence(chrPos.chr, 0, this));
-				} else {
-					chr = sequences.get(chrPos.chr).getName();
+				if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
+					snps.add(variant);
+					numberOfIncludedSNPsWithAnnotation++;
 				}
 
-				variant = new ReadOnlyGeneticVariantTriTyper(snp, chrPos.getPos(), chr, variantProvider);
-
-
-
-				numberOfSNPsWithAnnotation++;
-			} else {
-				variant = new ReadOnlyGeneticVariantTriTyper(snp, 0, "0", variantProvider);
 			}
-
-			//First save in index otherwise variant filter can't use genotype data.
-			snpToIndex.put(variant, unfilteredSnpCount);
-			
-			if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
-				snps.add(variant);
-			} else {
-				//remove snp from index since it this variant included
-				snpToIndex.remove(variant);
-			}
-
-			unfilteredSnpCount++;
 
 		}
-		
-		tf.close();
 
-		LOG.info("Loaded " + snps.size() + " out of " + allSNPHash.size() + " SNPs, " + numberOfSNPsWithAnnotation + " of all SNPs have annotation.");
+		tfSNPMap.close();
+
+		//loop over reaming variant without annotation
+		for (Entry<String, Integer> entry : allSNPHash.entrySet()) {
+			GeneticVariant variant = new ReadOnlyGeneticVariantTriTyper(entry.getKey(), 0, "0", variantProvider, entry.getValue());
+
+			if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
+				snps.add(variant);
+				numberOfIncludedSNPsWithAnnotation++;
+			}
+
+		}
+
+		LOG.info("Loaded " + snps.size() + " out of " + allSNPHash.size() + " SNPs, " + numberOfIncludedSNPsWithAnnotation + " of loaded SNPs have annotation.");
 	}
 
 	private void checkFileSize() {
-		
+
 		System.out.println(unfilteredSnpCount);
-		
+
 		long expectedfilesize = (long) (unfilteredSnpCount * 2) * (long) samples.size();
 		long detectedsize = genotypeDataFile.length();
 		if (expectedfilesize != detectedsize) {
@@ -410,10 +404,9 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 	@Override
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
-		Integer index = snpToIndex.get(variant);
-		if (index == null) {
-			throw new GenotypeDataException("Variant " + variant.getPrimaryVariantId() + " does not exist.");
-		}
+
+		//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
+		int index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
 
 		int numIndividuals = samples.size();
 		long indexLong = (long) (index) * (numIndividuals * 2);
@@ -448,10 +441,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		float[] genotypes = CalledDosageConvertor.convertCalledAllelesToDosage(variantProvider.getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
 		if (imputedDosageDataFile != null) {
-			Integer index = snpToIndex.get(variant);
-			if (index == null) {
-				throw new GenotypeDataException("Variant " + variant.getPrimaryVariantId() + " does not exist.");
-			}
+
+			//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
+			int index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
+
 			int numIndividuals = samples.size();
 			long indexLong = (long) index * (long) numIndividuals * 1;
 			ByteBuffer buffer = ByteBuffer.allocate(numIndividuals);
@@ -577,6 +570,4 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	public Iterator<GeneticVariant> iterator() {
 		return snps.iterator();
 	}
-	
-	
 }
