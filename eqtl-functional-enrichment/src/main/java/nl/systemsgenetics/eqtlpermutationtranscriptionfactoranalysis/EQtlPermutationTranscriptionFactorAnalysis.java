@@ -53,21 +53,22 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 		
 		/*
 		 * Order of commandline arguments:
-		 * 1. String: Path to eQTL or permutation data file 
-		 * 2. String: Path to folder containing genotypeMatrix data (GenotypeMatrix.dat)
-		 * 3. int: LD Search window size
-		 * 4. double: R2 cutoff value (cutoff will be used as >= cutoff value)
-		 * 5. String: Path to folder containing regulomeDB (make sure that the files are named RegulomeDB.dbSNP132.Category#.txt)
-		 * 6. String: Path for output file location.
+		 * 1. String: Path to eQTL data file
+		 * 2. String: Path to the permutation data file.
+		 * 3. String: Path to folder containing genotypeMatrix data (GenotypeMatrix.dat)
+		 * 4. int: LD Search window size
+		 * 5. double: R2 cutoff value (cutoff will be used as >= cutoff value)
+		 * 6. String: Path to folder containing regulomeDB (make sure that the files are named RegulomeDB.dbSNP132.Category#.txt)
 		 */
 		//EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
-		//EQtlPermutationTranscriptionFactorAnalysis eqptfa =
-		//		new EQtlPermutationTranscriptionFactorAnalysis(args[0], args[1], Integer.parseInt(args[2]), Double.valueOf(args[3]), args[4]);
-		
 		EQtlPermutationTranscriptionFactorAnalysis eqptfa =
-				new EQtlPermutationTranscriptionFactorAnalysis("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\testEqtlFile2.txt",
-				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", 250000, 0.8,
-				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\");
+				new EQtlPermutationTranscriptionFactorAnalysis(args[0], args[1], args[2], Integer.parseInt(args[3]), Double.valueOf(args[4]), args[5]);
+		
+		//EQtlPermutationTranscriptionFactorAnalysis eqptfa =
+		//		new EQtlPermutationTranscriptionFactorAnalysis("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\testEqtlFile2.txt",
+		//		"",
+		//		"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", 250000, 0.8,
+		//		"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\");
 		//C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\
 	}
 	
@@ -75,7 +76,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	/*
 	 * Constructor that calls the other methods. The current code might change later.
 	 */
-	public EQtlPermutationTranscriptionFactorAnalysis(String eQtlFile, String genotypeData, int ldWindow, double r2cutoff, String regulomeDbFilesFolder)throws IOException, LdCalculatorException{
+	public EQtlPermutationTranscriptionFactorAnalysis(String eQtlFile, String permutationFile, String genotypeData, int ldWindow, double r2cutoff, String regulomeDbFilesFolder)throws IOException, LdCalculatorException{
 		
 		//Step 1.: Read the eQTL data.
 		System.out.println("[E]: Read the eQTL data and apply a filtering step.");
@@ -86,7 +87,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 		
 		//Read and filter the permutation data.
 		System.out.println("[P]: Read the permutation data");
-		EQTL[] permutationData = this.readEQtlResultData("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\testPermutationFile2.txt");
+		EQTL[] permutationData = this.readEQtlResultData(permutationFile);
 		HashMap<String, EQTL> topPermutationData = filterEQtlSet(permutationData);
 		System.out.println("[P]: Size of permutation data top before filtering: " + topPermutationData.size());
 		
