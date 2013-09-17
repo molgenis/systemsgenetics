@@ -35,7 +35,13 @@ public class Normalizer {
             outdir = Gpio.formatAsDirectory(outdir);
             Gpio.createDir(outdir);
         } else {
-            outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
+			if( Gpio.getParentDir(expressionFile) == null){
+				//This happens for relative paths in current dir
+				outdir = "";
+			} else {
+				outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
+			}
+            
         }
 
         DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);

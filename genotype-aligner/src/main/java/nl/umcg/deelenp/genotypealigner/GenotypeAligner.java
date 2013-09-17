@@ -15,6 +15,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -380,7 +381,12 @@ class GenotypeAligner {
 			LOGGER.fatal("Error combining the impute genotype data files: " + e.getMessage(), e);
 			System.exit(1);
 			return;
-		}
+		} catch (GenotypeDataException e) {
+			System.err.println("Error reading input data: " + e.getMessage());
+			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
+			System.exit(1);
+			return;
+		} 
 
 		System.out.println("Input data loaded");
 		LOGGER.info("Input data loaded");
@@ -396,6 +402,11 @@ class GenotypeAligner {
 		} catch (IncompatibleMultiPartGenotypeDataException e) {
 			System.err.println("Error combining the reference genotype data files: " + e.getMessage());
 			LOGGER.fatal("Error combining the reference genotype data files: " + e.getMessage(), e);
+			System.exit(1);
+			return;
+		} catch (GenotypeDataException e) {
+			System.err.println("Error reading reference data: " + e.getMessage());
+			LOGGER.fatal("Error reading reference data: " + e.getMessage(), e);
 			System.exit(1);
 			return;
 		}
@@ -418,6 +429,11 @@ class GenotypeAligner {
 		} catch (LdCalculatorException e) {
 			System.err.println("Error in LD caculation" + e.getMessage());
 			LOGGER.fatal("Error in LD caculation" + e.getMessage(), e);
+			System.exit(1);
+			return;
+		} catch (GenotypeDataException e) {
+			System.err.println("Error in alignment" + e.getMessage());
+			LOGGER.fatal("Error in alignment" + e.getMessage(), e);
 			System.exit(1);
 			return;
 		}
