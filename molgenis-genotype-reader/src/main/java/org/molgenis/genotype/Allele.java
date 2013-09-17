@@ -25,7 +25,7 @@ public class Allele implements Comparable<Allele>
 	{
 		if (allele.length() == 1)
 		{
-			if (allele.charAt(0) == 'A' || allele.charAt(0) == 'C' || allele.charAt(0) == 'G' || allele.charAt(0) == 'T')
+			if (allele.charAt(0) == 'A' || allele.charAt(0) == 'C' || allele.charAt(0) == 'G' || allele.charAt(0) == 'T' || allele.charAt(0) == '0')
 			{
 				this.snpAllele = allele.charAt(0);
 			}
