@@ -34,6 +34,7 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
         String inexppccorrected = null;
         RUNMODE step = null;
 
+        boolean matchCovariateAndExpressionDataOnMarkerName = false;
         Integer nrThreads = null;
 
 
@@ -69,6 +70,8 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                 gte = val;
             } else if (arg.equals("--snpprobe")) {
                 snpprobecombofile = val;
+            } else if (arg.equals("--matchCovariateNames")) {
+                matchCovariateAndExpressionDataOnMarkerName = true;
             } else if (arg.equals("--threads")) {
                 try {
                     nrThreads = Integer.parseInt(val);
@@ -136,7 +139,7 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                     System.err.println("");
                     printUsage();
                 } else {
-                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out);
+                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, matchCovariateAndExpressionDataOnMarkerName);
                 }
 
             }
@@ -166,13 +169,16 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
         System.out.print("Step 2: Mapping eQTLs\n" + ConsoleGUIElems.LINE);
         System.out.println("--step mapeqtls\t\t\t\tTell the program to map eQTLs.\n"
                 + "--inexppccorrected\tdir\t\tLocation of the principal component corrected gene expression data\n"
-                + "--inexpraw\t\tdir\t\tLocation of the raw gene expression data\n"
+                + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
                 + "--gte\t\t\tString\t\tLocation of the genotype to expression coupling file\n"
                 + "--in\t\t\tdir\t\tLocation of the genotype data\n"
                 + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
-                + "--cellcounts\t\tString\t\tLocation of the cell count (or cell count proxy) file\n"
-                + "--threads\t\tInteger\t\tThe number of threads to use for calculations.");
+                + "--cellcounts\t\tString\t\tLocation of the cell count (or cell count proxy) file (optional)\n"
+                + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
+                + "--matchCovariateNames\t\tMatch covariate names to names in the expression data (default is off)\n"
+                //+ "--combineAllCovariatesInSingleModel\t\tCurrently not implemented"
+                );
 
     }
 }

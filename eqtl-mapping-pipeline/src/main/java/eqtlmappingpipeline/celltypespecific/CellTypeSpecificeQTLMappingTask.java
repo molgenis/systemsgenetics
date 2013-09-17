@@ -24,10 +24,10 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
     private SNP eQTLSNPObj;
     private double[][] pcCorrectedData;
     private double[] cellcounts;
-    private String[] probesToUseAsCovariateArr;
+    private String[] covariatesToUse;
     private int[] wgaId;
     private String[] expInds;
-    private DoubleMatrixDataset<String, String> expressionDataRaw;
+    private DoubleMatrixDataset<String, String> covariateData;
     private TriTyperExpressionData expressionDataPCCorrected;
     private ArrayList<Pair<String, String>> eQTLsForSNP;
 
@@ -38,11 +38,11 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
         this.eQTLsForSNP = eQTLsForSNP;
         this.pcCorrectedData = pcCorrectedData;
         this.cellcounts = cellcounts;
-        this.probesToUseAsCovariateArr = probesToUseAsCovariateArr;
+        this.covariatesToUse = probesToUseAsCovariateArr;
         this.wgaId = wgaId;
         this.expInds = expInds;
         this.expressionDataPCCorrected = expressionDataPCCorrected;
-        this.expressionDataRaw = expressionDataRaw;
+        this.covariateData = expressionDataRaw;
     }
 
     @Override
@@ -50,9 +50,15 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
 
 
         ArrayList<String> eQTLsTested = new ArrayList<String>();
-        double[][] interactionVector = new double[probesToUseAsCovariateArr.length + 4][eQTLsForSNP.size()];
 
-        //We are using a coding system that uses the minor allele. If allele2 is not the minor allel, change the sign of the results we will output.
+        int nrRows = covariatesToUse.length;
+        if (cellcounts != null) {
+            nrRows += 4;
+        }
+
+        double[][] interactionVector = new double[nrRows][eQTLsForSNP.size()];
+
+        //We are using a coding system that uses the minor allele. If allele2 is not the minor allele, change the sign of the results we will output.
         double signInteractionEffectDirection = 1;
         if (eQTLSNPObj.getAlleles()[1] == eQTLSNPObj.getMinorAllele()) {
             signInteractionEffectDirection = -1;
@@ -63,14 +69,19 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
         Integer nrGenotypesCalled = null;
 
         org.apache.commons.math3.distribution.FDistribution fDist = null;
-        
-        
+
+
         cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
         cern.jet.random.tdouble.StudentT tDistColt = null;
 
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         OLSMultipleLinearRegression regressionFullWithInteraction = new OLSMultipleLinearRegression();
 
+        int startWithCovariate = 0;
+        if(cellcounts != null){
+            startWithCovariate = -1;
+        }
+        
 
         for (int e = 0; e < eQTLsForSNP.size(); e++) {
             Pair<String, String> eqtl = eQTLsForSNP.get(e);
@@ -84,34 +95,35 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
             double[] valsX = eQTLSNPObj.selectGenotypes(wgaId, true, true);
             double[] valsY = pcCorrectedData[eQTLProbeId]; //Expression level
 
-            for (int p = -1; p < probesToUseAsCovariateArr.length; p++) {
-
-                //First process the cell-type covariate that we want:
-                double[] valsCellCount = new double[cellcounts.length];
-                System.arraycopy(cellcounts, 0, valsCellCount, 0, valsCellCount.length);
-
-                //Subsequently process each individual gene, treat it as covariate:
-                if (p >= 0) {
-//                    valcCellCount = rawData[probesToUseAsCovariateArr[p]];
-                    String probeName = probesToUseAsCovariateArr[p];
-                    Integer probeIdInRawData = expressionDataRaw.hashRows.get(probeName);
+            for (int covariate = startWithCovariate; covariate < covariatesToUse.length; covariate++) {
+                double[] valsCellCount;
+                if (covariate == -1) {
+                    //First process the cell-type covariate that we want:
+                    valsCellCount = new double[cellcounts.length];
+                    System.arraycopy(cellcounts, 0, valsCellCount, 0, valsCellCount.length);
+                } else {
+                    //Subsequently process each individual gene, treat it as covariate:s
+                    String covariateName = covariatesToUse[covariate];
+                    Integer covariateIdInRawData = covariateData.hashRows.get(covariateName);
                     double[] tmpVarCelCount = null;
-                    if (probeIdInRawData != null) {
+                    if (covariateIdInRawData != null) {
                         tmpVarCelCount = new double[valsY.length];
                         for (int i = 0; i < tmpVarCelCount.length; i++) {
                             String sampleName = expInds[i];
-                            Integer indIDInRawData = expressionDataRaw.hashCols.get(sampleName);
-                            if (indIDInRawData != null) {
-                                tmpVarCelCount[i] = expressionDataRaw.rawData[probeIdInRawData][indIDInRawData];
+                            Integer individualIdInCovariateData = covariateData.hashCols.get(sampleName);
+                            if (individualIdInCovariateData != null) {
+                                tmpVarCelCount[i] = covariateData.rawData[covariateIdInRawData][individualIdInCovariateData];
                             } else {
                                 tmpVarCelCount[i] = Double.NaN;
                             }
                         }
                     } else {
-                        System.err.println("Covariate: " + probeName + " not present in RAW data!");
+                        System.err.println("Covariate: " + covariateName + " not present in RAW data!");
                     }
                     valsCellCount = tmpVarCelCount;
                 }
+
+
 
                 if (valsCellCount != null) {
                     //Check whether all the expression samples have a genotype and a cell count...
@@ -167,7 +179,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                     } catch (Exception err) {
                     }
 
-                    
+
                     // Get the regression parameters and R-square value and print it.
                     double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
                     double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
@@ -204,7 +216,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                         System.exit(0);
                     }
 
-                    if (p == -1) {
+                    if (covariate == -1) {
 
                         double corr = JSci.maths.ArrayMath.correlation(genotypesCalled, olsY);
                         double mainZ = Correlation.convertCorrelationToZScore(genotypesCalled.length, corr);
@@ -252,14 +264,13 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                         }
                         pValueCellType *= 2;
 
-
                         interactionVector[interactionVector.length - 4][e] = zScoreSNP;
                         interactionVector[interactionVector.length - 3][e] = zScoreCellType;
                         interactionVector[interactionVector.length - 2][e] = zScoreInteraction;
                         interactionVector[interactionVector.length - 1][e] = mainZ;
                         cellcountInterActionOutput = eQTLSNPObj.getName() + "\t" + eQTLProbeName + "\t" + nrCalled + "\t" + corr + "\t" + anovaFTestP + "\t" + betaInteraction + "\t" + seInteraction + "\t" + tInteraction + "\t" + pValueInteraction + "\t" + zScoreInteraction;
                     } else {
-                        interactionVector[p][e] = zScoreInteraction;
+                        interactionVector[covariate][e] = zScoreInteraction;
                     }
                 }
             }
@@ -272,7 +283,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
 
         eQTLSNPObj.clearGenotypes();
         eQTLSNPObj = null;
-        
+
         return result;
     }
 }

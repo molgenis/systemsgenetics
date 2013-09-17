@@ -39,9 +39,13 @@ public class ViolinBoxPlot {
         return (double) tL.getBounds().getWidth();
     }
 
+    public void draw(double[][][] vals, String[] datasetNames, String[][] xLabels, String yLabel, Output output, String outputFileName) throws IOException {
+        draw(vals, datasetNames, xLabels, yLabel, output, outputFileName, false);
+    }
+
     // draw multiple violinplots (for example for multiple datasets) format: vals[dataset][category][value]
     // xlabels format: xlabels2[dataset][category]
-    public void draw(double[][][] vals, String[] datasetNames, String[][] xLabels2, Output output, String outputFileName) throws IOException {
+    public void draw(double[][][] vals, String[] datasetNames, String[][] xLabels, String yLabel, Output output, String outputFileName, boolean sortresults) throws IOException {
 
         Locale defaultLocale = Locale.getDefault();
         Locale.setDefault(Locale.US);
@@ -201,9 +205,10 @@ public class ViolinBoxPlot {
 
         }
 
-        Collections.sort(sortedPValuesPerDataset, Collections.reverseOrder());
-        Collections.sort(sortedPValuesPerCategory, Collections.reverseOrder());
-
+        if (sortresults) {
+            Collections.sort(sortedPValuesPerDataset, Collections.reverseOrder());
+            Collections.sort(sortedPValuesPerCategory, Collections.reverseOrder());
+        }
 
 
         int datasetCounter = 0;
@@ -294,15 +299,15 @@ public class ViolinBoxPlot {
                 g2d.setColor(new Color(223, 36, 20));
 
                 // print category name
-                g2d.drawString(xLabels2[datasetNumber][category],
-                        linePos - (int) Math.round(getWidth(xLabels2[datasetNumber][category], g2d.getFont()) / 2),
+                g2d.drawString(xLabels[datasetNumber][category],
+                        linePos - (int) Math.round(getWidth(xLabels[datasetNumber][category], g2d.getFont()) / 2),
                         height + 130);
 
                 if (printTable && categoryCounter < categoryOrder.size()) {
                     int yPos = height + 130 + 30 + (categoryCounter * tableElementHeight);
-                    
-                    g2d.drawString(xLabels2[datasetNumber][category],
-                            plotStart - 15 - (int) Math.round(getWidth(xLabels2[datasetNumber][category], g2d.getFont()) / 2),
+
+                    g2d.drawString(xLabels[datasetNumber][category],
+                            plotStart - 15 - (int) Math.round(getWidth(xLabels[datasetNumber][category], g2d.getFont()) / 2),
                             yPos);
                 }
 
@@ -376,8 +381,8 @@ public class ViolinBoxPlot {
 
         g2d.translate(marginLeft - 60, marginTop + innerHeight / 2);
         g2d.rotate(-0.5 * Math.PI);
-        g2d.drawString("Relative gene expression", -(int) getWidth(
-                "Relative gene expression", g2d.getFont()) / 2, 0);
+        g2d.drawString(yLabel, -(int) getWidth(
+                yLabel, g2d.getFont()) / 2, 0);
         g2d.rotate(+0.5 * Math.PI);
         g2d.translate(-(marginLeft - 60), -(marginTop + innerHeight / 2));
 
