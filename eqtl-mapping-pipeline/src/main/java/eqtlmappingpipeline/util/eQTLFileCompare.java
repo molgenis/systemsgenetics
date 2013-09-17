@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
@@ -21,6 +22,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  */
 public class eQTLFileCompare {
 
+    private static Pattern SPLIT_ON_TAB = Pattern.compile("\t");
     private int nrShared = 0;
     private int nrOpposite = 0;
 
@@ -99,15 +101,16 @@ public class eQTLFileCompare {
         HashSet<String> hashTestedSNPsThatPassedQC = null; //We can confine the analysis to only those eQTLs for which the SNP has been successfully passed QC, otherwise sometimes unfair comparisons are made. If requested, put the SNP name in this HashMap
 
         //Now load the eQTLs for file 1:
-        HashMap<String, String> hashEQTLs = new HashMap<String, String>();
+        HashMap<String, String[]> hashEQTLs = new HashMap<String, String[]>();
         HashSet<String> hashUniqueProbes = new HashSet<String>();
         HashSet<String> hashUniqueGenes = new HashSet<String>();
 
 
         TextFile in = new TextFile(file1, TextFile.R);
-        String str = in.readLine();
-        while ((str = in.readLine()) != null) {
-            String[] data = str.split("\t");
+        in.readLine();
+        String[] data = null;
+        
+        while ((data = SPLIT_ON_TAB.split(in.readLine())) != null) {
             if (hashConvertProbeNames.size() > 0) {
                 if (hashConvertProbeNames.containsKey(data[4].trim())) {
                     data[4] = hashConvertProbeNames.get(data[4].trim());
@@ -118,14 +121,14 @@ public class eQTLFileCompare {
                     if (matchOnGeneName) {
                         if (data[16].length() > 1) {
                             if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
-                                hashEQTLs.put(data[1] + "\t" + data[16], str);
+                                hashEQTLs.put(data[1] + "\t" + data[16], data);
                                 hashUniqueProbes.add(data[4]);
                                 hashUniqueGenes.add(data[16]);
                             }
                         }
                     } else {
                         if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[4])) {
-                            hashEQTLs.put(data[1] + "\t" + data[4], str);
+                            hashEQTLs.put(data[1] + "\t" + data[4], data);
                             hashUniqueProbes.add(data[4]);
                             hashUniqueGenes.add(data[16]);
                         }
@@ -154,7 +157,7 @@ public class eQTLFileCompare {
         HashMap<String, Integer> hashEQTLNrTimesAssessed = new HashMap<String, Integer>();
         ArrayList<String> vecEQTLNrTimesAssessed = new ArrayList<String>();
 
-        HashMap<String, String> hashEQTLs2 = new HashMap<String, String>();
+        HashMap<String, String[]> hashEQTLs2 = new HashMap<String, String[]>();
         HashSet<String> hashUniqueProbes2 = new HashSet<String>();
         HashSet<String> hashUniqueGenes2 = new HashSet<String>();
         HashSet<String> hashUniqueProbesOverlap = new HashSet<String>();
@@ -171,12 +174,12 @@ public class eQTLFileCompare {
         //Now process file 2:
 
         in = new TextFile(file2, TextFile.R);
-        str = in.readLine();
+        in.readLine();
         TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
         int lineno = 1;
-        String[] data = in.readLineElemsReturnObjects(TextFile.tab);
+        data = null;
         TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
-        while (data != null) {
+        while ((data = SPLIT_ON_TAB.split(in.readLine())) != null) {
 
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
 
@@ -192,7 +195,7 @@ public class eQTLFileCompare {
                                 hashUniqueProbes2.add(data[4]);
                                 hashUniqueGenes2.add(data[16]);
                                 if (!hashEQTLs2.containsKey(data[1] + "\t" + data[16])) {
-                                    hashEQTLs2.put(data[1] + "\t" + data[16], str);
+                                    hashEQTLs2.put(data[1] + "\t" + data[16], data);
                                     counterFile2++;
                                 }
                             }
@@ -205,7 +208,7 @@ public class eQTLFileCompare {
                             counterFile2++;
                         }
                     }
-                    String eQTL = null;
+                    String[] eQTL = null;
                     String identifier = null;
                     if (matchOnGeneName) {
                         //System.out.println(data.length + "\t" + str);
@@ -232,7 +235,7 @@ public class eQTLFileCompare {
                         double pValue = Double.parseDouble(data[0]);
                         //if (pValue < 1E-4) {
                         if (hashTestedSNPsThatPassedQC == null || hashTestedSNPsThatPassedQC.contains(data[1])) {
-                            log.write("eQTL Present In New file But Not In Original File:\t" + identifier + "\t" + data[0] + "\t" + data[2] + "\t" + data[3] + "\t" + data[16] + "\t" + str + "\n");
+                            log.write("eQTL Present In New file But Not In Original File:\t" + identifier + "\t" + data[0] + "\t" + data[2] + "\t" + data[3] + "\t" + data[16] + "\n");
                         }
                         //}
                         double zScore2 = Double.parseDouble(data[10]);
@@ -241,7 +244,7 @@ public class eQTLFileCompare {
                         zs.draw(null, zScore2, 0, 1);
 
                     } else {
-                        String[] eQtlData = eQTL.split("\t");
+                        String[] eQtlData = eQTL;
                         boolean identicalProbe = true;
                         String probe = data[4];
                         String probeFound = eQtlData[4];
@@ -393,7 +396,6 @@ public class eQTLFileCompare {
                 }
             }
             lineno++;
-            data = in.readLineElemsReturnObjects(TextFile.tab);
         }
         identicalOut.close();
         log.close();
