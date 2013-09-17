@@ -2,7 +2,6 @@ package org.molgenis.genotype;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.molgenis.genotype.util.Utils;
 
 public class Allele implements Comparable<Allele>
@@ -26,14 +25,14 @@ public class Allele implements Comparable<Allele>
 	{
 		if (allele.length() == 1)
 		{
-			if (allele.charAt(0) == 'I' || allele.charAt(0) == 'D')
+			if (allele.charAt(0) == 'A' || allele.charAt(0) == 'C' || allele.charAt(0) == 'G' || allele.charAt(0) == 'T')
 			{
-				// Some times these are found in plink files. These are not SNPs
-				this.snpAllele = (char) -1;
+				this.snpAllele = allele.charAt(0);
 			}
 			else
 			{
-				this.snpAllele = allele.charAt(0);
+				// Some times these are found in plink files. These are not SNPs
+				this.snpAllele = (char) -1;
 			}
 
 		}
