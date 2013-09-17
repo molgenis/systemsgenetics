@@ -241,10 +241,10 @@ public class eQTLFileCompare {
                         zs.draw(null, zScore2, 0, 1);
 
                     } else {
-
+                        String[] eQtlData = eQTL.split("\t");
                         boolean identicalProbe = true;
                         String probe = data[4];
-                        String probeFound = eQTL.split("\t")[4];
+                        String probeFound = eQtlData[4];
                         if (!probe.equals(probeFound)) {
                             identicalProbe = false;
                         }
@@ -258,10 +258,10 @@ public class eQTLFileCompare {
                         } else {
                             hashEQTLNrTimesAssessed.put(identifier, 1 + hashEQTLNrTimesAssessed.get(identifier));
                         }
-                        String alleles = eQTL.split("\t")[8];
-                        String alleleAssessed = eQTL.split("\t")[9];
+                        String alleles = eQtlData[8];
+                        String alleleAssessed = eQtlData[9];
 
-                        String correlations[] = (eQTL.split("\t")[17]).split(";");
+                        String correlations[] = (eQtlData[17]).split(";");
                         double correlation = 0;
                         int numCorr1 = 0;
                         for (int c = 0; c < correlations.length; c++) {
@@ -278,8 +278,8 @@ public class eQTLFileCompare {
 //                       if(numCorr1 == 0){
 //                           System.out.println("Warning: no correlations defined for eqtl file 1");
 //                       }
-                        double zScore = Double.parseDouble(eQTL.split("\t")[10]);
-//                        double pValue = Double.parseDouble(eQTL.split("\t")[0]);
+                        double zScore = Double.parseDouble(eQtlData[10]);
+//                        double pValue = Double.parseDouble(eQtlData[0]);
                         String alleles2 = data[8];
                         String alleleAssessed2 = data[9];
                         double zScore2 = Double.parseDouble(data[10]);
@@ -289,7 +289,7 @@ public class eQTLFileCompare {
 
                         boolean alleleflipped = false;
                         if (!alleleAssessed.equals(data[9])) {
-                            if (data[9].equals(eQTL.split("\t")[8].split("/")[0])) {
+                            if (data[9].equals(eQtlData[8].split("/")[0])) {
                                 alleleflipped = true;
                             } else {
 //                               System.out.println("WTF BBQ!");
