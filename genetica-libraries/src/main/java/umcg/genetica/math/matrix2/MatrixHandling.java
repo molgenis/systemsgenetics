@@ -296,7 +296,7 @@ public class MatrixHandling {
         }
         
         
-        if ((dataset.columns() * newSize) < (Integer.MAX_VALUE - 2)) {
+        if ((dataset.columns() * (long)newSize) < (Integer.MAX_VALUE - 2)) {
             DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(newSize, dataset.columns());
 
             int probeId = -1;
@@ -425,7 +425,7 @@ public class MatrixHandling {
             }
         }
         
-        if ((dataset.rows() * newSize) < (Integer.MAX_VALUE - 2)) {
+        if ((dataset.rows() * (long)newSize) < (Integer.MAX_VALUE - 2)) {
             DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(dataset.rows(), newSize);
 
             int sampleId = -1;

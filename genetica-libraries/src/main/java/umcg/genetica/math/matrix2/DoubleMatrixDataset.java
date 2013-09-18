@@ -79,9 +79,9 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         
         DoubleMatrixDataset<String, String> dataset;
         
-        if ((tmpRows * tmpCols) < (Integer.MAX_VALUE - 2)) {
+        if ((tmpRows * (long)tmpCols) < (Integer.MAX_VALUE-2)) {
             LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
-            
+            System.out.println(tmpCols*(long)tmpRows);
             dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(tmpRows, tmpCols), rowMap, colMap);
             
             in.open();

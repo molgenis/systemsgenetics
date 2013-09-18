@@ -79,7 +79,7 @@ public class MergeDoubleMatrices {
         removeList = null;
 
 
-        if (((matrixI.rows() + matrixII.rows()) * matrixI.columns()) < (Integer.MAX_VALUE - 2)) {
+        if (((matrixI.rows() + matrixII.rows()) * (long)matrixI.columns()) < (Integer.MAX_VALUE - 2)) {
 
             newMatrix = new SmallDoubleMatrixDataset<String, String>((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
 
@@ -192,7 +192,7 @@ public class MergeDoubleMatrices {
         removeList = null;
 
 
-        if ((matrixI.rows() * (matrixII.columns() + matrixI.columns())) < (Integer.MAX_VALUE - 2)) {
+        if (((long)matrixI.rows() * (matrixII.columns() + matrixI.columns())) < (Integer.MAX_VALUE - 2)) {
             newMatrix = new SmallDoubleMatrixDataset<String, String>(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
 
             LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
