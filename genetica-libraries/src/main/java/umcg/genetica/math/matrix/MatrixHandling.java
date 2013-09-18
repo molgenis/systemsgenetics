@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
+import org.apache.commons.collections.primitives.ArrayIntList;
 import umcg.genetica.methylation.CheckMatrixForValidBetaValues;
 
 /**
@@ -525,5 +526,45 @@ public class MatrixHandling {
         }
         in.colObjects = newColObjects;
         in.recalculateHashMaps();
+    }
+
+    public static void RemoveDuplicateRowNames(DoubleMatrixDataset<String, String> dataset) {
+        int newSize = 0;
+        
+        HashSet<String> entries = new HashSet<String>();
+        ArrayIntList listRemoveRows = new ArrayIntList();
+        
+        int i = 0;
+        for (String t : dataset.rowObjects) {
+            if (!entries.contains(t)) {
+                newSize++;
+                entries.add(t);
+            } else {
+                listRemoveRows.add(i);
+            }
+            i++;
+        }
+
+
+        double[][] newRawData = new double[newSize][dataset.nrCols];
+        String[] newRowNames = new String[newSize];
+
+        int probeId = -1;
+
+        for (int p = 0; p < dataset.nrRows; ++p) {
+            if(!listRemoveRows.contains(p)){
+                
+                probeId++;
+                
+                newRowNames[probeId] = dataset.rowObjects.get(p);
+                newRawData[probeId] = dataset.rawData[p];
+
+            }
+        }
+
+        dataset.rowObjects = Arrays.asList(newRowNames);
+        dataset.nrRows = newSize;
+        dataset.rawData = newRawData;
+        dataset.recalculateHashMaps();
     }
 }
