@@ -25,7 +25,6 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt. Optionally: ImputedDosageMatrix.dat");
 	private final String name;
 	private final String description;
-	private static final Logger LOGGER = Logger.getLogger(RandomAccessGenotypeDataReaderFormats.class);
 
 	RandomAccessGenotypeDataReaderFormats(String name, String description) {
 		this.name = name;
