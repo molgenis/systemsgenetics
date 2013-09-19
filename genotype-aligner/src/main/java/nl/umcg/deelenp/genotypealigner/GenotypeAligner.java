@@ -89,27 +89,25 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The input data type. \n"
+				.withDescription("The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path\n"
 				+ "* PED_MAP - plink PED MAP files.\n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
 				.withLongOpt("inputType")
-				.isRequired()
 				.create("I");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The reference data type. \n"
+				.withDescription("The reference data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path\n"
 				+ "* PED_MAP - plink PED MAP files.\n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
 				.withLongOpt("refType")
-				.isRequired()
 				.create("R");
 		OPTIONS.addOption(option);
 
@@ -228,7 +226,20 @@ class GenotypeAligner {
 		final RandomAccessGenotypeDataReaderFormats inputType;
 
 		try {
-			inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+			if (commandLine.hasOption('I')) {
+				inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+			} else {
+				if (inputBasePath.endsWith(".vcf")) {
+					System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+				}
+				try {
+					inputType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(inputBasePath);
+				} catch (GenotypeDataException e) {
+					System.err.println("Unable to deterime inpute type based on specified path. Please specify --inputType");
+					System.exit(1);
+					return;
+				}
+			}
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --inputType \"" + commandLine.getOptionValue('I') + "\" is not a valid input data format");
 			System.exit(1);
@@ -239,7 +250,21 @@ class GenotypeAligner {
 
 		final RandomAccessGenotypeDataReaderFormats refType;
 		try {
-			refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+			if (commandLine.hasOption('R')) {
+				refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+			} else {
+				if (refBasePath.endsWith(".vcf")) {
+					System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+				}
+				try {
+					refType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(refBasePath);
+				} catch (GenotypeDataException e) {
+					System.err.println("Unable to deterime reference type based on specified path. Please specify --refType");
+					System.exit(1);
+					return;
+				}
+			}
+
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
 			System.exit(1);
