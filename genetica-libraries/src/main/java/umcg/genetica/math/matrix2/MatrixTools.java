@@ -17,8 +17,9 @@ public class MatrixTools {
     public static void centerAndScaleColum(DoubleMatrix2D mat) {
         System.out.println("Standardizing probe mean and standard deviation");
         for (int c = 0; c < mat.columns(); c++) {
-            double mean = Descriptives.mean(mat.viewColumn(c).toArray());
-            double stdev = Math.sqrt(Descriptives.variance(mat.viewColumn(c).toArray(), mean));
+            double[] t = mat.viewColumn(c).toArray();
+            double mean = Descriptives.mean(t);
+            double stdev = Math.sqrt(Descriptives.variance(t, mean));
             for (int r = 0; r < mat.rows(); r++) {
                 mat.set(r, c, ((mat.getQuick(r, c) - mean) / stdev));
             }
@@ -38,8 +39,9 @@ public class MatrixTools {
     public static void scaleColum(DoubleMatrix2D mat) {
         System.out.println("Standardizing probe mean and standard deviation");
         for (int c = 0; c < mat.columns(); c++) {
-            double mean = Descriptives.mean(mat.viewColumn(c).toArray());
-            double stdev = Math.sqrt(Descriptives.variance(mat.viewColumn(c).toArray(), mean));
+            double[] t = mat.viewColumn(c).toArray();
+            double mean = Descriptives.mean(t);
+            double stdev = Math.sqrt(Descriptives.variance(t, mean));
             for (int r = 0; r < mat.rows(); r++) {
                 mat.set(r, c, ((mat.getQuick(r, c)) / stdev));
             }
