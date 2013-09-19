@@ -4,6 +4,7 @@
  */
 package umcg.genetica.math.stats.concurrent;
 
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.util.concurrent.CompletionService;
@@ -75,32 +76,32 @@ public class ConcurrentCovariation {
     }
     
     
-    public DoubleMatrix2D pairwiseCovariation(DoubleMatrix2D in) {
+    public DenseDoubleMatrix2D pairwiseCovariationDoubleMatrix(double[][] in) {
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
         CompletionService<Pair<Integer, double[]>> pool = new ExecutorCompletionService<Pair<Integer, double[]>>(threadPool);
-        double meanOfSamples[] = new double[in.rows()];
+        double meanOfSamples[] = new double[in.length];
         
-        for(int i=0; i<in.rows(); ++i){
-            meanOfSamples[i] = (in.viewRow(i).zSum())/in.columns();
+        for(int i=0; i<meanOfSamples.length; ++i){
+            meanOfSamples[i] = Descriptives.mean(in[i]);
         }
         
-        for (int i = 0; i < in.rows(); ++i) {
-            ConcurrentCovariationTask task = new ConcurrentCovariationTask(in.toArray(), meanOfSamples, i);
+        for (int i = 0; i < in.length; i++) {
+            ConcurrentCovariationTask task = new ConcurrentCovariationTask(in, meanOfSamples, i);
             pool.submit(task);
         }
 
         int returned = 0;
 
-        DenseDoubleMatrix2D covariationMatrix = new DenseDoubleMatrix2D(in.rows(), in.rows());
-        ProgressBar pb = new ProgressBar(in.rows(), "Calculation of covariation matrix: " + in.rows() + " x " + in.rows());
-        while (returned < in.rows()) {
+        DenseDoubleMatrix2D covariationMatrix = new DenseDoubleMatrix2D(in.length, in.length);
+        ProgressBar pb = new ProgressBar(in.length, "Calculation of covariation matrix: " + in.length + " x " + in.length);
+        while (returned < in.length) {
             try {
                 Pair<Integer, double[]> result = pool.take().get();
                 if (result != null) {
                     int rownr = result.getLeft(); //  < 0 when row is not to be included because of hashProbesToInclude.
                     if (rownr >= 0) {
                         double[] doubles = result.getRight();
-                        for(int i=0; i< in.rows(); i++){
+                        for(int i=0; i<doubles.length; ++i){
                             covariationMatrix.setQuick(rownr, i, doubles[i]);
                         }
                     }
@@ -112,6 +113,7 @@ public class ConcurrentCovariation {
                 e.printStackTrace();
             }
         }
+        
         for(int r=1;r<covariationMatrix.rows(); r++){
             for(int c=0; c<r; c++){
                 covariationMatrix.setQuick(r, c, covariationMatrix.getQuick(c, r));
