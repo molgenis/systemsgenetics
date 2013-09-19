@@ -75,7 +75,7 @@
 		<module>genetica-libraries</module>
 		<module>imputation-tool</module>
 		<module>eqtl-mapping-pipeline</module>
-
+		<module>Genotype-IO</module>
 		<module>genotype-aligner</module>
 		<module>molgenis-genotype-reader</module>
 	 <module>eqtl-functional-enrichment</module>
