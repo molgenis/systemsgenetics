@@ -30,13 +30,13 @@ public class TriTyperToPedAndMapConverter {
         int numsnps = snps.length;
 
         HashSet<String> hashInds = null;
-        if(indsToExport!=null){
+        if (indsToExport != null) {
             TextFile infile = new TextFile(indsToExport, TextFile.R);
             hashInds = (HashSet<String>) infile.readAsSet(0, TextFile.tab);
             infile.close();
         }
-            
-        
+
+
         if (outputDir.endsWith("/")) {
             outputDir += "/";
         }
@@ -312,7 +312,9 @@ public class TriTyperToPedAndMapConverter {
             ProgressBar pb2 = new ProgressBar(batchsize);
             for (int i = indsprocessed; i < indsprocessed + batchsize; i++) {
 
-                if (dataGenotypeDataset.getIsIncluded()[i]) {
+                if (dataGenotypeDataset.getIsIncluded()[i] == null) {
+                    System.err.println("ERROR: " + dataGenotypeDataset.getIndividuals()[i] + " has no inclusion information?");
+                } else if (dataGenotypeDataset.getIsIncluded()[i]) {
 
                     String sex = "-9";
                     String condition = "-9";
@@ -352,19 +354,19 @@ public class TriTyperToPedAndMapConverter {
                             byte value1 = genotypes[s];
                             byte value2 = genotypes[s + numsnps];
                             sb.append(" ");
-							String variant1 = BaseAnnot.toString(value1) == null ? "0" : BaseAnnot.toString(value1);
+                            String variant1 = BaseAnnot.toString(value1) == null ? "0" : BaseAnnot.toString(value1);
                             sb.append(variant1);
                             sb.append(" ");
-							String variant2 = BaseAnnot.toString(value2) == null ? "0" : BaseAnnot.toString(value2);
+                            String variant2 = BaseAnnot.toString(value2) == null ? "0" : BaseAnnot.toString(value2);
                             sb.append(variant2);
                         }
                     }
 
-                    if(indsToExport == null || indsToExport.contains(individuals[i])){
+                    if (indsToExport == null || indsToExport.contains(individuals[i])) {
                         pedFile.writeln(sb.toString());
                     }
 
-                    
+
 
                     sb = null;
                     included++;

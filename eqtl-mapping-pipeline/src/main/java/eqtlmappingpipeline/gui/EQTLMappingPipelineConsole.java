@@ -42,6 +42,7 @@ public class EQTLMappingPipelineConsole {
 
 
             if (arg.equals("--imputationtool")) {
+                
                 imputationtool.ImputationTool.main(args);
             }
 

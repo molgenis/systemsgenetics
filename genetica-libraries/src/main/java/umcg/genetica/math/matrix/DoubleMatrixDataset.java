@@ -124,7 +124,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
 
     // TODO txt file gson
     public DoubleMatrixDataset(String fileName, String delimiter) throws IOException {
-        if (!fileName.endsWith(".txt")) {
+        if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
             throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
         }
         LOGGER.log(Level.INFO, "Loading dataset: {0}", fileName);

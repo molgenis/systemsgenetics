@@ -307,6 +307,7 @@ public class MixupMapper extends MetaQTL3 {
         // test all eQTLs
         int numTested = 0;
         int numNotTested = 0;
+        System.out.println("Using " + eQTLs.size() + " eQTLs.");
         for (Pair<String, String> eqtl : eQTLs) {
             String snp = eqtl.getLeft();
             String probe = eqtl.getRight();
@@ -369,7 +370,7 @@ public class MixupMapper extends MetaQTL3 {
                         int abCTR = 0;
                         int bbCTR = 0;
 
-                        for (int exp = 0; exp < nrTraits; exp++) {
+                        for (int exp = 0; exp < trInds.length; exp++) {
                             String traitSample = trInds[exp];
                             String linkedGenotype = traitToGenotype.get(traitSample);
                             Integer linkedGenotypeIndex = genotypeToRowIndex.get(linkedGenotype);
@@ -389,6 +390,8 @@ public class MixupMapper extends MetaQTL3 {
                                         abCTR++;
                                     }
                                 }
+                            } else {
+//                                System.err.println("No linked sample for expression sample: " + traitSample + "\t" + linkedGenotype);
                             }
 
                         }
@@ -435,6 +438,9 @@ public class MixupMapper extends MetaQTL3 {
                                 }
                             }
                             numTested++;
+                        } else {
+//                            System.out.println("Standard deviation is zero for one of the genotype groups: AA: " + sdAA + "\tAB: " + sdAB + "\tBB: " + sdBB);
+                            numNotTested++;
                         }
                     } else {
                         numNotTested++;
@@ -449,6 +455,11 @@ public class MixupMapper extends MetaQTL3 {
 
         System.out.println("Number QTLs tested: " + numTested + "");
         System.out.println("Number QTLs not tested: " + numNotTested + "");
+
+        if (numTested == 0) {
+            System.err.println("An error has occurred: none of the eQTLs was used during the MixupMapper test");
+            System.exit(-1);
+        }
 
         // scores have been calculated.. now visualize, and output...
         // scale result
@@ -560,7 +571,7 @@ public class MixupMapper extends MetaQTL3 {
             }
 
 
-           
+
             matchedTrOut.writeln(trSample + "\t" + linkedGenotype + "\t" + linkedGenotypeScore + "\t" + gtRowNames[minRow] + "\t" + comparisonMatrix[minRow][col] + "\t" + (!linkedGenotype.equals("N/A") && !linkedGenotype.equals(gtRowNames[minRow])));
 
         }

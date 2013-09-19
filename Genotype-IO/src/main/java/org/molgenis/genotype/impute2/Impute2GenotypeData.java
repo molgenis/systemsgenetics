@@ -360,11 +360,20 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 					switch (buffer[i]) {
 						case '\n':
 						case '\r':
+							if(currentChunk == 0){
+								//Ignore empty lines or second line break
+								currentChunk = -1;
+								continue;
+							}
 							if(column != 5){
+								LOGGER.fatal("Error reading haps file, did not detect first 5 columns with variant information \n"
+										+ "current column is:" + column + "\n"
+										+ "content in current column: " + stringBuilder.toString());
 								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information");
 							}
 							longestedChunk = longestedChunk < currentChunk ? currentChunk : longestedChunk;
 							column = 0;
+ 							currentChunk = -1;
 							break;
 						case ' ':
 							switch (column) {

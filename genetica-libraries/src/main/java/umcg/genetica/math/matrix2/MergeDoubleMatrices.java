@@ -79,9 +79,9 @@ public class MergeDoubleMatrices {
         removeList = null;
 
 
-        if (((matrixI.rows() + matrixII.rows()) * matrixI.columns()) < (Integer.MAX_VALUE - 2)) {
+        if (((matrixI.rows() + matrixII.rows()) * (long)matrixI.columns()) < (Integer.MAX_VALUE - 2)) {
 
-            newMatrix = new SmallDoubleMatrixDataset<String, String>((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
+            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
 
             LinkedHashMap<String, Integer> newRowMap = new LinkedHashMap<String, Integer>((matrixI.rows() + matrixII.rows()));
 
@@ -90,40 +90,40 @@ public class MergeDoubleMatrices {
             for (int r = 0; r < matrixI.rows(); ++r) {
                 newRowMap.put(matrixI.getRowObjects().get(r), r);
                 for (int s = 0; s < matrixI.columns(); ++s) {
-                    newMatrix.getMatrix().setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
+                    matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
                 }
                 tmpPos++;
             }
             for (int r = 0; r < matrixII.rows(); ++r) {
                 newRowMap.put(matrixII.getRowObjects().get(r), r + tmpPos);
                 for (int s = 0; s < matrixII.columns(); ++s) {
-                    newMatrix.getMatrix().setQuick((r + tmpPos), s, matrixII.getMatrix().getQuick(r, s));
+                    matrix.setQuick((r + tmpPos), s, matrixII.getMatrix().getQuick(r, s));
                 }
             }
-
-            newMatrix.setHashCols(matrixI.getHashCols());
-            newMatrix.setHashRows(newRowMap);
+            newMatrix = new SmallDoubleMatrixDataset<String, String>(matrix, newRowMap, matrixI.getHashCols());
 
         } else {
-            double[][] newRawData = new double[(matrixI.rows() + matrixII.rows())][matrixI.columns()];
+            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
             LinkedHashMap<String, Integer> newRowMap = new LinkedHashMap<String, Integer>((matrixI.rows() + matrixII.rows()));
 
             int tmpPos = 0;
 
+            
             for (int r = 0; r < matrixI.rows(); ++r) {
                 newRowMap.put(matrixI.getRowObjects().get(r), r);
-
-                newRawData[r] = matrixI.getMatrix().viewColumn(r).toArray();
-
+                for(int s = 0; s < matrixI.columns(); ++s){
+                    matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
+                }
                 tmpPos++;
             }
             for (int r = 0; r < matrixII.rows(); ++r) {
                 newRowMap.put(matrixII.getRowObjects().get(r), r + tmpPos);
-                newRawData[r + tmpPos] = matrixI.getMatrix().viewColumn(r).toArray();
+                for(int s = 0; s < matrixII.columns(); ++s){
+                    matrix.setQuick((r + tmpPos),s, matrixII.getMatrix().getQuick(r, s));
+                }
+                
             }
 
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(newRowMap.size(), matrixI.columns());
-            matrix.assign(newRawData);
             newMatrix = new LargeDoubleMatrixDataset<String, String>(matrix, newRowMap, matrixI.getHashCols());
         }
 
@@ -190,9 +190,9 @@ public class MergeDoubleMatrices {
         removeList = null;
 
 
-        if ((matrixI.rows() * (matrixII.columns() + matrixI.columns())) < (Integer.MAX_VALUE - 2)) {
-            newMatrix = new SmallDoubleMatrixDataset<String, String>(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
-
+        if (((long)matrixI.rows() * (matrixII.columns() + matrixI.columns())) < (Integer.MAX_VALUE - 2)) {
+            
+            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
             LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
 
             int tmpPos = 0;
@@ -200,22 +200,20 @@ public class MergeDoubleMatrices {
             for (int s = 0; s < matrixI.columns(); ++s) {
                 newColMap.put(matrixI.getColObjects().get(s), s);
                 for (int r = 0; r < matrixI.rows(); ++r) {
-                    newMatrix.getMatrix().setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
+                    matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
                 }
                 tmpPos++;
             }
             for (int s = 0; s < matrixII.columns(); ++s) {
                 newColMap.put(matrixII.getColObjects().get(s), s + tmpPos);
                 for (int r = 0; r < matrixII.rows(); ++r) {
-                    newMatrix.getMatrix().setQuick(r, (s + tmpPos), matrixII.getMatrix().getQuick(r, s));
+                    matrix.setQuick(r, (s + tmpPos), matrixII.getMatrix().getQuick(r, s));
                 }
             }
-            newMatrix.setHashCols(newColMap);
-            newMatrix.setHashRows(matrixI.getHashRows());
+            newMatrix = new SmallDoubleMatrixDataset<String, String>(matrix, matrixI.getHashRows(), newColMap);
 
         } else {
-
-            double[][] newRawData = new double[(matrixI.rows())][(matrixII.columns() + matrixI.columns())];
+            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
             LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
 
             int tmpPos = 0;
@@ -223,19 +221,17 @@ public class MergeDoubleMatrices {
             for (int s = 0; s < matrixI.columns(); ++s) {
                 newColMap.put(matrixI.getColObjects().get(s), s);
                 for (int r = 0; r < matrixI.rows(); ++r) {
-                    newRawData[r][s] = matrixI.getMatrix().getQuick(r, s);
+                    matrix.set(r, s, matrixI.getMatrix().getQuick(r, s));
                 }
                 tmpPos++;
             }
             for (int s = 0; s < matrixII.columns(); ++s) {
                 newColMap.put(matrixII.getColObjects().get(s), s + tmpPos);
                 for (int r = 0; r < matrixII.rows(); ++r) {
-                    newRawData[r][s + tmpPos] = matrixII.getMatrix().getQuick(r, s);
+                    matrix.set(r, (s + tmpPos), matrixII.getMatrix().getQuick(r, s));
                 }
             }
 
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(matrixI.rows(), newColMap.size());
-            matrix.assign(newRawData);
             newMatrix = new LargeDoubleMatrixDataset<String, String>(matrix, matrixI.getHashRows(), newColMap);
         }
 

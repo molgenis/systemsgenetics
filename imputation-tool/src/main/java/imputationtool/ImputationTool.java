@@ -79,7 +79,7 @@ public class ImputationTool {
         String sampleFile = null;
         String sampleFileToInclude = null;
         String pattern = null;
-		String fileMatchRegex = null;
+        String fileMatchRegex = null;
 
         boolean splitbychromosome = false;
 
@@ -173,9 +173,9 @@ public class ImputationTool {
                 sampleFile = val;
             } else if (arg.equals("--samplestoinclude")) {
                 sampleFileToInclude = val;
-            } else if(arg.equals("--fileMatchRegex")){
-				fileMatchRegex = val;
-			}
+            } else if (arg.equals("--fileMatchRegex")) {
+                fileMatchRegex = val;
+            }
         }
 
         if (mode == null) {
@@ -196,10 +196,11 @@ public class ImputationTool {
             convertImputedBeagleToTriTyperFromBatches(in, tmp, out, size, chrStart, chrEnd);
             // --mode bttb --in indir --tpl template --out outdir --size samplesize
         } else if (mode.equals("ttpd")) {
-            convertTriTyperToPlinkDosage(in, beagle, tmp, batchdesc, out, fam, splitbychromosome);
+            convertTriTyperToPlinkDosage(in, out, fam, splitbychromosome);
             // --mode ttpd --in indir --beagle beagledir --tpl template --batchdescriptor batchdescriptor --out outdir --fam famfile
         } else if (mode.equals("ttpm")) {
-            convertTriTyperToPedAndMap(in, out, fam, splitbychromosome);
+            convertTriTyperToPedAndMap(in, out, fam, snps, splitbychromosome);
+
             // --mode ttpm --in indir --out outdir --fam famfile
         } else if (mode.equals("ftt")) {
             convertFinalReportToTriTyper(in, out);
@@ -315,16 +316,13 @@ public class ImputationTool {
 
 
         System.out.println("# Converts TriTyper file to Plink Dosage format. Filetemplate is a template for the batch filenames, The text CHROMOSOME will be replaced by the chromosome number, BATCH by the batchname.\n"
-                + "--mode ttpd --in indir --beagle beagledir --tpl template --batchdesc batchdescriptor --out outdir --fam famfile\n");
+                + "--mode ttpd --in indir --out outdir --fam famfile [--split]\n");
 
         System.out.println("# Converts PED and MAP files to TriTyper.\n"
                 + "--mode pmtt --in Ped+MapDir --out TriTyperDir\n");
 
-        System.out.println("# Converts TriTyper file to PED and MAP files. The FAM file is optional. --split splits the ped and map files per chromosome\n"
-                + "--mode ttpm --in indir --out outdir [--fam famfile] [--split]\n");
-
-        //System.out.println("# Converts PED and MAP files to TriTyper format. Specify a batch Mapdelimiter: \\t or \\s, chrcol: chromosome column, chrposcol: snp chromosome position column, peddelimiter: \\t or \\s\n"
-        //	+ "--mode ttpmh --in indir --hap hapmapdir --out outdir [--fam famfile] [--batch-file batchfile] [--chr chromosome]\n");
+        System.out.println("# Converts TriTyper file to PED and MAP files. The FAM file is optional. --split splits the ped and map files per chromosome. Providing a SNP file will override --split\n"
+                + "--mode ttpm --in indir --out outdir [--fam famfile] [--split] [--snps snpfile]\n");
 
         System.out.println("# Converts TriTyper dataset to Ped+Map concordant to reference (hap) dataset. Supply a batchfile if you want to export in batches. Supply a chromosome if you want to export a certain chromosome.\n"
                 + "--mode ttpmh --in TriTyperDir --hap TriTyperReferenceDir --out outdir [--fam famfile] [--batch-file batchfile] [--chr chromosome] [--exclude fileName]\n");
@@ -368,14 +366,18 @@ public class ImputationTool {
         ttb.export(hapmapDir, baseDir, batchFile, excludesnps, outputDir);
     }
 
-    private void convertTriTyperToPedAndMap(String baseDir, String outputDir, String famfile, boolean splitbychromosome) throws IOException {
+    private void convertTriTyperToPedAndMap(String baseDir, String outputDir, String famfile, String snpList, boolean splitbychromosome) throws IOException, Exception {
         if (baseDir == null || outputDir == null) {
             System.out.println("Please supply values for TriTyper inputdir (--in) and outputdir (--out) when to running --mode ttpm\n\n");
             // printUsage();
             System.exit(0);
         }
         TriTyperToPedAndMapConverter ttpm = new TriTyperToPedAndMapConverter();
-        ttpm.exportAllSNPs(baseDir, outputDir, splitbychromosome);
+        if (snpList != null) {
+            ttpm.exportSubsetOfSNPs(baseDir, outputDir, snpList, null);
+        } else {
+            ttpm.exportAllSNPs(baseDir, outputDir, splitbychromosome);
+        }
     }
 
     private void convertImputedBeagleToTriTyper(String inputLocation, String descriptor, String extension, String trityperoutputdir, String famfile) throws IOException {
@@ -447,7 +449,7 @@ public class ImputationTool {
 //	p.importPEDFile(dataLocation, mapdelimiter, chrcol, chrpos, snpcol, peddelimiter, outputLocation, casesToInclude);
 //    }
     // ttpd trityperdir beagledir datasetdescriptor batchdescriptor outputdir
-    private void convertTriTyperToPlinkDosage(String trityperdir, String beagledir, String datasetdescriptor, String batchdescriptor, String outputdir, String famFile, boolean splitperchr) throws IOException {
+    private void convertTriTyperToPlinkDosage(String trityperdir, String outputdir, String famFile, boolean splitperchr) throws IOException {
         // if(trityperdir == null || beagledir == null || datasetdescriptor == null || batchdescriptor == null || outputdir == null){
         if (trityperdir == null || outputdir == null) {
             System.out.println("Please supply values for TriTyper input (--in), beagle dir (--beagle), dataset descriptor (--tpl), batch descriptor (--batchdesc), and output dir (--out)\n\n");

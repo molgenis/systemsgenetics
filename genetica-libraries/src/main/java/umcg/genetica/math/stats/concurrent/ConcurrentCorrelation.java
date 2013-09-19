@@ -4,6 +4,9 @@
  */
 package umcg.genetica.math.stats.concurrent;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -67,6 +70,55 @@ public class ConcurrentCorrelation {
                 correlationMatrix[r][c] = correlationMatrix[c][r];
             }
         }
+        threadPool.shutdown();
+        pb.close();
+        return correlationMatrix;
+    }
+    
+    public DenseDoubleMatrix2D pairwiseCorrelationDoubleMatrix(double[][] in) {
+        ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
+        CompletionService<Pair<Integer, double[]>> pool = new ExecutorCompletionService<Pair<Integer, double[]>>(threadPool);
+        double meanOfSamples[] = new double[in.length];
+        
+        for(int i=0; i<meanOfSamples.length; ++i){
+            meanOfSamples[i] = Descriptives.mean(in[i]);
+        }
+        
+        for (int i = 0; i < in.length; i++) {
+            ConcurrentCorrelationTask task = new ConcurrentCorrelationTask(in, meanOfSamples, i);
+            pool.submit(task);
+        }
+
+        int returned = 0;
+
+        DenseDoubleMatrix2D correlationMatrix = new DenseDoubleMatrix2D(in.length, in.length);
+        ProgressBar pb = new ProgressBar(in.length, "Calculation of correlation matrix: " + in.length + " x " + in.length);
+        while (returned < in.length) {
+            try {
+                Pair<Integer, double[]> result = pool.take().get();
+                if (result != null) {
+                    int rownr = result.getLeft(); //  < 0 when row is not to be included because of hashProbesToInclude.
+                    if (rownr >= 0) {
+                        double[] doubles = result.getRight();
+                        for(int i=0; i<doubles.length; ++i){
+                            correlationMatrix.setQuick(rownr, i, doubles[i]);
+                        }
+                    }
+                    result = null;
+                    returned++;
+                    pb.iterate();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        for(int r=1;r<correlationMatrix.rows(); r++){
+            for(int c=0; c<r; c++){
+                correlationMatrix.setQuick(r, c, correlationMatrix.getQuick(c, r));
+            }
+        }
+        
         threadPool.shutdown();
         pb.close();
         return correlationMatrix;
