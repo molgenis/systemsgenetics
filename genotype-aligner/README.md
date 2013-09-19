@@ -11,7 +11,7 @@ The Genotype Aligner is an easy to use commandline tool that allows harmonizatio
 stored using different fileformats with different and potentially unknown strands. 
 
 Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
-the [Molgenis Genotype Reader](https://github.com/PatrickDeelen/systemsgenetics/tree/master/molgenis-genotype-reader) we can import and export different file format.
+the [Genotype IO](https://github.com/PatrickDeelen/systemsgenetics/tree/master/Genotype-IO) package we can import and export different file format.
 
 Getting started
 ----------------
@@ -40,18 +40,14 @@ In the most basic usage scenario you need to define:
 Your command will look like this:
 ```
 GenotypeAligner.sh \
-	--inputType PLINK_BED \
-	--input ./exampleData/hapmap3CeuChr20B37Mb6RandomStrand \
-	--update-id \
-	--outputType PLINK_BED \
-	--output ./exampleOutput/binaryPlinkExampleOut \
-	--refType VCF \
-	--ref ./exampleData/1000gCeuChr20Mb6
+	--input path_to_study_data \
+	--output path_of_output \
+	--ref path_to_reference
 ```
 
 Note: this is a single commandline command. The `\` is only for readabily.
 
-You can find the example above and an other example using SHAPEIT2 data as a script in the root of the distribution.
+You can find more examples as a script in the root of the distribution.
 
 **Note: it is important to make sure that both study and reference are using the same genome build**
 
@@ -100,12 +96,12 @@ Arguments overview
 
 | Short | Long           | Description                                                                                                                          |
 |-------|----------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| -i    | --input        | The base path of the data to align. The extensions are determined based on the input data type.|
-| -I    | --inputType    | The input data type. (see inputeType options) |
-| -r    | --ref          | The base path of the reference data used for alignment. The extensions are determined based on the input data type.|
-| -R    | --refType      | The input data type. (see refType options) |
-| -o    | --output       | The base path of the output data. |
-| -O    | --outputType   | The output data type. (--outputType options) |
+| -i    | --input        | \* The base path of the data to align. The extensions are determined based on the input data type.|
+| -I    | --inputType    | The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path (see inputeType options) |
+| -r    | --ref          | \* The base path of the reference data used for alignment. The extensions are determined based on the input data type.|
+| -R    | --refType      | The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path (see refType options) |
+| -o    | --output       | \* The base path of the output data. |
+| -O    | --outputType   | The output data type. Defaults to --inputType or to PLINK_BED if there is no writer for the impute type. (--outputType options) |
 | -id   | --update-id    | Update the variant identifiers using the reference data. The identifiers of the output data will be the same as the reference data |
 | -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants |
 | -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment |
@@ -113,6 +109,8 @@ Arguments overview
 | -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with `--inputType SHAPEIT2`
 | -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
+
+\* = required
 
 ####--inputeType /--refType options
 
