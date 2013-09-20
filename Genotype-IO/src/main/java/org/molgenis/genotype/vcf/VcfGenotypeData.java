@@ -36,6 +36,7 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 
 public class VcfGenotypeData extends IndexedGenotypeData implements SampleVariantsProvider
 {
@@ -86,17 +87,17 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 
 		if (!vcfFile.canRead())
 		{
-			throw new IOException("VCF file not found at " + vcfFile.getAbsolutePath());
+			throw new IOException("Cannot read VCF file at: " + vcfFile.getAbsolutePath());
 		}
 
 		if (!tabixIndexFile.isFile())
 		{
-			throw new FileNotFoundException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath());
+			throw new TabixFileNotFoundException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath(), tabixIndexFile.getAbsolutePath());
 		}
 
 		if (!tabixIndexFile.canRead())
 		{
-			throw new IOException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath());
+			throw new IOException("Cannot read tabix file for VCF at: " + tabixIndexFile.getAbsolutePath());
 		}
 
 		try
