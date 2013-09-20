@@ -21,7 +21,7 @@ public class NotASnpException extends GenotypeDataException
 	public NotASnpException(GeneticVariant geneticVariant)
 	{
 		super("This variant is not a SNP " + geneticVariant.getSequenceName() + ":" + geneticVariant.getStartPos()
-				+ " " + geneticVariant.getPrimaryVariantId());
+				+ " " + geneticVariant.getPrimaryVariantId() + "Alleles: " + geneticVariant.getVariantAlleles());
 		this.geneticVariant = geneticVariant;
 	}
 
