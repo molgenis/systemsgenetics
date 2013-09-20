@@ -208,8 +208,28 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 			return value.equals(true) ? "1" : "0";
 		}
 
-		if (value instanceof Double || value instanceof Float)
+		if (value instanceof Double){
+			
+			if(Double.isNaN((Double)value)){
+				return nullValue;
+			}
+			
+			String result = value.toString();
+			if (result.equals("0.0"))
+			{
+				result = "0";
+			}
+
+			return result;
+			
+		}
+		
+		if (value instanceof Float)
 		{
+			if(Float.isNaN((Float)value)){
+				return nullValue;
+			}
+			
 			String result = value.toString();
 			if (result.equals("0.0"))
 			{
@@ -230,13 +250,13 @@ public class Impute2GenotypeWriter implements GenotypeWriter
 	{
 		for (GeneticVariant variant : genotypeData)
 		{
-			if (!variant.isSnp())
-			{
-				throw new NotASnpException(variant);
+			
+			if(variant.getAlleleCount() > 2){
+				LOG.warn("Skipping variant: " + variant.getPrimaryVariantId() + " at " + variant.getSequenceName() + ":" + variant.getStartPos() + " with more than 22 alleles: " + variant.getVariantAlleles());
 			}
-
+			
 			Allele allele0 = variant.getVariantAlleles().get(0);
-			Allele allele1 = variant.getVariantAlleles().get(1);
+			Allele allele1 = variant.getAlleleCount() == 1 ? Allele.ZERO : variant.getVariantAlleles().get(1);
 
 			StringBuilder sb = new StringBuilder();
 			sb.append(variant.getSequenceName());
