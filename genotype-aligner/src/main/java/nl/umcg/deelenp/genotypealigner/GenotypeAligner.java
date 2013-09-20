@@ -195,7 +195,7 @@ class GenotypeAligner {
 		System.out.println();
 		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: github.com/molgenis/systemsgenetics/blob/master/genotype-aligner/README.md");
+		System.out.println("More information: http://molgenis.org/systemsgenetics");
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
