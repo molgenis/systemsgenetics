@@ -13,8 +13,8 @@
 	<dependencies>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
-			<artifactId>molgenis-genotype-reader</artifactId>
-			<version>0.0.2-SNAPSHOT</version>
+			<artifactId>Genotype-IO</artifactId>
+			<version>0.0.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>

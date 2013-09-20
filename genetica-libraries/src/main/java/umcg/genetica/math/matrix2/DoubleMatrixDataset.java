@@ -76,49 +76,80 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             tmpRows++;
         }
         in.close();
-
-        double[][] initialMatrix = new double[tmpRows][tmpCols];
-
-        in.open();
-        in.readLine(); // read header
-        int row = 0;
-
-        LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
-
-        boolean correctData = true;
-        while ((str = in.readLine()) != null) {
-            data = splitPatern.split(str);
-
-            if (!rowMap.containsKey(data[0])) {
-                rowMap.put(data[0], row);
-                for (int s = 0; s < tmpCols; s++) {
-                    double d;
-                    try {
-                        d = Double.parseDouble(data[s + columnOffset]);
-                    } catch (NumberFormatException e) {
-                        correctData = false;
-                        d = Double.NaN;
-                    }
-                    initialMatrix[row][s] = d;
-                }
-                row++;
-            } else {
-                LOGGER.warning("Duplicated row name!");
-                throw (doubleMatrixDatasetNonUniqueHeaderException);
-            }           
-        }
-        if (!correctData) {
-            LOGGER.warning("Your data contains NaN/unparseable values!");
-        }
-        in.close();
-
+        
         DoubleMatrixDataset<String, String> dataset;
+        
+        if ((tmpRows * (long)tmpCols) < (Integer.MAX_VALUE-2)) {
+            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
+            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(tmpRows, tmpCols);
+            
+            in.open();
+            in.readLine(); // read header
+            int row = 0;
+            
+            boolean correctData = true;
+            while ((str = in.readLine()) != null) {
+                data = splitPatern.split(str);
 
-        if ((tmpRows * tmpCols) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(initialMatrix), rowMap, colMap);
+                if (!rowMap.containsKey(data[0])) {
+                    rowMap.put(data[0], row);
+                    for (int s = 0; s < tmpCols; s++) {
+                        double d;
+                        try {
+                            d = Double.parseDouble(data[s + columnOffset]);
+                        } catch (NumberFormatException e) {
+                            correctData = false;
+                            d = Double.NaN;
+                        }
+                        matrix.setQuick(row, s, d);
+                    }
+                    row++;
+                } else {
+                    LOGGER.warning("Duplicated row name!");
+                    throw (doubleMatrixDatasetNonUniqueHeaderException);
+                }           
+            }
+            if (!correctData) {
+                LOGGER.warning("Your data contains NaN/unparseable values!");
+            }
+            in.close();
+            
+            dataset = new SmallDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            
         } else {
+            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
             DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
-            matrix.assign(initialMatrix);
+            in.open();
+            in.readLine(); // read header
+            int row = 0;
+
+            boolean correctData = true;
+            while ((str = in.readLine()) != null) {
+                data = splitPatern.split(str);
+
+                if (!rowMap.containsKey(data[0])) {
+                    rowMap.put(data[0], row);
+                    for (int s = 0; s < tmpCols; s++) {
+                        double d;
+                        try {
+                            d = Double.parseDouble(data[s + columnOffset]);
+                        } catch (NumberFormatException e) {
+                            correctData = false;
+                            d = Double.NaN;
+                        }
+                        matrix.setQuick(row, s, d);
+                    }
+                    row++;
+                } else {
+                    LOGGER.warning("Duplicated row name!");
+                    throw (doubleMatrixDatasetNonUniqueHeaderException);
+                }           
+            }
+            if (!correctData) {
+                LOGGER.warning("Your data contains NaN/unparseable values!");
+            }
+            in.close();
+
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
         }
 
@@ -170,51 +201,90 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         }
         in.close();
         
-        double[][] initialMatrix = new double[rowsToStore][storedCols];
-
-        in.open();
-        in.readLine(); // read header
-        int storingRow = 0;
-        totalRows = 0;
-        LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(rowsToStore / 0.75));
-
-        boolean correctData = true;
-        while ((str = in.readLine()) != null) {
-            if(desiredRowPos.contains(totalRows)){
-                data = splitPatern.split(str);
-                if (!rowMap.containsKey(data[0])) {
-                    rowMap.put(data[0], storingRow);
-                    for (int s : desiredColPos) {
-                        double d;
-                        try {
-                            d = Double.parseDouble(data[s + columnOffset]);
-                        } catch (NumberFormatException e) {
-                            correctData = false;
-                            d = Double.NaN;
-                        }
-                        initialMatrix[storingRow][s] = d;
-                    }
-                    storingRow++;
-                } else if(rowMap.containsKey(data[0])){
-                    LOGGER.warning("Duplicated row name!");
-                    System.out.println("Tried to add: "+data[0]);
-                    throw (doubleMatrixDatasetNonUniqueHeaderException);
-                }
-            }
-            totalRows++;
-        }
-        if (!correctData) {
-            LOGGER.warning("Your data contains NaN/unparseable values!");
-        }
-        in.close();
-
         DoubleMatrixDataset<String, String> dataset;
 
-        if ((rowsToStore * tmpCols) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(initialMatrix), rowMap, colMap);
+        if ((rowsToStore * (long)tmpCols) < (Integer.MAX_VALUE - 2)) {
+            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(rowsToStore, storedCols);
+            in.open();
+            in.readLine(); // read header
+            int storingRow = 0;
+            totalRows = 0;
+            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(rowsToStore / 0.75));
+
+            boolean correctData = true;
+            while ((str = in.readLine()) != null) {
+                
+                
+                
+                if(desiredRowPos.contains(totalRows)){
+                    data = splitPatern.split(str);
+                    if (!rowMap.containsKey(data[0])) {
+                        rowMap.put(data[0], storingRow);
+                        for (int s : desiredColPos) {
+                            double d;
+                            try {
+                                d = Double.parseDouble(data[s + columnOffset]);
+                            } catch (NumberFormatException e) {
+                                correctData = false;
+                                d = Double.NaN;
+                            }
+                            matrix.setQuick(storingRow, s, d);
+                        }
+                        storingRow++;
+                    } else if(rowMap.containsKey(data[0])){
+                        LOGGER.warning("Duplicated row name!");
+                        System.out.println("Tried to add: "+data[0]);
+                        throw (doubleMatrixDatasetNonUniqueHeaderException);
+                    }
+                }
+                totalRows++;
+            }
+            if (!correctData) {
+                LOGGER.warning("Your data contains NaN/unparseable values!");
+            }
+            in.close();
+            
+            dataset = new SmallDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            
         } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(rowsToStore, tmpCols);
-            matrix.assign(initialMatrix);
+            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(rowsToStore, storedCols);
+
+            in.open();
+            in.readLine(); // read header
+            int storingRow = 0;
+            totalRows = 0;
+            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(rowsToStore / 0.75));
+
+            boolean correctData = true;
+            while ((str = in.readLine()) != null) {
+                if(desiredRowPos.contains(totalRows)){
+                    data = splitPatern.split(str);
+                    if (!rowMap.containsKey(data[0])) {
+                        rowMap.put(data[0], storingRow);
+                        for (int s : desiredColPos) {
+                            double d;
+                            try {
+                                d = Double.parseDouble(data[s + columnOffset]);
+                            } catch (NumberFormatException e) {
+                                correctData = false;
+                                d = Double.NaN;
+                            }
+                            matrix.setQuick(storingRow, s, d);
+                        }
+                        storingRow++;
+                    } else if(rowMap.containsKey(data[0])){
+                        LOGGER.warning("Duplicated row name!");
+                        System.out.println("Tried to add: "+data[0]);
+                        throw (doubleMatrixDatasetNonUniqueHeaderException);
+                    }
+                }
+                totalRows++;
+            }
+            if (!correctData) {
+                LOGGER.warning("Your data contains NaN/unparseable values!");
+            }
+            in.close();
+            
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
         }
 

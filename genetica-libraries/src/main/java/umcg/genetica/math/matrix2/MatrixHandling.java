@@ -9,7 +9,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -295,39 +294,74 @@ public class MatrixHandling {
                 return(dataset);
             }
         }
-        double[][] newRawData = new double[newSize][dataset.columns()];
-
-        int probeId = -1;
-        ArrayList<String> rowObj = dataset.getRowObjects();
         
-        if(removeRows){
-            for (int p = 0; p < dataset.rows(); ++p) {
-                if (!(rowNames.contains(rowObj.get(p)))) {
-                    probeId++;
-                    newRawData[probeId] = dataset.getMatrix().viewRow(p).toArray();
+        
+        if ((dataset.columns() * (long)newSize) < (Integer.MAX_VALUE - 2)) {
+            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(newSize, dataset.columns());
+
+            int probeId = -1;
+            ArrayList<String> rowObj = dataset.getRowObjects();
+
+            if(removeRows){
+                for (int p = 0; p < dataset.rows(); ++p) {
+                    if (!(rowNames.contains(rowObj.get(p)))) {
+                        probeId++;
+                        for (int s = 0; s < dataset.columns(); ++s) {
+                            matrix.setQuick(p, s, dataset.getMatrix().getQuick(p, s));
+                        }
+                    }
+                }
+            } else {
+                for (int p = 0; p < dataset.rows(); ++p) {
+                    if ((rowNames.contains(rowObj.get(p)))) {
+                        probeId++;
+                        for (int s = 0; s < dataset.columns(); ++s) {
+                            matrix.setQuick(p, s, dataset.getMatrix().getQuick(p, s));
+                        }
+                    }
                 }
             }
+            
+            for (String r : removeList) {
+                dataset.hashRows.remove(r);
+            }
+
+            fixOrdering(dataset.hashRows);
+            
+            dataset = new SmallDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         } else {
-            for (int p = 0; p < dataset.rows(); ++p) {
-                if ((rowNames.contains(rowObj.get(p)))) {
-                    probeId++;
-                    newRawData[probeId] = dataset.getMatrix().viewRow(p).toArray();
+            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(newSize, dataset.columns());
+
+            int probeId = -1;
+            ArrayList<String> rowObj = dataset.getRowObjects();
+
+            if(removeRows){
+                for (int p = 0; p < dataset.rows(); ++p) {
+                    if (!(rowNames.contains(rowObj.get(p)))) {
+                        probeId++;
+                        for (int s = 0; s < dataset.columns(); ++s) {
+                            matrix.setQuick(p, s, dataset.getMatrix().getQuick(p, s));
+                        }
+                    }
+                }
+            } else {
+                for (int p = 0; p < dataset.rows(); ++p) {
+                    if ((rowNames.contains(rowObj.get(p)))) {
+                        probeId++;
+                        for (int s = 0; s < dataset.columns(); ++s) {
+                            matrix.setQuick(p, s, dataset.getMatrix().getQuick(p, s));
+                        }
+                    }
                 }
             }
-        }
-        
 
-        for (String r : removeList) {
-            dataset.hashRows.remove(r);
-        }
-        
-        fixOrdering(dataset.hashRows);
 
-        if ((dataset.columns() * newRawData.length) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(newRawData), dataset.hashRows, dataset.hashCols);
-        } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(newRawData.length, dataset.columns());
-            matrix.assign(newRawData);
+            for (String r : removeList) {
+                dataset.hashRows.remove(r);
+            }
+
+            fixOrdering(dataset.hashRows);
+
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
         return(dataset);
@@ -391,41 +425,71 @@ public class MatrixHandling {
             }
         }
         
-        double[][] newRawData = new double[dataset.rows()][newSize];
+        if ((dataset.rows() * (long)newSize) < (Integer.MAX_VALUE - 2)) {
+            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(dataset.rows(), newSize);
 
-        int sampleId = -1;
+            int sampleId = -1;
 
-        ArrayList<String> colObj = dataset.getColObjects();
-        if(remove){
-            for (int s = 0; s < dataset.columns(); ++s) {
-                if (!(colNames.contains(colObj.get(s)))) {
-                    sampleId++;
-                    for (int p = 0; p < dataset.rows(); ++p) {
-                        newRawData[p][sampleId] = dataset.getMatrix().get(p, s);
+            ArrayList<String> colObj = dataset.getColObjects();
+            if(remove){
+                for (int s = 0; s < dataset.columns(); ++s) {
+                    if (!(colNames.contains(colObj.get(s)))) {
+                        sampleId++;
+                        for (int p = 0; p < dataset.rows(); ++p) {
+                            matrix.setQuick(p, sampleId, dataset.getMatrix().getQuick(p, s));
+                        }
+                    }
+                }
+            } else {
+                for (int s = 0; s < dataset.columns(); ++s) {
+                    if ((colNames.contains(colObj.get(s)))) {
+                        sampleId++;
+                        for (int p = 0; p < dataset.rows(); ++p) {
+                            matrix.setQuick(p, sampleId, dataset.getMatrix().getQuick(p, s));
+                        }
                     }
                 }
             }
+            for (String r : removeList) {
+                dataset.hashCols.remove(r);
+            }
+
+            fixOrdering(dataset.hashCols);
+            
+            
+            dataset = new SmallDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         } else {
-            for (int s = 0; s < dataset.columns(); ++s) {
-                if ((colNames.contains(colObj.get(s)))) {
-                    sampleId++;
-                    for (int p = 0; p < dataset.rows(); ++p) {
-                        newRawData[p][sampleId] = dataset.getMatrix().get(p, s);
+        
+            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(dataset.rows(), newSize);
+
+            int sampleId = -1;
+
+            ArrayList<String> colObj = dataset.getColObjects();
+            if(remove){
+                for (int s = 0; s < dataset.columns(); ++s) {
+                    if (!(colNames.contains(colObj.get(s)))) {
+                        sampleId++;
+                        for (int p = 0; p < dataset.rows(); ++p) {
+                            matrix.setQuick(p, sampleId, dataset.getMatrix().getQuick(p, s));
+                        }
+                    }
+                }
+            } else {
+                for (int s = 0; s < dataset.columns(); ++s) {
+                    if ((colNames.contains(colObj.get(s)))) {
+                        sampleId++;
+                        for (int p = 0; p < dataset.rows(); ++p) {
+                            matrix.setQuick(p, sampleId, dataset.getMatrix().getQuick(p, s));
+                        }
                     }
                 }
             }
-        }
-        for (String r : removeList) {
-            dataset.hashCols.remove(r);
-        }
-        
-        fixOrdering(dataset.hashCols);
-        
-        if ((dataset.rows() * newRawData[0].length) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(newRawData), dataset.hashRows, dataset.hashCols);
-        } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(dataset.rows(), newRawData[0].length);
-            matrix.assign(newRawData);
+            for (String r : removeList) {
+                dataset.hashCols.remove(r);
+            }
+
+            fixOrdering(dataset.hashCols);
+            
             dataset = new LargeDoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
         }
         return(dataset);
