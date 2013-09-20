@@ -515,7 +515,7 @@ class GenotypeAligner {
 			refData = null;
 			aligedInputData = null;
 			System.out.println("No reference specified. Do conversion without alignment");
-			LOGGER.info("No reference specified. Do conversion without alignment");
+			LOGGER.info("No reference specified. Do conversion without alignment");		
 		}
 
 		System.out.println(
