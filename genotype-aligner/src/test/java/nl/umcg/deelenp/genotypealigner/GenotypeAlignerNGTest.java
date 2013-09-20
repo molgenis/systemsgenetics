@@ -19,6 +19,7 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
+import org.molgenis.genotype.impute2.Impute2GenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import static org.testng.Assert.*;
@@ -260,6 +261,60 @@ public class GenotypeAlignerNGTest {
 		//Check if number of samples is correct
 		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
 		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+
+
+	}
+	
+	@Test
+	public void testMain4() throws Exception {
+		System.out.println("main");
+
+		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6";
+		System.out.println(studyDataBasePath);
+
+		GenotypeAligner.main("--debug", "--input", studyDataBasePath, "--outputType", "SHAPEIT2", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
+
+		System.out.println("Conversion complete now going to check using the orignal data");
+
+		RandomAccessGenotypeData convertedHapmap3Data = new Impute2GenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
+		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+
+
+		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
+		int variantCounter = 0;
+		for (GeneticVariant aligendVariant : convertedHapmap3Data) {
+
+			++variantCounter;
+			
+			if(!aligendVariant.isSnp()){
+				//skip non SNPs
+				continue;
+			}
+
+			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+
+			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+
+			while (aligendVariantSampleAllelesIterator.hasNext()) {
+				Alleles aligned = aligendVariantSampleAllelesIterator.next();
+				Alleles original = orignalVariantSampleAllelesIterator.next();
+				
+				//Shapeits imputs sporadic missing genotypes. Ignore this
+				if(original == MISSING_ALLELES){
+					continue;
+				}
+				
+				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+			}
+			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+
+		}
+
+		assertEquals(variantCounter, 4248);
+
+		//Check if number of samples is correct
+		assertEquals(convertedHapmap3Data.getSamples().size(), forwardHapmap3Data.getSamples().size());
 
 
 	}

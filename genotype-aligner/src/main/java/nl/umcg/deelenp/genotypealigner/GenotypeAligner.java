@@ -22,6 +22,7 @@ import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
+import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.LdCalculatorException;
 
 @SuppressWarnings("static-access")
@@ -83,7 +84,6 @@ class GenotypeAligner {
 				.hasArg()
 				.withDescription("The base bath of the reference data. The extensions are determined based on the reference data type.")
 				.withLongOpt("ref")
-				.isRequired()
 				.create("r");
 		OPTIONS.addOption(option);
 
@@ -246,30 +246,43 @@ class GenotypeAligner {
 			return;
 		}
 
-		final String refBasePath = commandLine.getOptionValue('r');
+		final String refBasePath;
 
 		final RandomAccessGenotypeDataReaderFormats refType;
-		try {
-			if (commandLine.hasOption('R')) {
-				refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
-			} else {
-				if (refBasePath.endsWith(".vcf")) {
-					System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+
+		if (commandLine.hasOption('r')) {
+
+			refBasePath = commandLine.getOptionValue('r');
+
+			try {
+				if (commandLine.hasOption('R')) {
+					refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+				} else {
+					if (refBasePath.endsWith(".vcf")) {
+						System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+					}
+					try {
+						refType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(refBasePath);
+					} catch (GenotypeDataException e) {
+						System.err.println("Unable to deterime reference type based on specified path. Please specify --refType");
+						System.exit(1);
+						return;
+					}
 				}
-				try {
-					refType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(refBasePath);
-				} catch (GenotypeDataException e) {
-					System.err.println("Unable to deterime reference type based on specified path. Please specify --refType");
-					System.exit(1);
-					return;
-				}
+
+			} catch (IllegalArgumentException e) {
+				System.err.println("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+				System.exit(1);
+				return;
 			}
 
-		} catch (IllegalArgumentException e) {
-			System.err.println("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
-			System.exit(1);
-			return;
+		} else {
+			refBasePath = null;
+			refType = null;
 		}
+
+
+
 
 		final String outputBasePath = commandLine.getOptionValue('o');
 
@@ -402,6 +415,13 @@ class GenotypeAligner {
 
 		try {
 			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache, forceSeqName);
+		} catch (TabixFileNotFoundException e) {
+			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
+					+ "Please see README on how to create a tabix file");
+			LOGGER.fatal("Tabix file not found for input data at: " + e.getPath() + "\n"
+					+ "Please see README on how to create a tabix file");
+			System.exit(1);
+			return;
 		} catch (IOException e) {
 			System.err.println("Error reading input data: " + e.getMessage());
 			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
@@ -424,65 +444,79 @@ class GenotypeAligner {
 		LOGGER.info(
 				"Input data loaded");
 
+
 		final RandomAccessGenotypeData refData;
+		final ModifiableGenotypeData aligedInputData;
+		if (refBasePath != null) {
+
+			try {
+				refData = refType.createGenotypeData(refBasePath, genotypeDataCache);
+			} catch (TabixFileNotFoundException e) {
+				System.err.println("Tabix file not found for reference data at: " + e.getPath() + "\n"
+						+ "Please see README on how to create a tabix file");
+				LOGGER.fatal("Tabix file not found for reference data at: " + e.getPath() + "\n"
+						+ "Please see README on how to create a tabix file");
+				System.exit(1);
+				return;
+			} catch (IOException e) {
+				System.err.println("Error reading reference data: " + e.getMessage());
+				LOGGER.fatal("Error reading reference data: " + e.getMessage(), e);
+				System.exit(1);
+				return;
+			} catch (IncompatibleMultiPartGenotypeDataException e) {
+				System.err.println("Error combining the reference genotype data files: " + e.getMessage());
+				LOGGER.fatal("Error combining the reference genotype data files: " + e.getMessage(), e);
+				System.exit(1);
+				return;
+			} catch (GenotypeDataException e) {
+				System.err.println("Error reading reference data: " + e.getMessage());
+				LOGGER.fatal("Error reading reference data: " + e.getMessage(), e);
+				System.exit(1);
+				return;
+			}
+
+			System.out.println(
+					"Reference data loaded");
+			LOGGER.info(
+					"Reference data loaded");
+
+			Aligner aligner = new Aligner();
+			if (inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED) {
+				System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+				LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+			}
 
 
-		try {
-			refData = refType.createGenotypeData(refBasePath, genotypeDataCache);
-		} catch (IOException e) {
-			System.err.println("Error reading reference data: " + e.getMessage());
-			LOGGER.fatal("Error reading reference data: " + e.getMessage(), e);
-			System.exit(1);
-			return;
-		} catch (IncompatibleMultiPartGenotypeDataException e) {
-			System.err.println("Error combining the reference genotype data files: " + e.getMessage());
-			LOGGER.fatal("Error combining the reference genotype data files: " + e.getMessage(), e);
-			System.exit(1);
-			return;
-		} catch (GenotypeDataException e) {
-			System.err.println("Error reading reference data: " + e.getMessage());
-			LOGGER.fatal("Error reading reference data: " + e.getMessage(), e);
-			System.exit(1);
-			return;
+			try {
+				System.out.println("Beginning alignment");
+				aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
+			} catch (LdCalculatorException e) {
+				System.err.println("Error in LD caculation" + e.getMessage());
+				LOGGER.fatal("Error in LD caculation" + e.getMessage(), e);
+				System.exit(1);
+				return;
+			} catch (GenotypeDataException e) {
+				System.err.println("Error in alignment" + e.getMessage());
+				LOGGER.fatal("Error in alignment" + e.getMessage(), e);
+				System.exit(1);
+				return;
+			}
+
+			System.out.println(
+					"Alignment complete");
+			LOGGER.info(
+					"Alignment complete");
+
+			System.out.println(
+					"Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
+			LOGGER.info(
+					"Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
+		} else {
+			refData = null;
+			aligedInputData = null;
+			System.out.println("No reference specified. Do conversion without alignment");
+			LOGGER.info("No reference specified. Do conversion without alignment");
 		}
-
-		System.out.println(
-				"Reference data loaded");
-		LOGGER.info(
-				"Reference data loaded");
-
-		Aligner aligner = new Aligner();
-		ModifiableGenotypeData aligedInputData;
-		if (inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED) {
-			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
-			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
-		}
-
-
-		try {
-			System.out.println("Beginning alignment");
-			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
-		} catch (LdCalculatorException e) {
-			System.err.println("Error in LD caculation" + e.getMessage());
-			LOGGER.fatal("Error in LD caculation" + e.getMessage(), e);
-			System.exit(1);
-			return;
-		} catch (GenotypeDataException e) {
-			System.err.println("Error in alignment" + e.getMessage());
-			LOGGER.fatal("Error in alignment" + e.getMessage(), e);
-			System.exit(1);
-			return;
-		}
-
-		System.out.println(
-				"Alignment complete");
-		LOGGER.info(
-				"Alignment complete");
-
-		System.out.println(
-				"Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
-		LOGGER.info(
-				"Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
 
 		System.out.println(
 				"Writing results");
@@ -490,12 +524,15 @@ class GenotypeAligner {
 				"Writing results");
 
 
-		GenotypeWriter inputDataWriter = outputType.createGenotypeWriter(aligedInputData);
-
-
 		try {
+			GenotypeWriter inputDataWriter = outputType.createGenotypeWriter(aligedInputData == null ? inputData : aligedInputData);
 			inputDataWriter.write(outputBasePath);
 		} catch (IOException e) {
+			System.err.println("Error writing output data: " + e.getMessage());
+			LOGGER.fatal("Error writing output data: " + e.getMessage(), e);
+			System.exit(1);
+			return;
+		} catch (GenotypeDataException e) {
 			System.err.println("Error writing output data: " + e.getMessage());
 			LOGGER.fatal("Error writing output data: " + e.getMessage(), e);
 			System.exit(1);
@@ -505,7 +542,9 @@ class GenotypeAligner {
 
 		try {
 			inputData.close();
-			refData.close();
+			if (refData != null) {
+				refData.close();
+			}
 		} catch (IOException ex) {
 		}
 
@@ -529,10 +568,10 @@ class GenotypeAligner {
 		LOGGER.info("Input base path: " + inputBasePath);
 		System.out.println(" - Input data type: " + inputType.getName());
 		LOGGER.info("Input data type: " + inputType.getName());
-		System.out.println(" - Reference base path: " + refBasePath);
-		LOGGER.info("Reference base path: " + refBasePath);
-		System.out.println(" - Reference data type: " + refType.getName());
-		LOGGER.info("Reference data type: " + refType.getName());
+		System.out.println(" - Reference base path: " + (refBasePath == null ? "no reference set" : refBasePath));
+		LOGGER.info("Reference base path: " + (refBasePath == null ? "no reference set" : refBasePath));
+		System.out.println(" - Reference data type: " + (refBasePath == null ? "no reference set" : refType.getName()));
+		LOGGER.info("Reference data type: " + (refBasePath == null ? "no reference set" : refType.getName()));
 		System.out.println(" - Output base path: " + outputBasePath);
 		LOGGER.info("Output base path: " + outputBasePath);
 		System.out.println(" - Output data type: " + outputType.getName());
