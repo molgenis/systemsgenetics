@@ -18,6 +18,7 @@ import java.util.Iterator;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import static org.testng.Assert.*;
@@ -134,12 +135,14 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "--refType", "VCF", "-ref", refData, "--keep");
+		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "-ref", refData, "--keep");
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 
 		RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test2");
-		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+		
+		//Complicated to test matchFormatToPath
+		RandomAccessGenotypeData forwardHapmap3Data = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6").createGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
 
 
