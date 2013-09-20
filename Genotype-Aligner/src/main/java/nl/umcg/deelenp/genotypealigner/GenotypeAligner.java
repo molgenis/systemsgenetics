@@ -89,7 +89,7 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path\n"
+				.withDescription("The input data type. If not defined will attempt to automatically select the first matching dataset on the specified path\n"
 				+ "* PED_MAP - plink PED MAP files.\n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
@@ -101,7 +101,7 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The reference data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path\n"
+				.withDescription("The reference data type. If not defined will attempt to automatically select the first matching dataset on the specified path\n"
 				+ "* PED_MAP - plink PED MAP files.\n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
@@ -515,7 +515,7 @@ class GenotypeAligner {
 			refData = null;
 			aligedInputData = null;
 			System.out.println("No reference specified. Do conversion without alignment");
-			LOGGER.info("No reference specified. Do conversion without alignment");
+			LOGGER.info("No reference specified. Do conversion without alignment");		
 		}
 
 		System.out.println(
