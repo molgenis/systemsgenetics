@@ -76,7 +76,7 @@
 		<module>imputation-tool</module>
 		<module>eqtl-mapping-pipeline</module>
 		<module>Genotype-IO</module>
-		<module>Genotype-Aligner</module>
+		<module>genotype-aligner</module>
 	 <module>eqtl-functional-enrichment</module>
 	</modules>
 </project>
