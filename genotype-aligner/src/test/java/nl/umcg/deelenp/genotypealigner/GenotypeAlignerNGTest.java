@@ -134,7 +134,7 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "--refType", "VCF", "-ref", refData, "--keep");
+		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "--refType", "VCF", "-ref", refData, "--keep");
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 

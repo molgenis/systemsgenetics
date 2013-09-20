@@ -89,27 +89,25 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The input data type. \n"
+				.withDescription("The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path\n"
 				+ "* PED_MAP - plink PED MAP files.\n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
 				.withLongOpt("inputType")
-				.isRequired()
 				.create("I");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The reference data type. \n"
+				.withDescription("The reference data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path\n"
 				+ "* PED_MAP - plink PED MAP files.\n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
 				.withLongOpt("refType")
-				.isRequired()
 				.create("R");
 		OPTIONS.addOption(option);
 
@@ -124,12 +122,11 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
-				.withDescription("The output data type. \n"
+				.withDescription("The output data type. Defaults to --inputType or to PLINK_BED if there is no writer for the impute type.\n"
 				+ "* PED_MAP - plink PED MAP files. \n"
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes.")
 				.withLongOpt("outputType")
-				.isRequired()
 				.create("O");
 		OPTIONS.addOption(option);
 
@@ -171,13 +168,13 @@ class GenotypeAligner {
 				.withLongOpt("update-id")
 				.create("id");
 		OPTIONS.addOption(option);
-		
+
 		option = OptionBuilder.withArgName("boolean")
 				.withDescription("Keep variants not present in reference data")
 				.withLongOpt("keep")
 				.create("k");
 		OPTIONS.addOption(option);
-		
+
 		option = OptionBuilder.withArgName("string")
 				.hasArg()
 				.withDescription("Shapeit2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with --inputType SHAPEIT2")
@@ -229,7 +226,20 @@ class GenotypeAligner {
 		final RandomAccessGenotypeDataReaderFormats inputType;
 
 		try {
-			inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+			if (commandLine.hasOption('I')) {
+				inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+			} else {
+				if (inputBasePath.endsWith(".vcf")) {
+					System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+				}
+				try {
+					inputType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(inputBasePath);
+				} catch (GenotypeDataException e) {
+					System.err.println("Unable to deterime inpute type based on specified path. Please specify --inputType");
+					System.exit(1);
+					return;
+				}
+			}
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --inputType \"" + commandLine.getOptionValue('I') + "\" is not a valid input data format");
 			System.exit(1);
@@ -240,7 +250,21 @@ class GenotypeAligner {
 
 		final RandomAccessGenotypeDataReaderFormats refType;
 		try {
-			refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+			if (commandLine.hasOption('R')) {
+				refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+			} else {
+				if (refBasePath.endsWith(".vcf")) {
+					System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+				}
+				try {
+					refType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(refBasePath);
+				} catch (GenotypeDataException e) {
+					System.err.println("Unable to deterime reference type based on specified path. Please specify --refType");
+					System.exit(1);
+					return;
+				}
+			}
+
 		} catch (IllegalArgumentException e) {
 			System.err.println("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
 			System.exit(1);
@@ -249,21 +273,31 @@ class GenotypeAligner {
 
 		final String outputBasePath = commandLine.getOptionValue('o');
 
-		final GenotypedDataWriterFormats outputType;
-		try {
-			outputType = GenotypedDataWriterFormats.valueOf(commandLine.getOptionValue('O').toUpperCase());
-		} catch (IllegalArgumentException e) {
-			System.err.println("Error parsing --outputType \"" + commandLine.getOptionValue('O') + "\" is not a valid output data format");
-			System.exit(1);
-			return;
+		GenotypedDataWriterFormats outputType;
+
+		if (commandLine.hasOption('O')) {
+			try {
+				outputType = GenotypedDataWriterFormats.valueOf(commandLine.getOptionValue('O').toUpperCase());
+			} catch (IllegalArgumentException e) {
+				System.err.println("Error parsing --outputType \"" + commandLine.getOptionValue('O') + "\" is not a valid output data format");
+				System.exit(1);
+				return;
+			}
+		} else {
+			try {
+				outputType = GenotypedDataWriterFormats.valueOf(inputType.name());
+			} catch (IllegalArgumentException e) {
+				outputType = GenotypedDataWriterFormats.PLINK_BED;
+			}
 		}
+
 
 		final boolean debugMode = commandLine.hasOption('d');
 		final boolean updateId = commandLine.hasOption("id");
-
 		final int minSnpsToAlignOn;
 		final int flankSnpsToConsider;
 		final double minLdToIncludeAlign;
+
 
 		try {
 			minSnpsToAlignOn = commandLine.hasOption('v') ? Integer.parseInt(commandLine.getOptionValue('s')) : DEFAULT_MIN_VARIANTS_TO_ALIGN_ON;
@@ -273,6 +307,7 @@ class GenotypeAligner {
 			return;
 		}
 
+
 		try {
 			flankSnpsToConsider = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_FLANK_VARIANTS_TO_CONSIDER;
 		} catch (NumberFormatException e) {
@@ -281,6 +316,7 @@ class GenotypeAligner {
 			return;
 		}
 
+
 		try {
 			minLdToIncludeAlign = commandLine.hasOption('l') ? Double.parseDouble(commandLine.getOptionValue('l')) : DEFAULT_MIN_LD_TO_INCLUDE_ALIGN;
 		} catch (NumberFormatException e) {
@@ -288,24 +324,19 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
-		
 		final String forceSeqName;
-		
-	
 		forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
-		
-
 		final boolean ldCheck = commandLine.hasOption('c');
 		final boolean keep = commandLine.hasOption('k');
-
 		File logFile = new File(outputBasePath + ".log");
-		if (logFile.getParentFile() != null && !logFile.getParentFile().isDirectory()) {
+
+		if (logFile.getParentFile()
+				!= null && !logFile.getParentFile().isDirectory()) {
 			if (!logFile.getParentFile().mkdirs()) {
 				System.err.println("Failed to create output folder: " + logFile.getParent());
 				System.exit(1);
 			}
 		}
-
 
 
 		try {
@@ -322,23 +353,24 @@ class GenotypeAligner {
 			System.exit(1);
 		}
 
-		LOGGER.info("\n" + HEADER);
-		LOGGER.info("Version: " + VERSION);
-		LOGGER.info("Log level: " + LOGGER.getLevel());
+		LOGGER.info(
+				"\n" + HEADER);
+		LOGGER.info(
+				"Version: " + VERSION);
+		LOGGER.info(
+				"Log level: " + LOGGER.getLevel());
 
-		System.out.println("Started logging");
+		System.out.println(
+				"Started logging");
 		System.out.println();
 
 		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName);
-
-
 		if (minSnpsToAlignOn < MIN_MIN_VARIANTS_TO_ALIGN_ON) {
 			LOGGER.fatal("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
 			System.err.println("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
 			System.exit(1);
 			return;
 		}
-
 		if (flankSnpsToConsider < minLdToIncludeAlign) {
 			LOGGER.fatal("--variants < --min-variants");
 			System.err.println("--variants < --min-variants");
@@ -359,15 +391,14 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
-		
-		if(forceSeqName != null && inputType != RandomAccessGenotypeDataReaderFormats.SHAPEIT2){
+		if (forceSeqName != null && inputType != RandomAccessGenotypeDataReaderFormats.SHAPEIT2) {
 			System.err.println("Error cannot force sequence name of: " + inputType.getName());
 			System.exit(1);
 			return;
 		}
-
 		int genotypeDataCache = flankSnpsToConsider * 4;
 		final RandomAccessGenotypeData inputData;
+
 
 		try {
 			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache, forceSeqName);
@@ -386,12 +417,16 @@ class GenotypeAligner {
 			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
 			System.exit(1);
 			return;
-		} 
+		}
 
-		System.out.println("Input data loaded");
-		LOGGER.info("Input data loaded");
+		System.out.println(
+				"Input data loaded");
+		LOGGER.info(
+				"Input data loaded");
 
 		final RandomAccessGenotypeData refData;
+
+
 		try {
 			refData = refType.createGenotypeData(refBasePath, genotypeDataCache);
 		} catch (IOException e) {
@@ -410,19 +445,20 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
-		System.out.println("Reference data loaded");
-		LOGGER.info("Reference data loaded");
+
+		System.out.println(
+				"Reference data loaded");
+		LOGGER.info(
+				"Reference data loaded");
 
 		Aligner aligner = new Aligner();
-
 		ModifiableGenotypeData aligedInputData;
-
-		if(inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED){
+		if (inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED) {
 			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
 			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
 		}
-		
-		
+
+
 		try {
 			System.out.println("Beginning alignment");
 			aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
@@ -438,17 +474,24 @@ class GenotypeAligner {
 			return;
 		}
 
-		System.out.println("Alignment complete");
-		LOGGER.info("Alignment complete");
+		System.out.println(
+				"Alignment complete");
+		LOGGER.info(
+				"Alignment complete");
 
-		System.out.println("Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
-		LOGGER.info("Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
+		System.out.println(
+				"Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
+		LOGGER.info(
+				"Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants");
 
-		System.out.println("Writing results");
-		LOGGER.info("Writing results");
+		System.out.println(
+				"Writing results");
+		LOGGER.info(
+				"Writing results");
 
 
 		GenotypeWriter inputDataWriter = outputType.createGenotypeWriter(aligedInputData);
+
 
 		try {
 			inputDataWriter.write(outputBasePath);
@@ -458,18 +501,23 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
+
+
 		try {
 			inputData.close();
 			refData.close();
 		} catch (IOException ex) {
-			
 		}
-				
-		LOGGER.info("Output data writen");
-		LOGGER.info("Program complete");
 
-		System.out.println("Output data writen");
-		System.out.println("Program complete");
+		LOGGER.info(
+				"Output data writen");
+		LOGGER.info(
+				"Program complete");
+
+		System.out.println(
+				"Output data writen");
+		System.out.println(
+				"Program complete");
 
 	}
 
@@ -504,8 +552,8 @@ class GenotypeAligner {
 		LOGGER.info("Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
 		System.out.println(" - Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
 		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
-		
-		
+
+
 		System.out.println();
 
 
