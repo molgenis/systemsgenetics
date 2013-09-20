@@ -35,7 +35,7 @@ import umcg.genetica.math.stats.FisherExactTest;
  *
  * @author Matthieu
  */
-public class EQtlPermutationTranscriptionFactorAnalysis {
+public class EQtlPermutationTranscriptionFactorAnalysisV2 {
 	
 	
 	public static void main(String[] args)throws IOException{
@@ -43,7 +43,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 	}
 	
 	
-	public EQtlPermutationTranscriptionFactorAnalysis(String eQtlFile, String permutationFile, String genotypeData, String regulomeDbLocation, int windowSize, double r2CutOff)throws IOException{
+	public EQtlPermutationTranscriptionFactorAnalysisV2(String eQtlFile, String permutationFile, String genotypeData, String regulomeDbLocation, int windowSize, double r2CutOff)throws IOException{
 		ArrayList<RegulomeDbFile> regulomeDbFiles = new ArrayList<RegulomeDbFile>();
 		regulomeDbFiles.add(new RegulomeDbFile( new File(regulomeDbLocation + "RegulomeDB.dbSNP132.b36.Category1.txt") ));
 		
