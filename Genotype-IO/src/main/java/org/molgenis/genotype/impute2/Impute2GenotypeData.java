@@ -59,6 +59,10 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 	private static final Logger LOGGER = Logger.getLogger(Impute2GenotypeData.class);
 	private AllelesAndPhasing last;
 
+	public Impute2GenotypeData(String path) throws IOException {
+		this(new File(path + ".haps"), new File(path + ".sample"));
+	}
+	
 	public Impute2GenotypeData(File hapsFile, File sampleFile) throws IOException {
 		this(hapsFile, sampleFile, 100);
 	}
@@ -151,7 +155,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 				String sampleId = tuple.getString(1);
 
 				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
-				annotationValues.put(SAMPLE_MISSING_RATE_DOUBLE, tuple.getDouble(2));
+				annotationValues.put(SAMPLE_MISSING_RATE_DOUBLE, tuple.getString(2).equals("NA")? Double.NaN:tuple.getDouble(2));
 
 				
 				for (String colName : sampleAnnotations.keySet()) {
