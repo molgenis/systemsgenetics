@@ -18,7 +18,7 @@ Getting started
 
 ### Downloading the Genotype Aligner
 The last build from the genotype aligner can be downloaded here:
-http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
+http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$Genotype-Aligner/lastBuild/
 
 Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, test data and 2 example scripts.
 
