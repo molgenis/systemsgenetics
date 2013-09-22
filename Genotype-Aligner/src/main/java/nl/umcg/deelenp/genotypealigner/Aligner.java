@@ -110,7 +110,7 @@ public class Aligner {
 							if (refVariant == null) {
 								refVariant = potentialRefVariant;
 							} else {
-								LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " because position maps to multiple variants with same alleles. Neither of these variants have same ID as this variant. No way to know which the correspoding variant should be.");
+								LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " because position maps to multiple variants with same alleles. Neither of these variants have same ID as this variant. No way to know what the correspoding variant is.");
 								studyVariant.exclude();
 								continue studyVariants;
 							}
@@ -135,6 +135,7 @@ public class Aligner {
 
 			//If we get here we have found a variant is our reference data on the same position with comparable alleles.
 
+			//We have to exclude maf of zero otherwise we can not do LD calculation
 			if (!(studyVariant.getMinorAlleleFrequency() > 0)) {
 				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " has a MAF of 0 in the study data");
 				studyVariant.exclude();
@@ -432,51 +433,6 @@ public class Aligner {
 		}
 
 		return array;
-	}
-
-	private GeneticVariant deterimeBestMatchRefVariant(
-			GeneticVariant studyVariant, Iterable<GeneticVariant> potentialRefVariants) {
-
-		for (GeneticVariant potentialRefVariant : potentialRefVariants) {
-
-			if (potentialRefVariant.getVariantId().isSameId(studyVariant.getVariantId())) {
-
-				//test if same alleles or complement
-				if (potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles())
-						|| potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles().getComplement())) {
-
-					return potentialRefVariant;
-
-				} else {
-
-					LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " Found variant with same ID but alleles are not comparable.");
-					return null;
-				}
-			}
-		}
-
-		GeneticVariant potentialRef = null;
-		for (GeneticVariant potentialRefVariant : potentialRefVariants) {
-
-			//test if same alleles or complement
-			if (potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles())
-					|| potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles().getComplement())) {
-
-				if (potentialRef == null) {
-					potentialRef = potentialRefVariant;
-				} else {
-					LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " because position maps to multiple variants with same alleles. Neither of these variants have same ID as this variant. No way to know which the correspoding variant should be.");
-					return null;
-				}
-
-			}
-		}
-		if (potentialRef == null) {
-			LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " There is no variant in the reference at this position with same ID or same alleles");
-			return null;
-		}
-		return potentialRef;
-
 	}
 
 	private static class correlationResults {
