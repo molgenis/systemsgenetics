@@ -91,6 +91,10 @@ When combining different genotype datasets, either samples ran on multiple genot
 
 The `--keep` option is particularly useful here to keep the SNPs not shared by both datasets. The `--update-id` will also make merging using Plink or other tools more easy.
 
+### Conversion
+
+Although there are many tools that can convert from one file type to an other it can also easily be done using our Genotype Aligner by simply not specifying a reference. In such a case the input data will simply be converted to the specified output type.
+
 Arguments overview
 ----------------
 
