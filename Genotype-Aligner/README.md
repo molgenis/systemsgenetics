@@ -1,6 +1,6 @@
 <!--
 
-  It is reccommend to view this file using a markdown viewer
+  It is recommended to view this file using a markdown viewer
   or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-aligner/README.md
 
 -->
@@ -35,7 +35,7 @@ In the most basic usage scenario you need to define:
 
 * A dataset that you want to align and the type of this dataset
 * A dataset that you want to use as reference and the type of this dataset
-* The output path and type where you want to write the aliged data to
+* The output path and type where you want to write the aligned data to
 
 Your command will look like this:
 ```
@@ -45,7 +45,7 @@ GenotypeAligner.sh \
 	--ref path_to_reference
 ```
 
-Note: this is a single commandline command. The `\` is only for readability.
+Note: this is a single command line command. The `\` is only for readability.
 
 You can find more examples as a script in the root of the distribution.
 
@@ -79,7 +79,7 @@ Typical usage scenarios
 
 ### Preparing data for genotype imputation
 
-When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
+When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambiguous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
 
 In combination with the `--update-id` option the Genotype Aligner is a convenient tool for preparation of genotype data before imputation.
 
@@ -94,8 +94,8 @@ The `--keep` option is particularly useful here to keep the SNPs not shared by b
 Arguments overview
 ----------------
 
-| Short | Long           | Description                                                                                                                          |
-|-------|----------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Short | Long           | Description                                 |
+|-------|----------------|---------------------------------------------|
 | -i    | --input        | \* The base path of the data to align. The extensions are determined based on the input data type.|
 | -I    | --inputType    | The input data type. If not defined will attempt to automatically select the first matching dataset on the specified path (see inputeType options) |
 | -r    | --ref          | The base path of the reference data used for alignment. The extensions are determined based on the input data type. If not specified the input data is simply converted to the specified output type.|
@@ -103,12 +103,13 @@ Arguments overview
 | -o    | --output       | \* The base path of the output data. |
 | -O    | --outputType   | The output data type. Defaults to --inputType or to PLINK_BED if there is no writer for the impute type. (--outputType options) |
 | -id   | --update-id    | Update the variant identifiers using the reference data. The identifiers of the output data will be the same as the reference data |
-| -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants |
-| -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment |
-| -s    | --variants     | Number of flanking variants to consider |
+| -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants. Defaults to 0.3 |
+| -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment. Defaults to 3 |
+| -v    | --variants     | Number of flanking variants to consider. Defaults to 100 |
 | -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2`
 | -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
+| -ma   | --mafAlign     | If there are not enough variants in LD and the minor allele frequency (MAF) of a variant <= the specified value in both study as in reference then the minor allele can be used as a backup for alignment. Defaults to 0 |
 
 \* = required
 
@@ -154,6 +155,16 @@ Regardless of the output type a log file will always be created at: `${base path
 * SHAPEIT2
  * Writers haps file at: `${base path}.haps`
  * Writers sample file at: `${base path}.sample`
+ 
+####Tweaking the alignment using the advanced options
+
+It can be worthwhile to tweak the alignment algorithm using the advanced options (`--min-ld`, `--min-variants`, `--variants` & `--mafAlign`) to improve the reliability of the alignment and to reduce the number of excluded variant that could not be aligned. The default values are quite conservative and sooner exclude variant than falsely swap the strand.
+
+We have found that for datasets with a small number of samples it is wiser to have a high value for `--min-ld` (as is the default). This resulted in a reliable aliment of the small example datasets. However for larger datasets a lower value can be used to retain more variants, we have good experiences with a cut-off 0.1 for datasets with more than 1000 samples. Increasing `--min-variants` safely allows lower values of `--min-ld` this can improve the number of aligned variants.
+
+When imputing the HLA region in densely genotyped dataset containing a large number of rare variants it helped to increase the `--variants` although this did effect the speed performance it did allow us to align more variants. This resulted in better imputation when using [snp2hla](https://www.broadinstitute.org/mpg/snp2hla/) from the Broad Institute.
+
+Finally, it is also possible to align using the minor allele when the LD alignment fails using the `--mafAlign` option. By default this option is off (the maximum maf is set to 0) so it is never done. However in a lot of cases it is save to use the minor when there are not enough in LD with a variant. A save value would be 0.1, in that case only variant with a maf <= to 0.1 will be aligned by matching the minor allele.
  
 Bug reports / feature requests
 ----------------
