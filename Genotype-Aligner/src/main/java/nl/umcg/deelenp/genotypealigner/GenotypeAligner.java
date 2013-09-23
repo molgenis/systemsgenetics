@@ -25,6 +25,10 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.LdCalculatorException;
 
+/**
+ * 
+ * @author Patrick Deelen
+ */
 @SuppressWarnings("static-access")
 class GenotypeAligner {
 
@@ -54,7 +58,7 @@ class GenotypeAligner {
 	 * The default number of SNPs on either flank to consider for LD alignment.
 	 * Only SNPs with LD above minimum LD will be used
 	 */
-	private static final int DEFAULT_FLANK_VARIANTS_TO_CONSIDER = 50;
+	private static final int DEFAULT_FLANK_VARIANTS_TO_CONSIDER = 100;
 	/**
 	 * The lowest allowed minimum for the number of SNPs needed to align on
 	 */
@@ -63,6 +67,10 @@ class GenotypeAligner {
 	 * The default minimum LD before using a SNP for LD alignment
 	 */
 	private static final double DEFAULT_MIN_LD_TO_INCLUDE_ALIGN = 0.3;
+	/**
+	 * The default maximum LD before the minor allele frequency (MAF) is used as backup for alignment
+	 */
+	private static final double DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT = 0;
 
 	static {
 
@@ -139,20 +147,20 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
-				.withDescription("Minum LD between variant to align or check and a flanking variants in both input as reference. Defaults to " + DEFAULT_MIN_LD_TO_INCLUDE_ALIGN + ". It is NOT recommend to set this to zero")
+				.withDescription("Minimum LD between variant to align or check and a flanking variants in both input as reference. Defaults to " + DEFAULT_MIN_LD_TO_INCLUDE_ALIGN + ". It is NOT recommend to set this to zero")
 				.withLongOpt("min-ld")
 				.create("l");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("int")
 				.hasArg()
-				.withDescription("Minimum number of variants above ld-cutoff to do LD alignment. Variants that do not meet this requerement are excluded. Defaults to " + DEFAULT_MIN_VARIANTS_TO_ALIGN_ON + ". Min value: " + MIN_MIN_VARIANTS_TO_ALIGN_ON)
+				.withDescription("Minimum number of variants above ld-cutoff to do LD alignment. Variants that do not meet this requirement are excluded. Defaults to " + DEFAULT_MIN_VARIANTS_TO_ALIGN_ON + ". Min value: " + MIN_MIN_VARIANTS_TO_ALIGN_ON)
 				.withLongOpt("min-variants")
 				.create("m");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("boolean")
-				.withDescription("Check ld structure of all variants after alignment and exclude variants that deviate")
+				.withDescription("Check ld structure of all variants after alignment and exclude variants that deviate. This option negates the effect of --mafAlign")
 				.withLongOpt("check-ld")
 				.create("c");
 		OPTIONS.addOption(option);
@@ -177,9 +185,16 @@ class GenotypeAligner {
 
 		option = OptionBuilder.withArgName("string")
 				.hasArg()
-				.withDescription("Shapeit2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with --inputType SHAPEIT2")
+				.withDescription("Shapeit2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid in combination with --inputType SHAPEIT2")
 				.withLongOpt("forceChr")
 				.create("f");
+		OPTIONS.addOption(option);
+		
+		option = OptionBuilder.withArgName("double")
+				.hasArg()
+				.withDescription("If there are not enough variants in LD and the minor allele frequency (MAF) of a variant <= the specified value in both study as in reference then the minor allele can be used as a backup for alignment. Defaults to " + DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT)
+				.withLongOpt("mafAlign")
+				.create("ma");
 		OPTIONS.addOption(option);
 
 	}
@@ -230,12 +245,12 @@ class GenotypeAligner {
 				inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
 			} else {
 				if (inputBasePath.endsWith(".vcf")) {
-					System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+					System.err.println("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
 				}
 				try {
 					inputType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(inputBasePath);
 				} catch (GenotypeDataException e) {
-					System.err.println("Unable to deterime inpute type based on specified path. Please specify --inputType");
+					System.err.println("Unable to determine input type based on specified path. Please specify --inputType");
 					System.exit(1);
 					return;
 				}
@@ -259,12 +274,14 @@ class GenotypeAligner {
 					refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
 				} else {
 					if (refBasePath.endsWith(".vcf")) {
-						System.err.println("Only vcf.gz is suppored. Please see manual on how to do create a vcf.gz file.");
+						System.err.println("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+						System.exit(1);
+						return;
 					}
 					try {
 						refType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(refBasePath);
 					} catch (GenotypeDataException e) {
-						System.err.println("Unable to deterime reference type based on specified path. Please specify --refType");
+						System.err.println("Unable to determine reference type based on specified path. Please specify --refType");
 						System.exit(1);
 						return;
 					}
@@ -310,25 +327,24 @@ class GenotypeAligner {
 		final int minSnpsToAlignOn;
 		final int flankSnpsToConsider;
 		final double minLdToIncludeAlign;
+		final double maxMafForMafAlignment;
 
 
 		try {
-			minSnpsToAlignOn = commandLine.hasOption('v') ? Integer.parseInt(commandLine.getOptionValue('s')) : DEFAULT_MIN_VARIANTS_TO_ALIGN_ON;
+			minSnpsToAlignOn = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_MIN_VARIANTS_TO_ALIGN_ON;
 		} catch (NumberFormatException e) {
-			System.err.println("Error parsing --variants \"" + commandLine.getOptionValue('s') + "\" is not an int");
+			System.err.println("Error parsing --min-variants \"" + commandLine.getOptionValue('m') + "\" is not an int");
 			System.exit(1);
 			return;
 		}
 
-
 		try {
-			flankSnpsToConsider = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_FLANK_VARIANTS_TO_CONSIDER;
+			flankSnpsToConsider = commandLine.hasOption('v') ? Integer.parseInt(commandLine.getOptionValue('v')) : DEFAULT_FLANK_VARIANTS_TO_CONSIDER;
 		} catch (NumberFormatException e) {
-			System.err.println("Error parsing --min-variants \"" + commandLine.getOptionValue('s') + "\" is not an int");
+			System.err.println("Error parsing --variants \"" + commandLine.getOptionValue('v') + "\" is not an int");
 			System.exit(1);
 			return;
 		}
-
 
 		try {
 			minLdToIncludeAlign = commandLine.hasOption('l') ? Double.parseDouble(commandLine.getOptionValue('l')) : DEFAULT_MIN_LD_TO_INCLUDE_ALIGN;
@@ -337,11 +353,21 @@ class GenotypeAligner {
 			System.exit(1);
 			return;
 		}
-		final String forceSeqName;
-		forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
+		
+		try{
+			maxMafForMafAlignment = commandLine.hasOption("ma") ? Double.parseDouble(commandLine.getOptionValue("ma")) : DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT;
+		} catch (NumberFormatException e) {
+			System.err.println("Error parsing --mafAlign \"" + commandLine.getOptionValue("ma") + "\" is not a double");
+			System.exit(1);
+			return;
+		}
+		
+		
+		final String forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
 		final boolean ldCheck = commandLine.hasOption('c');
 		final boolean keep = commandLine.hasOption('k');
 		File logFile = new File(outputBasePath + ".log");
+		File snpUpdateFile = new File(outputBasePath + ".idUpdates");
 
 		if (logFile.getParentFile()
 				!= null && !logFile.getParentFile().isDirectory()) {
@@ -377,7 +403,8 @@ class GenotypeAligner {
 				"Started logging");
 		System.out.println();
 
-		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName);
+		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName, maxMafForMafAlignment);
+		
 		if (minSnpsToAlignOn < MIN_MIN_VARIANTS_TO_ALIGN_ON) {
 			LOGGER.fatal("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
 			System.err.println("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
@@ -489,13 +516,18 @@ class GenotypeAligner {
 
 			try {
 				System.out.println("Beginning alignment");
-				aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep);
+				aligedInputData = aligner.alignToRef(inputData, refData, minLdToIncludeAlign, minSnpsToAlignOn, flankSnpsToConsider, ldCheck, updateId, keep, snpUpdateFile, maxMafForMafAlignment);
 			} catch (LdCalculatorException e) {
-				System.err.println("Error in LD caculation" + e.getMessage());
-				LOGGER.fatal("Error in LD caculation" + e.getMessage(), e);
+				System.err.println("Error in LD calculation" + e.getMessage());
+				LOGGER.fatal("Error in LD calculation" + e.getMessage(), e);
 				System.exit(1);
 				return;
 			} catch (GenotypeDataException e) {
+				System.err.println("Error in alignment" + e.getMessage());
+				LOGGER.fatal("Error in alignment" + e.getMessage(), e);
+				System.exit(1);
+				return;
+			} catch (IOException e) {
 				System.err.println("Error in alignment" + e.getMessage());
 				LOGGER.fatal("Error in alignment" + e.getMessage(), e);
 				System.exit(1);
@@ -549,21 +581,21 @@ class GenotypeAligner {
 		}
 
 		LOGGER.info(
-				"Output data writen");
+				"Output data written");
 		LOGGER.info(
 				"Program complete");
 
 		System.out.println(
-				"Output data writen");
+				"Output data written");
 		System.out.println(
 				"Program complete");
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName) {
+	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName, double maxMafForMafAlignment) {
 
 
-		System.out.println("Interpreted arugments: ");
+		System.out.println("Interpreted arguments: ");
 		System.out.println(" - Input base path: " + inputBasePath);
 		LOGGER.info("Input base path: " + inputBasePath);
 		System.out.println(" - Input data type: " + inputType.getName());
@@ -580,8 +612,10 @@ class GenotypeAligner {
 		LOGGER.info("Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
 		System.out.println(" - Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
 		LOGGER.info("Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
-		System.out.println(" - Minimum number of variants needed to for LD aligment: " + minSnpsToAlignOn);
-		LOGGER.info("Minimum number of variants needed to for LD aligment: " + minSnpsToAlignOn);
+		System.out.println(" - Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
+		LOGGER.info("Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
+		System.out.println(" - Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
+		LOGGER.info("Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
 		System.out.println(" - LD checker " + (ldCheck ? "on" : "off"));
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
