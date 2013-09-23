@@ -7,8 +7,8 @@
 Genotype Aligner
 ================
 
-The Genotype Aligner is an easy to use commandline tool that allows harmonization of genotype data 
-stored using different fileformats with different and potentially unknown strands. 
+The Genotype Aligner is an easy to use command-line tool that allows harmonization of genotype data 
+stored using different file formats with different and potentially unknown strands. 
 
 Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
 the [Genotype IO](https://github.com/PatrickDeelen/systemsgenetics/tree/master/Genotype-IO) package we can import and export different file format.
@@ -18,15 +18,15 @@ Getting started
 
 ### Downloading the Genotype Aligner
 The last build from the genotype aligner can be downloaded here:
-http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/lastBuild/
+http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$Genotype-Aligner/lastBuild/
 
 Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, test data and 2 example scripts.
 
-In case of succesfull build there will a green circel before the `Build #`. 
-It is possible that you visit the website when a new build is in progress (the circel will be blinking), please try again in a few minutes.
+In case of successfully build there will a green circle before the `Build #`. 
+It is possible that you visit the website when a new build is in progress (the circle will be blinking), please try again in a few minutes.
 
 ### Running the Genotype Aligner
-type `GenotypeAligner.sh`, `GenotypeAligner.bat` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different commandline options.
+type `GenotypeAligner.sh`, `GenotypeAligner.bat` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different command-line options.
 
 In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
@@ -45,7 +45,7 @@ GenotypeAligner.sh \
 	--ref path_to_reference
 ```
 
-Note: this is a single commandline command. The `\` is only for readabily.
+Note: this is a single commandline command. The `\` is only for readability.
 
 You can find more examples as a script in the root of the distribution.
 
@@ -81,15 +81,15 @@ Typical usage scenarios
 
 When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambigous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
 
-In combination with the `--update-id` option the Genotype Aligner is a convenient tool for preperation of genotype data before imputation.
+In combination with the `--update-id` option the Genotype Aligner is a convenient tool for preparation of genotype data before imputation.
 
-Aligning prephased data, generated using tools like SHAPEIT2, is particulary usefull. A dataset only needs to be prephased once and can then be aligned and imputed using different reference set or different versions of reference sets.
+Aligning pre-phased data, generated using tools like SHAPEIT2, is particularly useful. A dataset only needs to be pre-phased once and can then be aligned and imputed using different reference set or different versions of reference sets.
 
 ### Merging data from different genotyping platforms
 
-When combining different genotype datasets, either samples ran on multiple genotyping chips or different batches of samples, it is important to have identical strands. Merge data in plink will give a warning when it detects strand issues in non AT or non GC SNPs but can not automaticly correct this. AT and GC SNP swaps are not automaticly detected. 
+When combining different genotype datasets, either samples ran on multiple genotyping chips or different batches of samples, it is important to have identical strands. Merge data in Plink will give a warning when it detects strand issues in non AT or non GC SNPs but can not automatically correct this. AT and GC SNP swaps are not automatically detected. 
 
-The `--keep` option is particulary usefull here to keep the SNPs not shared by both datasets. The `--update-id` will also make merging using plink or other tools more easy.
+The `--keep` option is particularly useful here to keep the SNPs not shared by both datasets. The `--update-id` will also make merging using Plink or other tools more easy.
 
 Arguments overview
 ----------------
@@ -97,16 +97,16 @@ Arguments overview
 | Short | Long           | Description                                                                                                                          |
 |-------|----------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | -i    | --input        | \* The base path of the data to align. The extensions are determined based on the input data type.|
-| -I    | --inputType    | The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path (see inputeType options) |
-| -r    | --ref          | \* The base path of the reference data used for alignment. The extensions are determined based on the input data type.|
-| -R    | --refType      | The input data type. If not defined will attempt to automaticly select the first matching dataset on the specfied path (see refType options) |
+| -I    | --inputType    | The input data type. If not defined will attempt to automatically select the first matching dataset on the specified path (see inputeType options) |
+| -r    | --ref          | The base path of the reference data used for alignment. The extensions are determined based on the input data type. If not specified the input data is simply converted to the specified output type.|
+| -R    | --refType      | The input data type. If not defined will attempt to automatically select the first matching dataset on the specified path (see refType options) |
 | -o    | --output       | \* The base path of the output data. |
 | -O    | --outputType   | The output data type. Defaults to --inputType or to PLINK_BED if there is no writer for the impute type. (--outputType options) |
 | -id   | --update-id    | Update the variant identifiers using the reference data. The identifiers of the output data will be the same as the reference data |
 | -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants |
 | -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment |
 | -s    | --variants     | Number of flanking variants to consider |
-| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid incombination with `--inputType SHAPEIT2`
+| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2`
 | -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
 
@@ -117,18 +117,18 @@ Arguments overview
 Base path refers to either --input or --ref 
 
 * PED_MAP
- * Expects plink PED file at: `${base path}.ped`
- * Expects plink MAP file at: `${base path}.map`
- * Note: it is recommened to use PLINK_BED due to the large memory usage of the current implementation
+ * Expects Plink PED file at: `${base path}.ped`
+ * Expects Plink MAP file at: `${base path}.map`
+ * Note: it is recommend to use PLINK_BED due to the large memory usage of the current implementation
 * VCF
  * Expects VCF file at: `${base path}.vcf.gz`
- * Must be compresed usign bgzip. (see chapter: Preparing a VCF file)
+ * Must be compressed using bgzip. (see chapter: Preparing a VCF file)
  * Expects tabix file at: `${base path}.vcf.gz.tbi` (see chapter: Preparing a VCF file)
 * PLINK_BED
- * Expects plink BED file at: `${base path}.bed`
- * Expects plink BIM file at: `${base path}.bim`
- * Expects plink FAM file at: `${base path}.fam`
- * Must be in SNP major mode. This is the default of  plink 1.07.
+ * Expects Plink BED file at: `${base path}.bed`
+ * Expects Plink BIM file at: `${base path}.bim`
+ * Expects Plink FAM file at: `${base path}.fam`
+ * Must be in SNP major mode. This is the default of Plink 1.07.
 * VCFFOLDER
  * Matches all vcf.gz files in the folder specified with the bash path.
 * SHAPEIT2
@@ -143,13 +143,13 @@ Base path refers to --output
 Regardless of the output type a log file will always be created at: `${base path}.log`
 
 * PED_MAP
- * Writes plink PED file to: `${base path}.ped`
- * Writes plink MAP file to: `${base path}.map`
- * Note: it is recommened to use PLINK_BED since the writing is much faster
+ * Writes Plink PED file to: `${base path}.ped`
+ * Writes Plink MAP file to: `${base path}.map`
+ * Note: it is recommend to use PLINK_BED since the writing is much faster
 * PLINK_BED
- * Writes plink BED file to: `${base path}.bed`
- * Writes plink BIM file to: `${base path}.bim`
- * Writes plink FAM file to: `${base path}.fam`
+ * Writes Plink BED file to: `${base path}.bed`
+ * Writes Plink BIM file to: `${base path}.bim`
+ * Writes Plink FAM file to: `${base path}.fam`
  * Data is written in SNP major mode
 * SHAPEIT2
  * Writers haps file at: `${base path}.haps`
@@ -164,7 +164,7 @@ Test data
 ----------------
 This chapter is not relevant for the usage of the program but allows reproducibility of the test data.
 
-The genotype aligener contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
+The genotype aligner contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
 This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/). It is also supplied in the Genotype Aligner package to get you started.
 
@@ -172,8 +172,8 @@ This dataset is always tested when building the project and by our Jenkins serve
 
 The following tools are needed for this script:
 
-* plink
-* ucsc liftover + chain hg18ToHg19
+* Plink
+* UCSC liftover + chain hg18ToHg19
 * SHAPEIT2
 * Genetic Map (b37)
 
@@ -199,9 +199,9 @@ awk '{$5=$2;$2=$4;$3=$4+1;$1="chr"$1;print $1,$2,$3,$5}' OFS="\t" hapmap3CeuChr2
 #Update mapping
 liftOver -bedPlus=4 hapmap3CeuChr20B36Mb6b36.bed hg18ToHg19.over.chain hapmap3CeuChr20B36Mb6b37.bed hapmap3CeuChr20B36Mb6unmapped.txt
 
-#All snps are mapped. Normally we would have to account for this
+#All SNPs are mapped. Normally we would have to account for this
 
-#Create mapping update list used by plink
+#Create mapping update list used by Plink
 awk '{print $4, $2}' OFS="\t" hapmap3CeuChr20B36Mb6b37.bed > hapmap3CeuChr20B36Mb6b37.txt
 
 #Update plink mappings
@@ -223,7 +223,7 @@ awk '
 plink --noweb --bfile hapmap3CeuChr20B37Mb6 --make-bed --flip flipList.txt --out hapmap3CeuChr20B37Mb6RandomStrand
 ```
 
-We also want this data phased using SHAPEIT2, for aditional testing.
+We also want this data phased using SHAPEIT2, for additional testing.
 
 ```Bash
 shapeit.v2.r644.linux.x86_64 --input-bed ./hapmap3CeuChr20B37Mb6RandomStrand -M genetic_map_chr20_combined_b37.txt --output-max ./hapmap3CeuChr20B37Mb6RandomStrand --noped --thread 4
