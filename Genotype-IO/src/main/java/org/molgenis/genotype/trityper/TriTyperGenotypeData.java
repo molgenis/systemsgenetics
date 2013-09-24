@@ -266,7 +266,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			lineElems = t.readLineElemsReturnReference(TextFile.tab);
 		}
 		t.close();
-		LOG.info("Loaded " + samples.size() + " samples.\n" + visitedSamples.size() + " samples have annotation: " + numIncluded + " included, " + numFemale + " female, " + numMale + " male, " + numUnknownSex + " with unknown sex");
 
 		if (sampleFilter != null) {
 			includedSamples = new ArrayList<Sample>(numIncluded);
@@ -279,6 +278,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			includedSamples = samples;
 		}
 
+        LOG.info("Loaded " + includedSamples.size() + " out of "+ samples.size() + " samples.");
+        
 		sampleAnnotationMap = new HashMap<String, SampleAnnotation>(3);
 		sampleAnnotationMap.put(GenotypeData.BOOL_INCLUDE_SAMPLE, new SampleAnnotation(BOOL_INCLUDE_SAMPLE, BOOL_INCLUDE_SAMPLE, null, Annotation.Type.BOOLEAN, SampleAnnotation.SampleAnnotationType.OTHER, false));
 		sampleAnnotationMap.put(GenotypeData.CASE_CONTROL_SAMPLE_ANNOTATION_NAME, new SampleAnnotation(CASE_CONTROL_SAMPLE_ANNOTATION_NAME, CASE_CONTROL_SAMPLE_ANNOTATION_NAME, null, Annotation.Type.CASECONTROL, SampleAnnotation.SampleAnnotationType.PHENOTYPE, false));
@@ -360,12 +361,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 			if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
 				snps.add(variant);
-				numberOfIncludedSNPsWithAnnotation++;
 			}
 
 		}
 
-		LOG.info("Loaded " + snps.size() + " out of " + allSNPHash.size() + " SNPs, " + numberOfIncludedSNPsWithAnnotation + " of loaded SNPs have annotation.");
+		LOG.info("Loaded " + snps.size() + " out of " + unfilteredSnpCount + " SNPs, " + numberOfIncludedSNPsWithAnnotation + " of loaded SNPs have annotation.");
 	}
 
 	private void checkFileSize() {
