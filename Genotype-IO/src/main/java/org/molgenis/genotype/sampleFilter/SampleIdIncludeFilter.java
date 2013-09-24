@@ -19,7 +19,14 @@ public class SampleIdIncludeFilter implements SampleFilter {
 	public SampleIdIncludeFilter(Collection<String> includedSampleIds) {
 		this.includedSampleIds = new HashSet<String>(includedSampleIds);
 	}
-
+    
+    public SampleIdIncludeFilter(String... ids){
+		this.includedSampleIds = new HashSet<String>();
+		for(String id : ids){
+			includedSampleIds.add(id);
+		}
+	}
+    
 	public SampleIdIncludeFilter(HashSet<String> includedSampleIds) {
 		this.includedSampleIds = includedSampleIds;
 	}
