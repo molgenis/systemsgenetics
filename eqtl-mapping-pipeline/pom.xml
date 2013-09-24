@@ -15,12 +15,6 @@
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-		 <exclusions>
-		  <exclusion>
-		   <artifactId>colt</artifactId>
-		   <groupId>colt</groupId>
-		  </exclusion>
-		 </exclusions>
 		</dependency>
         <dependency>
 			<groupId>commons-beanutils</groupId>

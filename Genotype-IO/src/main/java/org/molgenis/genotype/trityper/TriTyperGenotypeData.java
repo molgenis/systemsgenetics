@@ -40,6 +40,7 @@ import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.molgenis.genotype.variantFilter.VariantFilter;
+import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
@@ -87,10 +88,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		this(new File(location), 1024, null, null);
 	}
 
-	public TriTyperGenotypeData(File location) throws IOException {
-		this(location, 1024, null, null);
-	}
-
 	public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
 		this(new File(location), cacheSize, null, null);
 	}
@@ -99,6 +96,14 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		this(new File(location), cacheSize, variantFilter, null);
 	}
 
+    public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
+		this(new File(location), cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
+	}
+    
+    public TriTyperGenotypeData(File location) throws IOException {
+		this(location, 1024, null, null);
+	}
+    
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
 		this(location, cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
 	}
