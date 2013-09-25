@@ -34,4 +34,20 @@ public abstract class AbstractGenotypeData implements GenotypeData
 		return getVariantAnnotationsMap().get(annotationId);
 	}
 
+	@Override
+	public String[] getSampleNames() {
+		
+		String[] sampleNames = new String[getSamples().size()];
+		
+		int i = 0;
+		for(Sample sample : getSamples()){
+			sampleNames[i] = sample.getId();
+			++i;
+		}
+		
+		return sampleNames;
+	}
+	
+	
+
 }
