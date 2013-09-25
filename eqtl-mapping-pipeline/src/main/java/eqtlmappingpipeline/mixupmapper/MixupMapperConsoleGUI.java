@@ -34,6 +34,7 @@ public class MixupMapperConsoleGUI {
         String gte = null;
         Integer threads = null;
         String inputeQTLs = null;
+        String snps = null;
         boolean allCombos = false;
 
         for (int i = 0; i < args.length; i++) {
@@ -54,6 +55,8 @@ public class MixupMapperConsoleGUI {
                 inexpplatform = val;
             } else if (arg.equals("--inexpannot")) {
                 inexpannot = val;
+            } else if (arg.equals("--snps")) {
+                snps = val;
             } else if (arg.equals("--gte")) {
                 gte = val;
             } else if (arg.equals("--eqtls")) {
@@ -82,7 +85,7 @@ public class MixupMapperConsoleGUI {
                 printUsage();
             } else {
                 MixupMapper m = new MixupMapper();
-                m.run(xmlSettingsFile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, null, threads, 500000, null, null, inputeQTLs, allCombos);
+                m.run(xmlSettingsFile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, snps, threads, 500000, null, null, inputeQTLs, allCombos);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -100,8 +103,9 @@ public class MixupMapperConsoleGUI {
                 + "--gte\t\t\tstring\t\tLocation of genotype to expression coupling file\n"
                 + "--perm\t\t\tstring\t\tNumber of permutations to perform in order to determine FDR\n"
                 + "--eqtls\t\t\tstring\t\tPath to eQTL file to use for MixupMapper\n"
-                + "--testall\t\t\t\tTest all possible combinations of genotype and gene expression samples\n"              
-                + "--threads\t\tinteger\t\tNumber of threads to calculate with. Default is number of processors.");
+                + "--testall\t\t\t\tTest all possible combinations of genotype and gene expression samples\n"
+                + "--threads\t\tinteger\t\tNumber of threads to calculate with. Default is number of processors.\n"
+                + "--snps\\t\\tstring\\t\\tList of SNPs to test.");
         System.out.println("");
     }
 }
