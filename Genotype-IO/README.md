@@ -267,9 +267,8 @@ Note that samples are filtered first and then the variant filter is applied, so 
 RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath, 1000, combinedFilter, sampleFilter);
 ```
 
-###Using Genotype-IO in rJava
-Reading in genotype information in R can be a big problem due to file size and fileformat support. Using rJava and the Genotype-IO API this is no problem anymore. Using the example method below you can easaly read in any supported fileformat. Just put in the basepath of the input and fileformat. If necessary one can change the cachesize and include filters for samples and variants.
-
+###Using Genotype IO in rJava
+Reading in genotype information in R can be a big problem due to file size and file format support. Using rJava and the Genotype-IO API this is no problem anymore. Using the example method below you can easily read in any supported file format. Just put in the base path of the input and file format. If necessary one can change the cache size and include filters for samples and variants.
 
 ```S
 loadGenotypeData <- function( basePath, dataType, cacheSize=1000, variantFilter = .jnull(class = "org/molgenis/genotype/variantFilter/VariantFilter"), sampleFilter = .jnull("org/molgenis/genotype/sampleFilter/SampleFilter")){
@@ -286,15 +285,15 @@ variantFilter <-  .jcast(.jnew("org/molgenis/genotype/variantFilter/VariantIdInc
 sampleFilter <- .jcast(.jnew("org/molgenis/genotype/sampleFilter/SampleIdIncludeFilter",includedSamples), "org/molgenis/genotype/sampleFilter/SampleFilter")
 ```
 
-A short example of a use case of this code is for instance when trying to read in genotype data, select a specific variant and printing the histogram of dosages.
+A short example of a use case of the API in R, we read a small subset of all data in Plink Bed format, select a specific SNP and printing the histogram of dosages.
 
 ```S
-genotypeData <- loadGenotypeData("PathToFiles", "Plink_BED")
-snp <- .jcall(genotypeData, "Lorg/molgenis/genotype/variant/GeneticVariant;", "getSnpVariantByPos", "8", as.integer(18257854))
-hist(as.numeric(.jcall(snp, "[B", "getSampleCalledDosages")))
+genotypeData <- loadGenotypeData(basePath = "PathToFiles", dataType = "Plink_BED", variantFilter = variantFilter, sampleFilter = sampleFilter)
+snp <- .jcall(genotypeData, "Lorg/molgenis/genotype/variant/GeneticVariant;", "getSnpVariantByPos", "chr", as.integer(position))
+hist(as.numeric(.jcall(snp, "[F", "getSampleDosages")))
 ```
 
-Use the rJava vignet for more information on rJava.
+Use the [rJava vignette](http://cran.r-project.org/web/packages/helloJavaWorld/vignettes/helloJavaWorld.pdf) for more information on rJava and check the java code examples for more help in using the Genotype IO in R.
 
 
 ###More examples
