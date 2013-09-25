@@ -267,6 +267,18 @@ Note that samples are filtered first and then the variant filter is applied, so 
 RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath, 1000, combinedFilter, sampleFilter);
 ```
 
+###Using Genotype-IO in rJava
+Reading in genotype information in R can be a big problem due to file size and fileformat support. Using rJava and the Genotype-IO java API this is no problem anymore. Using the example you can easaly read in any supported fileformat.
+
+
+```R
+loadGenotypeData <- function( basePath, dataType, cacheSize=1000, variantFilter = .jnull(class = "org/molgenis/genotype/variantFilter/VariantFilter"), sampleFilter = .jnull("org/molgenis/genotype/sampleFilter/SampleFilter")){
+  dataType <- toupper(dataType)
+  genotypeDataFormat <- .jcall("org/molgenis/genotype/RandomAccessGenotypeDataReaderFormats", "Lorg/molgenis/genotype/RandomAccessGenotypeDataReaderFormats;","valueOf", dataType)
+  return(.jcall(genotypeDataFormat, "Lorg/molgenis/genotype/RandomAccessGenotypeData;", "createFilteredGenotypeData", basePath, as.integer(cacheSize), variantFilter, sampleFilter))
+}
+```
+
 ###More examples
 The `org.molgenis.genotype.examples` package contains these and other basic examples.
 
