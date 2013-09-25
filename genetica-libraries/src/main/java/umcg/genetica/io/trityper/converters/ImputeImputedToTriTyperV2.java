@@ -104,11 +104,16 @@ public class ImputeImputedToTriTyperV2 {
 
         long nrSNPsAvailable = 0;
         boolean proceed = true;
-        for (int chr = 1; chr <= 22; chr++) {
+
+
+        for (int chr = 1; chr < 23; chr++) {
             // make a file list of batches for this chr....
             String[] fileList = makeFileList(inputDir, chr, fileMatchRegEx);
             System.out.println("Found " + fileList.length + " files for chr " + chr);
+
             for (int f = 0; f < fileList.length; f++) {
+                Pattern whitespace = Pattern.compile("\\s");
+
                 String fileName = inputDir + "/" + fileList[f];
                 System.out.println("Processing file:\t" + fileName);
                 try {
@@ -118,7 +123,9 @@ public class ImputeImputedToTriTyperV2 {
                         while (str.contains("  ")) {
                             str = str.replace("  ", " ");
                         }
-                        String data[] = str.split(" ");
+                        String data[] = data = whitespace.split(str);
+
+
                         String snp = new String(data[1].getBytes());
                         String snpPos = new String(data[2].getBytes());
 
@@ -158,7 +165,7 @@ public class ImputeImputedToTriTyperV2 {
             try {
                 TextFile outSNP = new TextFile(outputDir + "SNPMappings.txt", TextFile.W);
                 for (int snp = 0; snp < snpMappings.size(); snp++) {
-                    outSNP.write(((String) snpMappings.get(snp)) + "\n");
+                    outSNP.write(snpMappings.get(snp) + "\n");
                     if (snp % 2000 == 1999) {
                         System.out.print(".");
                     }
@@ -174,7 +181,7 @@ public class ImputeImputedToTriTyperV2 {
             try {
                 TextFile outSNP = new TextFile(outputDir + "SNPs.txt", TextFile.W);
                 for (int snp = 0; snp < snps.size(); snp++) {
-                    outSNP.write(((String) snps.get(snp)) + "\n");
+                    outSNP.write(snps.get(snp) + "\n");
                     if (snp % 2000 == 1999) {
                         System.out.print(".");
                     }
@@ -211,18 +218,22 @@ public class ImputeImputedToTriTyperV2 {
             int nrSNPs = (int) nrSNPsAvailable;
             WGAFileMatrixGenotype fileMatrixGenotype = new WGAFileMatrixGenotype(nrSNPs, nrSamplesToInclude, new File(outputDir + "GenotypeMatrix.dat"), false);
             WGAFileMatrixImputedDosage matrixImputedDosage = new WGAFileMatrixImputedDosage(nrSNPs, nrSamplesToInclude, new File(outputDir + "/ImputedDosageMatrix.dat"), false);
-
+            String currentSNP = null;
             int snpIndex = 0;
-            for (int chr = 1; chr <= 22; chr++) {
+            for (int chr = 1; chr < 23; chr++) {
                 // make a file list of batches for this chr....
                 String[] fileList = makeFileList(inputDir, chr, fileMatchRegEx);
 
 
                 for (int f = 0; f < fileList.length; f++) {
+
+
+                    Pattern whitespace = Pattern.compile("\\s");
+
+
                     String fileName = inputDir + "/" + fileList[f];
                     //String fileName = inputDir + "/chr" + chr + ".probs";
                     System.out.println("Processing file:\t" + fileName);
-                    String snp = "";
                     int lnctr = 0;
                     try {
                         TextFile in = new TextFile(fileName, TextFile.R);
@@ -232,8 +243,9 @@ public class ImputeImputedToTriTyperV2 {
                                 str = str.replace("  ", " ");
                             }
                             lnctr++;
-                            String data[] = str.split(" ");
-                            snp = new String(data[0].getBytes());
+                            String data[] = whitespace.split(str);
+                            String snp = new String(data[0].getBytes());
+                            currentSNP = snp;
                             byte[] allele1 = new byte[nrSamplesToInclude];
                             byte[] allele2 = new byte[nrSamplesToInclude];
                             byte[] alleles = new byte[2];
@@ -290,7 +302,7 @@ public class ImputeImputedToTriTyperV2 {
                         System.err.println("Error parsing file:\t" + fileName);
                         System.exit(-1);
                     } catch (NumberFormatException e) {
-                        System.err.println("Error parsing dosage value for SNP " + snp + " on line: " + lnctr);
+                        System.err.println("Error parsing dosage value for SNP " + currentSNP + " on line: " + lnctr);
                         System.exit(-1);
                     }
                 }
