@@ -80,8 +80,6 @@ public class Normalizer {
         if (runPCA) {
             ConcurrentCorrelation c = new ConcurrentCorrelation(2);
             double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
-            expressionFileName = expressionFile.replace(parentDir, "");
-            //outputFileNamePrefix = outdir + expressionFileName;
             Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
             correctDataForPCs(dataset, outputFileNamePrefix, nrPCAsOverSamplesToRemove, nrIntermediatePCAsOverSamplesToRemoveToOutput, PCAResults.getLeft(), PCAResults.getRight());
         }
@@ -163,84 +161,93 @@ public class Normalizer {
         // load covariate data, and remove samples for which there is missing covariate data.
         Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> covariateData = loadCovariateValues(covariatesToRemove, traitData);
         DoubleMatrixDataset<String, String> covariateDataset = covariateData.getLeft();
-        traitData = covariateData.getRight();
-        double[][] covariateValues = covariateDataset.getRawData();
+        DoubleMatrixDataset<String, String> traitDataUpdated = covariateData.getRight();
+
+        traitData.rawData = traitDataUpdated.rawData;
+        traitData.colObjects = traitDataUpdated.colObjects;
+        traitData.rowObjects = traitDataUpdated.rowObjects;
+        traitData.recalculateHashMaps();
+        
+        double[][] covariateValues = null;
         double[] pcaExpVar = null;
-        if (orthogonalizecovariates) {
-            // run PCA over the covariates.
-            // we need to transpose the dataset...
 
-            for (int p = 0; p < covariateDataset.rowObjects.size(); p++) {
-                double mean = Descriptives.mean(covariateDataset.getRawData()[p]);
-                double stdev = Math.sqrt(Descriptives.variance(covariateDataset.getRawData()[p], mean));
-                for (int s = 0; s < covariateDataset.colObjects.size(); s++) {
-                    covariateDataset.getRawData()[p][s] -= mean;
-                    covariateDataset.getRawData()[p][s] /= stdev;
-                }
-            }
+        System.out.println("Covariate data has " + covariateDataset.nrRows + " rows and " + covariateDataset.nrCols + " columns.");
 
-            //Covariation on a centered and scaled matrix equels the correlation.
-            //Covariation is faster to compute.
-            ConcurrentCovariation c = new ConcurrentCovariation(2);
-            double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawDataTransposed());
-
-//            DoubleMatrixDataset<String, String> correlationMatrixDs = new DoubleMatrixDataset<String, String>(correlationMatrix, covariateDataset.colObjects, covariateDataset.colObjects);
-//            correlationMatrixDs.save(covariatesToRemove+"-CorrelationMatrix.txt");
-
-            Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(covariateDataset, correlationMatrix, covariatesToRemove, null);
-            // replace covariateValues with orthogonal ones...
-            covariateDataset = PCAResults.getLeft();
-            covariateDataset.transposeDataset();
-
-            covariateValues = covariateDataset.getRawData();
-            System.out.println(covariateValues.length + " covariates finally loaded.");
-            // load the eigenvalues
-            pcaExpVar = new double[covariateValues.length];
-            TextFile tf = new TextFile(covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.R); // 
-            String[] elems = tf.readLineElems(TextFile.tab);
-            while (elems != null) {
-                if (elems.length > 2) {
-                    int pcanr = Integer.parseInt(elems[0]);
-                    double expvar = Double.parseDouble(elems[1]);
-                    pcaExpVar[pcanr - 1] = expvar;
-                    System.out.println(pcanr + "\t" + expvar);
-                }
-                elems = tf.readLineElems(TextFile.tab);
-            }
-            tf.close();
-        } else {
-            // PCA has been performed a-priori. Just check whether the user has supplied proper covariates.
-            if (covariateValues.length > 1) {
-                // check whether the covariates are orthogonal, by calculating the sum of products (inner product)
-                System.out.println("Determining whether covariates are orthogonal, since you defined > 1 covariate:");
-                System.out.println("Covariate1\tCovariate2\tInnerProduct\tCorrelation");
-                double dotproductthreshold = 1E-5;
-                if (covariateValues.length < 100) {
-                    dotproductthreshold = 0.05;
-                }
-                for (int i = 0; i < covariateValues.length; i++) {
-
-                    for (int j = i + 1; j < covariateValues.length; j++) {
-                        double dotproduct = 0;
-                        for (int v = 0; v < covariateValues[i].length; v++) {
-                            dotproduct += covariateValues[i][v] * covariateValues[j][v];
-                        }
-                        double corr = JSci.maths.ArrayMath.correlation(covariateValues[i], covariateValues[j]);
-
-                        if (Math.abs(dotproduct) > dotproductthreshold) {
-                            System.out.println("Innerproduct > 1E-5 for covariates " + covariateDataset.rowObjects.get(i) + " and " + covariateDataset.rowObjects.get(j) + ", InnerProduct: " + Math.abs(dotproduct) + "\tCorrelation: " + corr);
-                            System.out.println("If you want, we can orthogonalize the covariates for you: use --covpca in your command line.");
-                            System.exit(0);
-                        }
-
-                        System.out.println(covariateDataset.rowObjects.get(i) + "\t" + covariateDataset.rowObjects.get(j) + "\t" + dotproduct + "\t" + corr);
-                    }
-
-                }
-
-                System.out.println("Covariates are orthogonal. Now adjusting for covariates.");
+        for (int p = 0; p < covariateDataset.rowObjects.size(); p++) {
+            double mean = Descriptives.mean(covariateDataset.getRawData()[p]);
+            double stdev = Math.sqrt(Descriptives.variance(covariateDataset.getRawData()[p], mean));
+            for (int s = 0; s < covariateDataset.colObjects.size(); s++) {
+                covariateDataset.getRawData()[p][s] -= mean;
+                covariateDataset.getRawData()[p][s] /= stdev;
             }
         }
+
+        //Covariation on a centered and scaled matrix equals the correlation.
+        //Covariation is faster to compute.
+        ConcurrentCovariation c = new ConcurrentCovariation(2);
+        double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawData());
+        covariateDataset.transposeDataset();
+        Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(covariateDataset, correlationMatrix, covariatesToRemove, null);
+
+        // replace covariateValues with orthogonal ones...
+        covariateDataset = PCAResults.getLeft();
+
+
+        covariateDataset.transposeDataset();
+        covariateValues = covariateDataset.getRawData();
+
+        System.out.println(covariateDataset.nrRows + " covariates finally loaded.");
+
+        // load the eigenvalues
+        pcaExpVar = new double[covariateValues.length];
+        System.out.println("Loading eigenvalues from: " + covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz");
+        TextFile tf = new TextFile(covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.R); // 
+        // skip header
+        tf.readLine();
+        String[] elems = tf.readLineElems(TextFile.tab);
+        while (elems != null) {
+            if (elems.length > 2) {
+                int pcanr = Integer.parseInt(elems[0]);
+                double expvar = Double.parseDouble(elems[1]);
+                pcaExpVar[pcanr - 1] = expvar;
+                System.out.println(pcanr + "\t" + expvar);
+            }
+            elems = tf.readLineElems(TextFile.tab);
+        }
+        tf.close();
+//        } else {
+//            // PCA has been performed a-priori. Just check whether the user has supplied proper covariates.
+//            if (covariateValues.length > 1) {
+//                // check whether the covariates are orthogonal, by calculating the sum of products (inner product)
+//                System.out.println("Determining whether covariates are orthogonal, since you defined > 1 covariate:");
+//                System.out.println("Covariate1\tCovariate2\tInnerProduct\tCorrelation");
+//                double dotproductthreshold = 1E-5;
+//                if (covariateValues.length < 100) {
+//                    dotproductthreshold = 0.05;
+//                }
+//                for (int i = 0; i < covariateValues.length; i++) {
+//
+//                    for (int j = i + 1; j < covariateValues.length; j++) {
+//                        double dotproduct = 0;
+//                        for (int v = 0; v < covariateValues[i].length; v++) {
+//                            dotproduct += covariateValues[i][v] * covariateValues[j][v];
+//                        }
+//                        double corr = JSci.maths.ArrayMath.correlation(covariateValues[i], covariateValues[j]);
+//
+//                        if (Math.abs(dotproduct) > dotproductthreshold) {
+//                            System.out.println("Innerproduct > 1E-5 for covariates " + covariateDataset.rowObjects.get(i) + " and " + covariateDataset.rowObjects.get(j) + ", InnerProduct: " + Math.abs(dotproduct) + "\tCorrelation: " + corr);
+//                            System.out.println("If you want, we can orthogonalize the covariates for you: use --covpca in your command line.");
+//                            System.exit(0);
+//                        }
+//
+//                        System.out.println(covariateDataset.rowObjects.get(i) + "\t" + covariateDataset.rowObjects.get(j) + "\t" + dotproduct + "\t" + corr);
+//                    }
+//
+//                }
+//
+//                System.out.println("Covariates are orthogonal. Now adjusting for covariates.");
+//            }
+//        }
 
 
         double[][] rawdata = traitData.getRawData();
@@ -256,6 +263,7 @@ public class Normalizer {
         fileNamePrefix += ".CovariatesRemoved";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
 
+        traitData.rawData = rawdata;
 
 
         return fileNamePrefix;
@@ -320,6 +328,7 @@ public class Normalizer {
 
     public Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> calculatePCA(DoubleMatrixDataset<String, String> dataset, double[][] correlationMatrix, String fileNamePrefix, Integer nrOfPCsToCalculate) throws IOException {
         String expressionFile = fileNamePrefix;
+        System.out.println("Calculating PCA over file: " + fileNamePrefix);
         System.out.println("- Performing PCA over correlation matrix of size: " + correlationMatrix.length + "x" + correlationMatrix.length);
         Jama.EigenvalueDecomposition eig = PCA.eigenValueDecomposition(correlationMatrix);
 
