@@ -370,7 +370,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 	private void checkFileSize() {
 
-		System.out.println(unfilteredSnpCount);
+//		System.out.println(unfilteredSnpCount);
 
 		long expectedfilesize = (long) (unfilteredSnpCount * 2) * (long) samples.size();
 		long detectedsize = genotypeDataFile.length();
