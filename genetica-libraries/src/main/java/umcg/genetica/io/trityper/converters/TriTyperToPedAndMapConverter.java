@@ -196,7 +196,7 @@ public class TriTyperToPedAndMapConverter {
         Boolean[] indIsCase = ds.getIsCase();
 
         for (int i = 0; i < individuals.length; i++) {
-            if (indIsIncluded[i]) {
+            if (indIsIncluded[i] != null && indIsIncluded[i]) {
                 System.out.println(individuals[i]);
                 String sex = "-9";
                 String condition = "-9";
