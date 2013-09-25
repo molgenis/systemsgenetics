@@ -268,7 +268,7 @@ RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath
 ```
 
 ###Using Genotype-IO in rJava
-Reading in genotype information in R can be a big problem due to file size and fileformat support. Using rJava and the Genotype-IO java API this is no problem anymore. Using the example you can easaly read in any supported fileformat.
+Reading in genotype information in R can be a big problem due to file size and fileformat support. Using rJava and the Genotype-IO API this is no problem anymore. Using the example method below you can easaly read in any supported fileformat. Just put in the basepath of the input and fileformat. If necessary one can change the cachesize and include filters for samples and variants.
 
 
 ```R
@@ -278,6 +278,24 @@ loadGenotypeData <- function( basePath, dataType, cacheSize=1000, variantFilter 
   return(.jcall(genotypeDataFormat, "Lorg/molgenis/genotype/RandomAccessGenotypeData;", "createFilteredGenotypeData", basePath, as.integer(cacheSize), variantFilter, sampleFilter))
 }
 ```
+
+In the code below examples for the variant filter and sample filter are given. "includedSnps" and "includedSamples" are R character arrays.
+
+```r
+variantFilter <-  .jcast(.jnew("org/molgenis/genotype/variantFilter/VariantIdIncludeFilter",includedSnps),"org/molgenis/genotype/variantFilter/VariantFilter")
+sampleFilter <- .jcast(.jnew("org/molgenis/genotype/sampleFilter/SampleIdIncludeFilter",includedSamples), "org/molgenis/genotype/sampleFilter/SampleFilter")
+```
+
+A short example of a use case of this code is for instance when trying to read in genotype data, select a specific variant and printing the histogram of dosages.
+
+```r
+genotypeData <- loadGenotypeData("PathToFiles", "Plink_BED")
+snp <- .jcall(genotypeData, "Lorg/molgenis/genotype/variant/GeneticVariant;", "getSnpVariantByPos", "8", as.integer(18257854))
+hist(as.numeric(.jcall(snp, "[B", "getSampleCalledDosages")))
+```
+
+Use the rJava vignet for more information on rJava.
+
 
 ###More examples
 The `org.molgenis.genotype.examples` package contains these and other basic examples.
