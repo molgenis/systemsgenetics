@@ -524,6 +524,11 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 
 	}
 
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return true;
+	}
+
 	private static class AllelesAndPhasing {
 
 		private final GeneticVariant variant;

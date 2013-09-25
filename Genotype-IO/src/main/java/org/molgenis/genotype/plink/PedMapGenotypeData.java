@@ -325,4 +325,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public void close() throws IOException {
 	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return true;
+	}
 }

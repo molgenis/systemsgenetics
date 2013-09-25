@@ -40,7 +40,6 @@ import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.molgenis.genotype.variantFilter.VariantFilter;
-import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
@@ -386,6 +385,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				throw new GenotypeDataException("Size of ImputedDosageMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
 			}
 		}
+	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return false;
 	}
 
 	private static class PosChr {

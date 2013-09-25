@@ -342,4 +342,9 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 		reader.close();
 	}
 
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return false;
+	}
+
 }

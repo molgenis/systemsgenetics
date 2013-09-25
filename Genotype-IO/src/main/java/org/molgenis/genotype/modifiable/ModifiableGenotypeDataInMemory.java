@@ -364,4 +364,9 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 		return sourceGenotypeData.getSampleAnnotationsMap();
 	}
 
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return sourceGenotypeData.isOnlyContaingSaveProbabilityGenotypes();
+	}
+
 }

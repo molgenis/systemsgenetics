@@ -365,6 +365,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	public Iterator<GeneticVariant> iterator() {
 		return snps.iterator();
 	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return true;
+	}
 	
 	
 
