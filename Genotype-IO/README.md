@@ -271,7 +271,7 @@ RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath
 Reading in genotype information in R can be a big problem due to file size and fileformat support. Using rJava and the Genotype-IO API this is no problem anymore. Using the example method below you can easaly read in any supported fileformat. Just put in the basepath of the input and fileformat. If necessary one can change the cachesize and include filters for samples and variants.
 
 
-```R
+```S
 loadGenotypeData <- function( basePath, dataType, cacheSize=1000, variantFilter = .jnull(class = "org/molgenis/genotype/variantFilter/VariantFilter"), sampleFilter = .jnull("org/molgenis/genotype/sampleFilter/SampleFilter")){
   dataType <- toupper(dataType)
   genotypeDataFormat <- .jcall("org/molgenis/genotype/RandomAccessGenotypeDataReaderFormats", "Lorg/molgenis/genotype/RandomAccessGenotypeDataReaderFormats;","valueOf", dataType)
@@ -281,14 +281,14 @@ loadGenotypeData <- function( basePath, dataType, cacheSize=1000, variantFilter 
 
 In the code below examples for the variant filter and sample filter are given. "includedSnps" and "includedSamples" are R character arrays.
 
-```r
+```S
 variantFilter <-  .jcast(.jnew("org/molgenis/genotype/variantFilter/VariantIdIncludeFilter",includedSnps),"org/molgenis/genotype/variantFilter/VariantFilter")
 sampleFilter <- .jcast(.jnew("org/molgenis/genotype/sampleFilter/SampleIdIncludeFilter",includedSamples), "org/molgenis/genotype/sampleFilter/SampleFilter")
 ```
 
 A short example of a use case of this code is for instance when trying to read in genotype data, select a specific variant and printing the histogram of dosages.
 
-```r
+```S
 genotypeData <- loadGenotypeData("PathToFiles", "Plink_BED")
 snp <- .jcall(genotypeData, "Lorg/molgenis/genotype/variant/GeneticVariant;", "getSnpVariantByPos", "8", as.integer(18257854))
 hist(as.numeric(.jcall(snp, "[B", "getSampleCalledDosages")))
