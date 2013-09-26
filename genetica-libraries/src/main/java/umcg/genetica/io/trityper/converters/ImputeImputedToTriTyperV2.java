@@ -7,6 +7,7 @@ package umcg.genetica.io.trityper.converters;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +21,25 @@ import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
  */
 public class ImputeImputedToTriTyperV2 {
 
-    public void importImputedDataWithProbabilityInformationImpute(String inputDir, String outputDir, Integer nrSamples, String sampleListFile, String listOfSamplesToIncludeFile, String fileMatchRegex) throws Exception {
+    public void importImputedDataWithProbabilityInformationImpute(String inputDir, String outputDir, Integer nrSamples, String sampleListFile, String listOfSamplesToIncludeFile, String fileMatchRegex, String snpfile) throws Exception {
+
+        HashSet<String> snpsToInclude = null;
+        if (snpfile != null) {
+            try {
+                System.out.println("Loading snps to convert from: " + snpfile);
+                TextFile tf = new TextFile(snpfile, TextFile.R);
+                snpsToInclude = new HashSet<String>();
+                String ln = tf.readLine();
+                while (ln != null) {
+                    snpsToInclude.add(ln.trim());
+                    ln = tf.readLine();
+                }
+                tf.close();
+                System.out.println("About to convert a maximum of " + snpsToInclude.size() + " snps");
+            } catch (IOException e) {
+                System.err.println("Error: could not find or read file: " + snpfile);
+            }
+        }
 
         Pattern fileMatchRegEx = null;
 
@@ -70,7 +89,7 @@ public class ImputeImputedToTriTyperV2 {
                         System.out.println("WARNING: the number of samples in " + listOfSamplesToIncludeFile + " is larger than the actual number of samples in the imputed data (according to your specification).");
                     }
 
-                    System.out.println("About to include: " + samplesToInclude.size() + "\t out of " + allSamples.size());
+                    System.out.println("About to include: " + samplesToInclude.size() + "\tsamples out of " + allSamples.size());
 
                     // give each sample a new ID..
                     int ctr = 0;
@@ -127,13 +146,16 @@ public class ImputeImputedToTriTyperV2 {
 
 
                         String snp = new String(data[1].getBytes());
-                        String snpPos = new String(data[2].getBytes());
+                        if (snpsToInclude == null || snpsToInclude.contains(snp)) {
+                            String snpPos = new String(data[2].getBytes());
 
-                        String snpMapping = chr + "\t" + snpPos + "\t" + snp;
-                        snpMappings.add(snpMapping);
+                            String snpMapping = chr + "\t" + snpPos + "\t" + snp;
+                            snpMappings.add(snpMapping);
 
-                        snps.add(snp);
-                        nrSNPsAvailable++;
+                            snps.add(snp);
+
+                            nrSNPsAvailable++;
+                        }
                     }
                     System.out.println("Number of SNPs parsed so far:\t" + nrSNPsAvailable);
                     System.out.println("");
@@ -172,6 +194,7 @@ public class ImputeImputedToTriTyperV2 {
                 }
                 System.out.println("");
                 outSNP.close();
+                snpMappings = null;
             } catch (IOException e) {
                 System.err.println("Error writing SNPs.txt file:\t" + outputDir + "SNPMappings.txt");
                 System.exit(-1);
@@ -188,6 +211,7 @@ public class ImputeImputedToTriTyperV2 {
                 }
                 System.out.println("");
                 outSNP.close();
+                snps = null;
             } catch (IOException e) {
                 System.err.println("Error writing SNPs.txt file:\t" + e.getMessage());
                 System.exit(-1);
@@ -245,57 +269,56 @@ public class ImputeImputedToTriTyperV2 {
                             lnctr++;
                             String data[] = whitespace.split(str);
                             String snp = new String(data[0].getBytes());
-                            currentSNP = snp;
-                            byte[] allele1 = new byte[nrSamplesToInclude];
-                            byte[] allele2 = new byte[nrSamplesToInclude];
-                            byte[] alleles = new byte[2];
-                            alleles[0] = data[3].getBytes()[0];
-                            alleles[1] = data[4].getBytes()[0];
-                            byte[] dosage = new byte[nrSamplesToInclude];
+                            if (snpsToInclude == null || snpsToInclude.contains(snp)) {
+                                currentSNP = snp;
+                                byte[] allele1 = new byte[nrSamplesToInclude];
+                                byte[] allele2 = new byte[nrSamplesToInclude];
+                                byte[] alleles = new byte[2];
+                                alleles[0] = data[3].getBytes()[0];
+                                alleles[1] = data[4].getBytes()[0];
+                                byte[] dosage = new byte[nrSamplesToInclude];
 
-                            if (data.length != (nrSamples * 3) + 5) {
-                                throw new Exception("Expected " + nrSamples + "samples. Found: " + (data.length - 5) / 3f + " samples");
-                            }
+                                if (data.length != (nrSamples * 3) + 5) {
+                                    throw new Exception("Expected " + nrSamples + "samples. Found: " + (data.length - 5) / 3f + " samples");
+                                }
 
+                                for (int sample = 0; sample < nrSamples; sample++) {
 
-                            for (int sample = 0; sample < nrSamples; sample++) {
+                                    if (sampleToId == null || sampleToId[sample] != -1) {
 
-                                if (sampleToId == null || sampleToId[sample] != -1) {
+                                        int sampleId = sample;
+                                        if (sampleToId != null) {
+                                            sampleId = sampleToId[sample];
+                                        }
 
-                                    int sampleId = sample;
-                                    if (sampleToId != null) {
-                                        sampleId = sampleToId[sample];
-                                    }
+                                        double dosageValue = Double.parseDouble(data[sample * 3 + 5 + 1]) + 2 * Double.parseDouble(data[sample * 3 + 5 + 2]);
 
-                                    double dosageValue = Double.parseDouble(data[sample * 3 + 5 + 1]) + 2 * Double.parseDouble(data[sample * 3 + 5 + 2]);
-
-                                    int dosageInt = (int) Math.round(dosageValue * 100d);
-                                    byte dosageByte = (byte) (Byte.MIN_VALUE + dosageInt);
-                                    if (dosageInt < 0 || dosageInt > 200) {
-                                        System.out.println("Warning, incorrect dosage!:\t" + dosageInt + "\t" + snpIndex + "\t" + data[sample * 3 + 5] + "\t" + data[sample * 3 + 5 + 1] + "\t" + data[sample * 3 + 5 + 2]);
-                                    } else {
-                                        dosage[sampleId] = (byte) dosageByte;
-                                    }
-                                    if (dosageValue < 0.5) {
-                                        allele1[sampleId] = alleles[0];
-                                        allele2[sampleId] = alleles[0];
-                                    } else {
-                                        if (dosageValue > 1.5) {
-                                            allele1[sampleId] = alleles[1];
-                                            allele2[sampleId] = alleles[1];
+                                        int dosageInt = (int) Math.round(dosageValue * 100d);
+                                        byte dosageByte = (byte) (Byte.MIN_VALUE + dosageInt);
+                                        if (dosageInt < 0 || dosageInt > 200) {
+                                            System.out.println("Warning, incorrect dosage!:\t" + dosageInt + "\t" + snpIndex + "\t" + data[sample * 3 + 5] + "\t" + data[sample * 3 + 5 + 1] + "\t" + data[sample * 3 + 5 + 2]);
                                         } else {
+                                            dosage[sampleId] = (byte) dosageByte;
+                                        }
+                                        if (dosageValue < 0.5) {
                                             allele1[sampleId] = alleles[0];
-                                            allele2[sampleId] = alleles[1];
+                                            allele2[sampleId] = alleles[0];
+                                        } else {
+                                            if (dosageValue > 1.5) {
+                                                allele1[sampleId] = alleles[1];
+                                                allele2[sampleId] = alleles[1];
+                                            } else {
+                                                allele1[sampleId] = alleles[0];
+                                                allele2[sampleId] = alleles[1];
+                                            }
                                         }
                                     }
                                 }
-
-
+                                fileMatrixGenotype.setAllele1(snpIndex, 0, allele1);
+                                fileMatrixGenotype.setAllele2(snpIndex, 0, allele2);
+                                matrixImputedDosage.setDosage(snpIndex, 0, dosage);
+                                snpIndex++;
                             }
-                            fileMatrixGenotype.setAllele1(snpIndex, 0, allele1);
-                            fileMatrixGenotype.setAllele2(snpIndex, 0, allele2);
-                            matrixImputedDosage.setDosage(snpIndex, 0, dosage);
-                            snpIndex++;
                         }
                         in.close();
                     } catch (IOException e) {
