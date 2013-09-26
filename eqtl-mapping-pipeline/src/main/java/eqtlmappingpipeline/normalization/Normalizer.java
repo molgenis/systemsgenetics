@@ -1,6 +1,5 @@
 package eqtlmappingpipeline.normalization;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +45,8 @@ public class Normalizer {
 
         DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
 
+
+
         String parentDir = Gpio.getParentDir(expressionFile);
         String expressionFileName = Gpio.getFileName(expressionFile);
         if (parentDir == null) {
@@ -59,6 +60,11 @@ public class Normalizer {
         }
 
         String outputFileNamePrefix = outdir + expressionFileName;
+
+        // check for probes with zero variance, if there > 3 samples in the dataset
+        if (dataset.nrCols > 3) {
+            outputFileNamePrefix = removeProbesWithZeroVariance(dataset, outputFileNamePrefix);
+        }
 
         if (runQQNorm) {
             outputFileNamePrefix = quantileNormalize(dataset, outputFileNamePrefix);
@@ -167,7 +173,7 @@ public class Normalizer {
         traitData.colObjects = traitDataUpdated.colObjects;
         traitData.rowObjects = traitDataUpdated.rowObjects;
         traitData.recalculateHashMaps();
-        
+
         double[][] covariateValues = null;
         double[] pcaExpVar = null;
 
@@ -821,5 +827,48 @@ public class Normalizer {
         newDataset.save(dataset.fileName + "-SampleSizeCorrectedForCovariates.txt");
         return new Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>>(covariateDataset, newDataset);
 //        }
+    }
+
+    private String removeProbesWithZeroVariance(DoubleMatrixDataset<String, String> dataset, String outputFileNamePrefix) throws IOException {
+        boolean[] dataHasZeroVariance = new boolean[dataset.nrRows];
+        int nrRowsWithZeroVariance = 0;
+        for (int row = 0; row < dataset.nrRows; row++) {
+            double[] data = dataset.rawData[row];
+            double var = JSci.maths.ArrayMath.variance(data);
+            if (var == 0d) {
+                System.out.println("Removing probe with zero variance: " + dataset.rowObjects.get(row) + " on line " + (row + 1));
+                nrRowsWithZeroVariance++;
+                dataHasZeroVariance[row] = true;
+            }
+        }
+
+        if (nrRowsWithZeroVariance > 0) {
+            int newNrRows = dataset.nrRows - nrRowsWithZeroVariance;
+            if (newNrRows == 0) {
+                System.err.println("ERROR: all probes have zero variance!");
+                System.exit(-1);
+            }
+
+
+            double[][] newData = new double[newNrRows][dataset.nrCols];
+            int ctr = 0;
+            ArrayList<String> newRowHeader = new ArrayList<String>();
+            for (int row = 0; row < dataset.nrRows; row++) {
+                if (!dataHasZeroVariance[row]) {
+                    newData[ctr] = dataset.rawData[row];
+                    newRowHeader.add(dataset.rowObjects.get(row));
+                    ctr++;
+                }
+            }
+
+            dataset.rawData = newData;
+            dataset.rowObjects = newRowHeader;
+            dataset.recalculateHashMaps();
+            String outputFileName = outputFileNamePrefix + ".ProbesWithZeroVarianceRemoved";
+            dataset.save(outputFileName + ".txt.gz");
+            return outputFileName;
+        }
+
+        return outputFileNamePrefix;
     }
 }
