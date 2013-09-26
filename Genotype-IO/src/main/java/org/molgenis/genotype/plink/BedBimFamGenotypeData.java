@@ -30,8 +30,10 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
@@ -56,7 +58,6 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private static final Alleles BI_ALLELIC_MISSING = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(BedBimFamGenotypeWriter.class);
 	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
-	
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final HashMap<String, Sequence> sequences;
@@ -68,7 +69,6 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final int cacheSize;
 	private final List<Boolean> phasing;
 	private final int bytesPerVariant;
-	
 	/**
 	 * The orignal SNP count in the data regardless of number of read SNPs
 	 */
@@ -77,7 +77,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	public BedBimFamGenotypeData(String basePath) throws IOException {
 		this(basePath, 100);
 	}
-	
+
 	public BedBimFamGenotypeData(String basePath, int cacheSize) throws IOException {
 		this(new File(basePath + ".bed"), new File(basePath + ".bim"), new File(basePath + ".fam"), cacheSize);
 	}
@@ -115,7 +115,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		if (!famFile.canRead()) {
 			throw new IOException("FAM file not found at " + famFile.getAbsolutePath());
 		}
-		
+
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 
 		if (cacheSize <= 0) {
@@ -124,34 +124,34 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
 		}
 		this.cacheSize = cacheSize;
-		
+
 		sampleAnnotations = PlinkSampleAnnotations.getSampleAnnotations();
 		samples = new ArrayList<Sample>();
 		readFamFile(famFile);
-		
+
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
-		
+
 		snpIndexces = new HashMap<GeneticVariant, Integer>();
 		snps = new GeneticVariantTreeSet<GeneticVariant>();
 		sequences = new HashMap<String, Sequence>();
 		originalSnpCount = readBimFile(bimFile);
-		
+
 		bytesPerVariant = samples.size() % 4 == 0 ? samples.size() / 4 : (samples.size() / 4 + 1);
-		
+
 		//Check file size of bed file
-		if(bedFile.length() != ( (long) bytesPerVariant * (long) originalSnpCount + 3) ){
-			throw new GenotypeDataException("Invalid plink BED file not the expected file size. " + bedFile.getAbsolutePath() + " expected: " + ( (long) bytesPerVariant * (long) snpIndexces.size() + 3) + " found: " + bedFile.length() + " bytes per variant: " + bytesPerVariant + " snps: " + originalSnpCount);
+		if (bedFile.length() != ((long) bytesPerVariant * (long) originalSnpCount + 3)) {
+			throw new GenotypeDataException("Invalid plink BED file not the expected file size. " + bedFile.getAbsolutePath() + " expected: " + ((long) bytesPerVariant * (long) snpIndexces.size() + 3) + " found: " + bedFile.length() + " bytes per variant: " + bytesPerVariant + " snps: " + originalSnpCount);
 		}
-		
+
 		//Check first two bytes for magic number
 		bedFileReader = new RandomAccessFile(bedFile, "r");
-		if(bedFileReader.read() != MAGIC_NUMBER_1 || bedFileReader.read() != MAGIC_NUMBER_2){
+		if (bedFileReader.read() != MAGIC_NUMBER_1 || bedFileReader.read() != MAGIC_NUMBER_2) {
 			throw new GenotypeDataException("Error reading plink BED file, magic number not found. " + bedFile.getAbsolutePath());
 		}
-		
+
 		int bedFileMode = bedFileReader.read();
-		if(bedFileMode != MODE){
-			if(bedFileMode == 0){
+		if (bedFileMode != MODE) {
+			if (bedFileMode == 0) {
 				throw new GenotypeDataException("Error reading BED file, only SNP major mode is supported. " + bedFile.getAbsolutePath());
 			} else {
 				throw new GenotypeDataException("Error reading BED file, ivalid mode byte detected. " + bedFile.getAbsolutePath());
@@ -207,9 +207,9 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	@Override
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
-		
+
 		int index = snpIndexces.get(variant);
-		
+
 		long startByte = (index * bytesPerVariant) + 3;
 
 		long stopByte = startByte + bytesPerVariant;
@@ -217,27 +217,27 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		byte[] variantBytes = new byte[(int) (stopByte - startByte)];
 		try {
 			bedFileReader.seek(startByte);
-			if(bedFileReader.read(variantBytes) != variantBytes.length){
+			if (bedFileReader.read(variantBytes) != variantBytes.length) {
 				throw new GenotypeDataException("Error reading bed file");
 			}
 		} catch (IOException ex) {
 			throw new GenotypeDataException("Error reading bed file", ex);
 		}
-		
+
 		ArrayList<Alleles> alleles = new ArrayList<Alleles>(samples.size());
-		
+
 		Alleles heterozygote = variant.getVariantAlleles();
 		Alleles homozygoteFirst = Alleles.createAlleles(heterozygote.get(0), heterozygote.get(0));
 		Alleles homozygoteSecond = Alleles.createAlleles(heterozygote.get(1), heterozygote.get(1));
-		
+
 		int sampleCounter = 0;
-		
-		for(int variantByte : variantBytes){
-			
-			for(int i = 0 ; i < 4 ; ++i){
-				
-				if(sampleCounter < samples.size()){
-					switch (variantByte & READER_MASK){
+
+		for (int variantByte : variantBytes) {
+
+			for (int i = 0; i < 4; ++i) {
+
+				if (sampleCounter < samples.size()) {
+					switch (variantByte & READER_MASK) {
 						case HOMOZYGOTE_FIRST:
 							alleles.add(homozygoteFirst);
 							break;
@@ -250,23 +250,23 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 						case MISSING:
 							alleles.add(BI_ALLELIC_MISSING);
 							break;
-						default: 
+						default:
 							throw new GenotypeDataException("Error reading BED, this should not be reachable");
 					}
 				} else {
-					if( (variantByte & READER_MASK) != 0){
+					if ((variantByte & READER_MASK) != 0) {
 						throw new GenotypeDataException("Error reading BED file, found data in padding bits of variant: " + variant.getPrimaryVariantId());
 					}
 				}
 				variantByte = variantByte >>> 2;
 				++sampleCounter;
 			}
-			
+
 		}
-		
-		
+
+
 		return Collections.unmodifiableList(alleles);
-		
+
 	}
 
 	@Override
@@ -297,68 +297,68 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	}
 
 	private void readFamFile(File famFile) throws FileNotFoundException, IOException {
-		
+
 		BufferedReader famFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(famFile), FILE_ENCODING));
-		
+
 		String line;
-		while( (line = famFileReader.readLine()) != null ){
-			
+		while ((line = famFileReader.readLine()) != null) {
+
 			String[] elements = SEPARATOR_PATTERN.split(line);
-			
+
 			Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
 			annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, elements[2]);
 			annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, elements[3]);
-			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink((byte)elements[4].charAt(0)));
+			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink((byte) elements[4].charAt(0)));
 			annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, Double.parseDouble(elements[5]));
-			
+
 			samples.add(new Sample(elements[1], elements[0], annotationValues));
-			
+
 		}
-		
+
 		LOGGER.info("Read " + samples.size() + " from " + famFile.getAbsolutePath());
-		
+
 		famFileReader.close();
-		
+
 	}
 
 	private int readBimFile(File bimFile) throws FileNotFoundException, IOException {
-		
+
 		BufferedReader bimFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(bimFile), FILE_ENCODING));
-		
+
 		String line;
 		int snpIndex = 0;
-		while( (line = bimFileReader.readLine()) != null ){
-			
+		while ((line = bimFileReader.readLine()) != null) {
+
 			String[] elements = SEPARATOR_PATTERN.split(line);
-			
+
 			String sequenceName = elements[0].intern();
-			
-			if(!sequences.containsKey(sequenceName)){
+
+			if (!sequences.containsKey(sequenceName)) {
 				sequences.put(sequenceName, new SimpleSequence(sequenceName, 0, this));
 			}
-			
+
 			//Create new strign to make sure it is not backed by the whole line
 			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(new String(elements[1]), Integer.parseInt(elements[3]), sequenceName, sampleVariantProvider, Allele.create(elements[4]), Allele.create(elements[5]));
-			
-			if(snpIndexces.containsKey(variant)){
+
+			if (snpIndexces.containsKey(variant)) {
 				LOGGER.warn("Found two SNPs at " + sequenceName + ":" + variant.getStartPos() + " Only first is read!");
 			} else {
 				snps.add(variant);
 				snpIndexces.put(variant, snpIndex);
 			}
-			
-			
-			
+
+
+
 			++snpIndex;
-			
+
 		}
-		
+
 		LOGGER.info("Read " + snpIndex + " from " + bimFile.getAbsolutePath());
-		
+
 		bimFileReader.close();
-		
+
 		return snpIndex;
-		
+
 	}
 
 	@Override
@@ -370,7 +370,9 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	public boolean isOnlyContaingSaveProbabilityGenotypes() {
 		return true;
 	}
-	
-	
 
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles());
+	}
 }

@@ -23,8 +23,10 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SampleAnnotation.SampleAnnotationType;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
@@ -527,6 +529,11 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 	@Override
 	public boolean isOnlyContaingSaveProbabilityGenotypes() {
 		return true;
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 
 	private static class AllelesAndPhasing {

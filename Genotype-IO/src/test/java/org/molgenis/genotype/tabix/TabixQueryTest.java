@@ -18,7 +18,9 @@ import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.VariantQuery;
 import org.molgenis.genotype.VariantQueryResult;
 import org.molgenis.genotype.annotation.Annotation;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.VariantLineMapper;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -28,55 +30,47 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-public class TabixQueryTest extends ResourceTest implements SampleVariantsProvider
-{
+
+public class TabixQueryTest extends ResourceTest implements SampleVariantsProvider {
+
 	private VariantQuery query;
 	private TabixIndex index;
 	private VariantQueryResult result;
 	private final int sampleVariantProviderUniqueId = 0;
 
 	@BeforeClass
-	public void beforeClass() throws IOException, URISyntaxException
-	{
+	public void beforeClass() throws IOException, URISyntaxException {
 		VcfReader reader = new VcfReader(new BlockCompressedInputStream(getTestVcfGz()));
 
-		try
-		{
+		try {
 			VariantLineMapper variantLineMapper = new VcfVariantLineMapper(reader.getColNames(),
-					Collections.<Annotation> emptyList(), Collections.<String, String> emptyMap(), this);
+					Collections.<Annotation>emptyList(), Collections.<String, String>emptyMap(), this);
 			index = new TabixIndex(getTestVcfGzTbi(), getTestVcfGz(), variantLineMapper);
-		}
-		finally
-		{
+		} finally {
 			reader.close();
 		}
 
 	}
 
 	@BeforeMethod
-	public void beforeMethod() throws IOException
-	{
+	public void beforeMethod() throws IOException {
 		query = index.createQuery();
 	}
 
 	@AfterMethod
-	public void afterMethod() throws IOException
-	{
-		if (result != null)
-		{
+	public void afterMethod() throws IOException {
+		if (result != null) {
 			result.close();
 		}
 	}
 
 	@Test
-	public void queryPos() throws IOException
-	{
+	public void queryPos() throws IOException {
 		result = query.executeQuery("1", 565286, 6097450);
 		Iterator<GeneticVariant> it = result.iterator();
 
 		int i = 0;
-		while (it.hasNext())
-		{
+		while (it.hasNext()) {
 			i++;
 			GeneticVariant variant = it.next();
 			assertNotNull(variant);
@@ -88,14 +82,12 @@ public class TabixQueryTest extends ResourceTest implements SampleVariantsProvid
 	}
 
 	@Test
-	public void querySeq1() throws IOException
-	{
+	public void querySeq1() throws IOException {
 		result = query.executeQuery("1");
 		Iterator<GeneticVariant> it = result.iterator();
 
 		int i = 0;
-		while (it.hasNext())
-		{
+		while (it.hasNext()) {
 			i++;
 			GeneticVariant variant = it.next();
 			assertNotNull(variant);
@@ -105,14 +97,12 @@ public class TabixQueryTest extends ResourceTest implements SampleVariantsProvid
 	}
 
 	@Test
-	public void querySeq2() throws IOException
-	{
+	public void querySeq2() throws IOException {
 		result = query.executeQuery("2");
 		Iterator<GeneticVariant> it = result.iterator();
 
 		int i = 0;
-		while (it.hasNext())
-		{
+		while (it.hasNext()) {
 			i++;
 			GeneticVariant variant = it.next();
 			assertNotNull(variant);
@@ -122,8 +112,7 @@ public class TabixQueryTest extends ResourceTest implements SampleVariantsProvid
 	}
 
 	@Test
-	public void queryStartPos()
-	{
+	public void queryStartPos() {
 		result = query.executeQuery("1", 3172273);
 		Iterator<GeneticVariant> variants = result.iterator();
 
@@ -139,41 +128,40 @@ public class TabixQueryTest extends ResourceTest implements SampleVariantsProvid
 	}
 
 	@Override
-	public List<Alleles> getSampleVariants(GeneticVariant variant)
-	{
+	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public int cacheSize()
-	{
+	public int cacheSize() {
 		return 0;
 	}
 
 	@Override
-	public List<Boolean> getSamplePhasing(GeneticVariant variant)
-	{
+	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public int getSampleVariantProviderUniqueId()
-	{
+	public int getSampleVariantProviderUniqueId() {
 		return sampleVariantProviderUniqueId;
 	}
 
 	@Override
-	public byte[] getSampleCalledDosage(GeneticVariant variant)
-	{
+	public byte[] getSampleCalledDosage(GeneticVariant variant) {
 		return CalledDosageConvertor.convertCalledAllelesToCalledDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
 	}
 
 	@Override
-	public float[] getSampleDosage(GeneticVariant variant)
-	{
+	public float[] getSampleDosage(GeneticVariant variant) {
 		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }

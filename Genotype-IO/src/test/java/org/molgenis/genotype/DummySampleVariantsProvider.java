@@ -1,8 +1,10 @@
 package org.molgenis.genotype;
 
 import java.util.List;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -55,6 +57,11 @@ public class DummySampleVariantsProvider implements SampleVariantsProvider
 	{
 		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
+	}
+	
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 
 }

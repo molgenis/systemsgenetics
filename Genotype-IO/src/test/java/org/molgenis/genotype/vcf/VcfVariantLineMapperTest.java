@@ -11,31 +11,31 @@ import java.util.List;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.annotation.Annotation;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.VariantLineMapper;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.testng.annotations.Test;
 
-public class VcfVariantLineMapperTest implements SampleVariantsProvider
-{
+public class VcfVariantLineMapperTest implements SampleVariantsProvider {
+
 	private static final List<String> COL_NAMES = Arrays.asList("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
 			"INFO", "FORMAT", "sample1");
 	private final int sampleVariantProviderUniqueId;
 
-	public VcfVariantLineMapperTest()
-	{
+	public VcfVariantLineMapperTest() {
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
 
 	@Test
-	public void mapLineSnp()
-	{
+	public void mapLineSnp() {
 		String line = "1	565286	rs1578391	C	T	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754	GT:DP:EC:CONFS	1/1:5:5:5.300,5.300,1.000,1.000,1.000,1.000,1.000";
 
-		VariantLineMapper mapper = new VcfVariantLineMapper(COL_NAMES, Collections.<Annotation> emptyList(),
-				Collections.<String, String> emptyMap(), this);
+		VariantLineMapper mapper = new VcfVariantLineMapper(COL_NAMES, Collections.<Annotation>emptyList(),
+				Collections.<String, String>emptyMap(), this);
 		GeneticVariant variant = mapper.mapLine(line);
 		assertNotNull(variant);
 		assertEquals(variant.isSnp(), true);
@@ -65,12 +65,11 @@ public class VcfVariantLineMapperTest implements SampleVariantsProvider
 	}
 
 	@Test
-	public void mapLineInsert()
-	{
+	public void mapLineInsert() {
 		String line = "1	565286	.	C	CTA,CA	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754	GT:DP:EC:CONFS	1/1:5:5:5.300,5.300,1.000,1.000,1.000,1.000,1.000";
 
-		VariantLineMapper mapper = new VcfVariantLineMapper(COL_NAMES, Collections.<Annotation> emptyList(),
-				Collections.<String, String> emptyMap(), this);
+		VariantLineMapper mapper = new VcfVariantLineMapper(COL_NAMES, Collections.<Annotation>emptyList(),
+				Collections.<String, String>emptyMap(), this);
 		GeneticVariant variant = mapper.mapLine(line);
 		assertNotNull(variant);
 
@@ -93,39 +92,38 @@ public class VcfVariantLineMapperTest implements SampleVariantsProvider
 	}
 
 	@Override
-	public List<Alleles> getSampleVariants(GeneticVariant variant)
-	{
+	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public int cacheSize()
-	{
+	public int cacheSize() {
 		return 0;
 	}
 
 	@Override
-	public List<Boolean> getSamplePhasing(GeneticVariant variant)
-	{
+	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
 		return null;
 	}
 
-	public int getSampleVariantProviderUniqueId()
-	{
+	public int getSampleVariantProviderUniqueId() {
 		return sampleVariantProviderUniqueId;
 	}
 
 	@Override
-	public byte[] getSampleCalledDosage(GeneticVariant variant)
-	{
+	public byte[] getSampleCalledDosage(GeneticVariant variant) {
 		return CalledDosageConvertor.convertCalledAllelesToCalledDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
 	}
 
 	@Override
-	public float[] getSampleDosage(GeneticVariant variant)
-	{
+	public float[] getSampleDosage(GeneticVariant variant) {
 		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }
