@@ -118,10 +118,11 @@ public class PedFileDriver implements PlinkFileParser, Iterable<PedEntry>
 		final StringTokenizer strTokenizer = new StringTokenizer(line, separators);
 		try
 		{
-			String family = strTokenizer.nextToken();
-			String individual = strTokenizer.nextToken();
-			String father = strTokenizer.nextToken();
-			String mother = strTokenizer.nextToken();
+			//Todo this to make sure not to save whole line in background after a split or tokanizer
+			String family = new String(strTokenizer.nextToken());
+			String individual = new String(strTokenizer.nextToken());
+			String father = new String(strTokenizer.nextToken());
+			String mother = new String(strTokenizer.nextToken());
 			byte sex = Byte.parseByte(strTokenizer.nextToken());
 			double phenotype = Double.parseDouble(strTokenizer.nextToken());
 

@@ -1,4 +1,4 @@
-package nl.umcg.deelenp.genotypealigner;
+package nl.umcg.deelenp.genotypegarmonizer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,7 +24,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class Aligner {
 
-	private static Logger LOGGER = Logger.getLogger(GenotypeAligner.class);
+	private static Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
 
 	/**
 	 *
