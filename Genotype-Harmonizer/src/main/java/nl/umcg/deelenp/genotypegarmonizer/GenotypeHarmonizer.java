@@ -1,4 +1,4 @@
-package nl.umcg.deelenp.genotypealigner;
+package nl.umcg.deelenp.genotypegarmonizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,12 +30,12 @@ import org.molgenis.genotype.util.LdCalculatorException;
  * @author Patrick Deelen
  */
 @SuppressWarnings("static-access")
-class GenotypeAligner {
+class GenotypeHarmonizer {
 
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
 			"  /---------------------------------------\\\n"
-			+ "  |            Genotype Aligner           |\n"
+			+ "  |          Genotype Harmonizer          |\n"
 			+ "  |                                       |\n"
 			+ "  |             Patrick Deelen            |\n"
 			+ "  |        patrickdeelen@gmail.com        |\n"
@@ -74,7 +74,7 @@ class GenotypeAligner {
 
 	static {
 
-		LOGGER = Logger.getLogger(GenotypeAligner.class);
+		LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
 
 		OPTIONS = new Options();
 
