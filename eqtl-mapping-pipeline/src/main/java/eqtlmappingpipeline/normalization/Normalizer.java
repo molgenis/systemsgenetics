@@ -35,13 +35,13 @@ public class Normalizer {
             outdir = Gpio.formatAsDirectory(outdir);
             Gpio.createDir(outdir);
         } else {
-			if( Gpio.getParentDir(expressionFile) == null){
-				//This happens for relative paths in current dir
-				outdir = "";
-			} else {
-				outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
-			}
-            
+            if (Gpio.getParentDir(expressionFile) == null) {
+                //This happens for relative paths in current dir
+                outdir = "";
+            } else {
+                outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
+            }
+
         }
 
         DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
@@ -74,7 +74,7 @@ public class Normalizer {
         }
 
         if (adjustCovariates && covariatesToRemove != null) {
-            adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, orthogonalizecovariates, 1E-10);
+            outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, orthogonalizecovariates, 1E-10);
         }
 
         if (runPCA) {
@@ -89,14 +89,14 @@ public class Normalizer {
 
     public String quantileNormalize(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
         double[][] rawData = dataset.getRawData();
-        
-        if(!MatrixTools.containsNaNs(rawData)){
+
+        if (!MatrixTools.containsNaNs(rawData)) {
             QuantileNormalization.quantilenormalize(rawData);
         } else {
             System.out.println("Warning data contained NaNs, please check your data if you know that there should be no NaN's.\n Normalizer automaticaly replaces these NA values, with the sample median.");
-            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset,false,false);
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, false);
         }
-        
+
         DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
         fileNamePrefix += ".QuantileNormalized";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
@@ -814,4 +814,3 @@ public class Normalizer {
 //        }
     }
 }
-
