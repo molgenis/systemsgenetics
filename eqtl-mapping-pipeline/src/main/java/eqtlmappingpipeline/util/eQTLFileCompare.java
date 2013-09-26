@@ -22,7 +22,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  */
 public class eQTLFileCompare {
 
-    private static Pattern SPLIT_ON_TAB = Pattern.compile("\t");
+    private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
     private int nrShared = 0;
     private int nrOpposite = 0;
 
@@ -110,7 +110,7 @@ public class eQTLFileCompare {
         in.readLine();
         String[] data = null;
         
-        while ((data = SPLIT_ON_TAB.split(in.readLine())) != null) {
+        while ((data = in.readLineElemsReturnReference(SPLIT_ON_TAB)) != null) {
             if (hashConvertProbeNames.size() > 0) {
                 if (hashConvertProbeNames.containsKey(data[4].trim())) {
                     data[4] = hashConvertProbeNames.get(data[4].trim());
@@ -179,7 +179,7 @@ public class eQTLFileCompare {
         int lineno = 1;
         data = null;
         TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
-        while ((data = SPLIT_ON_TAB.split(in.readLine())) != null) {
+        while ((data = in.readLineElemsReturnReference(SPLIT_ON_TAB)) != null) {
 
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
 
