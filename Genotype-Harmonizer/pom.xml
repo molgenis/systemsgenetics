@@ -98,7 +98,7 @@
        -->
 							<classpathPrefix>lib/</classpathPrefix>
 							<!-- Specifies the main class of the application -->
-							<mainClass>nl.umcg.deelenp.genotypealigner.GenotypeAligner</mainClass>
+							<mainClass>nl.umcg.deelenp.genotypegarmonizer.GenotypeHarmonizer</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
