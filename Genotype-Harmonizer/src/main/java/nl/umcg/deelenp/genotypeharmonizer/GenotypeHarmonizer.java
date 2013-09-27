@@ -1,4 +1,4 @@
-package nl.umcg.deelenp.genotypegarmonizer;
+package nl.umcg.deelenp.genotypeharmonizer;
 
 import java.io.File;
 import java.io.IOException;
