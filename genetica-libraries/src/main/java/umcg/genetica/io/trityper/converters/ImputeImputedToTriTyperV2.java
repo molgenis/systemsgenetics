@@ -136,13 +136,13 @@ public class ImputeImputedToTriTyperV2 {
                 String fileName = inputDir + "/" + fileList[f];
                 System.out.println("Processing file:\t" + fileName);
                 try {
-                    TextFile in = new TextFile(fileName, TextFile.R);
+                    TextFile in = new TextFile(fileName, TextFile.R,104857600);
                     String str;
                     while ((str = in.readLine()) != null) {
                         while (str.contains("  ")) {
                             str = str.replace("  ", " ");
                         }
-                        String data[] = data = whitespace.split(str);
+                        String data[] = whitespace.split(str);
 
 
                         String snp = new String(data[1].getBytes());
@@ -260,7 +260,7 @@ public class ImputeImputedToTriTyperV2 {
                     System.out.println("Processing file:\t" + fileName);
                     int lnctr = 0;
                     try {
-                        TextFile in = new TextFile(fileName, TextFile.R);
+                        TextFile in = new TextFile(fileName, TextFile.R,104857600);
                         String str;
                         while ((str = in.readLine()) != null) {
                             while (str.contains("  ")) {
@@ -268,7 +268,7 @@ public class ImputeImputedToTriTyperV2 {
                             }
                             lnctr++;
                             String data[] = whitespace.split(str);
-                            String snp = new String(data[0].getBytes());
+                            String snp = new String(data[1].getBytes());
                             if (snpsToInclude == null || snpsToInclude.contains(snp)) {
                                 currentSNP = snp;
                                 byte[] allele1 = new byte[nrSamplesToInclude];
