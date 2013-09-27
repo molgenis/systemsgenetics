@@ -4,6 +4,7 @@
  */
 package umcg.genetica.io.geofiles;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.io.IOException;
@@ -16,8 +17,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.math.NumberUtils;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
-import umcg.genetica.math.matrix2.LargeDoubleMatrixDataset;
-import umcg.genetica.math.matrix2.SmallDoubleMatrixDataset;
 
 /**
  *
@@ -157,15 +156,18 @@ public class ParseTextTable {
         in.close();
 
         DoubleMatrixDataset<String, String> dataset;
-
+        
+        DoubleMatrix2D mat;
+        
         if ((tmpRows * tmpCols) < (Integer.MAX_VALUE - 2)) {
-            dataset = new SmallDoubleMatrixDataset<String, String>(new DenseDoubleMatrix2D(initialMatrix), rowMap, colMap);
+            mat = new DenseDoubleMatrix2D(initialMatrix);
         } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
-            matrix.assign(initialMatrix);
-            dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            mat = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
+            mat.assign(initialMatrix);            
         }
-
+        
+        dataset = new DoubleMatrixDataset<String, String>(mat, rowMap, colMap);
+        
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileInput, dataset.rows(), dataset.columns()});
         return dataset;
     }
