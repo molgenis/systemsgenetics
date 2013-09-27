@@ -251,7 +251,7 @@ public class ImputationTool {
             System.out.println("out:\t" + out);
             System.out.println("nrSamples:\t" + nrSamples);
 
-            convertImputeToTriTyper(in, out, nrSamples, sampleFile, sampleFileToInclude, fileMatchRegex);
+            convertImputeToTriTyper(in, out, nrSamples, sampleFile, sampleFileToInclude, fileMatchRegex, snps);
         } else if (mode.equals("ttvcf")) {
             System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
@@ -292,7 +292,7 @@ public class ImputationTool {
 
         System.out.println("------------------------\nImputation\n------------------------\n");
         System.out.println("# Convert Impute Imputed data into TriTyper\n"
-                + "--mode itt --in ImputeDir --out TriTyperDir --nrSamples numberOfSamplesInImputedData [--samples samplelistfile.txt] [--samplestoinclude samplelistfiletoinclude.txt] [--fileMatchRegex pattern]");
+                + "--mode itt --in ImputeDir --out TriTyperDir --nrSamples numberOfSamplesInImputedData [--samples samplelistfile.txt] [--samplestoinclude samplelistfiletoinclude.txt] [--fileMatchRegex pattern] [--snps snpfile.txt]");
 
         System.out.println("# Convert a dir with Minimac imputed data into TriTyper\n"
                 + "--mode mmtt --in Imputation restult dir --out TriTyperDir");
@@ -505,13 +505,13 @@ public class ImputationTool {
         }
     }
 
-    private void convertImputeToTriTyper(String in, String out, Integer nrSamples, String samplesFile, String samplesToIncludeFile, String fileMatchRegex) throws IOException, Exception {
+    private void convertImputeToTriTyper(String in, String out, Integer nrSamples, String samplesFile, String samplesToIncludeFile, String fileMatchRegex, String snps) throws IOException, Exception {
         if (in == null || out == null || nrSamples == null) {
             System.out.println("Please provide: --in, --nrSamples and --out for --mode itt");
             System.exit(0);
         } else {
             ImputeImputedToTriTyperV2 t = new ImputeImputedToTriTyperV2();
-            t.importImputedDataWithProbabilityInformationImpute(in, out, nrSamples, samplesFile, samplesToIncludeFile, fileMatchRegex);
+            t.importImputedDataWithProbabilityInformationImpute(in, out, nrSamples, samplesFile, samplesToIncludeFile, fileMatchRegex, snps);
         }
 
     }

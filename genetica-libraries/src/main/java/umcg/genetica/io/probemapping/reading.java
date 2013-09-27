@@ -458,7 +458,12 @@ public class reading {
 
             while ((str = in.readLine()) != null) {
                 String[] strParts = SPLIT_ON_TAB.split(str);
-                probeInfo.put(strParts[key], strParts[val]);
+                if(val==-1){
+                    probeInfo.put(strParts[key], str);
+                } else {
+                    probeInfo.put(strParts[key], strParts[val]);
+                }
+                
             }
 
         } catch (IOException e) {
