@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -23,10 +24,12 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author MarcJan
  */
-public abstract class DoubleMatrixDataset<R extends Comparable, C extends Comparable> extends DoubleMatrix2D {
+public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
     static final IOException doubleMatrixDatasetNonUniqueHeaderException = new IOException("Tried to use a non-unique header set in an identifier HashMap");
     static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
+    
+    protected DoubleMatrix2D matrix;
     protected LinkedHashMap<R, Integer> hashRows;
     protected LinkedHashMap<C, Integer> hashCols;
 
@@ -34,13 +37,32 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         hashRows = new LinkedHashMap<R, Integer>();
         hashCols = new LinkedHashMap<C, Integer>();
     }
+    
+    public DoubleMatrixDataset(int rows, int columns) {
+        hashRows = new LinkedHashMap<R, Integer>((int) Math.ceil(rows / 0.75));
+        hashCols = new LinkedHashMap<C, Integer>((int) Math.ceil(columns / 0.75));
+        if ((rows * (long)columns) < (Integer.MAX_VALUE - 2)) {
+            matrix = new DenseDoubleMatrix2D(rows, columns);
+        } else {
+            matrix = new DenseLargeDoubleMatrix2D(rows, columns);
+        }
+    }
 
     public DoubleMatrixDataset(LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
         this.hashRows = hashRows;
         this.hashCols = hashCols;
+        if((hashRows.size() * (long)hashCols.size()) < (Integer.MAX_VALUE-2)){
+            matrix = new DenseDoubleMatrix2D(hashRows.size(), hashCols.size());
+        } else {
+            matrix = new DenseLargeDoubleMatrix2D(hashRows.size(), hashCols.size());
+        }
     }
-
-    public abstract DoubleMatrix2D getMatrix();
+    
+    public DoubleMatrixDataset(DoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+        this.hashRows = hashRows;
+        this.hashCols = hashCols;
+        this.matrix = matrix;
+    }
 
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
         return loadDoubleData(fileName, "\t");
@@ -81,7 +103,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         
         if ((tmpRows * (long)tmpCols) < (Integer.MAX_VALUE-2)) {
             LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
-            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(tmpRows, tmpCols);
+            DenseDoubleMatrix2D tmpMatrix = new DenseDoubleMatrix2D(tmpRows, tmpCols);
             
             in.open();
             in.readLine(); // read header
@@ -101,7 +123,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                             correctData = false;
                             d = Double.NaN;
                         }
-                        matrix.setQuick(row, s, d);
+                        tmpMatrix.setQuick(row, s, d);
                     }
                     row++;
                 } else {
@@ -114,11 +136,11 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             }
             in.close();
             
-            dataset = new SmallDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
             
         } else {
             LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
+            DenseLargeDoubleMatrix2D tmpMatrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
             in.open();
             in.readLine(); // read header
             int row = 0;
@@ -137,7 +159,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                             correctData = false;
                             d = Double.NaN;
                         }
-                        matrix.setQuick(row, s, d);
+                        tmpMatrix.setQuick(row, s, d);
                     }
                     row++;
                 } else {
@@ -149,11 +171,10 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
                 LOGGER.warning("Your data contains NaN/unparseable values!");
             }
             in.close();
-
-            dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
         }
 
-        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.rows(), dataset.columns()});
+        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
         return dataset;
     }
     
@@ -244,7 +265,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             }
             in.close();
             
-            dataset = new SmallDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
             
         } else {
             DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(rowsToStore, storedCols);
@@ -285,20 +306,13 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
             }
             in.close();
             
-            dataset = new LargeDoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+            dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
         }
 
-        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.rows(), dataset.columns()});
+        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
         return dataset;
     }
 
-    public static DoubleMatrixDataset<String, String> createMatrixDataset(int rows, int cols) {
-        if ((rows * cols) < (Integer.MAX_VALUE - 2)) {
-            return new SmallDoubleMatrixDataset<String, String>();
-        } else {
-            return new LargeDoubleMatrixDataset<String, String>();
-        }
-    }
 
     public void saveLowMemory(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
@@ -307,13 +321,13 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
 
         out.append('-');
-        for (int s = 0; s < columns; s++) {
+        for (int s = 0; s < matrix.columns(); s++) {
             out.append('\t');
             out.append(colObjects.get(s).toString());
         }
         out.append('\n');
 
-        for (int r = 0; r < rows; r++) {
+        for (int r = 0; r < matrix.rows(); r++) {
             out.append(rowObjects.get(r).toString());
             DoubleMatrix1D rowInfo = getMatrix().viewRow(r);
             for (int s = 0; s < rowInfo.size(); s++) {
@@ -352,6 +366,14 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
     }
 
     //Getters and setters
+    public int rows(){
+        return matrix.rows();
+    }
+    
+    public int columns(){
+        return matrix.columns();
+    }
+    
     public LinkedHashMap<R, Integer> getHashRows() {
         return hashRows;
     }
@@ -407,13 +429,30 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
         this.hashCols = newHashCols;
     }
     
+    public DoubleMatrix2D getMatrix(){
+        return matrix;
+    }
+    
+    public void setMatrix(DoubleMatrix2D matrix){
+        this.matrix = matrix;
+    }
+    
+    public void setMatrix(double[][] matrix){
+        if((matrix.length * (long)matrix[0].length) < (Integer.MAX_VALUE-2)){
+            this.matrix = new DenseDoubleMatrix2D(matrix);
+        } else {
+            this.matrix = new DenseLargeDoubleMatrix2D(matrix.length, matrix[0].length);
+            this.matrix.assign(matrix);
+        }
+    }
+    
     /**
      * Order columns
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
     public void OrderOnColumns() {
-        LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(this.columns() / 0.75));
+        LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(this.matrix.columns() / 0.75));
         ArrayList<C> names = this.getColObjects();
         Collections.sort(names);
         
@@ -431,7 +470,7 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
      * @param dataset DoubleMatrixDataset Expression matrix
      */
     public void OrderOnRows() {
-        LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(this.rows() / 0.75));
+        LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(this.matrix.rows() / 0.75));
         ArrayList<R> names = this.getRowObjects();
         Collections.sort(names);
         
@@ -444,22 +483,44 @@ public abstract class DoubleMatrixDataset<R extends Comparable, C extends Compar
 
     }
 
-    public abstract void setMatrix(double[][] Matrix);
-    
-    public abstract void reorderRows(LinkedHashMap<R, Integer> mappingIndex);
-    
-    public abstract void reorderCols(LinkedHashMap<C, Integer> mappingIndex);
-    
-    public abstract DoubleMatrixDataset<C,R> viewDice();
-    
-    //Fixed like in parallel colt.
-    @Override
-    protected DoubleMatrix1D like1D(int size, int offset, int stride) {
-        throw new InternalError(); // should never get called
+    public void reorderRows(LinkedHashMap<R, Integer> mappingIndex) {
+        DoubleMatrix2D newRawData;
+        if((this.rows() * (long)this.columns()) < (Integer.MAX_VALUE-2)){
+            newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
+        } else {
+            newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
+        }
+        
+        for (Map.Entry<R, Integer> ent : mappingIndex.entrySet() ){
+            int pos = this.getHashRows().get(ent.getKey());
+            for (int s = 0; s < this.columns(); ++s) {
+                newRawData.set(ent.getValue(), s, this.getMatrix().get(pos, s));
+            }
+        }
+        this.setHashRows(mappingIndex);
+        this.setMatrix(newRawData);
     }
     
-    @Override
-    public int hashCode() {
-        return 1;
+    public void reorderCols(LinkedHashMap<C, Integer> mappingIndex) {
+        DoubleMatrix2D newRawData;
+        if((this.rows() * (long)this.columns()) < (Integer.MAX_VALUE-2)){
+            newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
+        } else {
+            newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
+        }
+        
+        for (Map.Entry<C, Integer> ent : mappingIndex.entrySet() ){
+            int pos = this.getHashCols().get(ent.getKey());
+            for (int p = 0; p < this.rows(); ++p) {
+                newRawData.set(p, ent.getValue(), this.getMatrix().get(p, pos));
+            }
+        }
+        
+        this.setHashCols(mappingIndex);
+        this.setMatrix(newRawData);
+    }
+    
+    public DoubleMatrixDataset<C, R> viewDice() {
+        return new DoubleMatrixDataset<C, R>(matrix.viewDice(), hashCols, hashRows);
     }
 }

@@ -4,6 +4,7 @@
  */
 package umcg.genetica.math.matrix2;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.ArrayList;
@@ -28,8 +29,6 @@ public class MergeDoubleMatrices {
      * @return
      */
     public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnColumns(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) throws Exception {
-        DoubleMatrixDataset<String, String> newMatrix = null;
-
         HashSet<String> keepColNames1 = new HashSet<String>();
         keepColNames1.addAll(matrixI.getColObjects());
         HashSet<String> keepColNames2 = new HashSet<String>();
@@ -78,56 +77,32 @@ public class MergeDoubleMatrices {
         keepRowNames1 = null;
         removeList = null;
 
-
+        DoubleMatrix2D matrix;
         if (((matrixI.rows() + matrixII.rows()) * (long)matrixI.columns()) < (Integer.MAX_VALUE - 2)) {
-
-            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
-
-            LinkedHashMap<String, Integer> newRowMap = new LinkedHashMap<String, Integer>((matrixI.rows() + matrixII.rows()));
-
-            int tmpPos = 0;
-
-            for (int r = 0; r < matrixI.rows(); ++r) {
-                newRowMap.put(matrixI.getRowObjects().get(r), r);
-                for (int s = 0; s < matrixI.columns(); ++s) {
-                    matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
-                }
-                tmpPos++;
-            }
-            for (int r = 0; r < matrixII.rows(); ++r) {
-                newRowMap.put(matrixII.getRowObjects().get(r), r + tmpPos);
-                for (int s = 0; s < matrixII.columns(); ++s) {
-                    matrix.setQuick((r + tmpPos), s, matrixII.getMatrix().getQuick(r, s));
-                }
-            }
-            newMatrix = new SmallDoubleMatrixDataset<String, String>(matrix, newRowMap, matrixI.getHashCols());
-
+            matrix = new DenseDoubleMatrix2D((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
         } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
-            LinkedHashMap<String, Integer> newRowMap = new LinkedHashMap<String, Integer>((matrixI.rows() + matrixII.rows()));
-
-            int tmpPos = 0;
-
-            
-            for (int r = 0; r < matrixI.rows(); ++r) {
-                newRowMap.put(matrixI.getRowObjects().get(r), r);
-                for(int s = 0; s < matrixI.columns(); ++s){
-                    matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
-                }
-                tmpPos++;
-            }
-            for (int r = 0; r < matrixII.rows(); ++r) {
-                newRowMap.put(matrixII.getRowObjects().get(r), r + tmpPos);
-                for(int s = 0; s < matrixII.columns(); ++s){
-                    matrix.setQuick((r + tmpPos),s, matrixII.getMatrix().getQuick(r, s));
-                }
-                
-            }
-
-            newMatrix = new LargeDoubleMatrixDataset<String, String>(matrix, newRowMap, matrixI.getHashCols());
+            matrix = new DenseLargeDoubleMatrix2D((matrixI.rows() + matrixII.rows()), (matrixI.columns()));
         }
 
-        return (newMatrix);
+        LinkedHashMap<String, Integer> newRowMap = new LinkedHashMap<String, Integer>((matrixI.rows() + matrixII.rows()));
+
+        int tmpPos = 0;
+
+        for (int r = 0; r < matrixI.rows(); ++r) {
+            newRowMap.put(matrixI.getRowObjects().get(r), r);
+            for (int s = 0; s < matrixI.columns(); ++s) {
+                matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
+            }
+            tmpPos++;
+        }
+        for (int r = 0; r < matrixII.rows(); ++r) {
+            newRowMap.put(matrixII.getRowObjects().get(r), r + tmpPos);
+            for (int s = 0; s < matrixII.columns(); ++s) {
+                matrix.setQuick((r + tmpPos), s, matrixII.getMatrix().getQuick(r, s));
+            }
+        }
+
+        return new DoubleMatrixDataset<String, String>(matrix, newRowMap, matrixI.getHashCols());
     }
 
     /**
@@ -139,8 +114,6 @@ public class MergeDoubleMatrices {
      * @return
      */
     public static DoubleMatrixDataset<String, String> mergeMatrixBasedOnRows(DoubleMatrixDataset<String, String> matrixI, DoubleMatrixDataset<String, String> matrixII, boolean removeOldMatrix) throws Exception {
-        DoubleMatrixDataset<String, String> newMatrix = null;
-
         HashSet<String> keepRowNames1 = new HashSet<String>();
         keepRowNames1.addAll(matrixI.getRowObjects());
         HashSet<String> keepRowNames2 = new HashSet<String>();
@@ -189,53 +162,32 @@ public class MergeDoubleMatrices {
         keepColNames1 = null;
         removeList = null;
 
-
+        DoubleMatrix2D matrix;
         if (((long)matrixI.rows() * (matrixII.columns() + matrixI.columns())) < (Integer.MAX_VALUE - 2)) {
-            
-            DenseDoubleMatrix2D matrix = new DenseDoubleMatrix2D(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
-            LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
-
-            int tmpPos = 0;
-
-            for (int s = 0; s < matrixI.columns(); ++s) {
-                newColMap.put(matrixI.getColObjects().get(s), s);
-                for (int r = 0; r < matrixI.rows(); ++r) {
-                    matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
-                }
-                tmpPos++;
-            }
-            for (int s = 0; s < matrixII.columns(); ++s) {
-                newColMap.put(matrixII.getColObjects().get(s), s + tmpPos);
-                for (int r = 0; r < matrixII.rows(); ++r) {
-                    matrix.setQuick(r, (s + tmpPos), matrixII.getMatrix().getQuick(r, s));
-                }
-            }
-            newMatrix = new SmallDoubleMatrixDataset<String, String>(matrix, matrixI.getHashRows(), newColMap);
-
+            matrix = new DenseDoubleMatrix2D(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
         } else {
-            DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
-            LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
-
-            int tmpPos = 0;
-
-            for (int s = 0; s < matrixI.columns(); ++s) {
-                newColMap.put(matrixI.getColObjects().get(s), s);
-                for (int r = 0; r < matrixI.rows(); ++r) {
-                    matrix.set(r, s, matrixI.getMatrix().getQuick(r, s));
-                }
-                tmpPos++;
-            }
-            for (int s = 0; s < matrixII.columns(); ++s) {
-                newColMap.put(matrixII.getColObjects().get(s), s + tmpPos);
-                for (int r = 0; r < matrixII.rows(); ++r) {
-                    matrix.set(r, (s + tmpPos), matrixII.getMatrix().getQuick(r, s));
-                }
-            }
-
-            newMatrix = new LargeDoubleMatrixDataset<String, String>(matrix, matrixI.getHashRows(), newColMap);
+            matrix = new DenseLargeDoubleMatrix2D(matrixI.rows(), (matrixII.columns() + matrixI.columns()));
         }
+        LinkedHashMap<String, Integer> newColMap = new LinkedHashMap<String, Integer>((matrixII.columns() + matrixI.columns()));
 
-        return (newMatrix);
+        int tmpPos = 0;
+
+        for (int s = 0; s < matrixI.columns(); ++s) {
+            newColMap.put(matrixI.getColObjects().get(s), s);
+            for (int r = 0; r < matrixI.rows(); ++r) {
+                matrix.setQuick(r, s, matrixI.getMatrix().getQuick(r, s));
+            }
+            tmpPos++;
+        }
+        for (int s = 0; s < matrixII.columns(); ++s) {
+            newColMap.put(matrixII.getColObjects().get(s), s + tmpPos);
+            for (int r = 0; r < matrixII.rows(); ++r) {
+                matrix.setQuick(r, (s + tmpPos), matrixII.getMatrix().getQuick(r, s));
+            }
+        }
+        
+        return new DoubleMatrixDataset<String, String>(matrix, matrixI.getHashRows(), newColMap);
+        
     }
 
     /**
