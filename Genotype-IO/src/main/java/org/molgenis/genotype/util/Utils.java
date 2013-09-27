@@ -86,7 +86,7 @@ public class Utils {
 
 		if (file.getParentFile() != null && !file.getParentFile().exists()) {
 			if (!file.getParentFile().mkdirs()) {
-				throw new GenotypeDataException("Failed to create parent dir for " + fileName + " file: " + file.getAbsolutePath());
+				throw new GenotypeDataException("Failed to create parent dirs for " + fileName + " file: " + file.getAbsolutePath());
 			}
 		}
 

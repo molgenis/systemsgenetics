@@ -104,7 +104,8 @@ public class Allele implements Comparable<Allele>
 		}
 		else
 		{
-
+			//Todo this to make sure not to save whole line in background after a split or tokanizer
+			alleleString = new String(alleleString);
 			Allele newAllele = new Allele(alleleString);
 			pool.put(alleleString, newAllele);
 			if (newAllele.isSnpAllele())
