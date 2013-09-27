@@ -1,5 +1,5 @@
 @echo off
 
-set genotypeAlignerDir=%~dp0
+set genotypeHarmonizerDir=%~dp0
 
-java -Xmx1g -jar "%genotypeAlignerDir%GenotypeAligner.jar" %*
+java -Xmx1g -jar "%genotypeHarmonizerDir%GenotypeHarmonizer.jar" %*

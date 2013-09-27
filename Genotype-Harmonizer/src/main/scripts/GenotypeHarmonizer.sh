@@ -2,6 +2,6 @@
 
 #Script to run the genotype aligner
 
-genotypeAlignerDir=`dirname $0`
+genotypeHarmonizerDir=`dirname $0`
 
-java -Xmx1g -jar ${genotypeAlignerDir}/GenotypeAligner.jar $*
+java -Xmx1g -jar ${genotypeHarmonizerDir}/GenotypeHarmonizer.jar $*

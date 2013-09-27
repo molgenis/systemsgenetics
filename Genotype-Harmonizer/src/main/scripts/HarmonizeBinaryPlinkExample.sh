@@ -1,10 +1,10 @@
 #!/bin/bash
 
-GenotypeAlignDir=`dirname $0`
+GenotypeHarmonizerDir=`dirname $0`
 
-cd ${GenotypeAlignDir}
+cd ${GenotypeHarmonizerDir}
 
-sh GenotypeAligner.sh \
+sh GenotypeHarmonizer.sh \
 	--inputType PLINK_BED \
 	--input ./exampleData/hapmap3CeuChr20B37Mb6RandomStrand \
 	--update-id \
@@ -15,4 +15,4 @@ sh GenotypeAligner.sh \
 
 
 echo ""
-echo "Demo output saved in: ${GenotypeAlignDir}/exampleOutput/"
+echo "Demo output saved in: ${GenotypeHarmonizerDir}/exampleOutput/"
