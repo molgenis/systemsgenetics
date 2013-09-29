@@ -9,7 +9,7 @@ import org.molgenis.genotype.variantFilter.VariantFilter;
 public interface RandomAccessGenotypeData extends GenotypeData {
 
 	/**
-	 * Get all sequencenames
+	 * Get all sequence names
 	 *
 	 * @return List of String
 	 */
