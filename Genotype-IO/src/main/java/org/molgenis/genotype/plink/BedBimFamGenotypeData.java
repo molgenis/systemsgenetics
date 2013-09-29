@@ -70,7 +70,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final List<Boolean> phasing;
 	private final int bytesPerVariant;
 	/**
-	 * The orignal SNP count in the data regardless of number of read SNPs
+	 * The original SNP count in the data regardless of number of read SNPs
 	 */
 	private final int originalSnpCount;
 
