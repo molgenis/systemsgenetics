@@ -36,10 +36,12 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 
-public class VcfGenotypeData extends IndexedGenotypeData implements SampleVariantsProvider
-{
+public class VcfGenotypeData extends IndexedGenotypeData implements SampleVariantsProvider {
+
 	private final GenotypeDataIndex index;
 	private final VcfReader reader;
 	private Map<String, Annotation> sampleAnnotationsMap;
@@ -48,119 +50,95 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 
 	/**
 	 * VCF genotype reader with default cache of 100
-	 * 
+	 *
 	 * @param bzipVcfFile
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
-	public VcfGenotypeData(File bzipVcfFile) throws FileNotFoundException, IOException
-	{
+	public VcfGenotypeData(File bzipVcfFile) throws FileNotFoundException, IOException {
 		this(bzipVcfFile, 100);
 	}
 
-	public VcfGenotypeData(File bzipVcfFile, int cacheSize) throws FileNotFoundException, IOException
-	{
+	public VcfGenotypeData(File bzipVcfFile, int cacheSize) throws FileNotFoundException, IOException {
 		this(bzipVcfFile, new File(bzipVcfFile.getAbsolutePath() + ".tbi"), cacheSize);
 	}
 
 	/**
 	 * VCF genotype reader with default cache of 100
-	 * 
+	 *
 	 * @param bzipVcfFile
 	 * @param tabixIndexFile
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
-	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile) throws FileNotFoundException, IOException
-	{
+	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile) throws FileNotFoundException, IOException {
 		this(bzipVcfFile, tabixIndexFile, 100);
 	}
 
 	public VcfGenotypeData(File vcfFile, File tabixIndexFile, int cacheSize) throws FileNotFoundException,
-			IOException
-	{
+			IOException {
 
-		if (!vcfFile.isFile())
-		{
+		if (!vcfFile.isFile()) {
 			throw new FileNotFoundException("VCF file not found at " + vcfFile.getAbsolutePath());
 		}
 
-		if (!vcfFile.canRead())
-		{
+		if (!vcfFile.canRead()) {
 			throw new IOException("Cannot read VCF file at: " + vcfFile.getAbsolutePath());
 		}
 
-		if (!tabixIndexFile.isFile())
-		{
+		if (!tabixIndexFile.isFile()) {
 			throw new TabixFileNotFoundException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath(), tabixIndexFile.getAbsolutePath());
 		}
 
-		if (!tabixIndexFile.canRead())
-		{
+		if (!tabixIndexFile.canRead()) {
 			throw new IOException("Cannot read tabix file for VCF at: " + tabixIndexFile.getAbsolutePath());
 		}
 
-		try
-		{
+		try {
 			reader = new VcfReader(new BlockCompressedInputStream(vcfFile));
 
-			try
-			{
+			try {
 				SampleVariantsProvider sampleVariantProvider = cacheSize <= 0 ? this : new CachedSampleVariantProvider(
 						this, cacheSize);
 
 				VariantLineMapper variantLineMapper = new VcfVariantLineMapper(reader.getColNames(),
 						getVariantAnnotations(), getAltDescriptions(), sampleVariantProvider);
 				index = new TabixIndex(tabixIndexFile, vcfFile, variantLineMapper);
-			}
-			finally
-			{
+			} finally {
 				IOUtils.closeQuietly(reader);
 			}
 
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			throw new GenotypeDataException(e);
 		}
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
 
 	@Override
-	public List<Alleles> getSampleVariants(final GeneticVariant variant)
-
-	{
+	public List<Alleles> getSampleVariants(final GeneticVariant variant) {
 		List<VcfSampleGenotype> sampleGenotypes = getSampleGenotypes(variant);
-		return Lists.transform(sampleGenotypes, new Function<VcfSampleGenotype, Alleles>()
-		{
+		return Lists.transform(sampleGenotypes, new Function<VcfSampleGenotype, Alleles>() {
 			@Override
 			@Nullable
-			public Alleles apply(@Nullable
-			VcfSampleGenotype input)
-			{
-				if (input == null)
-				{
+			public Alleles apply(@Nullable VcfSampleGenotype input) {
+				if (input == null) {
 					return null;
 				}
 
 				return Alleles.createBasedOnString(input.getSamleVariants(variant.getVariantAlleles()
 						.getAllelesAsString()));
 			}
-
 		});
 	}
 
 	@Override
-	public Map<String, Annotation> getVariantAnnotationsMap()
-	{
-        // TODO: is this the correct annotation map that is returned?????
-		if (sampleAnnotationsMap == null)
-		{
+	public Map<String, Annotation> getVariantAnnotationsMap() {
+		// TODO: is this the correct annotation map that is returned?????
+		if (sampleAnnotationsMap == null) {
 			List<VcfInfo> infos = reader.getInfos();
 			sampleAnnotationsMap = new LinkedHashMap<String, Annotation>(infos.size());
 
-			for (VcfInfo info : infos)
-			{
+			for (VcfInfo info : infos) {
 				sampleAnnotationsMap.put(info.getId(), VcfAnnotation.fromVcfInfo(info));
 			}
 		}
@@ -169,14 +147,12 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	public List<Sequence> getSequences()
-	{
+	public List<Sequence> getSequences() {
 		List<String> seqNames = getSeqNames();
 		Map<String, Integer> seqLengths = getSequenceLengths();
 
 		List<Sequence> sequences = new ArrayList<Sequence>(seqNames.size());
-		for (String seqName : seqNames)
-		{
+		for (String seqName : seqNames) {
 			sequences.add(new SimpleSequence(seqName, seqLengths.get(seqName), this));
 		}
 
@@ -184,21 +160,16 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	public List<Sample> getSamples()
-	{
+	public List<Sample> getSamples() {
 		List<String> sampleNames;
-		try
-		{
+		try {
 			sampleNames = reader.getSampleNames();
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			throw new GenotypeDataException("IOException getting samplenames from VcfReader", e);
 		}
 
 		List<Sample> samples = new ArrayList<Sample>(sampleNames.size());
-		for (String sampleName : sampleNames)
-		{
+		for (String sampleName : sampleNames) {
 			Sample sample = new Sample(sampleName, null, null);
 			samples.add(sample);
 		}
@@ -209,28 +180,23 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	/**
 	 * Get sequence length by sequence name
 	 */
-	private Map<String, Integer> getSequenceLengths()
-	{
+	private Map<String, Integer> getSequenceLengths() {
 		List<VcfContig> contigs = reader.getContigs();
 		Map<String, Integer> sequenceLengthById = new HashMap<String, Integer>(contigs.size());
 
-		for (VcfContig contig : contigs)
-		{
+		for (VcfContig contig : contigs) {
 			sequenceLengthById.put(contig.getId(), contig.getLength());
 		}
 
 		return sequenceLengthById;
 	}
 
-	private Map<String, String> getAltDescriptions()
-	{
-		if (altDescriptions == null)
-		{
+	private Map<String, String> getAltDescriptions() {
+		if (altDescriptions == null) {
 			List<VcfAlt> alts = reader.getAlts();
 			altDescriptions = new HashMap<String, String>(alts.size());
 
-			for (VcfAlt alt : alts)
-			{
+			for (VcfAlt alt : alts) {
 				altDescriptions.put(alt.getId(), alt.getDescription());
 			}
 		}
@@ -239,72 +205,58 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	protected GenotypeDataIndex getIndex()
-	{
+	protected GenotypeDataIndex getIndex() {
 		return index;
 	}
 
 	@Override
-	public int cacheSize()
-	{
+	public int cacheSize() {
 		return 0;
 	}
 
 	@Override
-	public List<Boolean> getSamplePhasing(GeneticVariant variant)
-	{
+	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
 		List<VcfSampleGenotype> sampleGenotypes = getSampleGenotypes(variant);
-		return Lists.transform(sampleGenotypes, new Function<VcfSampleGenotype, Boolean>()
-		{
+		return Lists.transform(sampleGenotypes, new Function<VcfSampleGenotype, Boolean>() {
 			@Override
 			@Nullable
 			public Boolean apply(
-			VcfSampleGenotype input)
-			{
-				if (input == null)
-				{
+					VcfSampleGenotype input) {
+				if (input == null) {
 					return false;
 				}
 
 				return input.getPhasing().get(0);
 			}
-
 		});
 	}
 
-	private List<VcfSampleGenotype> getSampleGenotypes(GeneticVariant variant)
-	{
+	private List<VcfSampleGenotype> getSampleGenotypes(GeneticVariant variant) {
 		RawLineQueryResult queryResult = index.createRawLineQuery().executeQuery(variant.getSequenceName(),
 				variant.getStartPos());
 
 		List<VcfSampleGenotype> genotypes = new ArrayList<VcfSampleGenotype>();
-		try
-		{
-			for (String line : queryResult)
-			{
+		try {
+			for (String line : queryResult) {
 				List<String> alleles = variant.getVariantAlleles().getAllelesAsString();
 				VcfRecord record = new VcfRecord(line, reader.getColNames());
 				if (record.getChrom().equalsIgnoreCase(variant.getSequenceName())
-						&& (record.getPos() == variant.getStartPos()) && record.getAlleles().equals(alleles))
-				{
+						&& (record.getPos() == variant.getStartPos()) && record.getAlleles().equals(alleles)) {
 					List<String> sampleNames = reader.getSampleNames();
-					for (String sampleName : sampleNames)
-					{
+					for (String sampleName : sampleNames) {
 						VcfSampleGenotype geno = record.getSampleGenotype(sampleName);
-						if (geno == null) throw new GenotypeDataException("Missing GT format value for sample ["
-								+ sampleName + "]");
+						if (geno == null) {
+							throw new GenotypeDataException("Missing GT format value for sample ["
+									+ sampleName + "]");
+						}
 						genotypes.add(geno);
 					}
 
 				}
 			}
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			throw new RuntimeException(e);
-		}
-		finally
-		{
+		} finally {
 			IOUtils.closeQuietly(queryResult);
 		}
 
@@ -312,34 +264,39 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	public int getSampleVariantProviderUniqueId()
-	{
+	public int getSampleVariantProviderUniqueId() {
 		return sampleVariantProviderUniqueId;
 	}
 
 	@Override
-	public Map<String, SampleAnnotation> getSampleAnnotationsMap()
-	{
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return Collections.emptyMap();
 	}
 
 	@Override
-	public byte[] getSampleCalledDosage(GeneticVariant variant)
-	{
+	public byte[] getSampleCalledDosage(GeneticVariant variant) {
 		return CalledDosageConvertor.convertCalledAllelesToCalledDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
 	}
 
 	@Override
-	public float[] getSampleDosage(GeneticVariant variant)
-	{
+	public float[] getSampleDosage(GeneticVariant variant) {
 		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 				variant.getVariantAlleles(), variant.getRefAllele());
 	}
-	
+
 	@Override
 	public void close() throws IOException {
 		reader.close();
 	}
 
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return false;
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
+	}
 }

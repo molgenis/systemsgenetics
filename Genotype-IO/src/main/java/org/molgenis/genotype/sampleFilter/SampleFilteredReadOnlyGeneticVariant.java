@@ -14,6 +14,7 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
@@ -209,6 +210,32 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		return Collections.unmodifiableList(samplePhasing);
 
 	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleGenotypeProbilities() {
+		
+		SampleVariantProbabilities[] unfilteredProbs = original.getSampleGenotypeProbilities();
+		SampleVariantProbabilities[] includedSamplesProbs = new SampleVariantProbabilities[genotypeData.getIncludedSampleCount()];
+
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
+
+		try {
+			int i = 0;
+			for (SampleVariantProbabilities prob : unfilteredProbs) {
+				if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
+					includedSamplesProbs[i] = prob;
+					++i;
+				}
+			}
+		} catch (NoSuchElementException e) {
+			throw new GenotypeDataException("Error in filtering on included samples. More prob values than samples detected", e);
+		}
+
+		return includedSamplesProbs;
+		
+	}
+	
+	
 
 	@Override
 	public SampleVariantsProvider getSampleVariantsProvider() {

@@ -142,5 +142,10 @@ public class RandomAccessGenotypeDataVariantQc extends AbstractRandomAccessGenot
 	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return originalGenotypeData.getSampleAnnotationsMap();
 	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return originalGenotypeData.isOnlyContaingSaveProbabilityGenotypes();
+	}
 	
 }
