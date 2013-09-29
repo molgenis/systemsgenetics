@@ -77,9 +77,9 @@
 			<outputDirectory>exampleData/</outputDirectory>
 		</file>
 		<file>
-			<source>${project.build.directory}/GenotypeAligner-${project.version}.jar</source>
+			<source>${project.build.directory}/GenotypeHarmonizer-${project.version}.jar</source>
 			<outputDirectory>/</outputDirectory>
-			<destName>GenotypeAligner.jar</destName>
+			<destName>GenotypeHarmonizer.jar</destName>
 		</file>
 	</files>
 
