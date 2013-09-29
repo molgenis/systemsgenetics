@@ -1,13 +1,13 @@
 <!--
 
   It is recommended to view this file using a markdown viewer
-  or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-aligner/README.md
+  or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-harmonizer/README.md
 
 -->
-Genotype Aligner
+Genotype Harmonizer
 ================
 
-The Genotype Aligner is an easy to use command-line tool that allows harmonization of genotype data 
+The Genotype Harmonizer is an easy to use command-line tool that allows harmonization of genotype data 
 stored using different file formats with different and potentially unknown strands. 
 
 Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
@@ -16,19 +16,19 @@ the [Genotype IO](https://github.com/PatrickDeelen/systemsgenetics/tree/master/G
 Getting started
 ----------------
 
-### Downloading the Genotype Aligner
-The last build from the genotype aligner can be downloaded here:
-http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$Genotype-Aligner/lastBuild/
+### Downloading the Genotype Harmonizer
+The last build from the genotype harmonizer can be downloaded here:
+http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$Genotype-Harmonizer/lastBuild/
 
-Click on `genotype-aligner-*.*.*-dist.zip` or `genotype-aligner-*.*.*-dist.tar.gz` to download the Genotype Aligner, test data and 2 example scripts.
+Click on `genotype-harmonizer-*.*.*-dist.zip` or `genotype-harmonizer-*.*.*-dist.tar.gz` to download the Genotype Harmonizer, test data and 2 example scripts.
 
 In case of successfully build there will a green circle before the `Build #`. 
 It is possible that you visit the website when a new build is in progress (the circle will be blinking), please try again in a few minutes.
 
-### Running the Genotype Aligner
-type `GenotypeAligner.sh`, `GenotypeAligner.bat` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different command-line options.
+### Running the Genotype Harmonizer
+type `GenotypeHarmonizer.sh`, `GenotypeHarmonizer.bat` or `java -jar GenotypeHarmonizer.jar` to run. You will now get an overview of the different command-line options.
 
-In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Aligner. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
+In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Harmonizer. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeHarmonizer.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
 ### Basic usage
 In the most basic usage scenario you need to define:
@@ -39,7 +39,7 @@ In the most basic usage scenario you need to define:
 
 Your command will look like this:
 ```
-GenotypeAligner.sh \
+GenotypeHarmonizer.sh \
 	--input path_to_study_data \
 	--output path_of_output \
 	--ref path_to_reference
@@ -79,9 +79,9 @@ Typical usage scenarios
 
 ### Preparing data for genotype imputation
 
-When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambiguous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Aligner solves these problems by using LD structure of nearby variants. 
+When imputing genotype data the strand of both the study data to impute and the reference data used for imputation need to be identical. Some imputation tools can swap the strand of non-ambiguous SNPs but this is not possible for AT and GC SNPs. AT and GC can be swapped using minor allele frequency but this is not reliable, especially for variants with a high minor allele frequency. The Genotype Harmonizer solves these problems by using LD structure of nearby variants. 
 
-In combination with the `--update-id` option the Genotype Aligner is a convenient tool for preparation of genotype data before imputation.
+In combination with the `--update-id` option the Genotype Harmonizer is a convenient tool for preparation of genotype data before imputation.
 
 Aligning pre-phased data, generated using tools like SHAPEIT2, is particularly useful. A dataset only needs to be pre-phased once and can then be aligned and imputed using different reference set or different versions of reference sets.
 
@@ -93,7 +93,7 @@ The `--keep` option is particularly useful here to keep the SNPs not shared by b
 
 ### Conversion
 
-Although there are many tools that can convert from one file type to an other it can also easily be done using our Genotype Aligner by simply not specifying a reference. In such a case the input data will simply be converted to the specified output type.
+Although there are many tools that can convert from one file type to an other it can also easily be done using our Genotype Harmonizer by simply not specifying a reference. In such a case the input data will simply be converted to the specified output type.
 
 Arguments overview
 ----------------
@@ -179,9 +179,9 @@ Test data
 ----------------
 This chapter is not relevant for the usage of the program but allows reproducibility of the test data.
 
-The genotype aligner contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
+The genotype harmonizer contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-aligner/). It is also supplied in the Genotype Aligner package to get you started.
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-harmonizer/). It is also supplied in the Genotype Harmonizer package to get you started.
 
 ### HapMap3 data
 

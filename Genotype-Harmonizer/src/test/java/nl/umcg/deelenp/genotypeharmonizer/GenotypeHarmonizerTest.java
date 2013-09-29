@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.umcg.deelenp.genotypealigner;
+package nl.umcg.deelenp.genotypeharmonizer;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
  *
  * @author Patrick Deelen
  */
-public class GenotypeAlignerNGTest {
+public class GenotypeHarmonizerTest {
 
 	private File tmpOutputFolder;
 	private String fileSep = System.getProperty("file.separator");
@@ -38,7 +38,7 @@ public class GenotypeAlignerNGTest {
 	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	private static final Alleles MISSING_ALLELES = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 
-	public GenotypeAlignerNGTest() throws URISyntaxException {
+	public GenotypeHarmonizerTest() throws URISyntaxException {
 		testFilesFolder = new File(this.getClass().getResource("/").toURI());
 	}
 
@@ -71,7 +71,7 @@ public class GenotypeAlignerNGTest {
 	}
 
 	/**
-	 * Test of main method, of class GenotypeAligner.
+	 * Test of main method, of class GenotypeHarmonizer.
 	 */
 	@Test
 	public void testMain() throws Exception {
@@ -81,7 +81,7 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test", "--refType", "VCF", "-ref", refData);
+		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test", "--refType", "VCF", "-ref", refData);
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 
@@ -126,7 +126,7 @@ public class GenotypeAlignerNGTest {
 	}
 
 	/**
-	 * Test of main method, of class GenotypeAligner.
+	 * Test of main method, of class GenotypeHarmonizer.
 	 */
 	@Test
 	public void testMain2() throws Exception {
@@ -136,7 +136,7 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "-ref", refData, "--keep");
+		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "-ref", refData, "--keep");
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 
@@ -191,7 +191,7 @@ public class GenotypeAlignerNGTest {
 	}
 	
 	/**
-	 * Test of main method, of class GenotypeAligner.
+	 * Test of main method, of class GenotypeHarmonizer.
 	 */
 	@Test
 	public void testMain3() throws Exception {
@@ -201,7 +201,7 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "SHAPEIT2", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test3", "--refType", "VCF", "-ref", refData, "--keep", "--forceChr", "20");
+		GenotypeHarmonizer.main("--debug", "--inputType", "SHAPEIT2", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test3", "--refType", "VCF", "-ref", refData, "--keep", "--forceChr", "20");
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 
@@ -269,7 +269,7 @@ public class GenotypeAlignerNGTest {
 		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6";
 		System.out.println(studyDataBasePath);
 
-		GenotypeAligner.main("--debug", "--input", studyDataBasePath, "--outputType", "SHAPEIT2", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
+		GenotypeHarmonizer.main("--debug", "--input", studyDataBasePath, "--outputType", "SHAPEIT2", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
 
 		System.out.println("Conversion complete now going to check using the orignal data");
 
@@ -324,7 +324,7 @@ public class GenotypeAlignerNGTest {
 		System.out.println(studyDataBasePath);
 		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		GenotypeAligner.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test5", "--refType", "VCF", "-ref", refData, "--mafAlign", "0.2");
+		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test5", "--refType", "VCF", "-ref", refData, "--mafAlign", "0.2");
 
 		System.out.println("Alignement complete now going to check using the real forward data");
 
