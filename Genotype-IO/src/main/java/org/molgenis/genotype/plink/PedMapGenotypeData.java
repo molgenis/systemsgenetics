@@ -306,6 +306,6 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	@Override
 	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles());
+		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }

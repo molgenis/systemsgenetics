@@ -10,6 +10,7 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities3Probs;
 
 /**
  *
@@ -26,7 +27,7 @@ public class ProbabilitiesConvertor {
 	 * @param alleles
 	 * @return
 	 */
-	public static SampleVariantProbabilities[] convertCalledAllelesToDosage(List<Alleles> sampleAlleles, Alleles alleles) {
+	public static SampleVariantProbabilities[] convertCalledAllelesToProbability(List<Alleles> sampleAlleles, Alleles alleles) {
 
 		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[sampleAlleles.size()];
 
@@ -78,4 +79,35 @@ public class ProbabilitiesConvertor {
 		}
 		
 	}
+	
+	/**
+	 * Uses inexact heuristic as defined by plinkseq (http://atgu.mgh.harvard.edu/plinkseq/dosage.shtml)
+	 * to convert dosage to probabilities.
+	 * 
+	 * @param sampleDosages assuming count of ref allele. 
+	 * @return 
+	 */
+	public static SampleVariantProbabilities[] convertDosageToProbabilityHeuristic(float[] sampleDosages) {
+		
+		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[sampleDosages.length];
+		
+		for(int i = 0 ; i < sampleDosages.length ; ++i){
+			
+			float sampleDosage = sampleDosages[i];
+			
+			if(sampleDosage > 2 || sampleDosage < 0){
+				probs[i] = SampleVariantProbabilities.MISSING_PROB;
+			} else if ( sampleDosage < 1 ){
+				probs[i] = new SampleVariantProbabilities3Probs(new float[]{ 0, sampleDosage, 1 - sampleDosage});
+			} else {
+				//sampleDosage >= 1
+				probs[i] = new SampleVariantProbabilities3Probs(new float[]{ sampleDosage - 1, 2 - sampleDosage, 0});
+			}
+			
+		}
+		
+		return probs;
+		
+	}
+	
 }

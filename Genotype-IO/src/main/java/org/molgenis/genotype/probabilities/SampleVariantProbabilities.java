@@ -21,4 +21,6 @@ public interface SampleVariantProbabilities {
 	 * @return
 	 */
 	float[] getProbilities();
+
+	public SampleVariantProbabilities getReversedProbilities();
 }

@@ -4,6 +4,8 @@
  */
 package org.molgenis.genotype.probabilities;
 
+import org.apache.commons.lang.ArrayUtils;
+
 /**
  *
  * @author Patrick Deelen
@@ -23,5 +25,19 @@ public class SampleVariantProbabilities3Probs implements SampleVariantProbabilit
 	public float[] getProbilities() {
 		return probs;
 	}
+
+	@Override
+	public SampleVariantProbabilities getReversedProbilities() {
+		
+		float[] reverse = new float[probs.length];
+		
+		for(int i = 0 ; i < probs.length ; ++i){
+			reverse[probs.length - i -1] = probs[i];
+		}
+		
+		return new SampleVariantProbabilities3Probs(reverse);
+	}
+	
+	
 	
 }

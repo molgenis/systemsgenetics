@@ -396,7 +396,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	
 	@Override
 	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
-		throw new UnsupportedOperationException();
+		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 
 	@Override

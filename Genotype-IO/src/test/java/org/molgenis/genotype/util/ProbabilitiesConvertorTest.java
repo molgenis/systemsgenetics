@@ -10,6 +10,7 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities3Probs;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,11 +29,11 @@ public class ProbabilitiesConvertorTest {
 	}
 
 	/**
-	 * Test of convertCalledAllelesToDosage method, of class ProbabilitiesConvertor.
+	 * Test of convertDosageToProbabilityHeuristic method, of class ProbabilitiesConvertor.
 	 */
 	@Test
-	public void testConvertCalledAllelesToDosage1() {
-		System.out.println("convertCalledAllelesToDosage");
+	public void testConvertCalledAllelesToProbability1() {
+		System.out.println("convertCalledAllelesToProbability");
 		List<Alleles> sampleAlleles = new ArrayList<Alleles>();
 		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
 		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
@@ -51,14 +52,14 @@ public class ProbabilitiesConvertorTest {
 		expResult[4] = SampleVariantProbabilities.BB_PROB;
 		expResult[5] = SampleVariantProbabilities.AB_PROB;
 		
-		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToDosage(sampleAlleles, alleles);
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToProbability(sampleAlleles, alleles);
 		assertEqualsSampleVariantProbabilitiesArray(result, expResult);
 		
 	}
 	
 	@Test
-	public void testConvertCalledAllelesToDosage2() {
-		System.out.println("convertCalledAllelesToDosage");
+	public void testConvertCalledAllelesToProbability2() {
+		System.out.println("convertCalledAllelesToProbability");
 		List<Alleles> sampleAlleles = new ArrayList<Alleles>();
 		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
 		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
@@ -77,14 +78,14 @@ public class ProbabilitiesConvertorTest {
 		expResult[4] = SampleVariantProbabilities.AA_PROB;
 		expResult[5] = SampleVariantProbabilities.AB_PROB;
 		
-		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToDosage(sampleAlleles, alleles);
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToProbability(sampleAlleles, alleles);
 		assertEqualsSampleVariantProbabilitiesArray(result, expResult);
 		
 	}
 	
 	@Test
-	public void testConvertCalledAllelesToDosage3() {
-		System.out.println("convertCalledAllelesToDosage");
+	public void testConvertCalledAllelesToProbability3() {
+		System.out.println("convertCalledAllelesToProbability");
 		List<Alleles> sampleAlleles = new ArrayList<Alleles>();
 		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
 		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
@@ -103,14 +104,14 @@ public class ProbabilitiesConvertorTest {
 		expResult[4] = SampleVariantProbabilities.AA_PROB;
 		expResult[5] = SampleVariantProbabilities.MISSING_PROB;
 		
-		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToDosage(sampleAlleles, alleles);
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToProbability(sampleAlleles, alleles);
 		assertEqualsSampleVariantProbabilitiesArray(result, expResult);
 		
 	}
 	
 	@Test(expectedExceptions = GenotypeDataException.class)  
-	public void testConvertCalledAllelesToDosage4() {
-		System.out.println("convertCalledAllelesToDosage");
+	public void testConvertCalledAllelesToProbability4() {
+		System.out.println("convertCalledAllelesToProbability");
 		List<Alleles> sampleAlleles = new ArrayList<Alleles>();
 		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
 		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
@@ -121,13 +122,13 @@ public class ProbabilitiesConvertorTest {
 		
 		Alleles alleles = Alleles.createAlleles();
 
-		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToDosage(sampleAlleles, alleles);
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToProbability(sampleAlleles, alleles);
 		
 	}
 	
 	@Test
-	public void testConvertCalledAllelesToDosage5() {
-		System.out.println("convertCalledAllelesToDosage");
+	public void testConvertCalledAllelesToProbability5() {
+		System.out.println("convertCalledAllelesToProbability");
 		List<Alleles> sampleAlleles = new ArrayList<Alleles>();
 		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
 		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
@@ -146,7 +147,60 @@ public class ProbabilitiesConvertorTest {
 		expResult[4] = SampleVariantProbabilities.MISSING_PROB;
 		expResult[5] = SampleVariantProbabilities.MISSING_PROB;
 		
-		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToDosage(sampleAlleles, alleles);
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertCalledAllelesToProbability(sampleAlleles, alleles);
+		assertEqualsSampleVariantProbabilitiesArray(result, expResult);
+		
+	}
+	
+	@Test
+	public void testConvertDosageToProbabilityHeuristic1() {
+		System.out.println("convertDosageToProbabilityHeuristic");
+		List<Alleles> sampleAlleles = new ArrayList<Alleles>();
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		
+		Alleles alleles = Alleles.createAlleles(Allele.A, Allele.C);
+		
+		float[] sampleDosage = CalledDosageConvertor.convertCalledAllelesToDosage(sampleAlleles, alleles, null);
+	
+		SampleVariantProbabilities[] expResult = new SampleVariantProbabilities[6];
+		
+		expResult[0] = SampleVariantProbabilities.AA_PROB;
+		expResult[1] = SampleVariantProbabilities.AA_PROB;
+		expResult[2] = SampleVariantProbabilities.AB_PROB;
+		expResult[3] = SampleVariantProbabilities.AB_PROB;
+		expResult[4] = SampleVariantProbabilities.BB_PROB;
+		expResult[5] = SampleVariantProbabilities.AB_PROB;
+		
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(sampleDosage);
+		assertEqualsSampleVariantProbabilitiesArray(result, expResult);
+
+		
+	}
+	
+	@Test
+	public void testConvertDosageToProbabilityHeuristic2() {
+		System.out.println("convertDosageToProbabilityHeuristic");
+		
+		
+		float[] sampleDosage = new float[] {0, 1, 2, -1, 3, 0.5f, 1.5f, 1.75f};
+		
+		SampleVariantProbabilities[] expResult = new SampleVariantProbabilities[8];
+		
+		expResult[0] = SampleVariantProbabilities.BB_PROB;
+		expResult[1] = SampleVariantProbabilities.AB_PROB;
+		expResult[2] = SampleVariantProbabilities.AA_PROB;
+		expResult[3] = SampleVariantProbabilities.MISSING_PROB;
+		expResult[4] = SampleVariantProbabilities.MISSING_PROB;
+		expResult[5] = new SampleVariantProbabilities3Probs(new float[] {0,0.5f,0.5f});
+		expResult[6] = new SampleVariantProbabilities3Probs(new float[] {0.5f,0.5f, 0});
+		expResult[7] = new SampleVariantProbabilities3Probs(new float[] {0.75f,0.25f, 0});
+		
+		SampleVariantProbabilities[] result = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(sampleDosage);
 		assertEqualsSampleVariantProbabilitiesArray(result, expResult);
 		
 	}

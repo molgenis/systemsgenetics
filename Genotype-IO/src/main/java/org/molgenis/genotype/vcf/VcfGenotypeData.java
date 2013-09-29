@@ -297,6 +297,6 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 
 	@Override
 	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
-		throw new UnsupportedOperationException("Conversion to probilities from vcf not yet supported. Please contact the developers");
+		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 }

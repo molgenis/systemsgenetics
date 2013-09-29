@@ -7,6 +7,7 @@ import java.util.TreeSet;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
@@ -216,6 +217,13 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 		{
 			return null;
 		}
+
+		@Override
+		public SampleVariantProbabilities[] getSampleGenotypeProbilities() {
+			return null;
+		}
+		
+		
 
 		@Override
 		public SampleVariantsProvider getSampleVariantsProvider()

@@ -3,7 +3,7 @@ package org.molgenis.genotype;
 import java.io.File;
 import java.io.IOException;
 import org.apache.log4j.Logger;
-import org.molgenis.genotype.impute2.Impute2GenotypeData;
+import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
@@ -121,7 +121,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				}
 				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
 			case SHAPEIT2:
-				return new Impute2GenotypeData(new File(path + ".haps"), new File(
+				return new HapsGenotypeData(new File(path + ".haps"), new File(
 						path + ".sample"), cacheSize, forcedSequence);
 			case PLINK_BED:
 				if (forcedSequence != null) {
