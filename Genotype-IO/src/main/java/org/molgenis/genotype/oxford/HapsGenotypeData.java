@@ -1,4 +1,4 @@
-package org.molgenis.genotype.impute2;
+package org.molgenis.genotype.oxford;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
@@ -22,17 +21,15 @@ import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
-import org.molgenis.genotype.annotation.SampleAnnotation.SampleAnnotationType;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
-import org.molgenis.genotype.util.Utils;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
-import org.molgenis.io.csv.CsvReader;
-import org.molgenis.util.tuple.Tuple;
 
 /**
  * GenotypeData for haps/sample files see http://www.shapeit.fr/
@@ -45,10 +42,10 @@ import org.molgenis.util.tuple.Tuple;
  * @author Patrick Deelen
  *
  */
-public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
+public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
 	private final RandomAccessFile hapsFileReader;
-	private Map<String, SampleAnnotation> sampleAnnotations = new LinkedHashMap<String, SampleAnnotation>();
+	private Map<String, SampleAnnotation> sampleAnnotations;
 	private final int sampleVariantProviderUniqueId;
 	private final SampleVariantsProvider sampleVariantProvider;
 	private final GeneticVariantTreeSet<GeneticVariant> variants;
@@ -56,27 +53,28 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 	private final List<Sample> samples;
 	private final HashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
-	private static final Logger LOGGER = Logger.getLogger(Impute2GenotypeData.class);
+	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
 	private AllelesAndPhasing last;
 
-	public Impute2GenotypeData(String path) throws IOException {
+	public HapsGenotypeData(String path) throws IOException {
 		this(new File(path + ".haps"), new File(path + ".sample"));
 	}
-	
-	public Impute2GenotypeData(File hapsFile, File sampleFile) throws IOException {
+
+	public HapsGenotypeData(File hapsFile, File sampleFile) throws IOException {
 		this(hapsFile, sampleFile, 100);
 	}
 
-	public Impute2GenotypeData(File hapsFile, File sampleFile, int cacheSize) throws IOException{
+	public HapsGenotypeData(File hapsFile, File sampleFile, int cacheSize) throws IOException {
 		this(hapsFile, sampleFile, cacheSize, null);
 	}
-	
-	public Impute2GenotypeData(File hapsFile, File sampleFile, String forceSeqName) throws IOException{
+
+	public HapsGenotypeData(File hapsFile, File sampleFile, String forceSeqName) throws IOException {
 		this(hapsFile, sampleFile, 100, forceSeqName);
 	}
-	
-	public Impute2GenotypeData(File hapsFile, File sampleFile, int cacheSize, String forceSeqName)
+
+	public HapsGenotypeData(File hapsFile, File sampleFile, int cacheSize, String forceSeqName)
 			throws IOException {
+
 		if (hapsFile == null) {
 			throw new IllegalArgumentException("hapsFile is null");
 		}
@@ -89,17 +87,6 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 					+ hapsFile.getAbsolutePath());
 		}
 
-		if (sampleFile == null) {
-			throw new IllegalArgumentException("sampleFile is null");
-		}
-		if (!sampleFile.isFile()) {
-			throw new FileNotFoundException("sample file file not found at "
-					+ sampleFile.getAbsolutePath());
-		}
-		if (!sampleFile.canRead()) {
-			throw new IOException("Can not read sample file " + sampleFile.getAbsolutePath());
-		}
-
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
@@ -107,13 +94,10 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 			sampleVariantProvider = this;
 		}
 
+		OxfordSampleFile oxfordSampleFile = new OxfordSampleFile(sampleFile);
 
-		loadAnnotations(sampleFile);
-		LOGGER.info("Annotations loaded");
-
-		samples = new ArrayList<Sample>();
-		loadSamples(sampleFile);
-
+		sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
+		samples = oxfordSampleFile.getSamples();
 
 		variants = new GeneticVariantTreeSet<GeneticVariant>();
 		variantSampleAllelesIndex = new LinkedHashMap<GeneticVariant, Long>();
@@ -139,71 +123,6 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 		return Collections.unmodifiableList(samples);
 	}
 
-	private void loadSamples(File sampleFile) {
-
-		CsvReader reader = null;
-		try {
-			reader = new CsvReader(sampleFile, ' ');
-			Iterator<Tuple> it = reader.iterator();
-
-			it.next();// Datatype row
-
-			while (it.hasNext()) {
-				Tuple tuple = it.next();
-
-				String familyId = tuple.getString(0);
-				String sampleId = tuple.getString(1);
-
-				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
-				annotationValues.put(SAMPLE_MISSING_RATE_DOUBLE, tuple.getString(2).equals("NA")? Double.NaN:tuple.getDouble(2));
-
-				
-				for (String colName : sampleAnnotations.keySet()) {
-					
-					if(colName.equals(SAMPLE_MISSING_RATE_DOUBLE)){
-						continue;//already done
-					}
-					
-					SampleAnnotation annotation = sampleAnnotations.get(colName);
-					
-					Object value = null;
-					if (!tuple.getString(annotation.getName()).equalsIgnoreCase("NA")) {
-						switch (annotation.getType()) {
-							case STRING:
-								value = tuple.getString(colName);
-								break;
-							case INTEGER:
-								value = tuple.getInt(colName);
-								break;
-							case BOOLEAN:
-								if(tuple.getString(colName).equals("-9")){
-									value = null;
-								} else {
-									value = tuple.getBoolean(colName);
-								}
-								break;
-							case FLOAT:
-								value = tuple.getDouble(colName);
-								break;
-							default:
-								LOGGER.warn("Unsupported data type encountered for column [" + colName + "]");
-						}
-					}
-
-					annotationValues.put(colName, value);
-				}
-
-				samples.add(new Sample(sampleId, familyId, annotationValues));
-			}
-
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException("File [" + sampleFile.getAbsolutePath() + "] does not exists", e);
-		} finally {
-			IOUtils.closeQuietly(reader);
-		}
-
-	}
-
 	@Override
 	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return Collections.emptyMap();
@@ -214,62 +133,20 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 		return sampleAnnotations;
 	}
 
-	private void loadAnnotations(File sampleFile) throws IOException {
-		sampleAnnotations.clear();
-
-		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_DOUBLE, "missing",
-				"Missing data proportion of each individual", Annotation.Type.FLOAT, SampleAnnotationType.OTHER, false);
-		sampleAnnotations.put(missingAnnotation.getId(), missingAnnotation);
-
-		CsvReader reader = null;
-		try {
-			reader = new CsvReader(sampleFile, ' ');
-
-			List<String> colNames = Utils.iteratorToList(reader.colNamesIterator());
-			Tuple dataTypes = reader.iterator().next();
-			for (int i = 3; i < colNames.size(); i++) {
-				SampleAnnotation annotation = null;
-				if (dataTypes.getString(i).equalsIgnoreCase("D")) {
-					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.STRING,
-							SampleAnnotationType.COVARIATE, false);
-
-				} else if (dataTypes.getString(i).equalsIgnoreCase("C")) {
-					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.FLOAT,
-							SampleAnnotationType.COVARIATE, false);
-				} else if (dataTypes.getString(i).equalsIgnoreCase("P")) {
-					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.FLOAT,
-							SampleAnnotationType.PHENOTYPE, false);
-				} else if (dataTypes.getString(i).equalsIgnoreCase("B")) {
-					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.BOOLEAN,
-							SampleAnnotationType.PHENOTYPE, false);
-				} else {
-					LOGGER.warn("Unknown datatype [" + dataTypes.getString(i) + "]");
-				}
-
-				if (annotation != null) {
-					sampleAnnotations.put(annotation.getId(), annotation);
-				}
-			}
-		} finally {
-			IOUtils.closeQuietly(reader);
-		}
-
-	}
-
 	@Override
 	public synchronized List<Alleles> getSampleVariants(GeneticVariant variant) {
-				
-		if(last == null || !last.getVariant().equals(variant)){
+
+		if (last == null || !last.getVariant().equals(variant)) {
 			last = loadAllelesAndPhasing(variant);
 		}
 
 		return last.getAlleles();
-		
+
 	}
 
 	@Override
 	public synchronized List<Boolean> getSamplePhasing(GeneticVariant variant) {
-		if(last == null || !last.getVariant().equals(variant)){
+		if (last == null || !last.getVariant().equals(variant)) {
 			last = loadAllelesAndPhasing(variant);
 		}
 
@@ -364,12 +241,12 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 					switch (buffer[i]) {
 						case '\n':
 						case '\r':
-							if(currentChunk == 0){
+							if (currentChunk == 0) {
 								//Ignore empty lines or second line break
 								currentChunk = -1;
 								continue;
 							}
-							if(column != 5){
+							if (column != 5) {
 								LOGGER.fatal("Error reading haps file, did not detect first 5 columns with variant information \n"
 										+ "current column is:" + column + "\n"
 										+ "content in current column: " + stringBuilder.toString());
@@ -377,7 +254,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 							}
 							longestedChunk = longestedChunk < currentChunk ? currentChunk : longestedChunk;
 							column = 0;
- 							currentChunk = -1;
+							currentChunk = -1;
 							break;
 						case ' ':
 							switch (column) {
@@ -480,7 +357,7 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 					throw new GenotypeDataException("Error loading alleles for variant: " + geneticVariant.getPrimaryVariantId() + " and sample " + samples.get(s).getId() + " from haps file found allele: " + (char) buffer[i]);
 			}
 			++i;
-			
+
 			switch ((char) buffer[i]) {
 				case ' ':
 					phased = Boolean.TRUE;
@@ -507,21 +384,31 @@ public class Impute2GenotypeData extends AbstractRandomAccessGenotypeData implem
 				default:
 					throw new GenotypeDataException("Error loading alleles for variant: " + geneticVariant.getPrimaryVariantId() + " and sample " + samples.get(s).getId() + " from haps file found allele: " + (char) buffer[i]);
 			}
-			
-			if(!phased){
+
+			if (!phased) {
 				++i;
 			}
 
 			++i;
 			++i;
-			
+
 			alleles.add(Alleles.createAlleles(allele1, allele2));
 			phasing.add(phased);
-			
+
 		}
 
 		return new AllelesAndPhasing(geneticVariant, alleles, phasing);
 
+	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return true;
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 
 	private static class AllelesAndPhasing {

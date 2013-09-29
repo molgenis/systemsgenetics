@@ -262,4 +262,14 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return getSampleAnnotationsMap();
 	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		for(RandomAccessGenotypeData g : genotypeDataCollection){
+			if(g.isOnlyContaingSaveProbabilityGenotypes() == false){
+				return false;
+			}
+		}
+		return true;
+	}
 }

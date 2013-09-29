@@ -142,5 +142,10 @@ public class VariantFilterableGenotypeDataDecorator extends AbstractRandomAccess
 	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return originalGenotypeData.getSampleAnnotationsMap();
 	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return originalGenotypeData.isOnlyContaingSaveProbabilityGenotypes();
+	}
 	
 }

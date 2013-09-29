@@ -28,62 +28,67 @@ import org.molgenis.genotype.plink.datatypes.MapEntry;
 import org.molgenis.genotype.plink.datatypes.PedEntry;
 import org.molgenis.genotype.plink.drivers.PedFileDriver;
 import org.molgenis.genotype.plink.readers.MapFileReader;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
-public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider
-{
+public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
+
 	private static final Logger LOG = Logger.getLogger(PedMapGenotypeData.class);
 	private final int sampleVariantProviderUniqueId;
-
 	private final File pedFile;
 	private Map<Integer, List<Alleles>> sampleAllelesBySnpIndex = new HashMap<Integer, List<Alleles>>();
-
 	private GeneticVariantTreeSet<GeneticVariant> snps = new GeneticVariantTreeSet<GeneticVariant>();
 	private Map<String, Integer> snpIndexById = new HashMap<String, Integer>(1000);
 	private Map<String, SampleAnnotation> sampleAnnotations;
-
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
-	
 	private ArrayList<Sample> samples = new ArrayList<Sample>();
 	private HashSet<String> seqNames = new HashSet<String>();
 
-	public PedMapGenotypeData(String basePath) throws FileNotFoundException, IOException
-	{
+	public PedMapGenotypeData(String basePath) throws FileNotFoundException, IOException {
 		this(new File(basePath + ".ped"), new File(basePath + ".map"));
 	}
 
-	public PedMapGenotypeData(File pedFile, File mapFile) throws FileNotFoundException, IOException
-	{
-		if (pedFile == null) throw new IllegalArgumentException("PedFile is null");
-		if (mapFile == null) throw new IllegalArgumentException("MapFile is null");
-		if (!mapFile.isFile()) throw new FileNotFoundException("MAP index file not found at "
-				+ mapFile.getAbsolutePath());
-		if (!mapFile.canRead()) throw new IOException("MAP index file not found at " + mapFile.getAbsolutePath());
-		if (!pedFile.isFile()) throw new FileNotFoundException("PED file not found at " + pedFile.getAbsolutePath());
-		if (!pedFile.canRead()) throw new IOException("PED file not found at " + pedFile.getAbsolutePath());
+	public PedMapGenotypeData(File pedFile, File mapFile) throws FileNotFoundException, IOException {
+		if (pedFile == null) {
+			throw new IllegalArgumentException("PedFile is null");
+		}
+		if (mapFile == null) {
+			throw new IllegalArgumentException("MapFile is null");
+		}
+		if (!mapFile.isFile()) {
+			throw new FileNotFoundException("MAP index file not found at "
+					+ mapFile.getAbsolutePath());
+		}
+		if (!mapFile.canRead()) {
+			throw new IOException("MAP index file not found at " + mapFile.getAbsolutePath());
+		}
+		if (!pedFile.isFile()) {
+			throw new FileNotFoundException("PED file not found at " + pedFile.getAbsolutePath());
+		}
+		if (!pedFile.canRead()) {
+			throw new IOException("PED file not found at " + pedFile.getAbsolutePath());
+		}
 
 		this.pedFile = pedFile;
 
 		MapFileReader mapFileReader = null;
 		PedFileDriver pedFileDriver = null;
-		try
-		{
+		try {
 			pedFileDriver = new PedFileDriver(pedFile);
 			loadSampleBialleles(pedFileDriver);
 
 			mapFileReader = new MapFileReader(new FileInputStream(mapFile));
 			loadSnps(mapFileReader);
 
-		}
-		finally
-		{
+		} finally {
 			IOUtils.closeQuietly(pedFileDriver);
 			IOUtils.closeQuietly(mapFileReader);
 		}
@@ -97,12 +102,10 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	}
 
-	private void loadSampleBialleles(PedFileDriver pedFileDriver)
-	{
+	private void loadSampleBialleles(PedFileDriver pedFileDriver) {
 		int count = 0;
-		for (PedEntry entry : pedFileDriver)
-		{
-			
+		for (PedEntry entry : pedFileDriver) {
+
 			Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
 			annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, entry.getFather());
 			annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, entry.getMother());
@@ -111,13 +114,11 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 			annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, entry.getPhenotype());
 
 			samples.add(new Sample(entry.getIndividual(), entry.getFamily(), annotationValues));
-			
+
 			int index = 0;
-			for (Alleles biallele : entry)
-			{
+			for (Alleles biallele : entry) {
 				List<Alleles> biallelesForSnp = sampleAllelesBySnpIndex.get(index);
-				if (biallelesForSnp == null)
-				{
+				if (biallelesForSnp == null) {
 					biallelesForSnp = new ArrayList<Alleles>();
 					sampleAllelesBySnpIndex.put(index, biallelesForSnp);
 				}
@@ -127,8 +128,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 			}
 
 			++count;
-			if ((count % 100) == 0)
-			{
+			if ((count % 100) == 0) {
 				LOG.info("Loaded [" + (count) + "] samples");
 			}
 		}
@@ -136,32 +136,27 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 		LOG.info("Total [" + count + "] samples");
 	}
 
-	private void loadSnps(MapFileReader reader)
-	{
+	private void loadSnps(MapFileReader reader) {
 		int index = 0;
-		for (MapEntry entry : reader)
-		{
+		for (MapEntry entry : reader) {
 			String id = entry.getSNP();
 			String sequenceName = entry.getChromosome();
-			
+
 			seqNames.add(sequenceName);
-			
+
 			int startPos = (int) entry.getBpPos();
 
 			List<Alleles> sampleAlleles = sampleAllelesBySnpIndex.get(index);
 			List<String> alleles = new ArrayList<String>(2);
-			for (Alleles biallele : sampleAlleles)
-			{
+			for (Alleles biallele : sampleAlleles) {
 
 				String allele1 = biallele.get(0) == Allele.ZERO ? null : biallele.get(0).toString();
-				if ((allele1 != null) && !alleles.contains(allele1))
-				{
+				if ((allele1 != null) && !alleles.contains(allele1)) {
 					alleles.add(allele1);
 				}
 
 				String allele2 = biallele.get(1) == Allele.ZERO ? null : biallele.get(1).toString();
-				if ((allele2 != null) && !alleles.contains(allele2))
-				{
+				if ((allele2 != null) && !alleles.contains(allele2)) {
 					alleles.add(allele2);
 				}
 			}
@@ -173,8 +168,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 			index++;
 
-			if ((index % 100000) == 0)
-			{
+			if ((index % 100000) == 0) {
 				LOG.info("Loaded [" + index + "] snps");
 			}
 		}
@@ -183,13 +177,11 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	public List<Sequence> getSequences()
-	{
+	public List<Sequence> getSequences() {
 		List<String> seqNames = getSeqNames();
 
 		List<Sequence> sequences = new ArrayList<Sequence>(seqNames.size());
-		for (String seqName : seqNames)
-		{
+		for (String seqName : seqNames) {
 			sequences.add(new SimpleSequence(seqName, null, this));
 		}
 
@@ -197,24 +189,19 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	public List<Sample> getSamples()
-	{
+	public List<Sample> getSamples() {
 		return samples;
 	}
 
 	@Override
-	public List<Alleles> getSampleVariants(GeneticVariant variant)
-
-	{
-		if (variant.getPrimaryVariantId() == null)
-		{
+	public List<Alleles> getSampleVariants(GeneticVariant variant) {
+		if (variant.getPrimaryVariantId() == null) {
 			throw new IllegalArgumentException("Not a snp, missing primaryVariantId");
 		}
 
 		Integer index = snpIndexById.get(variant.getPrimaryVariantId());
 
-		if (index == null)
-		{
+		if (index == null) {
 			throw new IllegalArgumentException("Unknown primaryVariantId [" + variant.getPrimaryVariantId() + "]");
 		}
 
@@ -224,48 +211,41 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	public Map<String, Annotation> getVariantAnnotationsMap()
-	{
+	public Map<String, Annotation> getVariantAnnotationsMap() {
 		return Collections.emptyMap();
 	}
 
 	@Override
-	public List<String> getSeqNames()
-	{
+	public List<String> getSeqNames() {
 		return new ArrayList<String>(seqNames);
 	}
 
 	@Override
-	public List<GeneticVariant> getVariantsByPos(String seqName, int startPos)
-	{
+	public List<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
 		return new ArrayList<GeneticVariant>(snps.getSequencePosVariants(seqName, startPos));
 	}
 
 	@Override
-	public Iterator<GeneticVariant> iterator()
-	{
+	public Iterator<GeneticVariant> iterator() {
 		return snps.iterator();
 	}
 
 	@Override
-	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName)
-	{
+	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
 		return snps.getSequenceVariants(seqName);
 	}
 
 	@Override
-	public int cacheSize()
-	{
+	public int cacheSize() {
 		return 0;
 	}
 
 	/**
 	 * Ped/Map daoes not support phasing, always return false
-	 * 
+	 *
 	 */
 	@Override
-	public List<Boolean> getSamplePhasing(GeneticVariant variant)
-	{
+	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
 
 		List<Boolean> phasing = Collections.nCopies(getSampleVariants(variant).size(), false);
 
@@ -273,29 +253,24 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	public int getSampleVariantProviderUniqueId()
-	{
+	public int getSampleVariantProviderUniqueId() {
 		return sampleVariantProviderUniqueId;
 	}
 
 	@Override
-	public Map<String, SampleAnnotation> getSampleAnnotationsMap()
-	{
+	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
 		return sampleAnnotations;
 	}
 
 	@Override
-	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd)
-	{
+	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
 		return snps.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
 	}
 
 	@Override
-	public byte[] getSampleCalledDosage(GeneticVariant variant)
-	{
+	public byte[] getSampleCalledDosage(GeneticVariant variant) {
 
-		if (calledDosageCache.containsKey(variant))
-		{
+		if (calledDosageCache.containsKey(variant)) {
 			return calledDosageCache.get(variant);
 		}
 
@@ -307,11 +282,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	public float[] getSampleDosage(GeneticVariant variant)
-	{
+	public float[] getSampleDosage(GeneticVariant variant) {
 
-		if (dosageCache.containsKey(variant))
-		{
+		if (dosageCache.containsKey(variant)) {
 			return dosageCache.get(variant);
 		}
 
@@ -324,5 +297,15 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	@Override
 	public void close() throws IOException {
+	}
+
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return true;
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }

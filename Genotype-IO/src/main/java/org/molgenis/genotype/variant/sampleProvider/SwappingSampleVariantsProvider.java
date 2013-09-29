@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 public class SwappingSampleVariantsProvider implements SampleVariantsProvider
@@ -44,6 +45,7 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 		return sampleVariantsProvider.getSamplePhasing(variant);
 	}
 
+	@Override
 	public int getSampleVariantProviderUniqueId()
 	{
 		return sampleVariantProviderUniqueId;
@@ -59,6 +61,11 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 	public float[] getSampleDosage(GeneticVariant variant)
 	{
 		return sampleVariantsProvider.getSampleDosage(variant);
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return sampleVariantsProvider.getSampleProbilities(variant);
 	}
 
 }
