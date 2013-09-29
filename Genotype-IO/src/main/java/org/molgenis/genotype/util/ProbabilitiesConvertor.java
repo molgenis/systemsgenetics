@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.molgenis.genotype.Allele;
@@ -20,7 +21,8 @@ public class ProbabilitiesConvertor {
 
 	/**
 	 * Convert alleles to probability values. If more than two alleles will
-	 * return all missing. If sample alleles found not specified by alleles then sample will be set to missing
+	 * return all missing. If sample alleles found not specified by alleles then
+	 * sample will be set to missing
 	 *
 	 *
 	 * @param sampleAlleles
@@ -71,42 +73,112 @@ public class ProbabilitiesConvertor {
 				} else {
 					probs[i] = SampleVariantProbabilities.MISSING_PROB;
 				}
-				
+
 			}
-	
+
 			return probs;
-			
+
 		}
-		
+
 	}
-	
+
 	/**
-	 * Uses inexact heuristic as defined by plinkseq (http://atgu.mgh.harvard.edu/plinkseq/dosage.shtml)
-	 * to convert dosage to probabilities.
-	 * 
-	 * @param sampleDosages assuming count of ref allele. 
-	 * @return 
+	 * Uses inexact heuristic as defined by plinkseq
+	 * (http://atgu.mgh.harvard.edu/plinkseq/dosage.shtml) to convert dosage to
+	 * probabilities.
+	 *
+	 * @param sampleDosages assuming count of ref allele.
+	 * @return
 	 */
 	public static SampleVariantProbabilities[] convertDosageToProbabilityHeuristic(float[] sampleDosages) {
-		
+
 		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[sampleDosages.length];
-		
-		for(int i = 0 ; i < sampleDosages.length ; ++i){
-			
+
+		for (int i = 0; i < sampleDosages.length; ++i) {
+
 			float sampleDosage = sampleDosages[i];
-			
-			if(sampleDosage > 2 || sampleDosage < 0){
+
+			if (sampleDosage > 2 || sampleDosage < 0) {
 				probs[i] = SampleVariantProbabilities.MISSING_PROB;
-			} else if ( sampleDosage < 1 ){
-				probs[i] = new SampleVariantProbabilities3Probs(new float[]{ 0, sampleDosage, 1 - sampleDosage});
+			} else if (sampleDosage < 1) {
+				probs[i] = new SampleVariantProbabilities3Probs(new float[]{0, sampleDosage, 1 - sampleDosage});
 			} else {
 				//sampleDosage >= 1
-				probs[i] = new SampleVariantProbabilities3Probs(new float[]{ sampleDosage - 1, 2 - sampleDosage, 0});
+				probs[i] = new SampleVariantProbabilities3Probs(new float[]{sampleDosage - 1, 2 - sampleDosage, 0});
 			}
-			
+
+		}
+
+		return probs;
+
+	}
+
+	/**
+	 *
+	 * @param probs
+	 * @param variantAlleles the two alleles for this variant
+	 * @param minProbability to call a genotype
+	 * @return
+	 */
+	public static List<Alleles> convertProbabilitiesToAlleles(SampleVariantProbabilities[] probs, Alleles variantAlleles, float minProbability) {
+
+		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(probs.length);
+
+		if (variantAlleles.getAlleleCount() != 2) {
+			throw new GenotypeDataException("Error converting posterior probabilities to called alleles. Found non biallelic SNP");
+		}
+
+		Alleles aa = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
+		Alleles bb = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
+		Alleles missing = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
+
+		for (SampleVariantProbabilities sampleProbs : probs) {
+
+			int maxProbIndex = -1;
+			float maxProb = 0;
+
+			int i = 0;
+			for (float prob : sampleProbs.getProbilities()) {
+				if (prob >= minProbability && prob > maxProb) {
+					maxProbIndex = i;
+					maxProb = prob;
+				}
+				++i;
+			}
+
+			switch (maxProbIndex) {
+				case -1:
+					sampleAlleles.add(missing);
+					break;
+				case 0:
+					sampleAlleles.add(aa);
+					break;
+				case 1:
+					sampleAlleles.add(variantAlleles);
+					break;
+				case 2:
+					sampleAlleles.add(bb);
+					break;
+				default:
+					throw new GenotypeDataException("Error converting posterior probabilities to called alleles. This should not happen, please report this bug.");
+			}
+
+		}
+
+		return sampleAlleles;
+
+	}
+	
+	public static float[] convertProbabilitiesToDosage(SampleVariantProbabilities[] probs){
+		
+		float[] dosages = new float[probs.length];
+		
+		for(int i = 0 ; i < probs.length ; ++i){
+			dosages[i] = ( probs[i].getProbilities()[0] * 2 ) + probs[i].getProbilities()[1];
 		}
 		
-		return probs;
+		return dosages;
+		
 		
 	}
 	
