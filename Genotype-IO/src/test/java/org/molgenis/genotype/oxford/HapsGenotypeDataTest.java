@@ -1,5 +1,6 @@
-package org.molgenis.genotype.impute2;
+package org.molgenis.genotype.oxford;
 
+import org.molgenis.genotype.oxford.HapsGenotypeData;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -24,14 +25,14 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class Impute2GenotypeDataTest extends ResourceTest
+public class HapsGenotypeDataTest extends ResourceTest
 {
-	private Impute2GenotypeData genotypeData;
+	private HapsGenotypeData genotypeData;
 
 	@BeforeClass
 	public void beforeClass() throws IOException, URISyntaxException
 	{
-		genotypeData = new Impute2GenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
+		genotypeData = new HapsGenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
 	}
 
 	@Test

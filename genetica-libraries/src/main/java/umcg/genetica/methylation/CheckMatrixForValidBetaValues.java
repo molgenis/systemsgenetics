@@ -27,7 +27,7 @@ public class CheckMatrixForValidBetaValues {
 
         for (int c = 0; c < dataset.columns(); ++c) {
             for (int r = 0; r < dataset.rows(); ++r) {
-                if (!(dataset.get(r, c) >= 0 && dataset.get(r, c) <= 1)) {
+                if (!(dataset.getMatrix().get(r, c) >= 0 && dataset.getMatrix().get(r, c) <= 1)) {
                     dataset.getMatrix().set(r, c, Double.NaN);
                 }
             }

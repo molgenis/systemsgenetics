@@ -17,7 +17,7 @@ Getting started
 ----------------
 
 ### Downloading the Genotype Harmonizer
-The last build from the genotype aligner can be downloaded here:
+The last build from the genotype harmonizer can be downloaded here:
 http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$Genotype-Harmonizer/lastBuild/
 
 Click on `genotype-harmonizer-*.*.*-dist.zip` or `genotype-harmonizer-*.*.*-dist.tar.gz` to download the Genotype Harmonizer, test data and 2 example scripts.
@@ -26,9 +26,9 @@ In case of successfully build there will a green circle before the `Build #`.
 It is possible that you visit the website when a new build is in progress (the circle will be blinking), please try again in a few minutes.
 
 ### Running the Genotype Harmonizer
-type `GenotypeAligner.sh`, `GenotypeAligner.bat` or `java -jar GenotypeAligner.jar` to run. You will now get an overview of the different command-line options.
+type `GenotypeHarmonizer.sh`, `GenotypeHarmonizer.bat` or `java -jar GenotypeHarmonizer.jar` to run. You will now get an overview of the different command-line options.
 
-In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Harmonizer. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeAligner.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
+In the case of an heapspace or out of memory error you need allocate more memory to run the Genotype Harmonizer. If this should happen use this command to run: `Java -jar -Xms##g -Xmx##g -jar GenotypeHarmonizer.jar`. Replace ## with the number of gigabytes of memory you want to allocate.
 
 ### Basic usage
 In the most basic usage scenario you need to define:
@@ -39,7 +39,7 @@ In the most basic usage scenario you need to define:
 
 Your command will look like this:
 ```
-GenotypeAligner.sh \
+GenotypeHarmonizer.sh \
 	--input path_to_study_data \
 	--output path_of_output \
 	--ref path_to_reference
@@ -179,7 +179,7 @@ Test data
 ----------------
 This chapter is not relevant for the usage of the program but allows reproducibility of the test data.
 
-The genotype aligner contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
+The genotype harmonizer contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
 This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-harmonizer/). It is also supplied in the Genotype Harmonizer package to get you started.
 

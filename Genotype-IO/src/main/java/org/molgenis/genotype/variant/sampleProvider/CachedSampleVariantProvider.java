@@ -3,6 +3,7 @@ package org.molgenis.genotype.variant.sampleProvider;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.variant.GeneticVariant;
 
@@ -21,6 +22,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	private final Cache<GeneticVariant, List<Boolean>> phasingCache;
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
+	private final Cache<GeneticVariant, SampleVariantProbabilities[]> probCache;
 	private final int cacheSize;
 	private final int sampleVariantProviderUniqueId;
 
@@ -31,6 +33,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		this.phasingCache = new Cache<GeneticVariant, List<Boolean>>(cacheSize);
 		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(cacheSize);
 		this.dosageCache = new Cache<GeneticVariant, float[]>(cacheSize);
+		this.probCache = new Cache<GeneticVariant, SampleVariantProbabilities[]>(cacheSize);
 		this.cacheSize = cacheSize;
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
@@ -100,5 +103,17 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		float[] dosage = sampleVariantProvider.getSampleDosage(variant);
 		dosageCache.put(variant, dosage);
 		return dosage;
+	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		if (probCache.containsKey(variant))
+		{
+			return probCache.get(variant);
+		}
+
+		SampleVariantProbabilities[] probs = sampleVariantProvider.getSampleProbilities(variant);
+		probCache.put(variant, probs);
+		return probs;
 	}
 }
