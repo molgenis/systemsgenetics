@@ -191,7 +191,7 @@ public class PCAOptimum extends MetaQTL3 {
         System.out.println("Determined stepsize: " + stepSize);
 
         if (performEigenVectorQTLMapping) {
-            performeQTLMappingOverEigenvectorMatrixAndReNormalize(origInExp, out, stepSize, max);
+            performeQTLMappingOverEigenvectorMatrixAndReNormalize(origInExp, out, parentDir, stepSize, max, maxNrResults);
 
             fileList = Gpio.getListOfFiles(parentDir);
             pcs = new ArrayList<Integer>();
@@ -234,7 +234,7 @@ public class PCAOptimum extends MetaQTL3 {
                         outputDir = out + "Cis-" + pca + "PCAsRemoved-GeneticVectorsNotRemoved/";
                     }
                     if ((pca == 0 && !Gpio.exists(outputDir + "eQTLProbesFDR0.05.txt")) || pca > 0) {
-                        performeQTLMapping(true, false, nextInExp, outputDir, cisSnpsToTest, null, threads);
+                        performeQTLMapping(true, false, nextInExp, outputDir, cisSnpsToTest, null, threads, maxNrResults);
                         cleanup();
                     }
                 }
@@ -244,7 +244,7 @@ public class PCAOptimum extends MetaQTL3 {
                         outputDir = out + "Trans-" + pca + "PCAsRemoved-GeneticVectorsNotRemoved/";
                     }
                     if ((pca == 0 && !Gpio.exists(outputDir + "eQTLProbesFDR0.05.txt")) || pca > 0) {
-                        performeQTLMapping(false, true, nextInExp, outputDir, transSnpsToTest, null, threads);
+                        performeQTLMapping(false, true, nextInExp, outputDir, transSnpsToTest, null, threads, maxNrResults);
                         cleanup();
                     }
                 }
@@ -326,7 +326,7 @@ public class PCAOptimum extends MetaQTL3 {
         this.m_workPackages = null;
     }
 
-    protected void performeQTLMapping(boolean cis, boolean trans, String inFile, String out, HashSet<String> snpsToTest, HashSet<String> probesToTest, int threads) throws IOException, Exception {
+    protected void performeQTLMapping(boolean cis, boolean trans, String inFile, String out, HashSet<String> snpsToTest, HashSet<String> probesToTest, int threads, Integer maxNrResults) throws IOException, Exception {
 //
         String nextInExp = inFile;
 
@@ -373,7 +373,10 @@ public class PCAOptimum extends MetaQTL3 {
         m_settings.outputReportsDir = outputdir;
         m_settings.createTEXTOutputFiles = true;
         m_settings.createBinaryOutputFiles = false;
+        if (maxNrResults != null) {
+            m_settings.maxNrMostSignificantEQTLs = maxNrResults;
 
+        }
         init();
 
         // set standard trans settings
@@ -441,21 +444,21 @@ public class PCAOptimum extends MetaQTL3 {
         return y;
     }
 
-    private void performeQTLMappingOverEigenvectorMatrixAndReNormalize(String origInExp, String out, int stepSize, int max) throws IOException, Exception {
+    private void performeQTLMappingOverEigenvectorMatrixAndReNormalize(String origInExp, String out, String parentDir, int stepSize, int max, Integer maxNrResults) throws IOException, Exception {
         // Eigenvector mapping
         TextFile tf = new TextFile(origInExp, TextFile.R);
         String[] header = tf.readLineElems(TextFile.tab);
         int nrCols = header.length;
         tf.close();
 
-        int nrToRemove = nrCols;
+        int nrToRemove = max + 1;
 
         HashSet<String> probesToTest = new HashSet<String>();
         for (int i = 1; i < nrToRemove; i++) {
             probesToTest.add("Comp" + i);
         }
 
-        String parentDir = Gpio.getParentDir(origInExp);
+
         parentDir += "/";
         String[] files = Gpio.getListOfFiles(parentDir);
         String pcaOverSampleEigenVectorsTransposedFile = null;
@@ -475,7 +478,7 @@ public class PCAOptimum extends MetaQTL3 {
 
 
         String nextInExp = pcaOverSampleEigenVectorsTransposedFile;
-        performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", null, probesToTest, m_threads);
+        performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", null, probesToTest, m_threads, maxNrResults);
         cleanup();
 
         eQTLTextFile etf = new eQTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
@@ -506,7 +509,7 @@ public class PCAOptimum extends MetaQTL3 {
         System.out.println();
         if (geneticEigenVectors.size() > 0) {
             Normalizer n = new Normalizer();
-            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, origInExp, max, stepSize);
+            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
         } else {
             System.out.println("No PCA vectors seem to be genetically associated.\n"
                     + "To find the optimum number of PCs to use, rerun this command without --pcqtl, if you have not done so already.");
