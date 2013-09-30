@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -133,7 +134,7 @@ public class eQTLFileCompare {
                                 hashEQTLs.put( (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16], data);
                                 hashUniqueProbes.add(data[4]);
                                 hashUniqueGenes.add(data[16]);
-								log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]); 
+								//log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]); 
                             }
                         }
                     } else {
@@ -141,7 +142,7 @@ public class eQTLFileCompare {
                             hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4], data);
                             hashUniqueProbes.add(data[4]);
                             hashUniqueGenes.add(data[16]);
-							log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4]); 
+						//	log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4]); 
                         }
                     }
                 }
@@ -180,7 +181,7 @@ public class eQTLFileCompare {
         ArrayList<Double> vecY = new ArrayList<Double>();
 
         //Vector holding all opposite allelic effects:
-        ArrayList<String> vecOppositeEQTLs = new ArrayList<String>();
+        LinkedHashSet<String> vecOppositeEQTLs = new LinkedHashSet<String>();
 
         //Now process file 2:
 
@@ -297,6 +298,7 @@ public class eQTLFileCompare {
                         String alleles2 = data[8];
                         String alleleAssessed2 = data[9];
                         double zScore2 = Double.parseDouble(data[10]);
+						
 //                        double pValue2 = Double.parseDouble(data[0]);
                         String correlations2[] = data[17].split(";");
                         double correlation2 = 0;
@@ -345,10 +347,35 @@ public class eQTLFileCompare {
                         }
                         if (nrIdenticalAlleles == 1) {
                             log.write("Error! SNPs have incompatible alleles!!:\t" + alleles + "\t" + alleles2 + "\t" + identifier + "\n");
+							continue;
                         }
                         if (nrIdenticalAlleles == 0) {
-                            alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
+							
+                            alleles2 = BaseAnnot.getComplement((byte)alleles2.charAt(0)) + "/" + BaseAnnot.getComplement((byte)alleles2.charAt(1));
+							alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
+							
                         }
+						
+						
+						//Try again after taking complement
+						nrIdenticalAlleles = 0;
+                        if (alleles.length() > 2 && alleles2.length() > 2) {
+                            for (int a = 0; a < 3; a++) {
+                                for (int b = 0; b < 3; b++) {
+                                    if (a != 1 && b != 1) {
+                                        if (alleles.getBytes()[a] == alleles2.getBytes()[b]) {
+                                            nrIdenticalAlleles++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+						
+						if (nrIdenticalAlleles == 0) {
+                            log.write("Error! SNPs have incompatible alleles!!:\t" + alleles + "\t" + alleles2 + "\t" + identifier + "\n");
+							continue;
+                        }
+						
                         if (!alleleAssessed.equals(alleleAssessed2)) {
                             zScore2 = -zScore2;
 //                           correlation2 = -correlation2;
@@ -357,11 +384,11 @@ public class eQTLFileCompare {
 
                         //Recode alleles:
                         // if contains T, but no A, take complement
-                        if (alleles.contains("T") && !alleles.contains("A")) {
-                            alleles = BaseAnnot.getComplement(alleles);
-                            alleleAssessed = BaseAnnot.getComplement(alleleAssessed);
-                            alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
-                        }
+//                        if (alleles.contains("T") && !alleles.contains("A")) {
+//                            alleles = BaseAnnot.getComplement(alleles);
+//                            alleleAssessed = BaseAnnot.getComplement(alleleAssessed);
+//                            alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
+//                        }
 
                         if (zScore2 * zScore > 0) {
                             sameDirection = true;
@@ -376,17 +403,22 @@ public class eQTLFileCompare {
                         zs.draw(zScore, zScore2, 0, 1);
                         if (!sameDirection) {
                             nreQTLsOppositeDirection++;
+							
+							String oppositeEQTL;
+							
                             if (matchOnGeneName) {
-                                identifier = data[1] + "\t" + data[16];
-                                if (!vecOppositeEQTLs.contains(identifier)) {
-                                    vecOppositeEQTLs.add(identifier);
-                                }
+                                oppositeEQTL = data[1] + "\t" + data[16];
+                                
                             } else {
-                                identifier = data[1] + "\t" + data[4];
-                                if (!vecOppositeEQTLs.contains(identifier)) {
-                                    vecOppositeEQTLs.add(identifier);
-                                }
+                                oppositeEQTL = data[1] + "\t" + data[4];
                             }
+							
+							oppositeEQTL += '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2;
+							
+							if (!vecOppositeEQTLs.contains(oppositeEQTL)) {
+                                    vecOppositeEQTLs.add(oppositeEQTL);
+                                }
+							
 //                            int posX = 500 + (int) Math.round(zScore * 10);
 //                            int posY = 500 - (int) Math.round(zScore2 * 10);
                             vecX.add(zScore);
@@ -442,8 +474,9 @@ public class eQTLFileCompare {
 
 
         TextFile out = new TextFile(outputFile + "-OppositeEQTLs.txt", TextFile.W);
-        for (int o = 0; o < vecOppositeEQTLs.size(); o++) {
-            out.write(vecOppositeEQTLs.get(o) + "\n");
+        for (String oppositeEQTL : vecOppositeEQTLs) {
+            out.write(oppositeEQTL);
+			out.append('\n');
         }
         out.close();
 
