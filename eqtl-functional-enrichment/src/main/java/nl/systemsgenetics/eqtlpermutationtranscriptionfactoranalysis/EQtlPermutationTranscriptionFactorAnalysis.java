@@ -45,12 +45,27 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 		 * args[4]: window size.
 		 * args[5]: r2 cutoff.
 		 */
-		EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[0], args[1], args[2], args[3], Double.valueOf(args[4]));
+		//EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[1], args[2], args[3], args[4], Double.valueOf(args[5]));
 //		EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 =
 //				new EQtlPermutationTranscriptionFactorAnalysisV3("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
 //				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\PermutedEQTLsPermutationRound8.txt",
 //				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\","C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\",
 //				250000, 0.8);
+		if(args[0].equals("tf")){
+			EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[1], args[2], args[3], args[4], Double.valueOf(args[5]));
+		}
+		else if(args[0].equals("gencode")){
+			//Make call to gencode analysis.
+		}
+		else if(args[0].equals("dbrip")){
+			eQtlsInAluRipData eqiard = new eQtlsInAluRipData(args[1], args[2], args[3], args[4], Double.valueOf(args[5]));
+		}
+		else if(args[0].equals("repeats")){
+			//Make call to perform analysis on repeat data from dasha.
+		}
+		else{
+			System.out.println("Use one of the following commands: ");
+		}
 	}
 	
 	

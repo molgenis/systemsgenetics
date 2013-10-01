@@ -54,7 +54,6 @@ public class RegulomeDbEntry {
 					supportDataClassElements = new ArrayList<RegulomeDbSupportingData>();
 					supportDataLoader.put(supportDataElement.getSupportClass(), supportDataClassElements);
 				}
-
 				supportDataClassElements.add(supportDataElement);
 
 			}
