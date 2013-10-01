@@ -94,8 +94,8 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 		getTranscriptionFactorCountsV2(topEQtlEffects, nonTopEqtlEffects, eqtlCounts, genotypeData, regulomeDbData, r2Cutoff);
 		
 		
-		
 		//STEP 5.: PERFORM THE OPERATION FOR THE PERMUTATION DATA.
+		
 		System.out.println("[O]:> Start the analysis for the permutation data.");
 		HashMap<String, Integer> permutationCounts = new HashMap<String, Integer>();
 		for(int n=1;n<=100;n++){
@@ -268,7 +268,7 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 	
 	public RandomAccessGenotypeData readEQtlGenotypeData(String genotypeData, Set<String> variantIdFilter) throws IOException{
 		//Provide a Set<String> containing rsID of all significant eQTLs.
-		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 1000, new VariantIdIncludeFilter(variantIdFilter), new SampleIncludedFilter());
+		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 630000, new VariantIdIncludeFilter(variantIdFilter), new SampleIncludedFilter());
 		return gonlImputedBloodGenotypeData;
 	}
 	
@@ -303,7 +303,6 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 					
 					if(nonTopEffectData.containsKey(rsProbe)){
 						HashSet<Integer> get = nonTopEffectData.get(rsProbe);
-						//System.out.println("LD SNP " + gv.getPrimaryVariantId() + " says: le francais can suck my dick!");
 						
 						if(get.contains(gv.getStartPos())){
 							
@@ -390,6 +389,81 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 									//SEARCH THROUGH REGULOMEDB
 									if(regulomeDbData.containsKey(rsChr)){
 										TreeMap<Integer, String[]> regulomeChromosomeEntries = regulomeDbData.get(rsChr);
+										
+										if(regulomeChromosomeEntries.containsKey(eqtlPos)){
+											String[] transcriptionFactors = regulomeChromosomeEntries.get(eqtlPos);
+											for(String tf : transcriptionFactors){
+												if(countsMap.containsKey(tf)){
+													countsMap.put(tf, countsMap.get(tf)+1);
+												}
+												else{
+													countsMap.put(tf, 1);
+												}
+											}
+										}
+									}
+
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	
+	
+	
+	
+	
+	public void getTranscriptionFactorCountsV3(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
+			RandomAccessGenotypeData genotypeData, HashMap<String, TreeMap<Integer, String[]>> regulomeDbData, int windowSize, double r2CutOff){
+		Ld ld = null;
+		
+		Iterator<Map.Entry<String, EQTL>> topEffectIterator = topEffectData.entrySet().iterator();
+		while(topEffectIterator.hasNext()){
+			Map.Entry<String, EQTL> topEffectDataEntry = (Map.Entry) topEffectIterator.next();
+			EQTL eqtl = topEffectDataEntry.getValue();
+			
+			//FETCH THE EQTL FROM GENOTYPE DATA.
+			String rsChr = eqtl.getRsChr().toString();
+			int rsChrPos = eqtl.getRsChrPos();
+			String rsProbe = eqtl.getProbe();
+			GeneticVariant eQtlVariant = genotypeData.getSnpVariantByPos(rsChr.toString(), rsChrPos);
+			
+			
+			
+			//CHECK IF THE GOTTEN VARIANT IS NOT NULL.
+			if(eQtlVariant != null){
+				int boundaryL = eQtlVariant.getStartPos() - windowSize;
+				int boundaryR = eQtlVariant.getStartPos() + windowSize;
+				
+				
+				//GET THE VARIANTS BY RANGE AND LOOP THROUGH THEM.
+				
+				if(nonTopEffectData.containsKey(rsProbe)){
+					HashSet<Integer> get = nonTopEffectData.get(rsProbe);
+					
+					Iterable<GeneticVariant> variantsByRange = genotypeData.getVariantsByRange(rsChr, boundaryL, boundaryR);
+					for(GeneticVariant gv : variantsByRange){
+
+						if(get.contains(gv.getStartPos())){
+
+							if(eQtlVariant.isBiallelic() && gv.isBiallelic()){
+								try {
+									ld = eQtlVariant.calculateLd(gv);
+								} catch (LdCalculatorException ex) {
+									System.out.println("Error in LD calculation: " + ex.getMessage());
+									System.exit(1);
+								}
+
+
+								//CHECK IF R2 IS BIGGER THAN THE SET CUTOFF
+								if(ld.getR2() >= r2CutOff){
+									//SEARCH THROUGH REGULOMEDB
+									if(regulomeDbData.containsKey(rsChr)){
+										TreeMap<Integer, String[]> regulomeChromosomeEntries = regulomeDbData.get(rsChr);
 										Iterator<Entry<Integer, String[]>> regulomeChromosomeIterator = regulomeChromosomeEntries.entrySet().iterator();
 
 										//PERFORM A COUNT OPERATION FOR EACH TF.
@@ -407,11 +481,17 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 									}
 
 								}
+								//PERFORMED THE CHECK IF THE R2 IS BIGGER THAN THE SET CUTOFF.
 							}
+
 						}
 					}
+
+
 				}
+				
 			}
+			
 		}
 	}
 	
