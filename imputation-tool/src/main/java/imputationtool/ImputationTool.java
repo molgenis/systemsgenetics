@@ -345,12 +345,12 @@ public class ImputationTool {
                 + "--mode merge --in TriTyper1Dir --in2 TryTyper2Dir --out outdir\n");
 
         System.out.println("# Concatinate TriTyper datasets. All should contain same number of individuals in the same order.\n"
-                + "--mode concat --in TriTyperDir1;TriTyperDir2;TriTyperDirN --out outdir\n");
+                + "--mode concat --in \"TriTyperDir1;TriTyperDir2;TriTyperDirN\" --out outdir\n");
 
         System.out.println("---------------------\nVCF\n---------------------\n");
         System.out.println("# Convert TriTyper to VCF and vice versa\n"
                 + "--mode ttvcf --in indir --out outdir \n"
-                + "--mode vcftt --in infile --out outdir [--pattern pattern]\n");
+                + "--mode vcftt --in indir --out outdir [--pattern pattern]\n");
 
         System.exit(0);
     }

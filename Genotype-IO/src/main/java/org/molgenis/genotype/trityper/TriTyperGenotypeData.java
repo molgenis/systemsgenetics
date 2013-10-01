@@ -30,17 +30,18 @@ import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.CaseControlAnnotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.molgenis.genotype.variantFilter.VariantFilter;
-import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
@@ -388,23 +389,14 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 	}
 
-	private static class PosChr {
-
-		private final String chr;
-		private final int pos;
-
-		public PosChr(String chr, int pos) {
-			this.chr = chr;
-			this.pos = pos;
-		}
-
-		public String getChr() {
-			return chr;
-		}
-
-		public int getPos() {
-			return pos;
-		}
+	@Override
+	public boolean isOnlyContaingSaveProbabilityGenotypes() {
+		return imputedDosageDataFile == null;
+	}
+	
+	@Override
+	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 
 	@Override

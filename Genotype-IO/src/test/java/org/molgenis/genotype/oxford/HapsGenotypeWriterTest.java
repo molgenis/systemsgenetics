@@ -1,5 +1,7 @@
-package org.molgenis.genotype.impute2;
+package org.molgenis.genotype.oxford;
 
+import org.molgenis.genotype.oxford.HapsGenotypeWriter;
+import org.molgenis.genotype.oxford.HapsGenotypeData;
 import static org.testng.Assert.assertEquals;
 
 import java.io.File;
@@ -12,16 +14,16 @@ import org.molgenis.genotype.ResourceTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class Impute2GenotypeWriterTest extends ResourceTest
+public class HapsGenotypeWriterTest extends ResourceTest
 {
 	private GenotypeData genotypeData;
-	private Impute2GenotypeWriter writer;
+	private HapsGenotypeWriter writer;
 
 	@BeforeClass
 	public void setUp() throws IOException, URISyntaxException
 	{
-		genotypeData = new Impute2GenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
-		writer = new Impute2GenotypeWriter(genotypeData);
+		genotypeData = new HapsGenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
+		writer = new HapsGenotypeWriter(genotypeData);
 	}
 
 	@Test
@@ -30,14 +32,13 @@ public class Impute2GenotypeWriterTest extends ResourceTest
 		try
 		{
 			writer.write("write-test");
-
-            //TODO fix this test. Did not work for Marc Jan
             
-			//assertEquals(FileUtils.readFileToString(new File("write-test.haps")),
-			//		FileUtils.readFileToString(getTestImpute2Haps()));
+			assertEquals(FileUtils.readFileToString(new File("write-test.haps")),
+					FileUtils.readFileToString(getTestImpute2Haps()));
 
-			//assertEquals(FileUtils.readFileToString(new File("write-test.sample")),
-			//		FileUtils.readFileToString(getTestImpute2Sample()));
+			//TODO fix this test. 
+//			assertEquals(FileUtils.readFileToString(new File("write-test.sample")),
+//					FileUtils.readFileToString(getTestImpute2Sample()));
 		}
 		finally
 		{

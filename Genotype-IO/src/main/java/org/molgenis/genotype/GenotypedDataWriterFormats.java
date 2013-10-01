@@ -1,6 +1,6 @@
 package org.molgenis.genotype;
 
-import org.molgenis.genotype.impute2.Impute2GenotypeWriter;
+import org.molgenis.genotype.oxford.HapsGenotypeWriter;
 import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
 import org.molgenis.genotype.plink.PedMapGenotypeWriter;
 
@@ -29,7 +29,7 @@ public enum GenotypedDataWriterFormats
 			case PED_MAP:
 				return new PedMapGenotypeWriter(genotypeData);
 			case SHAPEIT2:
-				return new Impute2GenotypeWriter(genotypeData);
+				return new HapsGenotypeWriter(genotypeData);
 			case PLINK_BED:
 				return new BedBimFamGenotypeWriter(genotypeData);
 			default:

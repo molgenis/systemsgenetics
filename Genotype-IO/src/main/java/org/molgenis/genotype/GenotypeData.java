@@ -80,5 +80,12 @@ public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 	 * @return 
 	 */
 	String[] getSampleNames();
+	
+	/**
+	 * Return true if data contains probabilities or called genotypes (0,1,2)
+	 * It is not 100% save to convert dosage that are not exactly 0, 1 or 2.
+	 * Datasets that potentially contain these dosages must return false
+	 */
+	boolean isOnlyContaingSaveProbabilityGenotypes();
 
 }

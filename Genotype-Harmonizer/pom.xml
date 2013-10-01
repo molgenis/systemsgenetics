@@ -2,7 +2,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>Genotype-Harmonizer</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3</version>
 	<name>Genotype Harmonizer</name>
 	<packaging>jar</packaging>
 	<parent>
@@ -54,7 +54,7 @@
 				</includes>
 			</resource>
 		</resources>
-		<finalName>GenotypeAligner-${project.version}</finalName>
+		<finalName>GenotypeHarmonizer-${project.version}</finalName>
 		<plugins>
 			<!-- The configuration of maven-assembly-plugin -->
 			<plugin>
@@ -98,7 +98,7 @@
        -->
 							<classpathPrefix>lib/</classpathPrefix>
 							<!-- Specifies the main class of the application -->
-							<mainClass>nl.umcg.deelenp.genotypealigner.GenotypeAligner</mainClass>
+							<mainClass>nl.umcg.deelenp.genotypeharmonizer.GenotypeHarmonizer</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

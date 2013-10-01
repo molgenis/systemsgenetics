@@ -3,6 +3,7 @@ package org.molgenis.genotype.variant.sampleProvider;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
@@ -47,5 +48,13 @@ public interface SampleVariantsProvider
 	 * @return
 	 */
 	float[] getSampleDosage(GeneticVariant variant);
+	
+	/**
+	 * Get sample genotype probabilities. Make sure to ask genotype data if this is save
+	 * 
+	 * @param variant
+	 * @return 
+	 */
+	SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant);
 
 }

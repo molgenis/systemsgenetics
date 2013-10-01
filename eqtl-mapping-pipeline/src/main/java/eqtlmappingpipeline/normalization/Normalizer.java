@@ -446,8 +446,8 @@ public class Normalizer {
 
     }
 
-    public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
-        String parentDir = Gpio.getParentDir(expressionFile);
+    public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String parentDir, String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
+        System.out.println("Will write output to: "+parentDir);
         String[] files = Gpio.getListOfFiles(parentDir);
         String startExpressionFileName = expressionFile;
 
@@ -518,6 +518,11 @@ public class Normalizer {
             }
 
             int nrPCAs = t + 1;
+            if(minimalFilename.endsWith(".txt")){
+                minimalFilename = minimalFilename.substring(0, minimalFilename.length()-4);
+            } else if(minimalFilename.endsWith(".txt.gz")){
+                minimalFilename = minimalFilename.substring(0, minimalFilename.length()-7);
+            }
             if (nrIntermediatePCAsOverSamplesToRemoveToOutput > 0 && nrPCAs % nrIntermediatePCAsOverSamplesToRemoveToOutput == 0) {
                 //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt");
                 expressionDataset.save(minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");

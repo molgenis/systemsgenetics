@@ -6,6 +6,7 @@ import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculator;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -267,6 +268,34 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant
 		}
 
 	}
+
+	@Override
+	public SampleVariantProbabilities[] getSampleGenotypeProbilities() {
+		
+		SampleVariantProbabilities[] probByProvider = getSampleVariantsProvider().getSampleProbilities(originalVariant);
+		
+		Allele originalAAllele = originalVariant.getVariantAlleles().get(0);
+		Allele newAAllele = getVariantAlleles().get(0);
+		
+		if(originalAAllele == newAAllele){
+			return probByProvider;
+		} else if (originalAAllele == newAAllele.getComplement()){
+			return probByProvider;
+		} else {
+			
+			SampleVariantProbabilities[] probs = new SampleVariantProbabilities[probByProvider.length];
+			
+			for(int i = 0 ; i < probByProvider.length ; ++i){
+				probs[i] = probByProvider[i].getReversedProbilities();
+			}
+			
+			return probs;
+			
+		}
+		
+	}
+	
+	
 
 	@Override
 	public SampleVariantsProvider getSampleVariantsProvider()

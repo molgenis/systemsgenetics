@@ -136,7 +136,7 @@ public class ImputeImputedToTriTyperV2 {
                 String fileName = inputDir + "/" + fileList[f];
                 System.out.println("Processing file:\t" + fileName);
                 try {
-                    TextFile in = new TextFile(fileName, TextFile.R,104857600);
+                    TextFile in = new TextFile(fileName, TextFile.R, 1048576);
                     String str;
                     while ((str = in.readLine()) != null) {
                         while (str.contains("  ")) {
@@ -260,7 +260,7 @@ public class ImputeImputedToTriTyperV2 {
                     System.out.println("Processing file:\t" + fileName);
                     int lnctr = 0;
                     try {
-                        TextFile in = new TextFile(fileName, TextFile.R,104857600);
+                        TextFile in = new TextFile(fileName, TextFile.R, 1048576);
                         String str;
                         while ((str = in.readLine()) != null) {
                             while (str.contains("  ")) {
