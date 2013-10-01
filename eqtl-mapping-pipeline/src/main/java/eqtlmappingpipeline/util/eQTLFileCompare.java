@@ -264,7 +264,7 @@ public class eQTLFileCompare {
                             identicalProbe = false;
                         }
 
-                        overlap++;
+                        
                         hashUniqueProbesOverlap.add(data[4]);
                         hashUniqueGenesOverlap.add(data[16]);
                         if (!hashEQTLNrTimesAssessed.containsKey(identifier)) {
@@ -345,94 +345,86 @@ public class eQTLFileCompare {
                                 }
                             }
                         }
-                        if (nrIdenticalAlleles == 1) {
-                            log.write("Error! SNPs have incompatible alleles!!:\t" + alleles + "\t" + alleles2 + "\t" + identifier + "\n");
-							continue;
-                        }
+                        
                         if (nrIdenticalAlleles == 0) {
-							
                             alleles2 = BaseAnnot.getComplement((byte)alleles2.charAt(0)) + "/" + BaseAnnot.getComplement((byte)alleles2.charAt(1));
 							alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
-							
-                        }
-						
-						
-						//Try again after taking complement
-						nrIdenticalAlleles = 0;
-                        if (alleles.length() > 2 && alleles2.length() > 2) {
-                            for (int a = 0; a < 3; a++) {
-                                for (int b = 0; b < 3; b++) {
-                                    if (a != 1 && b != 1) {
-                                        if (alleles.getBytes()[a] == alleles2.getBytes()[b]) {
-                                            nrIdenticalAlleles++;
+							if (alleles.length() > 2 && alleles2.length() > 2) {
+                                for (int a = 0; a < 3; a++) {
+                                    for (int b = 0; b < 3; b++) {
+                                        if (a != 1 && b != 1) {
+                                            if (alleles.getBytes()[a] == alleles2.getBytes()[b]) {
+                                                nrIdenticalAlleles++;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+                        
 						
-						if (nrIdenticalAlleles == 0) {
+						if (nrIdenticalAlleles != 2) {
                             log.write("Error! SNPs have incompatible alleles!!:\t" + alleles + "\t" + alleles2 + "\t" + identifier + "\n");
-							continue;
-                        }
-						
-                        if (!alleleAssessed.equals(alleleAssessed2)) {
-                            zScore2 = -zScore2;
-//                           correlation2 = -correlation2;
-                            alleleAssessed2 = alleleAssessed;
-                        }
-
-                        //Recode alleles:
-                        // if contains T, but no A, take complement
-//                        if (alleles.contains("T") && !alleles.contains("A")) {
-//                            alleles = BaseAnnot.getComplement(alleles);
-//                            alleleAssessed = BaseAnnot.getComplement(alleleAssessed);
-//                            alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
-//                        }
-
-                        if (zScore2 * zScore > 0) {
-                            sameDirection = true;
-                        }
-
-//                       if(correlation != correlation2 && (numCorr1 > 0 && numCorr2 > 0)){
-//                           if(Math.abs(correlation - correlation2) > 0.00001){
-//                               System.out.println("Correlations are different: "+lineno+"\t"+correlation +"\t"+correlation2+"\t"+str);
-//                           }
-//                           
-//                       }
-                        zs.draw(zScore, zScore2, 0, 1);
-                        if (!sameDirection) {
-                            nreQTLsOppositeDirection++;
-							
-							String oppositeEQTL;
-							
-                            if (matchOnGeneName) {
-                                oppositeEQTL = data[1] + "\t" + data[16];
-                                
-                            } else {
-                                oppositeEQTL = data[1] + "\t" + data[4];
-                            }
-							
-							oppositeEQTL += '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2;
-							
-							if (!vecOppositeEQTLs.contains(oppositeEQTL)) {
-                                    vecOppositeEQTLs.add(oppositeEQTL);
-                                }
-							
-//                            int posX = 500 + (int) Math.round(zScore * 10);
-//                            int posY = 500 - (int) Math.round(zScore2 * 10);
-                            vecX.add(zScore);
-                            vecY.add(zScore2);
-
                         } else {
-                            // write to output
-                            identicalOut.writeln(identifier);
-                            nreQTLsIdenticalDirection++;
-                            if (alleles.length() > 2 && !alleles.equals("A/T") && !alleles.equals("T/A") && !alleles.equals("C/G") && !alleles.equals("G/C")) {
-//                                int posX = 500 + (int) Math.round(zScore * 10);
-//                                int posY = 500 - (int) Math.round(zScore2 * 10);
+                            overlap++;
+                            if (!alleleAssessed.equals(alleleAssessed2)) {
+                                zScore2 = -zScore2;
+    //                           correlation2 = -correlation2;
+                                alleleAssessed2 = alleleAssessed;
+                            }
+
+                            //Recode alleles:
+                            // if contains T, but no A, take complement
+    //                        if (alleles.contains("T") && !alleles.contains("A")) {
+    //                            alleles = BaseAnnot.getComplement(alleles);
+    //                            alleleAssessed = BaseAnnot.getComplement(alleleAssessed);
+    //                            alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
+    //                        }
+
+                            if (zScore2 * zScore > 0) {
+                                sameDirection = true;
+                            }
+
+    //                       if(correlation != correlation2 && (numCorr1 > 0 && numCorr2 > 0)){
+    //                           if(Math.abs(correlation - correlation2) > 0.00001){
+    //                               System.out.println("Correlations are different: "+lineno+"\t"+correlation +"\t"+correlation2+"\t"+str);
+    //                           }
+    //                           
+    //                       }
+                            zs.draw(zScore, zScore2, 0, 1);
+                            if (!sameDirection) {
+                                nreQTLsOppositeDirection++;
+
+                                String oppositeEQTL;
+
+                                if (matchOnGeneName) {
+                                    oppositeEQTL = data[1] + "\t" + data[16];
+
+                                } else {
+                                    oppositeEQTL = data[1] + "\t" + data[4];
+                                }
+
+                                oppositeEQTL += '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2;
+
+                                if (!vecOppositeEQTLs.contains(oppositeEQTL)) {
+                                        vecOppositeEQTLs.add(oppositeEQTL);
+                                    }
+
+    //                            int posX = 500 + (int) Math.round(zScore * 10);
+    //                            int posY = 500 - (int) Math.round(zScore2 * 10);
                                 vecX.add(zScore);
                                 vecY.add(zScore2);
+
+                            } else {
+                                // write to output
+                                identicalOut.writeln(identifier);
+                                nreQTLsIdenticalDirection++;
+                                if (alleles.length() > 2 && !alleles.equals("A/T") && !alleles.equals("T/A") && !alleles.equals("C/G") && !alleles.equals("G/C")) {
+    //                                int posX = 500 + (int) Math.round(zScore * 10);
+    //                                int posY = 500 - (int) Math.round(zScore2 * 10);
+                                    vecX.add(zScore);
+                                    vecY.add(zScore2);
+                                }
                             }
                         }
                     }
