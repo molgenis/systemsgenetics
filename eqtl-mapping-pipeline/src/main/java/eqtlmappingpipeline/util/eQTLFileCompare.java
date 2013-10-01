@@ -347,7 +347,7 @@ public class eQTLFileCompare {
                         }
                         
                         if (nrIdenticalAlleles == 0) {
-                            alleles2 = BaseAnnot.getComplement((byte)alleles2.charAt(0)) + "/" + BaseAnnot.getComplement((byte)alleles2.charAt(1));
+                            alleles2 = (char)BaseAnnot.getComplement((byte) alleles2.charAt(0)) + "/" + (char)BaseAnnot.getComplement((byte) alleles2.charAt(2));
 							alleleAssessed2 = BaseAnnot.getComplement(alleleAssessed2);
 							if (alleles.length() > 2 && alleles2.length() > 2) {
                                 for (int a = 0; a < 3; a++) {

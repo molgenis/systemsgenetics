@@ -26,7 +26,7 @@ import umcg.genetica.text.Strings;
  * @author harmjan
  */
 public class CisEQTLProbeSNPLDCheck {
-    
+
     double cr = 0.95;
     double hwe = 0.001;
     double maf = 0.01;
@@ -60,7 +60,6 @@ public class CisEQTLProbeSNPLDCheck {
 //            e.printStackTrace();
 //        }
 //    }
-
     public void runNew(String probeMapFile, String snpprobefile, String[] referenceDatasets, String[] referenceDatasetNames, String outputDirectory, double rSquaredThreshold, double dPrimeThreshold,
             int probecol, int probechrposcol, int probechrcol) throws IOException {
         ArrayList<Byte> probeChr = new ArrayList<Byte>();
