@@ -1,7 +1,7 @@
 <!--
 
   It is recommended to view this file using a markdown viewer
-  or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-harmonizer/README.md
+  or view this readme online: github.com/PatrickDeelen/systemsgenetics/blob/master/Genotype-Harmonizer/README.md
 
 -->
 Genotype Harmonizer
@@ -17,13 +17,8 @@ Getting started
 ----------------
 
 ### Downloading the Genotype Harmonizer
-The last build from the genotype harmonizer can be downloaded here:
-http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$Genotype-Harmonizer/lastBuild/
-
-Click on `genotype-harmonizer-*.*.*-dist.zip` or `genotype-harmonizer-*.*.*-dist.tar.gz` to download the Genotype Harmonizer, test data and 2 example scripts.
-
-In case of successfully build there will a green circle before the `Build #`. 
-It is possible that you visit the website when a new build is in progress (the circle will be blinking), please try again in a few minutes.
+The last version from the Genotype Harmonizer can be downloaded here:
+www.molgenis.org/systemsgenetics/Genotype-Harmonizer.html
 
 ### Running the Genotype Harmonizer
 type `GenotypeHarmonizer.sh`, `GenotypeHarmonizer.bat` or `java -jar GenotypeHarmonizer.jar` to run. You will now get an overview of the different command-line options.
