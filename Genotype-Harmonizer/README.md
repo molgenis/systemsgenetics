@@ -1,7 +1,7 @@
 <!--
 
   It is recommended to view this file using a markdown viewer
-  or view this readme online: https://github.com/PatrickDeelen/systemsgenetics/edit/master/genotype-harmonizer/README.md
+  or view this readme online: github.com/PatrickDeelen/systemsgenetics/blob/master/Genotype-Harmonizer/README.md
 
 -->
 Genotype Harmonizer
