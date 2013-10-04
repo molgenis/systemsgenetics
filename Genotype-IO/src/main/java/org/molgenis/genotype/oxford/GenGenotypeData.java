@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
-import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
@@ -54,21 +53,35 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
 	private final float minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
+	
+	private static final float DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 
 	public GenGenotypeData(String path) throws IOException {
 		this(new File(path + ".gen"), new File(path + ".sample"));
 	}
+	
+	public GenGenotypeData(String path, float minimumPosteriorProbabilityToCall) throws IOException {
+		this(new File(path + ".gen"), new File(path + ".sample"), minimumPosteriorProbabilityToCall);
+	}
 
 	public GenGenotypeData(File genFile, File sampleFile) throws IOException {
-		this(genFile, sampleFile, 100);
+		this(genFile, sampleFile, 1000);
+	}
+	
+	public GenGenotypeData(File genFile, File sampleFile, float minimumPosteriorProbabilityToCall) throws IOException {
+		this(genFile, sampleFile, 1000, minimumPosteriorProbabilityToCall);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, int cacheSize) throws IOException {
-		this(genFile, sampleFile, cacheSize, null, 0f);
+		this(genFile, sampleFile, cacheSize, null, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
+	}
+	
+	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, float minimumPosteriorProbabilityToCall) throws IOException {
+		this(genFile, sampleFile, cacheSize, null, minimumPosteriorProbabilityToCall);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, String forceSeqName) throws IOException {
-		this(genFile, sampleFile, 100, forceSeqName, 0f);
+		this(genFile, sampleFile, 1000, forceSeqName, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, float minimumPosteriorProbabilityToCall)
@@ -112,7 +125,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
-	public Iterable<Sequence> getSequences() {
+	public List<Sequence> getSequences() {
 		List<Sequence> sequences = new ArrayList<Sequence>();
 		for (String seqName : getSeqNames()) {
 			sequences.add(new SimpleSequence(seqName, null, this));
@@ -165,7 +178,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 	@Override
 	public float[] getSampleDosage(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertProbabilitiesToDosage(variant.getSampleGenotypeProbilities());
+		return ProbabilitiesConvertor.convertProbabilitiesToDosage(variant.getSampleGenotypeProbilities(), minimumPosteriorProbabilityToCall);
 	}
 
 	@Override
@@ -243,7 +256,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 								LOGGER.fatal("Error reading haps file, did not detect first 5 columns with variant information \n"
 										+ "current column is:" + column + "\n"
 										+ "content in current column: " + stringBuilder.toString());
-								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information");
+								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information. Note gen files must be space separted");
 							}
 							longestedChunk = longestedChunk < currentChunk ? currentChunk : longestedChunk;
 							column = 0;
@@ -355,8 +368,9 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 					switch ((char) buffer[i]) {
 						case ' ':
 						case '\n':
-						case '\t':
+						case '\r':
 							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
+							currentProb = new StringBuilder();
 							++currentProbIndex;
 							break;
 						default:

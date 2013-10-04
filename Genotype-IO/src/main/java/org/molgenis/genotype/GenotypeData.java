@@ -23,7 +23,7 @@ public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 	public static final String DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME = "phenotype";
     public static final String BOOL_INCLUDE_SAMPLE = "sampleInclude";
     public static final String CASE_CONTROL_SAMPLE_ANNOTATION_NAME = "caseControl";
-	public static final String SAMPLE_MISSING_RATE_DOUBLE = "sampleMissingRateDouble";
+	public static final String SAMPLE_MISSING_RATE_FLOAT = "sampleMissingRateDouble";
 
 	/**
 	 * Get all possible variant annotations

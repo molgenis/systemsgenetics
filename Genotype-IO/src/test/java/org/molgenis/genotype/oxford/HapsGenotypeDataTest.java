@@ -1,14 +1,10 @@
 package org.molgenis.genotype.oxford;
 
-import org.molgenis.genotype.oxford.HapsGenotypeData;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+
+import static org.testng.Assert.*;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -16,6 +12,7 @@ import java.util.Map;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.ResourceTest;
@@ -79,12 +76,12 @@ public class HapsGenotypeDataTest extends ResourceTest
 		Map<String, ?> annotations = sample.getAnnotationValues();
 		
 		assertEquals(annotations.size(), 7);
-		assertEquals((Double) annotations.get(genotypeData.SAMPLE_MISSING_RATE_DOUBLE), 0.007d, 0.0001);
+		assertEquals((Float) annotations.get(GenotypeData.SAMPLE_MISSING_RATE_FLOAT), 0.007f, 0.0001);
 		assertEquals(annotations.get("cov_1"), "1");
 		assertEquals(annotations.get("cov_2"), "2");
-		assertEquals((Double) annotations.get("cov_3"), 0.0019d, 0.00001);
-		assertNull(annotations.get("cov_4"));
-		assertEquals((Double) annotations.get("pheno1"), 1.233d, 0.0001);
+		assertEquals((Float) annotations.get("cov_3"), 0.0019f, 0.00001);
+		assertTrue(Float.isNaN((Float) annotations.get("cov_4")));
+		assertEquals((Float) annotations.get("pheno1"), 1.233f, 0.0001);
 		assertEquals(annotations.get("bin1"), true);
 	}
 

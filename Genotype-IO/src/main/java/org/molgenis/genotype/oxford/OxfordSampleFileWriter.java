@@ -48,7 +48,7 @@ public class OxfordSampleFileWriter {
 		List<String> dataTypes = new ArrayList<String>();
 
 		for (SampleAnnotation annotation : genotypeData.getSampleAnnotations()) {
-			if (annotation.getId().equals(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE)) {
+			if (annotation.getId().equals(GenotypeData.SAMPLE_MISSING_RATE_FLOAT)) {
 				continue;
 			}
 
@@ -123,7 +123,7 @@ public class OxfordSampleFileWriter {
 			sb.append(SEPARATOR);
 			sb.append(sample.getId() == null ? "NA" : sample.getId());
 			sb.append(SEPARATOR);
-			sb.append(getValue(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE, sample, "NA"));
+			sb.append(getValue(GenotypeData.SAMPLE_MISSING_RATE_FLOAT, sample, "NA"));
 
 			for (String colName : colNames) {
 				sb.append(SEPARATOR);

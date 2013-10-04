@@ -89,11 +89,11 @@ public class Sample {
 		}
 	}
 	
-	public double getMissingRate(){
-		if(annotationValues.containsKey(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE)){
-			return (Double) annotationValues.get(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE);
+	public float getMissingRate(){
+		if(annotationValues.containsKey(GenotypeData.SAMPLE_MISSING_RATE_FLOAT)){
+			return (Float) annotationValues.get(GenotypeData.SAMPLE_MISSING_RATE_FLOAT);
 		} else {
-			return Double.NaN;
+			return Float.NaN;
 		}
 	}
 	

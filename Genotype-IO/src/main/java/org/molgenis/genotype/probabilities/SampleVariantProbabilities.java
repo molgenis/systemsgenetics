@@ -23,4 +23,6 @@ public interface SampleVariantProbabilities {
 	float[] getProbilities();
 
 	public SampleVariantProbabilities getReversedProbilities();
+
+	public boolean containsMinProbability(float minProbability);
 }

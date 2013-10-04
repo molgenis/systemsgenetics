@@ -28,6 +28,8 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
             Map<String, ?> annotationValues, SampleVariantsProvider sampleVariantsProvider, Alleles alleles,
             Allele refAllele) {
 
+		alleles = alleles.createCopyWithoutDuplicates();
+		
         if (refAllele != null) {
             if (!alleles.contains(refAllele)) {
                 throw new GenotypeDataException("Supplied ref allele (" + refAllele

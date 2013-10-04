@@ -9,14 +9,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import static org.molgenis.genotype.GenotypeData.SAMPLE_MISSING_RATE_DOUBLE;
+import static org.molgenis.genotype.GenotypeData.SAMPLE_MISSING_RATE_FLOAT;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.annotation.Annotation;
 import static org.molgenis.genotype.annotation.Annotation.Type.BOOLEAN;
@@ -64,7 +63,7 @@ public class OxfordSampleFile {
 
 	private void loadAnnotations() throws IOException {
 
-		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_DOUBLE, "missing",
+		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_FLOAT, SAMPLE_MISSING_RATE_FLOAT,
 				"Missing data proportion of each individual", Annotation.Type.FLOAT, SampleAnnotation.SampleAnnotationType.OTHER, false);
 		sampleAnnotations.put(missingAnnotation.getId(), missingAnnotation);
 
@@ -119,40 +118,40 @@ public class OxfordSampleFile {
 				String sampleId = tuple.getString(1);
 
 				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
-				annotationValues.put(SAMPLE_MISSING_RATE_DOUBLE, tuple.getString(2).equals("NA") ? Double.NaN : tuple.getDouble(2));
+				annotationValues.put(SAMPLE_MISSING_RATE_FLOAT, tuple.getString(2).equals("NA") ? Float.NaN : Float.parseFloat(tuple.getString(2)));
 
 
 				for (String colName : sampleAnnotations.keySet()) {
 
-					if (colName.equals(SAMPLE_MISSING_RATE_DOUBLE)) {
+					if (colName.equals(SAMPLE_MISSING_RATE_FLOAT)) {
 						continue;//already done
 					}
 
 					SampleAnnotation annotation = sampleAnnotations.get(colName);
 
 					Object value = null;
-					if (!tuple.getString(annotation.getName()).equalsIgnoreCase("NA")) {
+					
 						switch (annotation.getType()) {
 							case STRING:
 								value = tuple.getString(colName);
 								break;
 							case INTEGER:
-								value = tuple.getInt(colName);
+								value = tuple.getString(colName).equals("NA") ? null : tuple.getInt(colName);
 								break;
 							case BOOLEAN:
-								if (tuple.getString(colName).equals("-9")) {
+								if (tuple.getString(colName).equals("-9") || tuple.getString(colName).equals("NA")) {
 									value = null;
 								} else {
 									value = tuple.getBoolean(colName);
 								}
 								break;
 							case FLOAT:
-								value = tuple.getDouble(colName);
+								value = tuple.getString(colName).equals("NA") || tuple.getString(colName).equals("-9") ? Float.NaN : Float.parseFloat(tuple.getString(colName));
 								break;
 							default:
 								LOGGER.warn("Unsupported data type encountered for column [" + colName + "]");
 						}
-					}
+					
 
 					annotationValues.put(colName, value);
 				}

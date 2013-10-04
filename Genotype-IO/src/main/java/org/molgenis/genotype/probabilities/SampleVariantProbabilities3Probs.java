@@ -37,7 +37,16 @@ public class SampleVariantProbabilities3Probs implements SampleVariantProbabilit
 		
 		return new SampleVariantProbabilities3Probs(reverse);
 	}
-	
+
+	@Override
+	public boolean containsMinProbability(float minProbability) {
+		for(float f : probs){
+			if(f >= minProbability){
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	
 }

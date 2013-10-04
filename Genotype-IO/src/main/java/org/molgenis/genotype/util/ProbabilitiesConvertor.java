@@ -84,7 +84,7 @@ public class ProbabilitiesConvertor {
 
 	/**
 	 * Uses inexact heuristic as defined by plinkseq
-	 * (http://atgu.mgh.harvard.edu/plinkseq/dosage.shtml) to convert dosage to
+	 * (thtp://atgu.mgh.harvard.edu/plinkseq/dosage.shtml) to convert dosage to
 	 * probabilities.
 	 *
 	 * @param sampleDosages assuming count of ref allele.
@@ -124,12 +124,21 @@ public class ProbabilitiesConvertor {
 
 		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(probs.length);
 
-		if (variantAlleles.getAlleleCount() != 2) {
+		final int alleleCount = variantAlleles.getAlleleCount();
+
+		if (alleleCount > 2 || alleleCount == 0) {
 			throw new GenotypeDataException("Error converting posterior probabilities to called alleles. Found non biallelic SNP");
 		}
 
 		Alleles aa = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
-		Alleles bb = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
+		Alleles bb;
+		
+		if(alleleCount == 2){
+			bb = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
+		} else {
+			bb = null;
+		}
+		
 		Alleles missing = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 
 		for (SampleVariantProbabilities sampleProbs : probs) {
@@ -139,11 +148,15 @@ public class ProbabilitiesConvertor {
 
 			int i = 0;
 			for (float prob : sampleProbs.getProbilities()) {
-				if (prob >= minProbability && prob > maxProb) {
+				if (prob > 0 && prob >= minProbability && prob > maxProb) {
 					maxProbIndex = i;
 					maxProb = prob;
 				}
 				++i;
+			}
+
+			if (alleleCount == 1 && maxProbIndex >= 1) {
+				throw new GenotypeDataException("Error converting posterior probabilities to called alleles. Illigale probability.");
 			}
 
 			switch (maxProbIndex) {
@@ -168,18 +181,26 @@ public class ProbabilitiesConvertor {
 		return sampleAlleles;
 
 	}
-	
-	public static float[] convertProbabilitiesToDosage(SampleVariantProbabilities[] probs){
-		
+
+	public static float[] convertProbabilitiesToDosage(SampleVariantProbabilities[] probs, float minProbability) {
+
 		float[] dosages = new float[probs.length];
-		
-		for(int i = 0 ; i < probs.length ; ++i){
-			dosages[i] = ( probs[i].getProbilities()[0] * 2 ) + probs[i].getProbilities()[1];
+
+		for (int i = 0; i < probs.length; ++i) {
+
+			if (probs[i].containsMinProbability(minProbability)) {
+
+				dosages[i] = (probs[i].getProbilities()[0] * 2) + probs[i].getProbilities()[1];
+				if (dosages[i] > 2) {
+					dosages[i] = 2;
+				}
+			} else {
+				dosages[i] = -1;
+			}
 		}
-		
+
 		return dosages;
-		
-		
+
+
 	}
-	
 }
