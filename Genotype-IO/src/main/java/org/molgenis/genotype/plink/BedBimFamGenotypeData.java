@@ -314,7 +314,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		}
 
-		LOGGER.info("Read " + samples.size() + " from " + famFile.getAbsolutePath());
+		LOGGER.info("Read " + samples.size() + " samples from " + famFile.getAbsolutePath());
 
 		famFileReader.close();
 
@@ -352,7 +352,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		}
 
-		LOGGER.info("Read " + snpIndex + " from " + bimFile.getAbsolutePath());
+		LOGGER.info("Read " + snpIndex + " SNPs from " + bimFile.getAbsolutePath());
 
 		bimFileReader.close();
 
