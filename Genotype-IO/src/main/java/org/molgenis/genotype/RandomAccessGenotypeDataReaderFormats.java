@@ -3,7 +3,6 @@ package org.molgenis.genotype;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.apache.log4j.Logger;
 import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
