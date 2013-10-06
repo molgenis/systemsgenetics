@@ -18,9 +18,6 @@ import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities3Probs;
-import static org.molgenis.genotype.util.ProbabilitiesConvertorTest.assertEqualsSampleVariantProbabilities;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import static org.molgenis.genotype.util.AssertExtended.*;
@@ -126,7 +123,7 @@ public class GenGenotypeDataTest extends ResourceTest {
 			switch(i){
 				case 0:
 					assertEquals(annotation.getKey(), GenotypeData.SAMPLE_MISSING_RATE_FLOAT);
-					assertEquals(annotation.getValue().getName(), GenotypeData.SAMPLE_MISSING_RATE_FLOAT);
+					assertEquals(annotation.getValue().getName(), "missing");
 					assertEquals(annotation.getValue().getSampleAnnotationType(), SampleAnnotation.SampleAnnotationType.OTHER);
 					assertEquals(annotation.getValue().getType(), Annotation.Type.FLOAT);
 					assertFalse(annotation.getValue().isList());
@@ -205,19 +202,19 @@ public class GenGenotypeDataTest extends ResourceTest {
 		assertEquals(variant.getStartPos(), pos);
 
 
-		SampleVariantProbabilities[] expResult = new SampleVariantProbabilities[9];
+		float[][] expResult = new float[9][3];
 
-		expResult[0] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 1});
-		expResult[1] = new SampleVariantProbabilities3Probs(new float[]{0, 1, 0});
-		expResult[2] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 1});
-		expResult[3] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 1});
-		expResult[4] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 1});
-		expResult[5] = new SampleVariantProbabilities3Probs(new float[]{0, 1, 0});
-		expResult[6] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 1});
-		expResult[7] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 1});
-		expResult[8] = new SampleVariantProbabilities3Probs(new float[]{0, 1, 0});
+		expResult[0] = new float[]{0, 0, 1};
+		expResult[1] = new float[]{0, 1, 0};
+		expResult[2] = new float[]{0, 0, 1};
+		expResult[3] = new float[]{0, 0, 1};
+		expResult[4] = new float[]{0, 0, 1};
+		expResult[5] = new float[]{0, 1, 0};
+		expResult[6] = new float[]{0, 0, 1};
+		expResult[7] = new float[]{0, 0, 1};
+		expResult[8] = new float[]{0, 1, 0};
 
-		assertEqualsSampleVariantProbabilitiesArray(variant.getSampleGenotypeProbilities(), expResult);
+		assertEquals(variant.getSampleGenotypeProbilities(), expResult, 0.001f, "Probs not identical");
 
 		ArrayList<Alleles> expectedSampleAlleles = new ArrayList<Alleles>(9);
 		expectedSampleAlleles.add(Alleles.createBasedOnChars('G', 'G'));
@@ -249,19 +246,19 @@ public class GenGenotypeDataTest extends ResourceTest {
 		assertEquals(variant.getVariantAlleles(), Alleles.createAlleles(Allele.C));
 
 
-		SampleVariantProbabilities[] expResult = new SampleVariantProbabilities[9];
+		float[][] expResult = new float[9][3];
 
-		expResult[0] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[1] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[2] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[3] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[4] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[5] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[6] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[7] = new SampleVariantProbabilities3Probs(new float[]{1, 0, 0});
-		expResult[8] = new SampleVariantProbabilities3Probs(new float[]{0, 0, 0});
+		expResult[0] = new float[]{1, 0, 0};
+		expResult[1] = new float[]{1, 0, 0};
+		expResult[2] = new float[]{1, 0, 0};
+		expResult[3] = new float[]{1, 0, 0};
+		expResult[4] = new float[]{1, 0, 0};
+		expResult[5] = new float[]{1, 0, 0};
+		expResult[6] = new float[]{1, 0, 0};
+		expResult[7] = new float[]{1, 0, 0};
+		expResult[8] = new float[]{0, 0, 0};
 
-		assertEqualsSampleVariantProbabilitiesArray(variant.getSampleGenotypeProbilities(), expResult);
+		assertEquals(variant.getSampleGenotypeProbilities(), expResult, 0.001f, "Probs not identical");
 
 		ArrayList<Alleles> expectedSampleAlleles = new ArrayList<Alleles>(9);
 		expectedSampleAlleles.add(Alleles.createBasedOnChars('C', 'C'));
@@ -298,19 +295,19 @@ public class GenGenotypeDataTest extends ResourceTest {
 		assertEquals(variant.getVariantAlleles(), Alleles.createAlleles(Allele.A, Allele.T));
 
 
-		SampleVariantProbabilities[] expResult = new SampleVariantProbabilities[9];
+		float[][] expResult = new float[9][3];
 
-		expResult[0] = new SampleVariantProbabilities3Probs(new float[]{0.5f, 0.25f, 0.25f});
-		expResult[1] = new SampleVariantProbabilities3Probs(new float[]{0.25f, 0.5f, 0.25f});
-		expResult[2] = new SampleVariantProbabilities3Probs(new float[]{0.25f, 0.25f, 0.5f});
-		expResult[3] = new SampleVariantProbabilities3Probs(new float[]{0.1f, 0.1f, 0.1f});
-		expResult[4] = new SampleVariantProbabilities3Probs(new float[]{0.3f, 0.3f, 0.3f});
-		expResult[5] = new SampleVariantProbabilities3Probs(new float[]{0.4f, 0.3f, 0.3f});
-		expResult[6] = new SampleVariantProbabilities3Probs(new float[]{0.2f, 0.3f, 0.5f});
-		expResult[7] = new SampleVariantProbabilities3Probs(new float[]{0, 0.1f, 1f});
-		expResult[8] = new SampleVariantProbabilities3Probs(new float[]{0.01f, 0.001f, 0.989f});
+		expResult[0] = new float[]{0.5f, 0.25f, 0.25f};
+		expResult[1] = new float[]{0.25f, 0.5f, 0.25f};
+		expResult[2] = new float[]{0.25f, 0.25f, 0.5f};
+		expResult[3] = new float[]{0.1f, 0.1f, 0.1f};
+		expResult[4] = new float[]{0.3f, 0.3f, 0.3f};
+		expResult[5] = new float[]{0.4f, 0.3f, 0.3f};
+		expResult[6] = new float[]{0.2f, 0.3f, 0.5f};
+		expResult[7] = new float[]{0, 0.1f, 1f};
+		expResult[8] = new float[]{0.01f, 0.001f, 0.989f};
 
-		assertEqualsSampleVariantProbabilitiesArray(variant.getSampleGenotypeProbilities(), expResult);
+		assertEquals(variant.getSampleGenotypeProbilities(), expResult, 0.001f, "Probs not identical");
 
 		ArrayList<Alleles> expectedSampleAlleles = new ArrayList<Alleles>(9);
 		expectedSampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
@@ -334,24 +331,5 @@ public class GenGenotypeDataTest extends ResourceTest {
 		assertEquals(variant.getSampleCalledDosages(), expectedCalledDosage);
 
 	}
-
-	public static void assertEqualsSampleVariantProbabilitiesArray(SampleVariantProbabilities[] result, SampleVariantProbabilities[] expResult) {
-
-		assertEquals(result.length, expResult.length, "Different number of probs");
-
-		for (int i = 0; i < result.length; ++i) {
-			assertEqualsSampleVariantProbabilities(result[i], expResult[i], "sample " + i);
-		}
-
-	}
-
-	public static void assertEqualsSampleVariantProbabilities(SampleVariantProbabilities result, SampleVariantProbabilities expResult, String comparisonName) {
-		float[] resultVector = result.getProbilities();
-		float[] expResultVector = expResult.getProbilities();
-
-		for (int i = 0; i < resultVector.length; ++i) {
-			assertEquals(resultVector[i], expResultVector[i], 0.0001f, "Different prob value for element " + i + " in prob vector of " + comparisonName);
-		}
-
-	}
+	
 }

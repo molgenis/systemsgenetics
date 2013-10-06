@@ -46,4 +46,37 @@ public class AssertExtended extends Assert {
 
 		}
 	}
+	
+	/**
+	 * Asserts that two 2D float arrays contain the same elements in the same
+	 * order. If they do not, an AssertionError, with the given message, is
+	 * thrown.
+	 *
+	 * @param actual the actual value
+	 * @param expected the expected value
+	 * @param delta the absolute tolerate value value between the actual and
+	 * expected value
+	 * @param message the assertion error message
+	 */
+	static public void assertEquals(final float[][] actual, final float[][] expected, float delta, final String message) {
+		if (expected == actual) {
+			return;
+		}
+		if (null == expected) {
+			fail("expected a null array, but not null found. " + message);
+		}
+		if (null == actual) {
+			fail("expected not null array, but null found. " + message);
+		}
+
+		org.testng.Assert.assertEquals(actual.length, expected.length, "arrays don't have the same size. " + message);
+
+		for (int i = 0; i < expected.length; i++) {
+
+			assertEquals(actual[i], expected[i], delta, "arrays differ firstly at dimension 1 pos [" + i + "]; "
+					+ message);
+
+		}
+	}
+	
 }

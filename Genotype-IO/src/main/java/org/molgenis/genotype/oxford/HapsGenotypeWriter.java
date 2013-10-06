@@ -7,158 +7,143 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeWriter;
+import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
  * Export a GenotypeData object to an impute2 haps/sample files
- * 
+ *
  * Missing values in the samplefile are written as 'NA'
- * 
+ *
  * @author erwin
- * 
+ *
  */
-public class HapsGenotypeWriter implements GenotypeWriter
-{
+public class HapsGenotypeWriter implements GenotypeWriter {
+
 	public static final Charset FILE_ENCODING = Charset.forName("UTF-8");
-	public static final String LINE_ENDING = "\n";
+	public static final char LINE_ENDING = '\n';
 	private static final char SEPARATOR = ' ';
 	private static final char UNPHASED_INDICATOR = '*';
 	private static final char MISSING_INDICATOR = '?';
 	private static final Logger LOG = Logger.getLogger(HapsGenotypeWriter.class);
 	private GenotypeData genotypeData;
 
-	public HapsGenotypeWriter(GenotypeData genotypeData)
-	{
+	public HapsGenotypeWriter(GenotypeData genotypeData) {
 		this.genotypeData = genotypeData;
 	}
 
-    @Override
-	public void write(String basePath) throws IOException
-	{
+	@Override
+	public void write(String basePath) throws IOException {
 		write(new File(basePath + ".haps"), new File(basePath + ".sample"));
 	}
 
-	public void write(File hapsFile, File sampleFile) throws IOException
-	{
+	public void write(File hapsFile, File sampleFile) throws IOException {
 		LOG.info("Writing haps file [" + hapsFile.getAbsolutePath() + "] and sample file ["
 				+ sampleFile.getAbsolutePath() + "]");
 
 		Utils.createEmptyFile(hapsFile, "haps");
 		Utils.createEmptyFile(sampleFile, "sample");
 		
-		Writer hapsFileWriter = null;
-		Writer sampleFileWriter = null;
-		try
-		{
-			hapsFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(hapsFile), FILE_ENCODING));
-			writeHapsFile(hapsFileWriter);
-			OxfordSampleFileWriter.writeSampleFile(sampleFile, genotypeData);
-			
-		}
-		finally
-		{
-			IOUtils.closeQuietly(hapsFileWriter);
-			IOUtils.closeQuietly(sampleFileWriter);
-		}
+		HashMap<Sample, Float> sampleMissingness = writeHapsFile(hapsFile);
+		OxfordSampleFileWriter.writeSampleFile(sampleFile, genotypeData, sampleMissingness);
+
 	}
 
-
-	private void writeHapsFile(Writer hapsFileWriter) throws IOException
-	{
-		for (GeneticVariant variant : genotypeData)
-		{
+	private HashMap<Sample, Float> writeHapsFile(File hapsFile) throws IOException {
+		
+		BufferedWriter hapsFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(hapsFile), FILE_ENCODING));
+		
+		float[] sampleMissingCount = new float[genotypeData.getSamples().size()];
+		int totalVariants = 0;
+		
+		for (GeneticVariant variant : genotypeData) {
 			
-			if(variant.getAlleleCount() > 2){
+			++totalVariants;
+
+			if (variant.getAlleleCount() > 2) {
 				LOG.warn("Skipping variant: " + variant.getPrimaryVariantId() + " at " + variant.getSequenceName() + ":" + variant.getStartPos() + " with more than 2 alleles: " + variant.getVariantAlleles());
 			}
-			
+
 			Allele allele0 = variant.getVariantAlleles().get(0);
 			Allele allele1 = variant.getAlleleCount() == 1 ? Allele.ZERO : variant.getVariantAlleles().get(1);
 
-			StringBuilder sb = new StringBuilder();
-			sb.append(variant.getSequenceName());
-			sb.append(SEPARATOR);
-			sb.append(variant.getPrimaryVariantId());
-			sb.append(SEPARATOR);
-			sb.append(variant.getStartPos());
-			sb.append(SEPARATOR);
-			sb.append(allele0);
-			sb.append(SEPARATOR);
-			sb.append(allele1);
+			hapsFileWriter.append(variant.getSequenceName());
+			hapsFileWriter.append(SEPARATOR);
+			hapsFileWriter.append(variant.getPrimaryVariantId());
+			hapsFileWriter.append(SEPARATOR);
+			hapsFileWriter.append(String.valueOf(variant.getStartPos()));
+			hapsFileWriter.append(SEPARATOR);
+			hapsFileWriter.append(allele0.getAlleleAsString());
+			hapsFileWriter.append(SEPARATOR);
+			hapsFileWriter.append(allele1.getAlleleAsString());
 
 			List<Alleles> sampleAlleles = variant.getSampleVariants();
 			List<Boolean> phasing = variant.getSamplePhasing();
 
-			if ((sampleAlleles != null) && !sampleAlleles.isEmpty())
-			{
-				for (int i = 0; i < sampleAlleles.size(); i++)
-				{
-					sb.append(SEPARATOR);
+			if ((sampleAlleles != null) && !sampleAlleles.isEmpty()) {
+				for (int i = 0; i < sampleAlleles.size(); i++) {
+					hapsFileWriter.append(SEPARATOR);
 
 					Alleles alleles = sampleAlleles.get(i);
 					if ((alleles == null) || alleles.getAllelesAsString().isEmpty() || (alleles.get(0) == Allele.ZERO)
-							|| (alleles.get(1) == Allele.ZERO))
-					{
-						sb.append(MISSING_INDICATOR);
-						sb.append(SEPARATOR);
-						sb.append(MISSING_INDICATOR);
-					}
-					else
-					{
-						if (alleles.get(0).equals(allele0))
-						{
-							sb.append("0");
-						}
-						else if (alleles.get(0).equals(allele1))
-						{
-							sb.append("1");
-						}
-						else
-						{
-							throw new RuntimeException("SampleAllele [" + alleles.get(0) + "] for SNP ["
-									+ variant.getPrimaryVariantId() + "] does not match one of the variant alleles");
+							|| (alleles.get(1) == Allele.ZERO)) {
+						hapsFileWriter.append(MISSING_INDICATOR);
+						hapsFileWriter.append(SEPARATOR);
+						hapsFileWriter.append(MISSING_INDICATOR);
+						sampleMissingCount[i]++;
+					} else {
+						if (alleles.get(0).equals(allele0)) {
+							hapsFileWriter.append('0');
+						} else if (alleles.get(0).equals(allele1)) {
+							hapsFileWriter.append('1');
+						} else {
+							throw new GenotypeDataException("SampleAllele [" + alleles.get(0) + "] for SNP ["
+									+ variant.getPrimaryVariantId() + "] does not match one of the variant alleles " + variant.getVariantAlleles());
 						}
 
-						if (!phasing.get(i))
-						{
-							sb.append(UNPHASED_INDICATOR);
+						if (!phasing.get(i)) {
+							hapsFileWriter.append(UNPHASED_INDICATOR);
 						}
 
-						sb.append(SEPARATOR);
+						hapsFileWriter.append(SEPARATOR);
 
-						if (alleles.get(1).equals(allele0))
-						{
-							sb.append("0");
-						}
-						else if (alleles.get(1).equals(allele1))
-						{
-							sb.append("1");
-						}
-						else
-						{
+						if (alleles.get(1).equals(allele0)) {
+							hapsFileWriter.append('0');
+						} else if (alleles.get(1).equals(allele1)) {
+							hapsFileWriter.append('1');
+						} else {
 							throw new RuntimeException("SampleAllele [" + alleles.get(1) + "] for SNP ["
-									+ variant.getPrimaryVariantId() + "] does not match one of the variant alleles");
+									+ variant.getPrimaryVariantId() + "] does not match one of the variant alleles " + variant.getVariantAlleles());
 						}
 
-						if (!phasing.get(i))
-						{
-							sb.append(UNPHASED_INDICATOR);
+						if (!phasing.get(i)) {
+							hapsFileWriter.append(UNPHASED_INDICATOR);
 						}
 					}
 				}
 			}
 
-			sb.append(LINE_ENDING);
+			hapsFileWriter.append(LINE_ENDING);
 
-			hapsFileWriter.write(sb.toString());
 		}
+		
+		hapsFileWriter.close();
+		
+		HashMap<Sample, Float> sampleMissingness = new HashMap<Sample, Float>();
+		for(int i = 0 ; i < sampleMissingCount.length ; ++i){
+			sampleMissingness.put(genotypeData.getSamples().get(i), sampleMissingCount[i] / (float) totalVariants);
+		}
+		return sampleMissingness;
+		
 	}
 }

@@ -10,8 +10,6 @@ import java.util.List;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities3Probs;
 
 /**
  *
@@ -29,15 +27,15 @@ public class ProbabilitiesConvertor {
 	 * @param alleles
 	 * @return
 	 */
-	public static SampleVariantProbabilities[] convertCalledAllelesToProbability(List<Alleles> sampleAlleles, Alleles alleles) {
+	public static float[][] convertCalledAllelesToProbability(List<Alleles> sampleAlleles, Alleles alleles) {
 
-		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[sampleAlleles.size()];
+		float[][] probs = new float[sampleAlleles.size()][3];
 
 		if (alleles.getAlleleCount() == 0) {
 			throw new GenotypeDataException("Error converting alleles to probabilities. No alleles detected");
 		} else if (alleles.getAlleleCount() > 2) {
 
-			Arrays.fill(probs, SampleVariantProbabilities.MISSING_PROB);
+			Arrays.fill(probs, new float[]{0,0,0});
 			return probs;
 
 		} else {
@@ -61,17 +59,17 @@ public class ProbabilitiesConvertor {
 				Alleles sampleVariant = sampleAlleles.get(i);
 
 				if (sampleVariant.contains(Allele.ZERO)) {
-					probs[i] = SampleVariantProbabilities.MISSING_PROB;
+					probs[i] = new float[]{0,0,0};
 				} else if (sampleVariant == AA) {
-					probs[i] = SampleVariantProbabilities.AA_PROB;
+					probs[i] = new float[]{1,0,0};
 				} else if (sampleVariant == AB) { //We test above for missing so is never true for monomorphic SNPs
-					probs[i] = SampleVariantProbabilities.AB_PROB;
+					probs[i] = new float[]{0,1,0};
 				} else if (sampleVariant == BA) { //We test above for missing so is never true for monomorphic SNPs
-					probs[i] = SampleVariantProbabilities.AB_PROB;
+					probs[i] = new float[]{0,1,0};
 				} else if (sampleVariant == BB) { //We test above for missing so is never true for monomorphic SNPs
-					probs[i] = SampleVariantProbabilities.BB_PROB;
+					probs[i] = new float[]{0,0,1};
 				} else {
-					probs[i] = SampleVariantProbabilities.MISSING_PROB;
+					probs[i] = new float[]{0,0,0};
 				}
 
 			}
@@ -90,21 +88,21 @@ public class ProbabilitiesConvertor {
 	 * @param sampleDosages assuming count of ref allele.
 	 * @return
 	 */
-	public static SampleVariantProbabilities[] convertDosageToProbabilityHeuristic(float[] sampleDosages) {
+	public static float[][] convertDosageToProbabilityHeuristic(float[] sampleDosages) {
 
-		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[sampleDosages.length];
+		float[][] probs = new float[sampleDosages.length][3];
 
 		for (int i = 0; i < sampleDosages.length; ++i) {
 
 			float sampleDosage = sampleDosages[i];
 
 			if (sampleDosage > 2 || sampleDosage < 0) {
-				probs[i] = SampleVariantProbabilities.MISSING_PROB;
+				probs[i] = new float[]{0f, 0f, 0f};
 			} else if (sampleDosage < 1) {
-				probs[i] = new SampleVariantProbabilities3Probs(new float[]{0, sampleDosage, 1 - sampleDosage});
+				probs[i] = new float[]{0, sampleDosage, 1 - sampleDosage};
 			} else {
-				//sampleDosage >= 1
-				probs[i] = new SampleVariantProbabilities3Probs(new float[]{sampleDosage - 1, 2 - sampleDosage, 0});
+				//sampleDosage >= 1 && sampleDosage <= 2
+				probs[i] = new float[]{sampleDosage - 1, 2 - sampleDosage, 0};
 			}
 
 		}
@@ -120,7 +118,7 @@ public class ProbabilitiesConvertor {
 	 * @param minProbability to call a genotype
 	 * @return
 	 */
-	public static List<Alleles> convertProbabilitiesToAlleles(SampleVariantProbabilities[] probs, Alleles variantAlleles, float minProbability) {
+	public static List<Alleles> convertProbabilitiesToAlleles(float[][] probs, Alleles variantAlleles, float minProbability) {
 
 		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(probs.length);
 
@@ -132,22 +130,22 @@ public class ProbabilitiesConvertor {
 
 		Alleles aa = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
 		Alleles bb;
-		
-		if(alleleCount == 2){
+
+		if (alleleCount == 2) {
 			bb = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
 		} else {
 			bb = null;
 		}
-		
+
 		Alleles missing = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 
-		for (SampleVariantProbabilities sampleProbs : probs) {
+		for (float[] sampleProbs : probs) {
 
 			int maxProbIndex = -1;
 			float maxProb = 0;
 
 			int i = 0;
-			for (float prob : sampleProbs.getProbilities()) {
+			for (float prob : sampleProbs) {
 				if (prob > 0 && prob >= minProbability && prob > maxProb) {
 					maxProbIndex = i;
 					maxProb = prob;
@@ -182,18 +180,28 @@ public class ProbabilitiesConvertor {
 
 	}
 
-	public static float[] convertProbabilitiesToDosage(SampleVariantProbabilities[] probs, float minProbability) {
+	public static float[] convertProbabilitiesToDosage(float[][] probs, float minProbability) {
 
 		float[] dosages = new float[probs.length];
 
 		for (int i = 0; i < probs.length; ++i) {
 
-			if (probs[i].containsMinProbability(minProbability)) {
+			boolean containsMinProbability = false;
 
-				dosages[i] = (probs[i].getProbilities()[0] * 2) + probs[i].getProbilities()[1];
+			for (float prob : probs[i]) {
+				if (prob >= minProbability) {
+					containsMinProbability = true;
+					break;
+				}
+			}
+
+			if (containsMinProbability) {
+
+				dosages[i] = (probs[i][0] * 2) + probs[i][1];
 				if (dosages[i] > 2) {
 					dosages[i] = 2;
 				}
+
 			} else {
 				dosages[i] = -1;
 			}

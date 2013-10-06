@@ -24,8 +24,6 @@ import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities3Probs;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
@@ -324,10 +322,10 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 
 
-		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[getSamples().size()];
+		float[][] probs = new float[getSamples().size()][3];
 
 		long start = variantSampleAllelesIndex.get(variant);
 
@@ -381,7 +379,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 				}
 
-				probs[s] = new SampleVariantProbabilities3Probs(sampleProbs);
+				probs[s] = sampleProbs;
 
 			}
 		} catch (NumberFormatException e) {

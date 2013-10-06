@@ -63,8 +63,7 @@ public class OxfordSampleFile {
 
 	private void loadAnnotations() throws IOException {
 
-		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_FLOAT, SAMPLE_MISSING_RATE_FLOAT,
-				"Missing data proportion of each individual", Annotation.Type.FLOAT, SampleAnnotation.SampleAnnotationType.OTHER, false);
+		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_FLOAT, "missing", "Missing data proportion of each individual", Annotation.Type.FLOAT, SampleAnnotation.SampleAnnotationType.OTHER, false);
 		sampleAnnotations.put(missingAnnotation.getId(), missingAnnotation);
 
 		CsvReader reader = null;
@@ -130,28 +129,28 @@ public class OxfordSampleFile {
 					SampleAnnotation annotation = sampleAnnotations.get(colName);
 
 					Object value = null;
-					
-						switch (annotation.getType()) {
-							case STRING:
-								value = tuple.getString(colName);
-								break;
-							case INTEGER:
-								value = tuple.getString(colName).equals("NA") ? null : tuple.getInt(colName);
-								break;
-							case BOOLEAN:
-								if (tuple.getString(colName).equals("-9") || tuple.getString(colName).equals("NA")) {
-									value = null;
-								} else {
-									value = tuple.getBoolean(colName);
-								}
-								break;
-							case FLOAT:
-								value = tuple.getString(colName).equals("NA") || tuple.getString(colName).equals("-9") ? Float.NaN : Float.parseFloat(tuple.getString(colName));
-								break;
-							default:
-								LOGGER.warn("Unsupported data type encountered for column [" + colName + "]");
-						}
-					
+
+					switch (annotation.getType()) {
+						case STRING:
+							value = tuple.getString(colName);
+							break;
+						case INTEGER:
+							value = tuple.getString(colName).equals("NA") ? null : tuple.getInt(colName);
+							break;
+						case BOOLEAN:
+							if (tuple.getString(colName).equals("-9") || tuple.getString(colName).equals("NA")) {
+								value = null;
+							} else {
+								value = tuple.getBoolean(colName);
+							}
+							break;
+						case FLOAT:
+							value = tuple.getString(colName).equals("NA") || tuple.getString(colName).equals("-9") ? Float.NaN : Float.parseFloat(tuple.getString(colName));
+							break;
+						default:
+							LOGGER.warn("Unsupported data type encountered for column [" + colName + "]");
+					}
+
 
 					annotationValues.put(colName, value);
 				}
@@ -172,6 +171,6 @@ public class OxfordSampleFile {
 	}
 
 	public Map<String, SampleAnnotation> getSampleAnnotations() {
-		return Collections.unmodifiableMap(sampleAnnotations);
+		return sampleAnnotations;
 	}
 }

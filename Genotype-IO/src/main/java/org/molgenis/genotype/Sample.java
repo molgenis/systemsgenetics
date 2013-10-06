@@ -13,6 +13,11 @@ public class Sample {
     private final Map<String, Object> annotationValues;
 
     public Sample(String id, String familyId, Map<String, Object> annotationValues) {
+		
+		if(id == null){
+			throw new GenotypeDataException("Cannot create sample with a null ID");
+		}
+		
         this.id = id;
         this.familyId = familyId;
         if (annotationValues == null) {
@@ -102,59 +107,29 @@ public class Sample {
         return "Sample [id=" + id + ", familyId=" + familyId + ", annotationValues=" + annotationValues + "]";
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((annotationValues == null) ? 0 : annotationValues.hashCode());
-        result = prime * result + ((familyId == null) ? 0 : familyId.hashCode());
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        return result;
-    }
+	@Override
+	public int hashCode() {
+		return this.id.hashCode();
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        Sample other = (Sample) obj;
-        if (annotationValues == null) {
-            if (other.annotationValues != null) {
-                return false;
-            }
-        } else if (!annotationValues.equals(other.annotationValues)) {
-            return false;
-        }
-        if (familyId == null) {
-            if (other.familyId != null) {
-                return false;
-            }
-        } else if (!familyId.equals(other.familyId)) {
-            return false;
-        }
-        if (id == null) {
-            if (other.id != null) {
-                return false;
-            }
-        } else if (!id.equals(other.id)) {
-            return false;
-        }
-        return true;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final Sample other = (Sample) obj;
+		if ((this.id == null) ? (other.id != null) : !this.id.equals(other.id)) {
+			return false;
+		}
+		if ((this.familyId == null) ? (other.familyId != null) : !this.familyId.equals(other.familyId)) {
+			return false;
+		}
+		return true;
+	}
+
+	
+ 
 }

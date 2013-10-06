@@ -30,7 +30,6 @@ import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.CaseControlAnnotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.util.CalledDosageConvertor;
@@ -395,7 +394,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 	
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 
