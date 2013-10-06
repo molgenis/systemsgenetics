@@ -1,11 +1,13 @@
 package org.molgenis.genotype;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
+import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
@@ -20,9 +22,10 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	PED_MAP("PED / MAP files", "plink PED / MAP files"),
 	VCF("VCF file", "gziped vcf with tabix index file"),
 	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder. Each file must contain a sigle chromosome. Each chromsome should be unique to a single file."),
-	SHAPEIT2("Shapeit2 output", ".haps.gz, haps.gz.tbi and .samples with phased haplotypes as outputted by Shapeit2 converted to tab separated and bgziped with tabix index"),
+	SHAPEIT2("Shapeit2 output", ".haps, and .samples with phased haplotypes as outputted by Shapeit2"),
 	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files"),
-	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt. Optionally: ImputedDosageMatrix.dat");
+	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat"),
+	GEN("GEN / SAMPLE files", "Oxford .gen and .sample");
 	private final String name;
 	private final String description;
 
@@ -63,6 +66,14 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			return SHAPEIT2;
 		}
 
+		if (new File(path + ".gen").exists() && new File(path + ".sample").exists()) {
+			return GEN;
+		}
+
+		if (pathFile.exists() && pathFile.isFile() && new File(path + ".sample").exists()) {
+			return GEN;
+		}
+
 		if (pathFile.isDirectory()) {
 			for (File file : pathFile.listFiles()) {
 				if (file.getName().endsWith(".vcg.gz")) {
@@ -74,9 +85,9 @@ public enum RandomAccessGenotypeDataReaderFormats {
 					&& (new File(pathFile, "SNPMappings.txt").exists() || new File(pathFile, "SNPMappings.txt.gz").exists())
 					&& (new File(pathFile, "Individuals.txt").exists() || new File(pathFile, "Individuals.txt.gz").exists())
 					&& (new File(pathFile, "PhenotypeInformation.txt").exists() || new File(pathFile, "PhenotypeInformation.txt.gz").exists())) {
-				
-				return TRITYPER;				
-				
+
+				return TRITYPER;
+
 			}
 		}
 
@@ -96,6 +107,11 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(path, cacheSize, forcedSequence, 0.34f);
+	}
+
+	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence, float minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
 
 		switch (this) {
@@ -133,6 +149,18 @@ public enum RandomAccessGenotypeDataReaderFormats {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
 				return new TriTyperGenotypeData(path, cacheSize);
+
+			case GEN:
+				if (new File(path + ".gen").exists()) {
+					return new GenGenotypeData(new File(path + ".gen"), new File(
+							path + ".sample"), cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+				} else if (new File(path).exists() && new File(path + ".sample").exists()) {
+					return new GenGenotypeData(new File(path), new File(
+							path + ".sample"), cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+				} else {
+					throw new FileNotFoundException("Unable to load gen and sample file at: " + path);
+				}
+
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
@@ -163,6 +191,10 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				}
 				return genotypeData;
 		}
-
+	
 	}
+
+	
+	
+	
 }
