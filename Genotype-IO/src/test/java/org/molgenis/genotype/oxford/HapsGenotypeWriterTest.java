@@ -1,7 +1,5 @@
 package org.molgenis.genotype.oxford;
 
-import org.molgenis.genotype.oxford.HapsGenotypeWriter;
-import org.molgenis.genotype.oxford.HapsGenotypeData;
 import static org.testng.Assert.assertEquals;
 
 import java.io.File;
@@ -11,7 +9,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.apache.commons.io.FileUtils;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.ResourceTest;
