@@ -76,7 +76,7 @@ public class HapsGenotypeDataTest extends ResourceTest
 		Map<String, ?> annotations = sample.getAnnotationValues();
 		
 		assertEquals(annotations.size(), 7);
-		assertEquals((Float) annotations.get(GenotypeData.SAMPLE_MISSING_RATE_FLOAT), 0.007f, 0.0001);
+		assertEquals((Float) annotations.get(GenotypeData.SAMPLE_MISSING_RATE_FLOAT), 0.25f, 0.0001);
 		assertEquals(annotations.get("cov_1"), "1");
 		assertEquals(annotations.get("cov_2"), "2");
 		assertEquals((Float) annotations.get("cov_3"), 0.0019f, 0.00001);
