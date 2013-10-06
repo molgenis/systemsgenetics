@@ -5,11 +5,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -23,7 +21,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 /**
  * Export a GenotypeData object to an impute2 haps/sample files
  *
- * Missing values in the samplefile are written as 'NA'
+ * Missing values in the sample file are written as 'NA'
  *
  * @author erwin
  *
