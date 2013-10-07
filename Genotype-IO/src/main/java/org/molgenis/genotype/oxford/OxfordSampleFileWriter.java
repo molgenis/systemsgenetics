@@ -171,7 +171,13 @@ public class OxfordSampleFileWriter {
 		}
 
 		if (value instanceof SexAnnotation) {
-			return Byte.toString(((SexAnnotation) value).getPlinkSex());
+			SexAnnotation sexValue = (SexAnnotation) value;
+			switch(sexValue){
+				case UNKNOWN:
+					return nullValue;
+				default:
+					return Byte.toString(sexValue.getPlinkSex());
+			}
 		}
 
 		return value.toString();

@@ -26,7 +26,7 @@ public class PlinkSampleAnnotations
 		sampleAnnotations.put(motherAnno.getId(), motherAnno);
 
 		SampleAnnotation sexAnno = new SampleAnnotation(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME,
-				GenotypeData.SEX_SAMPLE_ANNOTATION_NAME, "", Annotation.Type.SEX, SampleAnnotationType.COVARIATE, false);
+				"Sex", "", Annotation.Type.SEX, SampleAnnotationType.COVARIATE, false);
 		sampleAnnotations.put(sexAnno.getId(), sexAnno);
 
 		SampleAnnotation phenoAnno = new SampleAnnotation(GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME,

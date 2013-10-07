@@ -1,6 +1,8 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package org.molgenis.genotype.oxford;
-
-import static org.testng.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,19 +10,25 @@ import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.ResourceTest;
+import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.util.GenotypeDataCompareTool;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class HapsGenotypeWriterTest extends ResourceTest {
+/**
+ *
+ * @author Patrick Deelen
+ */
+public class GenGenotypeWriterTest extends ResourceTest {
 
+	public GenGenotypeWriterTest() {
+	}
 	private GenotypeData genotypeData;
-	private HapsGenotypeWriter writer;
+	private GenGenotypeWriter writer;
 	private File tmpOutputFolder;
 	private String fileSep = System.getProperty("file.separator");
 
@@ -32,7 +40,7 @@ public class HapsGenotypeWriterTest extends ResourceTest {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		Date date = new Date();
 
-		tmpOutputFolder = new File(tmpDir, "GenotypeHapsTest_" + dateFormat.format(date));
+		tmpOutputFolder = new File(tmpDir, "GenotypeGenTest_" + dateFormat.format(date));
 
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -41,7 +49,7 @@ public class HapsGenotypeWriterTest extends ResourceTest {
 				System.out.println("Removing tmp dir and files");
 				for (File file : tmpOutputFolder.listFiles()) {
 					System.out.println(" - Deleting: " + file.getAbsolutePath());
-					file.delete();
+					//file.delete();
 				}
 				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
 				tmpOutputFolder.delete();
@@ -51,8 +59,8 @@ public class HapsGenotypeWriterTest extends ResourceTest {
 		tmpOutputFolder.mkdir();
 
 
-		genotypeData = new HapsGenotypeData(getTestImpute2Haps(), getTestImpute2Sample());
-		writer = new HapsGenotypeWriter(genotypeData);
+		genotypeData = new BedBimFamGenotypeData(getTestBed6(), getTestBim6(), getTestFam6(), 2);
+		writer = new GenGenotypeWriter(genotypeData);
 	}
 
 	@Test
@@ -60,21 +68,8 @@ public class HapsGenotypeWriterTest extends ResourceTest {
 
 		writer.write(tmpOutputFolder.getAbsolutePath() + fileSep + "test");
 
-		GenotypeData genotypeDataWritten = RandomAccessGenotypeDataReaderFormats.SHAPEIT2.createGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test", 0);
+		GenotypeData genotypeDataWritten = RandomAccessGenotypeDataReaderFormats.GEN.createGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test", 0);
 
 		assertTrue(GenotypeDataCompareTool.same(genotypeData, genotypeDataWritten));
-
-		assertEquals(genotypeData.getSamples().get(0).getMissingRate(), 0.25, 0.000001);
-		assertEquals(genotypeData.getSamples().get(1).getMissingRate(), 0, 0.000001);
-		assertEquals(genotypeData.getSamples().get(2).getMissingRate(), 0, 0.000001);
-		assertEquals(genotypeData.getSamples().get(3).getMissingRate(), 0, 0.000001);
-
-		assertEquals(genotypeData.getSamples().get(0).getAnnotationValues().get("bin1"), Boolean.TRUE);
-		assertEquals(genotypeData.getSamples().get(1).getAnnotationValues().get("bin1"), Boolean.FALSE);
-		assertEquals(genotypeData.getSamples().get(2).getAnnotationValues().get("bin1"), Boolean.TRUE);
-		assertEquals(genotypeData.getSamples().get(3).getAnnotationValues().get("bin1"), Boolean.TRUE);
-
-		genotypeData.close();
-
 	}
 }
