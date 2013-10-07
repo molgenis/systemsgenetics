@@ -94,6 +94,9 @@ public class OxfordSampleFileWriter {
 		}
 
 		for (String colName : colNames) {
+			if(colName.equals(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME)){
+				colName = "sex";
+			}
 			sampleWriter.append(SEPARATOR);
 			sampleWriter.append(colName);
 		}
