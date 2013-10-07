@@ -202,7 +202,6 @@ public class ProbabilitiesConvertorTest {
 	public void testConvertDosageToProbabilityHeuristic2() {
 		System.out.println("convertDosageToProbabilityHeuristic");
 
-
 		float[] sampleDosage = new float[]{0, 1, 2, -1, 3, 0.5f, 1.5f, 1.75f};
 
 		float[][] expResult = new float[8][3];
@@ -216,9 +215,67 @@ public class ProbabilitiesConvertorTest {
 		expResult[6] = new float[]{0.5f, 0.5f, 0};
 		expResult[7] = new float[]{0.75f, 0.25f, 0};
 
-
 		float[][] result = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(sampleDosage);
 		assertEquals(result, expResult, 0.001f, "Probs not identical");
 
 	}
+	
+	@Test
+	public void testConvertProbabilitiesToAlleles() {
+		System.out.println("convertProbabilitiesToAlleles");
+		
+		float[][] probs = new float[8][3];
+
+		probs[0] = new float[]{1, 0, 0};
+		probs[1] = new float[]{1, 0, 0};
+		probs[2] = new float[]{0, 1, 0};
+		probs[3] = new float[]{0, 1, 0};
+		probs[4] = new float[]{0, 0, 1};
+		probs[5] = new float[]{0, 1, 0};
+		probs[6] = new float[]{0.3f, 0.3f, 0.3f};
+		probs[7] = new float[]{0.3f, 0.3f, 0.4f};
+		
+		List<Alleles> expectedSampleAlleles = new ArrayList<Alleles>();
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.ZERO));
+		expectedSampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		
+		Alleles alleles = Alleles.createAlleles(Allele.A, Allele.C);
+		
+		List<Alleles> sampleAlleles = ProbabilitiesConvertor.convertProbabilitiesToAlleles(probs, alleles, 0.4);
+		
+		for(int i = 0 ; i < expectedSampleAlleles.size() ; ++i){
+			assertEquals(sampleAlleles.get(i), expectedSampleAlleles.get(i), "sample index " + i);
+		}
+		
+	}
+	
+	@Test
+	public void testConvertProbabilitiesToDosage() {
+		System.out.println("convertProbabilitiesToAlleles");
+		
+		float[][] probs = new float[8][3];
+
+		probs[0] = new float[]{1, 0, 0};
+		probs[1] = new float[]{1, 0, 0};
+		probs[2] = new float[]{0, 1, 0};
+		probs[3] = new float[]{0, 1, 0};
+		probs[4] = new float[]{0, 0, 1};
+		probs[5] = new float[]{0, 1, 0};
+		probs[6] = new float[]{0.3f, 0.3f, 0.3f};
+		probs[7] = new float[]{0.3f, 0.3f, 0.4f};
+		
+		float[] expectedDosage = new float[]{2,2,1,1,0,1,-1,0.9f};
+		float[] dosage = ProbabilitiesConvertor.convertProbabilitiesToDosage(probs, 0.4);
+		
+		assertEquals(dosage, expectedDosage, 0.00001f, "");
+		
+		
+	}
+	
  }

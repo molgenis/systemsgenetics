@@ -24,7 +24,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	SHAPEIT2("Shapeit2 output", ".haps, and .samples with phased haplotypes as outputted by Shapeit2"),
 	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files"),
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat"),
-	GEN("GEN / SAMPLE files", "Oxford .gen and .sample");
+	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample");
 	private final String name;
 	private final String description;
 
@@ -110,7 +110,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		return createGenotypeData(path, cacheSize, forcedSequence, 0.34f);
 	}
 
-	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence, float minimumPosteriorProbabilityToCall) throws IOException,
+	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
 
 		switch (this) {

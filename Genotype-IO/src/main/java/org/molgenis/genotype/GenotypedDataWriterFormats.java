@@ -11,7 +11,7 @@ public enum GenotypedDataWriterFormats
 	PED_MAP("PED / MAP files"), 
 	SHAPEIT2("Impute2 haplotypes haps / sample files"), 
 	PLINK_BED("Plink BED / BIM / FAM files"),
-	GEN("Oxford gen / sample files");
+	GEN("Oxford GEN / SAMPLE files");
 
 	private final String name;
 

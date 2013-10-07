@@ -118,7 +118,7 @@ public class ProbabilitiesConvertor {
 	 * @param minProbability to call a genotype
 	 * @return
 	 */
-	public static List<Alleles> convertProbabilitiesToAlleles(float[][] probs, Alleles variantAlleles, float minProbability) {
+	public static List<Alleles> convertProbabilitiesToAlleles(float[][] probs, Alleles variantAlleles, double minProbability) {
 
 		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(probs.length);
 
@@ -180,7 +180,7 @@ public class ProbabilitiesConvertor {
 
 	}
 
-	public static float[] convertProbabilitiesToDosage(float[][] probs, float minProbability) {
+	public static float[] convertProbabilitiesToDosage(float[][] probs, double minProbability) {
 
 		float[] dosages = new float[probs.length];
 

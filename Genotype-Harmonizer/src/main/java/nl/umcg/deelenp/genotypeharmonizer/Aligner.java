@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
@@ -41,7 +42,7 @@ public class Aligner {
 	 * @throws LdCalculatorException
 	 */
 	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment) throws LdCalculatorException, IOException {
-
+		
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
 		//The included study variants after the first loop

@@ -26,7 +26,7 @@ import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.LdCalculatorException;
 
 /**
- * 
+ *
  * @author Patrick Deelen
  */
 @SuppressWarnings("static-access")
@@ -68,9 +68,14 @@ class GenotypeHarmonizer {
 	 */
 	private static final double DEFAULT_MIN_LD_TO_INCLUDE_ALIGN = 0.3;
 	/**
-	 * The default maximum LD before the minor allele frequency (MAF) is used as backup for alignment
+	 * The default maximum LD before the minor allele frequency (MAF) is used as
+	 * backup for alignment
 	 */
 	private static final double DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT = 0;
+	/**
+	 * The default minimum posterior probability to call genotypes
+	 */
+	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY = 0.4;
 
 	static {
 
@@ -102,7 +107,8 @@ class GenotypeHarmonizer {
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
-				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
+				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
+				+ "* GEN - Oxford .gen & .sample")
 				.withLongOpt("inputType")
 				.create("I");
 		OPTIONS.addOption(option);
@@ -114,7 +120,8 @@ class GenotypeHarmonizer {
 				+ "* PLINK_BED - plink BED BIM FAM files.\n"
 				+ "* VCF - bgziped vcf with tabix index file\n"
 				+ "* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n"
-				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample")
+				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
+				+ "* GEN - Oxford .gen & .sample")
 				.withLongOpt("refType")
 				.create("R");
 		OPTIONS.addOption(option);
@@ -131,9 +138,10 @@ class GenotypeHarmonizer {
 		option = OptionBuilder.withArgName("type")
 				.hasArg()
 				.withDescription("The output data type. Defaults to --inputType or to PLINK_BED if there is no writer for the impute type.\n"
-				+ "* PED_MAP - plink PED MAP files. \n"
-				+ "* PLINK_BED - plink BED BIM FAM files.\n"
-				+ "* SHAPEIT2 - shapeit2 phased haplotypes.")
+				+ "* PED_MAP - plink PED MAP files\n"
+				+ "* PLINK_BED - plink BED BIM FAM files\n"
+				+ "* SHAPEIT2 - shapeit2 phased haplotypes\n"
+				+ "* GEN - Oxford .gen & .sample")
 				.withLongOpt("outputType")
 				.create("O");
 		OPTIONS.addOption(option);
@@ -189,12 +197,19 @@ class GenotypeHarmonizer {
 				.withLongOpt("forceChr")
 				.create("f");
 		OPTIONS.addOption(option);
-		
+
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
 				.withDescription("If there are not enough variants in LD and the minor allele frequency (MAF) of a variant <= the specified value in both study as in reference then the minor allele can be used as a backup for alignment. Defaults to " + DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT)
 				.withLongOpt("mafAlign")
 				.create("ma");
+		OPTIONS.addOption(option);
+		
+		option = OptionBuilder.withArgName("double")
+				.hasArg()
+				.withDescription("The minimum posterior probability to call genotypes in the input data " + DEFAULT_MINIMUM_POSTERIOR_PROBABILITY)
+				.withLongOpt("inputProb")
+				.create("ip");
 		OPTIONS.addOption(option);
 
 	}
@@ -328,6 +343,7 @@ class GenotypeHarmonizer {
 		final int flankSnpsToConsider;
 		final double minLdToIncludeAlign;
 		final double maxMafForMafAlignment;
+		final double minimumPosteriorProbability;
 
 
 		try {
@@ -353,8 +369,8 @@ class GenotypeHarmonizer {
 			System.exit(1);
 			return;
 		}
-		
-		try{
+
+		try {
 			maxMafForMafAlignment = commandLine.hasOption("ma") ? Double.parseDouble(commandLine.getOptionValue("ma")) : DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT;
 		} catch (NumberFormatException e) {
 			System.err.println("Error parsing --mafAlign \"" + commandLine.getOptionValue("ma") + "\" is not a double");
@@ -362,7 +378,15 @@ class GenotypeHarmonizer {
 			return;
 		}
 		
-		
+		try {
+			minimumPosteriorProbability = commandLine.hasOption("ip") ? Double.parseDouble(commandLine.getOptionValue("ip")) : DEFAULT_MINIMUM_POSTERIOR_PROBABILITY;
+		} catch (NumberFormatException e) {
+			System.err.println("Error parsing --inputProb \"" + commandLine.getOptionValue("ip") + "\" is not an int");
+			System.exit(1);
+			return;
+		}
+
+
 		final String forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
 		final boolean ldCheck = commandLine.hasOption('c');
 		final boolean keep = commandLine.hasOption('k');
@@ -403,8 +427,8 @@ class GenotypeHarmonizer {
 				"Started logging");
 		System.out.println();
 
-		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName, maxMafForMafAlignment);
-		
+		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName, maxMafForMafAlignment, minimumPosteriorProbability);
+
 		if (minSnpsToAlignOn < MIN_MIN_VARIANTS_TO_ALIGN_ON) {
 			LOGGER.fatal("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
 			System.err.println("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
@@ -431,7 +455,8 @@ class GenotypeHarmonizer {
 			System.exit(1);
 			return;
 		}
-		if (forceSeqName != null && inputType != RandomAccessGenotypeDataReaderFormats.SHAPEIT2) {
+
+		if (forceSeqName != null && inputType != RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && inputType != RandomAccessGenotypeDataReaderFormats.GEN) {
 			System.err.println("Error cannot force sequence name of: " + inputType.getName());
 			System.exit(1);
 			return;
@@ -441,7 +466,7 @@ class GenotypeHarmonizer {
 
 
 		try {
-			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache, forceSeqName);
+			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache, forceSeqName, minimumPosteriorProbability);
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");
@@ -508,11 +533,6 @@ class GenotypeHarmonizer {
 					"Reference data loaded");
 
 			Aligner aligner = new Aligner();
-			if (inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED) {
-				System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
-				LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
-			}
-
 
 			try {
 				System.out.println("Beginning alignment");
@@ -547,8 +567,19 @@ class GenotypeHarmonizer {
 			refData = null;
 			aligedInputData = null;
 			System.out.println("No reference specified. Do conversion without alignment");
-			LOGGER.info("No reference specified. Do conversion without alignment");		
+			LOGGER.info("No reference specified. Do conversion without alignment");
 		}
+
+		if (inputType == RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && outputType == GenotypedDataWriterFormats.PLINK_BED) {
+			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
+		}
+		
+		if(outputType == GenotypedDataWriterFormats.GEN && !inputData.isOnlyContaingSaveProbabilityGenotypes()){
+			System.out.println("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+			LOGGER.warn("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+		}
+
 
 		System.out.println(
 				"Writing results");
@@ -592,7 +623,7 @@ class GenotypeHarmonizer {
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName, double maxMafForMafAlignment) {
+	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName, double maxMafForMafAlignment, double minimumPosteriorProbability) {
 
 
 		System.out.println("Interpreted arguments: ");
@@ -616,6 +647,10 @@ class GenotypeHarmonizer {
 		LOGGER.info("Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
 		System.out.println(" - Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
 		LOGGER.info("Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
+		
+		System.out.println(" - Minimum posterior probability for input data: " + minimumPosteriorProbability);
+		LOGGER.info("Minimum posterior probability for input data: " + minimumPosteriorProbability);
+		
 		System.out.println(" - LD checker " + (ldCheck ? "on" : "off"));
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));

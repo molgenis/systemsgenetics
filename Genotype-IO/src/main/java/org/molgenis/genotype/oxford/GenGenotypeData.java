@@ -49,32 +49,31 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final HashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
 	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
-	private final float minimumPosteriorProbabilityToCall;
+	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
-	
-	private static final float DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
+	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 
 	public GenGenotypeData(String path) throws IOException {
 		this(new File(path + ".gen"), new File(path + ".sample"));
 	}
-	
-	public GenGenotypeData(String path, float minimumPosteriorProbabilityToCall) throws IOException {
+
+	public GenGenotypeData(String path, double minimumPosteriorProbabilityToCall) throws IOException {
 		this(new File(path + ".gen"), new File(path + ".sample"), minimumPosteriorProbabilityToCall);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile) throws IOException {
 		this(genFile, sampleFile, 1000);
 	}
-	
-	public GenGenotypeData(File genFile, File sampleFile, float minimumPosteriorProbabilityToCall) throws IOException {
+
+	public GenGenotypeData(File genFile, File sampleFile, double minimumPosteriorProbabilityToCall) throws IOException {
 		this(genFile, sampleFile, 1000, minimumPosteriorProbabilityToCall);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, int cacheSize) throws IOException {
 		this(genFile, sampleFile, cacheSize, null, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
 	}
-	
-	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, float minimumPosteriorProbabilityToCall) throws IOException {
+
+	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
 		this(genFile, sampleFile, cacheSize, null, minimumPosteriorProbabilityToCall);
 	}
 
@@ -82,7 +81,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		this(genFile, sampleFile, 1000, forceSeqName, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
 	}
 
-	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, float minimumPosteriorProbabilityToCall)
+	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, double minimumPosteriorProbabilityToCall)
 			throws IOException {
 
 		if (genFile == null) {
@@ -96,9 +95,9 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 			throw new IOException("cannot read gen file at "
 					+ genFile.getAbsolutePath());
 		}
-		
+
 		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
-	
+
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
@@ -110,7 +109,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
 		samples = oxfordSampleFile.getSamples();
-		
+
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
 		variants = new GeneticVariantTreeSet<GeneticVariant>();
@@ -334,7 +333,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		int bytesRead;
 
 		try {
-			synchronized (hapsFileReader){
+			synchronized (hapsFileReader) {
 				hapsFileReader.seek(start);
 				bytesRead = hapsFileReader.read(buffer);
 			}
@@ -391,5 +390,4 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 
 	}
-
 }
