@@ -307,7 +307,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
 			annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, elements[2]);
 			annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, elements[3]);
-			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink((byte) elements[4].charAt(0)));
+			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink(Byte.parseByte(elements[4])));
 			annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, Double.parseDouble(elements[5]));
 
 			samples.add(new Sample(elements[1], elements[0], annotationValues));
