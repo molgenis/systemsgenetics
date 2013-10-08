@@ -10,6 +10,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -17,6 +19,9 @@ import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.genomicboundaries.GenomicBoundaries;
+import umcg.genetica.genomicboundaries.GenomicBoundary;
+import umcg.genetica.io.gtf.GffElement;
+import umcg.genetica.io.gtf.GtfReader;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
 
@@ -36,8 +41,22 @@ public class eQtlsInEncodeAnnotationDataRegions {
 	 */
 	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
 	
-	public eQtlsInEncodeAnnotationDataRegions(){
+	public static void main(String[] args)throws IOException {
+		eQtlsInEncodeAnnotationDataRegions aap = new eQtlsInEncodeAnnotationDataRegions("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
+				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\gencode\\gencode.v18.annotation.b36.gtf");
+	}
+	
+	public eQtlsInEncodeAnnotationDataRegions(String eQtlFile, String gencodeFile) throws IOException{
+		EQTL[] eqtls = readEQtlData(eQtlFile);
+		Set<String> rsIdList = makeRsIdList(eqtls);
+		HashMap<String, EQTL> topEQtlEffects = getTopEQtlEffects(eqtls);
+		HashMap<String, HashSet<Integer>> nonTopEqtlEffects = getNonTopEqtlEffects(eqtls, topEQtlEffects);
 		
+		//RandomAccessGenotypeData genotypeData = readEQtlGenotypeData(genotypeLocation, rsIdList);
+		
+		GenomicBoundaries<Object> encodeData = readEncodeAnnotationData(gencodeFile);
+		HashMap<String, Integer> eQtlInEncodeRegions = eQtlInEncodeRegions(eqtls, encodeData);
+		printCountsMap(eQtlInEncodeRegions);
 	}
 	
 	
@@ -144,21 +163,59 @@ public class eQtlsInEncodeAnnotationDataRegions {
 	 * = START: ENCODE ANNOTATION DATA PROCESSING METHODS.
 	 * =========================================================================
 	 */
-	public void readEncodeAnnotationData(String encodeFile)throws IOException{
+	public GenomicBoundaries<Object> readEncodeAnnotationData(String encodeFile)throws IOException{
 		GenomicBoundaries<Object> encodeBoundaries = new GenomicBoundaries();
 		
-		String fileLine;
-		String[] fileLineData;
-		
-		BufferedReader encodeReader = new BufferedReader(new FileReader(encodeFile));
-		while((fileLine=encodeReader.readLine())!=null){
+		GtfReader gtfr = new GtfReader(new File(encodeFile));
+		Iterator<GffElement> encodeIterator = gtfr.iterator();
+		while(encodeIterator.hasNext()){
+			GffElement encodeEntry = encodeIterator.next();
 			
+			encodeBoundaries.addBoundary(encodeEntry.getSeqname(), encodeEntry.getStart(), encodeEntry.getEnd(),
+					encodeEntry.getAttributeValue("transcript_type"));
 		}
-		encodeReader.close();
+		gtfr.close();
+		return encodeBoundaries;
 	}
 	/*
 	 * =========================================================================
 	 * = END: ENCODE ANNOTATION DATA PROCESSING METHODS.
 	 * =========================================================================
 	 */
+	
+	
+	public HashMap<String, Integer> eQtlInEncodeRegions(EQTL[] eqtls, GenomicBoundaries<Object> boundaries){
+		HashMap<String, Integer> encodeCounts = new HashMap<String, Integer>();
+		for(EQTL eqtl : eqtls){
+			if(boundaries.isInBoundary(eqtl.getRsChr().toString(), eqtl.getRsChrPos(), 0)){
+				GenomicBoundary boundary = boundaries.getBoundary(eqtl.getRsChr().toString(), eqtl.getRsChrPos(), 0);
+				
+				String transcriptType = (String) boundary.getAnnotation();
+				if(encodeCounts.containsKey(transcriptType)){
+					encodeCounts.put(transcriptType, encodeCounts.get(transcriptType)+1);
+				}
+				else{
+					encodeCounts.put(transcriptType, 1);
+				}
+			}
+		}
+		return encodeCounts;
+	}
+	
+	
+	
+	
+	public void printCountsMap(HashMap<String, Integer> counts){
+		Iterator<Map.Entry<String, Integer>> countsIter = counts.entrySet().iterator();
+		int n = 1;
+		int totalHits = 0;
+		System.out.println("Entries in count map of size " + counts.values().size() + ".");
+		while(countsIter.hasNext()){
+			Map.Entry<String, Integer> next = countsIter.next();
+			System.out.println(n + ". " + next.getKey() + ": " + next.getValue());
+			totalHits += next.getValue();
+			n++;
+		}
+		System.out.println("Total hits: " + totalHits);
+	}
 }
