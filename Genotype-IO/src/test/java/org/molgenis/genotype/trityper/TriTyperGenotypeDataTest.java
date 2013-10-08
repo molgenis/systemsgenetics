@@ -163,10 +163,10 @@ public class TriTyperGenotypeDataTest extends ResourceTest {
 		expectedSampleAlleles.add(Alleles.createBasedOnChars('A', 'G'));
 
 		assertEquals(variant.getSampleVariants(), expectedSampleAlleles);
-		assertEquals(variant.getVariantAlleles(), Alleles.createBasedOnChars('A', 'G'));
+		assertEquals(variant.getVariantAlleles(), Alleles.createBasedOnChars('G', 'A'));
 
 		byte[] expectedCalledDosage = new byte[]
-		{ 0, 1, 0, 0, 0, 1, 0, 0, 1 };
+		{ 2, 1, 2, 2, 2, 1, 2, 2, 1 };
 
 		assertEquals(variant.getSampleCalledDosages(), expectedCalledDosage);
 
