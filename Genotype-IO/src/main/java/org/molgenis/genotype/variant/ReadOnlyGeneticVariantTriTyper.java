@@ -6,7 +6,7 @@ package org.molgenis.genotype.variant;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.molgenis.genotype.Allele;
@@ -91,7 +91,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 		if (this.alleles == null) {
 			//set alleles here
 
-			HashSet<Allele> variantAlleles = new HashSet<Allele>(2);
+			LinkedHashSet<Allele> variantAlleles = new LinkedHashSet<Allele>(2);
 
 			for (Alleles alleles2 : SampleVariantAlleles) {
 				for (Allele allele : alleles2) {
