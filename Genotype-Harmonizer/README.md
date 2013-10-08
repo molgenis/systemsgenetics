@@ -65,9 +65,9 @@ bgzip -c example.vcf > example.vcf.gz
 tabix -p vcf example.vcf.gz
 ```
 
-### Using SHAPEIT2 output
+### Using SHAPEIT2 Output and Oxford Gen format
 
-The output format of SHAPEIT2 is documented on their website: http://www.shapeit.fr/pages/m02_formats/hapssample.html. However, the actual output does not contain the chromosome on the first column. The `--forceChr` option forces the input data to the chromosome which is specified. Note this is only valid if all variants are indeed on this chromosome. This feature is currently only implemented for the input data and not for the reference data. Feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our github project to request this.
+The [SHAPEIT2 output](http://www.shapeit.fr/pages/m02_formats/hapssample.html) and the [Oxford GEN format](http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html) store either a custom SNP ID on the first column or the chromosome. When the fist column is not used for the chromosome the `--forceChr` option can be used to force the input data to a specified chromosome. Note this is only valid if all variants are indeed on this chromosome. This feature is currently only implemented for the input data and not for the reference data, feel free to raise a [new issue](https://github.com/molgenis/systemsgenetics/issues/new) on our GitHub project to request this.
 
 Typical usage scenarios
 ----------------
@@ -105,7 +105,8 @@ Arguments overview
 | -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants. Defaults to 0.3 |
 | -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment. Defaults to 3 |
 | -v    | --variants     | Number of flanking variants to consider. Defaults to 100 |
-| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2`
+| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file and for GEN files this can also be the case. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2` and `--inputType GEN`
+| -ip   | --inputProb    | The minimum posterior probability to call genotypes in the input data. Defaults to 0.4 
 | -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
 | -ma   | --mafAlign     | If there are not enough variants in LD and the minor allele frequency (MAF) of a variant <= the specified value in both study as in reference then the minor allele can be used as a backup for alignment. Defaults to 0 |
@@ -119,7 +120,7 @@ Base path refers to either --input or --ref
 * PED_MAP
  * Expects Plink PED file at: `${base path}.ped`
  * Expects Plink MAP file at: `${base path}.map`
- * Note: it is recommend to use PLINK_BED due to the large memory usage of the current implementation
+ * Note: it is strongly recommend to use PLINK_BED due to the large memory usage of the current implementation. When dealing with large datasets it is recommend to first use plink to convert the data binary plink using this command `plink --file pedmapData --make-bed --out binaryData`
 * VCF
  * Expects VCF file at: `${base path}.vcf.gz`
  * Must be compressed using bgzip. (see chapter: Preparing a VCF file)
@@ -134,7 +135,11 @@ Base path refers to either --input or --ref
 * SHAPEIT2
  * Expects haps file at: `${base path}.haps`
  * Expects sample file at: `${base path}.sample`
- * See also chapter on SHAPEIT2 output.
+ * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
+* GEN
+ * Expects gen file at: `${base path}.gen` or without the extentions `${base path}`
+ * Expects sample file at: `${base path}.sample`
+ * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
 
 #####--outputType options
 
@@ -145,7 +150,7 @@ Regardless of the output type a log file will always be created at: `${base path
 * PED_MAP
  * Writes Plink PED file to: `${base path}.ped`
  * Writes Plink MAP file to: `${base path}.map`
- * Note: it is recommend to use PLINK_BED since the writing is much faster
+ * Note: it is strongly recommend to use PLINK_BED since the writing is much faster
 * PLINK_BED
  * Writes Plink BED file to: `${base path}.bed`
  * Writes Plink BIM file to: `${base path}.bim`
@@ -154,12 +159,15 @@ Regardless of the output type a log file will always be created at: `${base path
 * SHAPEIT2
  * Writers haps file at: `${base path}.haps`
  * Writers sample file at: `${base path}.sample`
+* GEN
+ * Writers gen file at: `${base path}.gen`
+ * Writers sample file at: `${base path}.sample`
  
 ####Tweaking the alignment using the advanced options
 
 It can be worthwhile to tweak the alignment algorithm using the advanced options (`--min-ld`, `--min-variants`, `--variants` & `--mafAlign`) to improve the reliability of the alignment and to reduce the number of excluded variant that could not be aligned. The default values are quite conservative and sooner exclude variant than falsely swap the strand.
 
-We have found that for datasets with a small number of samples it is wiser to have a high value for `--min-ld` (as is the default). This resulted in a reliable aliment of the small example datasets. However for larger datasets a lower value can be used to retain more variants, we have good experiences with a cut-off 0.1 for datasets with more than 1000 samples. Increasing `--min-variants` safely allows lower values of `--min-ld` this can improve the number of aligned variants.
+We have found that for datasets with a small number of samples it is wiser to have a high value for `--min-ld` (as is the default). This resulted in a reliable aliment of the small example datasets. However for larger datasets a lower value can be used to retain more variants. Increasing `--min-variants` allows lower values of `--min-ld` this can improve the number of aligned variants.
 
 When imputing the HLA region in densely genotyped dataset containing a large number of rare variants it helped to increase the `--variants` although this did effect the speed performance it did allow us to align more variants. This resulted in better imputation when using [snp2hla](https://www.broadinstitute.org/mpg/snp2hla/) from the Broad Institute.
 
@@ -221,7 +229,7 @@ plink --noweb --file hapmap3CeuChr20B36Mb6 --recode --out hapmap3CeuChr20B37Mb6 
 plink --noweb --file hapmap3CeuChr20B37Mb6 --out hapmap3CeuChr20B37Mb6 --make-bed
 ```
 
-We have now created a subset of the hapmap3 which is all in forward strand. We are no going to swap a large number variants. The aliger can identify these swapped variants and flip them back to forward strand using the 1000G data.
+We have now created a subset of the hapmap3 which is all in forward strand. We are no going to swap a large number variants. Genotype Harmonizer can identify these swapped variants and flip them back to forward strand using the 1000G data.
 
 ```Bash
 #Create swap list 50% of SNPs

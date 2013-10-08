@@ -228,6 +228,11 @@ public class Aligner {
 
 		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
 		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
+		
+		if(studyVariantList.isEmpty()){
+			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+			LOGGER.warn("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+		}
 
 		int removedSnpsBasedOnLdCheck = 0;
 

@@ -2,6 +2,9 @@ package nl.umcg.deelenp.genotypeharmonizer;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.ResourceBundle;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -76,6 +79,7 @@ class GenotypeHarmonizer {
 	 * The default minimum posterior probability to call genotypes
 	 */
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY = 0.4;
+	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	static {
 
@@ -204,7 +208,7 @@ class GenotypeHarmonizer {
 				.withLongOpt("mafAlign")
 				.create("ma");
 		OPTIONS.addOption(option);
-		
+
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
 				.withDescription("The minimum posterior probability to call genotypes in the input data " + DEFAULT_MINIMUM_POSTERIOR_PROBABILITY)
@@ -226,6 +230,10 @@ class GenotypeHarmonizer {
 		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
 		System.out.println("More information: http://molgenis.org/systemsgenetics");
+		System.out.println();
+
+		Date currentDataTime = new Date();
+		System.out.println("Current data and time: " + DATE_TIME_FORMAT.format(currentDataTime));
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -377,7 +385,7 @@ class GenotypeHarmonizer {
 			System.exit(1);
 			return;
 		}
-		
+
 		try {
 			minimumPosteriorProbability = commandLine.hasOption("ip") ? Double.parseDouble(commandLine.getOptionValue("ip")) : DEFAULT_MINIMUM_POSTERIOR_PROBABILITY;
 		} catch (NumberFormatException e) {
@@ -418,10 +426,9 @@ class GenotypeHarmonizer {
 
 		LOGGER.info(
 				"\n" + HEADER);
-		LOGGER.info(
-				"Version: " + VERSION);
-		LOGGER.info(
-				"Log level: " + LOGGER.getLevel());
+		LOGGER.info("Version: " + VERSION);
+		LOGGER.info("Current data and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		LOGGER.info("Log level: " + LOGGER.getLevel());
 
 		System.out.println(
 				"Started logging");
@@ -574,8 +581,8 @@ class GenotypeHarmonizer {
 			System.out.println("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
 			LOGGER.warn("WARNING: converting phased SHAPEIT2 data to binary Plink data. A BED file stores AB genotypes in the same manner as BA genotypes, thus all phasing will be lost.");
 		}
-		
-		if(outputType == GenotypedDataWriterFormats.GEN && !inputData.isOnlyContaingSaveProbabilityGenotypes()){
+
+		if (outputType == GenotypedDataWriterFormats.GEN && !inputData.isOnlyContaingSaveProbabilityGenotypes()) {
 			System.out.println("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
 			LOGGER.warn("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
 		}
@@ -647,10 +654,10 @@ class GenotypeHarmonizer {
 		LOGGER.info("Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
 		System.out.println(" - Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
 		LOGGER.info("Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
-		
+
 		System.out.println(" - Minimum posterior probability for input data: " + minimumPosteriorProbability);
 		LOGGER.info("Minimum posterior probability for input data: " + minimumPosteriorProbability);
-		
+
 		System.out.println(" - LD checker " + (ldCheck ? "on" : "off"));
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
 		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
