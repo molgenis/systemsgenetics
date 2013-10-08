@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.molgenis.genotype.util.Utils;
 
-public class Allele implements Comparable<Allele>
+public final class Allele implements Comparable<Allele>
 {
 
 	private static Map<String, Allele> pool = new HashMap<String, Allele>();

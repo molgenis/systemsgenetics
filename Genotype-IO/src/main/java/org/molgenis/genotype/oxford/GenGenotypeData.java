@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
-import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
@@ -25,8 +24,6 @@ import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities3Probs;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
@@ -52,26 +49,39 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final HashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
 	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
-	private final float minimumPosteriorProbabilityToCall;
+	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
+	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 
 	public GenGenotypeData(String path) throws IOException {
 		this(new File(path + ".gen"), new File(path + ".sample"));
 	}
 
+	public GenGenotypeData(String path, double minimumPosteriorProbabilityToCall) throws IOException {
+		this(new File(path + ".gen"), new File(path + ".sample"), minimumPosteriorProbabilityToCall);
+	}
+
 	public GenGenotypeData(File genFile, File sampleFile) throws IOException {
-		this(genFile, sampleFile, 100);
+		this(genFile, sampleFile, 1000);
+	}
+
+	public GenGenotypeData(File genFile, File sampleFile, double minimumPosteriorProbabilityToCall) throws IOException {
+		this(genFile, sampleFile, 1000, minimumPosteriorProbabilityToCall);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, int cacheSize) throws IOException {
-		this(genFile, sampleFile, cacheSize, null, 0f);
+		this(genFile, sampleFile, cacheSize, null, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
+	}
+
+	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
+		this(genFile, sampleFile, cacheSize, null, minimumPosteriorProbabilityToCall);
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, String forceSeqName) throws IOException {
-		this(genFile, sampleFile, 100, forceSeqName, 0f);
+		this(genFile, sampleFile, 1000, forceSeqName, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
 	}
 
-	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, float minimumPosteriorProbabilityToCall)
+	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, double minimumPosteriorProbabilityToCall)
 			throws IOException {
 
 		if (genFile == null) {
@@ -85,9 +95,9 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 			throw new IOException("cannot read gen file at "
 					+ genFile.getAbsolutePath());
 		}
-		
+
 		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
-	
+
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
@@ -99,7 +109,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
 		samples = oxfordSampleFile.getSamples();
-		
+
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
 		variants = new GeneticVariantTreeSet<GeneticVariant>();
@@ -112,7 +122,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
-	public Iterable<Sequence> getSequences() {
+	public List<Sequence> getSequences() {
 		List<Sequence> sequences = new ArrayList<Sequence>();
 		for (String seqName : getSeqNames()) {
 			sequences.add(new SimpleSequence(seqName, null, this));
@@ -165,7 +175,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 	@Override
 	public float[] getSampleDosage(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertProbabilitiesToDosage(variant.getSampleGenotypeProbilities());
+		return ProbabilitiesConvertor.convertProbabilitiesToDosage(variant.getSampleGenotypeProbilities(), minimumPosteriorProbabilityToCall);
 	}
 
 	@Override
@@ -243,7 +253,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 								LOGGER.fatal("Error reading haps file, did not detect first 5 columns with variant information \n"
 										+ "current column is:" + column + "\n"
 										+ "content in current column: " + stringBuilder.toString());
-								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information");
+								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information. Note gen files must be space separted");
 							}
 							longestedChunk = longestedChunk < currentChunk ? currentChunk : longestedChunk;
 							column = 0;
@@ -311,10 +321,10 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 
 
-		SampleVariantProbabilities[] probs = new SampleVariantProbabilities[getSamples().size()];
+		float[][] probs = new float[getSamples().size()][3];
 
 		long start = variantSampleAllelesIndex.get(variant);
 
@@ -323,7 +333,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		int bytesRead;
 
 		try {
-			synchronized (hapsFileReader){
+			synchronized (hapsFileReader) {
 				hapsFileReader.seek(start);
 				bytesRead = hapsFileReader.read(buffer);
 			}
@@ -355,8 +365,9 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 					switch ((char) buffer[i]) {
 						case ' ':
 						case '\n':
-						case '\t':
+						case '\r':
 							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
+							currentProb = new StringBuilder();
 							++currentProbIndex;
 							break;
 						default:
@@ -367,7 +378,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 				}
 
-				probs[s] = new SampleVariantProbabilities3Probs(sampleProbs);
+				probs[s] = sampleProbs;
 
 			}
 		} catch (NumberFormatException e) {
@@ -379,5 +390,4 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 
 	}
-
 }

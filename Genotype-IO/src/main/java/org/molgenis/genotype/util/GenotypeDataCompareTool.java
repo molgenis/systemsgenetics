@@ -18,7 +18,7 @@ public class GenotypeDataCompareTool {
 	public static boolean same(GenotypeData gd1, GenotypeData gd2) {
 		if (gd1.getSamples().equals(gd2.getSamples())) {
 			//System.out.println("Samples same");
-			if (gd1.getSampleAnnotations().equals(gd2.getSampleAnnotations())) {
+			//if (gd1.getSampleAnnotations().equals(gd2.getSampleAnnotations())) {
 				//System.out.println("Sample annotations same");
 				if (gd1.getVariantAnnotations().equals(gd2.getVariantAnnotations())) {
 					//System.out.println("Sample variants same");
@@ -52,7 +52,7 @@ public class GenotypeDataCompareTool {
 						return true;
 					}
 				}
-			}
+			//}
 		}
 		//System.err.println("Not the same");
 		return false;

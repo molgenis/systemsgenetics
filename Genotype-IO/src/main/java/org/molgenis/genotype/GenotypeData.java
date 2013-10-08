@@ -9,7 +9,7 @@ import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
- * Interface that represents genomic data, can be backed by different data types
+ * Interface that represents genotype data, can be backed by different data types
  * 
  * @author erwin
  * 
@@ -23,7 +23,7 @@ public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 	public static final String DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME = "phenotype";
     public static final String BOOL_INCLUDE_SAMPLE = "sampleInclude";
     public static final String CASE_CONTROL_SAMPLE_ANNOTATION_NAME = "caseControl";
-	public static final String SAMPLE_MISSING_RATE_DOUBLE = "sampleMissingRateDouble";
+	public static final String SAMPLE_MISSING_RATE_FLOAT = "sampleMissingRateFloat";
 
 	/**
 	 * Get all possible variant annotations
@@ -42,7 +42,7 @@ public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 	Annotation getVariantAnnotation(String annotationId);
 
 	/**
-	 * Get all posible sample annotations
+	 * Get all possible sample annotations
 	 * 
 	 * @return
 	 */
@@ -87,5 +87,9 @@ public interface GenotypeData extends Iterable<GeneticVariant>, Closeable
 	 * Datasets that potentially contain these dosages must return false
 	 */
 	boolean isOnlyContaingSaveProbabilityGenotypes();
+
+	boolean containsSampleAnnotation(String annotationName);
+	
+	void addSampleAnnotation(SampleAnnotation sampleAnnotation);
 
 }

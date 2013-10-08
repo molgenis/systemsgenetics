@@ -3,13 +3,12 @@ package org.molgenis.genotype.variant.sampleProvider;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
  * Cached sample variant provider to prevent reloading a SNPs that is accessed
- * multiple times in a sort periode.
+ * multiple times in a short period.
  * 
  * @author Patrick Deelen
  * 
@@ -22,7 +21,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	private final Cache<GeneticVariant, List<Boolean>> phasingCache;
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
-	private final Cache<GeneticVariant, SampleVariantProbabilities[]> probCache;
+	private final Cache<GeneticVariant, float[][]> probCache;
 	private final int cacheSize;
 	private final int sampleVariantProviderUniqueId;
 
@@ -33,7 +32,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		this.phasingCache = new Cache<GeneticVariant, List<Boolean>>(cacheSize);
 		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(cacheSize);
 		this.dosageCache = new Cache<GeneticVariant, float[]>(cacheSize);
-		this.probCache = new Cache<GeneticVariant, SampleVariantProbabilities[]>(cacheSize);
+		this.probCache = new Cache<GeneticVariant, float[][]>(cacheSize);
 		this.cacheSize = cacheSize;
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
@@ -106,13 +105,13 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 		if (probCache.containsKey(variant))
 		{
 			return probCache.get(variant);
 		}
 
-		SampleVariantProbabilities[] probs = sampleVariantProvider.getSampleProbilities(variant);
+		float[][] probs = sampleVariantProvider.getSampleProbilities(variant);
 		probCache.put(variant, probs);
 		return probs;
 	}

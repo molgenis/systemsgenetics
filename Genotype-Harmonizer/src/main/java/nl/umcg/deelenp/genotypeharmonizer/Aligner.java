@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
@@ -41,7 +42,7 @@ public class Aligner {
 	 * @throws LdCalculatorException
 	 */
 	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment) throws LdCalculatorException, IOException {
-
+		
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
 		//The included study variants after the first loop
@@ -227,6 +228,11 @@ public class Aligner {
 
 		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
 		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
+		
+		if(studyVariantList.isEmpty()){
+			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+			LOGGER.warn("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+		}
 
 		int removedSnpsBasedOnLdCheck = 0;
 

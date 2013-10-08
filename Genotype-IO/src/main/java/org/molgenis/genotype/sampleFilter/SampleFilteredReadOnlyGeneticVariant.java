@@ -14,7 +14,6 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
@@ -212,16 +211,16 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleGenotypeProbilities() {
+	public float[][] getSampleGenotypeProbilities() {
 		
-		SampleVariantProbabilities[] unfilteredProbs = original.getSampleGenotypeProbilities();
-		SampleVariantProbabilities[] includedSamplesProbs = new SampleVariantProbabilities[genotypeData.getIncludedSampleCount()];
+		float[][] unfilteredProbs = original.getSampleGenotypeProbilities();
+		float[][] includedSamplesProbs = new float[genotypeData.getIncludedSampleCount()][3];
 
 		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
 
 		try {
 			int i = 0;
-			for (SampleVariantProbabilities prob : unfilteredProbs) {
+			for (float[] prob : unfilteredProbs) {
 				if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
 					includedSamplesProbs[i] = prob;
 					++i;

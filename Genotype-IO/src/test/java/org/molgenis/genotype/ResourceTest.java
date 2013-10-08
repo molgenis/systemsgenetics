@@ -129,5 +129,14 @@ public class ResourceTest
 	{
 		return getTestResourceFile("/ldTest.vcf.gz.tbi");
 	}
-
+	
+	protected File getTest2Gen() throws URISyntaxException
+	{
+		return getTestResourceFile("/test2.gen");
+	}
+	
+	protected File getTest2Sample() throws URISyntaxException
+	{
+		return getTestResourceFile("/test2.sample");
+	}
 }
