@@ -40,6 +40,7 @@ public abstract class AbstractRandomAccessGenotypeData extends AbstractGenotypeD
 
 	}
 
+	@Override
 	public HashMap<String, GeneticVariant> getVariantIdMap() {
 		return getVariantIdMap(null);
 	}

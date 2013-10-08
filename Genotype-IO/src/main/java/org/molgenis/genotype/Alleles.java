@@ -5,10 +5,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-public class Alleles implements Iterable<Allele>, Comparable<Alleles>
+public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 {	
 	private static final Map<List<Allele>, Alleles> pool = new HashMap<List<Allele>, Alleles>();
 
@@ -345,6 +346,20 @@ public class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		}
 		else if (!alleles.equals(other.alleles)) return false;
 		return true;
+	}
+	
+	public Alleles createCopyWithoutDuplicates(){
+		
+		LinkedHashSet<Allele> uniqueAlleles = new LinkedHashSet<Allele>(alleles.size());
+		
+		for(Allele allele : alleles){
+			if(!uniqueAlleles.contains(allele)){
+				uniqueAlleles.add(allele);
+			}
+		}
+		
+		return Alleles.createAlleles(new ArrayList<Allele>(uniqueAlleles));
+		
 	}
 
 }

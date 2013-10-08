@@ -12,6 +12,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeData;
@@ -31,27 +32,25 @@ public class OxfordSampleFileWriter {
 	private static final char SEPARATOR = ' ';
 	private static final Logger LOG = Logger.getLogger(OxfordSampleFileWriter.class);
 
-	public static void writeSampleFile(File sampleFile, GenotypeData genotypeData) throws IOException {
+	public static void writeSampleFile(File sampleFile, GenotypeData genotypeData, HashMap<Sample, Float> sampleMissingness) throws IOException {
 
 		Writer sampleWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(sampleFile),
 				FILE_ENCODING));
 
 		// Write headers
-		StringBuilder sb = new StringBuilder();
-		sb.append("ID_1");
-		sb.append(SEPARATOR);
-		sb.append("ID_2");
-		sb.append(SEPARATOR);
-		sb.append("missing");
+		sampleWriter.append("ID_1");
+		sampleWriter.append(SEPARATOR);
+		sampleWriter.append("ID_2");
+		sampleWriter.append(SEPARATOR);
+		sampleWriter.append("missing");
 
 		List<String> colNames = new ArrayList<String>();
 		List<String> dataTypes = new ArrayList<String>();
 
 		for (SampleAnnotation annotation : genotypeData.getSampleAnnotations()) {
-			if (annotation.getId().equals(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE)) {
+			if (annotation.getId().equals(GenotypeData.SAMPLE_MISSING_RATE_FLOAT)) {
 				continue;
 			}
-
 
 			if (annotation.getSampleAnnotationType() == SampleAnnotationType.COVARIATE) {
 				switch (annotation.getType()) {
@@ -90,48 +89,48 @@ public class OxfordSampleFileWriter {
 						break;
 				}
 			} else {
-				LOG.warn("'OTHER' sample annotation type not supported by impute2");
+				LOG.warn("'OTHER' sample annotation type not supported by oxford sample file");
 			}
 		}
 
 		for (String colName : colNames) {
-			sb.append(SEPARATOR);
-			sb.append(colName);
+			if(colName.equals(GenotypeData.SEX_SAMPLE_ANNOTATION_NAME)){
+				colName = "sex";
+			}
+			sampleWriter.append(SEPARATOR);
+			sampleWriter.append(colName);
 		}
 
-		sb.append(LINE_ENDING);
+		sampleWriter.append(LINE_ENDING);
 
 		// Write datatypes
-		sb.append("0");
-		sb.append(SEPARATOR);
-		sb.append("0");
-		sb.append(SEPARATOR);
-		sb.append("0");
+		sampleWriter.append("0");
+		sampleWriter.append(SEPARATOR);
+		sampleWriter.append("0");
+		sampleWriter.append(SEPARATOR);
+		sampleWriter.append("0");
 
 		for (String dataType : dataTypes) {
-			sb.append(SEPARATOR);
-			sb.append(dataType);
+			sampleWriter.append(SEPARATOR);
+			sampleWriter.append(dataType);
 		}
 
-		sb.append(LINE_ENDING);
-		sampleWriter.write(sb.toString());
+		sampleWriter.append(LINE_ENDING);
 
 		// Write values
 		for (Sample sample : genotypeData.getSamples()) {
-			sb = new StringBuilder();
-			sb.append(sample.getFamilyId() == null ? "NA" : sample.getFamilyId());
-			sb.append(SEPARATOR);
-			sb.append(sample.getId() == null ? "NA" : sample.getId());
-			sb.append(SEPARATOR);
-			sb.append(getValue(GenotypeData.SAMPLE_MISSING_RATE_DOUBLE, sample, "NA"));
+			sampleWriter.append(sample.getFamilyId() == null ? "NA" : sample.getFamilyId());
+			sampleWriter.append(SEPARATOR);
+			sampleWriter.append(sample.getId() == null ? "NA" : sample.getId());
+			sampleWriter.append(SEPARATOR);
+			sampleWriter.append(String.valueOf(sampleMissingness.get(sample)));
 
 			for (String colName : colNames) {
-				sb.append(SEPARATOR);
-				sb.append(getValue(colName, sample, "NA"));
+				sampleWriter.append(SEPARATOR);
+				sampleWriter.append(getValue(colName, sample, "NA"));
 			}
 
-			sb.append(LINE_ENDING);
-			sampleWriter.write(sb.toString());
+			sampleWriter.append(LINE_ENDING);
 		}
 		sampleWriter.close();
 	}
@@ -175,7 +174,13 @@ public class OxfordSampleFileWriter {
 		}
 
 		if (value instanceof SexAnnotation) {
-			return Byte.toString(((SexAnnotation) value).getPlinkSex());
+			SexAnnotation sexValue = (SexAnnotation) value;
+			switch(sexValue){
+				case UNKNOWN:
+					return nullValue;
+				default:
+					return Byte.toString(sexValue.getPlinkSex());
+			}
 		}
 
 		return value.toString();

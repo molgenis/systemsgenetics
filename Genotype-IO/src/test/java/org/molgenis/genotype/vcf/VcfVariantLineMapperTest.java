@@ -11,7 +11,6 @@ import java.util.List;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.annotation.Annotation;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -123,7 +122,7 @@ public class VcfVariantLineMapperTest implements SampleVariantsProvider {
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }

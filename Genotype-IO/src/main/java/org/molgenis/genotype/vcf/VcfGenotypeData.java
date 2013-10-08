@@ -36,7 +36,6 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 
@@ -296,7 +295,7 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 }

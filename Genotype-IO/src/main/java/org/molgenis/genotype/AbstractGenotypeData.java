@@ -3,10 +3,11 @@ package org.molgenis.genotype;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import static org.molgenis.genotype.GenotypeData.SAMPLE_MISSING_RATE_FLOAT;
 
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
+import org.molgenis.genotype.variant.GeneticVariant;
 
 public abstract class AbstractGenotypeData implements GenotypeData
 {
@@ -47,6 +48,18 @@ public abstract class AbstractGenotypeData implements GenotypeData
 		
 		return sampleNames;
 	}
+	
+	
+@Override
+	public void addSampleAnnotation(SampleAnnotation sampleAnnotation) {
+		getSampleAnnotationsMap().put(sampleAnnotation.getName(), sampleAnnotation);
+	}
+
+	@Override
+	public boolean containsSampleAnnotation(String annotationName) {
+		return getSampleAnnotationsMap().containsKey(annotationName);
+	}
+	
 	
 	
 

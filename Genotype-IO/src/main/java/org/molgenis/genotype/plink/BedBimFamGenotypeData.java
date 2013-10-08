@@ -30,7 +30,6 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
-import org.molgenis.genotype.probabilities.SampleVariantProbabilities;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
@@ -308,14 +307,14 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
 			annotationValues.put(FATHER_SAMPLE_ANNOTATION_NAME, elements[2]);
 			annotationValues.put(MOTHER_SAMPLE_ANNOTATION_NAME, elements[3]);
-			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink((byte) elements[4].charAt(0)));
+			annotationValues.put(SEX_SAMPLE_ANNOTATION_NAME, SexAnnotation.getSexAnnotationForPlink(Byte.parseByte(elements[4])));
 			annotationValues.put(DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME, Double.parseDouble(elements[5]));
 
 			samples.add(new Sample(elements[1], elements[0], annotationValues));
 
 		}
 
-		LOGGER.info("Read " + samples.size() + " from " + famFile.getAbsolutePath());
+		LOGGER.info("Read " + samples.size() + " samples from " + famFile.getAbsolutePath());
 
 		famFileReader.close();
 
@@ -353,7 +352,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		}
 
-		LOGGER.info("Read " + snpIndex + " from " + bimFile.getAbsolutePath());
+		LOGGER.info("Read " + snpIndex + " SNPs from " + bimFile.getAbsolutePath());
 
 		bimFileReader.close();
 
@@ -372,7 +371,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	}
 
 	@Override
-	public SampleVariantProbabilities[] getSampleProbilities(GeneticVariant variant) {
+	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }
