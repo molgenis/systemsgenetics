@@ -157,7 +157,7 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 		assertEquals(variant.getVariantAlleles(), Alleles.createBasedOnChars('G', 'A'));
 
 		byte[] expectedCalledDosage = new byte[]
-		{ 0, 1, 0, 0, 0, 0, 0, 1 };
+		{ 2, 1, 2, 2, 2, 2, 2, 1 };
 
 		assertEquals(variant.getSampleCalledDosages(), expectedCalledDosage);
 		
