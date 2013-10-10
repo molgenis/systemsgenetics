@@ -233,7 +233,7 @@ class GenotypeHarmonizer {
 		System.out.println();
 
 		Date currentDataTime = new Date();
-		System.out.println("Current data and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -427,7 +427,7 @@ class GenotypeHarmonizer {
 		LOGGER.info(
 				"\n" + HEADER);
 		LOGGER.info("Version: " + VERSION);
-		LOGGER.info("Current data and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
 		LOGGER.info("Log level: " + LOGGER.getLevel());
 
 		System.out.println(
