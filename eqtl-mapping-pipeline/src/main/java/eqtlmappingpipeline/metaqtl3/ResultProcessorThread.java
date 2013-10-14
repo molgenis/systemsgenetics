@@ -129,6 +129,8 @@ public class ResultProcessorThread extends Thread {
                     poison = true;
                 } else if (r.pvalues != null) {
 
+                    nrTestsPerformed += wp.getNumTested();
+                    
                     double[] pvalues = r.pvalues;
                     if (m_createBinaryFiles && !poison) {
                         writeBinaryResult(r);
@@ -139,9 +141,9 @@ public class ResultProcessorThread extends Thread {
 
                         for (int p = 0; p < pvalues.length; p++) {
                             double pval = pvalues[p];
-                            if (!Double.isNaN(pval)) {
-                                nrTestsPerformed++;
-                            }
+//                            if (!Double.isNaN(pval)) {
+//                                nrTestsPerformed++;
+//                            }
                             if (!Double.isNaN(pval) && pval <= highestP) {
                                 double[][] corr = r.correlations;
                                 Double[] correlations = new Double[corr.length];
@@ -235,9 +237,6 @@ public class ResultProcessorThread extends Thread {
                 }
             }
 
-
-
-            System.out.println(totalcounter);
             if (m_createTEXTFiles) {
                 if (m_eQTLBufferCounter > 0) {
                     mergeResults();
@@ -363,7 +362,7 @@ public class ResultProcessorThread extends Thread {
     }
 
     private void writeTextResults() throws IOException {
-        System.out.println("Writing " + finalEQTLs.length + " results out of " + totalcounter);
+        System.out.println("Writing " + finalEQTLs.length + " results out of " + nrTestsPerformed);
         String fileName = m_outputdir + "eQTLs.txt.gz";
         if (m_permuting) {
             fileName = m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz";

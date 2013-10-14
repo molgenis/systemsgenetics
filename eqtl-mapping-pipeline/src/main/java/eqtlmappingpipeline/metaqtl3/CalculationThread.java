@@ -362,11 +362,7 @@ class CalculationThread extends Thread {
             r.zscores[d][p] = Double.NaN;
             r.correlations[d][p] = Double.NaN;
         } else {
-            testsPerformed++;
-
-//            long t3 = System.nanoTime();
-
-
+            //            long t3 = System.nanoTime();
             double correlation = Correlation.correlate(x, y, varianceX, varianceY);
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
@@ -555,6 +551,7 @@ class CalculationThread extends Thread {
             }
 
             if (nrDatasetsPassingQC > 0 && nrTotalSamples > 0) {
+                testsPerformed++;
                 double sqrtSample = Descriptives.getSqrt(nrTotalSamples);
                 double zScore = zSum / sqrtSample;
                 double zScoreAbsolute = zSumAbsolute / sqrtSample;
