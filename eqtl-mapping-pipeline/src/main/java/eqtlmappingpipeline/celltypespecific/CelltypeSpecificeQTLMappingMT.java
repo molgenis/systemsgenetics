@@ -389,7 +389,7 @@ public class CelltypeSpecificeQTLMappingMT {
 
     }
 
-    public void runCelltypeSpecificEQTLMapping(String inExpPCCorrected, String covariateFile, String ingt, String gte, String snpprobecombinationfile, String cellCountFile, Integer nrThreads, String out, boolean matchCovariateAndExpressionDataOnMarkerName) throws IOException, Exception {
+    public void runCelltypeSpecificEQTLMapping(String inExpPCCorrected, String covariateFile, String ingt, String gte, String snpprobecombinationfile, Integer nrThreads, String out, boolean testAllCovariates) throws IOException, Exception {
         String probeannot = null;
 
         double mafthreshold = 0.05;
@@ -425,37 +425,37 @@ public class CelltypeSpecificeQTLMappingMT {
 
         HashMap<String, Double> cellCountPerIndividual = null;
         HashSet<String> includeTheseIndividuals = null;
-        if (cellCountFile != null) {
-            // read cell counts
-            cellCountPerIndividual = new HashMap<String, Double>();
-            TextFile cellCountIn = new TextFile(cellCountFile, TextFile.R);
-            cellCountIn.readLine();
-            String[] elems = cellCountIn.readLineElems(TextFile.tab);
-            includeTheseIndividuals = new HashSet<String>();
-            while (elems != null) {
-                if (elems.length > 1) {
-                    Double count = null;
-                    try {
-                        count = Double.parseDouble(elems[1]);
-                        if (!Double.isNaN(count)) {
-                            includeTheseIndividuals.add(elems[0]);
-                            cellCountPerIndividual.put(elems[0], count);
-                        }
-                    } catch (NumberFormatException e) {
-                        System.err.println("ERROR: cell count is not a number for sample: " + elems[0] + "\t" + elems[1]);
-                    }
-                }
-                elems = cellCountIn.readLineElems(TextFile.tab);
-            }
-            cellCountIn.close();
-
-            if (cellCountPerIndividual.isEmpty()) {
-                System.err.println("ERROR: no cell counts loaded. Please check the format of " + cellCountFile);
-                System.exit(-1);
-            } else {
-                System.out.println("Cell counts loaded for " + cellCountPerIndividual.size() + " individuals, from: " + cellCountFile);
-            }
-        }
+//        if (cellCountFile != null) {
+//            // read cell counts
+//            cellCountPerIndividual = new HashMap<String, Double>();
+//            TextFile cellCountIn = new TextFile(cellCountFile, TextFile.R);
+//            cellCountIn.readLine();
+//            String[] elems = cellCountIn.readLineElems(TextFile.tab);
+//            includeTheseIndividuals = new HashSet<String>();
+//            while (elems != null) {
+//                if (elems.length > 1) {
+//                    Double count = null;
+//                    try {
+//                        count = Double.parseDouble(elems[1]);
+//                        if (!Double.isNaN(count)) {
+//                            includeTheseIndividuals.add(elems[0]);
+//                            cellCountPerIndividual.put(elems[0], count);
+//                        }
+//                    } catch (NumberFormatException e) {
+//                        System.err.println("ERROR: cell count is not a number for sample: " + elems[0] + "\t" + elems[1]);
+//                    }
+//                }
+//                elems = cellCountIn.readLineElems(TextFile.tab);
+//            }
+//            cellCountIn.close();
+//
+//            if (cellCountPerIndividual.isEmpty()) {
+//                System.err.println("ERROR: no cell counts loaded. Please check the format of " + cellCountFile);
+//                System.exit(-1);
+//            } else {
+//                System.out.println("Cell counts loaded for " + cellCountPerIndividual.size() + " individuals, from: " + cellCountFile);
+//            }
+//        }
 
         // load dataset
         System.out.println("Now loading eQTL dataset.");
@@ -486,7 +486,7 @@ public class CelltypeSpecificeQTLMappingMT {
         }
 
         // load the same individuals from the raw data....
-        System.out.println("Now loading raw expression data file");
+        System.out.println("Now loading covariate data file");
         DoubleMatrixDataset<String, String> covariateData = new DoubleMatrixDataset<String, String>(covariateFile, null, expressionIndividualsInPCCorrectedData);
 
         // since the number of samples has changed, we might need to reperform q-norm and log2 transform...
@@ -504,10 +504,16 @@ public class CelltypeSpecificeQTLMappingMT {
             String snp = p.getLeft();
             String probe = p.getRight();
             Integer snpId = genotypeData.getSnpToSNPId().get(snp);
-            Integer probeIdInRawData = covariateData.hashRows.get(probe);
+            Integer covariateId = covariateData.hashRows.get(probe);
             Integer probeIdInPCCorrectedData = pcCorrectedExpressionData.getProbeToId().get(probe);
-            if (probeIdInRawData != null && matchCovariateAndExpressionDataOnMarkerName) {
-                probesToUseAsCovariate.add(probe);
+
+//            System.out.println(probe + "\t" + covariateIdInRawData + "\t" + probeIdInPCCorrectedData);
+
+            // TODO: what if we want to test covariates 
+            if (covariateId != null && !testAllCovariates) {
+                // probesToUseAsCovariate.add(probe);
+            } else if (!testAllCovariates) {
+                System.out.println("Covariate not found in raw data: " + probe);
             }
             if (snpId != null && probeIdInPCCorrectedData != null) {
                 if (snpsPassingQC.contains(snp)) {
@@ -531,14 +537,15 @@ public class CelltypeSpecificeQTLMappingMT {
         }
         tfOut.close();
 
-        if (matchCovariateAndExpressionDataOnMarkerName) {
+        // test all covariates present in covariate data
+        if (testAllCovariates) {
             probesToUseAsCovariate.addAll(covariateData.rowObjects);
         }
 
-        if (probesToUseAsCovariate.isEmpty()) {
-            System.err.println("No covariates detected.");
-            System.exit(-1);
-        }
+//        if (probesToUseAsCovariate.isEmpty()) {
+//            System.err.println("No covariates detected.");
+//            System.exit(-1);
+//        }
 
         if (snpProbeCombinationsToTest.isEmpty()) {
             System.err.println("None of the specified SNP-probe combinations to test are present in the dataset!");
@@ -550,25 +557,21 @@ public class CelltypeSpecificeQTLMappingMT {
         // make a base cellcount array
         String[] expInds = pcCorrectedExpressionData.getIndividuals();
         double[] cellcounts = null;
-        if (cellCountPerIndividual != null) {
-            cellcounts = new double[expInds.length];
-            for (int i = 0; i < expInds.length; i++) {
-                if (cellCountPerIndividual.get(expInds[i]) != null) {
-                    cellcounts[i] = cellCountPerIndividual.get(expInds[i]);
-                } else {
-                    cellcounts[i] = Double.NaN;
-                }
-            }
-        }
+//        if (cellCountPerIndividual != null) {
+//            cellcounts = new double[expInds.length];
+//            for (int i = 0; i < expInds.length; i++) {
+//                if (cellCountPerIndividual.get(expInds[i]) != null) {
+//                    cellcounts[i] = cellCountPerIndividual.get(expInds[i]);
+//                } else {
+//                    cellcounts[i] = Double.NaN;
+//                }
+//            }
+//        }
 
         out = Gpio.formatAsDirectory(out);
         Gpio.createDir(out);
 
         String[] probesToUseAsCovariateArr = probesToUseAsCovariate.toArray(new String[0]);
-
-
-
-
 
         ArrayList<String> rowNames = new ArrayList<String>();
         rowNames.addAll(Arrays.asList(probesToUseAsCovariateArr));
