@@ -58,6 +58,7 @@ public class ResultProcessorThread extends Thread {
     public double highestP = Double.MAX_VALUE;
     private int nrSet;
     private int nrInFinalBuffer = 0;
+    private int nrSNPsTested = 0;
 
     public ResultProcessorThread(int nrThreads, LinkedBlockingQueue<WorkPackage> queue, boolean chargeOutput,
             TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, Integer[][] pprobeTranslation,
@@ -91,6 +92,7 @@ public class ResultProcessorThread extends Thread {
         m_numdatasets = m_gg.length;
 
         finalEQTLs = new EQTL[0];
+        nrSNPsTested = 0;
     }
 
     @Override
@@ -122,9 +124,11 @@ public class ResultProcessorThread extends Thread {
             int counter = 0;
             while (!poison) {
                 WorkPackage wp = m_queue.take();
-
                 Result r = wp.results;
-
+                if(wp.getHasResults()){
+                    nrSNPsTested++;
+                }
+               
                 if (r.poison) {
                     poison = true;
                 } else if (r.pvalues != null) {
@@ -362,7 +366,7 @@ public class ResultProcessorThread extends Thread {
     }
 
     private void writeTextResults() throws IOException {
-        System.out.println("Writing " + finalEQTLs.length + " results out of " + nrTestsPerformed);
+        System.out.println("Writing " + finalEQTLs.length + " results out of " + nrTestsPerformed +" tests performed. "+nrSNPsTested+" SNPs finally tested.");
         String fileName = m_outputdir + "eQTLs.txt.gz";
         if (m_permuting) {
             fileName = m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz";

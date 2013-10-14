@@ -515,6 +515,10 @@ class CalculationThread extends Thread {
         // per probe, convert to p-value
         int numProbes = dsResults.zscores[0].length;
 
+
+        boolean hasResults = false;
+
+
         for (int p = 0; p < numProbes; p++) {
             int nrDatasetsPassingQC = 0;
             int nrTotalSamples = 0;
@@ -552,6 +556,7 @@ class CalculationThread extends Thread {
 
             if (nrDatasetsPassingQC > 0 && nrTotalSamples > 0) {
                 testsPerformed++;
+                hasResults = true;
                 double sqrtSample = Descriptives.getSqrt(nrTotalSamples);
                 double zScore = zSum / sqrtSample;
                 double zScoreAbsolute = zSumAbsolute / sqrtSample;
@@ -576,9 +581,13 @@ class CalculationThread extends Thread {
             }
             // calculate the weighted Z-score
 
+
         }
 
+        wp.setHasResults(hasResults);
+
         wp.setResult(dsResults);
+
     }
 
     private void ploteQTL(WorkPackage wp, int p) {
