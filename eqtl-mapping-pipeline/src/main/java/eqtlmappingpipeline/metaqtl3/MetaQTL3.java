@@ -1070,8 +1070,8 @@ public class MetaQTL3 {
         excludedSNPs.close();
 
 
-        System.out.println("- The final number of SNPs to test: " + m_workPackages.length);
-        System.out.println("- The final number of SNP-Probe combinations: " + maxNrTestsToPerform);
+        System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
+        System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
     }
 
     protected void printSummary() {
@@ -1089,8 +1089,8 @@ public class MetaQTL3 {
         System.out.print("\nTotals\n" + ConsoleGUIElems.DOUBLELINE);
         System.out.println("Total number of datasets:\t" + m_gg.length);
         System.out.println("Total number of samples:\t" + totalSamples);
-        System.out.println("Final number of SNPs to test:\t" + m_workPackages.length);
-        System.out.println("Final number of Probes to test:\t" + m_probeList.length);
+        System.out.println("Maximum number of SNPs to test:\t" + m_workPackages.length);
+        System.out.println("Maximum number of Probes to test:\t" + m_probeList.length);
 
         if (totalSamples == 0) {
             System.err.println("ERROR!: No samples detected");
