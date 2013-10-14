@@ -23,6 +23,7 @@ public class WorkPackage implements Comparable<WorkPackage> {
     private int id;
     private int numtested = 0;
     private int metaSNPId = -1;
+    private boolean hasResults;
 
     /**
      * @return the snps
@@ -142,6 +143,9 @@ public class WorkPackage implements Comparable<WorkPackage> {
 //        } 
 //        results.pvalues = null;
         results = null;
+        hasResults = false;
+        numtested = 0;
+        
     }
 
     public int getId() {
@@ -158,5 +162,13 @@ public class WorkPackage implements Comparable<WorkPackage> {
 
     public void setMetaSNPId(int metaSNPId) {
         this.metaSNPId = metaSNPId;
+    }
+
+    public void setHasResults(boolean hasResults) {
+        this.hasResults = hasResults;
+    }
+    
+    public boolean getHasResults(){
+        return hasResults;
     }
 }
