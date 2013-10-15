@@ -99,9 +99,6 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
     private void reinit() throws IOException, Exception {
         m_gg = null;
-        System.gc();
-        System.gc();
-        System.gc();
 
         int numDatasets = m_settings.datasetSettings.size();
         m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];

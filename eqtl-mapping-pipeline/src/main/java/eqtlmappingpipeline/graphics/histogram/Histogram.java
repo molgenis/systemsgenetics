@@ -32,7 +32,7 @@ public class Histogram extends Graphics {
         double minX = dist.getMin();
         int numBins = dist.getNumBins();
         double binInterval = dist.getBinInterval();
-        int yRange = (int) Math.ceil(dist.getTotalNumValues());
+        int yRange = dist.getTotalNumValues();
 
         calcScaling(numBins, yRange);
 

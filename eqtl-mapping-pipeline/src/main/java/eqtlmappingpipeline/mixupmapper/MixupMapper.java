@@ -61,7 +61,6 @@ public class MixupMapper extends MetaQTL3 {
 
             // clear memory
             m_gg = null;
-            System.gc();
         }
 
         System.out.println("Using: " + inputeQTLs + " as input for MixupMapper");

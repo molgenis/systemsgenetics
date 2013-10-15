@@ -277,12 +277,12 @@ public class MetaQTL3 {
                 boolean identicalMapping = true;
                 boolean snpOk = false;
                 String d1SNP = snps[s];
-                if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP)) && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[0].getGenotypeData().getChr(s) == m_settings.confineToSNPsThatMapToChromosome)) {
+                if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP)) && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[0].getGenotypeData().getChr(s).equals(m_settings.confineToSNPsThatMapToChromosome))) {
                     for (int d = 1; d < m_gg.length; d++) {
                         Integer d2SNPId = m_gg[d].getGenotypeData().getSnpToSNPId().get(d1SNP);
                         if (d2SNPId == null) {
                             presentInAllDatasets = false;
-                        } else if (m_gg[d].getGenotypeData().getChr(d2SNPId) != m_gg[0].getGenotypeData().getChr(s) || m_gg[d].getGenotypeData().getChrPos(d2SNPId) != m_gg[0].getGenotypeData().getChrPos(s)) {
+                        } else if (!m_gg[d].getGenotypeData().getChr(d2SNPId).equals(m_gg[0].getGenotypeData().getChr(s)) || m_gg[d].getGenotypeData().getChrPos(d2SNPId) != m_gg[0].getGenotypeData().getChrPos(s)) {
                             identicalMapping = false;
                         }
                     }
@@ -621,7 +621,7 @@ public class MetaQTL3 {
                     invalidMappingPosition++;
                     probeLog.writeln("Removing probe:\t" + probe + "\t has no valid mapping position in any dataset: " + mappingOutput);
                 }
-            } else if (m_settings.confineToProbesThatMapToChromosome != null && chr != m_settings.confineToProbesThatMapToChromosome) {
+            } else if (m_settings.confineToProbesThatMapToChromosome != null && !chr.equals(m_settings.confineToProbesThatMapToChromosome)) {
                 // check whether this chromosome was requested to be analysed
                 includeProbe = false;
                 mapToWrongChromosome++;
@@ -698,10 +698,6 @@ public class MetaQTL3 {
         Descriptives.zScoreToPValue();
 
         boolean permuting = false;
-
-        System.gc();
-        System.gc();
-        System.gc();
 
         System.out.println("Will write output to dir: " + m_settings.outputReportsDir);
 
