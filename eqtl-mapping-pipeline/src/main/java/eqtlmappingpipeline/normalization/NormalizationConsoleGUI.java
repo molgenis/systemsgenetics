@@ -30,6 +30,7 @@ public class NormalizationConsoleGUI {
         boolean forceMissingValues = false;
         boolean forceReplacementOfMissingValues = false;
         boolean forceReplacementOfMissingValues2 = false;
+        boolean treatZerosAsNulls = false;
 
         int maxPcaToRemove = 100;
         int stepSizePcaRemoval = 5;
@@ -94,6 +95,9 @@ public class NormalizationConsoleGUI {
             if (arg.equals("--forceMissingValues")) {
                 forceMissingValues = true;
             }
+            if (arg.equals("--treatZerosAsNulls")) {
+                treatZerosAsNulls = true;
+            }
         }
 
         if (in == null) {
@@ -123,11 +127,13 @@ public class NormalizationConsoleGUI {
             if (!fullNorm) {
                 p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
-                        runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, forceReplacementOfMissingValues2);
+                        runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, 
+                        forceReplacementOfMissingValues2, treatZerosAsNulls);
             } else {
                 // run full normalization
                 p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
-                        true, true, false, true, true, true, false, false, false);
+                        true, true, false, true, true, true, false, false, false,
+                        false);
             }
 
             System.out.println("Done.");
@@ -162,6 +168,7 @@ public class NormalizationConsoleGUI {
                 +"Additional QN missing value parameters (only one option is allowed.) \n"
                 +"--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen only QN will be performed.\n"
                 +"--forceReplacementOfMissingValuesSampleBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by sample mean.\n"
-                +"--forceReplacementOfMissingValuesProbeBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by probe mean.");
+                +"--forceReplacementOfMissingValuesProbeBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by probe mean.\n"
+                +"--treatZerosAsNulls\tTransforms all zeros to nulls during QN.\n");
     }
 }
