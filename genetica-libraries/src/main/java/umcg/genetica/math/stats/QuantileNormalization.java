@@ -145,7 +145,7 @@ public class QuantileNormalization {
      */
     public static void QuantileNormAdressingNaValuesAfterInitialQN(DoubleMatrixDataset<String, String> dataset, boolean retainNA, boolean useRow) {
         //Quantile normalisation, allowing for missing values:
-
+        //ToDo: Can optimeze for alot of missing values. Tempory remove rows. Should speed it up and get better results.
         double[][] dataSorted = new double[dataset.nrRows][dataset.nrCols];
        
         System.out.println("Quantile normalization round 1");

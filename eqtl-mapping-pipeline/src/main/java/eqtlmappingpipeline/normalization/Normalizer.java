@@ -102,6 +102,7 @@ public class Normalizer {
         }
         if(treatZerosAsNulls){ 
             MatrixHandling.ReplaceZerosToNull(rawData);
+            dataContainsNulls = MatrixTools.containsNaNs(rawData);
         }
 
         if (!dataContainsNulls) {
