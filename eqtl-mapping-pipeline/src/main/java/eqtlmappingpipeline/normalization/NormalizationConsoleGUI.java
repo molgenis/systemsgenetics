@@ -165,8 +165,8 @@ public class NormalizationConsoleGUI {
                 + "--maxnrpcaremoved\tinteger\t\tMaximum number of PCs to remove\n"
                 + "--stepsizepcaremoval\tinteger\t\tStep size for PC removal\n"
                 +"\n"
-                +"Additional QN missing value parameters (only one option is allowed.) \n"
-                +"--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen only QN will be performed.\n"
+                +"Additional QN missing value parameters (Only one of the force option's is allowed at once.)\n"
+                +"--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen, without --treatZerosAsNulls, only QN will be performed.\n"
                 +"--forceReplacementOfMissingValuesSampleBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by sample mean.\n"
                 +"--forceReplacementOfMissingValuesProbeBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by probe mean.\n"
                 +"--treatZerosAsNulls\tTransforms all zeros to nulls during QN.\n");
