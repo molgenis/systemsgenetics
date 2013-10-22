@@ -109,11 +109,11 @@ public class NormalizationConsoleGUI {
         }
         if (runLogTransform && runMTransform) {
             System.out.println("Error: cant perform both log and M-value transformation");
-            System.exit(0);
+            System.exit(-1);
         }
         
         if((forceMissingValues && (forceReplacementOfMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues && (forceMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues2 && (forceReplacementOfMissingValues || forceMissingValues))){
-            System.out.println("Warning: only one missing value option allowed.");
+            System.out.println("Error: only one missing value option allowed.");
             System.exit(-1);
         }
 
