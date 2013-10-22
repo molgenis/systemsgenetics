@@ -122,7 +122,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
         if (m_settings.regressOutEQTLEffectFileName != null && m_settings.regressOutEQTLEffectFileName.trim().length() > 0) {
             EQTLRegression eqr = new EQTLRegression();
-            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_gg);
+            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg);
         }
 
         System.out.println(ConsoleGUIElems.LINE);
