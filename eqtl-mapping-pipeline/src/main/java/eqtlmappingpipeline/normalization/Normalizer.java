@@ -126,10 +126,6 @@ public class Normalizer {
         fileNamePrefix += ".QuantileNormalized";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
         
-        if(forceMissingValues && !treatZerosAsNulls){
-            System.out.println("Quantile normalization with respect to missing values performed.\n Exiting normalization because following steps can't handle missing data.");
-            System.exit(0);
-        }
         return fileNamePrefix;
     }
 

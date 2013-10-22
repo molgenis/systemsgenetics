@@ -109,18 +109,24 @@ public class NormalizationConsoleGUI {
         if (!Gpio.exists(in)) {
             System.out.println("Error: the file you specified does not exist.\n");
             System.out.println("Could not find file: " + in);
-            System.exit(0);
+            System.exit(-1);
         }
         if (runLogTransform && runMTransform) {
-            System.out.println("Error: cant perform both log and M-value transformation");
-            System.exit(-1);
+            throw new IllegalArgumentException("Error: cant perform both log and M-value transformation.");
         }
         
         if((forceMissingValues && (forceReplacementOfMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues && (forceMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues2 && (forceReplacementOfMissingValues || forceMissingValues))){
-            System.out.println("Error: only one missing value option allowed.");
-            System.exit(-1);
+            throw new IllegalArgumentException("Error: cant perform two forces on missing values.");
         }
 
+        if(forceMissingValues && !treatZerosAsNulls){
+            runLogTransform = false;
+            runMTransform = false;
+            runCenterScale = false;
+            runPCAdjustment = false;
+            runCovariateAdjustment = false;
+        }
+        
         try {
             Normalizer p = new Normalizer();
 
