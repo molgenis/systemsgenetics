@@ -601,8 +601,6 @@ public class CelltypeSpecificeQTLMappingMT {
             proxyEffectFile.writeln("#/#\tSNP\tProbe\tnrCalled\tCorrelation\tanovaFTestP\tbetaInteraction\tseInteraction\ttInteraction\tpValueInteraction\tzScoreInteraction");
         }
 
-        HashSet<String> snpsWritten = new HashSet<String>();
-
         String[] snpsPassingQCArr = snpsPassingQC.toArray(new String[0]);
         int nrSubmitted = 0;
         if (nrThreads == null) {

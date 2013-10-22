@@ -13,6 +13,7 @@ import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -366,18 +367,51 @@ public class ViolinBoxPlot {
         g2d.setComposite(alphaComposite100);
         g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
         g2d.setColor(new Color(100, 100, 100));
-        int startVal = (int) Math.ceil(minValue);
-        int endVal = (int) Math.floor(maxValue);
-        int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
-        int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
 
-        g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
-        g2d.setFont(fontBold);
-        for (int v = startVal; v <= endVal; v++) {
-            int posY = marginTop + innerHeight - (int) Math.round((double) innerHeight * (v - minValue) / (maxValue - minValue));
-            g2d.drawLine(marginLeft - 10, posY, marginLeft - 20, posY);
-            g2d.drawString(String.valueOf(v), marginLeft - 25 - (int) getWidth(String.valueOf(v), g2d.getFont()), posY + 3);
+        System.out.println("MAX: "+maxValue);
+        System.out.println("MIN: "+minValue);
+        if (maxValue <= 1 && minValue >= 0) {
+            System.out.println("New code...");
+            double diff = maxValue - minValue;
+            double unitY = determineUnit(diff);
+
+            double remain = minValue % unitY;
+            double startVal = minValue - remain;
+            remain = maxValue % unitY;
+            double endVal = maxValue + (unitY - remain);
+
+
+            int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
+            int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
+
+            System.out.println(posY1 + "\t" + posY2);
+
+
+            g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
+            g2d.setFont(fontBold);
+            DecimalFormat df = new DecimalFormat("0.0");
+            for (double v = startVal; v <= endVal; v += unitY) {
+                int posY = marginTop + innerHeight - (int) Math.round((double) innerHeight * (v - minValue) / (maxValue - minValue));
+                g2d.drawLine(marginLeft - 10, posY, marginLeft - 20, posY);
+                g2d.drawString(df.format(v), marginLeft - 25 - (int) getWidth(df.format(v), g2d.getFont()), posY + 3);
+            }
+
+        } else if (maxValue > 0 && minValue >= 0) {
+            int startVal = (int) Math.ceil(minValue);
+            int endVal = (int) Math.floor(maxValue);
+            int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
+            int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
+
+            g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
+            g2d.setFont(fontBold);
+            for (int v = startVal; v <= endVal; v++) {
+                int posY = marginTop + innerHeight - (int) Math.round((double) innerHeight * (v - minValue) / (maxValue - minValue));
+                g2d.drawLine(marginLeft - 10, posY, marginLeft - 20, posY);
+                g2d.drawString(String.valueOf(v), marginLeft - 25 - (int) getWidth(String.valueOf(v), g2d.getFont()), posY + 3);
+            }
         }
+
+
 
         g2d.translate(marginLeft - 60, marginTop + innerHeight / 2);
         g2d.rotate(-0.5 * Math.PI);
@@ -524,5 +558,13 @@ public class ViolinBoxPlot {
                 }
             }
         }
+    }
+
+    private double determineUnit(double range) {
+
+        double divisor = Math.log10(range);
+        divisor = Math.floor(divisor);
+        divisor = Math.pow(10, divisor);
+        return divisor;
     }
 }
