@@ -108,11 +108,13 @@ public class Normalizer {
         if (!dataContainsNulls) {
             QuantileNormalization.quantilenormalize(rawData);
         } else if(forceReplacementOfMissingValues){
-            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, false);
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, false, false);
         } else if(forceReplacementOfMissingValues2){
-            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, true);
-        } else if(forceMissingValues){
-            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, true, false);
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, true, false);
+        } else if(forceMissingValues && treatZerosAsNulls){
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, true, false, true);
+        }  else if(forceMissingValues){
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, true, false, false);
         } else {
             System.out.println("Warning: Your data contains missing values and missing value treatment is not selected.\n"
                     + "If desired please supply additional flag: --forceMissingValues or --forceReplacementOfMissingValues");

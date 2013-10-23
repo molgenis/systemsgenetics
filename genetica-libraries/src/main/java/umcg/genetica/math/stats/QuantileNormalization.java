@@ -145,7 +145,7 @@ public class QuantileNormalization {
      * @param useRow use row to guess the median expression value, instead of
      * column
      */
-    public static void QuantileNormAdressingNaValuesAfterInitialQN(DoubleMatrixDataset<String, String> dataset, boolean retainNA, boolean useRow) {
+    public static void QuantileNormAdressingNaValuesAfterInitialQN(DoubleMatrixDataset<String, String> dataset, boolean retainNA, boolean useRow, boolean keepZero) {
         //Quantile normalisation, allowing for missing values:
         //ToDo: Can optimeze for alot of missing values. Tempory remove rows. Should speed it up and get better results.
         
@@ -178,8 +178,8 @@ public class QuantileNormalization {
             
             double meanPerSample = 0;
             
-            if(dataForPretreatment.get(s).size()>0){
-                meanPerSample = JSci.maths.ArrayMath.median(dataForPretreatment.get(s).toArray(new double[0]));
+            if(dataForPretreatment.get(s).size()>0 && !keepZero){
+                meanPerSample = JSci.maths.ArrayMath.mean(dataForPretreatment.get(s).toArray(new double[0]));
             }
             
             for (int p = 0; p < maxNonNAvalues; ++p) {
@@ -198,9 +198,10 @@ public class QuantileNormalization {
         }
         
         double[] dist = new double[maxNonNAvalues];
-        for (int p = 0; p < maxNonNAvalues; p++) {
-            dist[p] = JSci.maths.ArrayMath.median(dataSorted[p]);
+        for (int p = 0; p < maxNonNAvalues; p++) {            
+            dist[p] = JSci.maths.ArrayMath.mean(dataSorted[p]);
         }
+
         dataSorted = null;
         
         System.out.println("done");
