@@ -45,7 +45,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 		File pathFile = new File(path);
 
-		if (path.endsWith(".vcf.zg") && pathFile.exists()) {
+		if (path.endsWith(".vcf.gz") && pathFile.exists()) {
 			return VCF;
 		}
 
