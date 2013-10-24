@@ -215,7 +215,7 @@ public class MetaQTL3 {
                 System.exit(0);
             }
             EQTLRegression eqr = new EQTLRegression();
-            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_gg);
+            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectExpressionOutputFiles, m_gg);
         }
 
         System.out.println(ConsoleGUIElems.LINE);
@@ -277,12 +277,12 @@ public class MetaQTL3 {
                 boolean identicalMapping = true;
                 boolean snpOk = false;
                 String d1SNP = snps[s];
-                if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP)) && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[0].getGenotypeData().getChr(s) == m_settings.confineToSNPsThatMapToChromosome)) {
+                if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP)) && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[0].getGenotypeData().getChr(s).equals(m_settings.confineToSNPsThatMapToChromosome))) {
                     for (int d = 1; d < m_gg.length; d++) {
                         Integer d2SNPId = m_gg[d].getGenotypeData().getSnpToSNPId().get(d1SNP);
                         if (d2SNPId == null) {
                             presentInAllDatasets = false;
-                        } else if (m_gg[d].getGenotypeData().getChr(d2SNPId) != m_gg[0].getGenotypeData().getChr(s) || m_gg[d].getGenotypeData().getChrPos(d2SNPId) != m_gg[0].getGenotypeData().getChrPos(s)) {
+                        } else if (!m_gg[d].getGenotypeData().getChr(d2SNPId).equals(m_gg[0].getGenotypeData().getChr(s)) || m_gg[d].getGenotypeData().getChrPos(d2SNPId) != m_gg[0].getGenotypeData().getChrPos(s)) {
                             identicalMapping = false;
                         }
                     }
@@ -621,7 +621,7 @@ public class MetaQTL3 {
                     invalidMappingPosition++;
                     probeLog.writeln("Removing probe:\t" + probe + "\t has no valid mapping position in any dataset: " + mappingOutput);
                 }
-            } else if (m_settings.confineToProbesThatMapToChromosome != null && chr != m_settings.confineToProbesThatMapToChromosome) {
+            } else if (m_settings.confineToProbesThatMapToChromosome != null && !chr.equals(m_settings.confineToProbesThatMapToChromosome)) {
                 // check whether this chromosome was requested to be analysed
                 includeProbe = false;
                 mapToWrongChromosome++;
@@ -698,10 +698,6 @@ public class MetaQTL3 {
         Descriptives.zScoreToPValue();
 
         boolean permuting = false;
-
-        System.gc();
-        System.gc();
-        System.gc();
 
         System.out.println("Will write output to dir: " + m_settings.outputReportsDir);
 
@@ -1070,8 +1066,8 @@ public class MetaQTL3 {
         excludedSNPs.close();
 
 
-        System.out.println("- The final number of SNPs to test: " + m_workPackages.length);
-        System.out.println("- The final number of SNP-Probe combinations: " + maxNrTestsToPerform);
+        System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
+        System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
     }
 
     protected void printSummary() {
@@ -1089,8 +1085,8 @@ public class MetaQTL3 {
         System.out.print("\nTotals\n" + ConsoleGUIElems.DOUBLELINE);
         System.out.println("Total number of datasets:\t" + m_gg.length);
         System.out.println("Total number of samples:\t" + totalSamples);
-        System.out.println("Final number of SNPs to test:\t" + m_workPackages.length);
-        System.out.println("Final number of Probes to test:\t" + m_probeList.length);
+        System.out.println("Maximum number of SNPs to test:\t" + m_workPackages.length);
+        System.out.println("Maximum number of Probes to test:\t" + m_probeList.length);
 
         if (totalSamples == 0) {
             System.err.println("ERROR!: No samples detected");

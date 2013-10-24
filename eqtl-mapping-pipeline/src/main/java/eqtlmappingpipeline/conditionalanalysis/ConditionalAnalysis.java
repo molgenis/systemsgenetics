@@ -354,9 +354,6 @@ public class ConditionalAnalysis extends MetaQTL3 {
 
     private void reinit(EQTL[] regressthis) throws IOException, Exception {
         m_gg = null;
-        System.gc();
-        System.gc();
-        System.gc();
 
         int numDatasets = m_settings.datasetSettings.size();
         m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];

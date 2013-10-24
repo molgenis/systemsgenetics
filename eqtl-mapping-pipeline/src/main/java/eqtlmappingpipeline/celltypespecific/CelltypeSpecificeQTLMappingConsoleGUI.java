@@ -30,11 +30,11 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
         String in = null;
         String gte = null;
         String snpprobecombofile = null;
-
-        String inexppccorrected = null;
+        String covariates = null;
+        String inexp = null;
         RUNMODE step = null;
 
-        boolean matchCovariateAndExpressionDataOnMarkerName = false;
+        boolean testAllCovariatesInCovariateData = false;
         Integer nrThreads = null;
 
 
@@ -52,10 +52,12 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                 } else if (val.equals("mapeqtls")) {
                     step = RUNMODE.CELLTYPESPECIFICEQTLMAPPING;
                 }
-            } else if (arg.equals("--inexppccorrected")) {
-                inexppccorrected = val;
             } else if (arg.equals("--inexpraw")) {
                 inexpraw = val;
+            } else if (arg.equals("--covariates")) {
+                covariates = val;
+            } else if (arg.equals("--inexp")) {
+                inexp = val;
             } else if (arg.equals("--out")) {
                 out = val;
             } else if (arg.equals("--in")) {
@@ -70,8 +72,8 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                 gte = val;
             } else if (arg.equals("--snpprobe")) {
                 snpprobecombofile = val;
-            } else if (arg.equals("--matchCovariateNames")) {
-                matchCovariateAndExpressionDataOnMarkerName = true;
+            } else if (arg.equals("--testAllCovariates")) {
+                testAllCovariatesInCovariateData = true;
             } else if (arg.equals("--threads")) {
                 try {
                     nrThreads = Integer.parseInt(val);
@@ -119,12 +121,12 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
             } else if (step == RUNMODE.CELLTYPESPECIFICEQTLMAPPING) {
                 System.out.println("Cell type specific cis-eQTL mapping");
                 boolean kill = false;
-                if (inexpraw == null) {
-                    System.err.println("Error: please supply --inexpraw");
+                if (covariates == null) {
+                    System.err.println("Error: please supply --covariates");
                     kill = true;
                 }
-                if (inexppccorrected == null) {
-                    System.err.println("Error: please supply --inexppccorrected");
+                if (inexp == null) {
+                    System.err.println("Error: please supply --inexp");
                     kill = true;
                 }
                 if (out == null) {
@@ -132,14 +134,15 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                     kill = true;
                 }
                 if (cellcountfile == null) {
-                    System.err.println("Error: please supply --cellcounts");
-                    kill = true;
+//                    System.err.println("Warning: yo please supply --cellcounts");
+                    //kill = true;
                 }
                 if (kill) {
                     System.err.println("");
                     printUsage();
                 } else {
-                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, matchCovariateAndExpressionDataOnMarkerName);
+                    qmt.runCelltypeSpecificEQTLMapping(inexp, covariates, in, gte, snpprobecombofile, nrThreads, out, testAllCovariatesInCovariateData);
+//                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                 }
 
             }
@@ -168,7 +171,7 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
 
         System.out.print("Step 2: Mapping eQTLs\n" + ConsoleGUIElems.LINE);
         System.out.println("--step mapeqtls\t\t\t\tTell the program to map eQTLs.\n"
-                + "--inexppccorrected\tdir\t\tLocation of the principal component corrected gene expression data\n"
+                + "--inexp\tdir\t\tLocation of the dependent dataset\n"
                 + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
                 + "--gte\t\t\tString\t\tLocation of the genotype to expression coupling file\n"
                 + "--in\t\t\tdir\t\tLocation of the genotype data\n"
@@ -176,8 +179,7 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
                 + "--cellcounts\t\tString\t\tLocation of the cell count (or cell count proxy) file (optional)\n"
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
-                + "--matchCovariateNames\t\tMatch covariate names to names in the expression data (default is off)\n"
-                //+ "--combineAllCovariatesInSingleModel\t\tCurrently not implemented"
+                + "--testAllCovariates\t\tThis tests all covariates in covariate dataset (default only tests covariates matching to probes in --snpprobe)\n" //+ "--combineAllCovariatesInSingleModel\t\tCurrently not implemented"
                 );
 
     }

@@ -362,11 +362,7 @@ class CalculationThread extends Thread {
             r.zscores[d][p] = Double.NaN;
             r.correlations[d][p] = Double.NaN;
         } else {
-            testsPerformed++;
-
-//            long t3 = System.nanoTime();
-
-
+            //            long t3 = System.nanoTime();
             double correlation = Correlation.correlate(x, y, varianceX, varianceY);
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
@@ -519,6 +515,10 @@ class CalculationThread extends Thread {
         // per probe, convert to p-value
         int numProbes = dsResults.zscores[0].length;
 
+
+        boolean hasResults = false;
+
+
         for (int p = 0; p < numProbes; p++) {
             int nrDatasetsPassingQC = 0;
             int nrTotalSamples = 0;
@@ -555,6 +555,8 @@ class CalculationThread extends Thread {
             }
 
             if (nrDatasetsPassingQC > 0 && nrTotalSamples > 0) {
+                testsPerformed++;
+                hasResults = true;
                 double sqrtSample = Descriptives.getSqrt(nrTotalSamples);
                 double zScore = zSum / sqrtSample;
                 double zScoreAbsolute = zSumAbsolute / sqrtSample;
@@ -579,9 +581,13 @@ class CalculationThread extends Thread {
             }
             // calculate the weighted Z-score
 
+
         }
 
+        wp.setHasResults(hasResults);
+
         wp.setResult(dsResults);
+
     }
 
     private void ploteQTL(WorkPackage wp, int p) {

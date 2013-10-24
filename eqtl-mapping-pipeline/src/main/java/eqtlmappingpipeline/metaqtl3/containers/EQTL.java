@@ -36,6 +36,7 @@ public class EQTL implements Comparable<EQTL> {
         correlations = null;
     }
 
+    @Override
     public int compareTo(EQTL o) {
         if (pvalue == o.pvalue) {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
@@ -174,7 +175,7 @@ public class EQTL implements Comparable<EQTL> {
 
             String eQTLType = "trans";
             if (rsChr != null && probeChr != null && probeChrPos != null && rsChrPos != null) {
-                if (rsChr == probeChr && Math.abs(probeChrPos - rsChrPos) < maxCisDistance) {
+                if (rsChr.equals(probeChr) && Math.abs(probeChrPos - rsChrPos) < maxCisDistance) {
                     eQTLType = "cis";
                 }
             }

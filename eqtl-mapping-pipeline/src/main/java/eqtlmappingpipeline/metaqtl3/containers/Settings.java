@@ -47,7 +47,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public Byte confineToSNPsThatMapToChromosome;                               // Confine SNP to be assessed to SNPs mapped on this chromosome
     public boolean expressionDataLoadOnlyProbesThatMapToChromosome = false;    // Only load expression data for probes with a known chromosome mapping
     public HashSet<String> tsSNPsConfine;                           // Confine analysis to the SNPs in this hash
-    public HashSet<String> tsProbesConfine;                         // Confine analysis to the probes in this hash
     public HashMap<String, HashSet<String>> tsSNPProbeCombinationsConfine;           // Confine analysis to the combinations of SNP and Probes in this hash
     // plots
     public double plotOutputPValueCutOff;                                      // Use this p-value as a cutoff for drawing plots
@@ -433,7 +432,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                         }
                     } 
                 }
+                elems = in.readLineElemsReturnReference(TextFile.tab);
             }
+            in.close();
         }
 
         

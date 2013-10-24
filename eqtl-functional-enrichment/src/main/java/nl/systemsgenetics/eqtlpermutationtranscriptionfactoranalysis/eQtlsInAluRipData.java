@@ -23,6 +23,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.genomicboundaries.GenomicBoundaries;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
+import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.math.stats.FisherExactTest;
@@ -323,6 +324,63 @@ public class eQtlsInAluRipData {
 	/*
 	 * =========================================================================
 	 * = END: FISHER EXACT TEST CODE.
+	 * =========================================================================
+	 */
+	
+	
+	
+	
+	
+	/*
+	 * =========================================================================
+	 * = START: SHARED PROBES CODE.
+	 * =========================================================================
+	 */
+	public HashSet<String> makeProbesList(String dataFile)throws IOException{
+		String fileLine;
+		String[] fileLineData;
+		char a = '#';
+		HashSet<String> probesList = new HashSet<String>();
+		
+		TextFile tf = new TextFile(dataFile, false);
+		while((fileLine=tf.readLine())!=null){
+			if(a != '#'){
+				fileLineData = TAB_PATTERN.split(fileLine);
+				probesList.add(new String(fileLineData[4]));
+			}
+			else{
+				a = '!';
+			}
+		}
+		return probesList;
+	}
+	
+	
+	public HashSet<String> getSharedProbes(String eQtlProbeFile, String permutationDataLocation)throws IOException{
+		HashSet<String> eqtlProbes = makeProbesList(eQtlProbeFile);
+		HashSet<String> permutationProbes = new HashSet<String>();
+		for(int n=1;n<=100;n++){
+			HashSet<String> tmpProbes = makeProbesList(permutationDataLocation + "PermutedEQTLsPermutationRound" + n + ".txt.gz");
+			if(n > 1){
+				permutationProbes.retainAll(tmpProbes);
+			}
+			else{
+				permutationProbes = tmpProbes;
+			}
+		}
+		
+		if(eqtlProbes.size() > permutationProbes.size()){
+			eqtlProbes.retainAll(permutationProbes);
+			return eqtlProbes;
+		}
+		else{
+			permutationProbes.retainAll(eqtlProbes);
+			return permutationProbes;
+		}
+	}
+	/*
+	 * =========================================================================
+	 * = END: SHARED PROBES CODE.
 	 * =========================================================================
 	 */
 }

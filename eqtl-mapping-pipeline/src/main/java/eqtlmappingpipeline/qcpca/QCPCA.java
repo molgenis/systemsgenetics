@@ -55,7 +55,7 @@ public class QCPCA {
 
 
 
-            ArrayList<Integer> ldSNPs = new ArrayList<Integer>();
+            ArrayList<Integer> ldSNPs;
             int numsamples = ds.getTotalGGSamples();
             int[] indWGA = ds.getExpressionToGenotypeIdArray();
 

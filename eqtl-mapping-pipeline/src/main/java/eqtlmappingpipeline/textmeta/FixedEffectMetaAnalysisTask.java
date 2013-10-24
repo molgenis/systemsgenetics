@@ -70,10 +70,12 @@ public class FixedEffectMetaAnalysisTask implements Callable<String> {
                 }
 
                 // flip the allele if required
-                if (flipZ) {
-                    zscores[q] = -e.getZscore();
-                } else {
-                    zscores[q] = e.getZscore();
+                if (flipZ != null) {
+                    if (flipZ) {
+                        zscores[q] = -e.getZscore();
+                    } else {
+                        zscores[q] = e.getZscore();
+                    }
                 }
 
                 samplesize[q] = e.getDatasetsSamples()[0];

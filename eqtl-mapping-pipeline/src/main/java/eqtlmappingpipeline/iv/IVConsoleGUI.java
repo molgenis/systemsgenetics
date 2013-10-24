@@ -66,7 +66,7 @@ public class IVConsoleGUI {
                 System.out.println("ERROR: Please supply settings file (--settings settings.xml) or --in and --out");
                 printUsage();
             } else {
-                IVAnalysis a = new IVAnalysis(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
+                new IVAnalysis(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
             }
         } catch (Exception e) {
             e.printStackTrace();

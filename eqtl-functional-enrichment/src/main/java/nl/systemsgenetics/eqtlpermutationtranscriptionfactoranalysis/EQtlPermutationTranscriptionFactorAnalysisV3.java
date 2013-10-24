@@ -4,8 +4,12 @@
  */
 package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
@@ -26,6 +31,7 @@ import umcg.genetica.io.regulomedb.RegulomeDbEntry;
 import umcg.genetica.io.regulomedb.RegulomeDbFile;
 import umcg.genetica.io.regulomedb.RegulomeDbFiles;
 import umcg.genetica.io.regulomedb.RegulomeDbSupportingData;
+import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.math.stats.FisherExactTest;
@@ -35,6 +41,7 @@ import umcg.genetica.math.stats.FisherExactTest;
  * @author Matthieu
  */
 public class EQtlPermutationTranscriptionFactorAnalysisV3 {
+	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
 	
 	public static void main(String[] args)throws IOException{
 		/*
@@ -47,81 +54,67 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 		 */
 		//EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[0], args[1], args[2], args[3], Integer.parseInt(args[4]), Double.valueOf(args[5]));
 		EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 =
-				new EQtlPermutationTranscriptionFactorAnalysisV3("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
+				new EQtlPermutationTranscriptionFactorAnalysisV3("", "C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
 				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\PermutedEQTLsPermutationRound8.txt",
-				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", "C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\", 0.8);
+				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", "C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\", 0.8, "");
 	}
 	
 	
-	
-	public EQtlPermutationTranscriptionFactorAnalysisV3(String eQtlFile, String permutationFile, String genotypeLocation, String regulomeDbLocation, double r2Cutoff)throws IOException{
+	public EQtlPermutationTranscriptionFactorAnalysisV3(String eQtlProbeLevelFile, String eQtlFile, String permutationFile, String genotypeLocation, String regulomeDbLocation, double r2Cutoff, String outputFile)throws IOException{
+		//STEP 1.: READ REGULOMEDB DATA.
 		ArrayList<RegulomeDbFile> regulomeDbFiles = new ArrayList<RegulomeDbFile>();
 		regulomeDbFiles.add(new RegulomeDbFile(new File(regulomeDbLocation + "RegulomeDB.dbSNP132.b36.Category1.txt")));
 		regulomeDbFiles.add(new RegulomeDbFile(new File(regulomeDbLocation + "RegulomeDB.dbSNP132.b36.Category2.txt")));
 		regulomeDbFiles.add(new RegulomeDbFile(new File(regulomeDbLocation + "RegulomeDB.dbSNP132.b36.Category3.txt")));
 		regulomeDbFiles.add(new RegulomeDbFile(new File(regulomeDbLocation + "RegulomeDB.dbSNP132.b36.Category4.txt")));
 		regulomeDbFiles.add(new RegulomeDbFile(new File(regulomeDbLocation + "RegulomeDB.dbSNP132.b36.Category5.txt")));
-		
-		
-		//STEP 1.: READ REGULOMEDB DATA.
-		System.out.println("[O]:> Read RegulomeDB data.");
-		//HashMap<String, TreeMap<Integer, ArrayList<RegulomeDbEntry>>> regulomeDbData = readRegulomeDbData(regulomeDbFiles);
 		HashMap<String, TreeMap<Integer, String[]>> regulomeDbData = readRegulomeDbData(regulomeDbFiles);
 		
 		
-		//STEP 2.: READ THE EQTL DATA.
-		System.out.println("[E]:> Read the eQTL data.");
+		//STEP 2.: GET A LIST OF PROBES SHARED BY ALL DATASETS.
+		HashSet<String> sharedProbes = getSharedProbes(eQtlProbeLevelFile, permutationFile);
+		
+		
+		//STEP 3.: READ THE EQTL FDR 0.05 DATA AND FILTER ON TOP EFFECTS AND NON TOP EFFECTS FOR SHARED PROBES.	
 		EQTL[] eqtls = readEQtlData(eQtlFile);
-		
-		System.out.println("[E]:> Make a list of all eQTL rsIDs.");
 		Set<String> rsIdList = makeRsIdList(eqtls);
-		
-		System.out.println("[E]:> Filter out the top effects per probe.");
-		HashMap<String, EQTL> topEQtlEffects = getTopEQtlEffects(eqtls);
-		
-		System.out.println("[E]:> Get the non top effects.");
-		HashMap<String, HashSet<Integer>> nonTopEqtlEffects = getNonTopEqtlEffects(eqtls, topEQtlEffects);
+		HashMap<String, EQTL> topEqtlEffects = getTopEffects(eqtls, sharedProbes);
+		HashMap<String, HashSet<Integer>> nonTopEqtlEffects = getNonTopEffects(eqtls, topEqtlEffects);
 		
 		
-		//STEP 3.: READ THE GENOTYPE DATA.
-		System.out.println("[O]:> Read Genotype matrix data.");
-		RandomAccessGenotypeData genotypeData = readEQtlGenotypeData(genotypeLocation, rsIdList);
-		HashMap<String, GeneticVariant> variantIdMap = genotypeData.getVariantIdMap();
-		
-		//STEP 4.: FIND LD SNPS FOR THE TOP EQTL EFFECTS AND FIND REGULOMEDB HITS.
-		HashMap<String, Integer> eqtlCounts = new HashMap<String, Integer>();
-		System.out.println("[E]:> Made the counts map of size " + eqtlCounts.size() + " and will search through the data.");
-		getTranscriptionFactorCountsV2(topEQtlEffects, nonTopEqtlEffects, eqtlCounts, genotypeData, regulomeDbData, r2Cutoff);
+		//STEP 4.: READ THE GENOTYPE MATRIX DATA.
+		RandomAccessGenotypeData genotypeMatrixData = readEQtlGenotypeData(genotypeLocation, rsIdList);
 		
 		
-		//STEP 5.: PERFORM THE OPERATION FOR THE PERMUTATION DATA.
+		//STEP 5.: PERFORM ANALYSIS FOR EQTL DATA.
+		HashMap<String, Integer> eQtlCounts = new HashMap<String, Integer>();
+		getTranscriptionFactorCounts(topEqtlEffects, nonTopEqtlEffects, eQtlCounts, genotypeMatrixData, regulomeDbData, r2Cutoff);
 		
-		System.out.println("[O]:> Start the analysis for the permutation data.");
+		
+		//STEP 6.: PERFORM ANALYSIS FOR PERMUTATION DATA.
 		HashMap<String, Integer> permutationCounts = new HashMap<String, Integer>();
 		for(int n=1;n<=100;n++){
 			EQTL[] permutationData;
-			HashMap<String, EQTL> topPermutationData;
+			HashMap<String, EQTL> topPermutationEffects;
 			HashMap<String, HashSet<Integer>> nonTopPermutationEffects;
 			
-			System.out.println("[P]:> Reading the permutation data for round " + n + ".");
 			permutationData = readEQtlData(permutationFile + "PermutedEQTLsPermutationRound" + n + ".txt.gz");
-			
-			System.out.println("[P]:> Filter top permutation data for round " + n + ".");
-			topPermutationData = getTopEQtlEffects(permutationData);
-			
-			System.out.println("[P]:> Filter the non top permutation data for round " + n + ".");
-			nonTopPermutationEffects = getNonTopEqtlEffects(permutationData, topPermutationData);
-			
-			System.out.println("[P]:> Get the transcription factors for round " + n + ".");
-			getTranscriptionFactorCountsV2(topPermutationData, nonTopPermutationEffects, permutationCounts, genotypeData, regulomeDbData, r2Cutoff);
+			topPermutationEffects = getTopEffects(permutationData, sharedProbes);
+			nonTopPermutationEffects = getNonTopEffects(permutationData, topPermutationEffects);
+			getTranscriptionFactorCounts(topPermutationEffects, nonTopPermutationEffects, permutationCounts, genotypeMatrixData, regulomeDbData, r2Cutoff);
 		}
 		
-		//STEP 6.: GET THE FISHER EXACT VALUES.
-		System.out.println("[O]:> Get the Fisher exact pvalues.");
-		getFisherPvalues(eqtlCounts, permutationCounts);
+		
+		//STEP 7.: PERFORM THE FISHER EXACT TEST.
+		getFisherPvalues(eQtlCounts, permutationCounts, outputFile);
 	}
 	
 	
+	/*
+	 * =========================================================================
+	 * = START: REGULOMEDB READING CODE.
+	 * =========================================================================
+	 */
 	public HashMap<String, TreeMap<Integer, String[]>> readRegulomeDbData(ArrayList<RegulomeDbFile> regulomeDbFiles){
 		HashMap<String, TreeMap<Integer, String[]>> regulomeDbData = new HashMap<String, TreeMap<Integer, String[]>>();
 		TreeMap<Integer, String[]> tmp;
@@ -141,13 +134,11 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 					tmp = regulomeDbData.get(rdbeChr);
 					tmp.put(rdbePos, transcriptionFactors);
 				}
-
 				else{
 					tmp = new TreeMap<Integer, String[]>();
 					tmp.put(rdbePos, transcriptionFactors);
 					regulomeDbData.put(rdbeChr, tmp);
 				}
-				//System.out.println("First TF: " + transcriptionFactors[0]);
 				n++;
 			}
 		}
@@ -172,21 +163,15 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 				}
 			}
 		}
-		//String[] tfsArray = new String[tfs.size()];
-		//tfsArray = tfs.toArray(tfsArray);
-		//return tfsArray;
 		return tfs.toArray( new String[tfs.size()] );
 	}
-	
-	
-	
-	
-	
 	/*
 	 * =========================================================================
-	 * = METHODS DONE HERE WORK CORRECT AND ACCORDING PATRICK PLAN.
+	 * = END: REGULOMEDB READING CODE.
 	 * =========================================================================
 	 */
+	
+	
 	
 	
 	/*
@@ -200,35 +185,30 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 	}
 	
 	
-	public HashMap<String, EQTL> getTopEQtlEffects(EQTL[] eqtls) throws IOException{
+	public HashMap<String, EQTL> getTopEffects(EQTL[] eqtls, HashSet<String> sharedProbes) throws IOException{
 		HashMap<String, EQTL> eqtlMap = new HashMap<String, EQTL>();
 		for(EQTL eqtl : eqtls){
 			
-			if( eqtlMap.containsKey(eqtl.getProbe()) ){
-				EQTL tmpEqtl = eqtlMap.get(eqtl.getProbe());
+			String eqtlProbe = eqtl.getProbe();
+			if(sharedProbes.contains(eqtlProbe)){
 				
-				if( Math.abs(eqtl.getZscore()) > Math.abs(tmpEqtl.getZscore())){
+				//Check if the eQTL for the shared probe has the highest absolute Z-Score.
+				if( eqtlMap.containsKey(eqtl.getProbe()) ){
+					EQTL tmpEqtl = eqtlMap.get(eqtl.getProbe());
+					if( Math.abs(eqtl.getZscore()) > Math.abs(tmpEqtl.getZscore())){
+						eqtlMap.put(eqtl.getProbe(), eqtl);
+					}
+				}
+				else{
 					eqtlMap.put(eqtl.getProbe(), eqtl);
 				}
-			}
-			
-			else{
-				eqtlMap.put(eqtl.getProbe(), eqtl);
 			}
 		}
 		return eqtlMap;
 	}
 	
-	public Set<String> makeRsIdList(EQTL[] eqtls){
-		Set<String> rsIdList = new HashSet<String>();
-		for(EQTL eqtl : eqtls){
-			rsIdList.add(eqtl.getRsName());
-		}
-		return rsIdList;
-	}
 	
-	
-	public HashMap<String, HashSet<Integer>> getNonTopEqtlEffects(EQTL[] eqtls, HashMap<String, EQTL> topEffects){
+	public HashMap<String, HashSet<Integer>> getNonTopEffects(EQTL[] eqtls, HashMap<String, EQTL> topEffects){
 		HashMap<String, HashSet<Integer>> otherEffects = new HashMap<String, HashSet<Integer>>();
 		HashSet<Integer> tmp;
 		int n = 0;
@@ -255,8 +235,16 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 				}
 			}
 		}
-		System.out.println("Total hits: " + n);
 		return otherEffects;
+	}
+	
+	
+	public Set<String> makeRsIdList(EQTL[] eqtls){
+		Set<String> rsIdList = new HashSet<String>();
+		for(EQTL eqtl : eqtls){
+			rsIdList.add(eqtl.getRsName());
+		}
+		return rsIdList;
 	}
 	/*
 	 * =========================================================================
@@ -273,88 +261,12 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 	}
 	
 	
-	//Provide empty countsMap as parameter for eQTLs.
+	/*
+	 * =========================================================================
+	 * = START: TRANSCRIPTION FACTOR COUNTS CODE.
+	 * =========================================================================
+	 */
 	public void getTranscriptionFactorCounts(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
-			RandomAccessGenotypeData genotypeData, HashMap<String, TreeMap<Integer, String[]>> regulomeDbData, int windowSize, double r2CutOff){
-		Ld ld = null;
-		
-		Iterator<Map.Entry<String, EQTL>> topEffectIterator = topEffectData.entrySet().iterator();
-		while(topEffectIterator.hasNext()){
-			Map.Entry<String, EQTL> topEffectDataEntry = (Map.Entry) topEffectIterator.next();
-			EQTL eqtl = topEffectDataEntry.getValue();
-			
-			//FETCH THE EQTL FROM GENOTYPE DATA.
-			String rsChr = eqtl.getRsChr().toString();
-			int rsChrPos = eqtl.getRsChrPos();
-			String rsProbe = eqtl.getProbe();
-			GeneticVariant eQtlVariant = genotypeData.getSnpVariantByPos(rsChr.toString(), rsChrPos);
-			
-			
-			
-			//CHECK IF THE GOTTEN VARIANT IS NOT NULL.
-			if(eQtlVariant != null){
-				int boundaryL = eQtlVariant.getStartPos() - windowSize;
-				int boundaryR = eQtlVariant.getStartPos() + windowSize;
-				
-				
-				//GET THE VARIANTS BY RANGE AND LOOP THROUGH THEM.
-				Iterable<GeneticVariant> variantsByRange = genotypeData.getVariantsByRange(rsChr, boundaryL, boundaryR);
-				for(GeneticVariant gv : variantsByRange){
-					
-					if(nonTopEffectData.containsKey(rsProbe)){
-						HashSet<Integer> get = nonTopEffectData.get(rsProbe);
-						
-						if(get.contains(gv.getStartPos())){
-							
-							if(eQtlVariant.isBiallelic() && gv.isBiallelic()){
-								try {
-									ld = eQtlVariant.calculateLd(gv);
-								} catch (LdCalculatorException ex) {
-									System.out.println("Error in LD calculation: " + ex.getMessage());
-									System.exit(1);
-								}
-
-
-								//CHECK IF R2 IS BIGGER THAN THE SET CUTOFF
-								if(ld.getR2() >= r2CutOff){
-									//SEARCH THROUGH REGULOMEDB
-									if(regulomeDbData.containsKey(rsChr)){
-										TreeMap<Integer, String[]> regulomeChromosomeEntries = regulomeDbData.get(rsChr);
-										Iterator<Entry<Integer, String[]>> regulomeChromosomeIterator = regulomeChromosomeEntries.entrySet().iterator();
-										
-										//PERFORM A COUNT OPERATION FOR EACH TF.
-										while(regulomeChromosomeIterator.hasNext()){
-											Entry<Integer, String[]> next = regulomeChromosomeIterator.next();
-											for(String aap : next.getValue()){
-												if(countsMap.containsKey(aap)){
-													countsMap.put(aap, countsMap.get(aap)+1);
-												}
-												else{
-													countsMap.put(aap, 1);
-												}
-											}
-										}
-									}
-									
-								}
-								//PERFORMED THE CHECK IF THE R2 IS BIGGER THAN THE SET CUTOFF.
-							}
-							
-						}
-					}
-					
-					
-				}
-				
-			}
-			
-		}
-	}
-	
-	
-	
-	
-	public void getTranscriptionFactorCountsV2(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
 			RandomAccessGenotypeData genotypeData, HashMap<String, TreeMap<Integer, String[]>> regulomeDbData, double r2CutOff){
 		Ld ld = null;
 		Iterator<Map.Entry<String, EQTL>> topEffectIterator = topEffectData.entrySet().iterator();
@@ -408,109 +320,42 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 						}
 					}
 				}
-			}
-		}
-	}
-	
-	
-	
-	
-	
-	
-	public void getTranscriptionFactorCountsV3(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
-			RandomAccessGenotypeData genotypeData, HashMap<String, TreeMap<Integer, String[]>> regulomeDbData, int windowSize, double r2CutOff){
-		Ld ld = null;
-		
-		Iterator<Map.Entry<String, EQTL>> topEffectIterator = topEffectData.entrySet().iterator();
-		while(topEffectIterator.hasNext()){
-			Map.Entry<String, EQTL> topEffectDataEntry = (Map.Entry) topEffectIterator.next();
-			EQTL eqtl = topEffectDataEntry.getValue();
-			
-			//FETCH THE EQTL FROM GENOTYPE DATA.
-			String rsChr = eqtl.getRsChr().toString();
-			int rsChrPos = eqtl.getRsChrPos();
-			String rsProbe = eqtl.getProbe();
-			GeneticVariant eQtlVariant = genotypeData.getSnpVariantByPos(rsChr.toString(), rsChrPos);
-			
-			
-			
-			//CHECK IF THE GOTTEN VARIANT IS NOT NULL.
-			if(eQtlVariant != null){
-				int boundaryL = eQtlVariant.getStartPos() - windowSize;
-				int boundaryR = eQtlVariant.getStartPos() + windowSize;
 				
-				
-				//GET THE VARIANTS BY RANGE AND LOOP THROUGH THEM.
-				
-				if(nonTopEffectData.containsKey(rsProbe)){
-					HashSet<Integer> get = nonTopEffectData.get(rsProbe);
-					
-					Iterable<GeneticVariant> variantsByRange = genotypeData.getVariantsByRange(rsChr, boundaryL, boundaryR);
-					for(GeneticVariant gv : variantsByRange){
+				//CODE TO SEARCH FOR THE TOP EFFECT.
+				if(regulomeDbData.containsKey(rsChr)){
+					TreeMap<Integer, String[]> regulomeChromosomeEntries = regulomeDbData.get(rsChr);
 
-						if(get.contains(gv.getStartPos())){
-
-							if(eQtlVariant.isBiallelic() && gv.isBiallelic()){
-								try {
-									ld = eQtlVariant.calculateLd(gv);
-								} catch (LdCalculatorException ex) {
-									System.out.println("Error in LD calculation: " + ex.getMessage());
-									System.exit(1);
-								}
-
-
-								//CHECK IF R2 IS BIGGER THAN THE SET CUTOFF
-								if(ld.getR2() >= r2CutOff){
-									//SEARCH THROUGH REGULOMEDB
-									if(regulomeDbData.containsKey(rsChr)){
-										TreeMap<Integer, String[]> regulomeChromosomeEntries = regulomeDbData.get(rsChr);
-										Iterator<Entry<Integer, String[]>> regulomeChromosomeIterator = regulomeChromosomeEntries.entrySet().iterator();
-
-										//PERFORM A COUNT OPERATION FOR EACH TF.
-										while(regulomeChromosomeIterator.hasNext()){
-											Entry<Integer, String[]> next = regulomeChromosomeIterator.next();
-											for(String aap : next.getValue()){
-												if(countsMap.containsKey(aap)){
-													countsMap.put(aap, countsMap.get(aap)+1);
-												}
-												else{
-													countsMap.put(aap, 1);
-												}
-											}
-										}
-									}
-
-								}
-								//PERFORMED THE CHECK IF THE R2 IS BIGGER THAN THE SET CUTOFF.
+					if(regulomeChromosomeEntries.containsKey(rsChrPos)){
+						String[] transcriptionFactors = regulomeChromosomeEntries.get(rsChrPos);
+						for(String tf : transcriptionFactors){
+							if(countsMap.containsKey(tf)){
+								countsMap.put(tf, countsMap.get(tf)+1);
 							}
-
+							else{
+								countsMap.put(tf, 1);
+							}
 						}
 					}
-
-
 				}
 				
 			}
-			
 		}
 	}
+	/*
+	 * =========================================================================
+	 * = END: TRANSCRIPTION FACTOR COUNTS CODE.
+	 * =========================================================================
+	 */
 	
 	
 	
 	
 	
-	public void printCountsMap(HashMap<String, Integer> counts){
-		Iterator<Map.Entry<String, Integer>> countsIter = counts.entrySet().iterator();
-		int n = 1;
-		System.out.println("Entries in count map of size " + counts.values().size() + ".");
-		while(countsIter.hasNext()){
-			Map.Entry<String, Integer> next = countsIter.next();
-			System.out.println(n + ". " + next.getKey() + ": " + next.getValue());
-			n++;
-		}
-	}
-	
-	
+	/*
+	 * =========================================================================
+	 * = START: FISHER EXACT TEST CODE.
+	 * =========================================================================
+	 */
 	public int getTotalHits(HashMap<String, Integer> countsMap){
 		int total = 0;
 		
@@ -523,11 +368,11 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 	}
 	
 	
-	public void getFisherPvalues(HashMap<String, Integer> eQtlCounts, HashMap<String, Integer> permutationCounts){
-		//HashMap<String, Double> fisherPValues = new HashMap<String, Double>();
+	public void getFisherPvalues(HashMap<String, Integer> eQtlCounts, HashMap<String, Integer> permutationCounts, String outputFile)throws IOException{
 		int totalEQtlCounts = getTotalHits(eQtlCounts);
 		int totalPermutationCounts = getTotalHits(permutationCounts);
 		
+		PrintWriter fisherWriter = new PrintWriter(new FileWriter(outputFile));
 		for(Iterator<Map.Entry<String, Integer>>iter=eQtlCounts.entrySet().iterator();iter.hasNext();){
 			Map.Entry<String, Integer> eQtlCountsEntry = iter.next();
 			
@@ -538,12 +383,72 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 				
 				//Perform Fisher Exact test.
 				FisherExactTest fet = new FisherExactTest();
-				double fisherPValue = fet.getFisherPValue(eQtlCount, (totalEQtlCounts - eQtlCount), permutationCount, (totalPermutationCounts - permutationCount));
-				//fisherPValues.put(tf, fisherPValue);
-				System.out.println(tf + "\t" + fisherPValue);
+				double fisherPValue = fet.getFisherPValue(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts);
+				fisherWriter.println(tf + "\t" + fisherPValue);
+			}
+		}
+		fisherWriter.close();
+	}
+	/*
+	 * =========================================================================
+	 * = END: FISHER EXACT TEST CODE
+	 * =========================================================================
+	 */
+	
+	
+	
+	
+	
+	/*
+	 * =========================================================================
+	 * = START: SHARED PROBES CODE.
+	 * =========================================================================
+	 */
+	public HashSet<String> makeProbesList(String dataFile)throws IOException{
+		String fileLine;
+		String[] fileLineData;
+		char a = '#';
+		HashSet<String> probesList = new HashSet<String>();
+		
+		TextFile tf = new TextFile(dataFile, false);
+		while((fileLine=tf.readLine())!=null){
+			if(a != '#'){
+				fileLineData = TAB_PATTERN.split(fileLine);
+				probesList.add(new String(fileLineData[4]));
+			}
+			else{
+				a = '!';
+			}
+		}
+		return probesList;
+	}
+	
+	
+	public HashSet<String> getSharedProbes(String eQtlProbeFile, String permutationDataLocation)throws IOException{
+		HashSet<String> eqtlProbes = makeProbesList(eQtlProbeFile);
+		HashSet<String> permutationProbes = new HashSet<String>();
+		for(int n=1;n<=100;n++){
+			HashSet<String> tmpProbes = makeProbesList(permutationDataLocation + "PermutedEQTLsPermutationRound" + n + ".txt.gz");
+			if(n > 1){
+				permutationProbes.retainAll(tmpProbes);
+			}
+			else{
+				permutationProbes = tmpProbes;
 			}
 		}
 		
+		if(eqtlProbes.size() > permutationProbes.size()){
+			eqtlProbes.retainAll(permutationProbes);
+			return eqtlProbes;
+		}
+		else{
+			permutationProbes.retainAll(eqtlProbes);
+			return permutationProbes;
+		}
 	}
-	
+	/*
+	 * =========================================================================
+	 * = END: SHARED PROBES CODE.
+	 * =========================================================================
+	 */
 }
