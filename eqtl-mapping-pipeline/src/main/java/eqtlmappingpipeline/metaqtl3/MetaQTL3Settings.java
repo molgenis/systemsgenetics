@@ -55,6 +55,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean confineProbesToProbesPresentInAllDatasets;
     public ArrayList<TriTyperGeneticalGenomicsDatasetSettings> datasetSettings;
     public String regressOutEQTLEffectFileName;
+    public boolean regressOutEQTLEffectExpressionOutputFiles;
     public Double snpQCCallRateThreshold = 0.95;
     public Double snpQCHWEThreshold = 0.0001;
     public Double snpQCMAFThreshold = 0.05;
@@ -68,7 +69,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean provideBetasAndStandardErrors = true;
     public boolean equalRankForTies = false;
     public boolean createQQPlot = true;
-	public boolean createDotPlot = true;
+    public boolean createDotPlot = true;
 
     public MetaQTL3Settings() {
     }
@@ -136,12 +137,12 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             createQQPlot = config.getBoolean("defaults.analysis.createqqplot");
         } catch (Exception e) {
         }
-		
-		try {
+
+        try {
             createDotPlot = config.getBoolean("defaults.analysis.createdotplot");
         } catch (Exception e) {
         }
-        
+
         try {
             runOnlyPermutations = config.getBoolean("defaults.analysis.onlypermutations", false);
         } catch (Exception e) {
@@ -229,7 +230,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         }
 
         if (nrthread == null) {
-            nrThreads = (Runtime.getRuntime().availableProcessors()-1);
+            nrThreads = (Runtime.getRuntime().availableProcessors() - 1);
         } else {
             int numProcs = Runtime.getRuntime().availableProcessors();
             if (nrthread > numProcs || nrthread < 1) {
@@ -507,7 +508,11 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             regressOutEQTLEffectFileName = config.getString("defaults.analysis.regressOutEQTLEffects");
         } catch (Exception e) {
         }
-
+        regressOutEQTLEffectExpressionOutputFiles = false;
+        try {
+            regressOutEQTLEffectExpressionOutputFiles = config.getBoolean("defaults.analysis.regressOutEQTLEffectsOutputDir");
+        } catch (Exception e) {
+        }
 
         // dataset parameters
         int i = 0;
@@ -561,7 +566,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 if (settingsTextToReplace != null && expressionData.contains(settingsTextToReplace)) {
                     probeannotation = probeannotation.replace(settingsTextToReplace, settingsTextReplaceWith);
                 }
-                if(probeannotation.length() == 0){
+                if (probeannotation.length() == 0) {
                     probeannotation = null;
                 }
             } catch (Exception e) {
@@ -584,9 +589,9 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 System.exit(-1);
             }
 
-            
+
             Gpio.formatAsDirectory(dataloc);
-            
+
 
             s.genotypeLocation = dataloc;
 

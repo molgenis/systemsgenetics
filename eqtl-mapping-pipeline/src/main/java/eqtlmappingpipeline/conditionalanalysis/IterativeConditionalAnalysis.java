@@ -99,9 +99,6 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
     private void reinit() throws IOException, Exception {
         m_gg = null;
-        System.gc();
-        System.gc();
-        System.gc();
 
         int numDatasets = m_settings.datasetSettings.size();
         m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];
@@ -125,7 +122,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
         if (m_settings.regressOutEQTLEffectFileName != null && m_settings.regressOutEQTLEffectFileName.trim().length() > 0) {
             EQTLRegression eqr = new EQTLRegression();
-            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_gg);
+            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg);
         }
 
         System.out.println(ConsoleGUIElems.LINE);

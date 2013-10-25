@@ -6,6 +6,7 @@ package eqtlmappingpipeline.metaqtl3;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import umcg.genetica.console.ProgressBar;
@@ -17,6 +18,7 @@ import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.math.PCA;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Regression;
 
 /**
@@ -50,7 +52,9 @@ public class EQTLRegression {
         regressOutEQTLEffects();
     }
 
-    public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
+    public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
+        
+        
         this.gg = gg;
         System.out.println("\n\n\nRemoving eQTL effects from the following eQTL file: '" + regressOutEQTLEffectFileName);
         eQTLTextFile in = new eQTLTextFile(regressOutEQTLEffectFileName, eQTLTextFile.R);
@@ -58,6 +62,20 @@ public class EQTLRegression {
         in.close();
         System.out.println("Number of eQTLs to regress out found in file:\t" + eqtlsToRegressOut.length);
         regressOutEQTLEffects();
+        if(outputfiles){
+            for(int d=0;d<gg.length;d++){
+                TriTyperGeneticalGenomicsDataset ds = gg[d];
+                TriTyperExpressionData dsexp = ds.getExpressionData();
+                double[][] matrix = dsexp.getMatrix();
+                String[] probes = dsexp.getProbes();
+                String[] individuals = dsexp.getIndividuals();
+                String filename = ds.getSettings().expressionLocation;
+                DoubleMatrixDataset<String,String> dsout = new DoubleMatrixDataset<String, String>(matrix, Arrays.asList(probes), Arrays.asList(individuals));
+                dsout.recalculateHashMaps();
+                dsout.save(filename+"-EQTLEffectsRemoved.txt.gz");
+            }
+        }
+    
     }
 
     /**

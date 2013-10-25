@@ -217,7 +217,7 @@ public class MetaQTL4 {
                 System.exit(0);
             }
             EQTLRegression eqr = new EQTLRegression();
-            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_gg);
+            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg);
         }
 
         System.out.println(ConsoleGUIElems.LINE);
