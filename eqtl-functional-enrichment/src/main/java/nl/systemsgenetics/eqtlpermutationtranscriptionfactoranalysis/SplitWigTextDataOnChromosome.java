@@ -55,9 +55,9 @@ public class SplitWigTextDataOnChromosome {
 					//Change the saved data to hold the next batch of data.
 					dataToWriteToFile = new ArrayList<String>();
 					dataToWriteToFile.add(fileLine);
-					previousChr = chr;
+					//previousChr = chr;
 				}
-				
+				previousChr = chr;
 			}
 			
 		}

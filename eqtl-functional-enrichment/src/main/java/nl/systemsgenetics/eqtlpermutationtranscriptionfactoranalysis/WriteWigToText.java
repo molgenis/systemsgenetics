@@ -25,7 +25,7 @@ public class WriteWigToText {
 	 * @throws IOException 
 	 */
 	public void writeWigToText(String wigFile, String textFileOutLocation)throws IOException{
-		WigFile wf = new WigFile("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\3.histones\\Gm12864Ctcf.wig", false);
+		WigFile wf = new WigFile(wigFile, false);
 		
 		//TextFile outputFile = new TextFile(textFileOut, true);
 		TextFile outputFile = new TextFile(textFileOutLocation, true);
@@ -34,7 +34,7 @@ public class WriteWigToText {
 		while(n < totalN){
 			UCSCDataObject ucscdo = wf.parseLn();
 			if(ucscdo != null){
-				outputFile.write(ucscdo.getChr() + "\t" + ucscdo.getPositionStart() + "\t" + ucscdo.getPositionEnd() + "\t" + ucscdo.getValue());
+				outputFile.write(ucscdo.getChr() + "\t" + ucscdo.getPositionStart() + "\t" + ucscdo.getPositionEnd() + "\t" + ucscdo.getValue() + "\n");
 			}
 			n++;
 		}

@@ -4,39 +4,21 @@
  */
 package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 
-import java.io.BufferedReader;
+import com.google.common.primitives.Doubles;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
-import org.molgenis.genotype.util.Ld;
-import org.molgenis.genotype.util.LdCalculatorException;
-import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.genomicboundaries.GenomicBoundaries;
-import umcg.genetica.io.regulomedb.RegulomeDbEntry;
-import umcg.genetica.io.regulomedb.RegulomeDbFile;
-import umcg.genetica.io.regulomedb.RegulomeDbFiles;
-import umcg.genetica.io.regulomedb.RegulomeDbSupportingData;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
-import umcg.genetica.math.stats.FisherExactTest;
 
 /**
  *
@@ -65,44 +47,58 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 		 * args[7]: output file location.
 		 */
 		
-		if(args.length > 0){
+		if(args.length == 3 || args.length == 8){
+			
+			//START CHECKING WHICH TYPE OF ANALYSIS TO PERFORM.
 			if(args[0].equalsIgnoreCase("tf")){
 				EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
 			}
+			
 			else if(args[0].equalsIgnoreCase("gencode")){
 				eQtlsInEncodeAnnotationData eqiead = new eQtlsInEncodeAnnotationData(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
 			}
+			
 			else if(args[0].equalsIgnoreCase("dbrip")){
 				//eQtlsInAluRipData eqiard = new eQtlsInAluRipData(args[1], args[2], args[3], args[4], Double.valueOf(args[5]));
 				System.out.println("This analysis type is disabled for now. No interesting results were produced earlier.");
 			}
+			
 			else if(args[0].equalsIgnoreCase("repeats")){
 				//Make call to perform analysis on repeat data from dasha.
 				eQtlsInRepeatData eqird = new eQtlsInRepeatData(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
 			}
+			
 			else if(args[0].equalsIgnoreCase("pseudogenes")){
 				eQtlsInPseudogeneOrgData eqipod = new eQtlsInPseudogeneOrgData(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
 			}
-			else if(args[0].equalsIgnoreCase("histones")){
-				EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
-				double[] eQtlHitScores;
-				double[] permutationHitScores;
+			
+			else if(args[0].equalsIgnoreCase("histones") || args[0].equalsIgnoreCase("dnase") || args[0].equalsIgnoreCase("methylation")){
+				//GET THE PROBES SHARED BY ALL USED DATASETS.
+				EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
 				HashSet<String> sharedProbes = eqptfa.getSharedProbes(args[1], args[3]);
-				
-				//Read the real eQTL data.
+
+				//READ THE EQTL DATA AND FILTER THE SET ON TOP AND NON TOP EQTL EFFECTS.
 				eQtlDataParser eqdp = new eQtlDataParser();
 				EQTL[] eqtls = eqdp.readEQtlData(args[2]);
 				Set<String> rsIdList = eqdp.makeRsIdList(eqtls);
 				HashMap<String, EQTL> topEqtlEffects = eqdp.getTopEffects(eqtls, sharedProbes);
 				HashMap<String, HashSet<Integer>> nonTopEqtlEffects = eqdp.getNonTopEffects(eqtls, topEqtlEffects);
-				
-				RandomAccessGenotypeData genotypeMatrixData = eqptfa.readEQtlGenotypeData(args[4], rsIdList);
 
+				//READ THE GENOTYPE DATA.
+				EnrichmentDataReader edr = new EnrichmentDataReader();
+				RandomAccessGenotypeData genotypeMatrixData = edr.readEQtlGenotypeData(args[4], rsIdList);
+				
+				
+				ArrayList<Double> eQtlHitScores = new ArrayList<Double>();
+				ArrayList<Double> permutationHitScores = new ArrayList<Double>();
+				
+				//READ THE NEEDED DATA.
+				GenomicBoundaries boundaries = edr.readHistoneDataFromText(args[5]);
+				
 				//PERFORM THE ENRICHMENT FOR THE EQTLS.
 				HistoneSiteEnrichment hse = new HistoneSiteEnrichment();
-				GenomicBoundaries histoneData = hse.readHistoneDataFromText("");
-				//hse.performAnalysis();
-				//hse.drawBoxPlot(eQtlHitScores, permutationHitScores, "", "");
+				hse.performAnalysis(topEqtlEffects, nonTopEqtlEffects, eQtlHitScores, genotypeMatrixData, boundaries, Double.valueOf(args[6]));
+				double[] eQtlHits = Doubles.toArray(eQtlHitScores);
 				
 				//PERFORM THE ENRICHMENT FOR THE PERMUTATION DATA.
 				for(int n=1;n<=100;n++){
@@ -113,9 +109,57 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 					permutationData = eqdp.readEQtlData(args[3] + "PermutedEQTLsPermutationRound" + n + ".txt.gz");
 					topPermutationEffects = eqdp.getTopEffects(permutationData, sharedProbes);
 					nonTopPermutationEffects = eqdp.getNonTopEffects(permutationData, topPermutationEffects);
-					//hse.performAnalysis();
+					hse.performAnalysis(topPermutationEffects, nonTopPermutationEffects, permutationHitScores, genotypeMatrixData, boundaries, Double.valueOf(args[6]));
 				}
+				double[] permutationHits = Doubles.toArray(permutationHitScores);
+				
+				//GET THE RESULTS.
+				hse.drawBoxPlot(eQtlHits, permutationHits, "pdf", args[7]);
 			}
+			
+			else if(args[0].equalsIgnoreCase("histonetest")){
+				//GET THE PROBES SHARED BY ALL USED DATASETS.
+				EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
+				HashSet<String> sharedProbes = eqptfa.getSharedProbes(args[1], args[3]);
+
+				//READ THE EQTL DATA AND FILTER THE SET ON TOP AND NON TOP EQTL EFFECTS.
+				eQtlDataParser eqdp = new eQtlDataParser();
+				EQTL[] eqtls = eqdp.readEQtlData(args[2]);
+				Set<String> rsIdList = eqdp.makeRsIdList(eqtls);
+				HashMap<String, EQTL> topEqtlEffects = eqdp.getTopEffects(eqtls, sharedProbes);
+				HashMap<String, HashSet<Integer>> nonTopEqtlEffects = eqdp.getNonTopEffects(eqtls, topEqtlEffects);
+
+				//READ THE GENOTYPE DATA.
+				EnrichmentDataReader edr = new EnrichmentDataReader();
+				RandomAccessGenotypeData genotypeMatrixData = edr.readEQtlGenotypeData(args[4], rsIdList);
+				
+				
+				ArrayList<Double> eQtlHitScores = new ArrayList<Double>();
+				ArrayList<Double> permutationHitScores = new ArrayList<Double>();
+				
+				//READ THE NEEDED DATA.
+				GenomicBoundaries boundaries = edr.readHistoneDataFromText(args[5]);
+				
+				//PERFORM THE ENRICHMENT FOR THE EQTLS.
+				HistoneSiteEnrichment hse = new HistoneSiteEnrichment();
+				hse.performAnalysis(topEqtlEffects, nonTopEqtlEffects, eQtlHitScores, genotypeMatrixData, boundaries, Double.valueOf(args[6]));
+				double[] eQtlHits = Doubles.toArray(eQtlHitScores);
+				System.out.println("Amount of eQTL hits: " + eQtlHits.length);
+				
+				
+				//PERFORM THE ENRICHMENT FOR THE PERMUTATION DATA.
+				EQTL[] permutationData = eqdp.readEQtlData(args[3]);
+				HashMap<String, EQTL> topPermutationEffects = eqdp.getTopEffects(permutationData, sharedProbes);
+				HashMap<String, HashSet<Integer>> nonTopPermutationEffects = eqdp.getNonTopEffects(permutationData, topPermutationEffects);
+				hse.performAnalysis(topPermutationEffects, nonTopPermutationEffects, permutationHitScores, genotypeMatrixData, boundaries, Double.valueOf(args[6]));
+				
+				double[] permutationHits = Doubles.toArray(permutationHitScores);
+				System.out.println("Amount of permutation hits: " + permutationHits.length);
+				
+				//GET THE RESULTS.
+				hse.drawBoxPlot(eQtlHits, permutationHits, "pdf", args[7]);
+			}
+			
 			else if(args[0].equalsIgnoreCase("convertWigToText")){
 				WriteWigToText wwtt = new WriteWigToText();
 				wwtt.writeWigToText(args[1], args[2]);
@@ -134,13 +178,6 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 			aap.printHelp();
 		}
 	}
-	
-	
-	
-	public EQtlPermutationTranscriptionFactorAnalysis(String eQtlProbeLevelFile, String eQtlFile, String permutationFile, String genotypeLocation, String regulomeDbLocation, double r2Cutoff, String outputFile)throws IOException{
-		
-	}
-	
 	
 	public EQtlPermutationTranscriptionFactorAnalysis(){
 		
@@ -206,11 +243,5 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 			permutationProbes.retainAll(eqtlProbes);
 			return permutationProbes;
 		}
-	}
-	
-	public RandomAccessGenotypeData readEQtlGenotypeData(String genotypeData, Set<String> variantIdFilter) throws IOException{
-		//Provide a Set<String> containing rsID of all significant eQTLs.
-		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 630000, new VariantIdIncludeFilter(variantIdFilter), new SampleIncludedFilter());
-		return gonlImputedBloodGenotypeData;
 	}
 }

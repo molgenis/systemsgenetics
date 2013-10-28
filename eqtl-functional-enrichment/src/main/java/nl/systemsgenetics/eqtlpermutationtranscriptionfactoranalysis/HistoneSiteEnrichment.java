@@ -5,6 +5,7 @@
 package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,60 +32,6 @@ import umcg.genetica.math.stats.WilcoxonMannWhitney;
 public class HistoneSiteEnrichment {
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
 	
-	public static void main(String[] args) throws IOException{
-		HistoneSiteEnrichment hse = new HistoneSiteEnrichment();
-		hse.readHistoneDataFromText("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\3.histones\\Gm12864Ctcf\\Gm12864Ctcfchr21.txt");
-	}
-	
-	/**
-	 * Reads histone data from a plain text file into GenomicBoundaries.
-	 * @param inputFileLocation
-	 * @return
-	 * @throws IOException 
-	 */
-	public GenomicBoundaries readHistoneDataFromText(String inputFileLocation)throws IOException{
-		GenomicBoundaries<Object> histoneBoundaries = new GenomicBoundaries();
-		
-		String fileLine;
-		String[] fileLineData;
-		TextFile tf = new TextFile(inputFileLocation, false);
-		while((fileLine=tf.readLine())!=null){
-			fileLineData = TAB_PATTERN.split(fileLine);
-			
-			String chr = new String(fileLineData[0]);
-			int startPos = Integer.parseInt(fileLineData[1]);
-			int stopPos = Integer.parseInt(fileLineData[2]);
-			double bindingValue = Double.valueOf(fileLineData[3]);
-			
-			histoneBoundaries.addBoundary(chr, startPos, stopPos, bindingValue);
-		}
-		tf.close();
-		return histoneBoundaries;
-	}
-	
-	
-	/**
-	 * Reads histone data from a wig file into GenomicBoundaries.
-	 * @param wigFileLocation
-	 * @return
-	 * @throws IOException 
-	 */
-	public GenomicBoundaries readHistoneSiteDataFromWig(String wigFileLocation) throws IOException{
-		GenomicBoundaries<Object> histoneSiteBoundaries = new GenomicBoundaries();
-		
-		WigFile wf = new WigFile(wigFileLocation, false);
-		long totalN = wf.size();
-		long n = 0;
-		while(n < totalN){
-			UCSCDataObject ucscdo = wf.parseLn();
-			String chr = Byte.toString(ucscdo.getChr());
-			histoneSiteBoundaries.addBoundary(chr, ucscdo.getPositionStart(), ucscdo.getPositionEnd(), ucscdo.getValue());
-		}
-		wf.close();
-		return histoneSiteBoundaries;
-	}
-	
-	
 	public void aap(double[] A, double[] B){
 		WilcoxonMannWhitney wcmw = new WilcoxonMannWhitney();
 		double testPvalue = wcmw.returnWilcoxonMannWhitneyPValue(A, B);
@@ -102,13 +49,22 @@ public class HistoneSiteEnrichment {
 		String[][] plotLabels = new String[][]{{"Real", "Chance"}};
 		String[] datasets = new String[]{"eQTLs", "Permutations"};
 		
+		//SOME TESTING, CAN BE REMOVED LATER.
+		System.out.println("eQtlHitScores size: " + eQtlHitScores.length);
+		System.out.println("permutationHitScores size: " + permutationHitScores.length);
+		System.out.println("dataToPlot size: " + dataToPlot.length);
+		System.out.println("plotLabels size: " + plotLabels.length);
+		System.out.println("datasets size: " + datasets.length);
+		//System.out.println("");
+		
+		
 		//Draw the plot.
 		ViolinBoxPlot vbp = new ViolinBoxPlot();
 		if( fileType.equalsIgnoreCase("png") ){
-			vbp.draw(dataToPlot, datasets, plotLabels, "Binding", ViolinBoxPlot.Output.PNG, outputFile);
+			vbp.draw(dataToPlot, datasets, plotLabels, "Peak Signal", ViolinBoxPlot.Output.PNG, outputFile);
 		}
 		else{
-			vbp.draw(dataToPlot, datasets, plotLabels, "Binding", ViolinBoxPlot.Output.PDF, outputFile);
+			vbp.draw(dataToPlot, datasets, plotLabels, "Peak Signal", ViolinBoxPlot.Output.PDF, outputFile);
 		}
 	}
 	
@@ -123,11 +79,9 @@ public class HistoneSiteEnrichment {
 	 * @param r2CutOff
 	 * @throws IOException 
 	 */
-	public void performAnalysis(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
+	public void performAnalysis(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, ArrayList<Double> scores,
 			RandomAccessGenotypeData genotypeData, GenomicBoundaries<Object> boundaries, double r2CutOff)throws IOException{
 		//First read the data.
-		readHistoneDataFromText("");
-		
 		Ld ld = null;
 		Iterator<Map.Entry<String, EQTL>> topEffectIterator = topEffectData.entrySet().iterator();
 		while(topEffectIterator.hasNext()){
@@ -161,14 +115,8 @@ public class HistoneSiteEnrichment {
 									//SEARCH THROUGH REGULOMEDB
 									if(boundaries.isInBoundary(rsChr, eqtlPos, 0)){
 										GenomicBoundary boundary = boundaries.getBoundary(rsChr, eqtlPos, 0);
-										String annotation = (String) boundary.getAnnotation();
-										
-										if(countsMap.containsKey(annotation)){
-											countsMap.put(annotation, countsMap.get(annotation)+1);
-										}
-										else{
-											countsMap.put(annotation, 1);
-										}
+										double annotation = (Double) boundary.getAnnotation();
+										scores.add(annotation);
 									}
 
 								}
@@ -181,14 +129,8 @@ public class HistoneSiteEnrichment {
 				//CODE TO SEARCH FOR THE TOP EFFECT.
 				if(boundaries.isInBoundary(rsChr, rsChrPos, 0)){
 					GenomicBoundary boundary = boundaries.getBoundary(rsChr, rsChrPos, 0);
-					String annotation = (String) boundary.getAnnotation();
-
-					if(countsMap.containsKey(annotation)){
-						countsMap.put(annotation, countsMap.get(annotation)+1);
-					}
-					else{
-						countsMap.put(annotation, 1);
-					}
+					double annotation = (Double) boundary.getAnnotation();
+					scores.add(annotation);
 				}
 			}
 		}

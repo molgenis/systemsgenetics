@@ -68,7 +68,7 @@ public class EnrichmentDataReader {
 		return regulomeDbData;
 	}
 	
-	public String[] getTranscriptionFactors(RegulomeDbEntry rdbe){
+	private String[] getTranscriptionFactors(RegulomeDbEntry rdbe){
 		Map<String, List<RegulomeDbSupportingData>> supportData = rdbe.getSupportData();
 		ArrayList<String> tfs = new ArrayList<String>();
 		
@@ -172,5 +172,28 @@ public class EnrichmentDataReader {
 		}
 		wf.close();
 		return histoneSiteBoundaries;
+	}
+	
+	//This method might not be neede as the hypersensitivity wig data has the exact same format as the histone wig data.
+	public GenomicBoundaries readHypersensitivityDataFromText(String dnaseFileLocation)throws IOException{
+		GenomicBoundaries<Object> dnaseSiteBoundaries = new GenomicBoundaries();
+		
+		String fileLine;
+		String[] fileLineData;
+		TextFile tf = new TextFile(dnaseFileLocation, false);
+		while((fileLine=tf.readLine())!=null){
+			fileLineData = TAB_PATTERN.split(fileLine);
+			String chr = new String(fileLineData[0]);
+			int start = Integer.parseInt(fileLineData[1]);
+			int stop = Integer.parseInt(fileLineData[2]);
+		}
+		return dnaseSiteBoundaries;
+	}
+	
+	
+	public GenomicBoundaries readEncodeMethylationData(String methylationFileLocation)throws IOException{
+		GenomicBoundaries<Object> encodeMethylationBoundaries = new GenomicBoundaries();
+		
+		return encodeMethylationBoundaries;
 	}
 }
