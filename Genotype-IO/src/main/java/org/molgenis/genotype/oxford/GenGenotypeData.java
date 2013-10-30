@@ -253,7 +253,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 								LOGGER.fatal("Error reading haps file, did not detect first 5 columns with variant information \n"
 										+ "current column is:" + column + "\n"
 										+ "content in current column: " + stringBuilder.toString());
-								throw new GenotypeDataException("Error reading haps file, did not detect first 5 columns with variant information. Note gen files must be space separted");
+								throw new GenotypeDataException("Error reading gen file, did not detect first 5 columns with variant information. Note gen files must be space separted");
 							}
 							longestedChunk = longestedChunk < currentChunk ? currentChunk : longestedChunk;
 							column = 0;
