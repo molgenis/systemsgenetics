@@ -46,7 +46,7 @@ This is a step by step guide which will guide you through the QTL mapping proces
 
 Step 1 - Preparation phenotype data
 ==========================
-Because our software uses a nonparametric test by default, you can use virtually any continuous data as trait values to map a variety of QTL effects. However, currently the normalization tools provided with this package are focused on array based methylation data, array based (Illumina) expression data, and preprocessed RNA-seq data (e.g. transcript level quantified data) or (GC)-RMA processed Affymetrix data. Please format your phenotype data in a simple tab separated text file. The format of this file is described here: 
+Because our software uses a nonparametric test by default, you can use virtually any continuous data as trait values to map a variety of QTL effects. However, currently the normalization tools provided with this package are focused on array based methylation data, array based (Illumina) expression data, and preprocessed RNA-seq data (e.g. transcript level quantified data) or (GC)-RMA processed Affymetrix data. Please format your phenotype data in a simple tab separated text file. The format of this file is described here: [Data Formats - Phenotype data](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file)
 
 Illumina array based expression data
 ------------------------------------
@@ -59,7 +59,8 @@ Because Illumina has several ways to annotate and preprocess their gene expressi
 	-	Rows should contain the different probes, and columns should contain the different sample IDs
 	-	Remove any header information that Genome studio might produce: the header of the matrix is expected at the first row
 	-	Create a new header (expected at the first row and column) for both rows and columns, describing the sample names (columns) and the probe IDs (rows). Note that you use the probe array address for your platform as the probe name.
-	-	
+
+
 Step 2 - Preparation genotype data
 ==========================
 Step 3 - Phenotype data normalization
