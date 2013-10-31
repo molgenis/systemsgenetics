@@ -11,6 +11,7 @@ import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.PCA;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.matrix.MatrixTools;
+import umcg.genetica.math.matrix.MatrixHandling;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Log2Transform;
 import umcg.genetica.math.stats.QuantileNormalization;
@@ -28,7 +29,9 @@ public class Normalizer {
     //nrIntermediatePCAsOverSamplesToRemoveToOutput = 5
     //nrPCAsOverSamplesToRemove = 100
     public void normalize(String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates, String outdir,
-            boolean runQQNorm, boolean runLog2Transform, boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates) throws IOException {
+            boolean runQQNorm, boolean runLog2Transform, boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates, boolean forceMissingValues, boolean forceReplacementOfMissingValues, 
+            boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls) throws IOException {
+        
         System.out.println("Running normalization.");
         if (outdir != null) {
             outdir = Gpio.formatAsDirectory(outdir);
@@ -44,8 +47,6 @@ public class Normalizer {
         }
 
         DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
-
-
 
         String parentDir = Gpio.getParentDir(expressionFile);
         String expressionFileName = Gpio.getFileName(expressionFile);
@@ -67,7 +68,7 @@ public class Normalizer {
         }
 
         if (runQQNorm) {
-            outputFileNamePrefix = quantileNormalize(dataset, outputFileNamePrefix);
+            outputFileNamePrefix = quantileNormalize(dataset, outputFileNamePrefix, forceMissingValues, forceReplacementOfMissingValues, forceReplacementOfMissingValues2, treatZerosAsNulls);
         }
         if (runLog2Transform) {
             outputFileNamePrefix = log2transform(dataset, outputFileNamePrefix);
@@ -91,19 +92,43 @@ public class Normalizer {
         }
     }
 
-    public String quantileNormalize(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
+    public String quantileNormalize(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, boolean forceMissingValues, boolean forceReplacementOfMissingValues, boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls) throws IOException {
         double[][] rawData = dataset.getRawData();
-
-        if (!MatrixTools.containsNaNs(rawData)) {
-            QuantileNormalization.quantilenormalize(rawData);
-        } else {
-            System.out.println("Warning data contained NaNs, please check your data if you know that there should be no NaN's.\n Normalizer automaticaly replaces these NA values, with the sample median.");
-            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, false);
+        
+        boolean dataContainsNulls = MatrixTools.containsNaNs(rawData);
+        
+        if(treatZerosAsNulls && dataContainsNulls){
+            System.out.println("Warning: Data already contains nulls before treating zeros as nulls.\n Later on it will not be possible to distinguish between those two!");
+        }
+        if(treatZerosAsNulls){ 
+            MatrixHandling.ReplaceZerosToNull(rawData);
+            dataContainsNulls = MatrixTools.containsNaNs(rawData);
         }
 
+        if (!dataContainsNulls) {
+            QuantileNormalization.quantilenormalize(rawData);
+        } else if(forceReplacementOfMissingValues){
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, false, false);
+        } else if(forceReplacementOfMissingValues2){
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, false, true, false);
+        } else if(forceMissingValues && treatZerosAsNulls){
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, true, false, true);
+        }  else if(forceMissingValues){
+            QuantileNormalization.QuantileNormAdressingNaValuesAfterInitialQN(dataset, true, false, false);
+        } else {
+            System.out.println("Warning: Your data contains missing values and missing value treatment is not selected.\n"
+                    + "If desired please supply additional flag: --forceMissingValues or --forceReplacementOfMissingValues");
+            System.exit(0);
+        }
+        
+        if(treatZerosAsNulls){
+            MatrixHandling.ReplaceNullToZero(rawData);
+        }
+        
         DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
         fileNamePrefix += ".QuantileNormalized";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");
+        
         return fileNamePrefix;
     }
 
