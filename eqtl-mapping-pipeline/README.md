@@ -129,15 +129,15 @@ Running the general normalization procedure yields a number of files in the dire
 
 |File|Description|
 |----|-----------|
-|**ExpressionData.txt.QuantileNormalized.txt.gz**|Quantile Normalized Expression Data|
-|**ExpressionData.txt.QuantileNormalized.Log2Transformed.txt.gz**|Quantile Normalized Expression Data which is also Log<sub>2</sub> Transformed.|
-|**ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.txt.gz**|Quantile Normalized Expression Data which is also Log2 Transformed. Probes were centered.|
-|**ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt.gz**|Quantile Normalized Expression Data which is also Log2 Transformed, probes were centered and samples were Z-transformed.|
-|**ExpressionData.txt.PCAOverSamplesEigenvalues.txt.gz**|Eigenvalues created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
-|**ExpressionData.txt.PCAOverSamplesEigenvectors.txt.gz**|Eigenvectors created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
-|**ExpressionData.txt.PCAOverSamplesEigenvectorsTransposed.txt.gz**|Eigenvectors transposed|
-|**ExpressionData.txt.PCAOverSamplesPrincipalComponents.txt.gz**|Principal Components describing the sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
-|**ExpressionData.txt.nPCAsOverSamplesRemoved.txt.gz**|Expression data, Quantile Normalized, Log2 Transformed, Z-transformed, with n Principal Components regressed out.|
+|**ExpressionData.txt.&shy;QuantileNormalized.&shy;txt.gz**|Quantile Normalized Expression Data|
+|**ExpressionData.txt.&shy;QuantileNormalized.&shy;Log2Transformed.txt.gz**|Quantile Normalized Expression Data which is also Log<sub>2</sub> Transformed.|
+|**ExpressionData.txt.&shy;QuantileNormalized.&shy;Log2Transformed.&shy;ProbesCentered.txt.gz**|Quantile Normalized Expression Data which is also Log2 Transformed. Probes were centered.|
+|**ExpressionData.txt.&shy;QuantileNormalized.&shy;Log2Transformed.&shy;ProbesCentered.&shy;SamplesZTransformed.txt.gz**|Quantile Normalized Expression Data which is also Log2 Transformed, probes were centered and samples were Z-transformed.|
+|**ExpressionData.txt.&shy;PCAOverSamplesEigenvalues.&shy;txt.gz**|Eigenvalues created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
+|**ExpressionData.txt.&shy;PCAOverSamplesEigenvectors.txt.gz**|Eigenvectors created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
+|**ExpressionData.txt.&shy;PCAOverSamplesEigenvectorsTransposed.txt.gz**|Eigenvectors transposed|
+|**ExpressionData.txt.&shy;PCAOverSamplesPrincipalComponents.txt.gz**|Principal Components describing the sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
+|**ExpressionData.txt.&shy;nPCAsOverSamplesRemoved.txt.gz**|Expression data, Quantile Normalized, Log2 Transformed, Z-transformed, with n Principal Components regressed out.|
 
 ##Step 4 - Mapping mix-ups
 We have shown in a paper published in Bioinformatics (Westra et al.: [MixupMapper: correcting sample mix-ups in genome-wide datasets increases power to detect small genetic effects](http://bioinformatics.oxfordjournals.org/content/27/15/2104)), that sample mix-ups often occur in genetical genomics datasets (i.e. datasets with both genotype and gene expression data). Therefore, we developed a method called MixupMapper, which is implemented in the eQTL Mapping Pipeline. This program performs the following steps:
@@ -148,6 +148,8 @@ We have shown in a paper published in Bioinformatics (Westra et al.: [MixupMappe
 For details how this exactly works, please have a look at the paper or read the attachment. 
 
 ###Preparations
+
+
 
 ##Step 5 - Determining the optimum number of PCs to remove
 ##Step 6 - Perform the final QTL analysis
@@ -185,14 +187,14 @@ ProbeArrayAddress    Sample1	Sample2		Sample3
 ##TriTyper genotype data
 The TriTyper format consists of several files, each describing an aspect of the genotype data. 
 
-|File name | Required | Description |
-|----------|----------------|
-| **GenotypeMatrix.dat** | X | Binary file containing genotype data. GenotypeMatrix.dat has the following file size: (number of SNPs * 2) * number of individuals. The ImputedDosageMatrix.dat should be half this size.|
-| **ImputedDosageMatrix.dat** | - | Binary file containing imputed genotype dosage values. The ImputedDosageMatrix.dat should be half this size in bytes compared to the GenotypeMatrix.dat.|
-| **SNPs.txt** | X | The list of SNPs that are encoded within the GenotypeMatrix.dat file. One line per SNP.|
-| **SNPMappings.txt** | X | The list of SNPs that are encoded within the GenotypeMatrix.dat file. One line per SNP, tab-separated: first column contains the chromosome number, second column contains the SNP position, and third column contains the SNPID (rs ID).|
-| **Individuals.txt** | X | The list of individuals that are encoded within the GenotypeMatrix.dat file. One line per individual. **Do not change the order of the individuals in this file, or the number of individuals in this file. You can change the individual identifiers, although duplicates are not allowed.**|
-| **PhenotypeInformation.txt** | X | This file describes the phenotypes of the individuals. One line per individual, 4 columns per individual: individual ID, case/control status, include/exclude a certain individual, gender (female/male). **This file does not have to contain all individuals contained in Individuals.txt and can be used to exclude certain individuals from the analysis**|
+|File name|Required|Description|
+|----------|-------|---------|
+|**GenotypeMatrix.dat**|YES|Binary file containing genotype data. GenotypeMatrix.dat has the following file size: (number of SNPs x 2) x number of individuals. The ImputedDosageMatrix.dat should be half this size.|
+|**ImputedDosageMatrix.dat**|NO|Binary file containing imputed genotype dosage values. The ImputedDosageMatrix.dat should be half this size in bytes compared to the GenotypeMatrix.dat.|
+|**SNPs.txt**|YES|The list of SNPs that are encoded within the GenotypeMatrix.dat file. One line per SNP.|
+|**SNPMappings.txt**|YES|The list of SNPs that are encoded within the GenotypeMatrix.dat file. One line per SNP, tab-separated: first column contains the chromosome number, second column contains the SNP position, and third column contains the SNPID (rs ID).|
+|**Individuals.txt**|YES|The list of individuals that are encoded within the GenotypeMatrix.dat file. One line per individual. **Do not change the order of the individuals in this file, or the number of individuals in this file. You can change the individual identifiers, although duplicates are not allowed.**|
+|**PhenotypeInformation.txt**|YES|This file describes the phenotypes of the individuals. One line per individual, 4 columns per individual: individual ID, case/control status, include/exclude a certain individual, gender (female/male). **This file does not have to contain all individuals contained in Individuals.txt and can be used to exclude certain individuals from the analysis**|
 
 Please note that you can update the PhenotypeInformation.txt file. For a population based approach, you should designate all participants “control”. “Include” or “Exclude” determines whether you include or exclude a participant into the analysis. Finally, you need to add gender information. For individuals of unknown gender, you can use a random string, as long as this string does not match 'female' or 'male'. Individuals that are in the Individuals.txt file, but are not present in the PhenotypeInformation.txt file, will be excluded from analysis.
 
@@ -209,7 +211,7 @@ rs10904045
 
 SNPMappings.txt: example of 3 SNPs
 <pre>
-10	62765	rs11511647	
+10    62765	rs11511647	
 10	84172	rs12218882	
 10	84426	rs10904045	
 </pre>
