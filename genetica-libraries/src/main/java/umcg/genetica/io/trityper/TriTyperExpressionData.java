@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
@@ -40,14 +41,14 @@ public class TriTyperExpressionData {
     private double[] probeVariance;
     private String m_platform;
 
-    
-    public TriTyperExpressionData(){        
+    public TriTyperExpressionData() {
     }
-    
+
     public TriTyperExpressionData(String loc, String probeAnnotationLoc, String platform, boolean cistrans) throws IOException {
-        
+
         this.load(loc, probeAnnotationLoc, platform, cistrans);
     }
+
     /**
      * @return the rowNames
      */
@@ -142,10 +143,8 @@ public class TriTyperExpressionData {
         boolean fileIsGZipped = false;
         TextFile in = new TextFile(loc, TextFile.R);
 
-
         // detect whether TriTyper dataset
         // load probeAnnotation otherwise
-
         int numProbes = 0;
         boolean trityperformat = false;
         int offset = 1;
@@ -162,7 +161,6 @@ public class TriTyperExpressionData {
         } else if (probeAnnotationLoc == null && !cistrans) {
             throw new IOException("ERROR: Probe annotation is not specified. Please specify probe annotation or provide expression data in TriTyper format!");
         }
-
 
         // load the probe annotation, if any present
         HashMap<String, Byte> hashProbeChr = null;
@@ -268,8 +266,6 @@ public class TriTyperExpressionData {
                 System.out.println("WARNING: no probe annotation available.");
             }
         }
-
-
 
         int probesIncluded = 0;
         int probesExcluded = 0;
@@ -424,17 +420,17 @@ public class TriTyperExpressionData {
                     float[] data = tmpRaw.get(i);
                     double sum = 0;
                     int nrNotMissing = 0;
-                    for(int j=0; j<data.length; j++){
-                        if(!Float.isNaN(data[j])){
-                            sum+=data[j];
+                    for (int j = 0; j < data.length; j++) {
+                        if (!Float.isNaN(data[j])) {
+                            sum += data[j];
                             nrNotMissing++;
                         }
                     }
 
-                    sum/=nrNotMissing;
-                    
-                    for(int j=0; j<data.length; j++){
-                        if(Float.isNaN(data[j])){
+                    sum /= nrNotMissing;
+
+                    for (int j = 0; j < data.length; j++) {
+                        if (Float.isNaN(data[j])) {
                             data[j] = (float) sum;
                         }
                     }
@@ -479,7 +475,6 @@ public class TriTyperExpressionData {
                 chrStop[i] = tmpChrEnd.get(i);
             }
 
-
         }
 
         for (int i = 0; i < numIndsIncluded; i++) {
@@ -506,7 +501,6 @@ public class TriTyperExpressionData {
         calcMeanAndVariance();
 
         System.out.println("Loaded " + probeNr + " probes for " + individuals.length + " individuals");
-
 
         return true;
     }
@@ -656,5 +650,27 @@ public class TriTyperExpressionData {
         for (int i = 0; i < individuals.length; i++) {
             matrix[f][i] = (float) probeData[i];
         }
+    }
+
+    public void pruneAndReorderSamples(List<String> colObjects) {
+        double[][] newMatrix = new double[matrix.length][colObjects.size()];
+        HashMap<String, Integer> indToInd = new HashMap<String, Integer>();
+        for (int i = 0; i < colObjects.size(); i++) {
+            String ind = colObjects.get(i);
+            indToInd.put(ind, i);
+        }
+
+        for (int i = 0; i < individuals.length; i++) {
+            Integer newId = indToInd.get(individuals[i]);
+            if (newId != null) {
+                for (int row = 0; row < matrix.length; row++) {
+                    newMatrix[row][newId] = matrix[row][i];
+                }
+            }
+        }
+        
+        matrix = newMatrix;
+        individualNameToId = indToInd;
+        individuals = colObjects.toArray(new String[0]);
     }
 }

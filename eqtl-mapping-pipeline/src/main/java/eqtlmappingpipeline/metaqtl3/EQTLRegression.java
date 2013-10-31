@@ -53,8 +53,8 @@ public class EQTLRegression {
     }
 
     public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
-        
-        
+
+
         this.gg = gg;
         System.out.println("\n\n\nRemoving eQTL effects from the following eQTL file: '" + regressOutEQTLEffectFileName);
         eQTLTextFile in = new eQTLTextFile(regressOutEQTLEffectFileName, eQTLTextFile.R);
@@ -62,20 +62,21 @@ public class EQTLRegression {
         in.close();
         System.out.println("Number of eQTLs to regress out found in file:\t" + eqtlsToRegressOut.length);
         regressOutEQTLEffects();
-        if(outputfiles){
-            for(int d=0;d<gg.length;d++){
+        if (outputfiles) {
+            for (int d = 0; d < gg.length; d++) {
                 TriTyperGeneticalGenomicsDataset ds = gg[d];
                 TriTyperExpressionData dsexp = ds.getExpressionData();
                 double[][] matrix = dsexp.getMatrix();
                 String[] probes = dsexp.getProbes();
                 String[] individuals = dsexp.getIndividuals();
                 String filename = ds.getSettings().expressionLocation;
-                DoubleMatrixDataset<String,String> dsout = new DoubleMatrixDataset<String, String>(matrix, Arrays.asList(probes), Arrays.asList(individuals));
+                DoubleMatrixDataset<String, String> dsout = new DoubleMatrixDataset<String, String>(matrix, Arrays.asList(probes), Arrays.asList(individuals));
                 dsout.recalculateHashMaps();
-                dsout.save(filename+"-EQTLEffectsRemoved.txt.gz");
+                System.out.println("Saving expression file after removal of eQTL effects: " + filename + "-EQTLEffectsRemoved.txt.gz");
+                dsout.save(filename + "-EQTLEffectsRemoved.txt.gz");
             }
         }
-    
+
     }
 
     /**
@@ -92,14 +93,10 @@ public class EQTLRegression {
         HashMap<EQTL, Integer> hashEQTLIds = new HashMap<EQTL, Integer>();
         int nrProbesWithMultipleCovariates = 0;
 
-        HashSet<String> uniqueProbes = new HashSet<String>();
-
         for (int v = 0; v < eqtlsToRegressOut.length; v++) {
             EQTL current = eqtlsToRegressOut[v];
             hashEQTLIds.put(current, v);
-            String snp = current.getRsName();
             String probe = current.getProbe();
-            uniqueProbes.add(probe);
 
             if (!hashProbesCovariates.containsKey(probe)) {
                 ArrayList<EQTL> eqtls = new ArrayList<EQTL>();
@@ -131,8 +128,6 @@ public class EQTLRegression {
             }
         }
 
-
-
         //Remove multiple SNPs acting on one single probe:
         for (int d = 0; d < gg.length; d++) {
             HashSet<EQTL> hashEQTLsMultipleRegressionRegressedOut = new HashSet<EQTL>();
@@ -151,7 +146,6 @@ public class EQTLRegression {
                     ArrayList<EQTL> eventualListOfEQTLs = new ArrayList<EQTL>();
                     ArrayList<SNP> snpsForProbe = new ArrayList<SNP>();
                     ArrayList<double[]> xs = new ArrayList<double[]>();
-                    ArrayList<Double> varxs = new ArrayList<Double>();
                     ArrayList<Double> meanxs = new ArrayList<Double>();
 
 
@@ -182,7 +176,6 @@ public class EQTLRegression {
                                         eventualListOfEQTLs.add(e);
                                         snpsForProbe.add(currentSNP);
                                         xs.add(x);
-                                        varxs.add(varianceX);
                                         meanxs.add(meanX);
                                         snpPassesQC.put(snpId, true);
                                     } else {
@@ -198,19 +191,16 @@ public class EQTLRegression {
 
                     // regress out single effects
                     if (eventualListOfEQTLs.size() == 1) {
-                        EQTL e = eventualListOfEQTLs.get(0);
                         SNP currentSNP = snpsForProbe.get(0);
-                        Integer SNPId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
 
                         int[] expressionToGenotypeId = currentDataset.getExpressionToGenotypeIdArray();
                         double[] x = xs.get(0);
                         double meanX = meanxs.get(0);
-                        double varianceX = varxs.get(0);
 
                         //Get the expression data:
                         double[][] rawData = currentDataset.getExpressionData().getMatrix();
-                        double meanY = 0;
-                        double varianceY = 0;
+                        double meanY;
+                        double varianceY;
 
                         //Check what the number of samples is with genotype data available:
                         int nrSamplesWGenotypeData = x.length;
@@ -331,12 +321,14 @@ public class EQTLRegression {
                                 correlationMatrix[g][f] = covariance;
                             }
                         }
-                        //Performe eigenvalue decomposition:
+                        
+                        //Perform eigenvalue decomposition:
                         Jama.EigenvalueDecomposition eig = PCA.eigenValueDecomposition(correlationMatrix);
                         double[][] eigenArrayLists = new double[correlationMatrix.length][correlationMatrix.length];
                         for (int pca = 0; pca < nrSNPs; pca++) {
                             eigenArrayLists[pca] = PCA.getEigenVector(eig, pca);
                         }
+                        
                         //Calculate principal component scores:
                         double[][] dataMatrixPCScores = new double[nrSNPs][totalGGSamples];
                         for (int sample = 0; sample < totalGGSamples; sample++) {
@@ -347,11 +339,7 @@ public class EQTLRegression {
                                 }
                             }
                         }
-                        /*
-                         for (int i = 0; i < currentDataset.getSampleCount(); i++) {
-                         System.out.println(i + "\t" + dataMatrix[0][i] + "\t" + dataMatrix[1][i] + "\t" + dataMatrixPCScores[0][i] + "\t" + dataMatrixPCScores[1][i]);
-                         }*/
-
+                   
                         //Orthogonal PCAs have been determined, use these to regress out the effects on gene expression levels:
                         TriTyperExpressionData expresionData = currentDataset.getExpressionData();
                         double[][] rawData = currentDataset.getExpressionData().getMatrix();
@@ -479,9 +467,8 @@ public class EQTLRegression {
 
 
         output = "r2";
-
-        for (int d = 0; d < gg.length; d++) {
-            output += "\t" + gg[d].getSettings().name;
+        for (TriTyperGeneticalGenomicsDataset gg1 : gg) {
+            output += "\t" + gg1.getSettings().name;
         }
 
         System.out.println(output);

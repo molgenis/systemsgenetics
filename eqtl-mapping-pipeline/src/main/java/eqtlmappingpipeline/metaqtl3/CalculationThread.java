@@ -13,10 +13,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.Deflater;
+import org.apache.commons.math3.distribution.FDistribution;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
-import umcg.genetica.math.stats.Regression;
+import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.util.RunTimer;
 
 /**
@@ -49,8 +52,12 @@ class CalculationThread extends Thread {
     private boolean determinefoldchange = false;
     private WorkPackage currentWP;
     private boolean m_binaryoutput = false;
+    private final DoubleMatrixDataset<String, String>[] m_covariates;
+    private OLSMultipleLinearRegression regressionFullWithInteraction;
 
-    CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata, Integer[][] probeTranslationTable,
+    CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
+            DoubleMatrixDataset<String, String>[] covariates,
+            Integer[][] probeTranslationTable,
             int[][] expressionToGenotypeIds, MetaQTL3Settings settings, EQTLPlotter plotter, boolean binaryoutput) {
         m_binaryoutput = binaryoutput;
         m_name = i;
@@ -71,6 +78,11 @@ class CalculationThread extends Thread {
             probeVariance[d] = expressiondata[d].getProbeVariance();
             probeMean[d] = expressiondata[d].getProbeMean();
             probeName[d] = expressiondata[d].getProbes();
+        }
+
+        m_covariates = covariates;
+        if (covariates != null) {
+            regressionFullWithInteraction = new OLSMultipleLinearRegression();
         }
 
         cisOnly = false;
@@ -94,34 +106,22 @@ class CalculationThread extends Thread {
 
     @Override
     public void run() {
-//        System.out.println("Starting thread: " + this.getName() +". Waiting for input");
-
-        // while the process has not been killed or when the queue is not empty
         boolean poison = false;
-
         RunTimer t = new RunTimer();
         t.start();
-        int taken = 0;
         while (!poison) {
             try {
                 WorkPackage pack = m_workpackage_queue.take();
                 if (!pack.getPoison()) {
                     analyze(pack);
-                    taken++;
-
-//                    if(taken % printperiterations == 0){
-//                        System.out.println("Thread "+this.getName()+" calculated "+taken+" workpackages.");
-//                    }
                 } else {
                     poison = pack.getPoison();
-//                    System.out.println("Thread " + m_name + " got killed by a poisonous workpackage, but was bravely able to perform\t" + testsPerformed + "\ttests");
                 }
 
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
         }
-//        System.out.println(this.getName() + " finished.\t" + testsPerformed + "\ttests performed");
     }
 
     public void kill() {
@@ -197,11 +197,14 @@ class CalculationThread extends Thread {
                     double[] varY = m_expressiondata[d].getProbeVariance();
                     double[] meanY = m_expressiondata[d].getProbeMean();
                     int samplecount = m_expressiondata[d].getIndividuals().length;
+
+                    DoubleMatrixDataset<String, String> covariateData = m_covariates[d];
+
                     for (int p = 0; p < probes.length; p++) {
                         int pid = probes[p];
                         Integer probeId = m_probeTranslation[d][pid];
                         if (probeId != null) {
-                            test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, dsResults);
+                            test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, covariateData.rawData, dsResults);
                         } else {
                             dsResults.correlations[d][p] = Double.NaN;
                             dsResults.zscores[d][p] = Double.NaN;
@@ -238,7 +241,7 @@ class CalculationThread extends Thread {
                         if (probestoExclude == null || !probestoExclude.contains(pid)) {
                             Integer probeId = m_probeTranslation[d][pid];
                             if (probeId != null) {
-                                test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, dsResults);
+                                test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults);
                             } else {
                                 dsResults.correlations[d][pid] = Double.NaN;
                                 dsResults.zscores[d][pid] = Double.NaN;
@@ -271,7 +274,7 @@ class CalculationThread extends Thread {
                     for (int pid = 0; pid < m_numProbes; pid++) {
                         Integer probeId = m_probeTranslation[d][pid];
                         if (probeId != null) {
-                            test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, dsResults);
+                            test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults);
                         } else {
                             dsResults.correlations[d][pid] = Double.NaN;
                             dsResults.zscores[d][pid] = Double.NaN;
@@ -292,8 +295,8 @@ class CalculationThread extends Thread {
 
         if (m_eQTLPlotter != null) {
             for (int p = 0; p < dsResults.pvalues.length; p++) {
-                Double pval = dsResults.pvalues[p];
-                if (pval != null && pval < m_pvaluePlotThreshold) {
+                double pval = dsResults.pvalues[p];
+                if (!Double.isNaN(pval) && pval < m_pvaluePlotThreshold) {
                     ploteQTL(wp, p);
                 }
             }
@@ -301,15 +304,14 @@ class CalculationThread extends Thread {
 
         snps = wp.getSnps();
         if (snps != null) {
-            for (int d = 0; d < snps.length; d++) {
-                if (snps[d] != null) {
-                    snps[d].clearGenotypes();
+            for (SNP snp : snps) {
+                if (snp != null) {
+                    snp.clearGenotypes();
                 }
             }
         }
 
         // if result output is binary, convert to bytes and deflate the set of bytes.
-
         if (m_binaryoutput) {
             deflateResults(wp);
         }
@@ -323,22 +325,35 @@ class CalculationThread extends Thread {
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
-    private void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, Result r) {
+    private void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r) {
         double[] y = null;
-
-//        long t1 = System.nanoTime();
-//        long t2 = 0;
+        double[][] covariates = null;
         if (x.length != sampleCount) {
             y = new double[x.length];
             int itr = 0;
             double sum = 0;
             double[] tmpY = rawData[probeId];
+
             // recalculate mean and variance
             for (int s = 0; s < sampleCount; s++) {
                 if (includeExpressionSample[s]) {
                     y[itr] = tmpY[s];
                     sum += y[itr];
                     itr++;
+                }
+            }
+
+            if (covariateRawData != null) {
+                int covariateitr = 0;
+                covariates = new double[covariateRawData.length][0];
+                for (int covariate = 0; covariate < covariateRawData.length; covariate++) {
+                    covariates[covariate] = new double[x.length];
+                    for (int s = 0; s < sampleCount; s++) {
+                        if (includeExpressionSample[s]) {
+                            covariates[covariate][covariateitr] = covariateRawData[covariate][s];
+                            covariateitr++;
+                        }
+                    }
                 }
             }
 
@@ -350,37 +365,53 @@ class CalculationThread extends Thread {
                 varsum += y[i] * y[i];
             }
             varianceY = varsum / (y.length - 1);
-//            t2 = System.nanoTime();
         } else {
-//            y = rawData[probeId];
             y = new double[x.length];
             System.arraycopy(rawData[probeId], 0, y, 0, x.length);
         }
 
-        //Calculate correlation coefficient:
         if (varianceY == 0) {
             r.zscores[d][p] = Double.NaN;
             r.correlations[d][p] = Double.NaN;
+        } else if (covariates != null && regressionFullWithInteraction != null) {
+       
+            double[][] olsXFullWithInteraction = new double[x.length][3];       //With interaction term, linear model: y ~ a * SNP + b * CellCount + c + d * SNP * CellCount
+            olsXFullWithInteraction[0] = x;
+
+            // TODO: what to do when there are multiple covariates involved?
+            olsXFullWithInteraction[1] = covariates[0];
+            for (int i = 0; i < covariates.length; i++) {
+                olsXFullWithInteraction[2][i] = covariates[0][i] * x[i];
+            }
+            regressionFullWithInteraction.newSampleData(y, olsXFullWithInteraction);
+            double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
+            double r2 = regressionFullWithInteraction.calculateRSquared();
+            // calculate F statistic for the significance of the model
+            double totalSS = regressionFullWithInteraction.calculateTotalSumOfSquares();
+            double modelSS = totalSS - residualSS;
+            double dfmodel = 3;
+            double dferror = x.length - dfmodel - 1;
+            double msm = modelSS / dfmodel;
+            double mse = residualSS / dferror;
+            double f = msm / mse;
+            FDistribution fDist = new org.apache.commons.math3.distribution.FDistribution(dfmodel, dferror);
+            double pvalmodel = fDist.cumulativeProbability(f);
+            double zscoremodel = ZScores.pToZ(pvalmodel);
+
+            r.zscores[d][p] = zscoremodel;
+            r.correlations[d][p] = r2;
+
         } else {
-            //            long t3 = System.nanoTime();
+
+            //Calculate correlation coefficient:
             double correlation = Correlation.correlate(x, y, varianceX, varianceY);
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
-
-//                if (determinebeta || determinefoldchange) {
                 double[] xcopy = new double[x.length];
-
-//                System.out.println("");
-//                System.out.println("Pre");
-//                for (int i = 0; i < y.length; i++) {
-//                    System.out.println(i + "\t" + x[i] + "\t" + y[i]);
-//                }
-
                 double meanx = JSci.maths.ArrayMath.mean(x);
                 double meany = JSci.maths.ArrayMath.mean(y);
                 double stdevy = JSci.maths.ArrayMath.standardDeviation(y);
                 double stdevx = JSci.maths.ArrayMath.standardDeviation(x);
-                //
                 for (int i = 0; i < y.length; i++) {
                     y[i] -= meany;
                     y[i] /= stdevy;
@@ -389,40 +420,17 @@ class CalculationThread extends Thread {
                 }
                 meany = JSci.maths.ArrayMath.mean(y);
                 meanx = JSci.maths.ArrayMath.mean(xcopy);
-//                if (determinebeta) {
                 calculateRegressionCoefficients(xcopy, meanx, y, meany, r, d, p);
-//                }
                 if (determinefoldchange) {
                     determineFoldchange(originalGenotypes, y, r, d, p);
                 }
-//                }
-
-                //            long t4 = System.nanoTime();
                 r.zscores[d][p] = zScore;
                 r.correlations[d][p] = correlation;
-
-//                System.out.println("");
-//                System.out.println("Post");
-//                for (int i = 0; i < y.length; i++) {
-//                    System.out.println(i + "\t" + xcopy[i] + "\t" + y[i]);
-//                }
-
-//                double[] reg = Regression.getLinearRegressionCoefficients(xcopy, y);
-
-//                System.out.println("z " + zScore + "\tcorr " + correlation + "\tbeta " + r.beta[d][p] + "\tse " + r.se[d][p] + "\t" + reg[0] + "\t" + reg[1] + "\t" + reg[2]);
-//                System.out.println("");
-//                System.exit(0);
             } else {
                 System.err.println("Error! correlation invalid: " + correlation);
                 System.exit(-1);
             }
-
-//            long t5 = System.nanoTime();
-//            System.out.println((t2-t1)+"\t"+(t3-t1)+"\t"+(t4-t1)+"\t"+(t5-t1));
         }
-    }
-
-    private void normalizeGeneExpressionDataForMissingGenotypes() {
     }
 
     private void calculateRegressionCoefficients(double[] x, double meanx, double[] y, double meany, Result r, int d, int p) {
@@ -447,14 +455,8 @@ class CalculationThread extends Thread {
         }
 
         double se = (Math.sqrt((ssxy) / (y.length - 2))) / Math.sqrt(sxx);
-//	double se3 = se2 / Math.sqrt(sxx);
-
-//            System.out.println("---");
-//            System.out.println(beta+"\t"+alpha+"\t"+se2+"\t"+se3);
         r.beta[d][p] = beta;
         r.se[d][p] = se;
-//            System.exit(0);
-
     }
 
     private void determineFoldchange(double[] genotypes, double[] expression, Result r, int d, int p) {
@@ -484,10 +486,6 @@ class CalculationThread extends Thread {
 
         }
 
-
-
-
-
         sumAA /= (double) numAA;
         sumBB /= (double) numBB;
 
@@ -503,7 +501,6 @@ class CalculationThread extends Thread {
         }
         if (currentWP.getFlipSNPAlleles()[d]) {
 
-
             r.fc[d][p] = sumAA / sumBB;
         } else {
             r.fc[d][p] = sumBB / sumAA;
@@ -515,9 +512,7 @@ class CalculationThread extends Thread {
         // per probe, convert to p-value
         int numProbes = dsResults.zscores[0].length;
 
-
         boolean hasResults = false;
-
 
         for (int p = 0; p < numProbes; p++) {
             int nrDatasetsPassingQC = 0;
@@ -527,6 +522,7 @@ class CalculationThread extends Thread {
             double betasum = 0;
 
             for (int d = 0; d < m_numDatasets; d++) {
+                // TODO: check whether this actually returns the correct Z-scores: should the stored values be flipped?
                 double zscore = dsResults.zscores[d][p];
                 double correlation = dsResults.correlations[d][p];
 
@@ -580,7 +576,6 @@ class CalculationThread extends Thread {
                 dsResults.finalZScoreAbsolute[p] = Double.NaN;
             }
             // calculate the weighted Z-score
-
 
         }
 

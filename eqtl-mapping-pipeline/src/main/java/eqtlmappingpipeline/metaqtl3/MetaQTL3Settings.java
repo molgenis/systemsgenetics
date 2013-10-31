@@ -55,7 +55,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean confineProbesToProbesPresentInAllDatasets;
     public ArrayList<TriTyperGeneticalGenomicsDatasetSettings> datasetSettings;
     public String regressOutEQTLEffectFileName;
-    public boolean regressOutEQTLEffectExpressionOutputFiles;
+    public boolean regressOutEQTLEffectsSaveOutput;
     public Double snpQCCallRateThreshold = 0.95;
     public Double snpQCHWEThreshold = 0.0001;
     public Double snpQCMAFThreshold = 0.05;
@@ -508,9 +508,9 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             regressOutEQTLEffectFileName = config.getString("defaults.analysis.regressOutEQTLEffects");
         } catch (Exception e) {
         }
-        regressOutEQTLEffectExpressionOutputFiles = false;
+        regressOutEQTLEffectsSaveOutput = false;
         try {
-            regressOutEQTLEffectExpressionOutputFiles = config.getBoolean("defaults.analysis.regressOutEQTLEffectsOutputDir");
+            regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput");
         } catch (Exception e) {
         }
 
@@ -596,7 +596,18 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             s.genotypeLocation = dataloc;
 
 
+            // see if there are covariates to load
+            String covariateFile = null;
+            try {
+                covariateFile = config.getString("datasets.dataset(" + i + ").covariates");
+                if (settingsTextToReplace != null && covariateFile.contains(settingsTextToReplace)) {
+                    covariateFile = covariateFile.replace(settingsTextToReplace, settingsTextReplaceWith);
+                }
+            } catch (Exception e) {
+            }
 
+            s.covariateFile = covariateFile;
+            
             // see if there is a genotype to expression couplings file
             try {
                 genToExpCoupling = config.getString("datasets.dataset(" + i + ").genometoexpressioncoupling");
