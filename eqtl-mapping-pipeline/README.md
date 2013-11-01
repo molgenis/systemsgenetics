@@ -1,21 +1,39 @@
 #EQTL mapping pipeline manual
-
-
 This software allows for (e)QTL mapping using linear models and direct meta-analysis of such data.
+
+##Questions or suggestions?
+You can contact the authors of this software at westra.harmjan@gmail.com, or lude@ludesign.nl for questions or suggestions regarding the software or the manual.
+
+##Features
+
+###Various normalization strategies implemented
+###Minimum effort QTL mapping
+###Instant meta-analysis
+###Multiple testing corrections
+For multiple testing correction, we perform 10 permutations to control the false discovery rate (FDR) at 0.05 for both the *cis*- and *trans*-analyses. By randomly shuffling the sample labels, we can compute the sampling distribution for any test statistic, under the strong null hypothesis that a set of genetic variants has absolutely no effect on the outcome. FDR controls the expected proportion of false positives among the results based on the real data analysis.
 
 ##Downloading the software
 You can download the latest version of the software here: [Latest version](http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$eqtl-mapping-pipeline/lastBuild/).
+
 Make sure to download the stand alone jar: `eqtl-mapping-pipeline-******-jar-with-dependencies.jar`
 
 Please note that the manual refers to eQTLMappingPipeline.jar, while the name of the package described above may be different (because of different version numbers etc)
 
 ##Before you start
 
+###Path definitions and commands
+Please note that our software expects full paths, although shorter paths wil also work in most cases. So, if you are on Windows, a full path to a genotype directory would be similar to `c:\path\to\genotype\dir\` and a full path to a file would be `c:\path\to\genotype\directory\file.txt`. Linux and Mac OS use different path separators. On these systems, these paths would be similar to the following `/path/to/genotype/dir/` and `/path/to/genotype/dir/file.txt`. Our main point here is that when pointing to a directory, use a 'trailing slash'
+
+This manual will combine references to paths with commands that need to be issued for a certain task. For example, at some point in this manual we refer to your phenotype data as `traitfile`. Commands will also be in grey boxes, and can make references to paths earlier defined (to keep the manual readable), as follows:
+
+````
+java -jar eQTLMappingPipeline.jar --mode metaqtl --inexp traitfile
+````
 
 ###Java Virtual Machine
 Our software is written in Java, which makes the software both fast and portable across multiple operating systems. Executing a java program is similar to executing a normal program or app, although there are some considerations:
 
-* eQTL mapping heavily relies on available memory. Make sure your machine is 64-bit and has lots of memory installed (at least 4Gb). 
+* QTL mapping heavily relies on available memory. Make sure your machine is 64-bit and has lots of memory installed (at least 4Gb). 
 
 * Please make sure your version of java is up-to-date. Use at least the 64-bit version of Java version 6 (also called version 1.6). The software should also work on version 7 and higher. If you are running on Windows, you can download the so-called Java Runtime Environment (JRE) from: http://www.java.com. If you are running Linux, the virtual machine may be present in the proprietary section of your package manager, or may be available via http://www.java.com.
 
@@ -33,11 +51,9 @@ Our software is written in Java, which makes the software both fast and portable
 **IMPORTANT NOTE: In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the –Xmx switch from the example commands. Please be aware that you should use it, as most of the commands require a substantial amount of memory!**
 
 ###General information about software
-* The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: “java –jar eQTLMappingPipeline.jar” produces a list of available modes, while “java –jar eQTLMappingPipeline.jar  --mode metaqtl” produces a list of all available options for metaqtl. You can also find all possible switches in the manual section “command line options”.
+* The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: ```java –jar eQTLMappingPipeline.jar``` produces a list of available modes, while ```java –jar eQTLMappingPipeline.jar  --mode metaqtl``` produces a list of all available options for metaqtl. You can also find all possible switches in the manual section “command line options”.
 * The software is able to process GZipped text files for most of the input files (not files in .tar archives however), which allows you to save some space on your hard drive.
 
-###Path definitions
-Please note that our software expects full paths, although shorter paths wil also work in most cases. So, if you are on Windows, a full path to a genotype directory would be similar to `c:\path\to\genotype\dir\` and a full path to a file would be `c:\path\to\genotype\directory\file.txt`. Linux and Mac OS use different path separators. On these systems, these paths would be similar to the following `/path/to/genotype/dir/` and `/path/to/genotype/dir/file.txt`. Our main point here is that when pointing to a directory, use a 'trailing slash'
 
 #Step by step eQTL analysis
 This is a step by step guide which will guide you through the QTL mapping process using our software. Please note that this step by step guide illustrates only a part of the capabilities of our software. Our general method consists of six steps described below:
@@ -80,7 +96,7 @@ Use the GenomeStudio files of your expression arrays. **Please do not use any no
 Our software is able to use both unimputed called genotypes, as well as imputed genotypes and their dosage values. However, currently our software can only interpret files that are in the [TriTyper](http://genenetwork.nl/wordpress/trityper/) format. We are working on a generic method of genotype input through [Genotype IO](https://github.com/harmjanwestra/systemsgenetics/tree/master/Genotype-IO). In the mean time, users of the eQTL mapping pipeline should convert their data to TriTyper using ImputationTool. This tool is also integrated in the eQTL mapping pipeline, and can be called using the following command (no separate download required):
 
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --imputationtool
+java –jar eQTLMappingPipeline.jar --imputationtool
 ```
 
 The documentation for the ImputationTool can be found at the [ImputationTool repository page](https://github.com/molgenis/systemsgenetics/tree/master/imputation-tool).
@@ -92,6 +108,7 @@ After converting your genotype data to TriTyper format, a number of files should
 
 #File Checklist
 Before you continue in this manual, this is a good time check whether your files are in the correct format and whether you have all the required files ready.
+
 * Check whether all required files are in your `genotypedir`.
 * Check whether the `traitfile` is properly normalized.
 * Check whether you have an `annotationfile`. The format is described here [File formats - Probe annotation file](link).  
@@ -105,9 +122,9 @@ Our general normalization strategy for Illumina based array data consists of the
 2. Log<sub>2</sub> transformation
 3. Probe centering and scaling (Z-transform): (Expression<sub>Probe,Sample</sub> = Expression<sub>Probe,Sample</sub> – MeanProbe) / Std.Dev.<sub>Probe</sub>
 4. (Optionally) Removal of covariates - Correct gene expression data for first 4 PCs of the GWAS data – to remove possible population stratification
-    - *We run a Generalized Linear Model with the probes as dependent variables, and the GWAS PCs as orthogonal covariates. For the remainder of the analysis, we use the residuals of this model.*
+    * We run a Generalized Linear Model with the probes as dependent variables, and the GWAS PCs as orthogonal covariates. For the remainder of the analysis, we use the residuals of this model.*
 5. Principal component adjustment
-    - *In the Principal Component Analysis, the software tries to convert the normalized and standardized expression results into a set of values of uncorrelated variables, called Principal Components (PCs). The number of PCs is equal to the number of samples, and the first PCs explain a higher variance than the last PCs. By adjusting the normalized and standardized expression data for a set of PCs (like we did with the removal of the covariates – use of a Generalized Linear Model), we try to remove batch effects in the data. By removing them in an incremental way, we try to find the optimal number of PCs to remove.*
+    * In the Principal Component Analysis, the software tries to convert the normalized and standardized expression results into a set of values of uncorrelated variables, called Principal Components (PCs). The number of PCs is equal to the number of samples, and the first PCs explain a higher variance than the last PCs. By adjusting the normalized and standardized expression data for a set of PCs (like we did with the removal of the covariates – use of a Generalized Linear Model), we try to remove batch effects in the data. By removing them in an incremental way, we try to find the optimal number of PCs to remove.*
 
 After probe centering, sample z-transformation, and removal of covariates, a tab-separated gzipped plaintext file is created with an identical number of rows and columns as the input file. This means these files can subsequently be used during eQTL mapping.
 
@@ -118,29 +135,34 @@ Note down the full path to your `traitfile`. The output of the normalization too
 
 ###Commands to be issued
 To run the general normalization strategy described above, you can run the following command:
+
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --mode normalize --in traitfile
+java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile
 ```
 
 You can specify an output directory with the following command (specifying an `outdir`):
+
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --out outdir
+java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --out outdir
 ```
 
 To run the general normalization strategy described above, and correct for covariates:
+
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --adjustcovariates --cov covariatefile
+java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --adjustcovariates --cov covariatefile
 ```
 
 Individual elements of the normalization strategy can also be separately executed. For example to only run Quantile normalization, and Log<sub>2</sub> transformation run the following command:
+
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --qqnorm --logtransform
+java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --qqnorm --logtransform
 ```
 
 **Note:**
 Several other parameters can be set to customize your normalization strategy (e.g. number of PCs to remove, step size for PC removal, handling of missing values, etc). However, the order of procedures is fixed (Quantile Normalize > Log<sub>2</sub> transform > covariate adjustment > centering and scaling > PCA adjustment), irregardless of the order of each command line switch. To review the available options for normalization, issue the following command:
+
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --mode normalize
+java –jar eQTLMappingPipeline.jar --mode normalize
 ```
 
 ###Check your data
@@ -175,8 +197,9 @@ For details how this exactly works, please have a look at the paper or read the 
 
 ###Commands to be issued
 The *MixupMapper* analysis can be run using the following command:
+
 ```
-java –d64 –Xmx4g –jar eQTLMappingPipeline.jar --mode mixupmapper --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling
+java –jar eQTLMappingPipeline.jar --mode mixupmapper --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling
 ```
 
 By default, the software tests all SNPs in your genotype data, having a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95. If you want to test a subset of SNPs, create a text file (`snpfile`) with one column, one SNP identifier per row, and append the command above with the following command line switch `--snps snpfile` (remember to use the full path).
@@ -252,24 +275,61 @@ In this case, Ex-2 is matched to two genotype samples. This means that either GT
 Finally, consider the following example:
 <pre>
 GT-1	Ex-7	GT-7	FALSE	TRUE	-10.4	TRUE
-GT-2	Ex-6	GT-6	FALSE	TRUE	-9.6	TRUE
+GT-2	Ex-6	GT-6	FALSE	TRUE	-9.60	TRUE
 GT-3	Ex-5	GT-5	FALSE	TRUE	-10.4	TRUE
-GT-4	Ex-4	GT-4	FALSE	TRUE	-9.6	TRUE
+GT-4	Ex-4	GT-4	FALSE	TRUE	-9.60	TRUE
 GT-5	Ex-3	GT-3	FALSE	TRUE	-10.4	TRUE
-GT-6	Ex-2	GT-2	FALSE	TRUE	-9.6	TRUE
+GT-6	Ex-2	GT-2	FALSE	TRUE	-9.60	TRUE
 </pre>
 
 The above example shows you an example of what a row inversion on a chip would look like: GT-1 matches Ex-7, GT-2 matches Ex-6, etcetera.
 
-After checking the SampleMixups.txt file, some samples can be identified as sample mix-ups. You can easily replace the mixed IDs in the ‘GenotypeToExpressionCoupling.txt’ file, without the need to change the ExpressionData files (adjusted or not) themselves. Please check in your plate- and array layouts whether it was possible to make these sample mix-ups. If your layouts don’t give you any information on why a sample could have been mixed-up we have chosen to exclude samples for which column 4 indicates FALSE (eg: where the match is not concordant to what was initially defined).
+After checking the SampleMixups.txt file, some samples can be identified as sample mix-ups. You can easily replace the mixed IDs in the `genotypephenotypecoupling` file, without the need to change the ExpressionData files (adjusted or not) themselves. Please check in your plate- and array layouts whether it was possible to make these sample mix-ups. If your layouts don’t give you any information on why a sample could have been mixed-up we have chosen to exclude samples for which column 4 indicates FALSE (eg: where the match is not concordant to what was initially defined).
 
-
-If you want to remove a sample after for example the mix-up step, remove the sample by either deleting it from your ‘GenotypeToExpressionCoupling.txt’, by setting the sample to ‘exclude’ in the ‘PhenotypeInformation.txt’, or by removing the sample from the gene expression data.
-Make sure that you never remove lines from the Individuals.txt as this will result in erroneous genotypes for the remainder of the samples.
+If you want to remove a sample after for example the mix-up step, remove the sample by either deleting it from your  `genotypephenotypecoupling`, by setting the sample to ‘exclude’ in the ‘PhenotypeInformation.txt’, or by removing the sample from the gene expression data.
+**Make sure that you never remove lines from the Individuals.txt as this will result in erroneous genotypes for the remainder of the samples.**
 
 Always rerun the Sample Mix-up Mapper after removing or changing sample IDs and check whether the results become better. 
 
 ##Step 5 - The optimum number of PCs to remove
+Prior to eQTL mapping, we would like to determine whether removing PCs increases power to detect *cis*- and *trans*-QTLs. For each PC removing step (during normalization), this method runs both *cis*- and *trans*-eQTLs mapping(to refresh your memory: [see the section on normalization](link)). 
+
+1. To be able to determine the optimum number of PCs to remove, and to reduce calculation time, we ordinarily run the *cis*-analysis on a selection of about 300.000 SNPs (Illumina HumanHap 300K content) and the *trans*-analysis on a selection of about 5.000 SNPs (content of the GWAS database: Genome.gov/GWAS/). However, other selections of SNPs can be used as well as detailed below. At the end of the analyses, the program will produce a list with the number of significant *cis*- and *trans*-QTLs, for each increment of PC removal. Based on this list, a table will be created showing the optimum number of PCs to remove. **This analysis is optional**.
+2. Because we have seen that some PCs explain genetic variation, we perform an additional analysis to only adjust for PCs that have no genetic association. To identify the PCs that have no genetic association, we perform a QTL mapping on the principal component eigenvector matrix (PCAOverSamplesEigenvectorsTransposed.txt.gz). We call PCs genetically associated when they have a FDR of 0 (thus selecting truly significantly affected components only). Subsequently, we repeat the *cis*- and *trans*-QTL analyses, although this time we do not remove PCs that are genetically associated. Additionally, this second step also writes new PC Corrected phenotype files, although this time, excluding those compontents with a genetic association.
+
+###Preparations
+1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
+2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data). We will refer to this path as `traitfile`. 
+3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
+4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
+6. Create (or download) a list of SNPs to use for the *cis*- and *trans*-QTL analyses, and save this in (a) text-file(s). Use a single column, and one line per SNP identifier. We will refer to these files as `cissnpfile` and `transsnpfile`. As with *MixupMapper*, SNPs will only be tested with a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95.  
+
+###Commands to be issued
+To run the analysis, not taking into account the genetic association of PCs with SNPs, use the following command:
+
+
+```
+java –jar eQTLMappingPipeline.jar --mode pcaoptimum --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling --cissnps cissnpfile --transsnps transsnpfile
+```
+
+If you want to run this analysis specifically for cis-QTLs, you can omit the `--transsnps transsnpfile` part of the command. Conversely, if you only want to run the trans-QTL analysis, you can omit the `--cissnps cissnpfile` part of the command.
+
+To run the same analysis, taking the genetic association of PCs with SNPs into account (and to create the phenotype files that have been corrected with this approach), append the command above with the command line switch `--pcqtl`. 
+
+If you are running the software in a cluster environment, you can specificy the number of threads to use (`nrthreads`) by appending the command above with the following command line switch `--threads nrthreads` (nrthreads should be an integer).
+
+By default, the software uses 10 permutations to determine the False Discovery Rate (FDR) p-value threshold during the *cis*-eQTL mapping step. If you want to change the number of permutations (`nrperm`), you can append the command above with the following command line switch `--perm nrperm` (nrperm should be an integer).
+
+
+###Check your data
+After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyses (2 + 2 x the number of iterations performed: one folder for cis and trans per each iteration). The contents of these directories are detailed here: [QTL mapping output](link). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. Additionally, at the end of the analyses, the program produces a table with the number of significant *cis*- and *trans*-QTLs for each increment of PCs removal, the number of shared QTLs, and the number of QTLs with a different allelic direction compared to not removing any PC (this output will be printed on your screen). Furthermore, the program will produce a number of scatterplots in the output directory (x-axis: z-score for eQTLs after number of PCs removed, y-axis: z-score of eQTLs when 0 PCs removed) and some summary files. In excel, you can easily plot those PCA optimum numbers for both analyzes. 
+
+Apart from QTL mapping results, the `--pcqtl` procedure will also produce new phenotype files in the same directory as your initial `traitfile`. 
+
+
+
+
 ##Step 6 - Perform the final QTL analysis
 
 #File formats
@@ -281,7 +341,7 @@ A probe annotation file is required when running a *cis*-eQTL analysis. This fil
 
 ###File example
 <pre>
-Platform    HT12v4-ArrayAddress Symbol	Chr	ChrStart	ChrEnd	Probe     Seq
+Platform    HT12v4-ArrayAddress Symbol	Chr		ChrStart ChrEnd Probe     Seq
 HT12v4      00001               GeneX	1       1504        1554        0       CGCTCCCCTTATAACTT-etc.
 HT12v4      00002               GeneY	11      19900       19950       1       GGATCCCAGATTCCCT-etc.
 HT12v4      00003               GeneZ	23      101         151         2       TTCTCCAGAGTCGAGC-etc.
@@ -289,7 +349,7 @@ HT12v4      00003               GeneZ	23      101         151         2       TT
 
 
 ##Phenotype file, covariate file
-Phenotype and covariate files have the same basic format. We use a tab separated table, with individuals on columns and probes or covariates on the rows. 
+Phenotype and covariate files have the same basic format. We use a tab separated text-based table, with individuals on columns and probes or covariates on the rows. 
 
 ###File example
 <pre>
