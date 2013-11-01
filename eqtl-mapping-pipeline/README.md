@@ -1,33 +1,54 @@
 #EQTL mapping pipeline manual
-This software allows for (e)QTL mapping using linear models and direct meta-analysis of such data.
+This software allows for (e)QTL mapping using linear models and direct meta-analysis of such data through weighted Z-score analysis.
 
 ##Questions or suggestions?
-You can contact the authors of this software at westra.harmjan@gmail.com, or lude@ludesign.nl for questions or suggestions regarding the software or the manual.
+You can contact the authors of this software at westra.harmjan@gmail.com, or lude@ludesign.nl for questions or suggestions regarding the software or the manual. This manual was written in cooperation with Marjolein Peters and Joyce van Meurs.
 
-##Features
+##Manual contents
 
-###Various normalization strategies implemented
-###Minimum effort QTL mapping
-###Instant meta-analysis
-###Multiple testing corrections
-For multiple testing correction, we perform 10 permutations to control the false discovery rate (FDR) at 0.05 for both the *cis*- and *trans*-analyses. By randomly shuffling the sample labels, we can compute the sampling distribution for any test statistic, under the strong null hypothesis that a set of genetic variants has absolutely no effect on the outcome. FDR controls the expected proportion of false positives among the results based on the real data analysis.
+1. Downloading the software
+2. Before you start
+3. Step by step QTL analysis
+    * Step 1 - Preparation phenotype data
+    * Step 2 - Preparation genotype data
+    * File Checklist
+    * Step 3 - Phenotype data normalization
+    * Step 4 - MixupMapper
+    * Step 5 - Determining the optimum number of PCs to remove
+    * Step 6 - Perform the final QTL analysis
+4. Additional analyses and advanced settings
+    * Meta-analysis and settings file
+    * Multiple linear regression using interaction model
+    * Conditional analysis
+5. File formats
+    * Probe annotation file
+    * Phenotype file, covariate file
+    * Genotype - phenotype coupling
+    * TriTyper genotype data
+6. Frequently asked questions
 
 ##Downloading the software
 You can download the latest version of the software here: [Latest version](http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$eqtl-mapping-pipeline/lastBuild/).
 
 Make sure to download the stand alone jar: `eqtl-mapping-pipeline-******-jar-with-dependencies.jar`
 
-Please note that the manual refers to eQTLMappingPipeline.jar, while the name of the package described above may be different (because of different version numbers etc)
+Please note that the manual refers to eQTLMappingPipeline.jar, while the name of the package described above may be different (because of different version numbers etc).
 
 ##Before you start
 
 ###Path definitions and commands
 Please note that our software expects full paths, although shorter paths wil also work in most cases. So, if you are on Windows, a full path to a genotype directory would be similar to `c:\path\to\genotype\dir\` and a full path to a file would be `c:\path\to\genotype\directory\file.txt`. Linux and Mac OS use different path separators. On these systems, these paths would be similar to the following `/path/to/genotype/dir/` and `/path/to/genotype/dir/file.txt`. Our main point here is that when pointing to a directory, use a 'trailing slash'
 
-This manual will combine references to paths with commands that need to be issued for a certain task. For example, at some point in this manual we refer to your phenotype data as `traitfile`. Commands will also be in grey boxes, and can make references to paths earlier defined (to keep the manual readable), as follows:
+This manual will combine references to paths with commands that need to be issued for a certain task. For example, at some point in this manual we refer to your phenotype data as `traitfile`, which will be printed in a grey box. Commands will also be in grey boxes, and can make references to paths defined earlier (to keep the manual readable), as follows:
 
 ````
 java -jar eQTLMappingPipeline.jar --mode metaqtl --inexp traitfile
+````
+
+To run the command in the example above, you have to replace the string `traitfile` with the full path of your `traitfile` after the command line switch `--inexp`. So if the full path to your `traitfile` would be `/path/to/traitfile.txt`, the final command would be:
+
+````
+java -jar eQTLMappingPipeline.jar --mode metaqtl --inexp /path/to/traitfile.txt
 ````
 
 ###Java Virtual Machine
@@ -42,47 +63,53 @@ Our software is written in Java, which makes the software both fast and portable
     java –jar eQTLMappingPipeline.jar 
 ```
 
-* You need to specify the amount of memory available to the program using the command-line switch –Xmx. The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. Both switches (–Xmx and –d64) should be called prior to the –jar switch. An example where the program is allowed to use 4gb of memory:
+* You need to specify the amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. Both switches (–Xmx and –d64) should be called prior to the –jar switch. An example where the program is allowed to use 4gb of memory:
+* 
 ```    
     java –d64 –Xmx4g –jar eQTLMappingPipeline.jar 
 ```
+
 * Try to increase the –Xmx amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
 
-**IMPORTANT NOTE: In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the –Xmx switch from the example commands. Please be aware that you should use it, as most of the commands require a substantial amount of memory!**
+**IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the –Xmx switch from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
 
 ###General information about software
-* The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: ```java –jar eQTLMappingPipeline.jar``` produces a list of available modes, while ```java –jar eQTLMappingPipeline.jar  --mode metaqtl``` produces a list of all available options for metaqtl. You can also find all possible switches in the manual section “command line options”.
+* The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: ```java –jar eQTLMappingPipeline.jar``` produces a list of available modes, while ```java –jar eQTLMappingPipeline.jar  --mode metaqtl``` produces a list of all available options for metaqtl.
 * The software is able to process GZipped text files for most of the input files (not files in .tar archives however), which allows you to save some space on your hard drive.
 
 
 #Step by step eQTL analysis
-This is a step by step guide which will guide you through the QTL mapping process using our software. Please note that this step by step guide illustrates only a part of the capabilities of our software. Our general method consists of six steps described below:
+This is a step by step guide which will guide you through the QTL mapping process using our software. Please note that this step by step guide illustrates only a part of the capabilities of our software. However, this guide does explain the different command line switches. [Additional types of analyses can be found in this section.](link). Our general method consists of six steps described below:
 
 * Step 1 - Preparation phenotype data
 * Step 2 - Preparation genotype data
 * File Checklist
 * Step 3 - Phenotype data normalization
-* Step 4 - Mapping mix-ups
+* Step 4 - MixupMapper
 * Step 5 - Determining the optimum number of PCs to remove
 * Step 6 - Perform the final QTL analysis
 
+##Definitions
+Througout the manual, references to different full paths will be made. Here is an overview of these paths:
+
+* The phenotype file will be referred to as `traitfile`
+* The probe/trait/gene annotation file will be referred to as `annotationfile`
+* The full path of your genotype data will be referred to as `genotypedir`
+* The file linking phenotype individuals to genotype individuals will be referred to as `genotypephenotypecoupling`
+* The file containing covariates will be defined as `covariatefile`
 
 ##Step 1 - Preparation phenotype data
 Because our software uses a nonparametric test by default, you can use virtually any continuous data as trait values to map a variety of QTL effects. However, currently the normalization tools provided with this package are focused on array based methylation data, array based (Illumina) expression data, and preprocessed RNA-seq data (e.g. transcript level quantified data) or (GC)-RMA processed Affymetrix data. 
 
 Please format your phenotype data in a simple tab separated text file. The format of this file is described here: [Data Formats - Phenotype data](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file).
 
-**Throughout the manual, we will refer to your phenotype file as `traitfile`**
-
 Some analyses will require an annotation of the probes/traits/genes in your `traitfile`. We store this annotation in a separate file. The format of this file is described here: [File Formats - Annotation File](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file). 
-
-**Throughout the manual, we will refer to the full path of your annotation file as `annotationfile`**
 
 ###Illumina array based expression data
 
 Because Illumina has several ways to annotate and preprocess their gene expression arrays, we provide a detailed instruction below, that will yield raw, untouched gene expression levels.
 
-Use the GenomeStudio files of your expression arrays. **Please do not use any normalization, transformation, imputation, or background correction method that is offered by Illumina’s GenomeStudio! Just load your raw data, without doing any normalization, transformation, or background correction.**
+Use the GenomeStudio files of your expression arrays. **Note:** Please do not use any normalization, transformation, imputation, or background correction method that is offered by Illumina’s GenomeStudio! Just load your raw data, without doing any normalization, transformation, or background correction.
 
 * Export a so-called ‘Final Report’ using GenomeStudio, including array_address_id (as the probe identifier) and the average expression signals per sample for all probes (click 'Analysis' in the top menu bar, then 'Reports').
 * If you create more than one Final Report, merge the Final Reports, so that all data will be combined in one Expression Matrix File
@@ -101,8 +128,6 @@ java –jar eQTLMappingPipeline.jar --imputationtool
 
 The documentation for the ImputationTool can be found at the [ImputationTool repository page](https://github.com/molgenis/systemsgenetics/tree/master/imputation-tool).
 
-**Throughout the manual, we will refer to the full path of your genotype data as `genotypedir`**
-
 ###Check your data
 After converting your genotype data to TriTyper format, a number of files should have been created in your output directory. For a description of the different files, please refer to [Data formats - TriTyper](link)
 
@@ -111,13 +136,16 @@ Before you continue in this manual, this is a good time check whether your files
 
 * Check whether all required files are in your `genotypedir`.
 * Check whether the `traitfile` is properly normalized.
-* Check whether you have an `annotationfile`. The format is described here [File formats - Probe annotation file](link).  
+* Check whether you have an `annotationfile`. The format is described here [File formats - Probe annotation file](link). 
+    - Some QTL data may not have annotation (for example if you want to do a GWAS on lipid levels). In such cases an `annotationfile` is not required for QTL mapping. Please see [Step 6 - Running the final QTL mapping](link) for more details. 
+    - For the other steps, the annotation file is required, although you can fool the software by setting your genotype genomic locations to 1 (both chromosome and chromosome position) and doing the same for your phenotype data using the `annotationfile`.
 * If the sample identifiers differ between genotype and phenotype data, you have to create a file that links these identifiers together. This format is described here: [File formats - Genotype Phenotype coupling](link). This file is optional, although we will mention this file in this manual as `genotypephenotypecoupling`
 
 ##Step 3 - Phenotype data normalization
 Generally, continuous trait data needs to be normalized prior to applying statistical testing. Our software package provides different ways of normalizing your data contained in the `traitfile`. 
 
 Our general normalization strategy for Illumina based array data consists of the following steps:
+
 1. Quantile normalization
 2. Log<sub>2</sub> transformation
 3. Probe centering and scaling (Z-transform): (Expression<sub>Probe,Sample</sub> = Expression<sub>Probe,Sample</sub> – MeanProbe) / Std.Dev.<sub>Probe</sub>
@@ -180,7 +208,7 @@ Running the general normalization procedure yields a number of files in the dire
 |**ExpressionData.txt.&shy;PCAOverSamplesPrincipalComponents.txt.gz**|Principal Components describing the sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
 |**ExpressionData.txt.&shy;nPCAsOverSamplesRemoved.txt.gz**|Expression data, Quantile Normalized, Log2 Transformed, Z-transformed, with n Principal Components regressed out.|
 
-##Step 4 - Mapping mix-ups
+##Step 4 - MixupMapper
 We have shown in a paper published in Bioinformatics ([Westra et al.: *MixupMapper: correcting sample mix-ups in genome-wide datasets increases power to detect small genetic effects*](http://bioinformatics.oxfordjournals.org/content/27/15/2104)), that sample mix-ups often occur in genetical genomics datasets (i.e. datasets with both genotype and gene expression data). Therefore, we developed a method called *MixupMapper*, which is implemented in the eQTL Mapping Pipeline. This program performs the following steps:
 1. At first a *cis*-eQTL analysis is conducted on the dataset:
     -	using a 250 kb window between the SNP and the mid-probe position
@@ -219,6 +247,7 @@ If you want to use a set of QTLs that you have previously calculated (`eqtlfile`
 This directory contains output from a default *cis*-eQTL mapping approach. The contents of this directory are detailed here: [QTL mapping output](link).
 
 ####MixupMapping directory
+
 |File|Description|
 |----------------|
 |Distribution-Frequency.pdf|Frequency distribution of overall Z-scores. The Z-scores are plotted on the X-axis and the frequencies on the Y-axis.|
@@ -234,6 +263,7 @@ This directory contains output from a default *cis*-eQTL mapping approach. The c
 
 
 In the SampleMixups.txt file, you can find the best matching expression sample for each genotyped sample:
+
 -   1st column = genotyped sample ID
 -	2nd column = best matching expression set 
 -	3rd column = original genotype of the best matching expression set
@@ -248,7 +278,7 @@ Genotype-ID    BM-Exp-ID	Ori-Gen-BM-Exp-ID	Concordant	BM-Exp	Z-Score	Include?
 Sample1		Sample1		Sample1			true		true	-11.357	true
 Sample2		Sample2		Sample2			true		true	-15.232	true
 Sample3		Sample6		Sample6			false		true	-3.774	false
-Sample4		Sample5		Sample4			false		false	-3.892	tru
+Sample4		Sample5		Sample4			false		false	-3.892	true
 </pre>
 
 ###Resolving Sample mix-ups
@@ -323,21 +353,129 @@ By default, the software uses 10 permutations to determine the False Discovery R
 
 
 ###Check your data
-After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyses (2 + 2 x the number of iterations performed: one folder for cis and trans per each iteration). The contents of these directories are detailed here: [QTL mapping output](link). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. Additionally, at the end of the analyses, the program produces a table with the number of significant *cis*- and *trans*-QTLs for each increment of PCs removal, the number of shared QTLs, and the number of QTLs with a different allelic direction compared to not removing any PC (this output will be printed on your screen). Furthermore, the program will produce a number of scatterplots in the output directory (x-axis: z-score for eQTLs after number of PCs removed, y-axis: z-score of eQTLs when 0 PCs removed) and some summary files. In excel, you can easily plot those PCA optimum numbers for both analyzes. 
+After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyse. These folders will be named **Cis-nPCAsRemoved-GeneticVectorsNotRemoved** and **Trans-nPCAsRemoved-GeneticVectorsNotRemoved** (one folder per iteration of n PCs removed). The contents of these directories are detailed here: [QTL mapping output](link). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. 
 
-Apart from QTL mapping results, the `--pcqtl` procedure will also produce new phenotype files in the same directory as your initial `traitfile`. 
+Additionally, at the end of the analyses, the program produces a table with the number of significant *cis*- and *trans*-QTLs for each increment of PC removal, the number of shared QTLs, and the number of QTLs with a different allelic direction compared to the number of detected QTLs using your input `traitfile` (this output will be printed on your screen). 
 
+Furthermore, the program will produce a number of scatterplots in the `outdir` (x-axis: z-score for eQTLs after number of PCs removed, y-axis: z-score of eQTLs when 0 PCs removed) and some summary files. In excel, you can easily plot those PCA optimum numbers for both analyzes. 
 
-
+Apart from QTL mapping results, the `--pcqtl` procedure will also produce new phenotype files in the same directory as your initial `traitfile`. These files have the suffix **-GeneticVectorsNotRemoved.txt.gz**. The format of these files is identical to the format of the input `traitfile` and can subsequently be used for QTL mapping.
 
 ##Step 6 - Perform the final QTL analysis
+In a single command, the final QTL mapping can be performed. Standard settings for both *cis*- and *trans*-QTL mapping are: HWEP > 0.0001, MAF > 0.05, and Call Rate > 0.95. For *cis*-QTL mapping, the maximum distance between the SNP and the middle of the probe is 250.000bp. For *trans*-QTL mapping, the minimum distance between the SNP and the middle of the probe equals 5.000.000bp. To control for multiple testing, we perform 10 permutations, thereby shuffling sample labels, to calculate the false discovery rate (FDR) at 0.05 for both the *cis*- and *trans*-analysis.
+
+###Preparations
+1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
+2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, or any of the files produced in [Step 5](link)). We will refer to this path as `traitfile`. 
+3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
+4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
+6. (Optional) You can confine your analysis in several ways. For example, you can create a text-file with a list of snps (referred to as `snplist`; one SNP per line, single column), or a text file containing combination between SNPs and probes/traits/genes (referred to as `snpprobelist`; tab-separated, SNP identifier on first column, probe/gene/trait on second column).
+7. (Optional) We have found that removing *cis* effects greatly enhances the power to detect *trans* effects. Consequently, our software provides a way to correct your `traitfile` data for *cis* effects. Note down the full path of the file containing the *cis*-QTL effects to be removed. We will refer to this file as `qtlfile`. The format of this file is identical to the [eQTLs.txt.gz file](link). 
+    - **Note:** Removing QTL effects only properly works on imputed genotype data. The program will not remove QTL effects when imputation dosages are not available.
+
+###Commands to be issued
+
+The default command for a *cis*-QTL analysis:
+
+```
+java –jar eQTLMappingPipeline.jar --mode metaqtl --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --cis
+```
+
+By replacing the `--cis` command line switch with `--trans` in the above command, a genome-wide *trans* analysis is performed. 
+
+If you want to run both *cis* and *trans* analyses at once, you can supply the software with both command line switches:
+
+```
+java –jar eQTLMappingPipeline.jar --mode metaqtl --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --cis --trans
+```
+
+If you want to confine your analysis to a certain set of SNPs, you can append the command with `--snps snplist`. Alternatively, you can supply a combination of SNPs and traits/probes/genes by appending `--snpprobe snpprobelist`.
+
+If you want to remove QTL effects before your analysis, append the command with `--reqressouteqtls qtlfile`.
+
+If you are running the software in a cluster environment, you can specificy the number of threads to use (`nrthreads`) by appending the command above with the following command line switch `--threads nrthreads` (nrthreads should be an integer).
+
+By default, the software uses 10 permutations to determine the False Discovery Rate (FDR) p-value threshold during the *cis*-eQTL mapping step. If you want to change the number of permutations (`nrperm`), you can append the command above with the following command line switch `--perm nrperm` (nrperm should be an integer).
+
+You can set the maximum number of results returned (`nrresults`) in the eQTLs.txt.gz file by appending the command above with `--maxresults nrresults`. The default is 500,000. Please note that increasing this number also increases the memory usage of the program and the file size of the output files.
+
+By default, the program outputs results in a text-based format. However, for meta-analysis purposes, a binary format is also provided. You can switch to the binary format by appending `--binary` to the above commands. Tools to meta-analyze these binary files will be released at a later stage. You can also produce output in both text-based and binary formats, by appending `--text --binary` to the commands.
+
+### QTL Mapping output - Text mode
+This section describes the default output of a QTL mapping analysis. Depending on settings, one or more of the files below may not be present in your `outdir`.
+
+|File|Description|
+|----------------|
+|DotPlot-FDR0.05.png|The x-axis depicts SNP chromosome position, the y-axis depicts the probe chromosome position. Each dot represents the position of a significant association.|
+|eQTLProbesFDR0.05.txt|Contains eQTL results after correction for multiple testing. This file lists the strongest effect for each gene expression probe. FDR threshold value = 0.05.|
+|eQTLSNPsFDR0.05.txt|Contains eQTL results after correction for multiple testing. This file lists the strongest effect for each SNP. FDR threshold value = 0.05.|
+|eQTLs.txt|This file contains raw eQTL results on real data, not corrected for multiple testing: only the top 150,000 cis-eQTL results are shown, sorted by p-value.| 
+|eQTLsFDR0.05.txt|This file contains all significant cis-eQTL effects. FDR threshold value = 0.05.|
+|PermutedEQTLsPermutationRoundn.txt|This file contains eQTLs as determined based upon n permutation rounds. These files are used to calculate the FDR distribution.|
+|eQTLsFDR0.05QQPlot.pdf|QQ plot of test statistics.|
+|excludedSNPsBySNPFilter.txt|These SNPs are excluded by the user (by command)|
+|excludedSNPsBySNPProbeCombinationFilter.txt|There are no gene expression probes located within 250.000bp of this SNP position.|
+
+### QTL Mapping output - Binary mode
+This section describes the binary output files generated using the `--binary` command line switch.
+
+|File|Description|
+|-----|
+|Dataset.ProbeSummary.dat|This file contains the basic description of the tested probes: chromosome, chromosome position, probename and gene symbol. This file defines the order of probes in the ZscoreMatrix described below.|
+|Dataset.SNPSummary.dat|This file contains basic information on the tested SNPs: chromosome, chromosome position, minor allele frequency, HWE, call-rate, minor allele, the assessed allele, the number of samples for which there were genotypes available, and the position in the ZscoreMatrix|
+|Dataset.ZscoreMatrix.dat|This file contains a matrix the size of the number of probes in Dataset.ProbeSummary x Dataset.SnpSummary. The binary contents (1 floating point value per probe) are gzipped per SNP, which makes fast random access possible.|
+|Dataset-PermutationRound-n.SNPSummary.dat|SNP Summary for the permuted data analysis|
+|Dataset-PermutationRound-n.ZScoreMatrix.dat|Zscore matrix for the permuted data analysis|
+|excludedSNPsBySNPFilter.txt.gz|These SNPs are excluded by the user.|
+|excludedSNPsBySNPProbeCombinationFilter.txt.gz|There are no gene expression probes located within 250.000bp of this SNP position.|
+|ProbeQCLog.txt.gz|This file describes which probes have been excluded from analysis.|
+|SNPQCLog.txt.gz|This file contains QC information for all tested SNPs, including MAF, HWE-pvalue and call-rate (which is always 1.0 for imputed SNPs).|
+
+
+#Additional analyses and advanced settings
+
+
+
+##Multiple linear regression using interaction model
+
+##Conditional analysis
+
+##Meta-analysis and settings file
+The command line interface of this software allows for basic QTL analyses. However, our software has many more capabilities that are not accesible via the command line. In these cases, an XML file is required that describes the different settings (full path referred to as `settingsfile`). [An example `settingsfile` is provided in the repository](link). Using a settings file allows you to quickly rerun certain analyses and to perform on-the-fly meta-analyses. A copy of the `settingsfile` will always be copied to your `outdir`. 
+
+Currently, `settingsfile` can only be used in the `--mode metaqtl` mode. You should note that a `settingsfile` overrides all command line switches. The `settingsfile` can be used as follows:
+
+```
+java –jar eQTLMappingPipeline.jar --mode metaqtl --settings settingsfile
+```
+
+###Available options in settingsfile
+XML is, like HTML, a hierarchical markup language, which works with so-called markup tags. An example of such tags (describing two QC settings) is below:
+
+```
+<defaults>
+    <qc>
+        <maf>0.05</maf>
+        <hwep>0.001</hwep>    
+    </qc>
+</defaults>
+```
+
+Please note that if you open a tag "`<maf>`" you also need to close it: "`</maf>`". Also note that the `<maf>` tag is part of both `<qc>` and `<defaults>`, as an example of the hierarchy of XML files. If you have issues with the settings file, check whether all tags are opened and closed properly, and whether the hierarchy is correct. Also note that these tags are case-sensitive. 
+
+Because of the readability of the table below, we reduce the above hierarchy to `defaults.qc.maf` and `defaults.qc.hwep`, respectively. 
+
+|Setting|Value|Description|
+|-------------------|
+|sett.ing|double|description|
 
 #File formats
 This section lists the different file formats used by the software package.
 ##Probe annotation file
 A probe annotation file is required when running a *cis*-eQTL analysis. This file describes where each probe/trait/gene is located on the genome. This file is a simple tab-separated text file, with a line for each probe, and a header.
 
-**Please note: for reliable meta-analysis, probe annotations should be identical between datasets. Therefore, we recommend use of the array address for your platform as a probe identifier if you are using Illumina array based expression data.**
+**Please note:** for reliable meta-analysis, probe annotations should be identical between datasets. Therefore, we recommend use of the array address for your platform as a probe identifier if you are using Illumina array based expression data.
 
 ###File example
 <pre>
@@ -360,7 +498,7 @@ ProbeArrayAddress    Sample1	Sample2		Sample3
 00004		    	1.129		1.002		1.313
 </pre>
 
-**Please note: if you are exporting your data from R, note that the first column often does not have a column identifier. Our software expects n+1 columns in both the header as well as the data (where n equals the number of individuals in your dataset).**
+**Please note:** if you are exporting your data from R, note that the first column often does not have a column identifier. Our software expects n+1 columns in both the header as well as the data (where n equals the number of individuals in your dataset).
 
 ##Genotype - phenotype coupling
 Sometimes, the sample identifiers used in your phenotype data may not be identical to the identifiers used in your genotype data. Our software allows linking such identifiers through an external file we call a genotype-phenotype coupling file. This file also allows you to test specific combinations of genotype and phenotype individuals or can be used to select certain individuals to test by inclusion/exclusion.
@@ -401,9 +539,9 @@ rs10904045
 
 SNPMappings.txt: example of 3 SNPs
 <pre>
-10    62765	rs11511647	
-10	84172	rs12218882	
-10	84426	rs10904045	
+10    62765	rs11511647
+10    84172	rs12218882
+10    84426	rs10904045	
 </pre>
 
 
@@ -423,22 +561,10 @@ Sample3
 
 PhenotypeInformation.txt: example of 3 samples
 <pre>
-Sample1		control	include	female
-Sample2		control	include 	male
-Sample3		control	include	female
+Sample1    control    include    female
+Sample2    control    include    male
+Sample3    control    include    female
 </pre>
 
-## QTL Mapping output
 
-|File|Description|
-|----------------|
-|DotPlot-FDR0.05.png|The x-axis depicts SNP chromosome position, the y-axis depicts the probe chromosome position. Each dot represents the position of a significant association.|
-|eQTLProbesFDR0.05.txt|Contains eQTL results after correction for multiple testing. This file lists the strongest effect for each gene expression probe. FDR threshold value = 0.05.|
-|eQTLSNPsFDR0.05.txt|Contains eQTL results after correction for multiple testing. This file lists the strongest effect for each SNP. FDR threshold value = 0.05.|
-|eQTLs.txt|This file contains raw eQTL results on real data, not corrected for multiple testing: only the top 150,000 cis-eQTL results are shown, sorted by p-value.| 
-|eQTLsFDR0.05.txt|This file contains all significant cis-eQTL effects. FDR threshold value = 0.05.|
-|PermutedEQTLsPermutationRoundn.txt|This file contains eQTLs as determined based upon n permutation rounds. These files are used to calculate the FDR distribution.|
-|eQTLsFDR0.05QQPlot.pdf|QQ plot of test statistics.|
-|excludedSNPsBySNPFilter.txt|These SNPs are excluded by the user (by command)|
-|excludedSNPsBySNPProbeCombinationFilter.txt|There are no gene expression probes located within 250.000bp of this SNP position.|
 
