@@ -257,7 +257,7 @@ This directory contains output from a default *cis*-eQTL mapping approach. The c
 
 
 |File|Description|
-|----------------|
+|----|-----------|
 |Distribution-Frequency.pdf|Frequency distribution of overall Z-scores. The Z-scores are plotted on the X-axis and the frequencies on the Y-axis.|
 |Distribution-Frequency-BestMatches.pdf|This file is identical to Distribution-Frequency.pdf, except for the samples which have been removed after sample mix-up correction.|
 |Heatmap.pdf|Visualization of overall Z-scores per assessed pair of samples. The genotyped samples are plotted on the X-axis, and the gene expression samples are plotted on the Y-axis. The brightness of each box corresponds to the height of the overall Z-score, with lower values having brighter colours. The grey bars next to the sample names indicate the correlation of the samples with the first Principal Component, which is an indicator for sample quality. Samples are sorted alphabetically on both axes.|
@@ -414,7 +414,7 @@ By default, the program outputs results in a text-based format. However, for met
 This section describes the default output of a QTL mapping analysis. Depending on settings, one or more of the files below may not be present in your `outdir`.
 
 |File|Description|
-|----------------|
+|----|-----------|
 |DotPlot-FDR0.05.png|The x-axis depicts SNP chromosome position, the y-axis depicts the probe chromosome position. Each dot represents the position of a significant association.|
 |eQTLProbesFDR0.05.txt|Contains eQTL results after correction for multiple testing. This file lists the strongest effect for each gene expression probe. FDR threshold value = 0.05.|
 |eQTLSNPsFDR0.05.txt|Contains eQTL results after correction for multiple testing. This file lists the strongest effect for each SNP. FDR threshold value = 0.05.|
@@ -429,7 +429,7 @@ This section describes the default output of a QTL mapping analysis. Depending o
 This section describes the binary output files generated using the `--binary` command line switch.
 
 |File|Description|
-|-----|
+|-----|----------|
 |Dataset.ProbeSummary.dat|This file contains the basic description of the tested probes: chromosome, chromosome position, probename and gene symbol. This file defines the order of probes in the ZscoreMatrix described below.|
 |Dataset.SNPSummary.dat|This file contains basic information on the tested SNPs: chromosome, chromosome position, minor allele frequency, HWE, call-rate, minor allele, the assessed allele, the number of samples for which there were genotypes available, and the position in the ZscoreMatrix|
 |Dataset.ZscoreMatrix.dat|This file contains a matrix the size of the number of probes in Dataset.ProbeSummary x Dataset.SnpSummary. The binary contents (1 floating point value per probe) are gzipped per SNP, which makes fast random access possible.|
@@ -475,9 +475,13 @@ Please note that if you open a tag "`<maf>`" you also need to close it: "`</maf>
 
 Because of the readability of the table below, we reduce the above hierarchy to `defaults.qc.maf` and `defaults.qc.hwep`, respectively. 
 
+
 |Setting|Value|Description|
-|-------------------|
+|-------|-----|-----------|
 |sett.ing|double|description|
+|sett.ing2|double|description2|
+
+
 
 #File formats
 This section lists the different file formats used by the software package.
