@@ -407,7 +407,7 @@ class CalculationThread extends Thread {
             try {
                 zscore = ZScores.pToZ(pvalmodel);
             } catch (IllegalArgumentException e) {
-                System.out.println("ILLEGAL ARGUMENT AAAARRRGGHH: " + pvalmodel + "\t" + zscore);
+                //   System.out.println("ILLEGAL ARGUMENT AAAARRRGGHH: " + pvalmodel + "\t" + zscore);
             }
             r.zscores[d][p] = zscore;
             r.correlations[d][p] = r2;
@@ -542,7 +542,9 @@ class CalculationThread extends Thread {
                     boolean flipalleles = wp.getFlipSNPAlleles()[d];
                     if (flipalleles) {
                         zscore = -zscore;
+                        dsResults.zscores[d][p] = zscore;
                         correlation = -correlation;
+                        dsResults.correlations[d][p] = correlation;
                     }
                     nrDatasetsPassingQC++;
 
@@ -551,9 +553,11 @@ class CalculationThread extends Thread {
                     zSum += (zscore * weight);
                     zSumAbsolute += (Math.abs(zscore) * weight);
                     nrTotalSamples += numSamples;
+                    
                     if (determinebeta) {
                         if (flipalleles) {
                             betasum += (-dsResults.beta[d][p] * numSamples);
+                            dsResults.beta[d][p] = -dsResults.beta[d][p];
                         } else {
                             betasum += (dsResults.beta[d][p] * numSamples);
                         }
