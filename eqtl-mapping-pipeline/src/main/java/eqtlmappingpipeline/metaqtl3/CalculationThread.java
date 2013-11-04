@@ -198,13 +198,17 @@ class CalculationThread extends Thread {
                     double[] meanY = m_expressiondata[d].getProbeMean();
                     int samplecount = m_expressiondata[d].getIndividuals().length;
 
-                    DoubleMatrixDataset<String, String> covariateData = m_covariates[d];
+                    double[][] covariates = null;
+                    if (m_covariates != null) {
+                        DoubleMatrixDataset<String, String> covariateData = m_covariates[d];
+                        covariates = covariateData.rawData;
+                    }
 
                     for (int p = 0; p < probes.length; p++) {
                         int pid = probes[p];
                         Integer probeId = m_probeTranslation[d][pid];
                         if (probeId != null) {
-                            test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, covariateData.rawData, dsResults);
+                            test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, covariates, dsResults);
                         } else {
                             dsResults.correlations[d][p] = Double.NaN;
                             dsResults.zscores[d][p] = Double.NaN;
@@ -327,7 +331,7 @@ class CalculationThread extends Thread {
 
     private void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r) {
         double[] y = null;
-        double[][] covariates = null;
+        double[][] covariates = covariateRawData;
         if (x.length != sampleCount) {
             y = new double[x.length];
             int itr = 0;
@@ -343,7 +347,7 @@ class CalculationThread extends Thread {
                 }
             }
 
-            if (covariateRawData != null) {
+            if (covariates != null) {
                 int covariateitr = 0;
                 covariates = new double[covariateRawData.length][0];
                 for (int covariate = 0; covariate < covariateRawData.length; covariate++) {
@@ -374,15 +378,17 @@ class CalculationThread extends Thread {
             r.zscores[d][p] = Double.NaN;
             r.correlations[d][p] = Double.NaN;
         } else if (covariates != null && regressionFullWithInteraction != null) {
-       
-            double[][] olsXFullWithInteraction = new double[x.length][3];       //With interaction term, linear model: y ~ a * SNP + b * CellCount + c + d * SNP * CellCount
-            olsXFullWithInteraction[0] = x;
 
             // TODO: what to do when there are multiple covariates involved?
-            olsXFullWithInteraction[1] = covariates[0];
-            for (int i = 0; i < covariates.length; i++) {
-                olsXFullWithInteraction[2][i] = covariates[0][i] * x[i];
+            double[][] olsXFullWithInteraction = new double[x.length][3];       //With interaction term, linear model: y ~ a * SNP + b * CellCount + c + d * SNP * CellCount
+            for (int i = 0; i < x.length; i++) {
+                double xi = x[i];
+                double covi = covariates[0][i];
+                olsXFullWithInteraction[i][0] = xi;
+                olsXFullWithInteraction[i][1] = covi;
+                olsXFullWithInteraction[i][2] = covi * xi;
             }
+
             regressionFullWithInteraction.newSampleData(y, olsXFullWithInteraction);
             double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
             double r2 = regressionFullWithInteraction.calculateRSquared();
@@ -396,9 +402,14 @@ class CalculationThread extends Thread {
             double f = msm / mse;
             FDistribution fDist = new org.apache.commons.math3.distribution.FDistribution(dfmodel, dferror);
             double pvalmodel = fDist.cumulativeProbability(f);
-            double zscoremodel = ZScores.pToZ(pvalmodel);
 
-            r.zscores[d][p] = zscoremodel;
+            double zscore = 0;
+            try {
+                zscore = ZScores.pToZ(pvalmodel);
+            } catch (IllegalArgumentException e) {
+                System.out.println("ILLEGAL ARGUMENT AAAARRRGGHH: " + pvalmodel + "\t" + zscore);
+            }
+            r.zscores[d][p] = zscore;
             r.correlations[d][p] = r2;
 
         } else {
