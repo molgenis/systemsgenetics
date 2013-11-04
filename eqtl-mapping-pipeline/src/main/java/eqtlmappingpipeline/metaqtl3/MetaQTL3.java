@@ -168,7 +168,7 @@ public class MetaQTL3 {
         int nrDatasetsWithCovariates = 0;
 
         for (int i = 0; i < numDatasets; i++) {
-            String covariateFile = m_gg[i].getSettings().covariateFile;
+            String covariateFile = m_settings.datasetSettings.get(i).covariateFile;
             if (covariateFile != null && Gpio.exists(covariateFile)) {
                 nrDatasetsWithCovariates++;
             }

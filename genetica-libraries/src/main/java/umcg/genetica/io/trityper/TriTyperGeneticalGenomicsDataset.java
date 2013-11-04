@@ -85,46 +85,41 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             Log2Transform.log2transform(expressionData.getMatrix());
         }
 
-        if (settings.covariateFile != null) {
+        if (settings.covariateFile != null && Gpio.exists(settings.covariateFile)) {
             // load covariates..
+            System.out.println("Loading covariates: " + settings.covariateFile);
+            HashSet<String> individualSet = new HashSet<String>();
+            individualSet.addAll(Arrays.asList(expressionData.getIndividuals()));
+            covariates = new DoubleMatrixDataset<String, String>(settings.covariateFile, null, individualSet);
 
-            if (Gpio.exists(settings.covariateFile)) {
-                System.out.println("Loading covariates: " + settings.covariateFile);
-                HashSet<String> individualSet = new HashSet<String>();
-                individualSet.addAll(Arrays.asList(expressionData.getIndividuals()));
-                covariates = new DoubleMatrixDataset<String, String>(settings.covariateFile, null, individualSet);
-
-                if (covariates.colObjects.isEmpty()) {
-                    // try the transpose
-                    System.out.println("Could not find matching sample identifiers between covariate file and expression file.\nTransposing your covariate file.");
-                    covariates = new DoubleMatrixDataset<String, String>(settings.covariateFile, individualSet);
-                    if (covariates.rowObjects.isEmpty()) {
-                        System.err.println("Could not find matching samples between expression data and covariate data.");
-                        System.exit(-1);
-                    } else {
-                        covariates.transposeDataset(); // put the covariates on the rows, samples on the columns
-                        covariates.recalculateHashMaps();
-                    }
-                }
-
-                covariates.removeColumnsWithNaNs();
-                covariates.recalculateHashMaps();
-                if (covariates.colObjects.isEmpty()) {
-                    System.err.println("ERROR: after removing samples with NaN values, no covariates remain");
+            if (covariates.colObjects.isEmpty()) {
+                // try the transpose
+                System.out.println("Could not find matching sample identifiers between covariate file and expression file.\nTransposing your covariate file.");
+                covariates = new DoubleMatrixDataset<String, String>(settings.covariateFile, individualSet);
+                if (covariates.rowObjects.isEmpty()) {
+                    System.err.println("Could not find matching samples between expression data and covariate data.");
                     System.exit(-1);
+                } else {
+                    covariates.transposeDataset(); // put the covariates on the rows, samples on the columns
+                    covariates.recalculateHashMaps();
                 }
-
-                System.out.println(covariates.rowObjects.size() + " covariates loaded for " + covariates.colObjects.size() + " samples");
-
-                // remove expression samples without covariates, and reorder expression data
-                expressionData.pruneAndReorderSamples(covariates.colObjects);
-
-                // prune expression dataset to samples having covariates
-                loadCouplings();
-                pruneGenotypeToExpressionCouplings();
-            } else {
-                System.err.println("ERROR: covariate file specified, but file is not readable: " + settings.covariateFile);
             }
+
+            covariates.removeColumnsWithNaNs();
+            covariates.recalculateHashMaps();
+            if (covariates.colObjects.isEmpty()) {
+                System.err.println("ERROR: after removing samples with NaN values, no covariates remain");
+                System.exit(-1);
+            }
+
+            System.out.println(covariates.rowObjects.size() + " covariates loaded for " + covariates.colObjects.size() + " samples");
+
+            // remove expression samples without covariates, and reorder expression data
+            expressionData.pruneAndReorderSamples(covariates.colObjects);
+
+            // prune expression dataset to samples having covariates
+            loadCouplings();
+            pruneGenotypeToExpressionCouplings();
         }
 
     }
