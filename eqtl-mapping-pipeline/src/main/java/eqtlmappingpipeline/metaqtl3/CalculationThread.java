@@ -54,11 +54,13 @@ class CalculationThread extends Thread {
     private boolean m_binaryoutput = false;
     private final DoubleMatrixDataset<String, String>[] m_covariates;
     private OLSMultipleLinearRegression regressionFullWithInteraction;
+    private final boolean m_useAbsoluteZScores;
+    private final boolean testSNPsPresentInBothDatasets;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
             Integer[][] probeTranslationTable,
-            int[][] expressionToGenotypeIds, MetaQTL3Settings settings, EQTLPlotter plotter, boolean binaryoutput) {
+            int[][] expressionToGenotypeIds, MetaQTL3Settings settings, EQTLPlotter plotter, boolean binaryoutput, boolean useAbsoluteZScores, boolean testSNPsPresentInBothDatasets) {
         m_binaryoutput = binaryoutput;
         m_name = i;
         m_workpackage_queue = packageQueue;
@@ -67,6 +69,7 @@ class CalculationThread extends Thread {
         m_expressiondata = expressiondata;
         boolean m_cis = settings.cisAnalysis;
         boolean m_trans = settings.transAnalysis;
+        m_useAbsoluteZScores = useAbsoluteZScores;
         m_name = i;
         m_numProbes = m_probeTranslation[m_probeTranslation.length - 1].length;
         m_numDatasets = m_probeTranslation.length;
@@ -85,6 +88,8 @@ class CalculationThread extends Thread {
             regressionFullWithInteraction = new OLSMultipleLinearRegression();
         }
 
+        this.testSNPsPresentInBothDatasets = testSNPsPresentInBothDatasets;
+        
         cisOnly = false;
         cisTrans = false;
         transOnly = false;
@@ -300,8 +305,10 @@ class CalculationThread extends Thread {
         if (m_eQTLPlotter != null) {
             for (int p = 0; p < dsResults.pvalues.length; p++) {
                 double pval = dsResults.pvalues[p];
-                if (!Double.isNaN(pval) && pval < m_pvaluePlotThreshold) {
-                    ploteQTL(wp, p);
+                if (!Double.isNaN(pval)) {
+                    if (pval < m_pvaluePlotThreshold) {
+                        ploteQTL(wp, p);
+                    }
                 }
             }
         }
@@ -395,25 +402,35 @@ class CalculationThread extends Thread {
             // calculate F statistic for the significance of the model
             double totalSS = regressionFullWithInteraction.calculateTotalSumOfSquares();
             double modelSS = totalSS - residualSS;
-            double dfmodel = 3;
+            double dfmodel = olsXFullWithInteraction[0].length;
             double dferror = x.length - dfmodel - 1;
             double msm = modelSS / dfmodel;
             double mse = residualSS / dferror;
             double f = msm / mse;
             FDistribution fDist = new org.apache.commons.math3.distribution.FDistribution(dfmodel, dferror);
-            double pvalmodel = fDist.cumulativeProbability(f);
+            double pvalmodel = 1 - fDist.cumulativeProbability(f);
 
             double zscore = 0;
+            if (pvalmodel == 1d) {
+                zscore = 0;
+            } else if (pvalmodel == 0d) {
+                pvalmodel = 1e-16;
+            }
+
             try {
                 zscore = ZScores.pToZ(pvalmodel);
             } catch (IllegalArgumentException e) {
-                System.out.println("ILLEGAL ARGUMENT AAAARRRGGHH: " + pvalmodel + "\t" + zscore);
+//                System.out.println(f + "\t" + pvalmodel + "\t" + zscore);
+//                //   System.out.println("ILLEGAL ARGUMENT AAAARRRGGHH: " + pvalmodel + "\t" + zscore);
+//                for (int i = 0; i < x.length; i++) {
+//                    System.out.println(i + "\t" + x[i] + "\t" + y[i] + "\t" + covariates[0][i]);
+//                }
+//                System.exit(-1);
             }
             r.zscores[d][p] = zscore;
             r.correlations[d][p] = r2;
 
         } else {
-
             //Calculate correlation coefficient:
             double correlation = Correlation.correlate(x, y, varianceX, varianceY);
             if (correlation >= -1 && correlation <= 1) {
@@ -540,9 +557,18 @@ class CalculationThread extends Thread {
                 Integer numSamples = dsResults.numSamples[d];
                 if (!Double.isNaN(correlation)) {
                     boolean flipalleles = wp.getFlipSNPAlleles()[d];
-                    if (flipalleles) {
+                    if(m_useAbsoluteZScores){
+                          dsResults.zscores[d][p] = Math.abs(zscore);
+                          dsResults.correlations[d][p] = Math.abs(correlation);
+                          if(!Double.isNaN(dsResults.beta[d][p])){
+                              dsResults.beta[d][p] = Math.abs(dsResults.beta[d][p]);
+                          }
+                          wp.getFlipSNPAlleles()[d] = false;
+                    } else if (flipalleles) {
                         zscore = -zscore;
-                        correlation = -correlation;
+//                        dsResults.zscores[d][p] = zscore;
+//                        correlation = -correlation;
+//                        dsResults.correlations[d][p] = correlation;
                     }
                     nrDatasetsPassingQC++;
 
@@ -551,9 +577,11 @@ class CalculationThread extends Thread {
                     zSum += (zscore * weight);
                     zSumAbsolute += (Math.abs(zscore) * weight);
                     nrTotalSamples += numSamples;
+
                     if (determinebeta) {
                         if (flipalleles) {
                             betasum += (-dsResults.beta[d][p] * numSamples);
+                            dsResults.beta[d][p] = -dsResults.beta[d][p];
                         } else {
                             betasum += (dsResults.beta[d][p] * numSamples);
                         }
@@ -561,18 +589,16 @@ class CalculationThread extends Thread {
                 }
             }
 
-            if (nrDatasetsPassingQC > 0 && nrTotalSamples > 0) {
+            
+            if(nrTotalSamples > 0 && (testSNPsPresentInBothDatasets && nrDatasetsPassingQC == m_numDatasets) || (!testSNPsPresentInBothDatasets && nrDatasetsPassingQC > 0)){
                 testsPerformed++;
                 hasResults = true;
                 double sqrtSample = Descriptives.getSqrt(nrTotalSamples);
                 double zScore = zSum / sqrtSample;
-                double zScoreAbsolute = zSumAbsolute / sqrtSample;
                 double pValueOverall = Descriptives.convertZscoreToPvalue(zScore);
-                double pValueOverallAbsolute = Descriptives.convertZscoreToPvalue(zScoreAbsolute);
                 dsResults.pvalues[p] = pValueOverall;
-                dsResults.pvaluesAbs[p] = pValueOverallAbsolute;
                 dsResults.finalZScore[p] = zScore;
-                dsResults.finalZScoreAbsolute[p] = zScoreAbsolute;
+
                 // determine assessed allele....
                 if (determinebeta) {
                     betasum /= nrTotalSamples;
@@ -582,9 +608,7 @@ class CalculationThread extends Thread {
                 }
             } else {
                 dsResults.pvalues[p] = Double.NaN;
-                dsResults.pvaluesAbs[p] = Double.NaN;
                 dsResults.finalZScore[p] = Double.NaN;
-                dsResults.finalZScoreAbsolute[p] = Double.NaN;
             }
             // calculate the weighted Z-score
 
