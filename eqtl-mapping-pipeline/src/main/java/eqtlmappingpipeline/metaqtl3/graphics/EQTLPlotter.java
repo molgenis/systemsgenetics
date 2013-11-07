@@ -184,6 +184,7 @@ public class EQTLPlotter {
                 g2d = cb.createGraphics(width, height);
             } catch (Exception e) {
                 System.out.println("Cannot write to PDF file!:\t" + file.getAbsolutePath());
+                System.out.println(e);
                 System.exit(-1);
             }
 
