@@ -306,7 +306,7 @@ class CalculationThread extends Thread {
             for (int p = 0; p < dsResults.pvalues.length; p++) {
                 double pval = dsResults.pvalues[p];
                 if (!Double.isNaN(pval)) {
-                    if (m_useAbsoluteZScores && pval < m_pvaluePlotThreshold) {
+                    if (pval < m_pvaluePlotThreshold) {
                         ploteQTL(wp, p);
                     }
                 }
