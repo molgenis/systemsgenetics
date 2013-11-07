@@ -138,9 +138,6 @@ public class ResultProcessorThread extends Thread {
                     nrTestsPerformed += wp.getNumTested();
 
                     double[] pvalues = r.pvalues;
-                    if (m_useAbsoluteZScore) {
-                        pvalues = r.pvaluesAbs;
-                    }
                     if (m_createBinaryFiles && !poison) {
                         writeBinaryResult(r);
                     }
@@ -150,6 +147,7 @@ public class ResultProcessorThread extends Thread {
 
                         for (int p = 0; p < pvalues.length; p++) {
                             double pval = pvalues[p];
+
                             if (!Double.isNaN(pval) && pval <= highestP) {
                                 double[][] corr = r.correlations;
                                 Double[] correlations = new Double[corr.length];
@@ -211,9 +209,6 @@ public class ResultProcessorThread extends Thread {
                                 }
 
                                 double Zfinal = r.finalZScore[p];
-                                if (m_useAbsoluteZScore) {
-                                    Zfinal = r.finalZScoreAbsolute[p];
-                                }
                                 double finalbeta = r.finalBeta[p];
                                 double finalbetase = r.finalBetaSe[p];
                                 int pid;
