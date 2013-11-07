@@ -772,7 +772,7 @@ public class MetaQTL3 {
                 if (!permuting) {
                     plotter = new EQTLPlotter(m_gg, m_settings, m_probeList, m_probeTranslationTable);
                 }
-                pool[tnum] = new CalculationThread(permutationRound, packageQueue, resultQueue, expressiondata, covariateData, m_probeTranslationTable, expressionToGenotypeIds, m_settings, plotter, m_settings.createBinaryOutputFiles);
+                pool[tnum] = new CalculationThread(permutationRound, packageQueue, resultQueue, expressiondata, covariateData, m_probeTranslationTable, expressionToGenotypeIds, m_settings, plotter, m_settings.createBinaryOutputFiles, m_settings.useAbsoluteZScorePValue, m_settings.confineSNPsToSNPsPresentInAllDatasets);
                 pool[tnum].setName("CalcThread-" + tnum);
                 pool[tnum].start();
 
@@ -980,7 +980,7 @@ public class MetaQTL3 {
                         for (String probe : probesSelected) {
                             Integer probeId = probeNameToId.get(probe);
                             if (probeId == null) {
-                                System.err.println("You selected the following SNP-Probe combination, but probe not present in dataset!?\t" + snpname + "\t-\t" + probe);
+                                System.err.println("You selected the following SNP-Probe combination, but probe not present in dataset.\t" + snpname + "\t-\t" + probe);
                             } else {
                                 probeToTest.add(probeId);
                             }
@@ -1001,9 +1001,14 @@ public class MetaQTL3 {
                 }
 
                 // don't add the cis-workpackage when there are no probes to test.
+                // cisonly is also used when performing analysis on a certain set of snp-probe combos.
                 if (cisOnly && (probeToTest == null || probeToTest.isEmpty())) {
                     workPackages[s] = null;
-                    excludedSNPs.write(snpname + "\tNo probes within " + m_settings.ciseQTLAnalysMaxSNPProbeMidPointDistance + "bp\n");
+
+                    // reduce the output size of the snp filter output to query snps, if any
+                    if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(m_snpList[s])) { 
+                        excludedSNPs.write(snpname + "\tNo probes to test.\n");
+                    }
                 } else {
                     int[] testprobes = null;
                     if (probeToTest != null) {
@@ -1035,10 +1040,6 @@ public class MetaQTL3 {
             }
 
             pb.iterate();
-//		if (numWorkPackages % 100000 == 0 && numWorkPackages > 0 && numWorkPackages > prevProc) {
-//		    System.out.println("\t" + numWorkPackages + " SNPs Processed.");
-//		    prevProc = numWorkPackages;
-//		}
         }
 
         pb.close();
@@ -1070,12 +1071,12 @@ public class MetaQTL3 {
 
         System.out.print("\nSummary\n" + ConsoleGUIElems.DOUBLELINE);
         int totalSamples = 0;
-        for (int d = 0; d < m_gg.length; d++) {
-            System.out.print("Dataset:\t" + m_gg[d].getSettings().name);
-            System.out.print("\tprobes:\t" + m_gg[d].getExpressionData().getProbes().length);
-            System.out.print("\tSNPs:\t" + m_gg[d].getGenotypeData().getSNPs().length);
-            totalSamples += m_gg[d].getTotalGGSamples();
-            System.out.println("\tsamples:\t" + m_gg[d].getTotalGGSamples());
+        for (TriTyperGeneticalGenomicsDataset m_gg1 : m_gg) {
+            System.out.print("Dataset:\t" + m_gg1.getSettings().name);
+            System.out.print("\tprobes:\t" + m_gg1.getExpressionData().getProbes().length);
+            System.out.print("\tSNPs:\t" + m_gg1.getGenotypeData().getSNPs().length);
+            totalSamples += m_gg1.getTotalGGSamples();
+            System.out.println("\tsamples:\t" + m_gg1.getTotalGGSamples());
         }
         System.out.println("");
         System.out.print("\nTotals\n" + ConsoleGUIElems.DOUBLELINE);

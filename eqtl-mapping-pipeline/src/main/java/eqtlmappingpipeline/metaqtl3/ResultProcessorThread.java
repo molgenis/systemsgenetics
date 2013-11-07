@@ -59,6 +59,7 @@ public class ResultProcessorThread extends Thread {
     private int nrSet;
     private int nrInFinalBuffer = 0;
     private int nrSNPsTested = 0;
+    private final boolean m_useAbsoluteZScore;
 
     public ResultProcessorThread(int nrThreads, LinkedBlockingQueue<WorkPackage> queue, boolean chargeOutput,
             TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, Integer[][] pprobeTranslation,
@@ -66,6 +67,7 @@ public class ResultProcessorThread extends Thread {
         m_availableWorkPackages = allPackages;
         m_createBinaryFiles = settings.createBinaryOutputFiles;
         m_createTEXTFiles = settings.createTEXTOutputFiles;
+        m_useAbsoluteZScore = settings.useAbsoluteZScorePValue;
         m_queue = queue;
         m_outputdir = settings.outputReportsDir;
         m_totalNumberOfProbes = probelist.length;
@@ -125,16 +127,16 @@ public class ResultProcessorThread extends Thread {
             while (!poison) {
                 WorkPackage wp = m_queue.take();
                 Result r = wp.results;
-                if(wp.getHasResults()){
+                if (wp.getHasResults()) {
                     nrSNPsTested++;
                 }
-               
+
                 if (r.poison) {
                     poison = true;
                 } else if (r.pvalues != null) {
 
                     nrTestsPerformed += wp.getNumTested();
-                    
+
                     double[] pvalues = r.pvalues;
                     if (m_createBinaryFiles && !poison) {
                         writeBinaryResult(r);
@@ -145,9 +147,7 @@ public class ResultProcessorThread extends Thread {
 
                         for (int p = 0; p < pvalues.length; p++) {
                             double pval = pvalues[p];
-//                            if (!Double.isNaN(pval)) {
-//                                nrTestsPerformed++;
-//                            }
+
                             if (!Double.isNaN(pval) && pval <= highestP) {
                                 double[][] corr = r.correlations;
                                 Double[] correlations = new Double[corr.length];
@@ -168,7 +168,12 @@ public class ResultProcessorThread extends Thread {
                                         betase[d] = null;
                                     } else {
                                         correlations[d] = corr[d][p];
-                                        zscores[d] = r.zscores[d][p];
+                                        if (m_useAbsoluteZScore) {
+                                            zscores[d] = Math.abs(r.zscores[d][p]);
+                                        } else {
+                                            zscores[d] = r.zscores[d][p];
+                                        }
+
                                         samples[d] = r.numSamples[d];
                                         fc[d] = r.fc[d][p];
                                         beta[d] = r.beta[d][p];
@@ -202,7 +207,6 @@ public class ResultProcessorThread extends Thread {
                                         }
                                     }
                                 }
-
 
                                 double Zfinal = r.finalZScore[p];
                                 double finalbeta = r.finalBeta[p];
@@ -366,7 +370,7 @@ public class ResultProcessorThread extends Thread {
     }
 
     private void writeTextResults() throws IOException {
-        System.out.println("Writing " + finalEQTLs.length + " results out of " + nrTestsPerformed +" tests performed. "+nrSNPsTested+" SNPs finally tested.");
+        System.out.println("Writing " + finalEQTLs.length + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
         String fileName = m_outputdir + "eQTLs.txt.gz";
         if (m_permuting) {
             fileName = m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz";
