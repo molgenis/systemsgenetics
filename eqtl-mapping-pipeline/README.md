@@ -6,31 +6,31 @@ You can contact the authors of this software at westra.harmjan@gmail.com, or lud
 
 ##Manual contents
 
-1. Downloading the software
-2. Before you start
-3. Step by step QTL analysis
-    * Step 1 - Preparation phenotype data
-    * Step 2 - Preparation genotype data
-    * File Checklist
-    * Step 3 - Phenotype data normalization
-    * Step 4 - MixupMapper
-    * Step 5 - Determining the optimum number of PCs to remove
-    * Step 6 - Perform the final QTL analysis
-4. Additional analyses and advanced settings
-    * Meta-analysis and settings file
-    * Multiple linear regression using interaction model
-    * Conditional analysis
-5. File formats
-    * Probe annotation file
-    * Phenotype file, covariate file
-    * Genotype - phenotype coupling
-    * TriTyper genotype data
-6. General software information 
-    - QTL Mapping
-    - Meta-analysis
-    - Multiple testing correction
-    - MixupMapper   
-7. Frequently asked questions
+1. [Downloading the software](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#downloading-the-software)
+2. [Before you start](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#before-you-start)
+3. [Step by step QTL analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-by-step-eqtl-analysis)
+    * [Step 1 - Preparation phenotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-1---preparation-phenotype-data)
+    * [Step 2 - Preparation genotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-2---preparation-of-genotype-data)
+    * [File Checklist](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#file-checklist)
+    * [Step 3 - Phenotype data normalization](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-3---phenotype-data-normalization)
+    * [Step 4 - MixupMapper](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-4---mixupmapper)
+    * [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)
+    * [Step 6 - Perform the final QTL analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-6---perform-the-final-qtl-analysis)
+4. [Additional analyses and advanced settings](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#additional-analyses-and-advanced-settings)
+    * [Multiple linear regression using interaction model](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#multiple-linear-regression-using-interaction-model)
+    * [Meta-analysis and settings file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#meta-analysis-and-settings-file)
+    * [Conditional analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#conditional-analysis)
+5. [File formats](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#file-formats)
+    * [Probe annotation file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#probe-annotation-file)
+    * [Phenotype file, covariate file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file)
+    * [Genotype - phenotype coupling](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#genotype---phenotype-coupling)
+    * [TriTyper genotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#trityper-genotype-data)
+6. [General software information](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#general-software-information) 
+    * [QTL Mapping](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-mapping)
+    * [Meta-analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#meta-analysis)
+    * [Multiple testing correction](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#multiple-testing-correction)
+    * [MixupMapper](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#mixupmapper)
+7. [Frequently asked questions]()
 
 ##Downloading the software
 You can download the latest version of the software here: [Latest version](http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$eqtl-mapping-pipeline/lastBuild/).
@@ -83,15 +83,15 @@ Our software is written in Java, which makes the software both fast and portable
 
 
 #Step by step eQTL analysis
-This is a step by step guide which will guide you through the QTL mapping process using our software. Please note that this step by step guide illustrates only a part of the capabilities of our software. However, this guide does explain the different command line switches. [Additional types of analyses can be found in this section.](link). Our general method consists of six steps described below:
+This is a step by step guide which will guide you through the QTL mapping process using our software. Please note that this step by step guide illustrates only a part of the capabilities of our software. However, this guide does explain the different command line switches. [Additional analyses and advanced settings](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#additional-analyses-and-advanced-settings). Our general method consists of six steps described below:
 
-* Step 1 - Preparation phenotype data
-* Step 2 - Preparation genotype data
-* File Checklist
-* Step 3 - Phenotype data normalization
-* Step 4 - MixupMapper
-* Step 5 - Determining the optimum number of PCs to remove
-* Step 6 - Perform the final QTL analysis
+* [Step 1 - Preparation phenotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-1---preparation-phenotype-data)
+* [Step 2 - Preparation genotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-2---preparation-of-genotype-data)
+* [File Checklist](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#file-checklist)
+* [Step 3 - Phenotype data normalization](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-3---phenotype-data-normalization)
+* [Step 4 - MixupMapper](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-4---mixupmapper)
+* [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)
+* [Step 6 - Perform the final QTL analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-6---perform-the-final-qtl-analysis)
 
 ##Definitions
 Througout the manual, references to different full paths will be made. Here is an overview of these paths:
@@ -107,9 +107,9 @@ Descriptions of each of these files and their usage is detailed below, and their
 ##Step 1 - Preparation phenotype data
 Because our software uses a nonparametric test by default, you can use virtually any continuous data as trait values to map a variety of QTL effects. However, currently the normalization tools provided with this package are focused on array based methylation data, array based (Illumina) expression data, and preprocessed RNA-seq data (e.g. transcript level quantified data) or (GC)-RMA processed Affymetrix data. 
 
-Please format your phenotype data in a simple tab separated text file. The format of this file is described here: [Data Formats - Phenotype data](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file).
+Please format your phenotype data in a simple tab separated text file. The format of this file is described here: [Phenotype file, covariate file](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file).
 
-Some analyses will require an annotation of the probes/traits/genes in your `traitfile`. We store this annotation in a separate file. The format of this file is described here: [File Formats - Annotation File](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file). 
+Some analyses will require an annotation of the probes/traits/genes in your `traitfile`. We store this annotation in a separate file. The format of this file is described here: [Probe annotation File](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#probe-annotation-file). 
 
 ###Illumina array based expression data
 
@@ -122,7 +122,7 @@ Use the GenomeStudio files of your expression arrays. **Note:** Please do not us
 * Rows should contain the different probes, and columns should contain the different sample IDs
 * Remove any header information that Genome studio might produce: the header of the matrix is expected at the first row
 * Create a new header (expected at the first row and column) for both rows and columns, describing the sample names (columns) and the probe IDs (rows). Note that you use the probe array address for your platform as the probe name.
-* The final file should look like this format: [Data Formats - Phenotype data](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file).
+* The final file should look like this format: [Phenotype file, covariate file](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file).
 
 
 ##Step 2 - Preparation of genotype data
@@ -135,17 +135,17 @@ java –jar eQTLMappingPipeline.jar --imputationtool
 The documentation for the ImputationTool can be found at the [ImputationTool repository page](https://github.com/molgenis/systemsgenetics/tree/master/imputation-tool).
 
 ###Check your data
-After converting your genotype data to TriTyper format, a number of files should have been created in your output directory. For a description of the different files, please refer to [Data formats - TriTyper](link)
+After converting your genotype data to TriTyper format, a number of files should have been created in your output directory. For a description of the different files, please refer to [TriTyper genotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#trityper-genotype-data)
 
 #File Checklist
 Before you continue in this manual, this is a good time check whether your files are in the correct format and whether you have all the required files ready.
 
 * Check whether all required files are in your `genotypedir`.
 * Check whether the `traitfile` is properly normalized.
-* Check whether you have an `annotationfile`. The format is described here [File formats - Probe annotation file](link). 
-    - Some QTL data may not have annotation (for example if you want to do a GWAS on lipid levels). In such cases an `annotationfile` is not required for QTL mapping. Please see [Step 6 - Running the final QTL mapping](link) for more details. 
+* Check whether you have an `annotationfile`. The format is described here [Probe annotation File](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#probe-annotation-file). 
+    - Some QTL data may not have annotation (for example if you want to do a GWAS on lipid levels). In such cases an `annotationfile` is not required for QTL mapping. Please see [Step 6 - Perform the final QTL analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-6---perform-the-final-qtl-analysis) for more details. 
     - For the other steps, the annotation file is required, although you can fool the software by setting your genotype genomic locations to 1 (both chromosome and chromosome position) and doing the same for your phenotype data using the `annotationfile`.
-* If the sample identifiers differ between genotype and phenotype data, you have to create a file that links these identifiers together. This format is described here: [File formats - Genotype Phenotype coupling](link). This file is optional, although we will mention this file in this manual as `genotypephenotypecoupling`
+* If the sample identifiers differ between genotype and phenotype data, you have to create a file that links these identifiers together. This format is described here: [Genotype - phenotype coupling](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#genotype---phenotype-coupling). This file is optional, although we will mention this file in this manual as `genotypephenotypecoupling`
 
 ##Step 3 - Phenotype data normalization
 Generally, continuous trait data needs to be normalized prior to applying statistical testing. Our software package provides different ways of normalizing your data contained in the `traitfile`. 
@@ -165,7 +165,7 @@ After probe centering, sample z-transformation, and removal of covariates, a tab
 Apart from the methods described above, our software can also perform Mtransformation for methylation beta values obtained from Illumina methylation arrays.
 
 ###Preparations
-Note down the full path to your `traitfile`. The output of the normalization tool will be written to the same directory by default. Optionally, note down the full path to the file containing covariates. We will refer to the covariate file as `covariatefile`. The format of this file is identical to the `traitfile`: [File formats - Phenotype data](link). 
+Note down the full path to your `traitfile`. The output of the normalization tool will be written to the same directory by default. Optionally, note down the full path to the file containing covariates. We will refer to the covariate file as `covariatefile`. The format of this file is identical to the `traitfile`: [Phenotype file, covariate file](https://github.com/harmjanwestra/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file). 
 
 ###Commands to be issued
 To run the general normalization strategy described above, you can run the following command:
@@ -193,26 +193,28 @@ java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --qqnorm --l
 ```
 
 **Note:**
-Several other parameters can be set to customize your normalization strategy (e.g. number of PCs to remove, step size for PC removal, handling of missing values, etc). However, the order of procedures is fixed (Quantile Normalize > Log<sub>2</sub> transform > covariate adjustment > centering and scaling > PCA adjustment), irregardless of the order of each command line switch. To review the available options for normalization, issue the following command:
+Several other parameters can be set to customize your normalization strategy (e.g. which procedures to run, number of PCs to remove, step size for PC removal, handling of missing values, etc). However, the order of procedures is fixed (Quantile Normalize > Log<sub>2</sub> transform > covariate adjustment > centering and scaling > PCA adjustment), irregardless of the order of each command line switch. To review the available options for normalization, issue the following command:
 
 ```
 java –jar eQTLMappingPipeline.jar --mode normalize
 ```
 
 ###Check your data
-Running the general normalization procedure yields a number of files in the directory of your `traitfile`, or in the `outdir` if you specified one. 
+Running the general normalization procedure yields a number of files in the directory of your `traitfile`, or in the `outdir` if you specified one. The default procedure will generate files suffixes listed below. Suffixes will be appended in the default order as described above. Selecting multiple normalization methods will add multiple suffixes. 
+ 
 
-|File|Description|
+|Suffix|Description|
 |----|-----------|
-|**ExpressionData.txt.&shy;QuantileNormalized.&shy;txt.gz**|Quantile Normalized Expression Data|
-|**ExpressionData.txt.&shy;QuantileNormalized.&shy;Log2Transformed.txt.gz**|Quantile Normalized Expression Data which is also Log<sub>2</sub> Transformed.|
-|**ExpressionData.txt.&shy;QuantileNormalized.&shy;Log2Transformed.&shy;ProbesCentered.txt.gz**|Quantile Normalized Expression Data which is also Log2 Transformed. Probes were centered.|
-|**ExpressionData.txt.&shy;QuantileNormalized.&shy;Log2Transformed.&shy;ProbesCentered.&shy;SamplesZTransformed.txt.gz**|Quantile Normalized Expression Data which is also Log2 Transformed, probes were centered and samples were Z-transformed.|
-|**ExpressionData.txt.&shy;PCAOverSamplesEigenvalues.&shy;txt.gz**|Eigenvalues created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
-|**ExpressionData.txt.&shy;PCAOverSamplesEigenvectors.txt.gz**|Eigenvectors created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
-|**ExpressionData.txt.&shy;PCAOverSamplesEigenvectorsTransposed.txt.gz**|Eigenvectors transposed|
-|**ExpressionData.txt.&shy;PCAOverSamplesPrincipalComponents.txt.gz**|Principal Components describing the sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
-|**ExpressionData.txt.&shy;nPCAsOverSamplesRemoved.txt.gz**|Expression data, Quantile Normalized, Log2 Transformed, Z-transformed, with n Principal Components regressed out.|
+|**QuantileNormalized**|Quantile Normalized trait data|
+|**Log2Transformed**|Log<sub>2</sub> Transformed trait data.|
+|**ProbesCentered**|Probes were centered.|
+|**SamplesZTransformed**|Samples were Z-transformed.|
+|**CovariatesRemoved**|Gene expression was adjusted for covariates.|
+|**PCAOverSamplesEigenvalues**|Eigenvalues created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
+|**PCAOverSamplesEigenvectors**|Eigenvectors created during eigenvalue decomposition of the gene expression sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
+|**PCAOverSamplesEigenvectorsTransposed**|Eigenvectors transposed|
+|**PCAOverSamplesPrincipalComponents**|Principal Components describing the sample correlation matrix (created from the Quantile Normalized, Log2 Transformed, Z-transformed data)|
+|**nPCAsOverSamplesRemoved**|Expression data, Quantile Normalized, Log2 Transformed, Z-transformed, with n Principal Components regressed out.|
 
 
 ##Step 4 - MixupMapper
@@ -245,13 +247,13 @@ If you are running the software in a cluster environment, you can specificy the 
 
 If you want to test all possible combinations in your dataset, you can append the command above using the following command line switch `--testall`.
 
-If you want to use a set of QTLs that you have previously calculated (`eqtlfile`, for example from another dataset, which we do not recommend because of technical and biological differences between datasets), you can append the command above using the following command line switch `--eqtls eqtlfile` (remember to use the full path). The format of such file is described here: [File Formatas - eQTL file](link).
+If you want to use a set of QTLs that you have previously calculated (`eqtlfile`, for example from another dataset, which we do not recommend because of technical and biological differences between datasets), you can append the command above using the following command line switch `--eqtls eqtlfile` (remember to use the full path). The format of such file is described here: [QTL file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-file).
 
 ###Check your data
 *MixupMapper* is a two stage approach. As such, the default procedure creates two directories in the `outdir` you specified: *cis*-eQTLs and MixupMapping. Both folders contain a different set of output files, described below.
 
 ####*cis*-eQTLs directory
-This directory contains output from a default *cis*-eQTL mapping approach. The contents of this directory are detailed here: [QTL mapping output](link).
+This directory contains output from a default *cis*-eQTL mapping approach. The contents of this directory are detailed here: [QTL Mapping output - Text mode](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-mapping-output---text-mode).
 
 ####MixupMapping directory
 
@@ -272,13 +274,13 @@ This directory contains output from a default *cis*-eQTL mapping approach. The c
 
 In the SampleMixups.txt file, you can find the best matching expression sample for each genotyped sample:
 
--   1st column = genotyped sample ID
--	2nd column = best matching expression set 
--	3rd column = original genotype of the best matching expression set
--	4th column = concordant (true or false)
--	5th column = best match for expression set (true or false)
--	6th column = z-score (the lower, the better)
--	7th column = include sample? (true or false)
+*   1st column = genotyped sample ID
+*	2nd column = best matching expression set 
+*	3rd column = original genotype of the best matching expression set
+*	4th column = concordant (true or false)
+*	5th column = best match for expression set (true or false)
+*	6th column = z-score (the lower, the better)
+*	7th column = include sample? (true or false)
 
 **Example of SampleMixups.txt**
 <pre>
@@ -330,7 +332,7 @@ If you want to remove a sample after for example the mix-up step, remove the sam
 Always rerun the Sample Mix-up Mapper after removing or changing sample IDs and check whether the results become better. 
 
 ##Step 5 - The optimum number of PCs to remove
-Prior to eQTL mapping, we would like to determine whether removing PCs increases power to detect *cis*- and *trans*-QTLs. For each PC removing step (during normalization), this method runs both *cis*- and *trans*-eQTLs mapping(to refresh your memory: [see the section on normalization](link)). 
+Prior to eQTL mapping, we would like to determine whether removing PCs increases power to detect *cis*- and *trans*-QTLs. For each PC removing step (during normalization), this method runs both *cis*- and *trans*-eQTLs mapping(to refresh your memory: [Step 3 - Phenotype data normalization](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-3---phenotype-data-normalization)). 
 
 1. To be able to determine the optimum number of PCs to remove, and to reduce calculation time, we ordinarily run the *cis*-analysis on a selection of about 300.000 SNPs (Illumina HumanHap 300K content) and the *trans*-analysis on a selection of about 5.000 SNPs (content of the GWAS database: Genome.gov/GWAS/). However, other selections of SNPs can be used as well as detailed below. At the end of the analyses, the program will produce a list with the number of significant *cis*- and *trans*-QTLs, for each increment of PC removal. Based on this list, a table will be created showing the optimum number of PCs to remove. **This analysis is optional**.
 2. Because we have seen that some PCs explain genetic variation, we perform an additional analysis to only adjust for PCs that have no genetic association. To identify the PCs that have no genetic association, we perform a QTL mapping on the principal component eigenvector matrix (PCAOverSamplesEigenvectorsTransposed.txt.gz). We call PCs genetically associated when they have a FDR of 0 (thus selecting truly significantly affected components only). Subsequently, we repeat the *cis*- and *trans*-QTL analyses, although this time we do not remove PCs that are genetically associated. Additionally, this second step also writes new PC Corrected phenotype files, although this time, excluding those compontents with a genetic association.
@@ -361,7 +363,7 @@ By default, the software uses 10 permutations to determine the False Discovery R
 
 
 ###Check your data
-After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyse. These folders will be named **Cis-nPCAsRemoved-GeneticVectorsNotRemoved** and **Trans-nPCAsRemoved-GeneticVectorsNotRemoved** (one folder per iteration of n PCs removed). The contents of these directories are detailed here: [QTL mapping output](link). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. 
+After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyse. These folders will be named **Cis-nPCAsRemoved-GeneticVectorsNotRemoved** and **Trans-nPCAsRemoved-GeneticVectorsNotRemoved** (one folder per iteration of n PCs removed). The contents of these directories are detailed here: [QTL Mapping output - Text mode](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-mapping-output---text-mode). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. 
 
 Additionally, at the end of the analyses, the program produces a table with the number of significant *cis*- and *trans*-QTLs for each increment of PC removal, the number of shared QTLs, and the number of QTLs with a different allelic direction compared to the number of detected QTLs using your input `traitfile` (this output will be printed on your screen). 
 
@@ -374,12 +376,12 @@ In a single command, the final QTL mapping can be performed. Standard settings f
 
 ###Preparations
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
-2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, or any of the files produced in [Step 5](link)). We will refer to this path as `traitfile`. 
+2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, or any of the files produced in [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
 4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
 6. (Optional) You can confine your analysis in several ways. For example, you can create a text-file with a list of snps (referred to as `snplist`; one SNP per line, single column), or a text file containing combination between SNPs and probes/traits/genes (referred to as `snpprobelist`; tab-separated, SNP identifier on first column, probe/gene/trait on second column).
-7. (Optional) We have found that removing *cis* effects greatly enhances the power to detect *trans* effects. Consequently, our software provides a way to correct your `traitfile` data for *cis* effects. Note down the full path of the file containing the *cis*-QTL effects to be removed. We will refer to this file as `qtlfile`. The format of this file is identical to the [eQTLs.txt.gz file](link). 
+7. (Optional) We have found that removing *cis* effects greatly enhances the power to detect *trans* effects. Consequently, our software provides a way to correct your `traitfile` data for *cis* effects. Note down the full path of the file containing the *cis*-QTL effects to be removed. We will refer to this file as `qtlfile`. The format of this file is identical to the [QTL file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-file). 
     - **Note:** Removing QTL effects only properly works on imputed genotype data. The program will not remove QTL effects when imputation dosages are not available.
 
 ###Commands to be issued
@@ -581,6 +583,9 @@ Sample3    control    include    female
 </pre>
 
 #General software information
+
+##QTL File
+QTL file description
 
 ##QTL mapping
 MetaQTL is the part of the eQTLMappingPipeline that actually performs the QTL mapping. This part is actually used by multiple parts of the program, such as during the pcaoptimum method and the MixupMapper. The program is able to run genome-wide analyses, but is also able to run mapping on a selected number of SNPs, probes or a combination thereof. For a given SNP, the program first determines which probes it should be tested against. Generally for *cis*-eQTLs, this implies gene expression probes that are on the same chromosome and for which the genomic position of the middle of the probe is within 250kb of the SNP position. For *trans*-eQTLs, however, the minimum distance between the SNP and the gene expression probe should be at least 5Mb, or the gene expression probe should be located on a different chromosome. During eQTL mapping, we use a Hardy-Weinberg p-value threshold of 0.0001, a minor allele frequency threshold of 0.05 and a call-rate threshold of 95% as a quality control on the SNPs we test.
