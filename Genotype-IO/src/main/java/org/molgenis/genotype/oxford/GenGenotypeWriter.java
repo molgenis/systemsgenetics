@@ -97,7 +97,14 @@ public class GenGenotypeWriter implements GenotypeWriter {
 						isMissing = false;
 					}
 					hapsFileWriter.append(SEPARATOR);
-					hapsFileWriter.append(String.valueOf(prob));
+					if(prob == 0){
+						hapsFileWriter.append('0');
+					} else if (prob == 1){
+						hapsFileWriter.append('1');
+					} else {
+						hapsFileWriter.append(String.valueOf(prob));
+					}
+					
 				}
 				if (isMissing) {
 					sampleMissingCount[i]++;

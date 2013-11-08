@@ -82,8 +82,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, double minimumPosteriorProbabilityToCall)
-			throws IOException {
-
+			throws IOException {		
+		
 		if (genFile == null) {
 			throw new IllegalArgumentException("genFile is null");
 		}

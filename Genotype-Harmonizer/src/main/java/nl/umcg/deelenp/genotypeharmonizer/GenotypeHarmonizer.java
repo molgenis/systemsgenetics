@@ -90,7 +90,7 @@ class GenotypeHarmonizer {
 		Option option;
 
 		option = OptionBuilder.withArgName("basePath")
-				.hasArg()
+				.hasArgs()
 				.withDescription("The base path of the data to align. The extensions are determined based on the input data type.")
 				.withLongOpt("input")
 				.isRequired()
@@ -259,19 +259,18 @@ class GenotypeHarmonizer {
 			return;
 		}
 
-
-		final String inputBasePath = commandLine.getOptionValue('i');
+		final String[] inputBasePaths = commandLine.getOptionValues('i');
 		final RandomAccessGenotypeDataReaderFormats inputType;
 
 		try {
 			if (commandLine.hasOption('I')) {
 				inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
 			} else {
-				if (inputBasePath.endsWith(".vcf")) {
+				if (inputBasePaths[0].endsWith(".vcf")) {
 					System.err.println("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
 				}
 				try {
-					inputType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(inputBasePath);
+					inputType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(inputBasePaths[0]);
 				} catch (GenotypeDataException e) {
 					System.err.println("Unable to determine input type based on specified path. Please specify --inputType");
 					System.exit(1);
@@ -434,7 +433,7 @@ class GenotypeHarmonizer {
 				"Started logging");
 		System.out.println();
 
-		printOptions(inputBasePath, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName, maxMafForMafAlignment, minimumPosteriorProbability);
+		printOptions(inputBasePaths, inputType, refBasePath, refType, outputBasePath, outputType, minSnpsToAlignOn, flankSnpsToConsider, minLdToIncludeAlign, ldCheck, debugMode, updateId, keep, forceSeqName, maxMafForMafAlignment, minimumPosteriorProbability);
 
 		if (minSnpsToAlignOn < MIN_MIN_VARIANTS_TO_ALIGN_ON) {
 			LOGGER.fatal("the specified --min-variants < " + MIN_MIN_VARIANTS_TO_ALIGN_ON);
@@ -449,14 +448,14 @@ class GenotypeHarmonizer {
 			return;
 		}
 
-		if (inputBasePath.equals(refBasePath)) {
+		if (inputBasePaths[0].equals(refBasePath)) {
 			LOGGER.fatal("Study data and reference data cannot be the same data");
 			System.err.println("Study data and reference data cannot be the same data");
 			System.exit(1);
 			return;
 		}
 
-		if (inputBasePath.equals(outputBasePath)) {
+		if (inputBasePaths[0].equals(outputBasePath)) {
 			LOGGER.fatal("Study input can not be the same as output");
 			System.err.println("Study input can not be the same as output");
 			System.exit(1);
@@ -473,7 +472,7 @@ class GenotypeHarmonizer {
 
 
 		try {
-			inputData = inputType.createGenotypeData(inputBasePath, genotypeDataCache, forceSeqName, minimumPosteriorProbability);
+			inputData = inputType.createGenotypeData(inputBasePaths, genotypeDataCache, forceSeqName, minimumPosteriorProbability);
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");
@@ -630,12 +629,17 @@ class GenotypeHarmonizer {
 
 	}
 
-	private static void printOptions(String inputBasePath, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName, double maxMafForMafAlignment, double minimumPosteriorProbability) {
+	private static void printOptions(String[] inputBasePaths, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName, double maxMafForMafAlignment, double minimumPosteriorProbability) {
 
-
+		StringBuilder inputPaths = new StringBuilder();
+		for(String path : inputBasePaths){
+			inputPaths.append(path);
+			inputPaths.append(' ');
+		}
+		
 		System.out.println("Interpreted arguments: ");
-		System.out.println(" - Input base path: " + inputBasePath);
-		LOGGER.info("Input base path: " + inputBasePath);
+		System.out.println(" - Input base path: " + inputPaths);
+		LOGGER.info("Input base path: " + inputPaths);
 		System.out.println(" - Input data type: " + inputType.getName());
 		LOGGER.info("Input data type: " + inputType.getName());
 		System.out.println(" - Reference base path: " + (refBasePath == null ? "no reference set" : refBasePath));
