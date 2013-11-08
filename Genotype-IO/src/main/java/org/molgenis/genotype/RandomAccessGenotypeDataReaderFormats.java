@@ -45,7 +45,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 		File pathFile = new File(path);
 
-		if (path.endsWith(".vcf.gz") && pathFile.exists()) {
+		if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.VCF && pathFile.exists()) {
 			return VCF;
 		}
 
@@ -97,68 +97,111 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 	public RandomAccessGenotypeData createGenotypeData(String path) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
-		return createGenotypeData(path, 1000);
+		return createGenotypeData(new String[]{path}, 1000);
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
-		return createGenotypeData(path, cacheSize, null);
+		return createGenotypeData(new String[]{path}, cacheSize, null);
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
-		return createGenotypeData(path, cacheSize, forcedSequence, 0.34f);
+		return createGenotypeData(new String[]{path}, cacheSize, forcedSequence, 0.34f);
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(new String[]{path}, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+	}
 
+	public RandomAccessGenotypeData createGenotypeData(String[] paths) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(paths, 1000);
+	}
+
+	public RandomAccessGenotypeData createGenotypeData(String[] paths, int cacheSize) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(paths, cacheSize, null);
+	}
+
+	public RandomAccessGenotypeData createGenotypeData(String[] paths, int cacheSize, String forcedSequence) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+		return createGenotypeData(paths, cacheSize, forcedSequence, 0.34f);
+	}
+
+	public RandomAccessGenotypeData createGenotypeData(String[] paths, int cacheSize, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException,
+			IncompatibleMultiPartGenotypeDataException {
+
+		if(paths == null || paths.length == 0){
+			throw new GenotypeDataException("Error no paths specified");
+		}
+		
 		switch (this) {
 			case PED_MAP:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return new PedMapGenotypeData(new File(path + ".ped"), new File(path + ".map"));
+				return new PedMapGenotypeData(new File(paths[0] + ".ped"), new File(paths[0] + ".map"));
 			case VCF:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
 				File vcfFile;
-				if (path.endsWith(".vcf.gz")) {
-					vcfFile = new File(path);
+				if (paths[0].endsWith(".vcf.gz")) {
+					vcfFile = new File(paths[0]);
 				} else {
-					vcfFile = new File(path + ".vcf.gz");
+					vcfFile = new File(paths[0] + ".vcf.gz");
 				}
 				return new VcfGenotypeData(vcfFile, cacheSize);
 			case VCF_FOLDER:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return MultiPartGenotypeData.createFromVcfFolder(new File(path), cacheSize);
+				return MultiPartGenotypeData.createFromVcfFolder(new File(paths[0]), cacheSize);
 			case SHAPEIT2:
-				return new HapsGenotypeData(new File(path + ".haps"), new File(
-						path + ".sample"), cacheSize, forcedSequence);
+				return new HapsGenotypeData(new File(paths[0] + ".haps"), new File(
+						paths[0] + ".sample"), cacheSize, forcedSequence);
 			case PLINK_BED:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return new BedBimFamGenotypeData(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"), cacheSize);
+				return new BedBimFamGenotypeData(new File(paths[0] + ".bed"), new File(paths[0] + ".bim"), new File(paths[0] + ".fam"), cacheSize);
 			case TRITYPER:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return new TriTyperGenotypeData(path, cacheSize);
+				return new TriTyperGenotypeData(paths[0], cacheSize);
 
 			case GEN:
-				if (new File(path + ".gen").exists()) {
-					return new GenGenotypeData(new File(path + ".gen"), new File(
-							path + ".sample"), cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
-				} else if (new File(path).exists() && new File(path + ".sample").exists()) {
-					return new GenGenotypeData(new File(path), new File(
-							path + ".sample"), cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+				if (paths.length == 1) {
+					if (new File(paths[0] + ".gen").exists()) {
+						return new GenGenotypeData(new File(paths[0] + ".gen"), new File(
+								paths[0] + ".sample"), cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+					} else if (new File(paths[0]).exists() && new File(paths[0] + ".sample").exists()) {
+						return new GenGenotypeData(new File(paths[0]), new File(
+								paths[0] + ".sample"), cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+					} else {
+						throw new FileNotFoundException("Unable to load gen and sample file at: " + paths[0]);
+					}
+				} else if (paths.length == 2) {
+					File genFile = null;
+					File sampleFile = null;
+					for(String path : paths){
+						if(GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
+							sampleFile = new File(path);
+						} else {
+							genFile = new File(path);
+						}
+					}
+					if(sampleFile == null){
+						throw new GenotypeDataException("Path to .sample file not specified for oxford gen data");
+					}
+					return new GenGenotypeData(genFile, sampleFile, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
 				} else {
-					throw new FileNotFoundException("Unable to load gen and sample file at: " + path);
+					throw new GenotypeDataException("Expected 2 files for oxford gen data but found: " + paths.length);
 				}
+
 
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
@@ -190,10 +233,6 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				}
 				return genotypeData;
 		}
-	
-	}
 
-	
-	
-	
+	}
 }

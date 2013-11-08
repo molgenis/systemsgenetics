@@ -388,7 +388,7 @@ public class GenotypeHarmonizerTest {
 		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "GEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6");
 		
 		
-		GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test6", "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
+		GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test6.gen", tmpOutputFolder.getAbsolutePath() + fileSep + "test6.sample", "--inputType", "GEN", "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
 		
 		
 
