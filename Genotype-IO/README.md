@@ -54,6 +54,8 @@ Usage notes
 
 ### VCF
 
+Currently, our VCF implementation only supports called genotypes. We will add support for dosage values in the near future.
+
 Only VCF files that are compressed using bgzip and indexed with a tabix are supported. This prevents having to read all data into memory.
 
 #### Installing tabix
