@@ -448,6 +448,7 @@ public class FDR {
                     output = Strings.concat(data, Strings.tab) + "\t" + fdrEstimate;
                     if (fdrEstimate <= fdrcutoff) {
                         outSignificant.writeln(output);
+                        nrSignificantEQTLs++;
                     }
                 } else {
                     double fdr = fdrUniquePValues[pIndex];
