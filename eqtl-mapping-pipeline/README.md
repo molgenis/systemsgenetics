@@ -227,7 +227,7 @@ For details how this exactly works, please have a look at the paper or read the 
 
 ###Preparations/variables
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
-2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data). We will refer to this path as `traitfile`. 
+2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, that has been corrected for eventual covariates.). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
 4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
@@ -260,74 +260,66 @@ This directory contains output from a default *cis*-eQTL mapping approach. The c
 
 |File|Description|
 |----|-----------|
-|Distribution-Frequency.pdf|Frequency distribution of overall Z-scores. The Z-scores are plotted on the X-axis and the frequencies on the Y-axis.|
-|Distribution-Frequency-BestMatches.pdf|This file is identical to Distribution-Frequency.pdf, except for the samples which have been removed after sample mix-up correction.|
-|Heatmap.pdf|Visualization of overall Z-scores per assessed pair of samples. The genotyped samples are plotted on the X-axis, and the gene expression samples are plotted on the Y-axis. The brightness of each box corresponds to the height of the overall Z-score, with lower values having brighter colours. The grey bars next to the sample names indicate the correlation of the samples with the first Principal Component, which is an indicator for sample quality. Samples are sorted alphabetically on both axes.|
-|MixupMapper-Dataset-&shy;ExpressionCorrelationMatrix.txt|Correlation matrix on the gene expression data that is used for calculation of the Principal Components (PCA). The PCA scores are visualizes in the Heatmap.pdf.|
-|MixupMapper-Dataset-&shy;GenotypeCorrelationMatrix.txt|Correlation matrix of the genotype data that is used for calculation of the Principal Components (PCA). The correlation of the PCA scores for the genotype data are visualized in the Heatmap.pdf.|
-|ROC.pdf|Receiver Operator Curve (ROC), describing the distance between the overall Z-scores of the diagonal in the heatmap, and all other assessed pairs. Several lines are plotted, each corresponding to an increasing a priori chance of mixed-up samples.|
-|ROC.txt|A tab-separated text file representing the ROC curve.|
-|SampleMixups.txt|A tab-separated text file describing the best matched (gene expression) sample for each genotyped sample.|
-|ScoresMatrix.txt|A tab-separated text matrix of overall Z-scores as calculated by the method for each of the possible pairs of genotyped and gene expression samples.|
-|SuggestedCouplings.txt|This file is identical to SampleMixups.txt, except for the lack of the header and the samples which have been removed after sample mix-up correction.|
+|Heatmap.pdf|Visualization of overall Z-scores per assessed pair of samples. The genotyped samples are plotted on the X-axis, and the gene expression samples are plotted on the Y-axis. The brightness of each box corresponds to the height of the overall Z-score, with lower values having brighter colours. Samples are sorted alphabetically on both axes.|
+|BestMatchPerGenotype.txt|This file shows the best matching trait samples per genotype: the result matrix (MixupMapperScores.txt) is not symmetrical. As such, scanning for the best sample per genotype may yield other results than scanning for the best sample per trait.|
+|BestMatchPerTrait.txt|This file shows the best matching genotype sample per trait sample.|
+|MixupMapperScores.txt|A matrix showing the scores per pair of samples (combinations of traits and genotypes). |
 
+In the BestMatchPerGenotype.txt and BestMatchPerTrait.txt files, you can find the best matching trait sample for each genotyped sample and vice versa:
 
-In the SampleMixups.txt file, you can find the best matching expression sample for each genotyped sample:
+*   1st column = genotyped sample ID, or trait sample ID dependent on file chosen (see above)
+*	2nd column = trait sample originally linked to genotype sample ID in column 1, or genotype sample originally linked with trait sample in column 1
+*	3rd column = the MixupMapper Z-score for the link between the samples in column 1 and 2
+*	4rd column = best matching trait (for BestMatchPerGenotype.txt) or best matching genotype (for BestMatchPerTrait.txt)
+*	5th column = the MixupMapper Z-score for the link between the samples in column 1 and 4
+*	6th column = this column determines whether the best matching trait or genotype is identical to the sample found in column 2
 
-*   1st column = genotyped sample ID
-*	2nd column = best matching expression set 
-*	3rd column = original genotype of the best matching expression set
-*	4th column = concordant (true or false)
-*	5th column = best match for expression set (true or false)
-*	6th column = z-score (the lower, the better)
-*	7th column = include sample? (true or false)
-
-**Example of SampleMixups.txt**
+**Example of BestMatchPerGenotype.txt**
 <pre>
-Genotype-ID    BM-Exp-ID	Ori-Gen-BM-Exp-ID	Concordant	BM-Exp	Z-Score	Include?
-Sample1		Sample1		Sample1			true		true	-11.357	true
-Sample2		Sample2		Sample2			true		true	-15.232	true
-Sample3		Sample6		Sample6			false		true	-3.774	false
-Sample4		Sample5		Sample4			false		false	-3.892	true
+Trait   OriginalLinkedGenotype  OriginalLinkedGenotypeScore     BestMatchingGenotype    BestMatchingGenotypeScore       Mixup
+Sample1		Sample1		-11.357			Sample1		-11.357	false
+Sample2		Sample2		-15.232			Sample2		-15.232	false
+Sample3		Sample3		-3.774			Sample5		-6.341	true
+Sample4		Sample4		-3.892			Sample6		-12.263	true
 </pre>
 
 ###Resolving Sample mix-ups
-As described above, the SampleMixups.txt describes possible sample mix-ups in your data. Resolving sample mix-ups is however a bit of a puzzle: many things could have happened during hybridization to the genotype and gene expression chips. For example, samples could have been duplicated (hybridized to the array twice), contaminated, swapped or not hybridized at all. The MixupMapper tries to resolve these issues automatically, although you should always check in your logbook whether the proposed sample mix-ups actually make sense (for example, are the mixed-up samples located on the same row or column of the chip, was a complete row inverted, or was the RNA quality poor). For each match, a z-score is presented which describes how much the samples are alike. You should interpret the z-score as a distance measure, so the lower the z-score, the better the match.
+As described above, the BestMatchPerGenotype.txt describes possible sample mix-ups in your data. Resolving sample mix-ups is however a bit of a puzzle: many things could have happened during hybridization to the genotype and gene expression chips. For example, samples could have been duplicated (hybridized to the array twice), contaminated, swapped or not hybridized at all. The MixupMapper tries to resolve these issues automatically, although you should always check in your logbook whether the proposed sample mix-ups actually make sense (for example, are the mixed-up samples located on the same row or column of the chip, was a complete row inverted, or was the RNA quality poor). For each match, a z-score is presented which describes how much the samples are alike. You should interpret the z-score as a distance measure, so the lower the z-score, the better the match.
 
-You should read the output of the program as follows: for every genotype sample, a single gene expression sample is matched (it is the gene expression sample with the lowest z-score for the genotype sample). The assessed genotype sample ID is located in column 1, the matching gene expression sample is in column 2. The third column describes what assignment you gave to the gene expression sample (eg: to which genotype sample you think the gene expression sample belongs). Now, if the original assigned genotype sample in column 3 is identical to the genotype sample in column 1, there is no indication of a sample mix-up, and column 4 will be TRUE. However, if the sample names in column 1 and 3 are different, column 4 is FALSE and something might be going on with the samples.
+You should read the output of the program as follows: for every genotype sample, a single gene expression sample is matched (it is the gene expression sample with the lowest z-score for the genotype sample). The assessed genotype sample ID is located in column 1, the matching gene expression sample is in column 4. The second column describes what assignment you gave to the gene expression sample (eg: to which genotype sample you think the gene expression sample belongs). Now, if the original assigned genotype sample in column 4 is identical to the genotype sample in column 1, there is no indication of a sample mix-up, and column 6 will be FALSE. However, if the sample names in column 1 and 4 are different, column 6 is TRUE and something might be going on with the samples.
 
 Consider the following example:
 <pre>
-GT-1    Ex-2	GT-2	FALSE	TRUE	-10.4	TRUE
-GT-2	Ex-1	GT-1	FALSE	TRUE	-9.60	TRUE
+GT-1    Ex-1	-3.4	Ex-2	-10.6	TRUE
+GT-2	Ex-2	-2.60	Ex-1	-9.5	TRUE
 </pre>	
 
-The example described here is to be considered a classical sample swap: you observe that Ex-2 matches GT-1 best, and that gene Ex-1 matches GT-2 best. In this case, you can see that column 5 is also TRUE for both samples: for GT-1, this means that not only Ex-2 is the best match for GT-1, but also GT-1 is the best match for Ex1 (eg: the relationship is bidirectional). If we now observe that for GT-2 this relationship is also bidirectional, and the z-scores in column 6 are very low (eg: below -4, although this depends on the dataset), we get a strong indication that these samples are swapped.  
+The example described here is to be considered a classical sample swap: you observe that Ex-2 matches GT-1 best, and that gene Ex-1 matches GT-2 best. In this case, you can see that column 6 is also TRUE for both samples: for GT-1, this means that not only Ex-2 is the best match for GT-1, but also GT-1 is the best match for Ex1 (eg: the relationship is bidirectional). If we now observe that for GT-2 this relationship is also bidirectional, and the z-scores in column 5 are very low (eg: below -4, although this depends on the dataset), we get a strong indication that these samples are swapped.  
 
 Now consider the following example:
 <pre>
-GT-1	Ex-2	GT-2	FALSE	TRUE	-10.4	FALSE
-GT-2	Ex-2	GT-2	TRUE	FALSE	-9.60	TRUE
+GT-1    Ex-1	-3.4	Ex-2	-10.6	TRUE
+GT-2	Ex-2	-9.5	Ex-2	-9.5	TRUE
 </pre>
 
-In this case, Ex-2 is matched to two genotype samples. This means that either GT-1 and GT-2 are identical, or Ex-2 is contaminated (eg: a mix of RNA of both GT-1 and GT-2). The problem here is to decide which sample to include and which sample to exclude. The program decides here to stick with the original assignment provided by you, and exclude GT-1 (see column 7) even though the z-score is lower for the GT-1-Ex-2 match. The choice to exclude a sample should however not be made by a program: like described above, you should check whether things makes sense from the lab. The z-score can however give you an indication of how  much a gene expression sample resembles the genotype.
+In this case, Ex-2 is matched to two genotype samples. This means that either GT-1 and GT-2 are identical, or Ex-2 is contaminated (eg: a mix of RNA of both GT-1 and GT-2). The problem here is to decide which sample to include and which sample to exclude. In such a case, the best choice will often be to stick with the original assignment provided by you, and exclude GT-1 (see column 7) even though the z-score is lower for the GT-1-Ex-2 match. The choice to exclude a sample should however not be made by a program: like described above, you should check whether things makes sense from the lab. The z-score can however give you an indication of how  much a gene expression sample resembles the genotype.
 
 Finally, consider the following example:
 <pre>
-GT-1	Ex-7	GT-7	FALSE	TRUE	-10.4	TRUE
-GT-2	Ex-6	GT-6	FALSE	TRUE	-9.60	TRUE
-GT-3	Ex-5	GT-5	FALSE	TRUE	-10.4	TRUE
-GT-4	Ex-4	GT-4	FALSE	TRUE	-9.60	TRUE
-GT-5	Ex-3	GT-3	FALSE	TRUE	-10.4	TRUE
-GT-6	Ex-2	GT-2	FALSE	TRUE	-9.60	TRUE
+GT-1	Ex-1	-4.3	Ex-6	-10.4	TRUE
+GT-2	Ex-2	-4.2	Ex-5	-9.60	TRUE
+GT-3	Ex-3	-5.3	Ex-4	-10.4	TRUE
+GT-4	Ex-4	-4.3	Ex-3	-9.60	TRUE
+GT-5	Ex-5	-7.5	Ex-2	-10.4	TRUE
+GT-6	Ex-6	-2.3	Ex-1	-9.60	TRUE
 </pre>
 
-The above example shows you an example of what a row inversion on a chip would look like: GT-1 matches Ex-7, GT-2 matches Ex-6, etcetera.
+The above example shows you an example of what a row inversion on a chip would look like: GT-1 matches Ex-6, GT-2 matches Ex-5, etcetera.
 
-After checking the SampleMixups.txt file, some samples can be identified as sample mix-ups. You can easily replace the mixed IDs in the `genotypephenotypecoupling` file, without the need to change the ExpressionData files (adjusted or not) themselves. Please check in your plate- and array layouts whether it was possible to make these sample mix-ups. If your layouts don’t give you any information on why a sample could have been mixed-up we have chosen to exclude samples for which column 4 indicates FALSE (eg: where the match is not concordant to what was initially defined).
+After checking the BestMatchPerGenotype.txt or BestMatchPerTrait.txt files, some samples can be identified as sample mix-ups. You can easily replace the mixed IDs in the `genotypephenotypecoupling` file, without the need to change the ExpressionData files (adjusted or not) themselves. Please check in your plate- and array layouts whether it was possible to make these sample mix-ups. If your layouts don’t give you any information on why a sample could have been mixed-up our best practice is to remove the sample pair from further analysis.
 
-If you want to remove a sample after for example the mix-up step, remove the sample by either deleting it from your  `genotypephenotypecoupling`, by setting the sample to ‘exclude’ in the ‘PhenotypeInformation.txt’, or by removing the sample from the gene expression data.
-**Make sure that you never remove lines from the Individuals.txt as this will result in erroneous genotypes for the remainder of the samples.**
+If you want to remove a sample after for example the mix-up step, remove the sample by either deleting it from your `genotypephenotypecoupling`, by setting the sample to ‘exclude’ in the ‘PhenotypeInformation.txt’, or by removing the sample from the gene expression data.
+**Make sure that you never remove lines from the Individuals.txt in your TriTyper folder, as this will result in erroneous genotypes for the remainder of the samples.**
 
 Always rerun the Sample Mix-up Mapper after removing or changing sample IDs and check whether the results become better. 
 
@@ -347,7 +339,6 @@ Prior to eQTL mapping, we would like to determine whether removing PCs increases
 
 ###Commands to be issued
 To run the analysis, not taking into account the genetic association of PCs with SNPs, use the following command:
-
 
 ```
 java –jar eQTLMappingPipeline.jar --mode pcaoptimum --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling --cissnps cissnpfile --transsnps transsnpfile
