@@ -4,6 +4,8 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.jet.random.tdouble.StudentT;
+import cern.jet.random.tdouble.engine.DRand;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import umcg.genetica.math.stats.Descriptives;
@@ -14,6 +16,7 @@ import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.Deflater;
 import org.apache.commons.math3.distribution.FDistribution;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
@@ -53,9 +56,11 @@ class CalculationThread extends Thread {
     private WorkPackage currentWP;
     private boolean m_binaryoutput = false;
     private final DoubleMatrixDataset<String, String>[] m_covariates;
-    private OLSMultipleLinearRegression regressionFullWithInteraction;
+
     private final boolean m_useAbsoluteZScores;
     private final boolean testSNPsPresentInBothDatasets;
+    private boolean metaAnalyseInteractionTerms = false;
+    private boolean metaAnalyseModelCorrelationYHat = false;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
@@ -69,6 +74,8 @@ class CalculationThread extends Thread {
         m_expressiondata = expressiondata;
         boolean m_cis = settings.cisAnalysis;
         boolean m_trans = settings.transAnalysis;
+        metaAnalyseInteractionTerms = settings.metaAnalyseInteractionTerms;
+        metaAnalyseModelCorrelationYHat = settings.metaAnalyseModelCorrelationYHat;
         m_useAbsoluteZScores = useAbsoluteZScores;
         m_name = i;
         m_numProbes = m_probeTranslation[m_probeTranslation.length - 1].length;
@@ -84,12 +91,9 @@ class CalculationThread extends Thread {
         }
 
         m_covariates = covariates;
-        if (covariates != null) {
-            regressionFullWithInteraction = new OLSMultipleLinearRegression();
-        }
 
         this.testSNPsPresentInBothDatasets = testSNPsPresentInBothDatasets;
-        
+
         cisOnly = false;
         cisTrans = false;
         transOnly = false;
@@ -384,7 +388,7 @@ class CalculationThread extends Thread {
         if (varianceY == 0) {
             r.zscores[d][p] = Double.NaN;
             r.correlations[d][p] = Double.NaN;
-        } else if (covariates != null && regressionFullWithInteraction != null) {
+        } else if (covariates != null) {
 
             // TODO: what to do when there are multiple covariates involved?
             double[][] olsXFullWithInteraction = new double[x.length][3];       //With interaction term, linear model: y ~ a * SNP + b * CellCount + c + d * SNP * CellCount
@@ -396,39 +400,85 @@ class CalculationThread extends Thread {
                 olsXFullWithInteraction[i][2] = covi * xi;
             }
 
+            OLSMultipleLinearRegression regressionFullWithInteraction = new OLSMultipleLinearRegression();
             regressionFullWithInteraction.newSampleData(y, olsXFullWithInteraction);
-            double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
-            double r2 = regressionFullWithInteraction.calculateRSquared();
-            // calculate F statistic for the significance of the model
-            double totalSS = regressionFullWithInteraction.calculateTotalSumOfSquares();
-            double modelSS = totalSS - residualSS;
-            double dfmodel = olsXFullWithInteraction[0].length;
-            double dferror = x.length - dfmodel - 1;
-            double msm = modelSS / dfmodel;
-            double mse = residualSS / dferror;
-            double f = msm / mse;
-            FDistribution fDist = new org.apache.commons.math3.distribution.FDistribution(dfmodel, dferror);
-            double pvalmodel = 1 - fDist.cumulativeProbability(f);
 
-            double zscore = 0;
-            if (pvalmodel == 1d) {
-                zscore = 0;
-            } else if (pvalmodel == 0d) {
-                pvalmodel = 1e-16;
-            }
+            if (metaAnalyseModelCorrelationYHat) {
 
-            try {
-                zscore = ZScores.pToZ(pvalmodel);
-            } catch (IllegalArgumentException e) {
-//                System.out.println(f + "\t" + pvalmodel + "\t" + zscore);
-//                //   System.out.println("ILLEGAL ARGUMENT AAAARRRGGHH: " + pvalmodel + "\t" + zscore);
-//                for (int i = 0; i < x.length; i++) {
-//                    System.out.println(i + "\t" + x[i] + "\t" + y[i] + "\t" + covariates[0][i]);
-//                }
-//                System.exit(-1);
+                double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+                double[] yInferred = new double[y.length];
+                for (int s=0; s<y.length; s++) {
+                    yInferred[s] = regressionParameters[0];
+                    for (int a=0; a<3; a++) {
+                        yInferred[s]+=regressionParameters[a + 1] * olsXFullWithInteraction[s][a];
+                    }
+                }
+
+                SpearmansCorrelation spearman = new SpearmansCorrelation();
+                double correlationspearman = spearman.correlation(y, yInferred);
+                double zScore = Correlation.convertCorrelationToZScore(y.length, correlationspearman);
+                r.zscores[d][p] = zScore;
+                r.correlations[d][p] = correlationspearman;
+                r.beta[d][p] = regressionFullWithInteraction.calculateRSquared();
+            } else if (metaAnalyseInteractionTerms) {
+                double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+                double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+
+                double betaInteraction = regressionParameters[3];
+                double seInteraction = regressionStandardErrors[3];
+                double tInteraction = betaInteraction / seInteraction;
+                double pValueInteraction = 1;
+                double zScoreInteraction = 0;
+                DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
+                if (tInteraction < 0) {
+                    pValueInteraction = tDistColt.cdf(tInteraction);
+                    if (pValueInteraction < 2.0E-323) {
+                        pValueInteraction = 2.0E-323;
+                    }
+                    zScoreInteraction = cern.jet.stat.Probability.normalInverse(pValueInteraction);
+                } else {
+                    pValueInteraction = tDistColt.cdf(-tInteraction);
+                    if (pValueInteraction < 2.0E-323) {
+                        pValueInteraction = 2.0E-323;
+                    }
+                    zScoreInteraction = -cern.jet.stat.Probability.normalInverse(pValueInteraction);
+                }
+//                pValueInteraction *= 2;
+                r.zscores[d][p] = zScoreInteraction;
+                r.correlations[d][p] = betaInteraction;
+            } else {
+                double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
+                double r2 = regressionFullWithInteraction.calculateRSquared();
+                // calculate F statistic for the significance of the model
+                double totalSS = regressionFullWithInteraction.calculateTotalSumOfSquares();
+                double modelSS = totalSS - residualSS;
+                double dfmodel = olsXFullWithInteraction[0].length;
+                double dferror = x.length - dfmodel - 1;
+                double msm = modelSS / dfmodel;
+                double mse = residualSS / dferror;
+                double f = msm / mse;
+                FDistribution fDist = new org.apache.commons.math3.distribution.FDistribution(dfmodel, dferror);
+                double pvalmodel = 1 - fDist.cumulativeProbability(f);
+                double zscore = 0;
+                if (pvalmodel == 1d) {
+                    zscore = 0;
+                } else if (pvalmodel == 0d) {
+                    pvalmodel = 1e-16;
+                }
+                try {
+                    zscore = ZScores.pToZ(pvalmodel);
+                } catch (IllegalArgumentException e) {
+                    System.out.println(f + "\t" + pvalmodel + "\t" + zscore);
+                    for (int i = 0; i < x.length; i++) {
+                        System.out.println(i + "\t" + x[i] + "\t" + y[i] + "\t" + covariates[0][i]);
+                    }
+                    System.exit(-1);
+                }
+                r.zscores[d][p] = zscore;
+                r.correlations[d][p] = r2;
+
             }
-            r.zscores[d][p] = zscore;
-            r.correlations[d][p] = r2;
 
         } else {
             //Calculate correlation coefficient:
@@ -546,7 +596,6 @@ class CalculationThread extends Thread {
             int nrDatasetsPassingQC = 0;
             int nrTotalSamples = 0;
             double zSum = 0;
-            double zSumAbsolute = 0;
             double betasum = 0;
 
             for (int d = 0; d < m_numDatasets; d++) {
@@ -557,13 +606,14 @@ class CalculationThread extends Thread {
                 Integer numSamples = dsResults.numSamples[d];
                 if (!Double.isNaN(correlation)) {
                     boolean flipalleles = wp.getFlipSNPAlleles()[d];
-                    if(m_useAbsoluteZScores){
-                          dsResults.zscores[d][p] = Math.abs(zscore);
-                          dsResults.correlations[d][p] = Math.abs(correlation);
-                          if(!Double.isNaN(dsResults.beta[d][p])){
-                              dsResults.beta[d][p] = Math.abs(dsResults.beta[d][p]);
-                          }
-                          wp.getFlipSNPAlleles()[d] = false;
+                    if (m_useAbsoluteZScores) {
+                        zscore = Math.abs(zscore);
+                        dsResults.zscores[d][p] = Math.abs(zscore);
+                        dsResults.correlations[d][p] = Math.abs(correlation);
+                        if (!Double.isNaN(dsResults.beta[d][p])) {
+                            dsResults.beta[d][p] = Math.abs(dsResults.beta[d][p]);
+                        }
+                        wp.getFlipSNPAlleles()[d] = false;
                     } else if (flipalleles) {
                         zscore = -zscore;
 //                        dsResults.zscores[d][p] = zscore;
@@ -575,7 +625,6 @@ class CalculationThread extends Thread {
                     double weight = Descriptives.getSqrt(numSamples);
 
                     zSum += (zscore * weight);
-                    zSumAbsolute += (Math.abs(zscore) * weight);
                     nrTotalSamples += numSamples;
 
                     if (determinebeta) {
@@ -589,8 +638,7 @@ class CalculationThread extends Thread {
                 }
             }
 
-            
-            if(nrTotalSamples > 0 && (testSNPsPresentInBothDatasets && nrDatasetsPassingQC == m_numDatasets) || (!testSNPsPresentInBothDatasets && nrDatasetsPassingQC > 0)){
+            if (nrTotalSamples > 0 && (testSNPsPresentInBothDatasets && nrDatasetsPassingQC == m_numDatasets) || (!testSNPsPresentInBothDatasets && nrDatasetsPassingQC > 0)) {
                 testsPerformed++;
                 hasResults = true;
                 double sqrtSample = Descriptives.getSqrt(nrTotalSamples);
@@ -610,8 +658,6 @@ class CalculationThread extends Thread {
                 dsResults.pvalues[p] = Double.NaN;
                 dsResults.finalZScore[p] = Double.NaN;
             }
-            // calculate the weighted Z-score
-
         }
 
         wp.setHasResults(hasResults);

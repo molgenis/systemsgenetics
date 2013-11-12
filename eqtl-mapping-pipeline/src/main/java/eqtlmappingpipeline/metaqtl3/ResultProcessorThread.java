@@ -7,7 +7,6 @@ package eqtlmappingpipeline.metaqtl3;
 import eqtlmappingpipeline.metaqtl3.containers.EQTL;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
-import eqtlmappingpipeline.metaqtl3.containers.eQTLResultContainer;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import umcg.genetica.console.ProgressBar;
@@ -192,7 +191,6 @@ public class ResultProcessorThread extends Thread {
                                     }
                                 }
 
-
                                 if (alleles == null) {
                                     System.err.println("SNP has null alleles: ");
                                     for (int d = 0; d < snps.length; d++) {
@@ -347,7 +345,6 @@ public class ResultProcessorThread extends Thread {
             toMerge = tmpEQTLBuffer;
         }
 
-
         EQTL[] tmp = new EQTL[finalEQTLs.length + toMerge.length];
         System.arraycopy(toMerge, 0, tmp, 0, toMerge.length);
         System.arraycopy(finalEQTLs, 0, tmp, toMerge.length, finalEQTLs.length);
@@ -375,7 +372,7 @@ public class ResultProcessorThread extends Thread {
         if (m_permuting) {
             fileName = m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz";
             TextFile gz = new TextFile(fileName, TextFile.W);
-            gz.writeln("PValue\tSNP\tProbe\tGene");
+            gz.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
             for (int i = 0; i < finalEQTLs.length; i++) {
                 String output = finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
                 String[] realout = output.split("\t");
@@ -385,7 +382,7 @@ public class ResultProcessorThread extends Thread {
                 } else {
                     hugo = realout[eQTLTextFile.HUGO];
                 }
-                String ln = realout[0] + "\t" + realout[1] + "\t" + realout[4] + "\t" + hugo;
+                String ln = realout[0] + "\t" + realout[1] + "\t" + realout[4] + "\t" + hugo + "\t" + realout[8] + "\t" + realout[9] + "\t" + realout[10];
                 gz.writeln(ln);
             }
             gz.close();
