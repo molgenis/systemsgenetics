@@ -196,4 +196,24 @@ public class EnrichmentDataReader {
 		
 		return encodeMethylationBoundaries;
 	}
+	
+	
+	public GenomicBoundaries readHistoneNarrowPeakFileData(String peakDataFile)throws IOException{
+		GenomicBoundaries<Object> peakData = new GenomicBoundaries();
+		
+		String fileLine;
+		String[] fileLineData;
+		TextFile tf = new TextFile(peakDataFile, false);
+		while((fileLine=tf.readLine())!=null){
+			fileLineData = TAB_PATTERN.split(fileLine);
+			String chromosome = new String(fileLineData[0]);
+			int startPos = Integer.parseInt(fileLineData[1]);
+			int stopPos = Integer.parseInt(fileLineData[2]);
+			double peakScore = Double.valueOf(fileLineData[6]);
+			
+			peakData.addBoundary(chromosome, startPos, stopPos, peakScore);
+		}
+		tf.close();
+		return peakData;
+	}
 }

@@ -83,7 +83,7 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 		
 		
 		//STEP 4.: READ THE GENOTYPE MATRIX DATA.
-		RandomAccessGenotypeData genotypeMatrixData = readEQtlGenotypeData(genotypeLocation, rsIdList);
+		RandomAccessGenotypeData genotypeMatrixData = readEQtlGenotypeDataV2(genotypeLocation, rsIdList);
 		
 		
 		//STEP 5.: PERFORM ANALYSIS FOR EQTL DATA.
@@ -261,6 +261,13 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 	}
 	
 	
+	public RandomAccessGenotypeData readEQtlGenotypeDataV2(String genotypeData, Set<String> variantIdFilter) throws IOException{
+		//Provide a Set<String> containing rsID of all significant eQTLs.
+		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 630000, null, null);
+		return gonlImputedBloodGenotypeData;
+	}
+	
+	
 	/*
 	 * =========================================================================
 	 * = START: TRANSCRIPTION FACTOR COUNTS CODE.
@@ -369,8 +376,8 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 	
 	
 	public String getDirection(int eqtlHits, int eqtlTotalHits, int permutationHits, int permutationTotalHits){
-		double eqtlRatio = (eqtlHits / eqtlTotalHits);
-		double permutationRatio = (permutationHits / permutationTotalHits);
+		double eqtlRatio = ((double)eqtlHits / (double)eqtlTotalHits) * 100;
+		double permutationRatio = ((double)permutationHits / (double)permutationTotalHits) * 100;
 		
 		if(eqtlRatio > permutationRatio){
 			return "Enrichment";

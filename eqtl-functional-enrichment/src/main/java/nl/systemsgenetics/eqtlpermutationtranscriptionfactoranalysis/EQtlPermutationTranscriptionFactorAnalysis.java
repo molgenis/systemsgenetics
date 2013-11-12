@@ -6,7 +6,9 @@ package nl.systemsgenetics.eqtlpermutationtranscriptionfactoranalysis;
 
 import com.google.common.primitives.Doubles;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +56,10 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 				EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
 			}
 			
+			else if(args[0].equalsIgnoreCase("tf2")){
+				TranscriptionFactorEnrichmentV2 tfe2 = new TranscriptionFactorEnrichmentV2(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
+			}
+			
 			else if(args[0].equalsIgnoreCase("gencode")){
 				eQtlsInEncodeAnnotationData eqiead = new eQtlsInEncodeAnnotationData(args[1], args[2], args[3], args[4], args[5], Double.valueOf(args[6]), args[7]);
 			}
@@ -93,7 +99,8 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 				ArrayList<Double> permutationHitScores = new ArrayList<Double>();
 				
 				//READ THE NEEDED DATA.
-				GenomicBoundaries boundaries = edr.readHistoneDataFromText(args[5]);
+				//GenomicBoundaries boundaries = edr.readHistoneDataFromText(args[5]);
+				GenomicBoundaries boundaries = edr.readHistoneNarrowPeakFileData(args[5]);
 				
 				//PERFORM THE ENRICHMENT FOR THE EQTLS.
 				HistoneSiteEnrichment hse = new HistoneSiteEnrichment();
@@ -113,51 +120,17 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 				}
 				double[] permutationHits = Doubles.toArray(permutationHitScores);
 				
-				//GET THE RESULTS.
-				hse.drawBoxPlot(eQtlHits, permutationHits, "pdf", args[7]);
-			}
-			
-			else if(args[0].equalsIgnoreCase("histonetest")){
-				//GET THE PROBES SHARED BY ALL USED DATASETS.
-				EQtlPermutationTranscriptionFactorAnalysis eqptfa = new EQtlPermutationTranscriptionFactorAnalysis();
-				HashSet<String> sharedProbes = eqptfa.getSharedProbes(args[1], args[3]);
-
-				//READ THE EQTL DATA AND FILTER THE SET ON TOP AND NON TOP EQTL EFFECTS.
-				eQtlDataParser eqdp = new eQtlDataParser();
-				EQTL[] eqtls = eqdp.readEQtlData(args[2]);
-				Set<String> rsIdList = eqdp.makeRsIdList(eqtls);
-				HashMap<String, EQTL> topEqtlEffects = eqdp.getTopEffects(eqtls, sharedProbes);
-				HashMap<String, HashSet<Integer>> nonTopEqtlEffects = eqdp.getNonTopEffects(eqtls, topEqtlEffects);
-
-				//READ THE GENOTYPE DATA.
-				EnrichmentDataReader edr = new EnrichmentDataReader();
-				RandomAccessGenotypeData genotypeMatrixData = edr.readEQtlGenotypeData(args[4], rsIdList);
+				//First print the values.
+				System.out.println(hse.getWilcoxonPValue(eQtlHits, permutationHits));
+				System.out.println(hse.getWilcoxonUac(eQtlHits, permutationHits));
 				
 				
-				ArrayList<Double> eQtlHitScores = new ArrayList<Double>();
-				ArrayList<Double> permutationHitScores = new ArrayList<Double>();
-				
-				//READ THE NEEDED DATA.
-				GenomicBoundaries boundaries = edr.readHistoneDataFromText(args[5]);
-				
-				//PERFORM THE ENRICHMENT FOR THE EQTLS.
-				HistoneSiteEnrichment hse = new HistoneSiteEnrichment();
-				hse.performAnalysis(topEqtlEffects, nonTopEqtlEffects, eQtlHitScores, genotypeMatrixData, boundaries, Double.valueOf(args[6]));
-				double[] eQtlHits = Doubles.toArray(eQtlHitScores);
-				System.out.println("Amount of eQTL hits: " + eQtlHits.length);
-				
-				
-				//PERFORM THE ENRICHMENT FOR THE PERMUTATION DATA.
-				EQTL[] permutationData = eqdp.readEQtlData(args[3]);
-				HashMap<String, EQTL> topPermutationEffects = eqdp.getTopEffects(permutationData, sharedProbes);
-				HashMap<String, HashSet<Integer>> nonTopPermutationEffects = eqdp.getNonTopEffects(permutationData, topPermutationEffects);
-				hse.performAnalysis(topPermutationEffects, nonTopPermutationEffects, permutationHitScores, genotypeMatrixData, boundaries, Double.valueOf(args[6]));
-				
-				double[] permutationHits = Doubles.toArray(permutationHitScores);
-				System.out.println("Amount of permutation hits: " + permutationHits.length);
+				//Write result scores to a file.
+				eqptfa.writeThingsToTextFile("/target/gpfs2/gcc/groups/gcc/projects/eQtlFunctionalEnrichment/results/histoneEnrichment/resultsReal.txt", eQtlHits);
+				eqptfa.writeThingsToTextFile("/target/gpfs2/gcc/groups/gcc/projects/eQtlFunctionalEnrichment/results/histoneEnrichment/resultsChance.txt", permutationHits);
 				
 				//GET THE RESULTS.
-				hse.drawBoxPlot(eQtlHits, permutationHits, "pdf", args[7]);
+				hse.drawBoxPlot(eQtlHits, permutationHits, "pdf", "Histone Enrichment", args[7]);
 			}
 			
 			else if(args[0].equalsIgnoreCase("convertWigToText")){
@@ -243,5 +216,15 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 			permutationProbes.retainAll(eqtlProbes);
 			return permutationProbes;
 		}
+	}
+	
+	
+	public void writeThingsToTextFile(String outFile, double[] vals)throws IOException{
+		
+		PrintWriter pw = new PrintWriter(new FileWriter(outFile));
+		for(double val : vals){
+			pw.println(val);
+		}
+		pw.close();
 	}
 }

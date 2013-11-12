@@ -40,22 +40,14 @@ public class HistoneSiteEnrichment {
 	
 	
 	//Draw some boxplots of the data.
-	public void drawBoxPlot(double[] eQtlHitScores, double[] permutationHitScores, String fileType, String outputFile)throws IOException{
+	public void drawBoxPlot(double[] eQtlHitScores, double[] permutationHitScores, String fileType, String enrichmentType, String outputFile)throws IOException{
 		//Create some things.
 		double[][][] dataToPlot = new double[1][2][0];
 		dataToPlot[0][0] = eQtlHitScores;
 		dataToPlot[0][1] = permutationHitScores;
 		
 		String[][] plotLabels = new String[][]{{"Real", "Chance"}};
-		String[] datasets = new String[]{"eQTLs", "Permutations"};
-		
-		//SOME TESTING, CAN BE REMOVED LATER.
-		System.out.println("eQtlHitScores size: " + eQtlHitScores.length);
-		System.out.println("permutationHitScores size: " + permutationHitScores.length);
-		System.out.println("dataToPlot size: " + dataToPlot.length);
-		System.out.println("plotLabels size: " + plotLabels.length);
-		System.out.println("datasets size: " + datasets.length);
-		//System.out.println("");
+		String[] datasets = new String[]{enrichmentType};
 		
 		
 		//Draw the plot.
@@ -136,4 +128,17 @@ public class HistoneSiteEnrichment {
 		}
 	}
 	
+	
+	public double getWilcoxonPValue(double[] A, double[] B){
+		WilcoxonMannWhitney wcmw = new WilcoxonMannWhitney();
+		double testPvalue = wcmw.returnWilcoxonMannWhitneyPValue(A, B);
+		return testPvalue;
+	}
+	
+	public double getWilcoxonUac(double[] A, double[] B){
+		WilcoxonMannWhitney wcmw = new WilcoxonMannWhitney();
+		double testPvalue = wcmw.returnWilcoxonMannWhitneyPValue(A, B);
+		double wilcoxonUac = wcmw.getAUC();
+		return wilcoxonUac;
+	}
 }
