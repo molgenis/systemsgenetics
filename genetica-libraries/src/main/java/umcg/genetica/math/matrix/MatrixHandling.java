@@ -524,7 +524,6 @@ public class MatrixHandling {
 
         dataset.colObjects = Arrays.asList(newColNames);
         dataset.nrCols = newSize;
-        System.out.println(newSize);
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }
