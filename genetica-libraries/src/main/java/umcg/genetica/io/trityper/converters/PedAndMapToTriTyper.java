@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import umcg.genetica.console.ProgressBar;
@@ -25,6 +26,22 @@ public class PedAndMapToTriTyper {
 
         System.out.println("PED File importer v1.0");
 
+        //Add slash if directory does not end with slash:
+        if (!outputDir.endsWith("/")) {
+            outputDir += "/";
+        }
+
+        //Check for existence of directories and files:
+        File fileOutputDir = new File(outputDir);
+        if (!fileOutputDir.isDirectory()) {
+            System.out.println("Critical Error!\nThe output directory you have provided does not exist!:\t" + fileOutputDir.getAbsolutePath());
+            System.exit(-1);
+        }
+        if (!fileOutputDir.canWrite()) {
+            System.out.println("Critical Error!\nCannot write to output directory:\t" + outputDir);
+            System.exit(-1);
+        }
+
         boolean ignoreFirstLinePEDFile = false;
         int genotypeColumnOffset = 6;
         if (mapFile == null) {
@@ -40,10 +57,9 @@ public class PedAndMapToTriTyper {
                 mapFile[pf] = outputDir + "MAPFile.txt";
                 TextFile in = new TextFile(pedFile[pf], TextFile.R);
                 String str2 = in.readLine();
-				
-				//this does not work when splitting on \\s
+
+                //this does not work when splitting on \\s
                 //str2 = str2.replaceAll("\t", pedFileDelimiter);
-				
                 String data[] = str2.split(pedFileDelimiter);
                 for (int c = 6; c < data.length; c++) {
                     if (!hashUniqueSNPs.containsKey(data[c])) {
@@ -63,37 +79,20 @@ public class PedAndMapToTriTyper {
             mapFileSNPColumn = 0;
 
             System.out.println("Please make sure you update SNPMappings.txt!!! This file is currently not correct, as no physical mapping information is available for each of the SNPs!");
-        }
-
-        //Check whether amount of map and ped files is identical:
-        if (mapFile.length != pedFile.length) {
-            System.out.println("Critical Error!\nThe number of entered map files and ped files is not identical!");
-            System.exit(-1);
-        }
-
-        //Add slash if directory does not end with slash:
-        if (!outputDir.endsWith("/")) {
-            outputDir += "/";
-        }
-
-        //Check for existence of directories and files:
-        File fileOutputDir = new File(outputDir);
-        if (!fileOutputDir.isDirectory()) {
-            System.out.println("Critical Error!\nThe output directory you have provided does not exist!:\t" + fileOutputDir.getAbsolutePath());
-            System.exit(-1);
-        }
-        if (!fileOutputDir.canWrite()) {
-            System.out.println("Critical Error!\nCannot write to output directory:\t" + outputDir);
-            System.exit(-1);
-        }
-
-        for (int mf = 0; mf < mapFile.length; mf++) {
-            if (!(new File(mapFile[mf])).canRead()) {
-                System.out.println("Critical Error!\nCannot read from file:\t" + mapFile[mf]);
-                System.exit(-1);
+        } else {
+            for (int mf = 0; mf < mapFile.length; mf++) {
+                if (!(new File(mapFile[mf])).canRead()) {
+                    System.out.println("Critical Error!\nCannot read from file:\t" + mapFile[mf]);
+                    System.exit(-1);
+                }
+                if (!(new File(pedFile[mf])).canRead()) {
+                    System.out.println("Critical Error!\nCannot read from file:\t" + pedFile[mf]);
+                    System.exit(-1);
+                }
             }
-            if (!(new File(pedFile[mf])).canRead()) {
-                System.out.println("Critical Error!\nCannot read from file:\t" + pedFile[mf]);
+            //Check whether amount of map and ped files is identical:
+            if (mapFile.length != pedFile.length) {
+                System.out.println("Critical Error!\nThe number of entered map files and ped files is not identical!");
                 System.exit(-1);
             }
         }
@@ -157,7 +156,6 @@ public class PedAndMapToTriTyper {
 
                 Matcher m = idmatcher.matcher(str2);
 
-
                 if (m.find()) {
                     String group = m.group(0);
 
@@ -190,14 +188,12 @@ public class PedAndMapToTriTyper {
                             include = "include";
                         }
                     }
-                    
 
                     if (!hashInd.containsKey(individual)) {
                         out.write(individual + "\t" + affectionStatus + "\t" + include + "\t" + sex + "\n");
                         hashInd.put(individual, new Integer(vectorInd.size()));
                         vectorInd.add(individual);
                     }
-
 
                 } else {
                     System.out.println("Line does not match PED pattern: check the format in your file!");
@@ -216,7 +212,6 @@ public class PedAndMapToTriTyper {
 
         //Write individuals file:
 //        System.out.println("\nWriting individuals to file:");
-
         ProgressBar pb = new ProgressBar(vectorInd.size(), "Writing individuals to file: " + outputDir + "Individuals.txt");
         TextFile outInd = new TextFile(outputDir + "Individuals.txt", TextFile.W);
         for (int ind = 0; ind < vectorInd.size(); ind++) {
@@ -227,7 +222,6 @@ public class PedAndMapToTriTyper {
         pb.close();
 
         outInd.close();
-
 
         //Write individuals and SNPs file:
         pb = new ProgressBar(vectorSNP.size(), "Writing marker definition to file: " + outputDir + "SNPs.txt");
@@ -240,7 +234,6 @@ public class PedAndMapToTriTyper {
         pb.close();
         outSNP.close();
 
-
         //Write individuals and SNPs file:
         pb = new ProgressBar(vectorSNP.size(), "Writing marker mapping definition to file: " + outputDir + "SNPMappings.txt");
         outSNP = new TextFile(outputDir + "SNPMappings.txt", TextFile.W);
@@ -251,7 +244,6 @@ public class PedAndMapToTriTyper {
         }
         pb.close();
         outSNP.close();
-
 
         //Now write genotype data:
         int nrSamples = vectorInd.size();
@@ -285,19 +277,17 @@ public class PedAndMapToTriTyper {
                 byte[][] dataAllele1 = new byte[sampleBufferSize][mapFileNrSNPs[pf]];
                 byte[][] dataAllele2 = new byte[sampleBufferSize][mapFileNrSNPs[pf]];
 
-
                 for (int i = 0; i < sampleBufferSize; i++) {
                     // System.out.println("Loading individual:\t" + (individualCounter + individualCounterTotal));
                     str2 = in.readLine();
                     if (str2 != null) {
-						
-						//this does not work when splitting on \\s
+
+                        //this does not work when splitting on \\s
 //                        if (!pedFileDelimiter.equals("\t")) {
 //                            while (str2.contains("\t")) {
 //                                str2 = str2.replace("\t", pedFileDelimiter);
 //                            }
 //                        }
-
                         //str2 = str2.replaceAll("\t", pedFileDelimiter);
                         String data[] = str2.split(pedFileDelimiter);
 //                        String individual = data[0] + "-" + data[1];
@@ -342,7 +332,6 @@ public class PedAndMapToTriTyper {
                     individualCounter++;
                     //
 
-
                 }
 
                 //Write data to file:
@@ -368,18 +357,16 @@ public class PedAndMapToTriTyper {
             pb.close();
         }
 
-
         fileMatrixGenotype.close();
 
         System.out.println("");
-                
+
         System.out.println(
-                  
-                  "Import of PED files has completed.\n"
+                "Import of PED files has completed.\n"
                 + "----------------------------------\n"
                 + "|          Please note:          |\n"
                 + "----------------------------------\n"
-                + "Your TriTyper files have been placed in the folder: "+outputDir + "\n"
+                + "Your TriTyper files have been placed in the folder: " + outputDir + "\n"
                 + "Please check whether the PhenotypeInformation.txt file in this folder reflects the data for your samples.\n"
                 + "Have a nice day.\n");
 
@@ -411,6 +398,77 @@ public class PedAndMapToTriTyper {
         String[] pedFile = Gpio.getListOfFiles(dataLocation, "ped");
         String[] mapFile = Gpio.getListOfFiles(dataLocation, "map");
 
+        if (pedFile.length == 0) {
+// try GZipped files
+            ArrayList<String> gzippedPed = new ArrayList<String>();
+            String[] files = Gpio.getListOfFiles(dataLocation);
+            for (String file : files) {
+                if (!Gpio.isDir(file) && file.toLowerCase().endsWith(".ped.gz")) {
+                    gzippedPed.add(file);
+                }
+            }
+
+            pedFile = gzippedPed.toArray(new String[0]);
+
+            if (mapFile.length == 0) {
+                // gzipped map files?
+                HashSet<String> gzippedMap = new HashSet<String>();
+                for (String file : files) {
+                    if (!Gpio.isDir(file) && file.toLowerCase().endsWith(".map.gz")) {
+                        gzippedMap.add(file);
+                    }
+                }
+
+                boolean matchedMaps = true;
+                mapFile = new String[pedFile.length];
+                for (int p = 0; p < pedFile.length; p++) {
+                    String fWithOutExtension = pedFile[p].toLowerCase().replace(".ped.gz", "");
+                    String matchingMap = fWithOutExtension + ".map.gz";
+                    boolean fileFound = false;
+                    for (String map : gzippedMap) {
+                        if (map.toLowerCase().equals(matchingMap)) {
+                            mapFile[p] = map;
+                            fileFound = true;
+                        }
+                    }
+                    if (!fileFound) {
+                        System.out.println("No map file found for PED file: " + pedFile[p]);
+                        matchedMaps = false;
+                    }
+                }
+
+                if (!matchedMaps) {
+                    System.err.println("ERROR: could not match all PED files to MAP files.");
+                    System.exit(-1);
+                }
+            }
+
+        } else {
+            boolean matchedMaps = true;
+            String[] mapFiletmp = new String[pedFile.length];
+            for (int p = 0; p < pedFile.length; p++) {
+                String fWithOutExtension = pedFile[p].toLowerCase().replace(".ped", "");
+                String matchingMap = fWithOutExtension + ".map";
+                boolean fileFound = false;
+                for (String map : mapFile) {
+                    if (map.toLowerCase().equals(matchingMap)) {
+                        mapFiletmp[p] = map;
+                        fileFound = true;
+                    }
+                }
+                if (!fileFound) {
+                    System.out.println("No map file found for PED file: " + pedFile[p]);
+                    matchedMaps = false;
+                }
+            }
+
+            if (!matchedMaps) {
+                System.err.println("ERROR: could not match all PED files to MAP files.");
+                System.exit(-1);
+            }
+            
+            mapFile = mapFiletmp;
+        }
 
         boolean filesok = true;
         if (pedFile.length == 0) {
@@ -477,11 +535,10 @@ public class PedAndMapToTriTyper {
 //
 //                tf.close();
 //            }
-		
-		
-		//ped and map do not enforce concistent use of tab or space within one fill. Splitting should always be performed with \\s
-		return "\\s";
-		
+
+        //ped and map do not enforce concistent use of tab or space within one fill. Splitting should always be performed with \\s
+        return "\\s";
+
     }
 //    private String[] getListOfFiles(String dataLocation, String extension) {
 //        File loc = new File(dataLocation);

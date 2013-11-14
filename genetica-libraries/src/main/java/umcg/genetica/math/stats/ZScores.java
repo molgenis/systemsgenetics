@@ -106,6 +106,14 @@ public class ZScores {
      * @return absolute Z-score
      */
     public static double pToZ(double p) {
+        if(p == 1d){
+            return 0;
+        } else if (p < 0 || p > 1d){
+            throw new IllegalStateException("P-value should be between 0 and 1.");
+        } else if (p == 0d){
+            return 40d;
+        }
+        
         return Probability.normalInverse(p);
     }
 

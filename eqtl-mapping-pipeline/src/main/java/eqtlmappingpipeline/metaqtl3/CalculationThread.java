@@ -407,10 +407,10 @@ class CalculationThread extends Thread {
 
                 double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
                 double[] yInferred = new double[y.length];
-                for (int s=0; s<y.length; s++) {
+                for (int s = 0; s < y.length; s++) {
                     yInferred[s] = regressionParameters[0];
-                    for (int a=0; a<3; a++) {
-                        yInferred[s]+=regressionParameters[a + 1] * olsXFullWithInteraction[s][a];
+                    for (int a = 0; a < 3; a++) {
+                        yInferred[s] += regressionParameters[a + 1] * olsXFullWithInteraction[s][a];
                     }
                 }
 
