@@ -4,6 +4,8 @@
  */
 package umcg.genetica.math.stats;
 
+import cern.colt.list.tdouble.DoubleArrayList;
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
 import org.apache.commons.collections.primitives.ArrayIntList;
@@ -143,73 +145,85 @@ public class QuantileNormalization {
      * @param useRow use row to guess the median expression value, instead of
      * column
      */
-    public static void QuantileNormAdressingNaValuesAfterInitialQN(DoubleMatrixDataset<String, String> dataset, boolean retainNA, boolean useRow) {
+    public static void QuantileNormAdressingNaValuesAfterInitialQN(DoubleMatrixDataset<String, String> dataset, boolean retainNA, boolean useRow, boolean keepZero) {
         //Quantile normalisation, allowing for missing values:
-
-        double[][] dataSorted = new double[dataset.nrRows][dataset.nrCols];
-       
-        System.out.println("Quantile normalization round 1");
-
+        //ToDo: Can optimeze for alot of missing values. Tempory remove rows. Should speed it up and get better results.
+        
+        System.out.print("Pre-treating missing values:");
+        ArrayList<ArrayDoubleList> dataForPretreatment = new ArrayList<ArrayDoubleList>();
+        
+        int maxNonNAvalues = Integer.MIN_VALUE;
+        
         for (int s = 0; s < dataset.nrCols; s++) {
             
-            ArrayIntList naValueIndeces = new ArrayIntList();
             ArrayDoubleList nonNAvalues = new ArrayDoubleList();  
-            double[] vals = new double[dataset.nrRows];
             
             for (int p = 0; p < dataset.nrRows; ++p) {
                 if (!Double.isNaN(dataset.rawData[p][s])) {
                     nonNAvalues.add(dataset.rawData[p][s]);
-                    vals[p] = dataset.rawData[p][s];
-                } else {
-                    naValueIndeces.add(p);
                 }
             }
             
-            if(naValueIndeces.size()>0){
-                double meanPerSample = JSci.maths.ArrayMath.median(nonNAvalues.toArray(new double[0]));
-                for(int p : naValueIndeces.toArray()){
-                    vals[p] = meanPerSample;
+            if(nonNAvalues.size()>maxNonNAvalues){
+                maxNonNAvalues = nonNAvalues.size();
+            }
+            
+            dataForPretreatment.add(nonNAvalues);
+        }
+        
+        double[][] dataSorted = new double[maxNonNAvalues][dataset.nrCols];
+
+        for (int s = 0; s < dataset.nrCols; s++) {
+            double vals[] = new double[maxNonNAvalues];
+            
+            double meanPerSample = 0;
+            
+            if(dataForPretreatment.get(s).size()>0 && !keepZero){
+                meanPerSample = JSci.maths.ArrayMath.mean(dataForPretreatment.get(s).toArray(new double[0]));
+            }
+            
+            for (int p = 0; p < maxNonNAvalues; ++p) {
+                if (dataForPretreatment.get(s).size()>p) {
+                    vals[p] = dataForPretreatment.get(s).get(p);
+                } else {
+                    vals[p]=meanPerSample;
                 }
             }
             
             Arrays.sort(vals);
             
-            for (int p = 0; p < dataset.nrRows; p++) {
+            for (int p = 0; p < vals.length; p++) {
                 dataSorted[p][s] = vals[p];
             }
         }
-
-        double[] dist = new double[dataset.nrRows];
-        for (int p = 0; p < dataset.nrRows; p++) {
-            dist[p] = JSci.maths.ArrayMath.median(dataSorted[p]);
+        
+        double[] dist = new double[maxNonNAvalues];
+        for (int p = 0; p < maxNonNAvalues; p++) {            
+            dist[p] = JSci.maths.ArrayMath.mean(dataSorted[p]);
         }
+
         dataSorted = null;
         
+        System.out.println("done");
+        
+        System.out.println("Quantile normalization round (1)");        
         org.apache.commons.math3.stat.correlation.SpearmansCorrelation spearman = new org.apache.commons.math3.stat.correlation.SpearmansCorrelation();
         
         for (int s = 0; s < dataset.nrCols; s++) {
 
-            ArrayDoubleList vec1 = new ArrayDoubleList();
-
-            for (int p = 0; p < dataset.nrRows; p++) {
-                if (!Double.isNaN(dataset.rawData[p][s])) {
-                    vec1.add(dataset.rawData[p][s]);
-                }
-            }
-
-            double[] vals1 = new double[vec1.size()];
+            double[] vals1 = new double[dataForPretreatment.get(s).size()];
             
             RankArray rda = new RankArray();
             
-            double[] valsRanked = rda.rank(vec1.toArray(new double[0]), false);
+            double[] valsRanked = rda.rank(dataForPretreatment.get(s).toArray(new double[0]), false);
 
             for (int v = 0; v < vals1.length; v++) {
                 double quantile = (valsRanked[v]) / ((double) vals1.length);
-                int distIndex = (int) ((quantile * (double) dataset.nrRows) - 1);
+                int distIndex = (int) ((quantile * (double) maxNonNAvalues) - 1);
                 vals1[v] = dist[distIndex+1];
             }
             
-            System.out.println("Normalized sample:\t" + dataset.colObjects.get(s) + "\t" + s + "\tCorrelation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(vec1.toArray(new double[0]), valsRanked) + "\tCorrelation original data and quantile normalized data:\t" + JSci.maths.ArrayMath.correlation(vec1.toArray(new double[0]), vals1)+"\t"+spearman.correlation(vec1.toArray(new double[0]), vals1));
+            System.out.println("Normalized sample:\t" + dataset.colObjects.get(s) + "\t" + s + "\tCorrelation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(dataForPretreatment.get(s).toArray(new double[0]), valsRanked) + "\tCorrelation original data and quantile normalized data:\t" + JSci.maths.ArrayMath.correlation(dataForPretreatment.get(s).toArray(new double[0]), vals1)+"\t"+spearman.correlation(dataForPretreatment.get(s).toArray(new double[0]), vals1));
 
             int itr = 0;
             for (int p = 0; p < dataset.nrRows; p++) {
@@ -220,8 +234,8 @@ public class QuantileNormalization {
             }
         }
         
+        //Replace missing values:
         if (!retainNA) {
-            //Replace missing values:
             if (useRow) {
                 for (int p = 0; p < dataset.nrRows; p++) {
                     double valSum = 0;

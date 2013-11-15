@@ -24,4 +24,5 @@ public class TriTyperGeneticalGenomicsDatasetSettings {
     public String expressionplatform;
     public String probeannotation;
     public boolean cisAnalysis, transAnalysis;
+    public String covariateFile;
 }

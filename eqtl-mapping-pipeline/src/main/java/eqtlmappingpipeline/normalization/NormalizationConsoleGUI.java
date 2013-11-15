@@ -27,6 +27,10 @@ public class NormalizationConsoleGUI {
         boolean runCovariateAdjustment = false;
         boolean runPCAdjustment = false;
         boolean orthogonalizecovariates = false;
+        boolean forceMissingValues = false;
+        boolean forceReplacementOfMissingValues = false;
+        boolean forceReplacementOfMissingValues2 = false;
+        boolean treatZerosAsNulls = false;
 
         int maxPcaToRemove = 100;
         int stepSizePcaRemoval = 5;
@@ -82,6 +86,18 @@ public class NormalizationConsoleGUI {
             if (arg.equals("--stepsizepcaremoval")) {
                 stepSizePcaRemoval = Integer.parseInt(val);
             }
+            if (arg.equals("--forceReplacementOfMissingValuesSampleBased")) {
+                forceReplacementOfMissingValues = true;
+            }
+            if (arg.equals("--forceReplacementOfMissingValuesProbeBased")) {
+                forceReplacementOfMissingValues2 = true;
+            }
+            if (arg.equals("--forceMissingValues")) {
+                forceMissingValues = true;
+            }
+            if (arg.equals("--treatZerosAsNulls")) {
+                treatZerosAsNulls = true;
+            }
         }
 
         if (in == null) {
@@ -93,24 +109,37 @@ public class NormalizationConsoleGUI {
         if (!Gpio.exists(in)) {
             System.out.println("Error: the file you specified does not exist.\n");
             System.out.println("Could not find file: " + in);
-            System.exit(0);
+            System.exit(-1);
         }
-        if(runLogTransform && runMTransform){
-            System.out.println("Error: cant perform both log and M-value transformation");
-            System.exit(0);
+        if (runLogTransform && runMTransform) {
+            throw new IllegalArgumentException("Error: cant perform both log and M-value transformation.");
+        }
+        
+        if((forceMissingValues && (forceReplacementOfMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues && (forceMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues2 && (forceReplacementOfMissingValues || forceMissingValues))){
+            throw new IllegalArgumentException("Error: cant perform two forces on missing values.");
         }
 
-
+        if(forceMissingValues && !treatZerosAsNulls){
+            runLogTransform = false;
+            runMTransform = false;
+            runCenterScale = false;
+            runPCAdjustment = false;
+            runCovariateAdjustment = false;
+        }
+        
         try {
             Normalizer p = new Normalizer();
-            
+
             if (!fullNorm) {
                 p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
-                        runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment, runCovariateAdjustment);
+                        runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
+                        runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, 
+                        forceReplacementOfMissingValues2, treatZerosAsNulls);
             } else {
                 // run full normalization
                 p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
-                        true, true, false, true, true, true);
+                        true, true, false, true, true, true, false, false, false,
+                        false);
             }
 
             System.out.println("Done.");
@@ -140,6 +169,12 @@ public class NormalizationConsoleGUI {
                 + "\n"
                 + "PCA parameters\n"
                 + "--maxnrpcaremoved\tinteger\t\tMaximum number of PCs to remove\n"
-                + "--stepsizepcaremoval\tinteger\t\tStep size for PC removal\n");
+                + "--stepsizepcaremoval\tinteger\t\tStep size for PC removal\n"
+                +"\n"
+                +"Additional QN missing value parameters (Only one of the force option's is allowed at once.)\n"
+                +"--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen, without --treatZerosAsNulls, only QN will be performed.\n"
+                +"--forceReplacementOfMissingValuesSampleBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by sample mean.\n"
+                +"--forceReplacementOfMissingValuesProbeBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by probe mean.\n"
+                +"--treatZerosAsNulls\tTransforms all zeros to nulls during QN.\n");
     }
 }

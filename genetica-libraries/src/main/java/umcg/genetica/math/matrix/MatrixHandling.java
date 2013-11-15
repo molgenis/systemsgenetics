@@ -428,6 +428,36 @@ public class MatrixHandling {
             }
         }
     }
+    
+    /**
+     * Replace zero's with nulls.
+     *
+     * @param rawData
+     */
+    public static void ReplaceZerosToNull(double[][] rawData) {
+        for (int s = 0; s < rawData[1].length; ++s) {
+            for (int p = 0; p < rawData.length; ++p) {
+                if (rawData[p][s]==0.0d) {
+                    rawData[p][s] = Double.NaN;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Replace null's with zero's.
+     *
+     * @param rawData
+     */
+    public static void ReplaceNullToZero(double[][] rawData) {
+        for (int s = 0; s < rawData[1].length; ++s) {
+            for (int p = 0; p < rawData.length; ++p) {
+                if (Double.isNaN(rawData[p][s])) {
+                    rawData[p][s] = 0;
+                }
+            }
+        }
+    }
 
     /**
      * Method to apply all QC steps.
@@ -494,7 +524,6 @@ public class MatrixHandling {
 
         dataset.colObjects = Arrays.asList(newColNames);
         dataset.nrCols = newSize;
-        System.out.println(newSize);
         dataset.rawData = newRawData;
         dataset.recalculateHashMaps();
     }

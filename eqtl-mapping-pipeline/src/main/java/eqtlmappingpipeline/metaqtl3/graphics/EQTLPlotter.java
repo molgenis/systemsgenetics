@@ -118,7 +118,6 @@ public class EQTLPlotter {
         int innerHeight = y1 - y0;
 
         double metaPvalue = wp.results.pvalues[pid];
-        double metaPvalueAbs = wp.results.pvaluesAbs[pid];
 
         SNP[] snps = wp.getSnps();
 
@@ -134,13 +133,11 @@ public class EQTLPlotter {
         }
 
         String probeName = m_probeList[probeId];
-
-        for (int s = 0; s < snps.length; s++) {
-            if (snps[s] != null) {
-                snpName = snps[s].getName();
-                snpChr = snps[s].getChr();
-                snpChrpos = snps[s].getChrPos();
-
+        for (SNP snp : snps) {
+            if (snp != null) {
+                snpName = snp.getName();
+                snpChr = snp.getChr();
+                snpChrpos = snp.getChrPos();
                 break;
             }
         }
@@ -160,7 +157,7 @@ public class EQTLPlotter {
             logPValueString = "0" + logPValueString;
         }
 
-        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_") + ".pdf";
+        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_").replace(";", "_") + ".pdf";
 //        fileName = m_outputDir + "" + logPValueString + "-" + snpName + "-" + probeName + ".pdf";
         File file = new File(fileName);
 
@@ -201,10 +198,6 @@ public class EQTLPlotter {
         g2d.drawString("Probe", margin, 25);
         g2d.drawString("P-Value", margin, 35);
 
-        if (m_gg.length > 1) {
-            g2d.drawString("P-Value Abs.", margin + 165, 35);
-        }
-
         g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
         g2d.drawString(snpName + " - Chr: " + snpChr + " (" + snpChrpos + ")", margin + 40, 15);
         g2d.drawString(probeName + " - " + probeAnnot, margin + 40, 25);
@@ -217,13 +210,6 @@ public class EQTLPlotter {
         }
 
         g2d.drawString(pValueOverallString, margin + 40, 35);
-        if (m_gg.length > 1) {
-            String pValueOverallAbsoluteString = df5.format(metaPvalueAbs);
-            if (metaPvalueAbs > 0.001) {
-                pValueOverallString = df6.format(metaPvalueAbs);
-            }
-            g2d.drawString(pValueOverallAbsoluteString, margin + 230, 35);
-        }
 
         int numDatasets = m_gg.length;
 
