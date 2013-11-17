@@ -319,10 +319,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		sequences = new HashMap<String, Sequence>();
 
-		Iterator<String[]> snpMapIterator = tfSNPMap.readLineElemsIterator(TextFile.tab);
-		while (snpMapIterator.hasNext()) {
-			String[] chrPosId = snpMapIterator.next();
-
+		for(String[] chrPosId : tfSNPMap.readLineElemsIterable(TextFile.tab)){
+			
 			if (allSNPHash.containsKey(chrPosId[2])) {
 				String snp = chrPosId[2];
 
