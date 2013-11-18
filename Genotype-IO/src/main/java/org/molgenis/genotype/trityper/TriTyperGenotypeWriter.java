@@ -1,8 +1,6 @@
 package org.molgenis.genotype.trityper;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -61,7 +59,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 	private void writeSnps(File snpFile, File snpMapFile) throws IOException{
 		
 		BufferedWriter snpFileWriter = new BufferedWriter(new FileWriter(snpFile));
-		BufferedWriter snpMapFileWriter = new BufferedWriter(new FileWriter(snpFile));
+		BufferedWriter snpMapFileWriter = new BufferedWriter(new FileWriter(snpMapFile));
 		
 		for(GeneticVariant variant : genotypeData){
 			
