@@ -9,7 +9,7 @@ import eqtlmappingpipeline.celltypespecific.CelltypeSpecificeQTLMappingConsoleGU
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
 import eqtlmappingpipeline.eQTLFoldChangeCalculator.eQTLFoldChangeCalculatorGUI;
-import eqtlmappingpipeline.iv.IVConsoleGUI;
+import eqtlmappingpipeline.causalinference.IVConsoleGUI;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3ConsoleGUI;
 import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
