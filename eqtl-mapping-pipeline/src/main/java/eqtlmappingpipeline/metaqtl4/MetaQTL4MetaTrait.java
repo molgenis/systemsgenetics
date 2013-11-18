@@ -53,11 +53,12 @@ public class MetaQTL4MetaTrait implements Comparable<Object> {
             if (!this.getChr().equals(that.getChr())) {
                 return chrComparator.compare(chr, that.getChr());
             } else {
-                if(this.getChrMidpoint() > that.getChrMidpoint()){
-                    return 1;
-                } else {
-                    return -1;
-                }
+				if(this.getChrMidpoint() == that.getChrMidpoint()){
+					//Assume id is unique
+					return this.metaTraitId - that.metaTraitId;
+				} else {
+					return this.getChrMidpoint() - that.getChrMidpoint();
+				}
             }
         }
     }

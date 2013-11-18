@@ -23,20 +23,20 @@ import umcg.genetica.util.Primitives;
  */
 public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
 
-    int distributionSize;
-    long[] randomizationSeeds;
-    ArrayList<MetaQTL4MetaTrait> availableTraits;
-    HashMap<MetaQTL4MetaTrait, Integer> availableTraitsHash;
-    MetaQTL4Dataset[] datasets;
-    GeneticVariant[][] geneticVariantIndex;
-    MetaQTL4Settings m_settings;
-    MetaQTL4TraitAnnotation traitAnnotation;
-    Integer[][] traitIndex;
-    Set<MetaQTL4MetaTrait> traitsToInclude;
-    Set<String> variantsToInclude;
-    int threadIndex;
-    int[] realDistribution;
-    int[] permutedDistribution;
+    private final int distributionSize;
+    private final long[] randomizationSeeds;
+    private final ArrayList<MetaQTL4MetaTrait> availableTraits;
+    private final HashMap<MetaQTL4MetaTrait, Integer> availableTraitsHash;
+    private final MetaQTL4Dataset[] datasets;
+    private final GeneticVariant[][] geneticVariantIndex;
+    private final MetaQTL4Settings m_settings;
+    private final MetaQTL4TraitAnnotation traitAnnotation;
+    private final Integer[][] traitIndex;
+    private final Set<MetaQTL4MetaTrait> traitsToInclude;
+    private final Set<String> variantsToInclude;
+    private final int threadIndex;
+    private final int[] realDistribution;
+    private final int[] permutedDistribution;
 
     MetaQTL4CorrelationTask(int nrThreads,
             int distributionSize,
@@ -236,6 +236,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
                         double hwep = variant.getHwePvalue();
                         double callrate = variant.getCallRate();
 
+						// TODO: best done on loading dataset with filter.
                         if (maf > mafthreshold && hwep > hwepthreshold && callrate > callratethreshold) {
                             // TODO: remove missing genotypes and rescale the genotype data
                             Pair<double[], Double> genotypedata = correctGenotypesForMissingValuesAndNormalize(gte, variant, genotypesTMP, includeTraitSample[datasetId]);

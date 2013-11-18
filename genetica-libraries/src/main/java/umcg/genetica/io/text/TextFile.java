@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -136,10 +138,14 @@ public class TextFile implements Iterable<String> {
 		return readLineElemsReturnReference(p);
 	}
 
-	public Iterator<String[]> readLineElemsIterator(Pattern p) throws IOException {
+	private Iterator<String[]> readLineElemsIterator(Pattern p) throws IOException {
 		return new TextFileIteratorElements(this, p);
 	}
 
+	public Iterable<String[]> readLineElemsIterable(Pattern p) {
+		return new TextFileIterableElements(this, p);
+	}
+	
 	/**
 	 * This method returns default substrings delimited by Pattern p. As such,
 	 * this method may be more memory-efficient in some situations (for example
@@ -466,5 +472,26 @@ public class TextFile implements Iterable<String> {
 		public void remove() {
 			throw new UnsupportedOperationException("Not supported yet.");
 		}
+	}
+	
+	private static class TextFileIterableElements implements Iterable<String[]> {
+
+		private final TextFile textFile;
+		private final Pattern pattern;
+
+		public TextFileIterableElements(TextFile textFile, Pattern pattern) {
+			this.textFile = textFile;
+			this.pattern = pattern;
+		}
+		
+		@Override
+		public Iterator<String[]> iterator() {
+			try {
+				return textFile.readLineElemsIterator(pattern);
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+		
 	}
 }

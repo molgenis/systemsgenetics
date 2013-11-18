@@ -67,12 +67,12 @@ class MetaQTL4TraitAnnotation {
             }
         }
 
-        String[] elems = tf.readLineElems(TextFile.tab);
+
         int probeCounter = 0;
-        while (elems != null) {
+        for(String[] elems : tf.readLineElemsIterable(TextFile.tab)){
 
             String metaTraitName = elems[0];
-            String chr = elems[1];
+            String chr = elems[1].intern();
             int chrstartpos = -1;
             try {
                 chrstartpos = Integer.parseInt(elems[2]);
@@ -101,7 +101,6 @@ class MetaQTL4TraitAnnotation {
             probeCounter++;
             metatraits.add(metaTraitObj);
             metaTraitNameToObj.put(metaTraitName, metaTraitObj);
-            elems = tf.readLineElems(TextFile.tab);
         }
         tf.close();
     }

@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.plink;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,7 +62,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final HashMap<String, Sequence> sequences;
 	private final GeneticVariantTreeSet<GeneticVariant> snps;
-	private final HashMap<GeneticVariant, Integer> snpIndexces;
+	private final TObjectIntHashMap<GeneticVariant> snpIndexces;
 	private final RandomAccessFile bedFileReader;
 	private final SampleVariantsProvider sampleVariantProvider;
 	private final int sampleVariantProviderUniqueId;
@@ -130,7 +131,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
-		snpIndexces = new HashMap<GeneticVariant, Integer>();
+		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f);
 		snps = new GeneticVariantTreeSet<GeneticVariant>();
 		sequences = new HashMap<String, Sequence>();
 		originalSnpCount = readBimFile(bimFile);
