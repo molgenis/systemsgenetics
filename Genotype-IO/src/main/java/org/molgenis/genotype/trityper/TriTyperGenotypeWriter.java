@@ -107,7 +107,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 	
 	private void writeGenotypes(File genotypeDataFile, File imputedDosageDataFile) throws IOException{
 		
-		// no need for buffered stream writer. snps we write per SNP.
+		// no need for buffered stream writer. data we write per SNP.
 		FileOutputStream genotypeDataFileWriter = new FileOutputStream(genotypeDataFile);
 		
 		String[] samples = genotypeData.getSampleNames();
