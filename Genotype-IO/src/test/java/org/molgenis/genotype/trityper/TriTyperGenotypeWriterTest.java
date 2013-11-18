@@ -45,7 +45,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 				//	file.delete();
 				}
 				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-				//tmpOutputFolder.delete();
+				tmpOutputFolder.delete();
 			}
 		});
 
