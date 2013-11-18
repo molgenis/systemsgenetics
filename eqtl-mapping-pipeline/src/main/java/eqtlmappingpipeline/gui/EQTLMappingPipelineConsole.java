@@ -11,6 +11,7 @@ import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
 import eqtlmappingpipeline.eQTLFoldChangeCalculator.eQTLFoldChangeCalculatorGUI;
 import eqtlmappingpipeline.iv.IVConsoleGUI;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3ConsoleGUI;
+import eqtlmappingpipeline.metaqtl4.MetaQTL4ConsoleUI;
 import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
@@ -62,7 +63,7 @@ public class EQTLMappingPipelineConsole {
             if (mode.equals("metaqtl")) {
                 MetaQTL3ConsoleGUI metaQTL = new MetaQTL3ConsoleGUI(args);
             } else if (mode.equals("metaqtl4")) {
-                //MetaQTL4ConsoleGUI metaQTL = new MetaQTL4ConsoleGUI(args);
+                MetaQTL4ConsoleUI mui = new MetaQTL4ConsoleUI(args);
             } else if (mode.equals("mixupmapper")) {
                 MixupMapperConsoleGUI m = new MixupMapperConsoleGUI(args);
             } else if (mode.equals("normalize")) {

@@ -194,13 +194,14 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                         if (pValueInteraction < 2.0E-323) {
                             pValueInteraction = 2.0E-323;
                         }
-                        zScoreInteraction = cern.jet.stat.Probability.normalInverse(pValueInteraction);
+                        zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
                     } else {
                         pValueInteraction = tDistColt.cdf(-tInteraction);
                         if (pValueInteraction < 2.0E-323) {
                             pValueInteraction = 2.0E-323;
                         }
-                        zScoreInteraction = -cern.jet.stat.Probability.normalInverse(pValueInteraction);
+                        
+                        zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
                     }
                     pValueInteraction *= 2;
 
@@ -232,13 +233,13 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                             if (pValueSNP < 2.0E-323) {
                                 pValueSNP = 2.0E-323;
                             }
-                            zScoreSNP = cern.jet.stat.Probability.normalInverse(pValueSNP);
+                            zScoreSNP = cern.jet.stat.tdouble.Probability.normalInverse(pValueSNP);
                         } else {
                             pValueSNP = tDistColt.cdf(-tSNP);
                             if (pValueSNP < 2.0E-323) {
                                 pValueSNP = 2.0E-323;
                             }
-                            zScoreSNP = -cern.jet.stat.Probability.normalInverse(pValueSNP);
+                            zScoreSNP = -cern.jet.stat.tdouble.Probability.normalInverse(pValueSNP);
                         }
                         pValueSNP *= 2;
 
@@ -254,13 +255,13 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
                             if (pValueCellType < 2.0E-323) {
                                 pValueCellType = 2.0E-323;
                             }
-                            zScoreCellType = cern.jet.stat.Probability.normalInverse(pValueCellType);
+                            zScoreCellType = cern.jet.stat.tdouble.Probability.normalInverse(pValueCellType);
                         } else {
                             pValueCellType = tDistColt.cdf(-tCellType);
                             if (pValueCellType < 2.0E-323) {
                                 pValueCellType = 2.0E-323;
                             }
-                            zScoreCellType = -cern.jet.stat.Probability.normalInverse(pValueCellType);
+                            zScoreCellType = -cern.jet.stat.tdouble.Probability.normalInverse(pValueCellType);
                         }
                         pValueCellType *= 2;
 
