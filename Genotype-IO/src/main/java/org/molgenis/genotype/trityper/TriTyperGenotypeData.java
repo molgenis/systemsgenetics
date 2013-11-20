@@ -319,7 +319,12 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		sequences = new HashMap<String, Sequence>();
 
+		int lineCount = 0;
 		for(String[] chrPosId : tfSNPMap.readLineElemsIterable(TextFile.tab)){
+			++lineCount;
+			if(chrPosId.length != 3){
+				throw new GenotypeDataException("Error in Trityper SNPMappings.txt. Line number " + lineCount + " does not contain 3 elements: ");
+			}
 			
 			if (allSNPHash.containsKey(chrPosId[2])) {
 				String snp = chrPosId[2];
