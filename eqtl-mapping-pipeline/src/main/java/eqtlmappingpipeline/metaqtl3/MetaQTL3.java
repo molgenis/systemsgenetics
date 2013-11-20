@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
@@ -43,6 +44,7 @@ public class MetaQTL3 {
     protected int numAvailableInds;
     protected WorkPackage[] m_workPackages;
     private boolean dataHasCovariates;
+    private Pair<List<String>, List<List<String>>> pathwayDefinitions;
 
     public MetaQTL3() {
     }
@@ -182,11 +184,46 @@ public class MetaQTL3 {
             dataHasCovariates = true;
         }
 
+        List<String> pathwayNames = new ArrayList<String>();
+        List<List<String>> ensgsInPathways = new ArrayList<List<String>>();
+        if (m_settings.pathwayDefinition != null) {
+            if (Gpio.exists(m_settings.pathwayDefinition)) {
+                TextFile tf = new TextFile(m_settings.pathwayDefinition, TextFile.R);
+                String line;
+                while ((line = tf.readLine()) != null) {
+                    List<String> ensgsThisPathway = new ArrayList<String>();
+                    String[] split = line.split("\t");
+                    for (int i = 2; i < split.length; i++) {
+                        ensgsThisPathway.add(split[i]);
+                    }
+                    pathwayNames.add(split[0]);
+                    ensgsInPathways.add(ensgsThisPathway);
+                }
+                tf.close();
+                System.out.println("Read " + pathwayNames.size() + " pathways from " + m_settings.pathwayDefinition);
+                pathwayDefinitions = new Pair<List<String>, List<List<String>>>(pathwayNames, ensgsInPathways);
+
+                // be sure this is a cis-trans analysis on pathways...
+                m_settings.cisAnalysis = true;
+                m_settings.transAnalysis = true;
+                for (int d = 0; d < numDatasets; d++) {
+                    // hooray for redundant settings: need to fix at some point.
+                    m_settings.datasetSettings.get(d).cisAnalysis = true;
+                    m_settings.datasetSettings.get(d).transAnalysis = true;
+                }
+            } else {
+                System.err.println("Pathway defnition defined as: " + m_settings.pathwayDefinition + ", but file does not exist.");
+                System.exit(-1);
+            }
+        } else {
+            pathwayDefinitions = null;
+        }
+
         for (int i = 0; i < numDatasets; i++) {
             System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
             m_settings.datasetSettings.get(i).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
             System.out.println(ConsoleGUIElems.LINE);
-            m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i));
+            m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i), pathwayDefinitions);
 
             if (m_gg[i].isExpressionDataLoadedCorrectly()) {
                 nrOfDatasetsWithGeneExpressionData++;
@@ -1006,7 +1043,7 @@ public class MetaQTL3 {
                     workPackages[s] = null;
 
                     // reduce the output size of the snp filter output to query snps, if any
-                    if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(m_snpList[s])) { 
+                    if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(m_snpList[s])) {
                         excludedSNPs.write(snpname + "\tNo probes to test.\n");
                     }
                 } else {
