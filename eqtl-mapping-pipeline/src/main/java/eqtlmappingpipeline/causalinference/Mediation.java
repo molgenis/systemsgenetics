@@ -11,6 +11,7 @@ import umcg.genetica.containers.Triple;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
+import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Regression;
 
@@ -46,20 +47,25 @@ public class Mediation extends IVAnalysis {
                 Triple<String, String, String> next = it.next();
                 ProgressBar pb = new ProgressBar(snpProbeCombos.size(), "Running Mediation Analysis - Permutation " + perm);
 
-                out.writeln("SNP\t"
+                out.writeln("SNP\tSNP Chr\tSNP ChrPos\t"
+                        + "Alleles\tDirectionAllele\t"
                         + "N\t"
-                        + "CisArrayAddress\t"
-                        + "CisGeneName"
-                        + "TransArrayAddress\t"
+                        + "CisArrayAddress\tCisProbe Chr\tCisProbe ChrPos\t"
+                        + "CisGeneName\t"
+                        + "TransArrayAddress\tTransProbe Chr\tTransProbe ChrPos\t"
                         + "TransGeneName\t"
-                        + "CisTransCorrelation\t"
+                        + "CisTrans-Correlation\t"
+                        + "Cis-eQTL-Beta\t"
+                        + "Cis-eQTL-SE\t"
                         + "CisTrans-Beta\t"
                         + "CisTrans-SE\t"
                         + "Trans-eQTL-Beta\t"
                         + "Trans-eQTL-SE\t"
-                        + "CisTransResidualCorrelation\t"
-                        + "Trans-Residual-Beta\t"
-                        + "Trans-Residual-SE"
+                        + "CisTrans-Residual-Correlation\t"
+                        + "CisTrans-Residual-Beta\t"
+                        + "CisTrans-Residual-SE\t"
+                        + "Trans-eQTL-Residual-Beta\t"
+                        + "Trans-eQTL-Residual-SE\t"
                         + "Beta-Ratio");
 
                 while (next != null) {
@@ -115,34 +121,50 @@ public class Mediation extends IVAnalysis {
 
                         double corrCisTrans = JSci.maths.ArrayMath.correlation(cisvals, transvals); // for code validation
                         double[] cisTransRCs = Regression.getLinearRegressionCoefficients(cisvals, transvals); // returns beta, alpha, se, t
-//                        double[] snpCisRCs = Regression.getLinearRegressionCoefficients(genotypes, cisvals); // returns beta, alpha, se, t
+                        double[] snpCisRCs = Regression.getLinearRegressionCoefficients(genotypes, cisvals); // returns beta, alpha, se, t
                         double[] snpTransRCs = Regression.getLinearRegressionCoefficients(genotypes, transvals);
 
                         // remove correlation between cis and trans probe
-
 //                        double[] resCis = new double[cisvals.length];
-                        double[] resTrans = new double[cisvals.length];
-                        for (int i = 0; i < resTrans.length; i++) {
+                        double[] resTransVals = new double[cisvals.length];
+                        for (int i = 0; i < resTransVals.length; i++) {
 //                            resCis[i] = cisvals[i] - snpCisRCs[0] * genotypes[i];
-                            resTrans[i] = transvals[i] - cisTransRCs[0] * cisvals[i];
+                            resTransVals[i] = transvals[i] - cisTransRCs[0] * cisvals[i];
                         }
 
-                        double[] snpResTransRCs = Regression.getLinearRegressionCoefficients(genotypes, resTrans);
+                        resTransVals = normalize(resTransVals);
 
-                        double rescorr = JSci.maths.ArrayMath.correlation(cisvals, resTrans); // for code validation
+                        double[] cisResTransRCs = Regression.getLinearRegressionCoefficients(cisvals, resTransVals); // returns beta, alpha, se, t
+                        double[] snpResTransRCs = Regression.getLinearRegressionCoefficients(genotypes, resTransVals);
 
-                        out.write(snp
+                        double rescorr = JSci.maths.ArrayMath.correlation(cisvals, resTransVals); // for code validation
+
+                        out.writeln(snp
+                                + "\t" + snpObj.getChr()
+                                + "\t" + snpObj.getChrPos()
+                                + "\t" + BaseAnnot.toString(snpObj.getAlleles()[0]) + "/" + BaseAnnot.toString(snpObj.getAlleles()[1])
+                                + "\t" + BaseAnnot.toString(snpObj.getAlleles()[0])
                                 + "\t" + transvals.length
                                 + "\t" + cisprobe
+                                + "\t" + m_gg[d].getExpressionData().getChr()[cisProbeId]
+                                + "\t" + m_gg[d].getExpressionData().getChrStart()[cisProbeId]
+                                + ":" + m_gg[d].getExpressionData().getChrStop()[cisProbeId]
                                 + "\t" + m_gg[d].getExpressionData().getAnnotation()[cisProbeId]
                                 + "\t" + transprobe
+                                + "\t" + m_gg[d].getExpressionData().getChr()[transProbeId]
+                                + "\t" + m_gg[d].getExpressionData().getChrStart()[transProbeId]
+                                + ":" + m_gg[d].getExpressionData().getChrStop()[transProbeId]
                                 + "\t" + m_gg[d].getExpressionData().getAnnotation()[transProbeId]
                                 + "\t" + corrCisTrans
+                                + "\t" + snpCisRCs[0]
+                                + "\t" + snpCisRCs[2]
                                 + "\t" + cisTransRCs[0]
                                 + "\t" + cisTransRCs[2]
                                 + "\t" + snpTransRCs[0]
                                 + "\t" + snpTransRCs[2]
                                 + "\t" + rescorr
+                                + "\t" + cisResTransRCs[0]
+                                + "\t" + cisResTransRCs[2]
                                 + "\t" + snpResTransRCs[0]
                                 + "\t" + snpResTransRCs[2]
                                 + "\t" + (snpResTransRCs[0] / snpTransRCs[0]));

@@ -70,8 +70,13 @@ public class IVConsoleGUI {
                 System.out.println("ERROR: Please supply settings file (--settings settings.xml) or --in and --out");
                 printUsage();
             } else {
-                IVAnalysis iv = new IVAnalysis(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
-                iv.run();
+                if (mediation) {
+                    Mediation iv = new Mediation(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
+                    iv.run();
+                } else {
+                    IVAnalysis iv = new IVAnalysis(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
+                    iv.run();
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
