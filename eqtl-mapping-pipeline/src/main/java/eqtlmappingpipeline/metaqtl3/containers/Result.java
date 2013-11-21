@@ -27,7 +27,7 @@ public class Result {
     public double[][] fc;
     public double[] finalBetaSe;
     public double[] finalBeta;
-    public byte[][] deflatedZScores;
+    
     
     
     public Result(boolean poison){

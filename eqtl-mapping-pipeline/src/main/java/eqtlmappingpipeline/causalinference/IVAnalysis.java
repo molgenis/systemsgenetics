@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.iv;
+package eqtlmappingpipeline.causalinference;
 
 import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
 import java.io.IOException;
@@ -31,10 +31,11 @@ import umcg.genetica.util.RankDoubleArray;
  */
 public class IVAnalysis {
 
-    HashSet<Triple<String, String, String>> snpProbeCombos = new HashSet<Triple<String, String, String>>();
+    protected HashSet<Triple<String, String, String>> snpProbeCombos = new HashSet<Triple<String, String, String>>();
     protected MetaQTL3Settings m_settings;
     // snpProbeCombinationList (SNP cis trans)
-    private TriTyperGeneticalGenomicsDataset[] m_gg;
+    protected TriTyperGeneticalGenomicsDataset[] m_gg;
+    protected final String outDir;
 
     public IVAnalysis(String xmlSettingsFile,
             String ingt, String inexp, String inexpplatform, String inexpannot,
@@ -60,8 +61,8 @@ public class IVAnalysis {
         }
 
         Gpio.createDir(out);
+        this.outDir = out;
 
-        run(out);
 
     }
 
@@ -194,7 +195,7 @@ public class IVAnalysis {
 
     }
 
-    public void run(String outDir) throws IOException {
+    public void run() throws IOException {
         for (int d = 0; d < m_gg.length; d++) {
             // now test all triples
             SNPLoader snpLoader = m_gg[d].getGenotypeData().createSNPLoader();
@@ -285,9 +286,9 @@ public class IVAnalysis {
 
 
 
-                        
+
                         double corrCisTrans = JSci.maths.ArrayMath.correlation(cisvals, transvals);
-                        
+
                         double[] snpCisRCs = Regression.getLinearRegressionCoefficients(genotypes, cisvals);
                         double[] snpTransRCs = Regression.getLinearRegressionCoefficients(genotypes, transvals);
 
@@ -299,7 +300,7 @@ public class IVAnalysis {
                         }
 
                         double corrResCisResTrans = JSci.maths.ArrayMath.correlation(resCis, resTrans);
-                        
+
 
 
                         double[] cisTransRCs = Regression.getLinearRegressionCoefficients(cisvals, transvals);
@@ -362,10 +363,10 @@ public class IVAnalysis {
 
 //                        out.writeln(snp + "\t" + snpId + "\t" + cisprobe + "\t" + cisProbeId + "\t" + m_gg[d].getExpressionData().getAnnotation()[cisProbeId] + "\t" + transprobe + "\t" + transProbeId + "\t" + m_gg[d].getExpressionData().getAnnotation()[transProbeId] + "\t" + stats[0] + "\t" + stats[1] + "\t" + stats[2] + "\t" + stats2[0] + "\t" + stats2[1] + "\t" + stats2[2] + "\t" + result[0] + "\t" + result[1] + "\t" + result[2] + "\t" + corrCisTrans + "\t" + r2CisTrans + "\t" + corrResCisResTrans + "\t" + r2ResCisResTrans + "\t" + corrCisResTrans + "\t" + corSNPTrans + "\t" + corrSNPResTrans+"\t"+corrSNPResCisResTrans);
 
-                        out.write(snp 
-                                + "\t" + cisprobe 
-                                + "\t" + m_gg[d].getExpressionData().getAnnotation()[cisProbeId] 
-                                + "\t" + transprobe 
+                        out.write(snp
+                                + "\t" + cisprobe
+                                + "\t" + m_gg[d].getExpressionData().getAnnotation()[cisProbeId]
+                                + "\t" + transprobe
                                 + "\t" + m_gg[d].getExpressionData().getAnnotation()[transProbeId]
                                 + "\t" + cisEQTL
                                 + "\t" + (cisEQTL * cisEQTL)
@@ -374,10 +375,9 @@ public class IVAnalysis {
                                 + "\t" + corrCisTrans
                                 + "\t" + (corrCisTrans * corrCisTrans)
                                 + "\t" + corrResCisResTrans
-                                + "\t" + (corrResCisResTrans*corrResCisResTrans)
+                                + "\t" + (corrResCisResTrans * corrResCisResTrans)
                                 + "\t" + result[0]
-                                + "\t" + result[2]
-                                );
+                                + "\t" + result[2]);
                         snpObj.clearGenotypes();
                     }
 
