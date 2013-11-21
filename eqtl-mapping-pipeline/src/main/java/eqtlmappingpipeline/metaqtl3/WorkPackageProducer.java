@@ -132,9 +132,9 @@ class WorkPackageProducer extends Thread {
                     boolean dosageAvailable = loader.hasDosageInformation();
 
                     // too bad, but we need sorting by SNP id for optimal sequential access of the RandomAccessFile handlers in the SNPLoader objects
-                    if (d > 0) {
-                        java.util.Arrays.sort(workPackageBuffer);
-                    }
+//                    if (d > 0) {
+//                        java.util.Arrays.sort(workPackageBuffer);
+//                    }
 
                     for (int i = 0; i < workPackageBufferSize; i++) {
 
