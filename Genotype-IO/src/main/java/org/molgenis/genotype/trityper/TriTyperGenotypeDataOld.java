@@ -22,6 +22,8 @@ import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import static org.molgenis.genotype.GenotypeData.BOOL_INCLUDE_SAMPLE;
+import static org.molgenis.genotype.GenotypeData.CASE_CONTROL_SAMPLE_ANNOTATION_NAME;
+import static org.molgenis.genotype.GenotypeData.SEX_SAMPLE_ANNOTATION_NAME;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -33,10 +35,10 @@ import org.molgenis.genotype.annotation.SexAnnotation;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
-import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -48,10 +50,10 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author harmjan
  */
-public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
+public class TriTyperGenotypeDataOld extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
 	private final List<Boolean> samplePhasing;
-	private final GeneticVariantRange snps;
+	private GeneticVariantTreeSet<GeneticVariant> snps = new GeneticVariantTreeSet<GeneticVariant>();
 	private final SampleVariantsProvider variantProvider;
 	private final File genotypeDataFile;
 	private final File imputedDosageDataFile;
@@ -64,6 +66,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final int cacheSize;
 	private final RandomAccessFile dosageHandle;
 	private final RandomAccessFile genotypeHandle;
+	private final FileChannel genotypeChannel;
 	private final FileChannel dosageChannel;
 	private final int sampleVariantProviderUniqueId;
 	private HashMap<String, SampleAnnotation> sampleAnnotationMap;
@@ -83,31 +86,31 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	 */
 	private ArrayList<Sample> samples;
 
-	public TriTyperGenotypeData(String location) throws IOException {
+	public TriTyperGenotypeDataOld(String location) throws IOException {
 		this(new File(location), 1024, null, null);
 	}
 
-	public TriTyperGenotypeData(String location, int cacheSize) throws IOException {
+	public TriTyperGenotypeDataOld(String location, int cacheSize) throws IOException {
 		this(new File(location), cacheSize, null, null);
 	}
 
-	public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter) throws IOException {
+	public TriTyperGenotypeDataOld(String location, int cacheSize, VariantFilter variantFilter) throws IOException {
 		this(new File(location), cacheSize, variantFilter, null);
 	}
 
-    public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
+    public TriTyperGenotypeDataOld(String location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
 		this(new File(location), cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
 	}
     
-    public TriTyperGenotypeData(File location) throws IOException {
+    public TriTyperGenotypeDataOld(File location) throws IOException {
 		this(location, 1024, null, null);
 	}
     
-	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
+	public TriTyperGenotypeDataOld(File location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
 		this(location, cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
 	}
 
-	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
+	public TriTyperGenotypeDataOld(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
 		this.variantFilter = variantFilter;
 		this.sampleFilter = sampleFilter;
@@ -185,14 +188,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
+		genotypeChannel = genotypeHandle.getChannel();
 
 		loadSamples();
 		samplePhasing = Collections.nCopies(samples.size(), false);
-		
-		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
-		loadSNPAnnotation(snpsFactory);
-		snps = snpsFactory.createRange();
-		
+		loadSNPAnnotation();
 		checkFileSize();
 
 
@@ -300,7 +300,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 	}
 
-	private void loadSNPAnnotation(GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws IOException {
+	private void loadSNPAnnotation() throws IOException {
 		TextFile tf = new TextFile(snpFile, TextFile.R);
 
 		HashMap<String, Integer> allSNPHash = new HashMap<String, Integer>();
@@ -350,7 +350,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				GeneticVariant variant = new ReadOnlyGeneticVariantTriTyper(snp, pos, chr, variantProvider, allSNPHash.remove(snp));
 
 				if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
-					snpsFactory.addVariant(variant);
+					snps.add(variant);
 					numberOfIncludedSNPsWithAnnotation++;
 				}
 
@@ -365,12 +365,12 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			GeneticVariant variant = new ReadOnlyGeneticVariantTriTyper(entry.getKey(), 0, "0", variantProvider, entry.getValue());
 
 			if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
-				snpsFactory.addVariant(variant);
+				snps.add(variant);
 			}
 
 		}
 
-		LOG.info("Loaded " + snpsFactory.size() + " out of " + unfilteredSnpCount + " SNPs, " + numberOfIncludedSNPsWithAnnotation + " of loaded SNPs have annotation.");
+		LOG.info("Loaded " + snps.size() + " out of " + unfilteredSnpCount + " SNPs, " + numberOfIncludedSNPsWithAnnotation + " of loaded SNPs have annotation.");
 	}
 
 	private void checkFileSize() {
@@ -408,27 +408,24 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
 		int index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
-		
+
 		int numIndividuals = samples.size();
 		long indexLong = (long) (index) * (numIndividuals * 2);
 
-		byte[] buffer = new byte[2 * numIndividuals];
+		// load bytes using NIO
+		ByteBuffer buffer = ByteBuffer.allocate(2 * numIndividuals);
 		try {
-			
-			if (genotypeHandle.read(buffer) != buffer.length) {
-				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
-			}
-			
+			genotypeChannel.read(buffer, indexLong);
 		} catch (IOException e) {
 			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 		}
 
 		List<Alleles> alleles = new ArrayList<Alleles>(includedSamples.size());
-
+		byte[] bufferArr = buffer.array();
 		for (int i = 0; i < numIndividuals; i++) {
 			if (sampleFilter == null || sampleFilter.doesSamplePassFilter(samples.get(i))) {
 				int allele2Pos = numIndividuals + i;
-				Alleles a = Alleles.createAlleles(TriTyperAlleleAnnotation.convertByteToAllele(buffer[i]), TriTyperAlleleAnnotation.convertByteToAllele(buffer[allele2Pos]));
+				Alleles a = Alleles.createAlleles(TriTyperAlleleAnnotation.convertByteToAllele(bufferArr[i]), TriTyperAlleleAnnotation.convertByteToAllele(bufferArr[allele2Pos]));
 				alleles.add(a);
 			}
 		}
@@ -523,6 +520,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				dosageChannel.close();
 				dosageHandle.close();
 			}
+			genotypeChannel.close();
 			genotypeHandle.close();
 		} catch (IOException e) {
 			throw new GenotypeDataException("Could not close file handle to TriTyper file: " + genotypeDataFile);
@@ -556,17 +554,17 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return snps.getVariantAtPos(seqName, startPos);
+		return snps.getSequencePosVariants(seqName, startPos);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return snps.getVariantsBySequence(seqName);
+		return snps.getSequenceVariants(seqName);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return snps.getVariantsByRange(seqName, rangeStart, rangeEnd);
+		return snps.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
 	}
 
 	@Override

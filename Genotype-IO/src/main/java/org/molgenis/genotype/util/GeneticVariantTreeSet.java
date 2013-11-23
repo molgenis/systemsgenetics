@@ -12,6 +12,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
+@Deprecated
 public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 {
 
