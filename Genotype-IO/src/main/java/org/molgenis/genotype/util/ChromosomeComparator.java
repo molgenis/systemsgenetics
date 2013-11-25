@@ -5,6 +5,20 @@ import java.util.Comparator;
 
 public class ChromosomeComparator implements Comparator<String>, Serializable
 {
+	
+	public static final ChromosomeComparator comparator = new ChromosomeComparator();
+	
+	public static boolean chrASmallerChrB(String chrA, String chrB){
+		return comparator.compare(chrA, chrB) < 0;
+	}
+	
+	public static boolean chrASmallerEqualChrB(String chrA, String chrB){
+		return comparator.compare(chrA, chrB) <= 0;
+	}
+	
+	public static boolean chrALargerChrB(String chrA, String chrB){
+		return comparator.compare(chrA, chrB) > 0;
+	}
 
 	@Override
 	public int compare(String arg0, String arg1)

@@ -93,7 +93,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 			phenotypeAnnotationFileWriter.append('\t');
 			phenotypeAnnotationFileWriter.append(sample.getCaseControlAnnotation().getTriTyperName());
 			phenotypeAnnotationFileWriter.append('\t');
-			phenotypeAnnotationFileWriter.append(sample.isIncluded() ? "included" : "excluded");
+			phenotypeAnnotationFileWriter.append(sample.isIncluded() ? "include" : "exclude");
 			phenotypeAnnotationFileWriter.append('\t');
 			phenotypeAnnotationFileWriter.append(sample.getSex().getGender().toLowerCase());
 			phenotypeAnnotationFileWriter.append('\n');

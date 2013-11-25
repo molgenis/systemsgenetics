@@ -141,5 +141,12 @@ public class BedBimFamGenotypeData9SamplesTest extends ResourceTest
 		GeneticVariant variant = genotypeData.getSnpVariantByPos("24", pos);
 		assertNull(variant);
 	}
+	
+	@Test
+	public void testGetSnpVariantByPos4(){
+		int pos = 14434960;
+		GeneticVariant variant = genotypeData.getSnpVariantByPos("24", pos);
+		assertNull(variant);
+	}
 
 }

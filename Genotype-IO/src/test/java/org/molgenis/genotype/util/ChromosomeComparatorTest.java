@@ -60,6 +60,9 @@ public class ChromosomeComparatorTest
 
 		assertEquals(testComparator.compare("MT", "10") > 0, true);
 		assertEquals(testComparator.compare("10", "MT") < 0, true);
+		
+		assertEquals(testComparator.compare("22", "23") < 0, true);
+		assertEquals(testComparator.compare("23", "22") > 0, true);
 
 	}
 
