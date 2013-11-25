@@ -225,7 +225,7 @@ public class MatrixHandling {
         return CreatSubsetBasedOnRows(dataset, probesToBeRemoved, true);
     }
 
-    private static void fixOrdering(LinkedHashMap<String, Integer> hashMap) {
+    public static void fixOrdering(LinkedHashMap<String, Integer> hashMap) {
         int i=0;
         for(Entry<String, Integer> e : hashMap.entrySet()){
            e.setValue(i);
