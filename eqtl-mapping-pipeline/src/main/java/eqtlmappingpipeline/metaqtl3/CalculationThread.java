@@ -445,82 +445,82 @@ class CalculationThread extends Thread {
                 r.correlations[d][p] = correlationspearman;
                 r.beta[d][p] = regressionFullWithInteraction.calculateRSquared();
             } else if (metaAnalyseInteractionTerms) {
-//                double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
-//                double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
-//
-//                double betaInteraction = regressionParameters[3];
-//                double seInteraction = regressionStandardErrors[3];
-//                double tInteraction = betaInteraction / seInteraction;
-//                double pValueInteraction = 1;
-//                double zScoreInteraction = 0;
-//                DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
-//                StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
-//                if (tInteraction < 0) {
-//                    pValueInteraction = tDistColt.cdf(tInteraction);
-//                    if (pValueInteraction < 2.0E-323) {
-//                        pValueInteraction = 2.0E-323;
-//                    }
-//                    zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-//                } else {
-//                    pValueInteraction = tDistColt.cdf(-tInteraction);
-//                    if (pValueInteraction < 2.0E-323) {
-//                        pValueInteraction = 2.0E-323;
-//                    }
-//                    zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-//                }
-                //                pValueInteraction *= 2;
-//                r.zscores[d][p] = zScoreInteraction;
-//                r.correlations[d][p] = betaInteraction;
+                double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+                double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
 
-                if (rConnection != null) {
-                    try {
-                        if (rConnection.isConnected()) {
-                            rConnection.assign("y", y);
-                            rConnection.assign("x", x);
-                            rConnection.assign("z", covariates[0]);
-                            rConnection.voidEval("interaction <- x*z");
-                            rConnection.voidEval("m <- lm(y ~ x + z + interaction)");
-                            rConnection.voidEval("modelsummary <- summary(m)");
-                            double betaInteractionR = rConnection.eval("modelsummary$coefficients[4,1]").asDouble();
-                            rConnection.voidEval("m2 <- sqrt(diag(vcovHC(m, type = 'HC0')))");
-                            double seInteractionRCorrected = rConnection.eval("as.numeric(m2[4])").asDouble();
-                            double tInteraction = betaInteractionR / seInteractionRCorrected;
-                            double pValueInteraction = 1;
-                            double zScoreInteraction = 0;
-                            DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
-                            StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
-                            if (tInteraction < 0) {
-                                pValueInteraction = tDistColt.cdf(tInteraction);
-                                if (pValueInteraction < 2.0E-323) {
-                                    pValueInteraction = 2.0E-323;
-                                }
-                                zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-                            } else {
-                                pValueInteraction = tDistColt.cdf(-tInteraction);
-                                if (pValueInteraction < 2.0E-323) {
-                                    pValueInteraction = 2.0E-323;
-                                }
-                                zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-                            }
-                            r.zscores[d][p] = zScoreInteraction;
-                            r.correlations[d][p] = betaInteractionR;
-
-                            //                            int dfresiduals = rConnection.eval("m$df.residual").asInteger();
-//                            double[] coeff = rConnection.eval("m$coefficients").asDoubles();  // intercept: 0, x: 1, z: 2, zx: 3
-//                            double fstat = rConnection.eval("as.numeric(modelsummary$fstatistic['value'])").asDouble();
-//                            double fstatdf = rConnection.eval("as.numeric(modelsummary$fstatistic['numdf'])").asDouble();
-//                            double fstatdferr = rConnection.eval("as.numeric(modelsummary$fstatistic['dendf'])").asDouble();
-//                            double rsquared = rConnection.eval("as.numeric(modelsummary$r.squared)").asDouble();
-//                            double seInteractionR = rConnection.eval("modelsummary$coefficients[4,2]").asDouble();
-                        } else {
-                            System.err.println("ERROR: R is not connected.");
-                        }
-                    } catch (REngineException ex) {
-                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (REXPMismatchException ex) {
-                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+                double betaInteraction = regressionParameters[3];
+                double seInteraction = regressionStandardErrors[3];
+                double tInteraction = betaInteraction / seInteraction;
+                double pValueInteraction = 1;
+                double zScoreInteraction = 0;
+                DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
+                if (tInteraction < 0) {
+                    pValueInteraction = tDistColt.cdf(tInteraction);
+                    if (pValueInteraction < 2.0E-323) {
+                        pValueInteraction = 2.0E-323;
                     }
+                    zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+                } else {
+                    pValueInteraction = tDistColt.cdf(-tInteraction);
+                    if (pValueInteraction < 2.0E-323) {
+                        pValueInteraction = 2.0E-323;
+                    }
+                    zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
                 }
+                                pValueInteraction *= 2;
+                r.zscores[d][p] = zScoreInteraction;
+                r.correlations[d][p] = betaInteraction;
+
+//                if (rConnection != null) {
+//                    try {
+//                        if (rConnection.isConnected()) {
+//                            rConnection.assign("y", y);
+//                            rConnection.assign("x", x);
+//                            rConnection.assign("z", covariates[0]);
+//                            rConnection.voidEval("interaction <- x*z");
+//                            rConnection.voidEval("m <- lm(y ~ x + z + interaction)");
+//                            rConnection.voidEval("modelsummary <- summary(m)");
+//                            double betaInteractionR = rConnection.eval("modelsummary$coefficients[4,1]").asDouble();
+//                            rConnection.voidEval("m2 <- sqrt(diag(vcovHC(m, type = 'HC0')))");
+//                            double seInteractionRCorrected = rConnection.eval("as.numeric(m2[4])").asDouble();
+//                            double tInteraction = betaInteractionR / seInteractionRCorrected;
+//                            double pValueInteraction = 1;
+//                            double zScoreInteraction = 0;
+//                            DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+//                            StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
+//                            if (tInteraction < 0) {
+//                                pValueInteraction = tDistColt.cdf(tInteraction);
+//                                if (pValueInteraction < 2.0E-323) {
+//                                    pValueInteraction = 2.0E-323;
+//                                }
+//                                zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+//                            } else {
+//                                pValueInteraction = tDistColt.cdf(-tInteraction);
+//                                if (pValueInteraction < 2.0E-323) {
+//                                    pValueInteraction = 2.0E-323;
+//                                }
+//                                zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+//                            }
+//                            r.zscores[d][p] = zScoreInteraction;
+//                            r.correlations[d][p] = betaInteractionR;
+//
+//                            //                            int dfresiduals = rConnection.eval("m$df.residual").asInteger();
+////                            double[] coeff = rConnection.eval("m$coefficients").asDoubles();  // intercept: 0, x: 1, z: 2, zx: 3
+////                            double fstat = rConnection.eval("as.numeric(modelsummary$fstatistic['value'])").asDouble();
+////                            double fstatdf = rConnection.eval("as.numeric(modelsummary$fstatistic['numdf'])").asDouble();
+////                            double fstatdferr = rConnection.eval("as.numeric(modelsummary$fstatistic['dendf'])").asDouble();
+////                            double rsquared = rConnection.eval("as.numeric(modelsummary$r.squared)").asDouble();
+////                            double seInteractionR = rConnection.eval("modelsummary$coefficients[4,2]").asDouble();
+//                        } else {
+//                            System.err.println("ERROR: R is not connected.");
+//                        }
+//                    } catch (REngineException ex) {
+//                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+//                    } catch (REXPMismatchException ex) {
+//                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+//                    }
+//                }
 
             } else {
                 double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
