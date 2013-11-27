@@ -146,17 +146,17 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 	private void writeBedFile(File bedFile) throws IOException {
 		Utils.createEmptyFile(bedFile, "bed");
 
-		final DataOutputStream bedStreamWriter;
+		final BufferedOutputStream bedStreamWriter;
 
 		try {
-			bedStreamWriter = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(bedFile)));
+			bedStreamWriter = new BufferedOutputStream(new FileOutputStream(bedFile));
 		} catch (FileNotFoundException ex) {
 			throw new RuntimeException("This should never happen. File will be present at this time", ex);
 		}
 
-		bedStreamWriter.writeByte(MAGIC_NUMBER_1);
-		bedStreamWriter.writeByte(MAGIC_NUMBER_2);
-		bedStreamWriter.writeByte(MODE);
+		bedStreamWriter.write(MAGIC_NUMBER_1);
+		bedStreamWriter.write(MAGIC_NUMBER_2);
+		bedStreamWriter.write(MODE);
 
 		for (GeneticVariant variant : genotypeData) {
 
@@ -189,7 +189,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 				}
 				++counterCurrentByte;
 				if (counterCurrentByte == 4) {
-					bedStreamWriter.writeByte(currentByte);
+					bedStreamWriter.write(currentByte);
 					currentByte = 0;
 					counterCurrentByte = 0;
 				} else {
@@ -202,7 +202,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 					++counterCurrentByte;
 					currentByte = currentByte >>> 2;
 				}
-				bedStreamWriter.writeByte(currentByte);
+				bedStreamWriter.write(currentByte);
 			}
 
 		}

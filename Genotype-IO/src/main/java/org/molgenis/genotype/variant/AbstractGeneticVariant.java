@@ -127,7 +127,6 @@ abstract public class AbstractGeneticVariant implements GeneticVariant
 	{
 		final int prime = 31;
 		int result = 0;
-		result = prime * result + ((getVariantAlleles() == null) ? 0 : getVariantAlleles().hashCode());
 		result = prime * result + ((getSampleVariantsProvider() == null) ? 0 : getSampleVariantsProvider().hashCode());
 		result = prime * result + ((getSequenceName() == null) ? 0 : getSequenceName().hashCode());
 		result = prime * result + getStartPos();

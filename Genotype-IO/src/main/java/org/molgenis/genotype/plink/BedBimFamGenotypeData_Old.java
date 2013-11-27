@@ -36,7 +36,6 @@ import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
-import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -45,7 +44,7 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
  *
  * @author Patrick Deelen
  */
-public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
+public class BedBimFamGenotypeData_Old extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
 	private static final Pattern SEPARATOR_PATTERN = Pattern.compile("[ \\t]+");
 	private static final byte MAGIC_NUMBER_1 = 108;
@@ -62,7 +61,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final HashMap<String, Sequence> sequences;
-	private final GeneticVariantRange snps;
+	private final GeneticVariantTreeSet<GeneticVariant> snps;
 	private final TObjectIntHashMap<GeneticVariant> snpIndexces;
 	private final RandomAccessFile bedFileReader;
 	private final SampleVariantsProvider sampleVariantProvider;
@@ -75,15 +74,15 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	 */
 	private final int originalSnpCount;
 
-	public BedBimFamGenotypeData(String basePath) throws IOException {
+	public BedBimFamGenotypeData_Old(String basePath) throws IOException {
 		this(basePath, 100);
 	}
 
-	public BedBimFamGenotypeData(String basePath, int cacheSize) throws IOException {
+	public BedBimFamGenotypeData_Old(String basePath, int cacheSize) throws IOException {
 		this(new File(basePath + ".bed"), new File(basePath + ".bim"), new File(basePath + ".fam"), cacheSize);
 	}
 
-	public BedBimFamGenotypeData(File bedFile, File bimFile, File famFile, int cacheSize) throws IOException {
+	public BedBimFamGenotypeData_Old(File bedFile, File bimFile, File famFile, int cacheSize) throws IOException {
 
 		if (bedFile == null) {
 			throw new IllegalArgumentException("BedFile is null");
@@ -133,10 +132,9 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
 		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f);
-		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
+		snps = new GeneticVariantTreeSet<GeneticVariant>();
 		sequences = new HashMap<String, Sequence>();
-		originalSnpCount = readBimFile(bimFile, snpsFactory);
-		snps = snpsFactory.createRange();
+		originalSnpCount = readBimFile(bimFile);
 
 		bytesPerVariant = samples.size() % 4 == 0 ? samples.size() / 4 : (samples.size() / 4 + 1);
 
@@ -194,17 +192,17 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return snps.getVariantAtPos(seqName, startPos);
+		return snps.getSequencePosVariants(seqName, startPos);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return snps.getVariantsBySequence(seqName);
+		return snps.getSequenceVariants(seqName);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return snps.getVariantsByRange(seqName, rangeStart, rangeEnd);
+		return snps.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
 	}
 
 	@Override
@@ -323,7 +321,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	}
 
-	private int readBimFile(File bimFile, GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws FileNotFoundException, IOException {
+	private int readBimFile(File bimFile) throws FileNotFoundException, IOException {
 
 		BufferedReader bimFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(bimFile), FILE_ENCODING));
 
@@ -345,7 +343,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			if (snpIndexces.containsKey(variant)) {
 				LOGGER.warn("Found two SNPs at " + sequenceName + ":" + variant.getStartPos() + " Only first is read!");
 			} else {
-				snpsFactory.addVariant(variant);
+				snps.add(variant);
 				snpIndexces.put(variant, snpIndex);
 			}
 
