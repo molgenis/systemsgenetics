@@ -14,16 +14,22 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.Deflater;
 import org.apache.commons.math3.distribution.FDistribution;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
+import org.rosuda.REngine.REXP;
+import org.rosuda.REngine.REXPMismatchException;
+import org.rosuda.REngine.REngineException;
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.ZScores;
-import umcg.genetica.util.RunTimer;
 
 /**
  *
@@ -61,6 +67,7 @@ class CalculationThread extends Thread {
     private final boolean testSNPsPresentInBothDatasets;
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
+    private RConnection rConnection;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
@@ -111,13 +118,27 @@ class CalculationThread extends Thread {
 
         m_eQTLPlotter = plotter;
         m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
+
+        if (covariates != null) {
+            try {
+                rConnection = new RConnection();
+                REXP x = rConnection.eval("R.version.string");
+                System.out.println("Thread made R Connection: " + x.asString());
+//                rConnection.voidEval("install.packages('sandwich')");
+                rConnection.voidEval("library(sandwich)");
+            } catch (RserveException ex) {
+                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+                rConnection = null;
+            } catch (REXPMismatchException ex) {
+                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+                rConnection = null;
+            }
+        }
     }
 
     @Override
     public void run() {
         boolean poison = false;
-        RunTimer t = new RunTimer();
-        t.start();
         while (!poison) {
             try {
                 WorkPackage pack = m_workpackage_queue.take();
@@ -130,6 +151,10 @@ class CalculationThread extends Thread {
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
+        }
+        
+        if (rConnection != null) {
+            rConnection.close();
         }
     }
 
@@ -327,9 +352,9 @@ class CalculationThread extends Thread {
         }
 
         // if result output is binary, convert to bytes and deflate the set of bytes.
-        if (m_binaryoutput) {
-            deflateResults(wp);
-        }
+//        if (m_binaryoutput) {
+//            deflateResults(wp);
+//        }
         // now push the results in the queue..
         try {
             wp.setNumTested(testsPerformed);
@@ -337,6 +362,8 @@ class CalculationThread extends Thread {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
@@ -421,32 +448,83 @@ class CalculationThread extends Thread {
                 r.correlations[d][p] = correlationspearman;
                 r.beta[d][p] = regressionFullWithInteraction.calculateRSquared();
             } else if (metaAnalyseInteractionTerms) {
-                double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
-                double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+//                double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+//                double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+//
+//                double betaInteraction = regressionParameters[3];
+//                double seInteraction = regressionStandardErrors[3];
+//                double tInteraction = betaInteraction / seInteraction;
+//                double pValueInteraction = 1;
+//                double zScoreInteraction = 0;
+//                DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+//                StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
+//                if (tInteraction < 0) {
+//                    pValueInteraction = tDistColt.cdf(tInteraction);
+//                    if (pValueInteraction < 2.0E-323) {
+//                        pValueInteraction = 2.0E-323;
+//                    }
+//                    zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+//                } else {
+//                    pValueInteraction = tDistColt.cdf(-tInteraction);
+//                    if (pValueInteraction < 2.0E-323) {
+//                        pValueInteraction = 2.0E-323;
+//                    }
+//                    zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+//                }
+                //                pValueInteraction *= 2;
+//                r.zscores[d][p] = zScoreInteraction;
+//                r.correlations[d][p] = betaInteraction;
 
-                double betaInteraction = regressionParameters[3];
-                double seInteraction = regressionStandardErrors[3];
-                double tInteraction = betaInteraction / seInteraction;
-                double pValueInteraction = 1;
-                double zScoreInteraction = 0;
-                DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
-                StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
-                if (tInteraction < 0) {
-                    pValueInteraction = tDistColt.cdf(tInteraction);
-                    if (pValueInteraction < 2.0E-323) {
-                        pValueInteraction = 2.0E-323;
+                if (rConnection != null) {
+                    try {
+                        if (rConnection.isConnected()) {
+                            rConnection.assign("y", y);
+                            rConnection.assign("x", x);
+                            rConnection.assign("z", covariates[0]);
+                            rConnection.voidEval("interaction <- x*z");
+                            rConnection.voidEval("m <- lm(y ~ x + z + interaction)");
+                            rConnection.voidEval("modelsummary <- summary(m)");
+                            double betaInteractionR = rConnection.eval("modelsummary$coefficients[4,1]").asDouble();
+                            rConnection.voidEval("m2 <- sqrt(diag(vcovHC(m, type = 'HC0')))");
+                            double seInteractionRCorrected = rConnection.eval("as.numeric(m2[4])").asDouble();
+                            double tInteraction = betaInteractionR / seInteractionRCorrected;
+                            double pValueInteraction = 1;
+                            double zScoreInteraction = 0;
+                            DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                            StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
+                            if (tInteraction < 0) {
+                                pValueInteraction = tDistColt.cdf(tInteraction);
+                                if (pValueInteraction < 2.0E-323) {
+                                    pValueInteraction = 2.0E-323;
+                                }
+                                zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+                            } else {
+                                pValueInteraction = tDistColt.cdf(-tInteraction);
+                                if (pValueInteraction < 2.0E-323) {
+                                    pValueInteraction = 2.0E-323;
+                                }
+                                zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+                            }
+                            r.zscores[d][p] = zScoreInteraction;
+                            r.correlations[d][p] = betaInteractionR;
+
+                            //                            int dfresiduals = rConnection.eval("m$df.residual").asInteger();
+//                            double[] coeff = rConnection.eval("m$coefficients").asDoubles();  // intercept: 0, x: 1, z: 2, zx: 3
+//                            double fstat = rConnection.eval("as.numeric(modelsummary$fstatistic['value'])").asDouble();
+//                            double fstatdf = rConnection.eval("as.numeric(modelsummary$fstatistic['numdf'])").asDouble();
+//                            double fstatdferr = rConnection.eval("as.numeric(modelsummary$fstatistic['dendf'])").asDouble();
+//                            double rsquared = rConnection.eval("as.numeric(modelsummary$r.squared)").asDouble();
+//                            double seInteractionR = rConnection.eval("modelsummary$coefficients[4,2]").asDouble();
+                        } else {
+                            System.err.println("ERROR: R is not connected.");
+                        }
+                    } catch (REngineException ex) {
+                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (REXPMismatchException ex) {
+                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    zScoreInteraction = cern.jet.stat.Probability.normalInverse(pValueInteraction);
-                } else {
-                    pValueInteraction = tDistColt.cdf(-tInteraction);
-                    if (pValueInteraction < 2.0E-323) {
-                        pValueInteraction = 2.0E-323;
-                    }
-                    zScoreInteraction = -cern.jet.stat.Probability.normalInverse(pValueInteraction);
                 }
-//                pValueInteraction *= 2;
-                r.zscores[d][p] = zScoreInteraction;
-                r.correlations[d][p] = betaInteraction;
+
             } else {
                 double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
                 double r2 = regressionFullWithInteraction.calculateRSquared();
@@ -475,14 +553,15 @@ class CalculationThread extends Thread {
                     }
                     System.exit(-1);
                 }
+
                 r.zscores[d][p] = zscore;
                 r.correlations[d][p] = r2;
 
             }
-
         } else {
             //Calculate correlation coefficient:
             double correlation = Correlation.correlate(x, y, varianceX, varianceY);
+
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
                 double[] xcopy = new double[x.length];
@@ -670,108 +749,108 @@ class CalculationThread extends Thread {
         m_eQTLPlotter.draw(wp, p);
     }
     private int tmpbuffersize = 4096;
-
-    private byte[] deflate(byte[] input) {
-        Deflater d = new Deflater(6);
-        d.setInput(input);
-        d.finish();
-        byte[] tmpbytebuffer = new byte[tmpbuffersize];
-        int compressedDataLength = tmpbuffersize;
-        int compressedsize = 0;
-        byte[] finaldata = new byte[input.length + 1024];
-
-        int start = 0;
-        while (compressedDataLength == tmpbuffersize) {
-            compressedDataLength = d.deflate(tmpbytebuffer);
-            // out.write(bytebuffer, 0, compressedDataLength);
-
-            System.arraycopy(tmpbytebuffer, 0, finaldata, start, compressedDataLength);
-            start += compressedDataLength;
-            compressedsize += compressedDataLength;
-        }
-
-        byte[] returndata = new byte[compressedsize];
-
-        System.arraycopy(finaldata, 0, returndata, 0, compressedsize);
-        return returndata;
-    }
-
-    private void deflateResults(WorkPackage currentWP) {
-        Result r = currentWP.results;
-//	double[][] datasetZscores = r.zscores;
-        byte[][] inflatedZScores = new byte[r.zscores.length][0];
-        if (r != null) {
-            int[] numSamples = null;
-            try {
-                numSamples = r.numSamples;
-            } catch (NullPointerException e) {
-                System.out.println("ERROR: null result?");
-            }
-
-            double[][] zscores = r.zscores;
-            int wpId = r.wpid;
-
-            int[] probes = currentWP.getProbes();
-            SNP[] snps = currentWP.getSnps();
-            int numDatasets = zscores.length;
-
-            if (zscores[0].length == 0) {
-                System.out.println("Warning: Z-score list is empty!");
-            }
-
-            for (int d = 0; d < numDatasets; d++) {
-                ByteBuffer buff = null;
-                int nrBytesRequired = m_numProbes * 4;
-                buff = ByteBuffer.allocate(nrBytesRequired);
-
-                if (cisOnly) {
-                    HashMap<Integer, Integer> availableProbes = new HashMap<Integer, Integer>();
-                    int loc = 0;
-                    for (Integer p : probes) {
-                        availableProbes.put(p, loc);     // translate position if probe Id to probe[] (and zscore list) position
-                        loc++;
-                    }
-
-                    for (int p = 0; p < m_numProbes; p++) {
-                        Integer probeLoc = availableProbes.get(p);
-                        if (probeLoc != null && !Double.isNaN(zscores[d][probeLoc])) {
-                            if (currentWP.getFlipSNPAlleles()[d]) {
-                                // zscorelist[p] = (float) -zscores[d][probeLoc];
-                                buff.putFloat(p * 4, (float) -zscores[d][probeLoc]);
-                            } else {
-                                // zscorelist[p] = (float) zscores[d][probeLoc];
-                                buff.putFloat(p * 4, (float) zscores[d][probeLoc]);
-                            }
-                        } else {
-                            // zscorelist[p] = Float.NaN;
-                            buff.putFloat(p * 4, Float.NaN);
-                        }
-                    }
-                } else {
-                    for (int i = 0; i < m_numProbes; i++) {
-                        if (!Double.isNaN(zscores[d][i])) {
-                            if (currentWP.getFlipSNPAlleles()[d]) {
-                                // zscorelist[i] = (float) -zscores[d][i];
-                                buff.putFloat(i * 4, (float) -zscores[d][i]);
-
-                            } else {
-                                // zscorelist[i] = (float) zscores[d][i];
-                                buff.putFloat(i * 4, (float) zscores[d][i]);
-                            }
-                        } else {
-                            // zscorelist[i] = Float.NaN;
-                            buff.putFloat(i * 4, Float.NaN);
-                        }
-                    }
-                }
-
-                if (numSamples[d] != 0 && snps[d] != null) {
-                    inflatedZScores[d] = deflate(buff.array());
-                } else {
-                    inflatedZScores[d] = null;
-                }
-            }
-        }
-        r.deflatedZScores = inflatedZScores;
-    }
+//
+//    private byte[] deflate(byte[] input) {
+//        Deflater d = new Deflater(6);
+//        d.setInput(input);
+//        d.finish();
+//        byte[] tmpbytebuffer = new byte[tmpbuffersize];
+//        int compressedDataLength = tmpbuffersize;
+//        int compressedsize = 0;
+//        byte[] finaldata = new byte[input.length + 1024];
+//
+//        int start = 0;
+//        while (compressedDataLength == tmpbuffersize) {
+//            compressedDataLength = d.deflate(tmpbytebuffer);
+//            // out.write(bytebuffer, 0, compressedDataLength);
+//
+//            System.arraycopy(tmpbytebuffer, 0, finaldata, start, compressedDataLength);
+//            start += compressedDataLength;
+//            compressedsize += compressedDataLength;
+//        }
+//
+//        byte[] returndata = new byte[compressedsize];
+//
+//        System.arraycopy(finaldata, 0, returndata, 0, compressedsize);
+//        return returndata;
+//    }
+//
+//    private void deflateResults(WorkPackage currentWP) {
+//        Result r = currentWP.results;
+////	double[][] datasetZscores = r.zscores;
+//        byte[][] inflatedZScores = new byte[r.zscores.length][0];
+//        if (r != null) {
+//            int[] numSamples = null;
+//            try {
+//                numSamples = r.numSamples;
+//            } catch (NullPointerException e) {
+//                System.out.println("ERROR: null result?");
+//            }
+//
+//            double[][] zscores = r.zscores;
+//            int wpId = r.wpid;
+//
+//            int[] probes = currentWP.getProbes();
+//            SNP[] snps = currentWP.getSnps();
+//            int numDatasets = zscores.length;
+//
+//            if (zscores[0].length == 0) {
+//                System.out.println("Warning: Z-score list is empty!");
+//            }
+//
+//            for (int d = 0; d < numDatasets; d++) {
+//                ByteBuffer buff = null;
+//                int nrBytesRequired = m_numProbes * 4;
+//                buff = ByteBuffer.allocate(nrBytesRequired);
+//
+//                if (cisOnly) {
+//                    HashMap<Integer, Integer> availableProbes = new HashMap<Integer, Integer>();
+//                    int loc = 0;
+//                    for (Integer p : probes) {
+//                        availableProbes.put(p, loc);     // translate position if probe Id to probe[] (and zscore list) position
+//                        loc++;
+//                    }
+//
+//                    for (int p = 0; p < m_numProbes; p++) {
+//                        Integer probeLoc = availableProbes.get(p);
+//                        if (probeLoc != null && !Double.isNaN(zscores[d][probeLoc])) {
+//                            if (currentWP.getFlipSNPAlleles()[d]) {
+//                                // zscorelist[p] = (float) -zscores[d][probeLoc];
+//                                buff.putFloat(p * 4, (float) -zscores[d][probeLoc]);
+//                            } else {
+//                                // zscorelist[p] = (float) zscores[d][probeLoc];
+//                                buff.putFloat(p * 4, (float) zscores[d][probeLoc]);
+//                            }
+//                        } else {
+//                            // zscorelist[p] = Float.NaN;
+//                            buff.putFloat(p * 4, Float.NaN);
+//                        }
+//                    }
+//                } else {
+//                    for (int i = 0; i < m_numProbes; i++) {
+//                        if (!Double.isNaN(zscores[d][i])) {
+//                            if (currentWP.getFlipSNPAlleles()[d]) {
+//                                // zscorelist[i] = (float) -zscores[d][i];
+//                                buff.putFloat(i * 4, (float) -zscores[d][i]);
+//
+//                            } else {
+//                                // zscorelist[i] = (float) zscores[d][i];
+//                                buff.putFloat(i * 4, (float) zscores[d][i]);
+//                            }
+//                        } else {
+//                            // zscorelist[i] = Float.NaN;
+//                            buff.putFloat(i * 4, Float.NaN);
+//                        }
+//                    }
+//                }
+//
+//                if (numSamples[d] != 0 && snps[d] != null) {
+//                    inflatedZScores[d] = deflate(buff.array());
+//                } else {
+//                    inflatedZScores[d] = null;
+//                }
+//            }
+//        }
+//        r.deflatedZScores = inflatedZScores;
+//    }
 }

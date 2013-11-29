@@ -72,6 +72,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean createDotPlot = true;
     public boolean metaAnalyseInteractionTerms = false;
     public boolean metaAnalyseModelCorrelationYHat = false;
+    public String pathwayDefinition;
 
     public MetaQTL3Settings() {
     }
@@ -210,12 +211,11 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } else {
             equalRankForTies = false;
         }
-        
-        
+
         /*
-            public boolean metaAnalyseInteractionTerms = false;
-    public boolean metaAnalyseModelCorrelationYHat = false;
-        */
+         public boolean metaAnalyseInteractionTerms = false;
+         public boolean metaAnalyseModelCorrelationYHat = false;
+         */
         Boolean metaAnalyzeInteractionTermsB = null;
         try {
             metaAnalyzeInteractionTermsB = config.getBoolean("defaults.analysis.metaAnalyseInteractionTerms");
@@ -226,7 +226,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } else {
             metaAnalyseInteractionTerms = false;
         }
-        
+
         Boolean metaAnalyseModelCorrelationYHatB = null;
         try {
             metaAnalyseModelCorrelationYHatB = config.getBoolean("defaults.analysis.metaAnalyseModelCorrelationYHat");
@@ -530,6 +530,14 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput");
         } catch (Exception e) {
         }
+
+        // is there a pathway definition?
+        String pathwayDef = null;
+        try {
+            pathwayDef = config.getString("defaults.analysis.pathwaydefinition");
+        } catch (Exception e) {
+        }
+        this.pathwayDefinition = pathwayDef;
 
         // dataset parameters
         int i = 0;

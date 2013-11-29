@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
@@ -33,7 +35,8 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
     private short[] genotypeToExpressionIdArray;
     DoubleMatrixDataset<String, String> covariates = null;
 
-    public TriTyperGeneticalGenomicsDataset(TriTyperGeneticalGenomicsDatasetSettings settings) throws IOException, Exception {
+    public TriTyperGeneticalGenomicsDataset(TriTyperGeneticalGenomicsDatasetSettings settings, Pair<List<String>, List<List<String>>> pathwayDefinitions) throws IOException, Exception {
+
         this.settings = settings;
 
         settings.genotypeLocation = Gpio.formatAsDirectory(settings.genotypeLocation);
@@ -73,6 +76,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         expressionData.setConfineToProbesThatMapToChromosome(settings.confineProbesToProbesMappingToAnyChromosome);
         expressionData.setConfineToProbesThatMapToChromosome(settings.confineProbesToProbesThatMapToChromosome);
         expressionData.setIncludeIndividuals(includedExpressionIndividuals);
+        expressionData.setPathwayDefinitions(pathwayDefinitions);
         expressionDataLoadedCorrectly = expressionData.load(settings.expressionLocation, settings.probeannotation, settings.expressionplatform, (settings.cisAnalysis && settings.transAnalysis));
 
         pruneGenotypeToExpressionCouplings();
@@ -122,6 +126,10 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             pruneGenotypeToExpressionCouplings();
         }
 
+    }
+
+    public TriTyperGeneticalGenomicsDataset(TriTyperGeneticalGenomicsDatasetSettings settings) throws IOException, Exception {
+        this(settings, null);
     }
 
     /**
