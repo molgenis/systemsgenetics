@@ -75,10 +75,8 @@ public class Gpio {
     public static boolean isDir(String dir) {
         File loc = new File(dir);
         if (loc.isDirectory()) {
-            loc = null;
             return true;
         } else {
-            loc = null;
             return false;
         }
     }
