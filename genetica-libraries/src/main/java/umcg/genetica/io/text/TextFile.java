@@ -30,79 +30,69 @@ import umcg.genetica.text.Strings;
 public class TextFile implements Iterable<String> {
 // check 1,2,3
 
+	public static final int DEFAULT_BUFFER_SIZE = 4096;
 	public static final Pattern tab = Pattern.compile("\\t");//Using the \t from string.tab is technically not valid. I would not want to depend on this
 	public static final Pattern space = Strings.space;
 	public static final Pattern colon = Strings.colon;
 	public static final Pattern semicolon = Strings.semicolon;
 	public static final Pattern comma = Strings.comma;
 	protected BufferedReader in;
-	protected String loc;
+	protected File file;
 	public static final boolean W = true;
 	public static final boolean R = false;
 	protected BufferedWriter out;
 	protected boolean writeable;
 	protected static final String ENCODING = "ISO-8859-1";
 	private boolean gzipped;
-	private int buffersize = 4096;
+	private int buffersize;
 
-	public TextFile(String loc, boolean mode) throws IOException {
-		if (loc.trim().length() == 0) {
-			throw new IOException("Could not find file: no file specified");
-		}
-		this.writeable = mode;
-		this.loc = loc;
-		if (loc.endsWith(".gz")) {
-			gzipped = true;
-		}
-		open();
+	public TextFile(String file, boolean mode) throws IOException {
+		this(new File(file), mode, DEFAULT_BUFFER_SIZE);
 	}
 
-	public TextFile(File locFile, boolean mode) throws IOException {
-		this.loc = locFile.getAbsolutePath();
-		if (loc.trim().length() == 0) {
-			throw new IOException("Could not find file: no file specified");
-		}
-		this.writeable = mode;
-
-		if (loc.endsWith(".gz")) {
-			gzipped = true;
-		}
-		open();
+	public TextFile(File file, boolean mode) throws IOException {
+		this(file, mode, DEFAULT_BUFFER_SIZE);
 	}
 
-	public TextFile(String loc, boolean mode, int buffersize) throws IOException {
-		if (loc.trim().length() == 0) {
-			throw new IOException("Could not find file: no file specified");
-		}
-		this.writeable = mode;
-		this.loc = loc;
+	public TextFile(File file, boolean mode, int buffersize) throws IOException {
+		
 		this.buffersize = buffersize;
+		
+		String loc = file.getAbsolutePath();
+		if (loc.trim().length() == 0) {
+			throw new IOException("Could not find file: no file specified");
+		}
+		this.writeable = mode;
+
 		if (loc.endsWith(".gz")) {
 			gzipped = true;
 		}
 		open();
+	}
+	
+	public TextFile(String file, boolean mode, int buffersize) throws IOException {
+		this(new File(file), mode, buffersize);
 	}
 
 	public final void open() throws IOException {
 
-		File locHandle = new File(loc);
-		if (!locHandle.exists() && !writeable) {
-			throw new IOException("Could not find file: " + loc);
+		if (!file.exists() && !writeable) {
+			throw new IOException("Could not find file: " + file);
 		} else {
 			if (writeable) {
 				if (gzipped) {
-					GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(loc));
+					GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file));
 					out = new BufferedWriter(new OutputStreamWriter(gzipOutputStream), buffersize);
 				} else {
-					out = new BufferedWriter(new FileWriter(locHandle), buffersize);
+					out = new BufferedWriter(new FileWriter(file), buffersize);
 				}
 			} else {
 				if (gzipped) {
-					GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(loc));
+					GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(file));
 					in = new BufferedReader(new InputStreamReader(gzipInputStream, "US-ASCII"));
 				} else {
-//                System.out.println("Opening file: "+loc);
-					in = new BufferedReader(new InputStreamReader(new FileInputStream(locHandle), ENCODING), 8096);
+//                System.out.println("Opening file: "+file);
+					in = new BufferedReader(new InputStreamReader(new FileInputStream(file), ENCODING), 8096);
 				}
 			}
 		}
@@ -117,7 +107,7 @@ public class TextFile implements Iterable<String> {
 	}
 
 	public void close() throws IOException {
-//        System.out.println("Closing "+loc);
+//        System.out.println("Closing "+file);
 		if (writeable) {
 			out.close();
 		} else {
@@ -365,7 +355,7 @@ public class TextFile implements Iterable<String> {
 	}
 
 	public String getFileName() {
-		return loc;
+		return file.getAbsolutePath();
 	}
 
 	public HashSet<Pair<String, String>> readAsPairs(int A, int B) throws IOException {
