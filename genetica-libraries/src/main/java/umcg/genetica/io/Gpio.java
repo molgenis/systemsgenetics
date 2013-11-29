@@ -82,11 +82,12 @@ public class Gpio {
     }
 
     public static boolean exists(String dir) {
-        File file = new File(dir);
-        boolean exists = file.exists();
-        boolean readable = file.canRead();
-        return exists & readable;
+		return existsAndReadable(new File(dir));
     }
+	
+	public static boolean existsAndReadable(File file){
+		return file.exists() && file.canRead();
+	}
 	
 	public static boolean createOuputDir(File dir) throws IOException {
 		
