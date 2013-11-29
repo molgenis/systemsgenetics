@@ -55,19 +55,19 @@ public class MetaQTL4Settings {
     private final Byte confineToProbesThatMapToChromosome;
     private final boolean createBinaryOutputFiles;
     private final boolean createTEXTOutputFiles;
-    private final String strConfineSNP;
-    private final String strConfineProbe;
+    private final File strConfineSNP;
+    private final File strConfineProbe;
     private final boolean provideFoldChangeData;
     private final boolean provideBetasAndStandardErrors;
     private final boolean equalRankForTies;
     private final boolean createQQPlot;
     private final boolean createDotPlot;
-    private final String strSNPProbeConfine;
+    private final File strSNPProbeConfine;
     private final String settingsTextToReplace;
     private final String settingsTextReplaceWith;
     private final boolean cisAnalysis;
     private final boolean transAnalysis;
-    private final String probeAnnotationFile;
+    private final File probeAnnotationFile;
 
     public MetaQTL4Settings(String settings, String settingsTextToReplace, String settingsTextReplaceWith) throws IOException, Exception {
 
@@ -128,7 +128,7 @@ public class MetaQTL4Settings {
             
         }
         
-        probeAnnotationFile = probeAnnot;
+        probeAnnotationFile = new File(probeAnnot);
         
         try {
             MAF = config.getDouble("defaults.qc.snpqcmafthreshold");
@@ -402,9 +402,9 @@ public class MetaQTL4Settings {
         } catch (Exception e) {
         }
 
-        strConfineSNP = confineSNP;
-        strConfineProbe = confineProbe;
-        strSNPProbeConfine = snpProbeConfine;
+        strConfineSNP = new File(confineSNP);
+        strConfineProbe = new File(confineProbe);
+        strSNPProbeConfine = new File(snpProbeConfine);
 
         // confine to snp present in all datasets
         performParametricAnalysisGetAccuratePValueEstimates = false;
@@ -713,11 +713,11 @@ public class MetaQTL4Settings {
         return createTEXTOutputFiles;
     }
 
-    public String getStrConfineSNP() {
+    public File getConfineSNPFile() {
         return strConfineSNP;
     }
 
-    public String getStrConfineProbe() {
+    public File getConfineProbeFile() {
         return strConfineProbe;
     }
 
@@ -741,7 +741,7 @@ public class MetaQTL4Settings {
         return createDotPlot;
     }
 
-    public String getStrSNPProbeConfine() {
+    public File getSNPProbeConfineFile() {
         return strSNPProbeConfine;
     }
 
@@ -757,7 +757,7 @@ public class MetaQTL4Settings {
         return datasetSettings.size();
     }
     
-    public String getProbeAnnotationFile(){
+    public File getProbeAnnotationFile(){
         return probeAnnotationFile;
     }
 }

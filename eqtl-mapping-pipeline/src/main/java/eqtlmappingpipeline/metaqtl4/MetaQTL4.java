@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl4;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,19 +62,28 @@ public class MetaQTL4 {
         traitAnnotation = new MetaQTL4TraitAnnotation(m_settings.getProbeAnnotationFile(), platforms);
     
 
-        if (m_settings.getStrConfineProbe() != null && Gpio.exists(m_settings.getStrConfineProbe())) {
-            traitsToInclude = loadMetaTraitList(m_settings.getStrConfineProbe());
+        if (m_settings.getConfineProbeFile() != null) {
+			if(!Gpio.existsAndReadable(m_settings.getConfineProbeFile())){
+				throw new IOException("Failed to read file with probes to include: " + m_settings.getConfineProbeFile().getAbsolutePath());
+			}
+            traitsToInclude = loadMetaTraitList(m_settings.getConfineProbeFile());
         }
 
-        if (m_settings.getStrConfineSNP() != null && Gpio.exists(m_settings.getStrConfineSNP())) {
-            TextFile tf = new TextFile(m_settings.getStrConfineSNP(), TextFile.R);
+        if (m_settings.getConfineSNPFile() != null) {
+			if(!Gpio.existsAndReadable(m_settings.getConfineSNPFile())){
+				throw new IOException("Failed to read file with SNPs to include: " + m_settings.getConfineSNPFile().getAbsolutePath());
+			}
+            TextFile tf = new TextFile(m_settings.getConfineSNPFile(), TextFile.R);
             variantsToInclude = tf.readAsSet(0, TextFile.tab);
             tf.close();
         }
 
         // load list of specific SNP-trait combinations
-        if (m_settings.getStrSNPProbeConfine() != null && Gpio.exists(m_settings.getStrSNPProbeConfine())) {
-            Triple<HashSet<String>, HashSet<MetaQTL4MetaTrait>, HashSet<Pair<String, MetaQTL4MetaTrait>>> combinations = loadgenotypeMarkerCombinations(m_settings.getStrSNPProbeConfine());
+        if (m_settings.getSNPProbeConfineFile() != null) {
+			if(!Gpio.existsAndReadable(m_settings.getSNPProbeConfineFile())){
+				throw new IOException("Failed to read file with SNP Probe combinations to include: " + m_settings.getSNPProbeConfineFile().getAbsolutePath());
+			}
+            Triple<HashSet<String>, HashSet<MetaQTL4MetaTrait>, HashSet<Pair<String, MetaQTL4MetaTrait>>> combinations = loadgenotypeMarkerCombinations(m_settings.getSNPProbeConfineFile());
             variantsToInclude = combinations.getLeft();
             traitsToInclude = combinations.getMiddle();
             genotypeTraitCombinations = combinations.getRight();
@@ -173,7 +183,7 @@ public class MetaQTL4 {
         // shutdown
     }
 
-    private Set<MetaQTL4MetaTrait> loadMetaTraitList(String location) throws IOException {
+    private Set<MetaQTL4MetaTrait> loadMetaTraitList(File location) throws IOException {
         TextFile tf = new TextFile(location, TextFile.R);
         Set<String> list = tf.readAsSet(0, TextFile.tab);
 
@@ -189,11 +199,11 @@ public class MetaQTL4 {
         return traits;
     }
 
-    private Triple<HashSet<String>, HashSet<MetaQTL4MetaTrait>, HashSet<Pair<String, MetaQTL4MetaTrait>>> loadgenotypeMarkerCombinations(String location) throws IOException {
+    private Triple<HashSet<String>, HashSet<MetaQTL4MetaTrait>, HashSet<Pair<String, MetaQTL4MetaTrait>>> loadgenotypeMarkerCombinations(File file) throws IOException {
         HashSet<Pair<String, MetaQTL4MetaTrait>> pairs = new HashSet<Pair<String, MetaQTL4MetaTrait>>();
         HashSet<String> snps = new HashSet<String>();
         HashSet<MetaQTL4MetaTrait> probes = new HashSet<MetaQTL4MetaTrait>();
-        TextFile tf = new TextFile(location, TextFile.R);
+        TextFile tf = new TextFile(file, TextFile.R);
         String[] elems = tf.readLineElems(TextFile.tab);
         while (elems != null) {
             String snp = elems[0];
