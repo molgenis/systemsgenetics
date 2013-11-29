@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl4;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -23,7 +24,7 @@ public class MetaQTL4Settings {
     private final boolean createSNPPValueSummaryStatisticsFile;               // Output SNP P-Value summary statistics
     private final boolean createSNPSummaryStatisticsFile;                     // Output SNP P-Value summary statistics
     private final boolean createEQTLPValueTable;                              // Output an eQTL p-value table (only applies for a limited number (500) of SNP)
-    private final String outputReportsDir;                                            // Output directory for reports
+    private final File outputReportsDir;                                            // Output directory for reports
     // SNP QC
     // Analysis settings
     private final boolean performParametricAnalysis;                          // Perform parametric analysis
@@ -293,13 +294,13 @@ public class MetaQTL4Settings {
         }
 
         if (outdir != null) {
-            outputReportsDir = Gpio.formatAsDirectory(outdir);
+            outputReportsDir = new File(outdir);
             // check if dir exists. if it does not, create it:
             if (!Gpio.exists(outdir)) {
-                Gpio.createDir(outdir);
+                Gpio.createOuputDir(outputReportsDir);
             }
             try {
-                config.save(outputReportsDir + "metaqtlsettings.xml");
+				config.save(new File(outputReportsDir, "metaqtlsettings.xml"));           
             } catch (ConfigurationException e) {
                 e.printStackTrace();
             }
@@ -608,7 +609,7 @@ public class MetaQTL4Settings {
         return createEQTLPValueTable;
     }
 
-    public String getOutputReportsDir() {
+    public File getOutputReportsDir() {
         return outputReportsDir;
     }
 

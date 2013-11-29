@@ -59,10 +59,7 @@ public class MetaQTL4 {
             platforms.add(m_settings.getDatasetSettings().get(d).getTraitPlatform());
         }
         traitAnnotation = new MetaQTL4TraitAnnotation(m_settings.getProbeAnnotationFile(), platforms);
-
-        if (!Gpio.exists(m_settings.getOutputReportsDir())) {
-            Gpio.createDir(m_settings.getOutputReportsDir());
-        }
+    
 
         if (m_settings.getStrConfineProbe() != null && Gpio.exists(m_settings.getStrConfineProbe())) {
             traitsToInclude = loadMetaTraitList(m_settings.getStrConfineProbe());
