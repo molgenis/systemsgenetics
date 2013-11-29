@@ -87,6 +87,17 @@ public class Gpio {
         boolean readable = file.canRead();
         return exists & readable;
     }
+	
+	public static boolean createOuputDir(File dir) throws IOException {
+		
+		if(!dir.exists()){
+			if(!dir.mkdirs()){
+				throw new IOException("Failed to create output dir at: " + dir.getAbsolutePath());
+			}
+		}
+		return dir.canRead() && dir.canWrite();
+		
+	}
 
     public static void copyFile(File sourceFile, File destFile) throws IOException {
         if (!destFile.exists()) {
