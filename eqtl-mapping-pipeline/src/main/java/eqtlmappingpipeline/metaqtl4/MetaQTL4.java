@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl4;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class MetaQTL4 {
     private MetaQTL4Dataset[] datasets;
     private Integer[][] traitIndex;
     private ArrayList<MetaQTL4MetaTrait> availableTraits;
-    private HashMap<MetaQTL4MetaTrait, Integer> availableTraitsHash;
+    private TObjectIntHashMap<MetaQTL4MetaTrait> availableTraitsHash; //int as value
     private GeneticVariant[][] geneticVariantIndex;
 
     public MetaQTL4(MetaQTL4Settings settings) throws IOException, Exception {
@@ -286,7 +287,7 @@ public class MetaQTL4 {
         }
 
         availableTraits = new ArrayList<MetaQTL4MetaTrait>(tmpAvailableTraits);
-        availableTraitsHash = new HashMap<MetaQTL4MetaTrait, Integer>();
+        availableTraitsHash = new TObjectIntHashMap<MetaQTL4MetaTrait>();
         traitIndex = new Integer[datasets.length][availableTraits.size()];
 
         for (int ds = 0; ds < datasets.length; ds++) {
