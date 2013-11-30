@@ -57,6 +57,7 @@ public class TextFile implements Iterable<String> {
 	public TextFile(File file, boolean mode, int buffersize) throws IOException {
 		
 		this.buffersize = buffersize;
+		this.file = file;
 		
 		String loc = file.getAbsolutePath();
 		if (loc.trim().length() == 0) {

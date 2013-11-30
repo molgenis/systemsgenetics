@@ -66,7 +66,7 @@ public class PeakFile extends TextFile {
         }
 
         if (peakformat == null) {
-            throw new IOException("Error: " + loc + " does not adhere to any of the peak formats");
+            throw new IOException("Error: " + file.getAbsolutePath() + " does not adhere to any of the peak formats");
         }
 
         String[] elems = Strings.whitespace.split(line);
@@ -126,6 +126,6 @@ public class PeakFile extends TextFile {
     }
 
     public long size() {
-        return Gpio.getFileSize(loc);
+        return file.length();
     }
 }

@@ -17,7 +17,7 @@ import umcg.genetica.text.Strings;
 public class WigFile extends TextFile {
 
     public long size() {
-        return Gpio.getFileSize(loc);
+        return file.length();
     }
 
     public static enum STEPMODE {
