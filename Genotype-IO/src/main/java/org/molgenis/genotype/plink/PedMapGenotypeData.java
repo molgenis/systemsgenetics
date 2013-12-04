@@ -1,17 +1,21 @@
 package org.molgenis.genotype.plink;
 
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -30,10 +34,10 @@ import org.molgenis.genotype.plink.drivers.PedFileDriver;
 import org.molgenis.genotype.plink.readers.MapFileReader;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.util.CalledDosageConvertor;
-import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -41,15 +45,14 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	private static final Logger LOG = Logger.getLogger(PedMapGenotypeData.class);
 	private final int sampleVariantProviderUniqueId;
-	private final File pedFile;
-	private Map<Integer, List<Alleles>> sampleAllelesBySnpIndex = new HashMap<Integer, List<Alleles>>();
-	private GeneticVariantTreeSet<GeneticVariant> snps = new GeneticVariantTreeSet<GeneticVariant>();
-	private Map<String, Integer> snpIndexById = new HashMap<String, Integer>(1000);
+	private TIntObjectMap<List<Alleles>> sampleAllelesBySnpIndex = new TIntObjectHashMap<List<Alleles>>(1000, 0.75f);
+	private GeneticVariantRange snps;
+	private TObjectIntMap<String> snpIndexById = new TObjectIntHashMap<String>(1000, 0.75f, -1);
 	private Map<String, SampleAnnotation> sampleAnnotations;
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
 	private ArrayList<Sample> samples = new ArrayList<Sample>();
-	private HashSet<String> seqNames = new HashSet<String>();
+	private Set<String> seqNames = new LinkedHashSet<String>();
 
 	public PedMapGenotypeData(String basePath) throws FileNotFoundException, IOException {
 		this(new File(basePath + ".ped"), new File(basePath + ".map"));
@@ -75,8 +78,6 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 		if (!pedFile.canRead()) {
 			throw new IOException("PED file not found at " + pedFile.getAbsolutePath());
 		}
-
-		this.pedFile = pedFile;
 
 		MapFileReader mapFileReader = null;
 		PedFileDriver pedFileDriver = null;
@@ -137,6 +138,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	private void loadSnps(MapFileReader reader) {
 		int index = 0;
+		
+		GeneticVariantRange.ClassGeneticVariantRangeCreate rangeFactory = GeneticVariantRange.createRangeFactory();
+		
 		for (MapEntry entry : reader) {
 			String id = entry.getSNP();
 			String sequenceName = entry.getChromosome();
@@ -162,7 +166,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 			GeneticVariant snp = ReadOnlyGeneticVariant.createVariant(id, startPos, sequenceName, this, alleles);
 
-			snps.add(snp);
+			rangeFactory.addVariant(snp);
 			snpIndexById.put(snp.getPrimaryVariantId(), index);
 
 			index++;
@@ -171,14 +175,12 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 				LOG.info("Loaded [" + index + "] snps");
 			}
 		}
-
+		snps = rangeFactory.createRange();
 		LOG.info("Total [" + index + "] snps");
 	}
 
 	@Override
 	public List<Sequence> getSequences() {
-		List<String> seqNames = getSeqNames();
-
 		List<Sequence> sequences = new ArrayList<Sequence>(seqNames.size());
 		for (String seqName : seqNames) {
 			sequences.add(new SimpleSequence(seqName, null, this));
@@ -198,9 +200,9 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 			throw new IllegalArgumentException("Not a snp, missing primaryVariantId");
 		}
 
-		Integer index = snpIndexById.get(variant.getPrimaryVariantId());
+		int index = snpIndexById.get(variant.getPrimaryVariantId());
 
-		if (index == null) {
+		if (index == -1) {
 			throw new IllegalArgumentException("Unknown primaryVariantId [" + variant.getPrimaryVariantId() + "]");
 		}
 
@@ -220,8 +222,8 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
-	public List<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return new ArrayList<GeneticVariant>(snps.getSequencePosVariants(seqName, startPos));
+	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
+		return snps.getVariantAtPos(seqName, startPos);
 	}
 
 	@Override
@@ -231,7 +233,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return snps.getSequenceVariants(seqName);
+		return snps.getVariantsBySequence(seqName);
 	}
 
 	@Override
@@ -263,7 +265,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return snps.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
+		return snps.getVariantsByRange(seqName, rangeStart, rangeEnd);
 	}
 
 	@Override

@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl4;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +25,7 @@ class MetaQTL4TraitAnnotation {
     private final TreeSet<MetaQTL4MetaTrait> metatraits;
     private final HashMap<String, MetaQTL4MetaTrait> metaTraitNameToObj;
 
-    public MetaQTL4TraitAnnotation(String probeAnnotationFile, Set<String> platformsToInclude) throws IOException {
+    public MetaQTL4TraitAnnotation(File probeAnnotationFile, Set<String> platformsToInclude) throws IOException {
         TextFile tf = new TextFile(probeAnnotationFile, TextFile.R);
         int nrLines = tf.countLines();
         String[] header = tf.readLineElems(TextFile.tab);
