@@ -332,6 +332,7 @@ public class TriTyperToPedAndMapConverter {
                     String condition = "-9";
 
                     StringBuilder sb = new StringBuilder();
+                    
                     if (dataGenotypeDataset.getIsFemale()[i]) {
                         sex = "2";
                     } else {
