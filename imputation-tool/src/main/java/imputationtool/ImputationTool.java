@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import umcg.genetica.io.trityper.converters.BeagleImputedToTriTyper;
 import umcg.genetica.io.trityper.converters.FinalReportToTriTyper;
 import umcg.genetica.io.trityper.converters.ImputeImputedToTriTyperV2;
+import umcg.genetica.io.trityper.converters.MachImputedToTriTyper;
 import umcg.genetica.io.trityper.converters.MinimacImputedToTriTyper;
 import umcg.genetica.io.trityper.converters.PedAndMapToTriTyper;
 import umcg.genetica.io.trityper.converters.TriTyperReferenceConcordantPedAndMapExporter;
@@ -80,6 +81,7 @@ public class ImputationTool {
         String sampleFileToInclude = null;
         String pattern = null;
         String fileMatchRegex = null;
+        
 
         boolean splitbychromosome = false;
 
@@ -111,6 +113,7 @@ public class ImputationTool {
                 fam = val;
             } else if (arg.equals("--tpl")) {
                 tmp = val;
+
             } else if (arg.equals("--chr")) {
                 try {
                     chr = Integer.parseInt(val);
@@ -183,7 +186,6 @@ public class ImputationTool {
 
             printUsage();
 
-
         } else if (mode.equals("btt")) {
 
             convertImputedBeagleToTriTyper(in, tmp, ext, out, fam);
@@ -199,7 +201,7 @@ public class ImputationTool {
             convertTriTyperToPlinkDosage(in, out, fam, splitbychromosome);
             // --mode ttpd --in indir --beagle beagledir --tpl template --batchdescriptor batchdescriptor --out outdir --fam famfile
         } else if (mode.equals("ttpm")) {
-            convertTriTyperToPedAndMap(in, out, fam, snps, splitbychromosome);
+            convertTriTyperToPedAndMap(in, out, fam, snps, splitbychromosome, sampleFile);
 
             // --mode ttpm --in indir --out outdir --fam famfile
         } else if (mode.equals("ftt")) {
@@ -268,6 +270,11 @@ public class ImputationTool {
             System.out.println("out:\t" + out);
             convertMinimacToTriTryper(in, out);
 
+        } else if (mode.equals("mtt")) {
+            System.out.println("in:\t" + in);
+            System.out.println("out:\t" + out);
+            convertMachToTriTyper(in, out);
+
         } else if (mode.equals("mmtt2")) {
             System.out.println("in:\t" + in);
             System.out.println("out:\t" + out);
@@ -289,10 +296,16 @@ public class ImputationTool {
         System.out.println("# Create random batches of cases and controls from a TriTyper dataset. Creates a file called batches.txt in outdir.\n"
                 + "--mode batch --in TriTyperdir --out outdir --size batchsize\n");
 
+        System.out.println("------------------------\nIllumina FinalReport files\n------------------------\n");
+        System.out.println("# Convert a dir with MACH imputed data into TriTyper\n"
+                + "--mode ftt --in finalreportfile --out TriTyperDir");
 
         System.out.println("------------------------\nImputation\n------------------------\n");
         System.out.println("# Convert Impute Imputed data into TriTyper\n"
                 + "--mode itt --in ImputeDir --out TriTyperDir --nrSamples numberOfSamplesInImputedData [--samples samplelistfile.txt] [--samplestoinclude samplelistfiletoinclude.txt] [--fileMatchRegex pattern] [--snps snpfile.txt]");
+
+        System.out.println("# Convert a dir with MACH imputed data into TriTyper\n"
+                + "--mode mtt --in Imputation restult dir --out TriTyperDir");
 
         System.out.println("# Convert a dir with Minimac imputed data into TriTyper\n"
                 + "--mode mmtt --in Imputation restult dir --out TriTyperDir");
@@ -314,7 +327,6 @@ public class ImputationTool {
         System.out.println("# Converts Ped and Map files created by ttpmh to Beagle format\n"
                 + "--mode pmbg --in indir --batch-file batches.txt\n");
 
-
         System.out.println("# Converts TriTyper file to Plink Dosage format. Filetemplate is a template for the batch filenames, The text CHROMOSOME will be replaced by the chromosome number, BATCH by the batchname.\n"
                 + "--mode ttpd --in indir --out outdir --fam famfile [--split]\n");
 
@@ -333,7 +345,6 @@ public class ImputationTool {
 
         System.out.println("# Correlates genotypes of imputed vs non-imputed datasets. Also take Beagle imputation score (R2) into account. Saves a file called correlationOutput.txt in outdir, containing correlation per chromosome as well as correlation distribution.\n"
                 + "--mode corrb --in TriTyperDir --name datasetname --in2 TriTyperDir2 --name2 datasetname2 --out outdir --beagle beagleDir --tpl template --size numBatches \n");
-
 
         System.out.println("# Gets all the excluded snps from chrx.excludedsnps.txt with a certain call-rate threshold (0 < threshold < 1.0)\n"
                 + "--mode ecra --in TriTyperDir --threshold threshold\n");
@@ -366,7 +377,7 @@ public class ImputationTool {
         ttb.export(hapmapDir, baseDir, batchFile, excludesnps, outputDir);
     }
 
-    private void convertTriTyperToPedAndMap(String baseDir, String outputDir, String famfile, String snpList, boolean splitbychromosome) throws IOException, Exception {
+    private void convertTriTyperToPedAndMap(String baseDir, String outputDir, String famfile, String snpList, boolean splitbychromosome, String samplesToInclude) throws IOException, Exception {
         if (baseDir == null || outputDir == null) {
             System.out.println("Please supply values for TriTyper inputdir (--in) and outputdir (--out) when to running --mode ttpm\n\n");
             // printUsage();
@@ -374,7 +385,7 @@ public class ImputationTool {
         }
         TriTyperToPedAndMapConverter ttpm = new TriTyperToPedAndMapConverter();
         if (snpList != null) {
-            ttpm.exportSubsetOfSNPs(baseDir, outputDir, snpList, null);
+            ttpm.exportSubsetOfSNPs(baseDir, outputDir, snpList, samplesToInclude);
         } else {
             ttpm.exportAllSNPs(baseDir, outputDir, splitbychromosome);
         }
@@ -603,6 +614,15 @@ public class ImputationTool {
 
             triTyperConcatDatasets.writeConcatedDataset();
 
+        }
+    }
+
+    private void convertMachToTriTyper(String in, String out) throws IOException {
+        if (in == null || out == null) {
+            System.out.println("Please provide: --in and --out for --mode mmtt");
+            System.exit(-1);
+        } else {
+            MachImputedToTriTyper m = new MachImputedToTriTyper(in, out);
         }
     }
 }

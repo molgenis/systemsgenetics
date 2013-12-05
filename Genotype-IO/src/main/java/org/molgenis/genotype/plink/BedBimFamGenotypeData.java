@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.plink;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +36,7 @@ import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -60,8 +62,8 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final HashMap<String, Sequence> sequences;
-	private final GeneticVariantTreeSet<GeneticVariant> snps;
-	private final HashMap<GeneticVariant, Integer> snpIndexces;
+	private final GeneticVariantRange snps;
+	private final TObjectIntHashMap<GeneticVariant> snpIndexces;
 	private final RandomAccessFile bedFileReader;
 	private final SampleVariantsProvider sampleVariantProvider;
 	private final int sampleVariantProviderUniqueId;
@@ -130,10 +132,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
-		snpIndexces = new HashMap<GeneticVariant, Integer>();
-		snps = new GeneticVariantTreeSet<GeneticVariant>();
+		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f);
+		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		sequences = new HashMap<String, Sequence>();
-		originalSnpCount = readBimFile(bimFile);
+		originalSnpCount = readBimFile(bimFile, snpsFactory);
+		snps = snpsFactory.createRange();
 
 		bytesPerVariant = samples.size() % 4 == 0 ? samples.size() / 4 : (samples.size() / 4 + 1);
 
@@ -191,17 +194,17 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return snps.getSequencePosVariants(seqName, startPos);
+		return snps.getVariantAtPos(seqName, startPos);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return snps.getSequenceVariants(seqName);
+		return snps.getVariantsBySequence(seqName);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return snps.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
+		return snps.getVariantsByRange(seqName, rangeStart, rangeEnd);
 	}
 
 	@Override
@@ -320,7 +323,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	}
 
-	private int readBimFile(File bimFile) throws FileNotFoundException, IOException {
+	private int readBimFile(File bimFile, GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws FileNotFoundException, IOException {
 
 		BufferedReader bimFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(bimFile), FILE_ENCODING));
 
@@ -342,7 +345,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 			if (snpIndexces.containsKey(variant)) {
 				LOGGER.warn("Found two SNPs at " + sequenceName + ":" + variant.getStartPos() + " Only first is read!");
 			} else {
-				snps.add(variant);
+				snpsFactory.addVariant(variant);
 				snpIndexces.put(variant, snpIndex);
 			}
 

@@ -55,7 +55,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean confineProbesToProbesPresentInAllDatasets;
     public ArrayList<TriTyperGeneticalGenomicsDatasetSettings> datasetSettings;
     public String regressOutEQTLEffectFileName;
-    public boolean regressOutEQTLEffectExpressionOutputFiles;
+    public boolean regressOutEQTLEffectsSaveOutput;
     public Double snpQCCallRateThreshold = 0.95;
     public Double snpQCHWEThreshold = 0.0001;
     public Double snpQCMAFThreshold = 0.05;
@@ -70,6 +70,9 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean equalRankForTies = false;
     public boolean createQQPlot = true;
     public boolean createDotPlot = true;
+    public boolean metaAnalyseInteractionTerms = false;
+    public boolean metaAnalyseModelCorrelationYHat = false;
+    public String pathwayDefinition;
 
     public MetaQTL3Settings() {
     }
@@ -94,7 +97,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         String outputplotdirectory = null;
 
         // load the defaults:
-
         // QC defaults
         try {
             callrate = config.getDouble("defaults.qc.snpqccallratethreshold");
@@ -199,7 +201,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             performParametricAnalysis = true;
         }
 
-
         Boolean useIdenticalRanksForTies = null;
         try {
             useIdenticalRanksForTies = config.getBoolean("defaults.analysis.equalrankforties");
@@ -209,6 +210,32 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             equalRankForTies = useIdenticalRanksForTies;
         } else {
             equalRankForTies = false;
+        }
+
+        /*
+         public boolean metaAnalyseInteractionTerms = false;
+         public boolean metaAnalyseModelCorrelationYHat = false;
+         */
+        Boolean metaAnalyzeInteractionTermsB = null;
+        try {
+            metaAnalyzeInteractionTermsB = config.getBoolean("defaults.analysis.metaAnalyseInteractionTerms");
+        } catch (Exception e) {
+        }
+        if (metaAnalyzeInteractionTermsB != null) {
+            metaAnalyseInteractionTerms = metaAnalyzeInteractionTermsB;
+        } else {
+            metaAnalyseInteractionTerms = false;
+        }
+
+        Boolean metaAnalyseModelCorrelationYHatB = null;
+        try {
+            metaAnalyseModelCorrelationYHatB = config.getBoolean("defaults.analysis.metaAnalyseModelCorrelationYHat");
+        } catch (Exception e) {
+        }
+        if (metaAnalyseModelCorrelationYHatB != null) {
+            metaAnalyseModelCorrelationYHat = metaAnalyseModelCorrelationYHatB;
+        } else {
+            metaAnalyseModelCorrelationYHat = false;
         }
 
         try {
@@ -221,8 +248,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } else {
             useAbsoluteZScorePValue = useAbsPVal;
         }
-
-
 
         try {
             nrthread = config.getInteger("defaults.analysis.threads", null);
@@ -286,13 +311,11 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             }
 
             // check if dir exists. if it does not, create it:
-
             if (!Gpio.exists(outdir)) {
                 Gpio.createDir(outdir);
             }
 
             config.save(outputReportsDir + "metaqtlsettings.xml");
-
 
         } else {
             System.out.println("Error: please supply an output directory.");
@@ -304,14 +327,12 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             if (probeConversionFileLoc != null && probeConversionFileLoc.length() > 0) {
                 System.out.println(probeConversionFileLoc);
 
-
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
         }
-
 
         try {
             outputplotthreshold = config.getDouble("defaults.output.outputplotthreshold");
@@ -392,7 +413,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } catch (Exception e) {
         }
 
-
         // confinements on snp, probe, or snp-probe
         String confineSNP = null;
         String confineProbe = null;
@@ -471,7 +491,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             throw new IOException("Error! SNP-Probe confinement file: " + snpProbeConfine + " could not be found.");
         }
 
-
         // confine to snp present in all datasets
         try {
             confineSNPsToSNPsPresentInAllDatasets = config.getBoolean("defaults.confine.confineSNPsToSNPsPresentInAllDatasets");
@@ -501,18 +520,24 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } catch (Exception e) {
         }
 
-
-
         regressOutEQTLEffectFileName = null;
         try {
             regressOutEQTLEffectFileName = config.getString("defaults.analysis.regressOutEQTLEffects");
         } catch (Exception e) {
         }
-        regressOutEQTLEffectExpressionOutputFiles = false;
+        regressOutEQTLEffectsSaveOutput = false;
         try {
-            regressOutEQTLEffectExpressionOutputFiles = config.getBoolean("defaults.analysis.regressOutEQTLEffectsOutputDir");
+            regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput");
         } catch (Exception e) {
         }
+
+        // is there a pathway definition?
+        String pathwayDef = null;
+        try {
+            pathwayDef = config.getString("defaults.analysis.pathwaydefinition");
+        } catch (Exception e) {
+        }
+        this.pathwayDefinition = pathwayDef;
 
         // dataset parameters
         int i = 0;
@@ -523,8 +548,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         }
 
         datasetSettings = new ArrayList<TriTyperGeneticalGenomicsDatasetSettings>();
-
-
 
 //            ArrayList<GeneticalGenomicsDataset> vGG = new ArrayList<GeneticalGenomicsDataset>();                    // create a dataset vector
 //            GeneticalGenomicsDataset tmpDataset;                                               // create a temporary dataset object
@@ -572,8 +595,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             } catch (Exception e) {
             }
 
-
-
             s.expressionplatform = expressionPlatform;
             s.probeannotation = probeannotation;
             s.expressionLocation = expressionData;
@@ -589,13 +610,21 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 System.exit(-1);
             }
 
-
             Gpio.formatAsDirectory(dataloc);
-
 
             s.genotypeLocation = dataloc;
 
+            // see if there are covariates to load
+            String covariateFile = null;
+            try {
+                covariateFile = config.getString("datasets.dataset(" + i + ").covariates");
+                if (settingsTextToReplace != null && covariateFile.contains(settingsTextToReplace)) {
+                    covariateFile = covariateFile.replace(settingsTextToReplace, settingsTextReplaceWith);
+                }
+            } catch (Exception e) {
+            }
 
+            s.covariateFile = covariateFile;
 
             // see if there is a genotype to expression couplings file
             try {
@@ -642,7 +671,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             s.confineProbesToProbesThatMapToChromosome = confineProbesToProbesThatMapToChromosome;
             s.tsProbesConfine = tsProbesConfine;
 
-
         }
         // summarize();
 
@@ -685,7 +713,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 + "expressionDataLoadOnlyProbesThatMapToChromosome\t" + expressionDataLoadOnlyProbesThatMapToChromosome + "\n"
                 + "\n";
 
-
         if (tsProbesConfine != null) {
             summary += "Confining to: " + tsProbesConfine.size() + " probes from: " + strConfineProbe + "\n";
         }
@@ -711,7 +738,6 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             summary += "ProbaAnnotation\t" + settings.probeannotation + "\n";
 
         }
-
 
         return summary;
 

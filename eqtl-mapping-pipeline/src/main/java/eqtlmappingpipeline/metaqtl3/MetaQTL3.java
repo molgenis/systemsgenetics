@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
@@ -24,6 +25,7 @@ import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.util.RunTimer;
 
@@ -41,6 +43,8 @@ public class MetaQTL3 {
     protected Integer[][] m_snpTranslationTable;
     protected int numAvailableInds;
     protected WorkPackage[] m_workPackages;
+    private boolean dataHasCovariates;
+    private Pair<List<String>, List<List<String>>> pathwayDefinitions;
 
     public MetaQTL3() {
     }
@@ -60,7 +64,6 @@ public class MetaQTL3 {
             String ingt, String inexp, String inexpplatform, String inexpannot,
             String gte, String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads, Integer maxNrResults,
             String regressouteqtls, String snpprobecombofile) throws IOException, Exception {
-
 
         if (m_settings == null && xmlSettingsFile == null && ingt != null) {
 
@@ -109,8 +112,6 @@ public class MetaQTL3 {
             }
 
             m_settings.datasetSettings = new ArrayList<TriTyperGeneticalGenomicsDatasetSettings>();
-
-
 
             m_settings.regressOutEQTLEffectFileName = regressouteqtls;
             m_settings.datasetSettings.add(s);
@@ -166,12 +167,63 @@ public class MetaQTL3 {
         m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];
         numAvailableInds = 0;
         int nrOfDatasetsWithGeneExpressionData = 0;
-        for (int i = 0; i < numDatasets; i++) {
+        int nrDatasetsWithCovariates = 0;
 
+        for (int i = 0; i < numDatasets; i++) {
+            String covariateFile = m_settings.datasetSettings.get(i).covariateFile;
+            if (covariateFile != null && Gpio.exists(covariateFile)) {
+                nrDatasetsWithCovariates++;
+            }
+        }
+        if (nrDatasetsWithCovariates >= 1 && nrDatasetsWithCovariates != m_gg.length) {
+            System.err.println("Covariate files have not been specified for all datasets.");
+            System.exit(-1);
+        }
+
+        if (nrDatasetsWithCovariates >= 1) {
+            dataHasCovariates = true;
+        }
+
+        List<String> pathwayNames = new ArrayList<String>();
+        List<List<String>> ensgsInPathways = new ArrayList<List<String>>();
+        if (m_settings.pathwayDefinition != null) {
+            if (Gpio.exists(m_settings.pathwayDefinition)) {
+                TextFile tf = new TextFile(m_settings.pathwayDefinition, TextFile.R);
+                String line;
+                while ((line = tf.readLine()) != null) {
+                    List<String> ensgsThisPathway = new ArrayList<String>();
+                    String[] split = line.split("\t");
+                    for (int i = 2; i < split.length; i++) {
+                        ensgsThisPathway.add(split[i]);
+                    }
+                    pathwayNames.add(split[0]);
+                    ensgsInPathways.add(ensgsThisPathway);
+                }
+                tf.close();
+                System.out.println("Read " + pathwayNames.size() + " pathways from " + m_settings.pathwayDefinition);
+                pathwayDefinitions = new Pair<List<String>, List<List<String>>>(pathwayNames, ensgsInPathways);
+
+                // be sure this is a cis-trans analysis on pathways...
+                m_settings.cisAnalysis = true;
+                m_settings.transAnalysis = true;
+                for (int d = 0; d < numDatasets; d++) {
+                    // hooray for redundant settings: need to fix at some point.
+                    m_settings.datasetSettings.get(d).cisAnalysis = true;
+                    m_settings.datasetSettings.get(d).transAnalysis = true;
+                }
+            } else {
+                System.err.println("Pathway defnition defined as: " + m_settings.pathwayDefinition + ", but file does not exist.");
+                System.exit(-1);
+            }
+        } else {
+            pathwayDefinitions = null;
+        }
+
+        for (int i = 0; i < numDatasets; i++) {
             System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
             m_settings.datasetSettings.get(i).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
             System.out.println(ConsoleGUIElems.LINE);
-            m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i));
+            m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i), pathwayDefinitions);
 
             if (m_gg[i].isExpressionDataLoadedCorrectly()) {
                 nrOfDatasetsWithGeneExpressionData++;
@@ -188,7 +240,6 @@ public class MetaQTL3 {
             System.out.println("WARNING: was able to load gene expression data for " + nrOfDatasetsWithGeneExpressionData + " while you specified " + m_gg.length + " datasets in the settings.");
 
             // remove the datasets without expression data.
-
             TriTyperGeneticalGenomicsDataset[] tmp_gg = new TriTyperGeneticalGenomicsDataset[nrOfDatasetsWithGeneExpressionData];
             int ctr = 0;
             for (TriTyperGeneticalGenomicsDataset d : m_gg) {
@@ -199,14 +250,11 @@ public class MetaQTL3 {
             m_gg = tmp_gg;
         }
 
-
-
         for (int i = 0; i < numDatasets; i++) {
             if (!m_settings.performParametricAnalysis) {
                 m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
             }
             numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
-
         }
 
         if (m_settings.regressOutEQTLEffectFileName != null && m_settings.regressOutEQTLEffectFileName.trim().length() > 0) {
@@ -215,7 +263,7 @@ public class MetaQTL3 {
                 System.exit(0);
             }
             EQTLRegression eqr = new EQTLRegression();
-            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectExpressionOutputFiles, m_gg);
+            eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectsSaveOutput, m_gg);
         }
 
         System.out.println(ConsoleGUIElems.LINE);
@@ -445,8 +493,6 @@ public class MetaQTL3 {
             i++;
         }
 
-
-
         // create snp translation table..
         m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
 
@@ -508,7 +554,6 @@ public class MetaQTL3 {
             System.out.println("\t- Confining to probes that map to chromosome: " + m_settings.confineToProbesThatMapToChromosome);
         }
 
-
         int numExcluded = 0;
         // first check all datasets for duplicate probes...
 
@@ -538,8 +583,6 @@ public class MetaQTL3 {
 
         // determine in how many datasets the probes are present
         String[] availableProbeArray = allAvailableProbes.toArray(new String[0]);
-
-
 
         if (m_settings.tsProbesConfine == null) {
         } else {
@@ -710,6 +753,14 @@ public class MetaQTL3 {
 
         boolean hasResults = true;
 
+        DoubleMatrixDataset<String, String>[] covariateData = null;
+        if (dataHasCovariates) {
+            covariateData = new DoubleMatrixDataset[m_gg.length];
+            for (int d = 0; d < m_gg.length; d++) {
+                covariateData[d] = m_gg[d].getCovariateData();
+            }
+        }
+
         for (int permutationRound = permStart; permutationRound < permEnd; permutationRound++) {
             RunTimer permtime = new RunTimer();
 
@@ -758,9 +809,7 @@ public class MetaQTL3 {
                 if (!permuting) {
                     plotter = new EQTLPlotter(m_gg, m_settings, m_probeList, m_probeTranslationTable);
                 }
-
-                pool[tnum] = new CalculationThread(permutationRound, packageQueue, resultQueue, expressiondata, m_probeTranslationTable,
-                        expressionToGenotypeIds, m_settings, plotter, m_settings.createBinaryOutputFiles);
+                pool[tnum] = new CalculationThread(permutationRound, packageQueue, resultQueue, expressiondata, covariateData, m_probeTranslationTable, expressionToGenotypeIds, m_settings, plotter, m_settings.createBinaryOutputFiles, m_settings.useAbsoluteZScorePValue, m_settings.confineSNPsToSNPsPresentInAllDatasets);
                 pool[tnum].setName("CalcThread-" + tnum);
                 pool[tnum].start();
 
@@ -770,8 +819,6 @@ public class MetaQTL3 {
             try {
 
                 producer.join();
-
-
 
 //                System.out.println("Joining calculation threads");
                 for (int threadNum = 0; threadNum < m_settings.nrThreads; threadNum++) {
@@ -826,8 +873,6 @@ public class MetaQTL3 {
                 hasResults = false;
             }
 
-
-
         }
 
         for (int d = 0; d < snploaders.length; d++) {
@@ -851,12 +896,6 @@ public class MetaQTL3 {
 
             }
         }
-
-
-
-
-
-
 
         System.out.print(ConsoleGUIElems.DOUBLELINE);
 
@@ -895,7 +934,6 @@ public class MetaQTL3 {
             }
         }
 
-
         WorkPackage[] workPackages = new WorkPackage[m_snpList.length];
         // improve performance by sorting here, and then breaking later..
         int numWorkPackages = 0;
@@ -932,8 +970,6 @@ public class MetaQTL3 {
             }
         }
 
-
-
         int prevProc = 0;
         ProgressBar pb = new ProgressBar(m_snpList.length);
         for (int s = 0; s < m_snpList.length; s++) {
@@ -959,7 +995,6 @@ public class MetaQTL3 {
                 }
             }
 
-
             ArrayList<Integer> probeOnChr = chrToProbe.get(snpchr);
 
             // cis trans
@@ -972,7 +1007,6 @@ public class MetaQTL3 {
                 maxNrTestsToPerform += m_probeList.length;
                 workPackages[s] = output;
 
-
                 // cis or trans
             } else {
                 ArrayList<Integer> probeToTest = null;
@@ -983,7 +1017,7 @@ public class MetaQTL3 {
                         for (String probe : probesSelected) {
                             Integer probeId = probeNameToId.get(probe);
                             if (probeId == null) {
-                                System.err.println("You selected the following SNP-Probe combination, but probe not present in dataset!?\t" + snpname + "\t-\t" + probe);
+                                System.err.println("You selected the following SNP-Probe combination, but probe not present in dataset.\t" + snpname + "\t-\t" + probe);
                             } else {
                                 probeToTest.add(probeId);
                             }
@@ -1004,9 +1038,14 @@ public class MetaQTL3 {
                 }
 
                 // don't add the cis-workpackage when there are no probes to test.
+                // cisonly is also used when performing analysis on a certain set of snp-probe combos.
                 if (cisOnly && (probeToTest == null || probeToTest.isEmpty())) {
                     workPackages[s] = null;
-                    excludedSNPs.write(snpname + "\tNo probes within " + m_settings.ciseQTLAnalysMaxSNPProbeMidPointDistance + "bp\n");
+
+                    // reduce the output size of the snp filter output to query snps, if any
+                    if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(m_snpList[s])) {
+                        excludedSNPs.write(snpname + "\tNo probes to test.\n");
+                    }
                 } else {
                     int[] testprobes = null;
                     if (probeToTest != null) {
@@ -1038,10 +1077,6 @@ public class MetaQTL3 {
             }
 
             pb.iterate();
-//		if (numWorkPackages % 100000 == 0 && numWorkPackages > 0 && numWorkPackages > prevProc) {
-//		    System.out.println("\t" + numWorkPackages + " SNPs Processed.");
-//		    prevProc = numWorkPackages;
-//		}
         }
 
         pb.close();
@@ -1065,7 +1100,6 @@ public class MetaQTL3 {
 
         excludedSNPs.close();
 
-
         System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
         System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
     }
@@ -1074,12 +1108,12 @@ public class MetaQTL3 {
 
         System.out.print("\nSummary\n" + ConsoleGUIElems.DOUBLELINE);
         int totalSamples = 0;
-        for (int d = 0; d < m_gg.length; d++) {
-            System.out.print("Dataset:\t" + m_gg[d].getSettings().name);
-            System.out.print("\tprobes:\t" + m_gg[d].getExpressionData().getProbes().length);
-            System.out.print("\tSNPs:\t" + m_gg[d].getGenotypeData().getSNPs().length);
-            totalSamples += m_gg[d].getTotalGGSamples();
-            System.out.println("\tsamples:\t" + m_gg[d].getTotalGGSamples());
+        for (TriTyperGeneticalGenomicsDataset m_gg1 : m_gg) {
+            System.out.print("Dataset:\t" + m_gg1.getSettings().name);
+            System.out.print("\tprobes:\t" + m_gg1.getExpressionData().getProbes().length);
+            System.out.print("\tSNPs:\t" + m_gg1.getGenotypeData().getSNPs().length);
+            totalSamples += m_gg1.getTotalGGSamples();
+            System.out.println("\tsamples:\t" + m_gg1.getTotalGGSamples());
         }
         System.out.println("");
         System.out.print("\nTotals\n" + ConsoleGUIElems.DOUBLELINE);

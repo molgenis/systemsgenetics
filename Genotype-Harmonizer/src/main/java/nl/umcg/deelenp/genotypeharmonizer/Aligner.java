@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
-import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;

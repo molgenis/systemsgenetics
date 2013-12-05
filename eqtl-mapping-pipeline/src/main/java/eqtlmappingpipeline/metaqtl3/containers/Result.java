@@ -19,8 +19,6 @@ public class Result {
    
     public byte alleles;
     public byte[] assessedAllele;
-    public double[] pvaluesAbs;
-    public double[] finalZScoreAbsolute;
     
     public boolean processed = false;
     public int wpid;
@@ -29,7 +27,7 @@ public class Result {
     public double[][] fc;
     public double[] finalBetaSe;
     public double[] finalBeta;
-    public byte[][] deflatedZScores;
+    
     
     
     public Result(boolean poison){
@@ -41,9 +39,7 @@ public class Result {
         zscores      = new double[numDs][numProbes];
         numSamples   = new int[numDs];
         pvalues      = new double[numProbes];
-        pvaluesAbs   = new double[numProbes];
         finalZScore  = new double[numProbes];
-        finalZScoreAbsolute = new double[numProbes];
         finalBeta    = new double[numProbes];
         finalBetaSe    = new double[numProbes];
         beta         = new double[numDs][numProbes];

@@ -31,6 +31,7 @@ public class TriTyperToPedAndMapConverter {
 
         HashSet<String> hashInds = null;
         if (indsToExport != null) {
+            System.out.println("Including samples from file: "+indsToExport);
             TextFile infile = new TextFile(indsToExport, TextFile.R);
             hashInds = (HashSet<String>) infile.readAsSet(0, TextFile.tab);
             infile.close();
@@ -76,6 +77,17 @@ public class TriTyperToPedAndMapConverter {
             snppassesQC[i] = true;
         }
 
+        if(hashInds!=null){
+            String[] individuals = dataGenotypeDataset.getIndividuals();
+            for(int i=0; i<individuals.length; i++){
+                if(!hashInds.contains(individuals[i])){
+                    dataGenotypeDataset.getIsIncluded()[i] = false;
+                } else {
+                    dataGenotypeDataset.getIsIncluded()[i] = true;
+                }
+            }
+        }
+        
         TextFile pedFile = new TextFile(outputDir + "/output.ped", true);
         exportSetOfSNPsToPedFile(snppassesQC, snpids, dataGenotypeDataset, pedFile, log, hashInds);
         pedFile.close();
@@ -320,6 +332,7 @@ public class TriTyperToPedAndMapConverter {
                     String condition = "-9";
 
                     StringBuilder sb = new StringBuilder();
+                    
                     if (dataGenotypeDataset.getIsFemale()[i]) {
                         sex = "2";
                     } else {

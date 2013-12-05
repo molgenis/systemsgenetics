@@ -130,6 +130,10 @@ public class TriTyperConcatDatasets {
         if (concatImputedDosageMatrix) {
             outputImputedDosageMatrix.close();
         }
+		
+		if(concatSnpMappings) {
+			outputMappings.close();
+		}
 
         writeIndividuals(this.outputFolder, individuals);
 
@@ -161,7 +165,7 @@ public class TriTyperConcatDatasets {
         while ((line = snpFileReader.readLine()) != null) {
 
             if (this.totalSnps.contains(line)) {
-                throw new Exception("Snp: " + line + " is present twice");
+               // throw new Exception("Snp: " + line + " is present twice");
             }
             totalSnps.add(line);
             snpFileWriter.writeln(line);

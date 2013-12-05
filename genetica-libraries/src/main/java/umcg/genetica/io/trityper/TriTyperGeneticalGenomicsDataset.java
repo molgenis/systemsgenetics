@@ -6,12 +6,17 @@ package umcg.genetica.io.trityper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Log2Transform;
 import umcg.genetica.math.stats.QuantileNormalization;
 
@@ -29,8 +34,10 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
     private short totalGGSamples;
     private boolean expressionDataLoadedCorrectly = true;
     private short[] genotypeToExpressionIdArray;
+    DoubleMatrixDataset<String, String> covariates = null;
 
-    public TriTyperGeneticalGenomicsDataset(TriTyperGeneticalGenomicsDatasetSettings settings) throws IOException, Exception {
+    public TriTyperGeneticalGenomicsDataset(TriTyperGeneticalGenomicsDatasetSettings settings, Pair<List<String>, List<List<String>>> pathwayDefinitions) throws IOException, Exception {
+
         this.settings = settings;
 
         settings.genotypeLocation = Gpio.formatAsDirectory(settings.genotypeLocation);
@@ -58,8 +65,8 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
                 includedExpressionIndividuals.add(entry.getValue());
             }
         }
-        
-        if(includedExpressionIndividuals.isEmpty()){
+
+        if (includedExpressionIndividuals.isEmpty()) {
             System.err.println("ERROR: none of the expression samples will be included with your current settings.\nPlease check the links between genotype and gene expression samples and/or your PhenotypeInformation.txt");
             System.exit(-1);
         }
@@ -70,10 +77,10 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         expressionData.setConfineToProbesThatMapToChromosome(settings.confineProbesToProbesMappingToAnyChromosome);
         expressionData.setConfineToProbesThatMapToChromosome(settings.confineProbesToProbesThatMapToChromosome);
         expressionData.setIncludeIndividuals(includedExpressionIndividuals);
+        expressionData.setPathwayDefinitions(pathwayDefinitions);
         expressionDataLoadedCorrectly = expressionData.load(settings.expressionLocation, settings.probeannotation, settings.expressionplatform, (settings.cisAnalysis && settings.transAnalysis));
 
         pruneGenotypeToExpressionCouplings();
-
 
         if (settings.quantilenormalize) {
             QuantileNormalization.quantilenormalize(expressionData.getMatrix());
@@ -83,7 +90,47 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             Log2Transform.log2transform(expressionData.getMatrix());
         }
 
+        if (settings.covariateFile != null && Gpio.exists(settings.covariateFile)) {
+            // load covariates..
+            System.out.println("Loading covariates: " + settings.covariateFile);
+            HashSet<String> individualSet = new HashSet<String>();
+            individualSet.addAll(Arrays.asList(expressionData.getIndividuals()));
+            covariates = new DoubleMatrixDataset<String, String>(settings.covariateFile, null, individualSet);
 
+            if (covariates.colObjects.isEmpty()) {
+                // try the transpose
+                System.out.println("Could not find matching sample identifiers between covariate file and expression file.\nTransposing your covariate file.");
+                covariates = new DoubleMatrixDataset<String, String>(settings.covariateFile, individualSet);
+                if (covariates.rowObjects.isEmpty()) {
+                    System.err.println("Could not find matching samples between expression data and covariate data.");
+                    System.exit(-1);
+                } else {
+                    covariates.transposeDataset(); // put the covariates on the rows, samples on the columns
+                    covariates.recalculateHashMaps();
+                }
+            }
+
+            covariates.removeColumnsWithNaNs();
+            covariates.recalculateHashMaps();
+            if (covariates.colObjects.isEmpty()) {
+                System.err.println("ERROR: after removing samples with NaN values, no covariates remain");
+                System.exit(-1);
+            }
+
+            System.out.println(covariates.rowObjects.size() + " covariates loaded for " + covariates.colObjects.size() + " samples");
+
+            // remove expression samples without covariates, and reorder expression data
+            expressionData.pruneAndReorderSamples(covariates.colObjects);
+
+            // prune expression dataset to samples having covariates
+            loadCouplings();
+            pruneGenotypeToExpressionCouplings();
+        }
+
+    }
+
+    public TriTyperGeneticalGenomicsDataset(TriTyperGeneticalGenomicsDatasetSettings settings) throws IOException, Exception {
+        this(settings, null);
     }
 
     /**
@@ -244,6 +291,22 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             }
         }
         expressionToGenotypeIdArray = indWGANew;
+
+        // shuffle covariate, if any
+        if (covariates != null) {
+            System.out.println("Randomizing covariates");
+            for (int covariate = 0; covariate < covariates.nrRows; covariate++) {
+                ArrayList<Double> covariateData = new ArrayList<Double>();
+                for (int col = 0; col < covariates.nrRows; col++) {
+                    covariateData.add(covariates.rawData[covariate][col]);
+                }
+                Collections.shuffle(covariateData);
+                for (int col = 0; col < covariates.nrRows; col++) {
+                    covariates.rawData[covariate][col] = covariateData.get(col);
+                }
+            }
+        }
+
     }
 
     public void resetGenotypeToExpressionCouplings() throws IOException {
@@ -339,5 +402,9 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
      */
     public void setExpressionDataLoadedCorrectly(boolean expressionDataLoadedCorrectly) {
         this.expressionDataLoadedCorrectly = expressionDataLoadedCorrectly;
+    }
+
+    public DoubleMatrixDataset<String, String> getCovariateData() {
+        return covariates;
     }
 }

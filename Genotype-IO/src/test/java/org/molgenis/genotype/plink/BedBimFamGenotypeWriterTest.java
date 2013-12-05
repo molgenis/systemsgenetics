@@ -20,12 +20,12 @@ import static org.testng.Assert.assertTrue;
  *
  * @author Patrick Deelen
  */
-public class BedBimFamGenotypeWriterNGTest extends ResourceTest {
+public class BedBimFamGenotypeWriterTest extends ResourceTest {
 
 	private File tmpOutputFolder;
 	private String fileSep = System.getProperty("file.separator");
 
-	public BedBimFamGenotypeWriterNGTest() {
+	public BedBimFamGenotypeWriterTest() {
 
 		File tmpDir = new File(System.getProperty("java.io.tmpdir"));
 

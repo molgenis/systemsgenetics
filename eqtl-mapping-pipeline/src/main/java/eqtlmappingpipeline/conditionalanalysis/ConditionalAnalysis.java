@@ -199,7 +199,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
         outfile.writeln("Probe\tProbe Chr\tProbe ChrPos\tProbe HUGO\t"
                 + "gSNP\tgSNP Chr\tgSNP ChrPos\tgSNP alleles\tgSNP allele assessed\t"
                 + "eSNP\teSNP Chr\teSNP ChrPos\teSNP alleles\teSNP allele assessed\t"
-                + "LD\t"
+                + "LD (rsquared; dprime)\t"
                 + "eSNP N\tgSNP N\t"
                 + "gSNP-PVal\teSNP-PVal\tgSNP-PVal-Conditional\teSNP-PVal-Conditional\t"
                 + "gSNP-ZMeta\teSNP-ZMeta\tgSNP-ZMeta-Conditional\teSNP-ZMeta-Conditional\t"
@@ -256,7 +256,8 @@ public class ConditionalAnalysis extends MetaQTL3 {
                             loaders[ds].loadGenotypes(gsnpobj);
                             loaders[ds].loadGenotypes(esnpobj);
                             double r2 = ld.getRSquared(gsnpobj, esnpobj, d.getGenotypeData(), DetermineLD.RETURN_R_SQUARED, DetermineLD.INCLUDE_CASES_AND_CONTROLS, false);
-                            ldStrArr[ds] = "" + r2;
+                            double dprime = ld.getRSquared(gsnpobj, esnpobj, d.getGenotypeData(), DetermineLD.RETURN_D_PRIME, DetermineLD.INCLUDE_CASES_AND_CONTROLS, false);
+                            ldStrArr[ds] = "" + r2 + "; "+dprime;
                         }
                         gsnpobj.clearGenotypes();
                         esnpobj.clearGenotypes();

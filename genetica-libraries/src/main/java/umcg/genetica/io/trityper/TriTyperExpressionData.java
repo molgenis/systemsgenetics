@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
@@ -39,15 +41,16 @@ public class TriTyperExpressionData {
     private double[] probeMean;
     private double[] probeVariance;
     private String m_platform;
+    private Pair<List<String>, List<List<String>>> pathwayDefinitions;
 
-    
-    public TriTyperExpressionData(){        
+    public TriTyperExpressionData() {
     }
-    
+
     public TriTyperExpressionData(String loc, String probeAnnotationLoc, String platform, boolean cistrans) throws IOException {
-        
+
         this.load(loc, probeAnnotationLoc, platform, cistrans);
     }
+
     /**
      * @return the rowNames
      */
@@ -139,13 +142,11 @@ public class TriTyperExpressionData {
             throw new IOException("! Error loading expression data: " + loc + " does not exist");
         }
         System.out.println("Loading expression data from: " + loc);
-        boolean fileIsGZipped = false;
-        TextFile in = new TextFile(loc, TextFile.R);
 
+        TextFile in = new TextFile(loc, TextFile.R);
 
         // detect whether TriTyper dataset
         // load probeAnnotation otherwise
-
         int numProbes = 0;
         boolean trityperformat = false;
         int offset = 1;
@@ -162,7 +163,6 @@ public class TriTyperExpressionData {
         } else if (probeAnnotationLoc == null && !cistrans) {
             throw new IOException("ERROR: Probe annotation is not specified. Please specify probe annotation or provide expression data in TriTyper format!");
         }
-
 
         // load the probe annotation, if any present
         HashMap<String, Byte> hashProbeChr = null;
@@ -268,8 +268,6 @@ public class TriTyperExpressionData {
                 System.out.println("WARNING: no probe annotation available.");
             }
         }
-
-
 
         int probesIncluded = 0;
         int probesExcluded = 0;
@@ -424,17 +422,17 @@ public class TriTyperExpressionData {
                     float[] data = tmpRaw.get(i);
                     double sum = 0;
                     int nrNotMissing = 0;
-                    for(int j=0; j<data.length; j++){
-                        if(!Float.isNaN(data[j])){
-                            sum+=data[j];
+                    for (int j = 0; j < data.length; j++) {
+                        if (!Float.isNaN(data[j])) {
+                            sum += data[j];
                             nrNotMissing++;
                         }
                     }
 
-                    sum/=nrNotMissing;
-                    
-                    for(int j=0; j<data.length; j++){
-                        if(Float.isNaN(data[j])){
+                    sum /= nrNotMissing;
+
+                    for (int j = 0; j < data.length; j++) {
+                        if (Float.isNaN(data[j])) {
                             data[j] = (float) sum;
                         }
                     }
@@ -479,7 +477,6 @@ public class TriTyperExpressionData {
                 chrStop[i] = tmpChrEnd.get(i);
             }
 
-
         }
 
         for (int i = 0; i < numIndsIncluded; i++) {
@@ -495,8 +492,73 @@ public class TriTyperExpressionData {
         tmpRaw = null;
         tmpAnnotation = null;
 
-        calcMeanAndVariance();
+        if (pathwayDefinitions != null) {
+            // do stuff.
+            System.out.println("Now performing Pathway merger magic. *stars and unicorns*");
+            List<String> pathwayNames = pathwayDefinitions.getLeft();
+            List<List<String>> genesInPathways = pathwayDefinitions.getRight();
+            double[][] pathwayData = new double[pathwayNames.size()][this.individuals.length];
+            boolean[] usePathway = new boolean[pathwayNames.size()];
+            int nrPathwaysToUse = 0;
+            for (int p = 0, len = pathwayNames.size(); p < len; p++) {
 
+                List<String> ensGenesForPathway = genesInPathways.get(p);
+                HashSet<String> hashGenesForPathway = new HashSet<String>(ensGenesForPathway);
+                int nrProbesFound = 0;
+                for (int probe = 0; probe < matrix.length; probe++) {
+                    String annotationForProbe = annotation[probe];
+                    String[] annStrings = annotationForProbe.split(";");
+                    boolean hasRightAnnotation = false;
+                    for (String s : annStrings) {
+                        if (hashGenesForPathway.contains(s)) {
+                            hasRightAnnotation = true;
+                        }
+                    }
+                    if (hasRightAnnotation) {
+                        // do stuff :-) :P
+                        for (int i = 0; i < individuals.length; i++) {
+                            pathwayData[p][i] += matrix[probe][i];
+                        }
+                        nrProbesFound++;
+                    }
+                }
+
+                if (nrProbesFound > 1) {
+                    for (int i = 0; i < individuals.length; i++) {
+                        pathwayData[p][i] /= nrProbesFound;
+                    }
+                }
+
+                if (nrProbesFound >= 10) {
+                    usePathway[p] = true;
+                    nrPathwaysToUse++;
+                }
+            }
+
+            System.out.println("Final number of pathways used in this dataset: " + nrPathwaysToUse);
+
+            matrix = new double[nrPathwaysToUse][0];
+            probes = new String[nrPathwaysToUse];
+            probeNameToId = new HashMap<String, Integer>();
+            probeMean = new double[nrPathwaysToUse];
+            probeVariance = new double[nrPathwaysToUse];
+            probeOriginalMean = new double[nrPathwaysToUse];
+            probeOriginalVariance = new double[nrPathwaysToUse];
+            chr = new byte[nrPathwaysToUse];
+            chrStart = new int[nrPathwaysToUse];
+            chrStop = new int[nrPathwaysToUse];
+            int nrPathwaysUsed = 0;
+            for (int p = 0, len = pathwayNames.size(); p < len; p++) {
+                if (usePathway[p]) {
+                    matrix[nrPathwaysUsed] = pathwayData[p];
+                    probes[nrPathwaysUsed] = pathwayNames.get(p);
+                    probeNameToId.put(probes[nrPathwaysUsed], nrPathwaysUsed);
+                    nrPathwaysUsed++;
+                }
+            }
+
+        }
+        calcMeanAndVariance();
         for (int p = 0; p < matrix.length; p++) {
             for (int s = 0; s < matrix[p].length; s++) {
                 matrix[p][s] -= probeMean[p];
@@ -505,8 +567,7 @@ public class TriTyperExpressionData {
 
         calcMeanAndVariance();
 
-        System.out.println("Loaded " + probeNr + " probes for " + individuals.length + " individuals");
-
+        System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
 
         return true;
     }
@@ -656,5 +717,31 @@ public class TriTyperExpressionData {
         for (int i = 0; i < individuals.length; i++) {
             matrix[f][i] = (float) probeData[i];
         }
+    }
+
+    public void pruneAndReorderSamples(List<String> colObjects) {
+        double[][] newMatrix = new double[matrix.length][colObjects.size()];
+        HashMap<String, Integer> indToInd = new HashMap<String, Integer>();
+        for (int i = 0; i < colObjects.size(); i++) {
+            String ind = colObjects.get(i);
+            indToInd.put(ind, i);
+        }
+
+        for (int i = 0; i < individuals.length; i++) {
+            Integer newId = indToInd.get(individuals[i]);
+            if (newId != null) {
+                for (int row = 0; row < matrix.length; row++) {
+                    newMatrix[row][newId] = matrix[row][i];
+                }
+            }
+        }
+
+        matrix = newMatrix;
+        individualNameToId = indToInd;
+        individuals = colObjects.toArray(new String[0]);
+    }
+
+    public void setPathwayDefinitions(Pair<List<String>, List<List<String>>> pathwayDefinitions) {
+        this.pathwayDefinitions = pathwayDefinitions;
     }
 }

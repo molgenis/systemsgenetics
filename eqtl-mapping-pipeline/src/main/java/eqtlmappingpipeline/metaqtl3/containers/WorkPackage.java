@@ -87,6 +87,7 @@ public class WorkPackage implements Comparable<WorkPackage> {
         this.sortSNPsByDataset = d;
     }
 
+    @Override
     public int compareTo(WorkPackage o) {
         SNP otherSNP = o.getSnps()[sortSNPsByDataset];
         SNP currentSNP = snps[sortSNPsByDataset];
@@ -111,12 +112,7 @@ public class WorkPackage implements Comparable<WorkPackage> {
         SNP otherSNP = o.getSnps()[sortSNPsByDataset];
         SNP currentSNP = snps[sortSNPsByDataset];
         if (currentSNP != null && otherSNP != null) {
-            if (currentSNP.getId() == otherSNP.getId()) {
-                return true;
-            } else {
-                return false;
-            }
-
+            return currentSNP.getId() == otherSNP.getId();
         } else {
             return false;
         }

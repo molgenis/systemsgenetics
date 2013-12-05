@@ -46,4 +46,13 @@ public enum CaseControlAnnotation {
             return CaseControlAnnotation.UNKNOWN;
         }
     }
+	
+	public String getTriTyperName(){
+		switch (this) {
+			case CASE: return "case";
+			case CONTROL: return "control";
+			case UNKNOWN: return "unknown";
+			default: throw new RuntimeException("This should never happen. Please report this bug");
+		}
+	}
 }
