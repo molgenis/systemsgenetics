@@ -399,8 +399,8 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 		double bonferroniFactor = 0.05/eQtlCounts.size();
 		
 		PrintWriter fisherWriter = new PrintWriter(new FileWriter(outputFile));
-		fisherWriter.println("#TF=Transcription Factor; FET=Fisher Exact Test P-value; BS=Bonferroni Significant?; DIR=Direction(Enrichment or not)");
-		fisherWriter.println("TF\tFET\tBS\tDIR");
+		fisherWriter.println("#TF=Transcription Factor; FET=Fisher Exact Test P-value; BS=Bonferroni Significant?; DIR=Direction(Enrichment or not); ERA=EQTL Ratio; PRA=Permutation Ratio");
+		fisherWriter.println("TF\tFET\tBS\tDIR\tERA\tPRA");
 		for(Iterator<Map.Entry<String, Integer>>iter=eQtlCounts.entrySet().iterator();iter.hasNext();){
 			Map.Entry<String, Integer> eQtlCountsEntry = iter.next();
 			
@@ -409,10 +409,12 @@ public class EQtlPermutationTranscriptionFactorAnalysisV3 {
 				int eQtlCount = eQtlCountsEntry.getValue();
 				int permutationCount = permutationCounts.get( eQtlCountsEntry.getKey() );
 				
-				//Perform Fisher Exact test.
+				//Perform Fisher Exact test.		
 				FisherExactTest fet = new FisherExactTest();
-				double fisherPValue = fet.getFisherPValue(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts);
-				fisherWriter.println(tf + "\t" + fisherPValue + "\t" + (fisherPValue<=bonferroniFactor) + "\t" + getDirection(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts));
+				double fisherPValue = fet.getFisherPValue(eQtlCount, (totalEQtlCounts - eQtlCount), permutationCount, (totalPermutationCounts - permutationCount));
+				fisherWriter.println(tf + "\t" + fisherPValue + "\t" + (fisherPValue<=bonferroniFactor) + "\t"
+						+ getDirection(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts) + "\t" + eQtlCount + "/" + totalEQtlCounts
+						+ "\t" + permutationCount + "/" + totalPermutationCounts);
 			}
 		}
 		fisherWriter.close();

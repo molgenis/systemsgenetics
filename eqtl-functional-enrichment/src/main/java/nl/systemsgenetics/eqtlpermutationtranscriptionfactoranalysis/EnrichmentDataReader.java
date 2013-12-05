@@ -47,8 +47,15 @@ public class EnrichmentDataReader {
 	}
 	
 	
+	public RandomAccessGenotypeData readEQtlGenotypeDataV2(String genotypeData, Set<String> variantIdFilter) throws IOException{
+		//Provide a Set<String> containing rsID of all significant eQTLs.
+		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 630000, null, null);
+		return gonlImputedBloodGenotypeData;
+	}
 	
-	public GenomicBoundaries readRegulomeDbData(ArrayList<RegulomeDbFile> regulomeDbFiles){
+	
+	
+	public GenomicBoundaries readRegulomeDbDataV2(ArrayList<RegulomeDbFile> regulomeDbFiles){
 		GenomicBoundaries<Object> regulomeDbData = new GenomicBoundaries();
 		
 		RegulomeDbFiles regulomeDbFilesData = new RegulomeDbFiles(regulomeDbFiles);
@@ -215,5 +222,66 @@ public class EnrichmentDataReader {
 		}
 		tf.close();
 		return peakData;
+	}
+	
+	
+	public HashMap<String, TreeMap<String, String>> readGwasCatalogData(String gwasCatalogLocation)throws IOException{
+		HashMap<String, TreeMap<String, String>> gwasData = new HashMap<String, TreeMap<String, String>>();
+		TreeMap<String, String> tmp;
+		
+		String fileLine;
+		String[] fileLineData;
+		TextFile tf = new TextFile(gwasCatalogLocation, false);
+		while((fileLine = tf.readLine())!=null){
+			fileLineData = TAB_PATTERN.split(fileLine);
+			//fileLineData[11];
+			//fileLineData[23];
+			//fileLineData[7];
+			
+			if(gwasData.containsKey(fileLineData[11])){
+				tmp = gwasData.get(fileLineData[11]);
+				tmp.put(fileLineData[23], fileLineData[7]);
+			}
+			
+			else{
+				tmp = new TreeMap<String, String>();
+				tmp.put(fileLineData[23], fileLineData[7]);
+				gwasData.put(fileLineData[11], tmp);
+			}
+		}
+		tf.close();
+		return gwasData;
+	}
+	
+	
+	
+	public HashMap<String, TreeMap<Integer, String[]>> readRegulomeDbData(ArrayList<RegulomeDbFile> regulomeDbFiles){
+		HashMap<String, TreeMap<Integer, String[]>> regulomeDbData = new HashMap<String, TreeMap<Integer, String[]>>();
+		TreeMap<Integer, String[]> tmp;
+		
+		RegulomeDbFiles regulomeDbFilesData = new RegulomeDbFiles(regulomeDbFiles);
+		Iterator<RegulomeDbEntry> regulomeDbDataIterator = regulomeDbFilesData.iterator();
+		int n = 0;
+		
+		while(regulomeDbDataIterator.hasNext()){
+			RegulomeDbEntry rdbe = regulomeDbDataIterator.next();
+			String rdbeChr = rdbe.getChr();
+			int rdbePos = rdbe.getChrPos();
+			String[] transcriptionFactors = getTranscriptionFactors(rdbe);
+			
+			if(transcriptionFactors.length > 0){
+				if(regulomeDbData.containsKey(rdbeChr)){
+					tmp = regulomeDbData.get(rdbeChr);
+					tmp.put(rdbePos, transcriptionFactors);
+				}
+				else{
+					tmp = new TreeMap<Integer, String[]>();
+					tmp.put(rdbePos, transcriptionFactors);
+					regulomeDbData.put(rdbeChr, tmp);
+				}
+				n++;
+			}
+		}
+		return regulomeDbData;
 	}
 }

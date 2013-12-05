@@ -16,6 +16,7 @@ import umcg.genetica.io.ucsc.UCSCDataObject;
 import umcg.genetica.io.ucsc.WigFile;
 import umcg.genetica.math.stats.WilcoxonMannWhitney;
 import com.google.common.primitives.Doubles;
+import umcg.genetica.io.gwascatalog.GWASCatalog;
 import umcg.genetica.math.stats.ZScores;
 
 /**
@@ -116,9 +117,7 @@ public class Testing {
 			System.out.println(arr_aapje1[i] + "\t" + arr_aapje2[i]);
 		}
 		*/
-		ZScores.pToZ(0.9);
-		double test1 = ((double)26/(double)453)*100;
-		System.out.println(test1);
+		
 	}
 	
 	

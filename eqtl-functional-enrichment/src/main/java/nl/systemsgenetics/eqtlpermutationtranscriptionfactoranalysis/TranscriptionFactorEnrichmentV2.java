@@ -36,6 +36,7 @@ import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.math.stats.FisherExactTest;
+import umcg.genetica.math.stats.WilcoxonMannWhitney;
 import umcg.genetica.math.stats.ZScores;
 
 /**
@@ -274,7 +275,14 @@ public class TranscriptionFactorEnrichmentV2 {
 					eqtl.setRsChrPos(gv.getStartPos());
 					eqtl.setRsName(gv.getPrimaryVariantId());
 					eqtl.setProbe(fileLineData[2]);
-					eqtl.setZscore(ZScores.pToZ(pval));
+					
+					if(pval < 1.0){
+						eqtl.setZscore(ZScores.pToZ(pval));
+					}
+					else{
+						eqtl.setZscore(0);
+					}
+					
 
 					//Add the EQTL to the ArrayList
 					permutations.add(eqtl);
@@ -418,8 +426,8 @@ public class TranscriptionFactorEnrichmentV2 {
 	
 	
 	public String getDirection(int eqtlHits, int eqtlTotalHits, int permutationHits, int permutationTotalHits){
-		double eqtlRatio = (eqtlHits / eqtlTotalHits);
-		double permutationRatio = (permutationHits / permutationTotalHits);
+		double eqtlRatio = ((double)eqtlHits / (double)eqtlTotalHits) * 100;
+		double permutationRatio = ((double)permutationHits / (double)permutationTotalHits) * 100;
 		
 		if(eqtlRatio > permutationRatio){
 			return "Enrichment";
@@ -441,8 +449,8 @@ public class TranscriptionFactorEnrichmentV2 {
 		double bonferroniFactor = 0.05/eQtlCounts.size();
 		
 		PrintWriter fisherWriter = new PrintWriter(new FileWriter(outputFile));
-		fisherWriter.println("#TF=Transcription Factor; FET=Fisher Exact Test P-value; BS=Bonferroni Significant?; DIR=Direction(Enrichment or not)");
-		fisherWriter.println("TF\tFET\tBS\tDIR");
+		fisherWriter.println("#TF=Transcription Factor; FET=Fisher Exact Test P-value; BS=Bonferroni Significant?; DIR=Direction(Enrichment or not); ERA=EQTL Ratio; PRA=Permutation Ratio");
+		fisherWriter.println("TF\tFET\tBS\tDIR\tERA\tPRA");
 		for(Iterator<Map.Entry<String, Integer>>iter=eQtlCounts.entrySet().iterator();iter.hasNext();){
 			Map.Entry<String, Integer> eQtlCountsEntry = iter.next();
 			
@@ -451,10 +459,12 @@ public class TranscriptionFactorEnrichmentV2 {
 				int eQtlCount = eQtlCountsEntry.getValue();
 				int permutationCount = permutationCounts.get( eQtlCountsEntry.getKey() );
 				
-				//Perform Fisher Exact test.
+				//Perform Fisher Exact test.		
 				FisherExactTest fet = new FisherExactTest();
-				double fisherPValue = fet.getFisherPValue(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts);
-				fisherWriter.println(tf + "\t" + fisherPValue + "\t" + (fisherPValue<=bonferroniFactor) + "\t" + getDirection(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts));
+				double fisherPValue = fet.getFisherPValue(eQtlCount, (totalEQtlCounts - eQtlCount), permutationCount, (totalPermutationCounts - permutationCount));
+				fisherWriter.println(tf + "\t" + fisherPValue + "\t" + (fisherPValue<=bonferroniFactor) + "\t"
+						+ getDirection(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts) + "\t" + eQtlCount + "/" + totalEQtlCounts
+						+ "\t" + permutationCount + "/" + totalPermutationCounts);
 			}
 		}
 		fisherWriter.close();
