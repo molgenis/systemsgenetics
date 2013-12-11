@@ -8,13 +8,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
@@ -25,8 +23,6 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.genomicboundaries.GenomicBoundaries;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
-import umcg.genetica.io.gtf.GffElement;
-import umcg.genetica.io.gtf.GtfReader;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
@@ -36,12 +32,13 @@ import umcg.genetica.math.stats.FisherExactTest;
  *
  * @author Matthieu
  */
-public class eQtlsInEncodeAnnotationData {
-	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
+public class eQtlsInPseudogeneOrgData {
+	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
 	
-	public eQtlsInEncodeAnnotationData(String eQtlProbeLevelFile, String eQtlFile, String permutationLocation, String genotypeLocation, String gencodeFile, double r2cutoff, String outputFile) throws IOException{
+	
+	public eQtlsInPseudogeneOrgData(String eQtlProbeLevelFile, String eQtlFile, String permutationLocation, String genotypeLocation, String pseudogeneFile, double r2cutoff, String outputFile) throws IOException{
 		//STEP 1.: READ THE ENCODE DATA.
-		GenomicBoundaries<Object> encodeData = readEncodeAnnotationData(gencodeFile);
+		GenomicBoundaries<Object> pseudoGeneData = readPsedogeneData(pseudogeneFile);
 		
 		//STEP 2.: GET THE SHARED PROBES.
 		HashSet<String> sharedProbes = getSharedProbes(eQtlProbeLevelFile, permutationLocation);
@@ -53,11 +50,11 @@ public class eQtlsInEncodeAnnotationData {
 		HashMap<String, HashSet<Integer>> nonTopEqtlEffects = getNonTopEffects(eqtls, topEQtlEffects);
 		
 		//STEP 4.: READING GENOTYPE MATRIX DATA AND ENCODE DATA SOURCES.
-		RandomAccessGenotypeData genotypeData = readEQtlGenotypeDataV2(genotypeLocation, rsIdList);
+		RandomAccessGenotypeData genotypeData = readEQtlGenotypeData(genotypeLocation, rsIdList);
 		
 		//STEP 5.: GET THE ENCODE REGION COUNTS FOR THE REAL EQTL DATA.
 		HashMap<String, Integer> eqtlCounts = new HashMap<String, Integer>();
-		getEncodeRegionCounts(topEQtlEffects, nonTopEqtlEffects, eqtlCounts, genotypeData, encodeData, r2cutoff);
+		getPseudogeneCounts(topEQtlEffects, nonTopEqtlEffects, eqtlCounts, genotypeData, pseudoGeneData, r2cutoff);
 		
 		
 		//STEP 6.: PERFORM READING, FILTERING AND ANALYSIS FOR PERMUTATION DATA.
@@ -71,7 +68,7 @@ public class eQtlsInEncodeAnnotationData {
 			topPermutationData = getTopEffects(permutationData, sharedProbes);
 			nonTopPermutationEffects = getNonTopEffects(permutationData, topPermutationData);
 			
-			getEncodeRegionCounts(topPermutationData, nonTopPermutationEffects, permutationCounts, genotypeData, encodeData, r2cutoff);
+			getPseudogeneCounts(topPermutationData, nonTopPermutationEffects, permutationCounts, genotypeData, pseudoGeneData, r2cutoff);
 		}
 		
 		//STEP 7.: PERFORM FISHER EXACT TEST.
@@ -170,13 +167,6 @@ public class eQtlsInEncodeAnnotationData {
 		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 630000, new VariantIdIncludeFilter(variantIdFilter), new SampleIncludedFilter());
 		return gonlImputedBloodGenotypeData;
 	}
-	
-	
-	public RandomAccessGenotypeData readEQtlGenotypeDataV2(String genotypeData, Set<String> variantIdFilter) throws IOException{
-		//Provide a Set<String> containing rsID of all significant eQTLs.
-		RandomAccessGenotypeData gonlImputedBloodGenotypeData = new TriTyperGenotypeData( new File(genotypeData), 630000, null, null);
-		return gonlImputedBloodGenotypeData;
-	}
 	/*
 	 * =========================================================================
 	 * = END: GENOTYPE DATA PROCESSING METHODS.
@@ -186,28 +176,34 @@ public class eQtlsInEncodeAnnotationData {
 	
 	
 	
+	
 	/*
 	 * =========================================================================
-	 * = START: ENCODE ANNOTATION DATA PROCESSING METHODS.
+	 * = START: PSEUDOGENE DATA PROCESSING METHODS.
 	 * =========================================================================
 	 */
-	public GenomicBoundaries<Object> readEncodeAnnotationData(String encodeFile)throws IOException{
-		GenomicBoundaries<Object> encodeBoundaries = new GenomicBoundaries();
+	public GenomicBoundaries readPsedogeneData(String pseudogeneFileLocation) throws IOException{
+		GenomicBoundaries<Object> pseudogenes = new GenomicBoundaries();
+		String fileLine;
+		String[] fileLineData;;
 		
-		GtfReader gtfr = new GtfReader(new File(encodeFile));
-		Iterator<GffElement> encodeIterator = gtfr.iterator();
-		while(encodeIterator.hasNext()){
-			GffElement encodeEntry = encodeIterator.next();
+		TextFile pseudogeneFile = new TextFile(pseudogeneFileLocation,false);
+		while( (fileLine=pseudogeneFile.readLine())!=null ){
+			fileLineData = TAB_PATTERN.split(fileLine);
 			
-			encodeBoundaries.addBoundary(encodeEntry.getSeqname(), encodeEntry.getStart(), encodeEntry.getEnd(),
-					encodeEntry.getAttributeValue("transcript_type"));
+			String chr = new String(fileLineData[1]);
+			int startPos = Integer.parseInt(fileLineData[2]);
+			int stopPos = Integer.parseInt(fileLineData[3]);
+			String annotation = new String(fileLineData[21]);
+			
+			pseudogenes.addBoundary(chr, startPos, stopPos, annotation);
 		}
-		gtfr.close();
-		return encodeBoundaries;
+		pseudogeneFile.close();
+		return pseudogenes;
 	}
 	/*
 	 * =========================================================================
-	 * = END: ENCODE ANNOTATION DATA PROCESSING METHODS.
+	 * = END: PSEUDOGENE DATA PROCESSING METHODS.
 	 * =========================================================================
 	 */
 	
@@ -217,10 +213,10 @@ public class eQtlsInEncodeAnnotationData {
 	
 	/*
 	 * =========================================================================
-	 * = START: ENCODE REGION COUNTS CODE.
+	 * = START: ANALYSIS CODE.
 	 * =========================================================================
 	 */
-	public void getEncodeRegionCounts(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
+	public void getPseudogeneCounts(HashMap<String, EQTL> topEffectData, HashMap<String, HashSet<Integer>> nonTopEffectData, HashMap<String, Integer> countsMap,
 			RandomAccessGenotypeData genotypeData, GenomicBoundaries<Object> boundaries, double r2CutOff){
 		Ld ld = null;
 		Iterator<Map.Entry<String, EQTL>> topEffectIterator = topEffectData.entrySet().iterator();
@@ -289,7 +285,7 @@ public class eQtlsInEncodeAnnotationData {
 	}
 	/*
 	 * =========================================================================
-	 * = END: ENCODE REGIONS COUNTS CODE.
+	 * = END: ANALYSIS CODE.
 	 * =========================================================================
 	 */
 	
@@ -315,8 +311,8 @@ public class eQtlsInEncodeAnnotationData {
 	
 	
 	public String getDirection(int eqtlHits, int eqtlTotalHits, int permutationHits, int permutationTotalHits){
-		double eqtlRatio = ((double) eqtlHits / (double) eqtlTotalHits) * 100;
-		double permutationRatio = ((double) permutationHits / (double) permutationTotalHits) * 100;
+		double eqtlRatio = (eqtlHits / eqtlTotalHits);
+		double permutationRatio = (permutationHits / permutationTotalHits);
 		
 		if(eqtlRatio > permutationRatio){
 			return "Enrichment";
@@ -338,8 +334,8 @@ public class eQtlsInEncodeAnnotationData {
 		double bonferroniFactor = 0.05/eQtlCounts.size();
 		
 		PrintWriter fisherWriter = new PrintWriter(new FileWriter(outputFile));
-		fisherWriter.println("#TF=Transcription Factor; FET=Fisher Exact Test P-value; BS=Bonferroni Significant?; DIR=Direction(Enrichment or not); ERA=EQTL Ratio; PRA+Permutation Ratio");
-		fisherWriter.println("TF\tFET\tBS\tDIR\tERA\tPRA");
+		fisherWriter.println("#TF=Transcription Factor; FET=Fisher Exact Test P-value; BS=Bonferroni Significant?; DIR=Direction(Enrichment or not)");
+		fisherWriter.println("TF\tFET\tBS\tDIR");
 		for(Iterator<Map.Entry<String, Integer>>iter=eQtlCounts.entrySet().iterator();iter.hasNext();){
 			Map.Entry<String, Integer> eQtlCountsEntry = iter.next();
 			
@@ -350,17 +346,15 @@ public class eQtlsInEncodeAnnotationData {
 				
 				//Perform Fisher Exact test.
 				FisherExactTest fet = new FisherExactTest();
-				double fisherPValue = fet.getFisherPValue(eQtlCount, (totalEQtlCounts - eQtlCount), permutationCount, (totalPermutationCounts - permutationCount));
-				fisherWriter.println(tf + "\t" + fisherPValue + "\t" + (fisherPValue<=bonferroniFactor) + "\t"
-						+ getDirection(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts) + "\t" + eQtlCount + "/" + totalEQtlCounts +
-						"\t" + permutationCount + "/" + totalPermutationCounts);
+				double fisherPValue = fet.getFisherPValue(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts);
+				fisherWriter.println(tf + "\t" + fisherPValue + "\t" + (fisherPValue<=bonferroniFactor) + "\t" + getDirection(eQtlCount, totalEQtlCounts, permutationCount, totalPermutationCounts));
 			}
 		}
 		fisherWriter.close();
 	}
 	/*
 	 * =========================================================================
-	 * = END: FISHER EXACT TEST CODE.
+	 * = END: FISHER EXACT TEST CODE
 	 * =========================================================================
 	 */
 	

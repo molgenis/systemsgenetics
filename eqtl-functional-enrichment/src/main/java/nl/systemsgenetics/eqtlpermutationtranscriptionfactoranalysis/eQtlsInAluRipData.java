@@ -82,16 +82,9 @@ public class eQtlsInAluRipData {
 			HashMap<String, EQTL> topPermutationData;
 			HashMap<String, HashSet<Integer>> nonTopPermutationEffects;
 			
-			System.out.println("[P]:> Reading the permutation data for round " + n + ".");
 			permutationData = readEQtlData(permutationLocation + "PermutedEQTLsPermutationRound" + n + ".txt.gz");
-			
-			System.out.println("[P]:> Filter top permutation data for round " + n + ".");
 			topPermutationData = getTopEQtlEffects(permutationData);
-			
-			System.out.println("[P]:> Filter the non top permutation data for round " + n + ".");
 			nonTopPermutationEffects = getNonTopEqtlEffects(permutationData, topPermutationData);
-			
-			System.out.println("[P]:> Get the transcription factors for round " + n + ".");
 			getAluCounts(topPermutationData, nonTopPermutationEffects, permutationCounts, genotypeData, aluRipRegions, r2cutoff);
 		}
 		
