@@ -75,20 +75,30 @@ public class Gpio {
     public static boolean isDir(String dir) {
         File loc = new File(dir);
         if (loc.isDirectory()) {
-            loc = null;
             return true;
         } else {
-            loc = null;
             return false;
         }
     }
 
     public static boolean exists(String dir) {
-        File file = new File(dir);
-        boolean exists = file.exists();
-        boolean readable = file.canRead();
-        return exists & readable;
+		return existsAndReadable(new File(dir));
     }
+	
+	public static boolean existsAndReadable(File file){
+		return file.exists() && file.canRead();
+	}
+	
+	public static boolean createOuputDir(File dir) throws IOException {
+		
+		if(!dir.exists()){
+			if(!dir.mkdirs()){
+				throw new IOException("Failed to create output dir at: " + dir.getAbsolutePath());
+			}
+		}
+		return dir.canRead() && dir.canWrite();
+		
+	}
 
     public static void copyFile(File sourceFile, File destFile) throws IOException {
         if (!destFile.exists()) {

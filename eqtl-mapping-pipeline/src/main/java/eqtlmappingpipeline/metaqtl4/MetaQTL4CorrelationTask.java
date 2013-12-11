@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl4;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
     private final int distributionSize;
     private final long[] randomizationSeeds;
     private final ArrayList<MetaQTL4MetaTrait> availableTraits;
-    private final HashMap<MetaQTL4MetaTrait, Integer> availableTraitsHash;
+    private final TObjectIntHashMap<MetaQTL4MetaTrait> availableTraitsHash;
     private final MetaQTL4Dataset[] datasets;
     private final GeneticVariant[][] geneticVariantIndex;
     private final MetaQTL4Settings m_settings;
@@ -42,7 +43,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
             int distributionSize,
             long[] randomizationSeeds,
             ArrayList<MetaQTL4MetaTrait> availableTraits,
-            HashMap<MetaQTL4MetaTrait, Integer> availableTraitsHash,
+            TObjectIntHashMap<MetaQTL4MetaTrait> availableTraitsHash,
             MetaQTL4Dataset[] datasets,
             GeneticVariant[][] geneticVariantIndex,
             MetaQTL4Settings m_settings,

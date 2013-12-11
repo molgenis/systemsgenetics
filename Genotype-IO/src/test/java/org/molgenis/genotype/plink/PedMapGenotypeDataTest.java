@@ -100,7 +100,7 @@ public class PedMapGenotypeDataTest extends ResourceTest
 	@Test
 	public void testGetSamplePhasing()
 	{
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("22", 14431347);
+		List<GeneticVariant> variants = Utils.iteratorToList(genotypeData.getVariantsByPos("22", 14431347).iterator());
 		assertEquals(variants.size(), 1);
 		assertEquals(genotypeData.getSamplePhasing(variants.get(0)),
 				Arrays.asList(false, false, false, false, false, false, false, false, false));

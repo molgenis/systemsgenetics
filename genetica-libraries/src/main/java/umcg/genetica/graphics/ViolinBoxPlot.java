@@ -124,20 +124,15 @@ public class ViolinBoxPlot {
             g2d = bi.createGraphics();
         }
 
-
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setColor(Color.white);
         g2d.fillRect(0, 0, docWidth, docHeight);
-
-
 
         double minValue = Double.MAX_VALUE;
         double maxValue = -Double.MAX_VALUE;
 
 //        cern.jet.random.engine.RandomEngine randomEngine = new cern.jet.random.engine.DRand();
-
         WilcoxonMannWhitney wmw = new WilcoxonMannWhitney();
-
 
         double[][][] aucs = new double[vals.length][vals[0].length][vals[0].length];
         double[][][] pvals = new double[vals.length][vals[0].length][vals[0].length];
@@ -166,7 +161,6 @@ public class ViolinBoxPlot {
 
                     aucs[dataset][category1][category2] = auc;
                     pvals[dataset][category1][category2] = pValueWilcoxon;
-
 
                     if (max2 > maxValue) {
                         maxValue = max2;
@@ -210,7 +204,6 @@ public class ViolinBoxPlot {
             Collections.sort(sortedPValuesPerDataset, Collections.reverseOrder());
             Collections.sort(sortedPValuesPerCategory, Collections.reverseOrder());
         }
-
 
         int datasetCounter = 0;
         int deltaX = 0;
@@ -287,7 +280,6 @@ public class ViolinBoxPlot {
                 double minVal1 = JSci.maths.ArrayMath.min(vals1);
 
                 int posY1 = y + height - (int) Math.round((double) height * (minVal1 - minValue) / (maxValue - minValue));
-
 
                 int linePos = xposViolin + (individualPlotWidth / 2);
                 g2d.setComposite(alphaComposite25);
@@ -368,8 +360,8 @@ public class ViolinBoxPlot {
         g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
         g2d.setColor(new Color(100, 100, 100));
 
-        System.out.println("MAX: "+maxValue);
-        System.out.println("MIN: "+minValue);
+        System.out.println("MAX: " + maxValue);
+        System.out.println("MIN: " + minValue);
         if (maxValue <= 1 && minValue >= 0) {
             System.out.println("New code...");
             double diff = maxValue - minValue;
@@ -380,12 +372,10 @@ public class ViolinBoxPlot {
             remain = maxValue % unitY;
             double endVal = maxValue + (unitY - remain);
 
-
             int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
             int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
 
             System.out.println(posY1 + "\t" + posY2);
-
 
             g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
             g2d.setFont(fontBold);
@@ -410,8 +400,6 @@ public class ViolinBoxPlot {
                 g2d.drawString(String.valueOf(v), marginLeft - 25 - (int) getWidth(String.valueOf(v), g2d.getFont()), posY + 3);
             }
         }
-
-
 
         g2d.translate(marginLeft - 60, marginTop + innerHeight / 2);
         g2d.rotate(-0.5 * Math.PI);
@@ -442,7 +430,7 @@ public class ViolinBoxPlot {
         double maxVals = JSci.maths.ArrayMath.max(vals);
 
         //Make frequency distribution:
-        int nrBins = 1 + (int) Math.round(Math.sqrt(nrVals) / 2d);
+        int nrBins = 1 + (int) Math.round(Math.sqrt(nrVals) / 4d);
         int[] binCount = new int[nrBins];
         for (int n = 0; n < nrBins; n++) {
             double lower = minVals + (maxVals - minVals) * (double) n / (double) nrBins;
@@ -469,7 +457,7 @@ public class ViolinBoxPlot {
 
             }
         }
-        double kernelWidth = 10;
+        double kernelWidth = (double) height / (double) nrBins / 4d;
         double[] kernelWeights = new double[201];
         for (int d = -100; d <= 100; d++) {
             double weight = java.lang.Math.pow(java.lang.Math.E, -((double) d / (double) kernelWidth) * ((double) d / (double) kernelWidth) / 2);
@@ -513,7 +501,6 @@ public class ViolinBoxPlot {
         double q1 = JSci.maths.ArrayMath.percentile(vals, 0.25d);
         double q3 = JSci.maths.ArrayMath.percentile(vals, 0.75d);
         double iqr = q3 - q1;
-
 
         //Draw median:
         int posY = y + height - (int) Math.round((double) height * (median - minValue) / (maxValue - minValue));
