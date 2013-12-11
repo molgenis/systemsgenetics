@@ -59,7 +59,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final File snpMapFile;
 	private final File individualFile;
 	private final File phenotypeAnnotationFile;
-	private final File baseDir;
 	private static final Logger LOG = Logger.getLogger(TriTyperGenotypeData.class);
 	private final int cacheSize;
 	private final RandomAccessFile dosageHandle;
@@ -78,8 +77,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	 */
 	private ArrayList<Sample> includedSamples;
 	/**
-	 * These are samlpes present in the dataset. If sample filters are used then
-	 * the it could be that there are fewer samples retured
+	 * These are samples present in the dataset. If sample filters are used then
+	 * the it could be that there are fewer samples returned
 	 */
 	private ArrayList<Sample> samples;
 
@@ -95,19 +94,23 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		this(new File(location), cacheSize, variantFilter, null);
 	}
 
-    public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
+	public TriTyperGenotypeData(String location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
 		this(new File(location), cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
 	}
-    
-    public TriTyperGenotypeData(File location) throws IOException {
+
+	public TriTyperGenotypeData(File location) throws IOException {
 		this(location, 1024, null, null);
 	}
-    
+
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, boolean readOnlyIncludedIndividuals) throws IOException {
 		this(location, cacheSize, variantFilter, readOnlyIncludedIndividuals ? new SampleIncludedFilter() : null);
 	}
 
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
+		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter);
+	}
+
+	public TriTyperGenotypeData(File genotypeDataFile, File imputedDosageDataFile, File snpFile, File snpMapFile, File individualFile, File phenotypeAnnotationFile, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
 		this.variantFilter = variantFilter;
 		this.sampleFilter = sampleFilter;
@@ -120,60 +123,36 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 		this.cacheSize = cacheSize;
 
-		baseDir = location;
-		if (!baseDir.exists() || !baseDir.isDirectory()) {
-			throw new IOException("Folder not found for TriTyper data: " + location.getAbsolutePath());
-		}
-
-		genotypeDataFile = new File(baseDir, "GenotypeMatrix.dat");
+		this.genotypeDataFile = genotypeDataFile;
 		if (!genotypeDataFile.exists()) {
-			throw new IOException("GenotypeMatrix.dat not found in TriTyper data folder: " + location);
+			throw new GenotypeDataException("GenotypeMatrix.dat not found at: " + genotypeDataFile.getAbsolutePath());
 		}
 
-
-		File tmpFile = new File(baseDir, "ImputedDosageMatrix.dat");
-		if (tmpFile.exists()) {
-			imputedDosageDataFile = tmpFile;
-		} else {
-			imputedDosageDataFile = null;
+		this.imputedDosageDataFile = imputedDosageDataFile;
+		if (this.imputedDosageDataFile != null && !this.imputedDosageDataFile.exists()) {
+			//ofcourse this file is optional but if it is explicitly specified we check if it exsists. This error will not occure during normal operations
+			throw new GenotypeDataException("ImputedDosageMatrix.dat not found at:" + this.imputedDosageDataFile.getAbsolutePath());
+		}
+		
+		this.snpFile = snpFile;
+		if (!this.snpFile.exists()) {
+			throw new GenotypeDataException("SNPs.txt or SNPs.txt.gz at:" + this.snpFile.getAbsolutePath());
+		}
+		
+		this.snpMapFile = snpMapFile;
+		if (!this.snpMapFile.exists()) {
+			throw new GenotypeDataException("SNPMappings.txt or SNPMappings.txt.gz at:" + this.snpMapFile.getAbsolutePath());
 		}
 
-		tmpFile = new File(baseDir, "SNPs.txt");
-		if (!tmpFile.exists()) {
-			tmpFile = new File(baseDir, "SNPs.txt.gz");
-			if (!tmpFile.exists()) {
-				throw new IOException("SNPs.txt or SNPs.txt.gz not found in TriTyper data folder: " + location);
-			}
+		this.individualFile = individualFile;
+		if (!this.individualFile.exists()) {
+			throw new GenotypeDataException("Individuals.txt or Individuals.txt.gz at:" + this.individualFile.getAbsolutePath());
 		}
-		snpFile = tmpFile;
 
-		tmpFile = new File(baseDir, "SNPMappings.txt");
-		if (!tmpFile.exists()) {
-			tmpFile = new File(baseDir, "SNPMappings.txt.gz");
-			if (!tmpFile.exists()) {
-				throw new IOException("SNPMappings.txt or SNPMappings.txt.gz not found in TriTyper data folder: " + location);
-			}
+		this.phenotypeAnnotationFile = phenotypeAnnotationFile;
+		if (!this.phenotypeAnnotationFile.exists()) {
+			throw new GenotypeDataException("PhenotypeInformation.txt or PhenotypeInformation.txt.gz at:" + this.phenotypeAnnotationFile.getAbsolutePath());
 		}
-		snpMapFile = tmpFile;
-
-
-		tmpFile = new File(baseDir, "Individuals.txt");
-		if (!tmpFile.exists()) {
-			tmpFile = new File(baseDir, "Individuals.txt.gz");
-			if (!tmpFile.exists()) {
-				throw new IOException("Individuals.txt or Individuals.txt.gz not found in TriTyper data folder: " + location);
-			}
-		}
-		individualFile = tmpFile;
-
-		tmpFile = new File(baseDir, "PhenotypeInformation.txt");
-		if (!tmpFile.exists()) {
-			tmpFile = new File(baseDir, "PhenotypeInformation.txt.gz");
-			if (!tmpFile.exists()) {
-				throw new IOException("PhenotypeInformation.txt or PhenotypeInformation.txt.gz not found in TriTyper data folder: " + location);
-			}
-		}
-		phenotypeAnnotationFile = tmpFile;
 
 		// create file handles //
 		if (imputedDosageDataFile != null) {
@@ -188,11 +167,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		loadSamples();
 		samplePhasing = Collections.nCopies(samples.size(), false);
-		
+
 		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		loadSNPAnnotation(snpsFactory);
 		snps = snpsFactory.createRange();
-		
+
 		checkFileSize();
 
 
@@ -280,8 +259,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			includedSamples = samples;
 		}
 
-        LOG.info("Loaded " + includedSamples.size() + " out of "+ samples.size() + " samples.");
-        
+		LOG.info("Loaded " + includedSamples.size() + " out of " + samples.size() + " samples.");
+
 		sampleAnnotationMap = new HashMap<String, SampleAnnotation>(3);
 		sampleAnnotationMap.put(GenotypeData.BOOL_INCLUDE_SAMPLE, new SampleAnnotation(BOOL_INCLUDE_SAMPLE, BOOL_INCLUDE_SAMPLE, null, Annotation.Type.BOOLEAN, SampleAnnotation.SampleAnnotationType.OTHER, false));
 		sampleAnnotationMap.put(GenotypeData.CASE_CONTROL_SAMPLE_ANNOTATION_NAME, new SampleAnnotation(CASE_CONTROL_SAMPLE_ANNOTATION_NAME, CASE_CONTROL_SAMPLE_ANNOTATION_NAME, null, Annotation.Type.CASECONTROL, SampleAnnotation.SampleAnnotationType.PHENOTYPE, false));
@@ -322,12 +301,12 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		sequences = new HashMap<String, Sequence>();
 
 		int lineCount = 0;
-		for(String[] chrPosId : tfSNPMap.readLineElemsIterable(TextFile.tab)){
+		for (String[] chrPosId : tfSNPMap.readLineElemsIterable(TextFile.tab)) {
 			++lineCount;
-			if(chrPosId.length != 3){
+			if (chrPosId.length != 3) {
 				throw new GenotypeDataException("Error in Trityper SNPMappings.txt. Line number " + lineCount + " does not contain 3 elements: ");
 			}
-			
+
 			if (allSNPHash.containsKey(chrPosId[2])) {
 				String snp = chrPosId[2];
 
@@ -397,7 +376,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	public boolean isOnlyContaingSaveProbabilityGenotypes() {
 		return imputedDosageDataFile == null;
 	}
-	
+
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
@@ -408,17 +387,17 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
 		int index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
-		
+
 		int numIndividuals = samples.size();
 		long indexLong = (long) (index) * (numIndividuals * 2);
 
 		byte[] buffer = new byte[2 * numIndividuals];
 		try {
-			
+
 			if (genotypeHandle.read(buffer) != buffer.length) {
 				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 			}
-			
+
 		} catch (IOException e) {
 			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 		}

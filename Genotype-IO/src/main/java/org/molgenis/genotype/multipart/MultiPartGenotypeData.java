@@ -21,6 +21,7 @@ import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
+import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
@@ -28,9 +29,10 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 {
 
 	private List<Sample> samples = null;
-	private static final Pattern VCF_PATTERN = Pattern.compile("vcf.gz$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern VCF_PATTERN = Pattern.compile(".*vcf\\.gz$", Pattern.CASE_INSENSITIVE);
 	private final Map<String, Annotation> variantAnnotationsMap;
 	private final Map<String, SampleAnnotation> sampleAnnotationsMap;
+	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(MultiPartGenotypeData.class);
 
 	/**
 	 * Can map multiple times to same genotype dataset if a genotype dataset
@@ -123,8 +125,9 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 			if (matcher.matches())
 			{
+				LOGGER.info("Adding to multipart data: " + file.getAbsolutePath());
 				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize));
-			}
+			} 
 		}
 
 		return new MultiPartGenotypeData(genotypeDataSets);
