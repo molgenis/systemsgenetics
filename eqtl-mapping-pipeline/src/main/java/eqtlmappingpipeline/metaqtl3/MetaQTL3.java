@@ -25,6 +25,7 @@ import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
+import umcg.genetica.io.trityper.TriTyperGenotypeData;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.util.RunTimer;
@@ -306,192 +307,154 @@ public class MetaQTL3 {
 
     protected void createSNPList() throws IOException {
         ArrayList<String> availableSNPs = new ArrayList<String>();
-        HashSet<String> snptree = new HashSet<String>();
         int chrYSNPs = 0;
         int unknownPos = 0;
         int unknownchr = 0;
 
         TextFile excludedSNPs = new TextFile(m_settings.outputReportsDir + "excludedSNPsBySNPFilter.txt.gz", TextFile.W);
 
-        if ((m_settings.confineSNPsToSNPsPresentInAllDatasets && m_gg.length > 1)) {
-            System.out.println("- Confining to SNPs shared by all datasets.");
-            String[] snps = m_gg[0].getGenotypeData().getSNPs();
-
-            int absentInSomeDatasets = 0;
-            int nonIdenticalMapping = 0;
-            for (int s = 0; s < snps.length; s++) {
-                String reason = snps[s];
-                boolean presentInAllDatasets = true;
-                boolean identicalMapping = true;
-                boolean snpOk = false;
-                String d1SNP = snps[s];
-                if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP)) && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[0].getGenotypeData().getChr(s).equals(m_settings.confineToSNPsThatMapToChromosome))) {
-                    for (int d = 1; d < m_gg.length; d++) {
-                        Integer d2SNPId = m_gg[d].getGenotypeData().getSnpToSNPId().get(d1SNP);
-                        if (d2SNPId == null) {
-                            presentInAllDatasets = false;
-                        } else if (!m_gg[d].getGenotypeData().getChr(d2SNPId).equals(m_gg[0].getGenotypeData().getChr(s)) || m_gg[d].getGenotypeData().getChrPos(d2SNPId) != m_gg[0].getGenotypeData().getChrPos(s)) {
-                            identicalMapping = false;
-                        }
-                    }
-                    if (!identicalMapping) {
-                        nonIdenticalMapping++;
-                        reason += "\tSNPs map to different datasets";
-                    }
-
-                    if (!presentInAllDatasets) {
-                        absentInSomeDatasets++;
-                        reason += "\tSNPs are not present in all datasets";
-                    }
-
-                    if (presentInAllDatasets && identicalMapping) {
-                        if (!snptree.contains(d1SNP)) {
-                            availableSNPs.add(d1SNP);
-                            snptree.add(d1SNP);
-                            snpOk = true;
-                        }
-                    }
-                } else {
-                    if (!m_settings.tsSNPsConfine.contains(d1SNP)) {
-                        reason += "\tSNP not confined to";
+        HashSet<String> tmpAvailableSNPs = new HashSet<String>();
+        HashSet<String> duplicatesWithinDataset = new HashSet<String>();
+        for (TriTyperGeneticalGenomicsDataset m_gg1 : m_gg) {
+            String[] snps = m_gg1.getGenotypeData().getSNPs();
+            HashSet<String> seenSNPs = new HashSet<String>();
+            for (String s : snps) {
+                if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(s)) {
+                    if (seenSNPs.contains(s)) {
+                        duplicatesWithinDataset.add(s);
                     } else {
-                        reason += "\tSNP chromosome does not match requested chromosome.";
+                        seenSNPs.add(s);
                     }
-
-                }
-
-                if (!snpOk) {
-                    excludedSNPs.write(reason + "\n");
+                    tmpAvailableSNPs.add(s);
                 }
             }
-            System.out.println("- " + absentInSomeDatasets + " snps not present in all datasets, " + nonIdenticalMapping + " without identical mapping. " + availableSNPs.size() + " included.");
-        } else {
-            System.out.println("- Not confining to SNPs shared by all datasets.");
-            if (m_gg.length == 1) {
-                int d = 0;
-                String[] snps = m_gg[d].getGenotypeData().getSNPs();
-                int snpNum = 0;
-                for (String d1SNP : snps) {
-                    String reason = d1SNP;
-                    Byte chr = m_gg[d].getGenotypeData().getChr(snpNum);
-                    Integer chrPos = m_gg[d].getGenotypeData().getChrPos(snpNum);
-                    boolean snpOk = false;
-                    if (chr == null) {
-                        unknownchr++;
-                        reason += "\tSNP has unknown chromosome: " + unknownchr;
-                    } else if (chr >= 24) {
+        }
+
+        String[] snps = tmpAvailableSNPs.toArray(new String[0]);
+        for (int s = 0; s < snps.length; s++) {
+            String snpName = snps[s];
+
+            if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(snpName)) {
+                StringBuilder reason = new StringBuilder(snps[s]).append("\t");
+                if (m_gg.length == 1) {
+                    TriTyperGenotypeData ds = m_gg[0].getGenotypeData();
+                    Integer snpId = ds.getSnpToSNPId().get(snpName);
+                    Byte chr1 = ds.getChr(snpId);
+                    int chrPos1 = ds.getChrPos(snpId);
+                    boolean excludeSNP = false;
+
+                    if (chr1 >= 24) {
                         chrYSNPs++;
-                        reason += "\tSNP is located on Y, MT, XY chromosome";
-                    } else if (chrPos == null || chrPos <= 0) {
+                        reason.append("\tSNP is located on Y, MT, XY chromosome");
+                        excludeSNP = true;
+                    } else if (chrPos1 < 0) {
                         unknownPos++;
-                        reason += "\tSNP has unknown mapping";
-                    } else if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP))
-                            && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[d].getGenotypeData().getChr(snpNum) == m_settings.confineToSNPsThatMapToChromosome)) {
-                        if (!snptree.contains(d1SNP)) {
-                            availableSNPs.add(d1SNP);
-                            snpOk = true;
-                        } else {
-                            System.err.println("\t!- WARNING! Duplicate SNP detected:\t" + d1SNP);
-                            reason += "\t - SNP is duplicate!";
-                        }
+                        reason.append("\tSNP has unknown mapping");
+                        excludeSNP = true;
+                    }
+
+                    if (duplicatesWithinDataset.contains(snpName)) {
+                        reason.append("\tSNP is present twice in one of the datasets");
+                        excludeSNP = true;
+                    }
+
+                    if (excludeSNP) {
+                        excludedSNPs.writeln(reason.toString());
                     } else {
-                        if (!m_settings.tsSNPsConfine.contains(d1SNP)) {
-                            reason += "\tSNP not confined to";
+                        availableSNPs.add(snpName);
+                    }
+                } else { // meta-analysis requires a bit more extensive comparison
+                    boolean identicalMapping = true;
+                    boolean presentInAllDatasets = true;
+                    Byte chr1 = null;
+                    int chrPos1 = -1;
+
+                    boolean excludeSNP = false;
+
+// check for identical mapping
+                    for (int d = 0; d < m_gg.length; d++) {
+                        TriTyperGenotypeData ds = m_gg[d].getGenotypeData();
+                        Integer snpId = ds.getSnpToSNPId().get(snpName);
+                        if (snpId == null) {
+                            presentInAllDatasets = false;
+                            reason.append(";Not present in dataset ").append(d);
                         } else {
-                            reason += "\tSNP chromosome does not match requested chromosome: " + m_gg[d].getGenotypeData().getChr(snpNum);
-                        }
-
-                    }
-
-                    if (!snpOk) {
-                        excludedSNPs.write(reason + "\n");
-                    }
-
-                    snptree.add(d1SNP);
-                    snpNum++;
-                }
-
-            } else {
-                for (int d = 0; d < m_gg.length; d++) {
-                    String[] snps = m_gg[d].getGenotypeData().getSNPs();
-                    int snpNum = 0;
-                    for (String d1SNP : snps) {
-                        boolean snpOk = false;
-                        String reason = d1SNP;
-                        if (!snptree.contains(d1SNP)) {
-                            int d2 = d + 1;
-                            if ((m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(d1SNP))
-                                    && (m_settings.confineToSNPsThatMapToChromosome == null || m_gg[d].getGenotypeData().getChr(snpNum) == m_settings.confineToSNPsThatMapToChromosome)) {
-                                // if this is the last set, and this SNP is unique to this dataset,
-
-                                Byte chr = m_gg[d].getGenotypeData().getChr(snpNum);
-                                Integer chrPos = m_gg[d].getGenotypeData().getChrPos(snpNum);
-
-                                if (chr == null) {
-                                    unknownchr++;
-                                    reason += "\tSNP has unknown chromosome: " + unknownchr;
-                                } else if (chr >= 24) {
-                                    chrYSNPs++;
-                                    reason += "\tSNP is located on Y, MT, XY chromosome";
-                                } else if (chrPos == null || chrPos <= 0) {
-                                    unknownPos++;
-                                    reason += "\tSNP has unknown mapping";
-                                } else if (d2 > m_gg.length - 1) { // if this is the last dataset, and the SNP has not been visited, it must be unique to this dataset.
-                                    if (!snptree.contains(d1SNP)) {
-                                        availableSNPs.add(d1SNP);
-                                    }
-                                } else { // else, check whether the mappings are identical accross the other datasets.
-                                    boolean identicalMapping = true;
-                                    for (d2 = d + 1; d2 < m_gg.length; d2++) {
-                                        Integer d2SNPId = m_gg[d2].getGenotypeData().getSnpToSNPId().get(d1SNP);
-                                        if (d2SNPId != null) {
-                                            if (m_gg[d2].getGenotypeData().getChr(d2SNPId) != m_gg[d].getGenotypeData().getChr(snpNum) || m_gg[d2].getGenotypeData().getChrPos(d2SNPId) != m_gg[d].getGenotypeData().getChrPos(snpNum)) {
-                                                identicalMapping = false;
-                                                reason += "\tSNP has different mappings between datasets";
-                                            }
-                                        }
-                                    }
-
-                                    if (identicalMapping) {
-                                        if (!snptree.contains(d1SNP)) {
-                                            availableSNPs.add(d1SNP);
-                                            snpOk = true;
-                                        }
-                                    }
-
-                                }
+                            Byte chr2 = ds.getChr(snpId);
+                            int chrPos2 = ds.getChrPos(snpId);
+                            if (chr1 == null && chr2 != null) {
+                                chr1 = ds.getChr(snpId);
+                                chrPos1 = ds.getChrPos(snpId);
                             } else {
-                                if (!m_settings.tsSNPsConfine.contains(d1SNP)) {
-                                    reason += "\tSNP not confined to";
-                                } else {
-                                    reason += "\tSNP chromosome does not match requested chromosome: " + m_gg[d].getGenotypeData().getChr(snpNum);
+                                if (chr1 != null && chr2 == null) {
+                                    identicalMapping = false;
+                                    reason.append(";SNP has no chromosome position in dataset: ").append(d);
+                                } else if (chr1 != null && chr2 != null) {
+                                    // compare positions
+                                    if (!chr1.equals(chr2)) {
+                                        identicalMapping = false;
+                                        reason.append(";SNP maps to different chromosome in dataset: ").append(d).append("-chr").append(chr2);
+                                    } else {
+                                        if (chrPos1 != chrPos2) {
+                                            identicalMapping = false;
+                                            reason.append(";SNP maps to different chromosome position in dataset: ").append(d).append("-chr").append(chr2);
+                                        }
+                                    }
                                 }
                             }
 
-                            snptree.add(d1SNP); // add it to the search list anyway, so we don't query this SNP twice.
-                        } else {
-                            reason += "\t SNP is duplicate!";
-
                         }
-                        snpNum++;
+                    }
 
-                        if (!snpOk) {
-                            excludedSNPs.write(reason + "\n");
+                    // process the snps, based on the settings
+                    if (m_settings.confineToSNPsThatMapToChromosome != null) {
+                        if (chr1 == null || !chr1.equals(m_settings.confineToSNPsThatMapToChromosome)) {
+                            reason.append("\tSNP does not map to chromosome ").append(m_settings.confineToSNPsThatMapToChromosome).append(": chr").append(chr1);
+                            excludeSNP = true;
                         }
+                    }
+                    if (m_settings.confineSNPsToSNPsPresentInAllDatasets && !presentInAllDatasets) {
+                        reason.append("\tSNP is not present in all datasets.");
+                        excludeSNP = true;
+                    }
+                    if (chr1 == null) {
+                        unknownchr++;
+                        reason.append("\tSNP has unknown chromosome");
+                        excludeSNP = true;
+                    }
+                    if (chr1 >= 24) {
+                        chrYSNPs++;
+                        reason.append("\tSNP is located on Y, MT, XY chromosome");
+                        excludeSNP = true;
+                    } else if (chrPos1 < 0) {
+                        unknownPos++;
+                        reason.append("\tSNP has unknown mapping");
+                        excludeSNP = true;
+                    }
+                    if (!identicalMapping) {
+                        reason.append("\tSNP has different mapping in different datasets");
+                        excludeSNP = true;
+                    }
+
+                    if (duplicatesWithinDataset.contains(snpName)) {
+                        reason.append("\tSNP is present twice in one of the datasets");
+                        excludeSNP = true;
+                    }
+
+                    if (excludeSNP) {
+                        excludedSNPs.writeln(reason.toString());
+                    } else {
+                        availableSNPs.add(snpName);
                     }
                 }
 
             }
-            System.out.println("- " + chrYSNPs + " chromosome Y SNPs, " + unknownPos + " SNPS with unknown position, " + unknownchr + " with unknown chromosome.");
-            System.out.println("- Remaining SNPs: " + availableSNPs.size());
+
         }
 
-        int i = 0;
-        m_snpList = new String[availableSNPs.size()];
-        for (String s : availableSNPs) {
-            m_snpList[i] = s;
-            i++;
-        }
+        System.out.println("- " + chrYSNPs + " chromosome Y, MT or XY SNPs, " + unknownPos + " SNPS with unknown position, " + unknownchr + " with unknown chromosome.");
+        System.out.println("- Remaining SNPs: " + availableSNPs.size());
+
+        m_snpList = availableSNPs.toArray(new String[0]);
 
         // create snp translation table..
         m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
