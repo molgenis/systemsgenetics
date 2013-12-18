@@ -166,7 +166,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
 
 		loadSamples();
-		samplePhasing = Collections.nCopies(samples.size(), false);
+		samplePhasing = Collections.nCopies(includedSamples.size(), false);
 
 		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		loadSNPAnnotation(snpsFactory);
