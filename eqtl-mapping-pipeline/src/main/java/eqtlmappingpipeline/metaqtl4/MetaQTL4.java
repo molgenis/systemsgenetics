@@ -16,7 +16,9 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
@@ -24,6 +26,7 @@ import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
+import umcg.genetica.math.stats.Correlation;
 
 /**
  * MetaQTL4 - Experimental Skunkworx edition
@@ -42,16 +45,17 @@ public class MetaQTL4 {
     private ArrayList<MetaQTL4MetaTrait> availableTraits;
     private TObjectIntHashMap<MetaQTL4MetaTrait> availableTraitsHash; //int as value
     private GeneticVariant[][] geneticVariantIndex;
+    private static final Logger LOG = Logger.getLogger(MetaQTL4.class);
 
     public MetaQTL4(MetaQTL4Settings settings) throws IOException, Exception {
-        System.out.println("WARNING: MetaQTL4 is experimental code!");
+        LOG.info("WARNING: MetaQTL4 is experimental code!");
         m_settings = settings;
         initialize();
         run();
     }
 
     public MetaQTL4(String settings, String replaceText, String testToReplaceWith) throws IOException, Exception {
-        System.out.println("WARNING: MetaQTL4 is experimental code!");
+        LOG.info("WARNING: MetaQTL4 is experimental code!");
         m_settings = new MetaQTL4Settings(settings, replaceText, testToReplaceWith);
         initialize();
         run();
@@ -98,7 +102,7 @@ public class MetaQTL4 {
         // TODO: there is one exception for the probe filter, 
         // which is when all the datasets are on the same platform. 
         // will implement this at a later stage, or not at all.
-        System.out.println("Running probe filter");
+        LOG.info("Running probe filter");
         runProbeFilter();
 
         // load the datasets..
@@ -127,17 +131,26 @@ public class MetaQTL4 {
         }
 
         // create probe index
-        System.out.println("Creating trait index");
+        LOG.info("Creating trait index");
         createTraitIndex();
 
         // create SNP index
-        System.out.println("Create SNP index");
+        LOG.info("Create SNP index");
         createSNPIndex();
+
+        // create lookup table for ZScores 
+        // TODO: put this in a nice test encapsulation thing
+        int nrSamples = 0;
+        for (int d = 0; d < datasets.length; d++) {
+            nrSamples += datasets[d].getGenotypeToTraitCouplingInt().length;
+        }
+        LOG.info("Meta-analysis will have " + nrSamples + " samples");
+        Correlation.correlationToZScore(nrSamples);
     }
 
     public final void run() {
         // create threadpool
-        System.out.println("Running software!");
+        LOG.info("Running software!");
         int nrPermutations = m_settings.getNrPermutationsFDR();
 
         // initialize random seed array
@@ -284,7 +297,7 @@ public class MetaQTL4 {
             String platform = m_settings.getDatasetSettings().get(d).getTraitPlatform();
             Integer platformId = traitAnnotation.getPlatformId(platform);
             String[] availableTraitsInDataset = datasets[d].getTraits();
-            System.out.println(m_settings.getDatasetSettings().get(d).getName() + " has " + availableTraitsInDataset.length + " traits on platform " + platform + " (" + platformId + ")");
+            LOG.info(m_settings.getDatasetSettings().get(d).getName() + " has " + availableTraitsInDataset.length + " traits on platform " + platform + " (" + platformId + ")");
             for (String trait : availableTraitsInDataset) {
                 MetaQTL4MetaTrait metatrait = traitAnnotation.getTraitForPlatformId(platformId, trait);
                 if (metatrait != null) {
@@ -320,7 +333,7 @@ public class MetaQTL4 {
             }
         }
 
-        System.out.println(availableTraits.size() + " traits available to test.");
+        LOG.info(availableTraits.size() + " traits available to test.");
 
     }
 
@@ -331,14 +344,14 @@ public class MetaQTL4 {
         }
 
         // if this is a cis-eQTL analysis, get all the unique variants within the probes vicinity
-        System.out.println("Indexing SNPs");
+        LOG.info("Indexing SNPs");
         int distance = m_settings.getCiseQTLAnalysMaxSNPProbeMidPointDistance();
         Set<Pair<String, Integer>> uniquePositions = new HashSet<Pair<String, Integer>>();
 
         // at a later stage, we may want to include gene-begin and gene-end as well..
         if (m_settings.isCisAnalysis() && !m_settings.isTransAnalysis()) {
-            System.out.println("Performing cis-eQTL analysis, so keeping only SNPs within " + m_settings.getCiseQTLAnalysMaxSNPProbeMidPointDistance());
-            System.out.println("");
+            LOG.info("Performing cis-eQTL analysis, so keeping only SNPs within " + m_settings.getCiseQTLAnalysMaxSNPProbeMidPointDistance());
+            LOG.info("");
             int tctr = 0;
             HashMap<Pair<String, Integer>, Integer> allPositions = new HashMap<Pair<String, Integer>, Integer>();
             for (int d = 0; d < datasets.length; d++) {
@@ -364,13 +377,13 @@ public class MetaQTL4 {
                         }
                     }
 
-                    pb.set(tctr);
+                    pb.iterate();
                     tctr++;
                 }
                 pb.close();
             }
 
-            System.out.println(allPositions.size() + " variants amongst all datasets.");
+            LOG.info(allPositions.size() + " variants amongst all datasets.");
 
             if (m_settings.getConfineSNPsToSNPsPresentInAllDatasets() != null && m_settings.getConfineSNPsToSNPsPresentInAllDatasets()) {
                 Set<Pair<String, Integer>> tmpPositions = new HashSet<Pair<String, Integer>>();
@@ -436,24 +449,19 @@ public class MetaQTL4 {
         if (numberFinalPositions == 0) {
             System.err.println("Error: no SNPs found to test");
         }
+        LOG.info("Creating final index");
         geneticVariantIndex = new GeneticVariant[datasets.length][numberFinalPositions];
+        ProgressBar pb2 = new ProgressBar(datasets.length * numberFinalPositions);
         for (int dataset = 0; dataset < datasets.length; dataset++) {
             int ctr = 0;
             RandomAccessGenotypeData data = datasets[dataset].getGenotypeData();
             for (Pair<String, Integer> pair : uniquePositions) {
                 geneticVariantIndex[dataset][ctr] = data.getSnpVariantByPos(pair.getLeft(), pair.getRight());
                 ctr++;
+                pb2.iterate();
             }
         }
-
-        for (int i = 0; i < numberFinalPositions; i++) {
-            GeneticVariant variant = geneticVariantIndex[0][i];
-            try {
-                System.out.println(variant.getPrimaryVariantId() + "\t" + variant.getMinorAlleleFrequency());
-            } catch (Exception e) {
-                System.out.println("Variant involved: " + variant.getPrimaryVariantId() + "\t" + variant.getSequenceName() + "\t" + variant.getStartPos());
-                e.printStackTrace();
-            }
-        }
+        pb2.close();
+        LOG.info("Done");
     }
 }

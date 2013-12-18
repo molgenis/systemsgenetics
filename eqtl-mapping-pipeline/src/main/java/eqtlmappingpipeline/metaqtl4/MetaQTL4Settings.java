@@ -209,7 +209,7 @@ public class MetaQTL4Settings {
                 performParametricAnalysis = false;
             }
         } else {
-            performParametricAnalysis = true;
+            performParametricAnalysis = false;
         }
 
 
