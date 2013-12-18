@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +22,6 @@ import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
-import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
@@ -108,7 +108,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			IncompatibleMultiPartGenotypeDataException
 	{
 
-		Set<RandomAccessGenotypeData> genotypeDataSets = new HashSet<RandomAccessGenotypeData>();
+		Set<RandomAccessGenotypeData> genotypeDataSets = new LinkedHashSet<RandomAccessGenotypeData>();
 
 		if (!vcfFolder.isDirectory())
 		{

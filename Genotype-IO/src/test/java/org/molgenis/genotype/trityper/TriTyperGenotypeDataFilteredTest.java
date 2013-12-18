@@ -36,7 +36,7 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 	@BeforeClass
 	public void beforeClass() throws IOException, URISyntaxException
 	{
-		genotypeData = new TriTyperGenotypeData(new File(getTriTyperFolder().getAbsolutePath()), 100, new VariantQcChecker(0, 1, 0), true);
+		genotypeData = new TriTyperGenotypeData(new File(getTriTyperFolder().getAbsolutePath()), 1, new VariantQcChecker(0, 1, 0), true);
 	}
     
     @Test
@@ -132,7 +132,7 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 		
 		
 		assertEquals(phasing,
-				Arrays.asList(false, false, false, false, false, false, false, false, false));
+				Arrays.asList(false, false, false, false, false, false, false, false));
 	}
 
 	@Test
@@ -164,6 +164,21 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 		//Try to get excluded variant
 		assertNull(genotypeData.getSnpVariantByPos("22", 14432918));
 		
+		//now get another variant and do some reloading to test stability 
+		GeneticVariant variant2 = genotypeData.getSnpVariantByPos("22", 14433591);
+		variant2.getVariantAlleles();
+		variant2.getSampleVariants();
+		
+		assertEquals(variant.getSampleVariants(), expectedSampleAlleles);
+		assertEquals(variant.getVariantAlleles(), Alleles.createBasedOnChars('G', 'A'));
+		
+		GeneticVariant variant4 = genotypeData.getSnpVariantByPos("22", 14433758);
+		variant4.getVariantAlleles();
+		variant4.getSampleVariants();
+		
+		GeneticVariant variant3 = genotypeData.getSnpVariantByPos("22", pos);
+		assertEquals(variant3.getSampleVariants(), expectedSampleAlleles);
+		assertEquals(variant3.getVariantAlleles(), Alleles.createBasedOnChars('G', 'A'));
 
 	}
 
