@@ -21,172 +21,184 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
  */
 public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
-	private final GeneticVariantId variantId;
-	private final int startPos;
-	private final String sequenceName;
-	private final SampleVariantsProvider sampleVariantsProvider;
-	private final int indexOfVariantInTriTyperData;
-	private Alleles alleles;
+    private final GeneticVariantId variantId;
+    private final int startPos;
+    private final String sequenceName;
+    private final SampleVariantsProvider sampleVariantsProvider;
+    private final int indexOfVariantInTriTyperData;
+    private Alleles alleles;
 
-	public ReadOnlyGeneticVariantTriTyper(String variantId, int startPos, String sequenceName, SampleVariantsProvider sampleVariantsProvider, int indexOfVariantInTriTyperData) {
-		this.variantId = GeneticVariantId.createVariantId(variantId);
-		this.startPos = startPos;
-		this.sequenceName = sequenceName;
-		this.sampleVariantsProvider = sampleVariantsProvider;
-		this.indexOfVariantInTriTyperData = indexOfVariantInTriTyperData;
-	}
+    public ReadOnlyGeneticVariantTriTyper(String variantId, int startPos, String sequenceName, SampleVariantsProvider sampleVariantsProvider, int indexOfVariantInTriTyperData) {
+        this.variantId = GeneticVariantId.createVariantId(variantId);
+        this.startPos = startPos;
+        this.sequenceName = sequenceName;
+        this.sampleVariantsProvider = sampleVariantsProvider;
+        this.indexOfVariantInTriTyperData = indexOfVariantInTriTyperData;
+    }
 
-	@Override
-	public String getPrimaryVariantId() {
-		return variantId.getPrimairyId();
-	}
+    @Override
+    public String getPrimaryVariantId() {
+        return variantId.getPrimairyId();
+    }
 
-	@Override
-	public List<String> getAlternativeVariantIds() {
-		return variantId.getAlternativeIds();
-	}
+    @Override
+    public List<String> getAlternativeVariantIds() {
+        return variantId.getAlternativeIds();
+    }
 
-	@Override
-	public List<String> getAllIds() {
-		return variantId.getVariantIds();
-	}
+    @Override
+    public List<String> getAllIds() {
+        return variantId.getVariantIds();
+    }
 
-	@Override
-	public GeneticVariantId getVariantId() {
-		return variantId;
-	}
+    @Override
+    public GeneticVariantId getVariantId() {
+        return variantId;
+    }
 
-	@Override
-	public int getStartPos() {
-		return startPos;
-	}
+    @Override
+    public int getStartPos() {
+        return startPos;
+    }
 
-	@Override
-	public String getSequenceName() {
-		return sequenceName;
-	}
+    @Override
+    public String getSequenceName() {
+        return sequenceName;
+    }
 
-	@Override
-	public final Alleles getVariantAlleles() {
-		if (alleles == null) {
-			getSampleVariants();
-		}
-		return alleles;
-	}
+    @Override
+    public final Alleles getVariantAlleles() {
+        if (alleles == null) {
+            getSampleVariants();
+        }
+        return alleles;
+    }
 
-	@Override
-	public int getAlleleCount() {
-		return this.getVariantAlleles().getAlleleCount();
-	}
+    @Override
+    public int getAlleleCount() {
+        return this.getVariantAlleles().getAlleleCount();
+    }
 
-	@Override
-	public Allele getRefAllele() {
-		return null;
-	}
+    @Override
+    public Allele getRefAllele() {
+        return null;
+    }
 
-	@Override
-	public List<Alleles> getSampleVariants() {
-		List<Alleles> SampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
+    @Override
+    public List<Alleles> getSampleVariants() {
+        List<Alleles> SampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
 
-		if (this.alleles == null) {
-			//set alleles here
+        if (this.alleles == null) {
+            //set alleles here
 
-			LinkedHashSet<Allele> variantAlleles = new LinkedHashSet<Allele>(2);
+            LinkedHashSet<Allele> variantAlleles = new LinkedHashSet<Allele>(2);
 
-			for (Alleles alleles2 : SampleVariantAlleles) {
-				for (Allele allele : alleles2) {
-					if (allele != allele.ZERO) {
-						variantAlleles.add(allele);
-					}
-				}
-			}
+            for (Alleles alleles2 : SampleVariantAlleles) {
+                for (Allele allele : alleles2) {
+                    if (allele != allele.ZERO) {
+                        variantAlleles.add(allele);
+                    }
+                }
+            }
 
-			this.alleles = Alleles.createAlleles(new ArrayList<Allele>(variantAlleles));
+            this.alleles = Alleles.createAlleles(new ArrayList<Allele>(variantAlleles));
 
 
-		}
-		return SampleVariantAlleles;
-	}
+        }
+        return SampleVariantAlleles;
+    }
 
-	@Override
-	public Map<String, ?> getAnnotationValues() {
-		return Collections.emptyMap();
-	}
+    @Override
+    public Map<String, ?> getAnnotationValues() {
+        return Collections.emptyMap();
+    }
 
-	@Override
-	public double getMinorAlleleFrequency() {
-		return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants()).getFreq();
-	}
+    @Override
+    public double getMinorAlleleFrequency() {
+        return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants()).getFreq();
+    }
 
-	@Override
-	public Allele getMinorAllele() {
-		return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants()).getMinorAllele();
-	}
+    @Override
+    public Allele getMinorAllele() {
+        return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants()).getMinorAllele();
+    }
 
-	@Override
-	public float[] getSampleDosages() {
-		return sampleVariantsProvider.getSampleDosage(this);
-	}
+    @Override
+    public float[] getSampleDosages() {
+        return sampleVariantsProvider.getSampleDosage(this);
+    }
 
-	@Override
-	public SampleVariantsProvider getSampleVariantsProvider() {
-		return sampleVariantsProvider;
-	}
+    @Override
+    public SampleVariantsProvider getSampleVariantsProvider() {
+        return sampleVariantsProvider;
+    }
 
-	@Override
-	public byte[] getSampleCalledDosages() {
-		return sampleVariantsProvider.getSampleCalledDosage(this);
-	}
+    @Override
+    public byte[] getSampleCalledDosages() {
+        return sampleVariantsProvider.getSampleCalledDosage(this);
+    }
 
-	@Override
-	public List<Boolean> getSamplePhasing() {
-		return sampleVariantsProvider.getSamplePhasing(this);
-	}
-	
-	@Override
-	public float[][] getSampleGenotypeProbilities() {
-		return sampleVariantsProvider.getSampleProbilities(this);
-	}
+    @Override
+    public List<Boolean> getSamplePhasing() {
+        return sampleVariantsProvider.getSamplePhasing(this);
+    }
 
-	@Override
-	public int hashCode() {
-		//This works good enough for trityper data.
-		return variantId.getPrimairyId().hashCode();
-	}
+    @Override
+    public float[][] getSampleGenotypeProbilities() {
+        return sampleVariantsProvider.getSampleProbilities(this);
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (!(obj instanceof ReadOnlyGeneticVariantTriTyper)) {
-			return false;
-		}
-		ReadOnlyGeneticVariantTriTyper other = (ReadOnlyGeneticVariantTriTyper) obj;
-		if (getSequenceName() == null) {
-			if (other.getSequenceName() != null) {
-				return false;
-			}
-		} else if (!getSequenceName().equals(other.getSequenceName())) {
-			return false;
-		}
-		if (getStartPos() != other.getStartPos()) {
-			return false;
-		}
+    @Override
+    public int hashCode() {
+        // TriTyper genotypes always have a primary ID, we should hash that.
+        return this.getPrimaryVariantId().hashCode();
+    }
 
-		// If we get here pos and sequence are identical
-		if (getSampleVariantsProvider() == null) {
-			if (other.getSampleVariantsProvider() != null) {
-				return false;
-			}
-		} else if (!getSampleVariantsProvider().equals(other.getSampleVariantsProvider())) {
-			//For trityper id must be identical
-			return this.variantId.getPrimairyId().equals(other.getPrimaryVariantId());
-		}
-		return true;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof ReadOnlyGeneticVariantTriTyper)) {
+            return false;
+        }
+        ReadOnlyGeneticVariantTriTyper other = (ReadOnlyGeneticVariantTriTyper) obj;
+        
+        // in trityper data, all SNPs have an unique identifier.
+        // this is not always true for other datatypes, however...
+       
+        if (this.getPrimaryVariantId() != null && other.getPrimaryVariantId() != null) {
+            if (this.getPrimaryVariantId().equals(other.getPrimaryVariantId())) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
+        if (getSequenceName() == null) {
+            if (other.getSequenceName() != null) {
+                return false;
+            }
+        } else if (!getSequenceName().equals(other.getSequenceName())) {
+            return false;
+        }
+        if (getStartPos() != other.getStartPos()) {
+            return false;
+        }
 
-	public int getIndexOfVariantInTriTyperData() {
-		return indexOfVariantInTriTyperData;
-	}
+        // If we get here pos and sequence are identical
+        if (getSampleVariantsProvider() == null) {
+            if (other.getSampleVariantsProvider() != null) {
+                return false;
+            }
+        } else if (!getSampleVariantsProvider().equals(other.getSampleVariantsProvider())) {
+            //For trityper id must be identical
+            return this.variantId.getPrimairyId().equals(other.getPrimaryVariantId());
+        }
+        return true;
+    }
+
+    public int getIndexOfVariantInTriTyperData() {
+        return indexOfVariantInTriTyperData;
+    }
 }
