@@ -393,7 +393,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		byte[] buffer = new byte[2 * numIndividuals];
 		try {
-
+			genotypeHandle.seek(indexLong);
 			if (genotypeHandle.read(buffer) != buffer.length) {
 				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 			}
