@@ -121,8 +121,8 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 			for(Alleles sampleAlleles : variant.getSampleVariants()){
 				
 				if(sampleAlleles.getAlleleCount() != 2){
-					LOGGER.warn("variant at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " set to missing for " + samples[i]);
-					continue;
+					LOGGER.debug("variant at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " set to missing for " + samples[i]);
+					sampleAlleles = Alleles.BI_ALLELIC_MISSING;
 				}
 				
 				snpBuffer[i] = sampleAlleles.get(0).isSnpAllele() && sampleAlleles.get(0) != Allele.ZERO ? (byte) sampleAlleles.get(0).getAlleleAsSnp() : 0;

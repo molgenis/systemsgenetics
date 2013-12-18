@@ -166,7 +166,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
 
 		loadSamples();
-		samplePhasing = Collections.nCopies(samples.size(), false);
+		samplePhasing = Collections.nCopies(includedSamples.size(), false);
 
 		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		loadSNPAnnotation(snpsFactory);
@@ -393,7 +393,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		byte[] buffer = new byte[2 * numIndividuals];
 		try {
-
+			genotypeHandle.seek(indexLong);
 			if (genotypeHandle.read(buffer) != buffer.length) {
 				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 			}

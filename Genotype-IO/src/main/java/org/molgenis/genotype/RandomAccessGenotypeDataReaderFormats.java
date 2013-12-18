@@ -3,6 +3,7 @@ package org.molgenis.genotype;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.EnumSet;
 import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
@@ -15,22 +16,25 @@ import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+import static org.molgenis.genotype.GenotypeFileType.*;
 
 public enum RandomAccessGenotypeDataReaderFormats {
 
-	PED_MAP("PED / MAP files", "plink PED / MAP files"),
-	VCF("VCF file", "gziped vcf with tabix index file"),
-	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder. Each file must contain a sigle chromosome. Each chromsome should be unique to a single file."),
-	SHAPEIT2("Shapeit2 output", ".haps, and .samples with phased haplotypes as outputted by Shapeit2"),
-	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files"),
-	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat"),
-	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample");
+	PED_MAP("PED / MAP files", "plink PED / MAP files", EnumSet.of(PED, MAP)),
+	VCF("VCF file", "gziped vcf with tabix index file", EnumSet.of(GenotypeFileType.VCF)),
+	VCF_FOLDER("VCF folder", "Matches all gziped vcf files + tabix index in a folder. Each file must contains only a sigle chromosome. Each chromsome must be unique to a single file.", EnumSet.of(GenotypeFileType.VCF_FOLDER)),
+	SHAPEIT2("Shapeit2 output", ".haps, and .samples with phased haplotypes as outputted by Shapeit2", EnumSet.of(HAPS, SAMPLE)),
+	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files", EnumSet.of(BED, BIM, FAM)),
+	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat", EnumSet.of(TRITYPER_GENOTYPE, TRITYPER_IND, TRITYPER_MAPPINGS, TRITYPER_MAPPINGS, TRITYPER_PHENO, TRITYPER_SNPS)),
+	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample", EnumSet.of(GenotypeFileType.GEN, SAMPLE));
 	private final String name;
 	private final String description;
+	private final EnumSet<GenotypeFileType> requiredFiles;
 
-	RandomAccessGenotypeDataReaderFormats(String name, String description) {
+	private RandomAccessGenotypeDataReaderFormats(String name, String description, EnumSet<GenotypeFileType> requiredFiles) {
 		this.name = name;
 		this.description = description;
+		this.requiredFiles = requiredFiles;
 	}
 
 	public String getName() {
@@ -41,58 +45,73 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		return description;
 	}
 
-	public static RandomAccessGenotypeDataReaderFormats matchFormatToPath(String path) {
+	public EnumSet<GenotypeFileType> getRequiredFiles() {
+		return requiredFiles;
+	}
+	
 
-		File pathFile = new File(path);
+	public static RandomAccessGenotypeDataReaderFormats matchFormatToPath(String... paths) {
 
-		if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.VCF && pathFile.exists()) {
-			return VCF;
-		}
+		if (paths.length == 0) {
+			throw new GenotypeDataException("Cannot find any suitable genotype data format based on path, please make sure the files exist");
+		} else if (paths.length == 1) {
 
-		if (new File(path + ".vcf.gz").exists()) {
-			return VCF;
-		}
+			String path = paths[0];
 
-		if (new File(path + ".ped").exists() && new File(path + ".map").exists()) {
-			return PED_MAP;
-		}
+			File pathFile = new File(path);
 
-		if (new File(path + ".bed").exists() && new File(path + ".bim").exists() && new File(path + ".fam").exists()) {
-			return PLINK_BED;
-		}
+			if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.VCF && pathFile.exists()) {
+				return VCF;
+			}
 
-		if (new File(path + ".haps").exists() && new File(path + ".sample").exists()) {
-			return SHAPEIT2;
-		}
+			if (new File(path + ".vcf.gz").exists()) {
+				return VCF;
+			}
 
-		if (new File(path + ".gen").exists() && new File(path + ".sample").exists()) {
-			return GEN;
-		}
+			if (new File(path + ".ped").exists() && new File(path + ".map").exists()) {
+				return PED_MAP;
+			}
 
-		if (pathFile.exists() && pathFile.isFile() && new File(path + ".sample").exists()) {
-			return GEN;
-		}
+			if (new File(path + ".bed").exists() && new File(path + ".bim").exists() && new File(path + ".fam").exists()) {
+				return PLINK_BED;
+			}
 
-		if (pathFile.isDirectory()) {
-			for (File file : pathFile.listFiles()) {
-				if (file.getName().endsWith(".vcg.gz")) {
-					return VCF_FOLDER;
+			if (new File(path + ".haps").exists() && new File(path + ".sample").exists()) {
+				return SHAPEIT2;
+			}
+
+			if (new File(path + ".gen").exists() && new File(path + ".sample").exists()) {
+				return GEN;
+			}
+
+			if (pathFile.exists() && pathFile.isFile() && new File(path + ".sample").exists()) {
+				return GEN;
+			}
+
+			if (pathFile.isDirectory()) {
+				for (File file : pathFile.listFiles()) {
+					if (file.getName().endsWith(".vcg.gz")) {
+						return VCF_FOLDER;
+					}
+				}
+				if (new File(pathFile, "GenotypeMatrix.dat").exists()
+						&& (new File(pathFile, "SNPs.txt").exists() || new File(pathFile, "SNPs.txt.gz").exists())
+						&& (new File(pathFile, "SNPMappings.txt").exists() || new File(pathFile, "SNPMappings.txt.gz").exists())
+						&& (new File(pathFile, "Individuals.txt").exists() || new File(pathFile, "Individuals.txt.gz").exists())
+						&& (new File(pathFile, "PhenotypeInformation.txt").exists() || new File(pathFile, "PhenotypeInformation.txt.gz").exists())) {
+
+					return TRITYPER;
+
 				}
 			}
-			if (new File(pathFile, "GenotypeMatrix.dat").exists()
-					&& (new File(pathFile, "SNPs.txt").exists() || new File(pathFile, "SNPs.txt.gz").exists())
-					&& (new File(pathFile, "SNPMappings.txt").exists() || new File(pathFile, "SNPMappings.txt.gz").exists())
-					&& (new File(pathFile, "Individuals.txt").exists() || new File(pathFile, "Individuals.txt.gz").exists())
-					&& (new File(pathFile, "PhenotypeInformation.txt").exists() || new File(pathFile, "PhenotypeInformation.txt.gz").exists())) {
 
-				return TRITYPER;
-
-			}
 		}
 
 
 
-		throw new GenotypeDataException("Cannot find any suitable genotype data format based on path");
+
+
+		throw new GenotypeDataException("Cannot find any suitable genotype data format based on path, please make sure the files exist");
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path) throws IOException,
@@ -133,10 +152,10 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	public RandomAccessGenotypeData createGenotypeData(String[] paths, int cacheSize, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
 
-		if(paths == null || paths.length == 0){
+		if (paths == null || paths.length == 0) {
 			throw new GenotypeDataException("Error no paths specified");
 		}
-		
+
 		switch (this) {
 			case PED_MAP:
 				if (forcedSequence != null) {
@@ -187,14 +206,14 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				} else if (paths.length == 2) {
 					File genFile = null;
 					File sampleFile = null;
-					for(String path : paths){
-						if(GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
+					for (String path : paths) {
+						if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
 							sampleFile = new File(path);
 						} else {
 							genFile = new File(path);
 						}
 					}
-					if(sampleFile == null){
+					if (sampleFile == null) {
 						throw new GenotypeDataException("Path to .sample file not specified for oxford gen data");
 					}
 					return new GenGenotypeData(genFile, sampleFile, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
