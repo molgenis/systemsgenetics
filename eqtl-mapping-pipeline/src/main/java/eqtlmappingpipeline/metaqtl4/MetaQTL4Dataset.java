@@ -323,7 +323,7 @@ public class MetaQTL4Dataset {
     }
 
     public String[] getTraits() {
-        return traitData.colObjects.toArray(new String[0]);
+        return traitData.rowObjects.toArray(new String[0]);
     }
 
     public Integer getTraitId(String probeName) {

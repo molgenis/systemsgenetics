@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
@@ -42,12 +43,14 @@ public class MetaQTL4 {
     private GeneticVariant[][] geneticVariantIndex;
 
     public MetaQTL4(MetaQTL4Settings settings) throws IOException, Exception {
+        System.out.println("WARNING: MetaQTL4 is experimental code!");
         m_settings = settings;
         initialize();
         run();
     }
 
     public MetaQTL4(String settings, String replaceText, String testToReplaceWith) throws IOException, Exception {
+        System.out.println("WARNING: MetaQTL4 is experimental code!");
         m_settings = new MetaQTL4Settings(settings, replaceText, testToReplaceWith);
         initialize();
         run();
@@ -61,19 +64,19 @@ public class MetaQTL4 {
             platforms.add(m_settings.getDatasetSettings().get(d).getTraitPlatform());
         }
         traitAnnotation = new MetaQTL4TraitAnnotation(m_settings.getProbeAnnotationFile(), platforms);
-    
+
 
         if (m_settings.getConfineProbeFile() != null) {
-			if(!Gpio.existsAndReadable(m_settings.getConfineProbeFile())){
-				throw new IOException("Failed to read file with probes to include: " + m_settings.getConfineProbeFile().getAbsolutePath());
-			}
+            if (!Gpio.existsAndReadable(m_settings.getConfineProbeFile())) {
+                throw new IOException("Failed to read file with probes to include: " + m_settings.getConfineProbeFile().getAbsolutePath());
+            }
             traitsToInclude = loadMetaTraitList(m_settings.getConfineProbeFile());
         }
 
         if (m_settings.getConfineSNPFile() != null) {
-			if(!Gpio.existsAndReadable(m_settings.getConfineSNPFile())){
-				throw new IOException("Failed to read file with SNPs to include: " + m_settings.getConfineSNPFile().getAbsolutePath());
-			}
+            if (!Gpio.existsAndReadable(m_settings.getConfineSNPFile())) {
+                throw new IOException("Failed to read file with SNPs to include: " + m_settings.getConfineSNPFile().getAbsolutePath());
+            }
             TextFile tf = new TextFile(m_settings.getConfineSNPFile(), TextFile.R);
             variantsToInclude = tf.readAsSet(0, TextFile.tab);
             tf.close();
@@ -81,9 +84,9 @@ public class MetaQTL4 {
 
         // load list of specific SNP-trait combinations
         if (m_settings.getSNPProbeConfineFile() != null) {
-			if(!Gpio.existsAndReadable(m_settings.getSNPProbeConfineFile())){
-				throw new IOException("Failed to read file with SNP Probe combinations to include: " + m_settings.getSNPProbeConfineFile().getAbsolutePath());
-			}
+            if (!Gpio.existsAndReadable(m_settings.getSNPProbeConfineFile())) {
+                throw new IOException("Failed to read file with SNP Probe combinations to include: " + m_settings.getSNPProbeConfineFile().getAbsolutePath());
+            }
             Triple<HashSet<String>, HashSet<MetaQTL4MetaTrait>, HashSet<Pair<String, MetaQTL4MetaTrait>>> combinations = loadgenotypeMarkerCombinations(m_settings.getSNPProbeConfineFile());
             variantsToInclude = combinations.getLeft();
             traitsToInclude = combinations.getMiddle();
@@ -177,9 +180,9 @@ public class MetaQTL4 {
 
         // close threadpool
         threadPool.shutdown();
-        
+
         // perform FDR estimation
-        
+
 
         // shutdown
     }
@@ -225,6 +228,7 @@ public class MetaQTL4 {
     }
 
     private void runProbeFilter() {
+        // TODO: improve this code..
         // if we confine to a single chromosome, throw out all the other probes...
         if (m_settings.getConfineToProbesThatMapToChromosome() != null) {
             HashSet<MetaQTL4MetaTrait> finalTraitList = new HashSet<MetaQTL4MetaTrait>();
@@ -247,6 +251,7 @@ public class MetaQTL4 {
                 }
             }
             traitsToInclude = finalTraitList;
+
 
             if (genotypeTraitCombinations != null) {
                 // find out whether there are some snp-trait combo's that we cannot test now..
@@ -278,10 +283,19 @@ public class MetaQTL4 {
             String platform = m_settings.getDatasetSettings().get(d).getTraitPlatform();
             Integer platformId = traitAnnotation.getPlatformId(platform);
             String[] availableTraitsInDataset = datasets[d].getTraits();
+            System.out.println(m_settings.getDatasetSettings().get(d).getName() + " has " + availableTraitsInDataset.length + " traits on platform " + platform + " (" + platformId + ")");
             for (String trait : availableTraitsInDataset) {
                 MetaQTL4MetaTrait metatrait = traitAnnotation.getTraitForPlatformId(platformId, trait);
                 if (metatrait != null) {
-                    availableTraits.add(metatrait);
+                    String chr = metatrait.getChr();
+                    if (m_settings.isCisAnalysis() && m_settings.isTransAnalysis()) {
+                        tmpAvailableTraits.add(metatrait);
+                    } else {
+                        if (chr.equals("X") || (chr.contains("[0-9]*") && !chr.equals("0") && !chr.equals("-1"))) {
+                            //if (chr.contains("[0-9]*") && chr.equals("0") && chr.equals("-1")) {
+                            tmpAvailableTraits.add(metatrait);
+                        }
+                    }
                 }
             }
         }
@@ -302,9 +316,134 @@ public class MetaQTL4 {
             }
         }
 
+        System.out.println(availableTraits.size() + " traits available to test.");
+
     }
 
     private void createSNPIndex() {
+
+        if (traitIndex == null) {
+            createTraitIndex();
+        }
+
+        // if this is a cis-eQTL analysis, get all the unique variants within the probes vicinity
+        System.out.println("Indexing SNPs");
+        int distance = m_settings.getCiseQTLAnalysMaxSNPProbeMidPointDistance();
+        Set<Pair<String, Integer>> uniquePositions = new HashSet<Pair<String, Integer>>();
+
+        // at a later stage, we may want to include gene-begin and gene-end as well..
+        if (m_settings.isCisAnalysis() && !m_settings.isTransAnalysis()) {
+            System.out.println("Performing cis-eQTL analysis, so keeping only SNPs within " + m_settings.getCiseQTLAnalysMaxSNPProbeMidPointDistance());
+            System.out.println("");
+            int tctr = 0;
+            HashMap<Pair<String, Integer>, Integer> allPositions = new HashMap<Pair<String, Integer>, Integer>();
+            for (int d = 0; d < datasets.length; d++) {
+                RandomAccessGenotypeData data = datasets[d].getGenotypeData();
+                ProgressBar pb = new ProgressBar(availableTraits.size(), "Dataset " + d);
+                for (MetaQTL4MetaTrait t : availableTraits) {
+                    String chr = t.getChr();
+                    int midpoint = t.getChrMidpoint();
+
+                    Iterable<GeneticVariant> variants = data.getVariantsByRange(chr, midpoint - distance, midpoint + distance);
+                    for (GeneticVariant variant : variants) {
+                        String primaryId = variant.getPrimaryVariantId();
+                        if (variantsToInclude == null || variantsToInclude.contains(primaryId)) {
+                            // we don't need to check the variant chromosome.. This was done already when creating the trait index
+                            Pair<String, Integer> position = new Pair<String, Integer>(variant.getSequenceName(), variant.getStartPos());
+                            Integer ctr = allPositions.get(position);
+                            if (ctr == null) {
+                                ctr = 1;
+                            } else {
+                                ctr++;
+                            }
+                            allPositions.put(position, ctr);
+                        }
+                    }
+
+                    pb.set(tctr);
+                    tctr++;
+                }
+                pb.close();
+            }
+
+            System.out.println(allPositions.size() + " variants amongst all datasets.");
+
+            if (m_settings.getConfineSNPsToSNPsPresentInAllDatasets() != null && m_settings.getConfineSNPsToSNPsPresentInAllDatasets()) {
+                Set<Pair<String, Integer>> tmpPositions = new HashSet<Pair<String, Integer>>();
+                for (Pair<String, Integer> pair : allPositions.keySet()) {
+                    Integer ctr = allPositions.get(pair);
+                    if (ctr == datasets.length) {
+                        // include snp
+                        tmpPositions.add(pair);
+                    }
+                }
+                uniquePositions = tmpPositions;
+            } else {
+                uniquePositions = allPositions.keySet();
+            }
+            allPositions = null;
+
+
+        } else { // if cistrans or trans.. include all the SNPs..
+            // per chromosome.. (for huge datasets, this saves alot of Integer objects)
+            for (int i = 0; i < 23; i++) {
+                String chr = "" + i;
+                if (i == 23) {
+                    chr = "X";
+                }
+
+                // get all the unique positions for this chromosome.
+                HashMap<Integer, Integer> allPositions = new HashMap<Integer, Integer>();
+                for (int d = 0; d < datasets.length; d++) {
+                    RandomAccessGenotypeData data = datasets[d].getGenotypeData();
+                    Iterable<GeneticVariant> variants = data.getSequenceGeneticVariants(chr);
+                    for (GeneticVariant variant : variants) {
+                        String primaryId = variant.getPrimaryVariantId();
+                        if (variantsToInclude == null || variantsToInclude.contains(primaryId)) {
+                            // this time we do need to check the chromosome, etc
+                            String variantSequence = variant.getSequenceName();
+                            if (variantSequence.equals(chr)) {
+                                Integer position = variant.getStartPos();
+                                if (position > 0) {
+                                    Integer ctr = allPositions.get(position);
+                                    if (ctr == null) {
+                                        ctr = 1;
+                                    } else {
+                                        ctr++;
+                                    }
+                                    allPositions.put(position, ctr);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for (Integer position : allPositions.keySet()) {
+                    Integer ctr = allPositions.get(position);
+                    if (m_settings.getConfineSNPsToSNPsPresentInAllDatasets() != null
+                            && (m_settings.getConfineSNPsToSNPsPresentInAllDatasets() && ctr == datasets.length) || (!m_settings.getConfineSNPsToSNPsPresentInAllDatasets())) {
+                        uniquePositions.add(new Pair<String, Integer>(chr, position));
+                    }
+                }
+            }
+
+            // ready to index
+            int numberFinalPositions = uniquePositions.size();
+            geneticVariantIndex = new GeneticVariant[datasets.length][numberFinalPositions];
+            for (int dataset = 0;
+                    dataset < datasets.length;
+                    dataset++) {
+                int ctr = 0;
+                RandomAccessGenotypeData data = datasets[dataset].getGenotypeData();
+                for (Pair<String, Integer> pair : uniquePositions) {
+                    geneticVariantIndex[dataset][ctr] = data.getSnpVariantByPos(pair.getLeft(), pair.getRight());
+                    ctr++;
+                }
+            }
+        }
+    }
+
+    private void createSNPIndexOld() {
         // create a list of shared snps
         ArrayList<HashMap<String, GeneticVariant>> tmpVariantsArr = new ArrayList<HashMap<String, GeneticVariant>>();
         HashMap<String, Integer> datasetCounter = new HashMap<String, Integer>();
@@ -317,6 +456,7 @@ public class MetaQTL4 {
             HashMap<String, GeneticVariant> tmpVariants = new HashMap<String, GeneticVariant>();
             tmpVariantsArr.add(tmpVariants);
             for (GeneticVariant variant : data) {
+
                 String primaryId = variant.getPrimaryVariantId();
                 if (variantsToInclude == null || variantsToInclude.contains(primaryId)) {
                     Integer counter = datasetCounter.get(primaryId);
