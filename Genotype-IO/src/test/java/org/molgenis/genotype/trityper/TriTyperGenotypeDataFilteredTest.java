@@ -132,7 +132,7 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 		
 		
 		assertEquals(phasing,
-				Arrays.asList(false, false, false, false, false, false, false, false, false));
+				Arrays.asList(false, false, false, false, false, false, false, false));
 	}
 
 	@Test
