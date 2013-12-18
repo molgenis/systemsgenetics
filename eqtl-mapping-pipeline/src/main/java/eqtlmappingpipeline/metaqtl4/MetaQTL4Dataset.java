@@ -57,9 +57,9 @@ public class MetaQTL4Dataset {
         this.genotypeDataLocation = genotypeDatalocation;
         RandomAccessGenotypeData tmpGenoData;
         if (snpsToInclude == null) {
-            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 100, null, new SampleIncludedFilter());
+            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 0, null, new SampleIncludedFilter());
         } else {
-            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 100, new VariantIdIncludeFilter(snpsToInclude), new SampleIncludedFilter());
+            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 0, new VariantIdIncludeFilter(snpsToInclude), new SampleIncludedFilter());
         }
 
 //        VariantFilter qcFilter = new VariantCombinedFilter(new VariantQcChecker(0.05f, 0.001f, 0.95d), new VariantFilterBiAllelic());

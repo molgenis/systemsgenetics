@@ -23,6 +23,7 @@ import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 /**
  * MetaQTL4 - Experimental Skunkworx edition
@@ -289,10 +290,13 @@ public class MetaQTL4 {
                 if (metatrait != null) {
                     String chr = metatrait.getChr();
                     if (m_settings.isCisAnalysis() && m_settings.isTransAnalysis()) {
+                        // include all traits when performing a cis+trans analysis
                         tmpAvailableTraits.add(metatrait);
                     } else {
-                        if (chr.equals("X") || (chr.contains("[0-9]*") && !chr.equals("0") && !chr.equals("-1"))) {
-                            //if (chr.contains("[0-9]*") && chr.equals("0") && chr.equals("-1")) {
+                        // otherwise, only include probes with a proper  annotation.
+                        // should we include ChrY traits?
+                        byte chrByte = ChrAnnotation.parseChr(chr);
+                        if (chr.equals("X") || (chrByte < 23 && chrByte > 0)) {
                             tmpAvailableTraits.add(metatrait);
                         }
                     }
@@ -426,79 +430,30 @@ public class MetaQTL4 {
                     }
                 }
             }
-
-            // ready to index
-            int numberFinalPositions = uniquePositions.size();
-            geneticVariantIndex = new GeneticVariant[datasets.length][numberFinalPositions];
-            for (int dataset = 0;
-                    dataset < datasets.length;
-                    dataset++) {
-                int ctr = 0;
-                RandomAccessGenotypeData data = datasets[dataset].getGenotypeData();
-                for (Pair<String, Integer> pair : uniquePositions) {
-                    geneticVariantIndex[dataset][ctr] = data.getSnpVariantByPos(pair.getLeft(), pair.getRight());
-                    ctr++;
-                }
-            }
         }
-    }
-
-    private void createSNPIndexOld() {
-        // create a list of shared snps
-        ArrayList<HashMap<String, GeneticVariant>> tmpVariantsArr = new ArrayList<HashMap<String, GeneticVariant>>();
-        HashMap<String, Integer> datasetCounter = new HashMap<String, Integer>();
-        HashSet<String> allAvailableVariants = new HashSet<String>();
-        // here we'll also filter for snps not mapping to chromosomes etc...
-        int maxNrVariants = 0;
-        System.out.println("Starting to index.");
-        for (int d = 0; d < datasets.length; d++) {
-            RandomAccessGenotypeData data = datasets[d].getGenotypeData();
-            HashMap<String, GeneticVariant> tmpVariants = new HashMap<String, GeneticVariant>();
-            tmpVariantsArr.add(tmpVariants);
-            for (GeneticVariant variant : data) {
-
-                String primaryId = variant.getPrimaryVariantId();
-                if (variantsToInclude == null || variantsToInclude.contains(primaryId)) {
-                    Integer counter = datasetCounter.get(primaryId);
-                    if (counter == null) {
-                        counter = 1;
-                    } else {
-                        counter++;
-                    }
-                    datasetCounter.put(primaryId, counter);
-                    tmpVariants.put(primaryId, variant);
-                    allAvailableVariants.add(primaryId);
-                }
-            }
-            if (tmpVariants.size() > maxNrVariants) {
-                maxNrVariants = tmpVariants.size();
+        // ready to index
+        int numberFinalPositions = uniquePositions.size();
+        if (numberFinalPositions == 0) {
+            System.err.println("Error: no SNPs found to test");
+        }
+        geneticVariantIndex = new GeneticVariant[datasets.length][numberFinalPositions];
+        for (int dataset = 0; dataset < datasets.length; dataset++) {
+            int ctr = 0;
+            RandomAccessGenotypeData data = datasets[dataset].getGenotypeData();
+            for (Pair<String, Integer> pair : uniquePositions) {
+                geneticVariantIndex[dataset][ctr] = data.getSnpVariantByPos(pair.getLeft(), pair.getRight());
+                ctr++;
             }
         }
 
-        System.out.println("Max nr variants: " + maxNrVariants);
-        // now check whether we actually should exclude variants because they are not in both datasets..
-        if (m_settings.getConfineSNPsToSNPsPresentInAllDatasets() != null && m_settings.getConfineSNPsToSNPsPresentInAllDatasets()) {
-            HashSet<String> newTmpVariants = new HashSet<String>();
-            for (String variant : allAvailableVariants) {
-                Integer ctr = datasetCounter.get(variant);
-                if (ctr == datasets.length) {
-
-                    newTmpVariants.add(variant);
-                }
+        for (int i = 0; i < numberFinalPositions; i++) {
+            GeneticVariant variant = geneticVariantIndex[0][i];
+            try {
+                System.out.println(variant.getPrimaryVariantId() + "\t" + variant.getMinorAlleleFrequency());
+            } catch (Exception e) {
+                System.out.println("Variant involved: " + variant.getPrimaryVariantId() + "\t" + variant.getSequenceName() + "\t" + variant.getStartPos());
+                e.printStackTrace();
             }
-            allAvailableVariants = newTmpVariants;
-            maxNrVariants = newTmpVariants.size();
         }
-        System.out.println("Max nr variants: " + maxNrVariants);
-        geneticVariantIndex = new GeneticVariant[datasets.length][maxNrVariants];
-        int variantCounter = 0;
-        for (String variant : allAvailableVariants) {
-            for (int d = 0; d < datasets.length; d++) {
-                GeneticVariant var = tmpVariantsArr.get(d).get(variant);
-                geneticVariantIndex[d][variantCounter] = var;
-            }
-            variantCounter++;
-        }
-        System.out.println("Final variants: " + variantCounter);
     }
 }

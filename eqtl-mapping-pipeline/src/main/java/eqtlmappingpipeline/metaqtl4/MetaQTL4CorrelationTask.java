@@ -229,6 +229,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
 
                 for (int datasetId = 0; datasetId < nrDatasets; datasetId++) {
                     GeneticVariant variant = geneticVariantIndex[datasetId][variantId];
+                    
                     MetaQTL4Dataset dataset = datasets[datasetId];
                     int[] gte = dataset.getGenotypeToTraitCouplingInt();
                     if (variant != null) {

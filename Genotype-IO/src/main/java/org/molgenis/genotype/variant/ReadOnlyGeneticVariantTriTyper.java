@@ -87,7 +87,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
     @Override
     public List<Alleles> getSampleVariants() {
         List<Alleles> SampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
-
+        
         if (this.alleles == null) {
             //set alleles here
 
@@ -115,12 +115,12 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
     @Override
     public double getMinorAlleleFrequency() {
-        return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants()).getFreq();
+        return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants()).getFreq();
     }
 
     @Override
     public Allele getMinorAllele() {
-        return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants()).getMinorAllele();
+        return MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants()).getMinorAllele();
     }
 
     @Override
