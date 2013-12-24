@@ -11,7 +11,7 @@ import java.util.Map;
 
 public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 {	
-	private static final Map<List<Allele>, Alleles> pool = new HashMap<List<Allele>, Alleles>();
+	private static final Map<List<Allele>, Alleles> pool;
 
 	private final List<Allele> alleles;
 	private final boolean snp;
@@ -20,6 +20,13 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	private final List<String> allelesAsString;
 	private final char[] allelesAsChar;
 	private final int hashCode;
+	
+	public static final Alleles BI_ALLELIC_MISSING;
+	
+	static{
+		pool = new HashMap<List<Allele>, Alleles>();
+		BI_ALLELIC_MISSING = createAlleles(Allele.ZERO, Allele.ZERO);				
+	}
 
 	private Alleles(List<Allele> alleles)
 	{

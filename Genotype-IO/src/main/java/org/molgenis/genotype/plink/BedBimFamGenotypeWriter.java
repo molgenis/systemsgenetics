@@ -31,196 +31,197 @@ import org.molgenis.genotype.variant.NotASnpException;
  */
 public class BedBimFamGenotypeWriter implements GenotypeWriter {
 
-	private static final byte MAGIC_NUMBER_1 = 108;
-	private static final byte MAGIC_NUMBER_2 = 27;
-	private static final byte MODE = 1; //We only write snp major mode
-	private static final int HOMOZYGOTE_SECOND_BITMASK = 192;
-	private static final int HETEROZYGOTE_BITMASK = 128;
-	private static final int MISSING_BIT_MASK = 64;
-	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
-	private static final char SEPARATOR = ' ';
-	private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");
-	private final GenotypeData genotypeData;
-	private int writtenSamplesCounter;
-	private int writtenVariantsCounter;
-	private int excludedVariantsCounter;
+    private static final byte MAGIC_NUMBER_1 = 108;
+    private static final byte MAGIC_NUMBER_2 = 27;
+    private static final byte MODE = 1; //We only write snp major mode
+    private static final int HOMOZYGOTE_SECOND_BITMASK = 192;
+    private static final int HETEROZYGOTE_BITMASK = 128;
+    private static final int MISSING_BIT_MASK = 64;
+    private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
+    private static final char SEPARATOR = ' ';
+    private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");
+    private final GenotypeData genotypeData;
+    private int writtenSamplesCounter;
+    private int writtenVariantsCounter;
+    private int excludedVariantsCounter;
+    private static final Logger LOGGER = Logger.getLogger(BedBimFamGenotypeWriter.class);
 
-	private static final Logger LOGGER = Logger.getLogger(BedBimFamGenotypeWriter.class);
-	
-	public BedBimFamGenotypeWriter(GenotypeData genotypeData) {
-		this.genotypeData = genotypeData;
-	}
-	
-	@Override
-	public void write(String path) throws IOException, NotASnpException {
-		write(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
-	}
+    public BedBimFamGenotypeWriter(GenotypeData genotypeData) {
+        this.genotypeData = genotypeData;
+    }
 
-	public void write(File bedFile, File bimFile, File famFile) throws IOException {
+    @Override
+    public void write(String path) throws IOException, NotASnpException {
+        write(new File(path + ".bed"), new File(path + ".bim"), new File(path + ".fam"));
+    }
 
-		if (bedFile == null) {
-			throw new IllegalArgumentException("No bed file specified to write to");
-		}
-		if (bimFile == null) {
-			throw new IllegalArgumentException("No bim file specified to write to");
-		}
-		if (famFile == null) {
-			throw new IllegalArgumentException("No fam file specified to write to");
-		}
-		
-		writtenSamplesCounter = 0;
-		writtenVariantsCounter = 0;
-		excludedVariantsCounter = 0;	
+    public void write(File bedFile, File bimFile, File famFile) throws IOException {
 
-		writeBimFile(bimFile);
-		writeFamFile(famFile);
-		writeBedFile(bedFile);
+        if (bedFile == null) {
+            throw new IllegalArgumentException("No bed file specified to write to");
+        }
+        if (bimFile == null) {
+            throw new IllegalArgumentException("No bim file specified to write to");
+        }
+        if (famFile == null) {
+            throw new IllegalArgumentException("No fam file specified to write to");
+        }
 
-		LOGGER.info("Binary plink data write completed.\n"
-				+ " - Number of samples: " + writtenSamplesCounter + "\n"
-				+ " - Number of SNPs: " + writtenVariantsCounter + "\n"
-				+ " - Excluded non biallelic SNPs: " + excludedVariantsCounter);
+        writtenSamplesCounter = 0;
+        writtenVariantsCounter = 0;
+        excludedVariantsCounter = 0;
+
+        writeBimFile(bimFile);
+        writeFamFile(famFile);
+        writeBedFile(bedFile);
+
+        LOGGER.info("Binary plink data write completed.\n"
+                + " - Number of samples: " + writtenSamplesCounter + "\n"
+                + " - Number of SNPs: " + writtenVariantsCounter + "\n"
+                + " - Excluded non biallelic SNPs: " + excludedVariantsCounter);
 
 
-	}
+    }
 
-	private void writeBimFile(File bimFile) throws IOException {
-		Utils.createEmptyFile(bimFile, "bim");
+    private void writeBimFile(File bimFile) throws IOException {
+        Utils.createEmptyFile(bimFile, "bim");
 
-		BufferedWriter bimFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(bimFile), FILE_ENCODING));
+        BufferedWriter bimFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(bimFile), FILE_ENCODING));
 
-		for (GeneticVariant variant : genotypeData) {
+        for (GeneticVariant variant : genotypeData) {
 
-			if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
-				LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
-				++excludedVariantsCounter;
-				continue;
-			}
+            if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
+                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
+                ++excludedVariantsCounter;
+                continue;
+            }
 
-			bimFileWriter.append(variant.getSequenceName());
-			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
-			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append('0');
-			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append(String.valueOf(variant.getStartPos()));
-			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append(variant.getVariantAlleles().get(0).toString());
-			bimFileWriter.append(SEPARATOR);
-			bimFileWriter.append(variant.getAlleleCount() == 1 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(1).toString());
-			bimFileWriter.append('\n');
+            bimFileWriter.append(variant.getSequenceName());
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append('0');
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(String.valueOf(variant.getStartPos()));
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(variant.getVariantAlleles().get(0).toString());
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(variant.getAlleleCount() == 1 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(1).toString());
+            bimFileWriter.append('\n');
 
-			++writtenVariantsCounter;
-		}
+            ++writtenVariantsCounter;
+        }
 
-		bimFileWriter.close();
+        bimFileWriter.close();
 
-	}
+    }
 
-	private void writeFamFile(File famFile) throws IOException {
-		Utils.createEmptyFile(famFile, "fam");
+    private void writeFamFile(File famFile) throws IOException {
+        Utils.createEmptyFile(famFile, "fam");
 
-		BufferedWriter famFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(famFile), FILE_ENCODING));
+        BufferedWriter famFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(famFile), FILE_ENCODING));
 
-		for (Sample sample : genotypeData.getSamples()) {
-			famFileWriter.append(sample.getFamilyId() != null ? sample.getFamilyId() : "0");
-			famFileWriter.append(SEPARATOR);
-			famFileWriter.append(sample.getId());
-			famFileWriter.append(SEPARATOR);
-			famFileWriter.append(sample.getFatherId());
-			famFileWriter.append(SEPARATOR);
-			famFileWriter.append(sample.getMotherId());
-			famFileWriter.append(SEPARATOR);
-			famFileWriter.append(Byte.toString(sample.getSex().getPlinkSex()));
-			famFileWriter.append(SEPARATOR);
-			famFileWriter.append(PHENO_FORMATTER.format(getPhenotype(sample)));
-			famFileWriter.append('\n');
+        for (Sample sample : genotypeData.getSamples()) {
+            famFileWriter.append(sample.getFamilyId() != null ? sample.getFamilyId() : "0");
+            famFileWriter.append(SEPARATOR);
+            famFileWriter.append(sample.getId());
+            famFileWriter.append(SEPARATOR);
+            famFileWriter.append(sample.getFatherId());
+            famFileWriter.append(SEPARATOR);
+            famFileWriter.append(sample.getMotherId());
+            famFileWriter.append(SEPARATOR);
+            famFileWriter.append(Byte.toString(sample.getSex().getPlinkSex()));
+            famFileWriter.append(SEPARATOR);
+            famFileWriter.append(PHENO_FORMATTER.format(getPhenotype(sample)));
+            famFileWriter.append('\n');
 
-			++writtenSamplesCounter;
-		}
+            ++writtenSamplesCounter;
+        }
 
-		famFileWriter.close();
+        famFileWriter.close();
 
-	}
+    }
 
-	private void writeBedFile(File bedFile) throws IOException {
-		Utils.createEmptyFile(bedFile, "bed");
+    private void writeBedFile(File bedFile) throws IOException {
+        Utils.createEmptyFile(bedFile, "bed");
 
-		final BufferedOutputStream bedStreamWriter;
+        BufferedOutputStream bedStreamWriter;
+        FileOutputStream stream;
+        try {
+            stream = new FileOutputStream(bedFile);
+            bedStreamWriter = new BufferedOutputStream(stream);
+        } catch (FileNotFoundException ex) {
+            throw new RuntimeException("This should never happen. File will be present at this time", ex);
+        }
 
-		try {
-			bedStreamWriter = new BufferedOutputStream(new FileOutputStream(bedFile));
-		} catch (FileNotFoundException ex) {
-			throw new RuntimeException("This should never happen. File will be present at this time", ex);
-		}
+        bedStreamWriter.write(MAGIC_NUMBER_1);
+        bedStreamWriter.write(MAGIC_NUMBER_2);
+        bedStreamWriter.write(MODE);
 
-		bedStreamWriter.write(MAGIC_NUMBER_1);
-		bedStreamWriter.write(MAGIC_NUMBER_2);
-		bedStreamWriter.write(MODE);
+        for (GeneticVariant variant : genotypeData) {
 
-		for (GeneticVariant variant : genotypeData) {
+            if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
+                continue; //Can only write biallelic snps to binary plink. This is logged when writing bim
+            }
 
-			if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
-				continue; //Can only write biallelic snps to binary plink. This is logged when writing bim
-			}
+            Alleles variantAlleles = variant.getVariantAlleles();
 
-			Alleles variantAlleles = variant.getVariantAlleles();
+            Alleles homozygoteFirst = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
+            Alleles homozygoteSecond = null;
+            if (variantAlleles.getAlleleCount() == 2) {
+                homozygoteSecond = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
+            }
 
-			Alleles homozygoteFirst = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
-			Alleles homozygoteSecond = null;
-			if(variantAlleles.getAlleleCount() == 2){
-				homozygoteSecond = Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1));
-			}
+            int currentByte = 0; //Bit operations are on int level, but we only write the last byte
+            byte counterCurrentByte = 0;
 
-			int currentByte = 0; //Bit operations are on int level, but we only write the last byte
-			byte counterCurrentByte = 0;
+            for (Alleles alleles : variant.getSampleVariants()) {
+                if (alleles == homozygoteFirst) {
+                    //Do nothing, already 00
+                } else if (variantAlleles.getAlleleCount() == 2 && alleles.sameAlleles(variantAlleles)) {
+                    currentByte = currentByte | HETEROZYGOTE_BITMASK;
+                } else if (variantAlleles.getAlleleCount() == 2 && alleles == homozygoteSecond) {
+                    currentByte = currentByte | HOMOZYGOTE_SECOND_BITMASK;
+                } else if (alleles.contains(Allele.ZERO)) {
+                    currentByte = currentByte | MISSING_BIT_MASK;
+                } else {
+                    throw new GenotypeDataException("Trying to write alleles " + alleles.getAllelesAsString() + " for " + variantAlleles + " SNP");
+                }
+                ++counterCurrentByte;
+                if (counterCurrentByte == 4) {
+                    bedStreamWriter.write(currentByte);
+                    currentByte = 0;
+                    counterCurrentByte = 0;
+                } else {
+                    currentByte = currentByte >>> 2;
+                }
+            }
 
-			for (Alleles alleles : variant.getSampleVariants()) {
-				if (alleles == homozygoteFirst) {
-					//Do nothing, already 00
-				} else if (variantAlleles.getAlleleCount() == 2 && alleles.sameAlleles(variantAlleles)) {
-					currentByte = currentByte | HETEROZYGOTE_BITMASK;
-				} else if (variantAlleles.getAlleleCount() == 2 && alleles == homozygoteSecond) {
-					currentByte = currentByte | HOMOZYGOTE_SECOND_BITMASK;
-				} else if (alleles.contains(Allele.ZERO)) {
-					currentByte = currentByte | MISSING_BIT_MASK;
-				} else {
-					throw new GenotypeDataException("Trying to write alleles " + alleles.getAllelesAsString() + " for " + variantAlleles + " SNP");
-				}
-				++counterCurrentByte;
-				if (counterCurrentByte == 4) {
-					bedStreamWriter.write(currentByte);
-					currentByte = 0;
-					counterCurrentByte = 0;
-				} else {
-					currentByte = currentByte >>> 2;
-				}
-			}
+            if (counterCurrentByte != 0) {
+                while (counterCurrentByte < 3) {
+                    ++counterCurrentByte;
+                    currentByte = currentByte >>> 2;
+                }
+                bedStreamWriter.write(currentByte);
+            }
 
-			if (counterCurrentByte != 0) {
-				while (counterCurrentByte < 3) {
-					++counterCurrentByte;
-					currentByte = currentByte >>> 2;
-				}
-				bedStreamWriter.write(currentByte);
-			}
+        }
 
-		}
-		bedStreamWriter.close();
+        bedStreamWriter.close();
+        stream.close();
+    }
 
-	}
+    private double getPhenotype(Sample sample) {
 
-	private double getPhenotype(Sample sample) {
+        Object value = sample.getAnnotationValues().get(GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME);
+        if (value == null) {
+            return -9;
+        }
 
-		Object value = sample.getAnnotationValues().get(GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTATION_NAME);
-		if (value == null) {
-			return -9;
-		}
+        if (value instanceof Double) {
+            return (Double) value;
+        }
 
-		if (value instanceof Double) {
-			return (Double) value;
-		}
-
-		return Double.valueOf(value.toString());
-	}
+        return Double.valueOf(value.toString());
+    }
 }

@@ -78,6 +78,7 @@ public class Utils {
 			}
 			if (file.isFile()) {
 				LOGGER.warn("Overriding " + fileName + " file" + file.getAbsolutePath());
+                                
 				if (!file.delete()) {
 					throw new GenotypeDataException("Failed to overwrite " + fileName + " file: " + file.getAbsolutePath());
 				}
