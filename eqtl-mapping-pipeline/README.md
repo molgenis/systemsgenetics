@@ -17,7 +17,7 @@ You can contact the authors of this software at westra.harmjan@gmail.com, or lud
     * [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)
     * [Step 6 - Perform the final QTL analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-6---perform-the-final-qtl-analysis)
 4. [Additional analyses and advanced settings](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#additional-analyses-and-advanced-settings)
-    * [Cell type specificity analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#Cell-type-specificity-analysis)
+    * [Cell type specificity analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#cell-type-specificity-analysis)
     * [Meta-analysis and settings file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#meta-analysis-and-settings-file)
 5. [File formats](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#file-formats)
     * [Probe annotation file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#probe-annotation-file)
