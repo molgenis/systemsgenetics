@@ -307,9 +307,9 @@ public class MetaQTL3 {
 
     protected void createSNPList() throws IOException {
         ArrayList<String> availableSNPs = new ArrayList<String>();
-        int chrYSNPs = 0;
-        int unknownPos = 0;
-        int unknownchr = 0;
+        HashSet<String> chrYSNPs = new HashSet<String>();
+        HashSet<String> unknownPos = new HashSet<String>();
+        HashSet<String> unknownchr = new HashSet<String>();
 
         TextFile excludedSNPs = new TextFile(m_settings.outputReportsDir + "excludedSNPsBySNPFilter.txt.gz", TextFile.W);
 
@@ -344,11 +344,11 @@ public class MetaQTL3 {
                     boolean excludeSNP = false;
 
                     if (chr1 >= 24) {
-                        chrYSNPs++;
+                        chrYSNPs.add(snpName);
                         reason.append("\tSNP is located on Y, MT, XY chromosome");
                         excludeSNP = true;
                     } else if (chrPos1 < 0) {
-                        unknownPos++;
+                        unknownPos.add(snpName);
                         reason.append("\tSNP has unknown mapping");
                         excludeSNP = true;
                     }
@@ -417,16 +417,16 @@ public class MetaQTL3 {
                         excludeSNP = true;
                     }
                     if (chr1 == null) {
-                        unknownchr++;
+                        unknownchr.add(snpName);
                         reason.append("\tSNP has unknown chromosome");
                         excludeSNP = true;
                     }
                     if (chr1 >= 24) {
-                        chrYSNPs++;
+                        chrYSNPs.add(snpName);
                         reason.append("\tSNP is located on Y, MT, XY chromosome");
                         excludeSNP = true;
                     } else if (chrPos1 < 0) {
-                        unknownPos++;
+                        unknownPos.add(snpName);
                         reason.append("\tSNP has unknown mapping");
                         excludeSNP = true;
                     }
@@ -451,7 +451,7 @@ public class MetaQTL3 {
 
         }
 
-        System.out.println("- " + chrYSNPs + " chromosome Y, MT or XY SNPs, " + unknownPos + " SNPS with unknown position, " + unknownchr + " with unknown chromosome.");
+        System.out.println("- " + chrYSNPs.size() + " chromosome Y, MT or XY SNPs, " + unknownPos.size() + " SNPS with unknown position, " + unknownchr.size() + " with unknown chromosome.");
         System.out.println("- Remaining SNPs: " + availableSNPs.size());
 
         m_snpList = availableSNPs.toArray(new String[0]);
@@ -654,8 +654,6 @@ public class MetaQTL3 {
         System.out.println("\t\t- " + mappingToDifferentPositionsAcrossDatasets + " probes map to different positions in one or more datasets");
         if (m_settings.confineToProbesThatMapToChromosome != null) {
             System.out.println("\t\t- " + mapToWrongChromosome + " probes map to a different chromosome than the one selected (Chr: " + m_settings.confineToProbesThatMapToChromosome + ")");
-        }
-        if (m_settings.confineProbesToProbesPresentInAllDatasets) {
         }
 
         if (finalProbeList.isEmpty()) {

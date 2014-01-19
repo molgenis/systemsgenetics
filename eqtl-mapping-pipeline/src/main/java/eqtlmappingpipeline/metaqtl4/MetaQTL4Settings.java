@@ -55,19 +55,19 @@ public class MetaQTL4Settings {
     private final Byte confineToProbesThatMapToChromosome;
     private final boolean createBinaryOutputFiles;
     private final boolean createTEXTOutputFiles;
-    private final File strConfineSNP;
-    private final File strConfineProbe;
+    private File strConfineSNP;
+    private File strConfineProbe;
+    private File strSNPProbeConfine;
+    private final File probeAnnotationFile;
     private final boolean provideFoldChangeData;
     private final boolean provideBetasAndStandardErrors;
     private final boolean equalRankForTies;
     private final boolean createQQPlot;
     private final boolean createDotPlot;
-    private final File strSNPProbeConfine;
     private final String settingsTextToReplace;
     private final String settingsTextReplaceWith;
     private final boolean cisAnalysis;
     private final boolean transAnalysis;
-    private final File probeAnnotationFile;
 
     public MetaQTL4Settings(String settings, String settingsTextToReplace, String settingsTextReplaceWith) throws IOException, Exception {
 
@@ -122,14 +122,13 @@ public class MetaQTL4Settings {
         }
 
         String probeAnnot = null;
-        try{
+        try {
             probeAnnot = config.getString("defaults.analysis.probeAnnotationFile");
-        } catch (Exception e){
-            
+        } catch (Exception e) {
         }
-        
+
         probeAnnotationFile = new File(probeAnnot);
-        
+
         try {
             MAF = config.getDouble("defaults.qc.snpqcmafthreshold");
         } catch (Exception e) {
@@ -210,7 +209,7 @@ public class MetaQTL4Settings {
                 performParametricAnalysis = false;
             }
         } else {
-            performParametricAnalysis = true;
+            performParametricAnalysis = false;
         }
 
 
@@ -300,7 +299,7 @@ public class MetaQTL4Settings {
                 Gpio.createOuputDir(outputReportsDir);
             }
             try {
-				config.save(new File(outputReportsDir, "metaqtlsettings.xml"));           
+                config.save(new File(outputReportsDir, "metaqtlsettings.xml"));
             } catch (ConfigurationException e) {
                 e.printStackTrace();
             }
@@ -381,6 +380,8 @@ public class MetaQTL4Settings {
             if (settingsTextToReplace != null && confineSNP.contains(settingsTextToReplace)) {
                 confineSNP = confineSNP.replace(settingsTextToReplace, settingsTextReplaceWith);
             }
+
+
         } catch (Exception e) {
         }
 
@@ -390,6 +391,7 @@ public class MetaQTL4Settings {
             if (settingsTextToReplace != null && confineProbe.contains(settingsTextToReplace)) {
                 confineProbe = confineProbe.replace(settingsTextToReplace, settingsTextReplaceWith);
             }
+
         } catch (Exception e) {
         }
 
@@ -399,12 +401,23 @@ public class MetaQTL4Settings {
             if (settingsTextToReplace != null && snpProbeConfine.contains(settingsTextToReplace)) {
                 snpProbeConfine = snpProbeConfine.replace(settingsTextToReplace, settingsTextReplaceWith);
             }
+
         } catch (Exception e) {
         }
 
-        strConfineSNP = new File(confineSNP);
-        strConfineProbe = new File(confineProbe);
-        strSNPProbeConfine = new File(snpProbeConfine);
+
+        if (snpProbeConfine != null && snpProbeConfine.trim().length() > 0) {
+            strSNPProbeConfine = new File(snpProbeConfine);
+        }
+        if (confineSNP != null && confineSNP.trim().length() > 0) {
+            strConfineSNP = new File(confineSNP);
+        }
+
+        if (confineProbe != null && confineProbe.trim().length() > 0) {
+            strConfineProbe = new File(confineProbe);
+        }
+
+
 
         // confine to snp present in all datasets
         performParametricAnalysisGetAccuratePValueEstimates = false;
@@ -443,11 +456,6 @@ public class MetaQTL4Settings {
         }
 
         datasetSettings = new ArrayList<MetaQTL4DatasetSettings>();
-
-
-
-//            ArrayList<GeneticalGenomicsDataset> vGG = new ArrayList<GeneticalGenomicsDataset>();                    // create a dataset vector
-//            GeneticalGenomicsDataset tmpDataset;                                               // create a temporary dataset object
         while (dataset != null) {
 
             String expressionData = null;
@@ -515,7 +523,8 @@ public class MetaQTL4Settings {
                 }
             } catch (Exception e) {
             }
-
+            datasetSettings.add(new MetaQTL4DatasetSettings(dataset, genotypeLocation, expressionData, genToExpCoupling, expressionplatform));
+            
             dataset = null;
             i++;
             try {
@@ -527,7 +536,7 @@ public class MetaQTL4Settings {
             } catch (Exception e) {
             }
 
-            datasetSettings.add(new MetaQTL4DatasetSettings(dataset, genotypeLocation, expressionData, genToExpCoupling, expressionplatform));
+
         }
     }
 
@@ -756,8 +765,8 @@ public class MetaQTL4Settings {
     public int getNrDatasets() {
         return datasetSettings.size();
     }
-    
-    public File getProbeAnnotationFile(){
+
+    public File getProbeAnnotationFile() {
         return probeAnnotationFile;
     }
 }

@@ -70,27 +70,31 @@ class MetaQTL4TraitAnnotation {
 
 
         int probeCounter = 0;
-        for(String[] elems : tf.readLineElemsIterable(TextFile.tab)){
+        for (String[] elems : tf.readLineElemsIterable(TextFile.tab)) {
 
             String metaTraitName = elems[0];
-            String chr = elems[1].intern();
+            String chr = elems[2].intern();
+            String chrpos = elems[3];
+            String[] chrposElems = chrpos.split("-");
             int chrstartpos = -1;
-            try {
-                chrstartpos = Integer.parseInt(elems[2]);
-            } catch (NumberFormatException e) {
-            }
-
             int chrendpos = -1;
-            try {
-                chrendpos = Integer.parseInt(elems[2]);
-            } catch (NumberFormatException e) {
+            if (chrposElems.length >= 1) {
+                try {
+                    chrstartpos = Integer.parseInt(chrposElems[0]);
+                } catch (NumberFormatException e) {
+                }
+                try {
+                    chrendpos = Integer.parseInt(chrposElems[chrposElems.length - 1]);
+                } catch (NumberFormatException e) {
+                }
             }
 
             String hugo = elems[4];
             String[] platformIds = new String[nrPlatforms];
+            // int metaTraitId, String metaTraitName, String chr, int chrStart, int chrEnd, String annotation, String[] platformIds
             MetaQTL4MetaTrait metaTraitObj = new MetaQTL4MetaTrait(probeCounter, metaTraitName, chr, chrstartpos, chrendpos, hugo, platformIds);
 
-            for (int i = 4; i < elems.length; i++) {
+            for (int i = 5; i < elems.length; i++) {
                 platformNr = 0;
                 if (colsToInclude[i]) {
                     platformIds[platformNr] = elems[i];
@@ -103,6 +107,7 @@ class MetaQTL4TraitAnnotation {
             metatraits.add(metaTraitObj);
             metaTraitNameToObj.put(metaTraitName, metaTraitObj);
         }
+        System.out.println(tf.getFileName() + " has annotation for " + visitedPlatforms.size() + " platforms and " + metatraits.size() + " traits.");
         tf.close();
     }
 
@@ -133,6 +138,4 @@ class MetaQTL4TraitAnnotation {
     public HashMap<String, MetaQTL4MetaTrait> getMetaTraitNameToObj() {
         return metaTraitNameToObj;
     }
-    
-    
 }

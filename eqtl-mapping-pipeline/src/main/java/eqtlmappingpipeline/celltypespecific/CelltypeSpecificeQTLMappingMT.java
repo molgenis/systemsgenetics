@@ -511,7 +511,7 @@ public class CelltypeSpecificeQTLMappingMT {
 
             // TODO: what if we want to test covariates 
             if (covariateId != null && !testAllCovariates) {
-                // probesToUseAsCovariate.add(probe);
+                probesToUseAsCovariate.add(probe);
             } else if (!testAllCovariates) {
                 System.out.println("Covariate not found in raw data: " + probe);
             }
