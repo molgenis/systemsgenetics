@@ -184,7 +184,7 @@ This chapter is not relevant for the usage of the program but allows reproducibi
 
 The genotype harmonizer contains test data. For the genotype data to align we use HapMap3 data and as a reference we use 1000G data. 
 
-This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$genotype-harmonizer/). It is also supplied in the Genotype Harmonizer package to get you started.
+This dataset is always tested when building the project and by our Jenkins server (http://www.molgenis.org/jenkins/job/systemsgenetics/lastBuild/nl.systemsgenetics$Genotype-Harmonizer/). It is also supplied in the Genotype Harmonizer package to get you started.
 
 ### HapMap3 data
 

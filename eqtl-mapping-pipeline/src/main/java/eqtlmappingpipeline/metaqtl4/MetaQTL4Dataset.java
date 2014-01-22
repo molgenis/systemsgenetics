@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl4;
 
+import eqtlmappingpipeline.normalization.Normalizer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,14 +12,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.sampleFilter.SampleIncludedFilter;
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
-import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -38,6 +38,7 @@ public class MetaQTL4Dataset {
     private final HashMap<String, String> genotypeToTraitCoupling;
     private int[] intGenotypeToTraitCoupling;
     private final String genotypeDataLocation;
+    private static final Logger LOG = Logger.getLogger(MetaQTL4Dataset.class);
 
     public MetaQTL4Dataset(MetaQTL4DatasetSettings settings) throws IOException {
         this(settings.getTraitDataLocation(), null, settings.getGenotypeLocation(), settings.getGenotypeFormat(), null, settings.getGenotypeToTraitCoupling());
@@ -53,22 +54,18 @@ public class MetaQTL4Dataset {
         this(traitDataFile, markersToInclude, genotypeDatalocation, format, snpsToInclude, null);
     }
 
-    public MetaQTL4Dataset(String traitDataFile, Set<String> markersToInclude, String genotypeDatalocation, RandomAccessGenotypeDataReaderFormats format, Set<String> snpsToInclude, String genotypeToTraitCouplingFile) throws IOException {
+    public MetaQTL4Dataset(String traitDataFile, Set<String> markersToInclude, String genotypeDatalocation,
+            RandomAccessGenotypeDataReaderFormats format, Set<String> snpsToInclude, String genotypeToTraitCouplingFile) throws IOException {
         this.genotypeDataLocation = genotypeDatalocation;
         RandomAccessGenotypeData tmpGenoData;
         if (snpsToInclude == null) {
-            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 100, null, new SampleIncludedFilter());
+            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 50000, null, new SampleIncludedFilter());
         } else {
-            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 100, new VariantIdIncludeFilter(snpsToInclude), new SampleIncludedFilter());
+            tmpGenoData = format.createFilteredGenotypeData(genotypeDatalocation, 50000, new VariantIdIncludeFilter(snpsToInclude), new SampleIncludedFilter());
         }
 
-//        VariantFilter qcFilter = new VariantCombinedFilter(new VariantQcChecker(0.05f, 0.001f, 0.95d), new VariantFilterBiAllelic());
-//        for (GeneticVariant variant : tmpGenoData) {
-//            if (qcFilter.doesVariantPassFilter(variant)) {
-//                //pass
-//            }
-//        }
-        genotypeData = new VariantFilterableGenotypeDataDecorator(tmpGenoData, new VariantFilterBiAllelic());
+        // rather do this lazily, because it saves indexing time
+        genotypeData = tmpGenoData; //new VariantFilterableGenotypeDataDecorator(tmpGenoData, new VariantFilterBiAllelic()); 
 
         // load genotype to expression couplings
         genotypeToTraitCoupling = new HashMap<String, String>();
@@ -103,6 +100,13 @@ public class MetaQTL4Dataset {
         linkSamples(gte);
 
         determineProbeMeanAndVariance();
+
+        // standard normalize trait data
+        subtractMean();
+
+
+        // reset mean and variance
+        determineProbeMeanAndVariance();
     }
 
     private void linkSamples(Map<String, String> gte) {
@@ -128,7 +132,7 @@ public class MetaQTL4Dataset {
         if (genotypeToTraitCoupling.isEmpty()) {
             throw new IllegalStateException("No links between genotypes and traits found for dataset: " + genotypeDataLocation);
         } else {
-            System.out.println("Found "+genotypeToTraitCoupling.size()+ " links between genotypes and traits");
+            LOG.info("Found " + genotypeToTraitCoupling.size() + " links between genotypes and traits");
         }
 //        intGenotypeToTraitCoupling = getPermutedSampleLinksInt();
     }
@@ -146,7 +150,7 @@ public class MetaQTL4Dataset {
             double mean = Descriptives.mean(traitData.rawData[row]);
             double variance = Descriptives.variance(traitData.rawData[row], mean);
             if (variance < 1E-200 || Double.isNaN(variance)) {
-                System.err.println("WARNING: sample\t" + traitData.rowObjects.get(row) + "\twill be excluded because sample variance " + variance + " < 1E-200");
+                LOG.warn("WARNING: sample\t" + traitData.rowObjects.get(row) + "\twill be excluded because sample variance " + variance + " < 1E-200");
                 excludeSampleBecauseOfLowVariance[row] = true;
             } else {
                 excludeSampleBecauseOfLowVariance[row] = false;
@@ -205,7 +209,7 @@ public class MetaQTL4Dataset {
             var = var / (ctr - 1);
 
             if (var < 1E-200 || Double.isNaN(var)) {
-                System.err.println("WARNING: trait\t" + traitData.rowObjects.get(row) + "\twill be excluded because variance " + var + " < 1E-200");
+                LOG.warn("WARNING: trait\t" + traitData.rowObjects.get(row) + "\twill be excluded because variance " + var + " < 1E-200");
                 includeTrait[row] = false;
             } else {
                 nrTraitsToInclude++;
@@ -241,32 +245,6 @@ public class MetaQTL4Dataset {
         return genotypeToTraitCoupling;
     }
 
-//    public void permuteSampleLinks() {
-//        if (permutedGenotypeToTraitCoupling == null) {
-//            permutedGenotypeToTraitCoupling = new HashMap<String, String>();
-//            intPermutedGenotypeToTraitCoupling = new int[intGenotypeToTraitCoupling.length];
-//        }
-//        // permute samples..
-//        List<Sample> availableGenotypeSamples = genotypeData.getSamples();
-//        ArrayList<Integer> availableTraitSamples = new ArrayList<Integer>();
-//        for (int i = 0; i < intGenotypeToTraitCoupling.length; i++) {
-//            if (intGenotypeToTraitCoupling[i] != -1) {
-//                availableTraitSamples.add(intGenotypeToTraitCoupling[i]);
-//            }
-//        }
-//
-//        for (int i = 0; i < intGenotypeToTraitCoupling.length; i++) {
-//            if (intGenotypeToTraitCoupling[i] != -1) {
-//                intPermutedGenotypeToTraitCoupling[i] = availableTraitSamples.remove((int) (Math.random() * (double) availableTraitSamples.size()));
-//                permutedGenotypeToTraitCoupling.put(availableGenotypeSamples.get(i).getId(), traitData.colObjects.get(intPermutedGenotypeToTraitCoupling[i]));
-//            } else {
-//                intPermutedGenotypeToTraitCoupling[i] = -1;
-//            }
-//        }
-//    }
-//    public HashMap<String, String> getPermutedSampleLinks() {
-//        return permutedGenotypeToTraitCoupling;
-//    }
     public int[] getGenotypeToTraitCouplingInt() {
         if (intGenotypeToTraitCoupling == null) {
             List<Sample> genotypeSamples = genotypeData.getSamples();
@@ -283,47 +261,46 @@ public class MetaQTL4Dataset {
         return intGenotypeToTraitCoupling;
     }
 
-//    public int[] getPermutedSampleLinksInt() {
-//        return intPermutedGenotypeToTraitCoupling;
-//    }
     public void close() throws IOException {
         genotypeData.close();
     }
 
     public void rankTraitData(boolean rankWithTies) {
-
+        LOG.info("Ranking trait data");
         RankArray r = new RankArray();
         for (int p = 0; p < traitData.nrRows; ++p) {
             double[] probeData = traitData.rawData[p];
 
             // because we have checked low variance traits before, we should never have to enter this loop.
             if (traitVarianceAndMeanData.rawData[0][p] == 0) {
-                System.out.println("Trait that has no variance in expression:\t" + traitData.rowObjects.get(p));
+                LOG.info("Trait that has no variance in expression:\t" + traitData.rowObjects.get(p));
             } else {
                 if (Double.isNaN(traitVarianceAndMeanData.rawData[0][p]) || Double.isNaN(traitVarianceAndMeanData.rawData[1][p])) {
                     throw new IllegalStateException("Error ranking trait data: mean or variance is NaN!:\t" + p + "\t" + traitData.rowObjects.get(p) + "\tMean: " + traitVarianceAndMeanData.rawData[0][p] + "\tVariance: " + traitVarianceAndMeanData.rawData[1][p]);
                 } else {
                     probeData = r.rank(probeData, rankWithTies);
                     traitData.rawData[p] = probeData;
-                    traitVarianceAndMeanData.rawData[0][p] = Descriptives.mean(probeData);
-                    traitVarianceAndMeanData.rawData[1][p] = Descriptives.variance(probeData, traitVarianceAndMeanData.rawData[0][p]);
+                    subtractMean();
+                    determineProbeMeanAndVariance();
                 }
             }
         }
     }
 
     private void determineProbeMeanAndVariance() {
+        LOG.info("Determining trait mean and variance for " + traitData.nrRows + " traits");
         traitVarianceAndMeanData = new DoubleMatrixDataset();
         traitVarianceAndMeanData.rawData = new double[2][traitData.nrRows];
+
         for (int i = 0; i < traitData.nrRows; i++) {
-            double mean = Descriptives.variance(traitData.rawData[i]);
+            double mean = Descriptives.mean(traitData.rawData[i]);
             traitVarianceAndMeanData.rawData[0][i] = mean;
             traitVarianceAndMeanData.rawData[1][i] = Descriptives.variance(traitData.rawData[i], mean);
         }
     }
 
     public String[] getTraits() {
-        return traitData.colObjects.toArray(new String[0]);
+        return traitData.rowObjects.toArray(new String[0]);
     }
 
     public Integer getTraitId(String probeName) {
@@ -353,14 +330,32 @@ public class MetaQTL4Dataset {
     }
 
     public double[] getTraitData(Integer traitId) {
+        if (traitId == null || traitId < 0) {
+            throw new IllegalArgumentException("Trait id is null or < 0. " + traitId);
+        }
         return traitData.get(traitId);
     }
 
     public double getTraitMean(Integer traitId) {
-        return traitVarianceAndMeanData.get(traitId, 0);
+        if (traitId == null || traitId < 0) {
+            throw new IllegalArgumentException("Trait id is null or < 0. " + traitId);
+        }
+        return traitVarianceAndMeanData.get(0, traitId);
     }
 
     public double getTraitVariance(Integer traitId) {
-        return traitVarianceAndMeanData.get(traitId, 1);
+        if (traitId == null || traitId < 0) {
+            throw new IllegalArgumentException("Trait id is null or < 0. " + traitId);
+        }
+        return traitVarianceAndMeanData.get(1, traitId);
+    }
+
+    private void subtractMean() {
+        for (int row = 0; row < traitData.nrRows; row++) {
+            double mean = Descriptives.mean(traitData.rawData[row]);
+            for (int col = 0; col < traitData.nrCols; col++) {
+                traitData.rawData[row][col] -= mean;
+            }
+        }
     }
 }

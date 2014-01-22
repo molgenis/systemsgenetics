@@ -8,7 +8,7 @@ Downloading latested jar
 
 Most user can simply download the latested jar and use it in there programs.
 
-http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$molgenis-genotype-reader/lastBuild/
+http://www.molgenis.org/jenkins/job/systemsgenetics/lastBuild/nl.systemsgenetics$Genotype-IO/
 
 Make sure to download the stand alone jar: `molgenis-genotype-reader-******-jar-with-dependencies`
 
