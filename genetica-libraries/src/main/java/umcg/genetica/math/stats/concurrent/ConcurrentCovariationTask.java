@@ -28,7 +28,7 @@ public class ConcurrentCovariationTask implements Callable<Pair<Integer, double[
     // WARNING: this method only calculates half of the matrix.
     @Override
     public Pair<Integer, double[]> call() throws Exception {
-        // determine what to correlate
+        // determine what to covariate
         
         double[] results = new double[matrix1.length];
         double[] xarr = matrix1[x];
