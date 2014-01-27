@@ -228,7 +228,7 @@ For details how this exactly works, please have a look at the paper or read the 
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
 2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, that has been corrected for eventual covariates.). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
-4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+4. (Optional) Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
 
 ###Commands to be issued
@@ -245,6 +245,8 @@ By default, the software uses 10 permutations to determine the False Discovery R
 If you are running the software in a cluster environment, you can specificy the number of threads to use (`nrthreads`) by appending the command above with the following command line switch `--threads nrthreads` (nrthreads should be an integer).
 
 If you want to test all possible combinations in your dataset, you can append the command above using the following command line switch `--testall`.
+
+Note that the `--gte` switch is optional, and only applies if you are using a `genotypephenotypecoupling` file.
 
 If you want to use a set of QTLs that you have previously calculated (`eqtlfile`, for example from another dataset, which we do not recommend because of technical and biological differences between datasets), you can append the command above using the following command line switch `--eqtls eqtlfile` (remember to use the full path). The format of such file is described here: [QTL file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-file).
 
@@ -332,9 +334,9 @@ Prior to eQTL mapping, we would like to determine whether removing PCs increases
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
 2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
-4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+4. (Optional) Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
-6. Create (or download) a list of SNPs to use for the *cis*- and *trans*-QTL analyses, and save this in (a) text-file(s). Use a single column, and one line per SNP identifier. We will refer to these files as `cissnpfile` and `transsnpfile`. As with *MixupMapper*, SNPs will only be tested with a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95.  
+6. Create (or download) a list of SNPs to use for the *cis*- and *trans*-QTL analyses, and save this in (a) text-file(s). Use a single column, and one line per SNP identifier. We will refer to these files as `cissnpfile` and `transsnpfile`. As with *MixupMapper*, SNPs will only be tested with a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95. Examples of these files can be found here: [resources](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline/src/main/resources)
 
 ###Commands to be issued
 To run the analysis, not taking into account the genetic association of PCs with SNPs, use the following command:
@@ -351,6 +353,7 @@ If you are running the software in a cluster environment, you can specificy the 
 
 By default, the software uses 10 permutations to determine the False Discovery Rate (FDR) p-value threshold during the *cis*-eQTL mapping step. If you want to change the number of permutations (`nrperm`), you can append the command above with the following command line switch `--perm nrperm` (nrperm should be an integer).
 
+Note that the `--gte` switch only applies if you are using a `genotypephenotype` coupling file.
 
 ###Check your data
 After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyse. These folders will be named **Cis-nPCAsRemoved-GeneticVectorsNotRemoved** and **Trans-nPCAsRemoved-GeneticVectorsNotRemoved** (one folder per iteration of n PCs removed). The contents of these directories are detailed here: [QTL Mapping output - Text mode](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-mapping-output---text-mode). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. 
@@ -368,7 +371,7 @@ In a single command, the final QTL mapping can be performed. Standard settings f
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
 2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, or any of the files produced in [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
-4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+4. (Optional) Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
 6. (Optional) You can confine your analysis in several ways. For example, you can create a text-file with a list of snps (referred to as `snplist`; one SNP per line, single column), or a text file containing combination between SNPs and probes/traits/genes (referred to as `snpprobelist`; tab-separated, SNP identifier on first column, probe/gene/trait on second column).
 7. (Optional) We have found that removing *cis* effects greatly enhances the power to detect *trans* effects. Consequently, our software provides a way to correct your `traitfile` data for *cis* effects. Note down the full path of the file containing the *cis*-QTL effects to be removed. We will refer to this file as `qtlfile`. The format of this file is identical to the [QTL file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-file). 
@@ -399,6 +402,8 @@ If you are running the software in a cluster environment, you can specificy the 
 By default, the software uses 10 permutations to determine the False Discovery Rate (FDR) p-value threshold during the *cis*-eQTL mapping step. If you want to change the number of permutations (`nrperm`), you can append the command above with the following command line switch `--perm nrperm` (nrperm should be an integer).
 
 You can set the maximum number of results returned (`nrresults`) in the eQTLs.txt.gz file by appending the command above with `--maxresults nrresults`. The default is 500,000. Please note that increasing this number also increases the memory usage of the program and the file size of the output files.
+
+Note that you should apply the `--gte` switch if you are using a `genotypephenotype` coupling file.
 
 By default, the program outputs results in a text-based format. However, for meta-analysis purposes, a binary format is also provided. You can switch to the binary format by appending `--binary` to the above commands. Tools to meta-analyze these binary files will be released at a later stage. You can also produce output in both text-based and binary formats, by appending `--text --binary` to the commands.
 
@@ -542,7 +547,7 @@ If you want to investigate the data stored within the CellTypeSpecificityMatrix.
 ``java –jar eQTLMappingPipeline.jar --mode util --convertbinarymatrix --in /path/to/ CellTypeSpecificityMatrix.binary.dat --out /path/to/textoutput.txt``
 
 ##Meta-analysis and settings file
-The command line interface of this software allows for basic QTL analyses. However, our software has many more capabilities that are not accesible via the command line. In these cases, an XML file is required that describes the different settings (full path referred to as `settingsfile`). [An example `settingsfile` is provided in the repository](link). Using a settings file allows you to quickly rerun certain analyses and to perform on-the-fly meta-analyses. A copy of the `settingsfile` will always be copied to your `outdir`. 
+The command line interface of this software allows for basic QTL analyses. However, our software has many more capabilities that are not accesible via the command line. In these cases, an XML file is required that describes the different settings (full path referred to as `settingsfile`). [An example `settingsfile` is provided in the repository](https://github.com/molgenis/systemsgenetics/blob/master/eqtl-mapping-pipeline/src/main/resources/settings.xml). Using a settings file allows you to quickly rerun certain analyses and to perform on-the-fly meta-analyses. A copy of the `settingsfile` will always be copied to your `outdir`. 
 
 Currently, `settingsfile` can only be used in the `--mode metaqtl` mode. You should note that a `settingsfile` overrides all command line switches. The `settingsfile` can be used as follows:
 
@@ -566,13 +571,10 @@ Please note that if you open a tag "`<maf>`" you also need to close it: "`</maf>
 
 Because of the readability of the table below, we reduce the above hierarchy to `defaults.qc.maf` and `defaults.qc.hwep`, respectively. 
 
-
 |Setting|Value|Description|
 |-------|-----|-----------|
 |sett.ing|double|description|
 |sett.ing2|double|description2|
-
-
 
 #File formats
 This section lists the different file formats used by the software package.
