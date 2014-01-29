@@ -272,7 +272,7 @@ RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath
 ###Using Genotype IO in rJava
 Reading in genotype information in R can be a big problem due to file size and file format support. Using rJava and the Genotype-IO API this is no problem anymore. 
 
-After instalation of rJava first start rJava and load the jar with dependencies.
+After instalation of rJava first start rJava and load the jar with dependencies. If you get a heapspace error increase the reserved memory by chaneing Xmx and Xms 
 ```S
 library(rJava)
 .jinit(classpath="Genotype-IO-0.0.4-SNAPSHOT-jar-with-dependencies.jar", parameters="-Xmx2g -Xms2g")
