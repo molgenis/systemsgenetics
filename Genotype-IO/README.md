@@ -275,7 +275,7 @@ Reading in genotype information in R can be a big problem due to file size and f
 After instalation of rJava first start rJava and load the jar with dependencies.
 ```S
 library(rJava)
-'.jinit(classpath="Genotype-IO-0.0.4-SNAPSHOT-jar-with-dependencies.jar", parameters="-Xmx2g -Xms2g")
+.jinit(classpath="Genotype-IO-0.0.4-SNAPSHOT-jar-with-dependencies.jar", parameters="-Xmx2g -Xms2g")
 ```
 
 Using the example method below you can easily read in any supported file format. Just put in the base path of the input and file format. If necessary one can change the cache size and include filters for samples and variants.
