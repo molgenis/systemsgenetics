@@ -152,10 +152,10 @@ public class Normalizer {
 
     public String centerAndScale(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
         double[][] rawData = dataset.getRawData();
-        System.out.println("Standardizing probe mean and standard deviation");
+        System.out.println("Standardizing probe mean");
         for (int p = 0; p < dataset.rowObjects.size(); p++) {
             double mean = Descriptives.mean(rawData[p]);
-            double stdev = Math.sqrt(Descriptives.variance(rawData[p], mean));
+            //double stdev = Math.sqrt(Descriptives.variance(rawData[p], mean));
             for (int s = 0; s < dataset.colObjects.size(); s++) {
                 rawData[p][s] -= mean;
             }
