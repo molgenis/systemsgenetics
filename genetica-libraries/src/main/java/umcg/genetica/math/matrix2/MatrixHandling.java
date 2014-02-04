@@ -225,7 +225,7 @@ public class MatrixHandling {
         return CreatSubsetBasedOnRows(dataset, probesToBeRemoved, true);
     }
 
-    public static void fixOrdering(LinkedHashMap<String, Integer> hashMap) {
+    public static void fixLinkedHashes(LinkedHashMap<String, Integer> hashMap) {
         int i=0;
         for(Entry<String, Integer> e : hashMap.entrySet()){
            e.setValue(i);
@@ -329,7 +329,7 @@ public class MatrixHandling {
             dataset.hashRows.remove(r);
         }
 
-        fixOrdering(dataset.hashRows);
+        fixLinkedHashes(dataset.hashRows);
         
         return new DoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
     }
@@ -425,7 +425,7 @@ public class MatrixHandling {
             dataset.hashCols.remove(r);
         }
 
-        fixOrdering(dataset.hashCols);
+        fixLinkedHashes(dataset.hashCols);
         
         return new DoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
     }
