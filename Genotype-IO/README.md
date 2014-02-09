@@ -8,7 +8,7 @@ Downloading latested jar
 
 Most user can simply download the latested jar and use it in there programs.
 
-http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$molgenis-genotype-reader/lastBuild/
+http://www.molgenis.org/jenkins/job/systemsgenetics/lastBuild/nl.systemsgenetics$Genotype-IO/
 
 Make sure to download the stand alone jar: `molgenis-genotype-reader-******-jar-with-dependencies`
 
@@ -270,7 +270,15 @@ RandomAccessGenotypeDataReaderFormats.VCF.createFilteredGenotypeData(datasetPath
 ```
 
 ###Using Genotype IO in rJava
-Reading in genotype information in R can be a big problem due to file size and file format support. Using rJava and the Genotype-IO API this is no problem anymore. Using the example method below you can easily read in any supported file format. Just put in the base path of the input and file format. If necessary one can change the cache size and include filters for samples and variants.
+Reading in genotype information in R can be a big problem due to file size and file format support. Using rJava and the Genotype-IO API this is no problem anymore. 
+
+After instalation of rJava first start rJava and load the jar with dependencies. If you get a heapspace error increase the reserved memory by chaneing Xmx and Xms 
+```S
+library(rJava)
+.jinit(classpath="Genotype-IO-0.0.4-SNAPSHOT-jar-with-dependencies.jar", parameters="-Xmx2g -Xms2g")
+```
+
+Using the example method below you can easily read in any supported file format. Just put in the base path of the input and file format. If necessary one can change the cache size and include filters for samples and variants.
 
 ```S
 loadGenotypeData <- function( basePath, dataType, cacheSize=1000, variantFilter = .jnull(class = "org/molgenis/genotype/variantFilter/VariantFilter"), sampleFilter = .jnull("org/molgenis/genotype/sampleFilter/SampleFilter")){
@@ -287,7 +295,7 @@ variantFilter <-  .jcast(.jnew("org/molgenis/genotype/variantFilter/VariantIdInc
 sampleFilter <- .jcast(.jnew("org/molgenis/genotype/sampleFilter/SampleIdIncludeFilter",includedSamples), "org/molgenis/genotype/sampleFilter/SampleFilter")
 ```
 
-A short example of a use case of the API in R, we read a small subset of all data in Plink Bed format, select a specific SNP and printing the histogram of dosages.
+A short example of a use case of the API in R, we read a small subset of all data in Plink Bed format, select a specific SNP and printing the histogram of dosages. Note the variantFilter and sampleFilter are optional. You can omit these arguments
 
 ```S
 genotypeData <- loadGenotypeData(basePath = "PathToFiles", dataType = "Plink_BED", variantFilter = variantFilter, sampleFilter = sampleFilter)

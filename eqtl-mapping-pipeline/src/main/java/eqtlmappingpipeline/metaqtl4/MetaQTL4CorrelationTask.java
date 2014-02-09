@@ -15,6 +15,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.math.stats.Correlation;
+import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.util.Primitives;
 
@@ -77,27 +78,31 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
                 zscores[datasetId] = Double.NaN;
             } else {
                 double[] x = genotypes[datasetId];
-                double varianceX = genotypeVariances[datasetId];
-                boolean[] includeDatasetTraitSample = includeTraitSample[datasetId];
+                if (x == null) {
+                    System.err.println("ERROR: genotype is null");
+                    zscores[datasetId] = Double.NaN;
+                } else {
+                    double varianceX = genotypeVariances[datasetId];
+                    boolean[] includeDatasetTraitSample = includeTraitSample[datasetId];
 
-                double meanY;
-                double varianceY;
+                    double meanY;
+                    double varianceY;
 
-                // re-normalize the trait data when the genotypes had missing values
-                Integer datasetTraitId = traitIndex[datasetId][traitId];
-                double[] y = datasets[datasetId].getTraitData(datasetTraitId);
-                if (sampleSizes[datasetId] != y.length) {
+                    // re-normalize the trait data when the genotypes had missing values
+                    Integer datasetTraitId = traitIndex[datasetId][traitId];
+                    double[] y = datasets[datasetId].getTraitData(datasetTraitId);
+//                    if (sampleSizes[datasetId] != y.length) {
                     double[] newY = new double[x.length];
                     int itr = 0;
                     double sum = 0;
 
                     // recalculate mean and variance
                     for (int s = 0; s < y.length; s++) {
-                        if (includeDatasetTraitSample[s]) {
+//                        if (includeDatasetTraitSample[s]) {
                             newY[itr] = y[s];
                             sum += newY[itr];
                             itr++;
-                        }
+//                        }
                     }
 
                     y = newY;
@@ -108,21 +113,24 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
                         varsum += y[i] * y[i];
                     }
                     varianceY = varsum / (y.length - 1);
-                } else {
-                    varianceY = datasets[datasetId].getTraitVariance(traitId);
-                }
+//                    } else {
+                    double varianceYOrig = datasets[datasetId].getTraitVariance(traitId);
+//                    }
 
-                if (varianceY == 0) {
-                    // trait has no variance
-                    zscores[datasetId] = Double.NaN;
-                } else {
-                    //Calculate correlation coefficient:
-                    double correlation = Correlation.correlate(x, y, varianceX, varianceY);
-                    if (correlation >= -1 && correlation <= 1) {
-                        zscores[datasetId] = Correlation.convertCorrelationToZScore(x.length, correlation);
+                    if (varianceY == 0) {
+                        // trait has no variance
+                        zscores[datasetId] = Double.NaN;
                     } else {
-                        System.err.println("Error! correlation invalid: " + correlation);
-                        System.exit(-1);
+                        //Calculate correlation coefficient:
+                        double correlation = Correlation.correlate(x, y, varianceX, varianceY);
+                        double correlation2 = JSci.maths.ArrayMath.correlation(x, y);
+                        System.out.println(correlation + "\t" + correlation2 + "\t" + x.length + "\t" + varianceX + "\t" + varianceYOrig + "\t" + varianceY + "\t" + Descriptives.variance(x) + "\t" + Descriptives.variance(y));
+                        if (correlation >= -1 && correlation <= 1) {
+                            zscores[datasetId] = Correlation.convertCorrelationToZScore(x.length, correlation);
+                        } else {
+                            System.err.println("Error! correlation invalid: " + correlation);
+                            System.exit(-1);
+                        }
                     }
                 }
             }
@@ -229,6 +237,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
 
                 for (int datasetId = 0; datasetId < nrDatasets; datasetId++) {
                     GeneticVariant variant = geneticVariantIndex[datasetId][variantId];
+
                     MetaQTL4Dataset dataset = datasets[datasetId];
                     int[] gte = dataset.getGenotypeToTraitCouplingInt();
                     if (variant != null) {
@@ -237,7 +246,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
                         double hwep = variant.getHwePvalue();
                         double callrate = variant.getCallRate();
 
-						// TODO: best done on loading dataset with filter.
+                        // TODO: best done on loading dataset with filter.
                         if (maf > mafthreshold && hwep > hwepthreshold && callrate > callratethreshold) {
                             // TODO: remove missing genotypes and rescale the genotype data
                             Pair<double[], Double> genotypedata = correctGenotypesForMissingValuesAndNormalize(gte, variant, genotypesTMP, includeTraitSample[datasetId]);

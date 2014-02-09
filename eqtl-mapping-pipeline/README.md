@@ -17,9 +17,8 @@ You can contact the authors of this software at westra.harmjan@gmail.com, or lud
     * [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)
     * [Step 6 - Perform the final QTL analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-6---perform-the-final-qtl-analysis)
 4. [Additional analyses and advanced settings](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#additional-analyses-and-advanced-settings)
-    * [Multiple linear regression using interaction model](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#multiple-linear-regression-using-interaction-model)
+    * [Cell type specificity analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#cell-type-specificity-analysis)
     * [Meta-analysis and settings file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#meta-analysis-and-settings-file)
-    * [Conditional analysis](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#conditional-analysis)
 5. [File formats](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#file-formats)
     * [Probe annotation file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#probe-annotation-file)
     * [Phenotype file, covariate file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file)
@@ -229,7 +228,7 @@ For details how this exactly works, please have a look at the paper or read the 
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
 2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, that has been corrected for eventual covariates.). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
-4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+4. (Optional) Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
 
 ###Commands to be issued
@@ -246,6 +245,8 @@ By default, the software uses 10 permutations to determine the False Discovery R
 If you are running the software in a cluster environment, you can specificy the number of threads to use (`nrthreads`) by appending the command above with the following command line switch `--threads nrthreads` (nrthreads should be an integer).
 
 If you want to test all possible combinations in your dataset, you can append the command above using the following command line switch `--testall`.
+
+Note that the `--gte` switch is optional, and only applies if you are using a `genotypephenotypecoupling` file.
 
 If you want to use a set of QTLs that you have previously calculated (`eqtlfile`, for example from another dataset, which we do not recommend because of technical and biological differences between datasets), you can append the command above using the following command line switch `--eqtls eqtlfile` (remember to use the full path). The format of such file is described here: [QTL file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-file).
 
@@ -333,9 +334,9 @@ Prior to eQTL mapping, we would like to determine whether removing PCs increases
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
 2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
-4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+4. (Optional) Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
-6. Create (or download) a list of SNPs to use for the *cis*- and *trans*-QTL analyses, and save this in (a) text-file(s). Use a single column, and one line per SNP identifier. We will refer to these files as `cissnpfile` and `transsnpfile`. As with *MixupMapper*, SNPs will only be tested with a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95.  
+6. Create (or download) a list of SNPs to use for the *cis*- and *trans*-QTL analyses, and save this in (a) text-file(s). Use a single column, and one line per SNP identifier. We will refer to these files as `cissnpfile` and `transsnpfile`. As with *MixupMapper*, SNPs will only be tested with a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95. Examples of these files can be found here: [resources](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline/src/main/resources)
 
 ###Commands to be issued
 To run the analysis, not taking into account the genetic association of PCs with SNPs, use the following command:
@@ -352,6 +353,7 @@ If you are running the software in a cluster environment, you can specificy the 
 
 By default, the software uses 10 permutations to determine the False Discovery Rate (FDR) p-value threshold during the *cis*-eQTL mapping step. If you want to change the number of permutations (`nrperm`), you can append the command above with the following command line switch `--perm nrperm` (nrperm should be an integer).
 
+Note that the `--gte` switch only applies if you are using a `genotypephenotype` coupling file.
 
 ###Check your data
 After running the pcaoptimum command (both variants), the `outdir` will contain a number of directories from the performed QTL analyse. These folders will be named **Cis-nPCAsRemoved-GeneticVectorsNotRemoved** and **Trans-nPCAsRemoved-GeneticVectorsNotRemoved** (one folder per iteration of n PCs removed). The contents of these directories are detailed here: [QTL Mapping output - Text mode](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-mapping-output---text-mode). If you have run the `--pcqtl` variant of this method, an additional folder will be created in the `outdir`, containing the QTL mapping on the PC eigenvectors. 
@@ -369,7 +371,7 @@ In a single command, the final QTL mapping can be performed. Standard settings f
 1. Note down the full path to your TriTyper genotype data directory. We will refer to this directory `genotypedir`. 
 2. Determine the full path of the trait data you want to use, and make sure this data is normalized (e.g. use Quantile Normalized, Log<sub>2</sub> transformed Illumina gene expression data, or any of the files produced in [Step 5 - Determining the optimum number of PCs to remove](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-5---the-optimum-number-of-pcs-to-remove)). We will refer to this path as `traitfile`. 
 3. Locate your phenotype annotation file: `annotationfile`. Also note down the platform identifier `platformidentifier`.
-4. Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
+4. (Optional) Locate your `genotypephenotypecoupling` if you have such a file. You can also use this file to test specific combinations of genotype and phenotype individuals. 
 5. Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
 6. (Optional) You can confine your analysis in several ways. For example, you can create a text-file with a list of snps (referred to as `snplist`; one SNP per line, single column), or a text file containing combination between SNPs and probes/traits/genes (referred to as `snpprobelist`; tab-separated, SNP identifier on first column, probe/gene/trait on second column).
 7. (Optional) We have found that removing *cis* effects greatly enhances the power to detect *trans* effects. Consequently, our software provides a way to correct your `traitfile` data for *cis* effects. Note down the full path of the file containing the *cis*-QTL effects to be removed. We will refer to this file as `qtlfile`. The format of this file is identical to the [QTL file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#qtl-file). 
@@ -400,6 +402,8 @@ If you are running the software in a cluster environment, you can specificy the 
 By default, the software uses 10 permutations to determine the False Discovery Rate (FDR) p-value threshold during the *cis*-eQTL mapping step. If you want to change the number of permutations (`nrperm`), you can append the command above with the following command line switch `--perm nrperm` (nrperm should be an integer).
 
 You can set the maximum number of results returned (`nrresults`) in the eQTLs.txt.gz file by appending the command above with `--maxresults nrresults`. The default is 500,000. Please note that increasing this number also increases the memory usage of the program and the file size of the output files.
+
+Note that you should apply the `--gte` switch if you are using a `genotypephenotype` coupling file.
 
 By default, the program outputs results in a text-based format. However, for meta-analysis purposes, a binary format is also provided. You can switch to the binary format by appending `--binary` to the above commands. Tools to meta-analyze these binary files will be released at a later stage. You can also produce output in both text-based and binary formats, by appending `--text --binary` to the commands.
 
@@ -438,13 +442,112 @@ This section describes the binary output files generated using the `--binary` co
 
 
 
-##Multiple linear regression using interaction model
+##Cell type specificity analysis
+###Background
+Many eQTL datasets are created by measuring gene expression tissues that consist of many different cell types. As about 40% of the trait-associated SNPs show a cis-eQTL effect in these compound tissues, it is often unclear what the causal cell-type is for the disease. The method described here is able to use an a priori defined list of cell-type specific genes to determine whether a cis-eQTL is specific for a cell type.
 
-##Conditional analysis
+This method is part of a manuscript titled:
+**Cell-type specific eQTL analysis without the need to sort cells**
 
+###Method
+Provided a list of genes that show a high correlation with the cell-count for the cell-type in question, we can determine a proxy phenotype in another gene expression dataset that does not have cell counts. Our method first creates a correlation matrix for the list of cell-type specific genes using the raw gene expression data (quantile normalized, log2 transformed, corrected for MDS components). Using principal component analysis on the correlation matrix, we obtain principal components (PC) that describe the variation among these genes. The first PC (PC1) attributes the largest amount of variation, and can thus be seen as a proxy-phenotype for the cell-type. PC1 can then be used as an independent variable in the linear model for the cis-eQTL. This means that apart from the genotype effect, we can now also determine the effect of PC1 on gene expression. Apart from these two effects, we also determine the interaction term between genotype and PC1. This interaction term describes the dependence of the cis-eQTL on PC1, and thus effectively the interaction between the cis-eQTL and the cell type (see the figure on the next page). We choose to only use PC1 here, because PC1 describes the majority of the variation amongst the cell-type specific genes and also to limit the number of independent variables in our model.
+A typical cis-eQTL linear model is the following:
+
+`y ~ β*g + e`
+
+where y is the gene expression of the gene, and β is the slope of the linear model, g is the genotype and e is the intersect with the y-axis. Including PC1 as an independent variable, the model is as follows:
+
+`y ~ β0*g + β1*p + β2*p*g + e`
+
+where p is the PC1 covariate and p*g is the interaction term between PC1 and the genotype. Note that this model fits three linear models at once (three different slopes). Apart from the cell count proxy, we also determine the interaction term for all genes that show a cis-eQTL effect.
+
+
+###Method overview
+The method is a two-step process:
+One step performs initial normalization of the gene expression data and adds an extra quality control step (by correlating the first PC over the sample correlation matrix, samples with poor RNA quality can be determined. We use a correlation threshold of 0.9 with PC1 to remove poor quality samples). Then, the program calculates the first PC using the cell-type specific probe correlation matrix to use as a proxy phenotype in the second step of the program. The second step performs the actual eQTL mapping using the Ordinary Least Squares model with two independent variables and an interaction term.
+
+####Normalization - Step 1 - Prepare your data
+Locate and/or download the following files (to avoid confusion, **use full paths** when supplying these files to the software):
+
+-	ExpressionData.txt.gz: the raw gene expression data (not normalized, not corrected for MDS components, not corrected for any *cis*-eQTL effects). We will call this file `traitfile`.
+-	Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
+-	CellTypeSpecificProbeList.txt: the list of probes that correlate with the cell type of interest. One probe per line. Make sure the probe identifiers (or a subset thereof) are consistent with those in your `traitfile` We will call this file `probelist`.
+-	MDSComponents.txt: this (optional) file contains the four MDS components that were previously used for trait data normalization (which were calculated using pruned genotypes). We will call this file `mdscomponents`. This format of this file is described here [Phenotype file, covariate file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file).
+-	GenotypeToExpressionCoupling.txt: the file linking genotypes to gene expression sample identifiers. This file is also optional (for example if your sample identifiers in your gene expression data correspond to the genotype sample identifiers). We will call this file `genotypetotraitcoupling`. The format is described here: [Genotype - phenotype coupling](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#genotype---phenotype-coupling).
+-	CellCounts.txt: in order to determine whether PC1 actually reflects cell-type differences, we may ask you to supply this optional file. The program will determine and output the correlation between the proxy phenotype and the actual phenotype if this file is supplied. The format is identical to the `mdscomponents` file. We will call this file `cellcounts`
+
+####Normalization - Step 2 - Run the normalization and QC
+``java –jar eQTLMappingPipeline.jar --mode celltypespecific --step normalize --inexpraw traitfile --out outputdir --celltypespecificprobes probelist --mdscomponents mdscomponents --gte genotypetotraitcoupling --cellcounts cellcounts``
+
+**Please note that the --gte, --mdscomponents and --cellcount switches are optional** 
+
+####Normalization - Step 3 - Check the output
+After completion, the normalization step will have generated a number of files in your `outputdir`:
+
+|File|Description|
+|----|-----------|
+|CellTypeProxyFile.txt|This file contains the first principal component, calculated over the cell type specific probe correlation matrix. This file is required for step 2.|
+|CellTypeSpecificProbeCorrelationMatrix.txt.gz|This file contains the correlation matrix for the cell type specific probes|
+|CellTypeSpecificProbePCA.PCAoverSamplesEigenvalues.txt.gz|This file contains the eigenvalues for the PCA analysis over the cell type specific probes|
+|CellTypeSpecificProbePCA.PCAoverSamplesEigenvectors.txt.gz|This file contains the eigenvectors for the PCA analysis over the cell type specific probes|
+|CellTypeSpecificProbePCA.PCAoverSamplesEigenvectorsTransposed.txt.gz|This is the transposed version of the eigenvector file above.|
+|CellTypeSpecificProbePCA.PCAoverSamplesPrincipalComponents.txt.gz|This file contains the actual principal components for the cell type specific probe PCA|
+|SampleCorrelationMatrix.txt|The correlation matrix over the samples.|
+|SamplePC1Correlations.txt|A PCA analysis has been performed using the sample correlation matrix. This file contains the correlations of all samples with the first principal component, as a quality control measure. Samples with a correlation < 0.9 with this first PC have been excluded to calculate the PCA that was used for CellTypeProxyFile.txt|
+|ComparisonToCellCount.txt|If you have used the --cellcounts option, this file contains the correlation of PC1 with your actual cell count.|
+|plot.pdf|If you have used the --cellcounts option, this file plots the cell-counts on the y-axis and the PC1 values on the x-axis.|
+
+Additionally, the normalization step will have created a subdirectory in your `outputdir` containing the following files:
+
+|File|Description|
+|----|-----------|
+|CellTypeSpecificProbeExpression.txt.gz|This file contains the (Quantile normalized, log2 transformed) gene expression data for the cell type specific probes.|
+|ExpressionData-QNormLog2Transformed.CovariatesRemoved.txt.gz OR
+ExpressionData-QNormLog2Transformed.txt.gz|This file contains the gene expression data you used as inexp, although now it is quantile normalized and log2 transformed. Please note that if you did not correct for MDS components, this file will not end with ‘CovariatesRemoved’.| 
+|ExpressionDataPCQC-QNormLog2Transformed.CovariatesRemoved.txt.gz OR
+ExpressionDataPCQC-QNormLog2Transformed.txt.gz|As described before, PC1 of the sample correlation matrix is used as a quality control measure. Samples with a correlation of < 0.9 with PC1 will be excluded from further analysis. This file contains only those samples that pass this threshold. This file is required for step 2.|
+|PCAResults.PCAoverSamplesEigenvalues.txt.gz|PCA eigenvalues for the quality control PCA over the sample correlation matrix|
+|PCAResults.PCAoverSamplesEigenvectors.txt.gz|PCA eigenvectors for the quality control PCA over the sample correlation matrix|
+|PCAResults.PCAoverSamplesEigenvectorsTransposed.txt.gz|Transposed PCA eigenvectors for the quality control PCA over the sample correlation matrix|
+|PCAResults.PCAoverSamplesPrincipalComponents.txt.gz|Principal components for the quality control PCA over the sample correlation matrix|
+
+####Association analysis - Step 1 - Prepare your data
+Locate and/or download the following files (to avoid confusion, **use full paths** when supplying these files to the software): 
+
+-	The directory containing your TriTyper genotype data. We will call this directory `genotypedir`.
+-	ExpressionDataPCQC-QNormLog2Transformed.CovariatesRemoved.txt.gz OR ExpressionDataPCQC-QNormLog2Transformed.txt.gz: the raw gene expression data as generated in the normalization step (described above). We will call this file `covariates`
+-	ExpressionData.txt.40PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz: trait data generated by [Step 3 - Phenotype data normalization](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-3---phenotype-data-normalization) of the eQTL mapping pipeline, corrected for 40PCs (please make sure this file was not corrected for cis-eQTL effects but was corrected for MDS components). We will call this file `traitfile`
+-	Find a location on your hard drive to store the output. We will refer to this directory as `outputdir`.
+-	SNPProbe.txt: the file containing the *cis*-eQTL SNP probe combinations to test. One combination per line, with the first column showing the genotype variant identifier. Please use a file that is suitable for your platform. We will call this file `snpprobefile`.
+-	GenotypeToExpressionCoupling.txt: the file linking genotypes to gene expression sample identifiers. This file is also optional (for example if your sample identifiers in your gene expression data correspond to the genotype sample identifiers). We will call this file `genotypetotraitcoupling`. The format is described here: [Genotype - phenotype coupling](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#genotype---phenotype-coupling).
+-	CellCounts.txt: the file containing the proxy-phenotype generated by the normalization step described above. The format is that of a [Phenotype file, covariate file](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#phenotype-file-covariate-file). We will call this file `cellcountproxy`
+-	Determine the number of available cores/processors in your machine (optional). We will call this `nrThreads`
+
+####Association analysis - Step 2 - Run the association analysis
+
+``java –jar eQTLMappingPipeline.jar --mode celltypespecific --step mapeqtls --inexp traitfile --covariates covariates --cellcounts cellcountproxy --in genotypedir --out outputdir --snpprobe snpprobefile --threads nrThreads``
+
+**Please note that the --gte and --threads switches are optional**
+
+####Association analysis - Step 3 - Check the output
+After finalizing, the association analysis will have generated a couple of files in your `outputdir`:
+
+|File|Description|
+|----|-----------|
+|CellTypeSpecificEQTLEffects.txt|This file contains the Z-scores for both the cis-eQTL as well as the interaction term with the (proxy) cell count| 
+|CellTypeSpecificityMatrix.binary.columns.ser|This binary file contains the column description for the CellTypeSpecificityMatrix|
+|CellTypeSpecificityMatrix.binary.dat|This binary matrix contains Z-scores: each column is a cis-eQTL, each row is a probe interaction Z-score, for each probe that was used as a covariate in the model. Also, this matrix contains two summary statistics (beta + Z-score) for the (proxy) cell count. This file can be used for eventual meta-analysis of cell-type specific effects. You can convert this file to a text-based matrix using the utility described in Step 3.|
+|CellTypeSpecificityMatrix.binary.rows.ser|This binary file contains the row description of the CellTypeSpecificityMatrix|
+|eQTLsNotPassingQC.txt|The set of eQTLs that did not pass QC|
+|SNPSummaryStatistics.txt|This file contains summary statistics on the SNPs: MAF, HWE, Call-rate, Alleleles, minor allele, etc.|
+
+####Association analysis - Step 4 - Convert the binary output table to text (optional)
+If you want to investigate the data stored within the CellTypeSpecificityMatrix.binary.dat file, you can use the following command to convert the binary file to a text-based, tab-separated matrix:
+
+``java –jar eQTLMappingPipeline.jar --mode util --convertbinarymatrix --in /path/to/ CellTypeSpecificityMatrix.binary.dat --out /path/to/textoutput.txt``
 
 ##Meta-analysis and settings file
-The command line interface of this software allows for basic QTL analyses. However, our software has many more capabilities that are not accesible via the command line. In these cases, an XML file is required that describes the different settings (full path referred to as `settingsfile`). [An example `settingsfile` is provided in the repository](link). Using a settings file allows you to quickly rerun certain analyses and to perform on-the-fly meta-analyses. A copy of the `settingsfile` will always be copied to your `outdir`. 
+The command line interface of this software allows for basic QTL analyses. However, our software has many more capabilities that are not accesible via the command line. In these cases, an XML file is required that describes the different settings (full path referred to as `settingsfile`). [An example `settingsfile` is provided in the repository](https://github.com/molgenis/systemsgenetics/blob/master/eqtl-mapping-pipeline/src/main/resources/settings.xml). Using a settings file allows you to quickly rerun certain analyses and to perform on-the-fly meta-analyses. A copy of the `settingsfile` will always be copied to your `outdir`. 
 
 Currently, `settingsfile` can only be used in the `--mode metaqtl` mode. You should note that a `settingsfile` overrides all command line switches. The `settingsfile` can be used as follows:
 
@@ -468,16 +571,26 @@ Please note that if you open a tag "`<maf>`" you also need to close it: "`</maf>
 
 Because of the readability of the table below, we reduce the above hierarchy to `defaults.qc.maf` and `defaults.qc.hwep`, respectively. 
 
-
 |Setting|Value|Description|
 |-------|-----|-----------|
 |sett.ing|double|description|
 |sett.ing2|double|description2|
 
-
-
 #File formats
 This section lists the different file formats used by the software package.
+
+##Trait file
+This file is required by most parts of the program, since it contains the actual quantitative trait measurements. The format of this file is a simple text-based matrix, which may be gzipped. If you are exporting your data from R, make sure that the first line starts with an empty tab (otherwise you are bound to get column-shift problems).
+
+###File example
+<pre>
+Probe   Sample1 Sample2	Sample3
+0001    0.2     0.5     0.6
+0002    0.8     0.6     0.6
+0003    0.9    -1.5     7.9
+</pre>
+
+
 ##Probe annotation file
 A probe annotation file is required when running a *cis*-eQTL analysis. This file describes where each probe/trait/gene is located on the genome. This file is a simple tab-separated text file, with a line for each probe, and a header.
 

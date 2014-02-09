@@ -1,3 +1,4 @@
+[![Build Status](http://www.molgenis.org/jenkins/buildStatus/icon?job=systemsgenetics)](http://www.molgenis.org/jenkins/job/systemsgenetics/)
 Systems Genetics
 ================
 

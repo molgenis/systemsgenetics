@@ -81,6 +81,7 @@ public class ImputationTool {
         String sampleFileToInclude = null;
         String pattern = null;
         String fileMatchRegex = null;
+        
 
         boolean splitbychromosome = false;
 
@@ -112,6 +113,7 @@ public class ImputationTool {
                 fam = val;
             } else if (arg.equals("--tpl")) {
                 tmp = val;
+
             } else if (arg.equals("--chr")) {
                 try {
                     chr = Integer.parseInt(val);
@@ -199,7 +201,7 @@ public class ImputationTool {
             convertTriTyperToPlinkDosage(in, out, fam, splitbychromosome);
             // --mode ttpd --in indir --beagle beagledir --tpl template --batchdescriptor batchdescriptor --out outdir --fam famfile
         } else if (mode.equals("ttpm")) {
-            convertTriTyperToPedAndMap(in, out, fam, snps, splitbychromosome);
+            convertTriTyperToPedAndMap(in, out, fam, snps, splitbychromosome, sampleFile);
 
             // --mode ttpm --in indir --out outdir --fam famfile
         } else if (mode.equals("ftt")) {
@@ -375,7 +377,7 @@ public class ImputationTool {
         ttb.export(hapmapDir, baseDir, batchFile, excludesnps, outputDir);
     }
 
-    private void convertTriTyperToPedAndMap(String baseDir, String outputDir, String famfile, String snpList, boolean splitbychromosome) throws IOException, Exception {
+    private void convertTriTyperToPedAndMap(String baseDir, String outputDir, String famfile, String snpList, boolean splitbychromosome, String samplesToInclude) throws IOException, Exception {
         if (baseDir == null || outputDir == null) {
             System.out.println("Please supply values for TriTyper inputdir (--in) and outputdir (--out) when to running --mode ttpm\n\n");
             // printUsage();
@@ -383,7 +385,7 @@ public class ImputationTool {
         }
         TriTyperToPedAndMapConverter ttpm = new TriTyperToPedAndMapConverter();
         if (snpList != null) {
-            ttpm.exportSubsetOfSNPs(baseDir, outputDir, snpList, null);
+            ttpm.exportSubsetOfSNPs(baseDir, outputDir, snpList, samplesToInclude);
         } else {
             ttpm.exportAllSNPs(baseDir, outputDir, splitbychromosome);
         }

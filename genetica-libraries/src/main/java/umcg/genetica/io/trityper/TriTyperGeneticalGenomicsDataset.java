@@ -7,6 +7,7 @@ package umcg.genetica.io.trityper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -290,6 +291,22 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             }
         }
         expressionToGenotypeIdArray = indWGANew;
+
+        // shuffle covariate, if any
+        if (covariates != null) {
+            System.out.println("Randomizing covariates");
+            for (int covariate = 0; covariate < covariates.nrRows; covariate++) {
+                ArrayList<Double> covariateData = new ArrayList<Double>();
+                for (int col = 0; col < covariates.nrRows; col++) {
+                    covariateData.add(covariates.rawData[covariate][col]);
+                }
+                Collections.shuffle(covariateData);
+                for (int col = 0; col < covariates.nrRows; col++) {
+                    covariates.rawData[covariate][col] = covariateData.get(col);
+                }
+            }
+        }
+
     }
 
     public void resetGenotypeToExpressionCouplings() throws IOException {
