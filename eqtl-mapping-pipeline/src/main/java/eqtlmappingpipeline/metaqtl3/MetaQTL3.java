@@ -305,8 +305,8 @@ public class MetaQTL3 {
     }
 
     protected void createSNPList() throws IOException {
-        ArrayList<String> availableSNPs = new ArrayList<String>();
-        HashSet<String> snptree = new HashSet<String>();
+        final ArrayList<String> availableSNPs = new ArrayList<String>();
+        final HashSet<String> snptree = new HashSet<String>();
         int chrYSNPs = 0;
         int unknownPos = 0;
         int unknownchr = 0;
@@ -395,7 +395,7 @@ public class MetaQTL3 {
                             reason += "\t - SNP is duplicate!";
                         }
                     } else {
-                        if (!m_settings.tsSNPsConfine.contains(d1SNP)) {
+                        if (m_settings.tsSNPsConfine != null && !m_settings.tsSNPsConfine.contains(d1SNP)) {
                             reason += "\tSNP not confined to";
                         } else {
                             reason += "\tSNP chromosome does not match requested chromosome: " + m_gg[d].getGenotypeData().getChr(snpNum);
