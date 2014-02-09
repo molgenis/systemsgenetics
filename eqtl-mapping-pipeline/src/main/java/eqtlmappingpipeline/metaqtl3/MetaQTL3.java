@@ -1011,7 +1011,13 @@ public class MetaQTL3 {
             } else {
                 ArrayList<Integer> probeToTest = null;
                 if (m_settings.tsSNPProbeCombinationsConfine != null) {
-                    HashSet<String> probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
+					HashSet<String> probesSelected;
+					if(m_settings.snpProbeConfineBasedOnChrPos){
+						probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpchr + ":" + snppos);
+					} else {
+						probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
+					}
+                    
                     if (probesSelected != null) {
                         probeToTest = new ArrayList<Integer>();
                         for (String probe : probesSelected) {

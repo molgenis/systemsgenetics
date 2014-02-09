@@ -73,6 +73,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean metaAnalyseInteractionTerms = false;
     public boolean metaAnalyseModelCorrelationYHat = false;
     public String pathwayDefinition;
+	public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
 
     public MetaQTL3Settings() {
     }
@@ -444,6 +445,11 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             if (settingsTextToReplace != null && snpProbeConfine.contains(settingsTextToReplace)) {
                 snpProbeConfine = snpProbeConfine.replace(settingsTextToReplace, settingsTextReplaceWith);
             }
+        } catch (Exception e) {
+        }
+		
+		try {
+            snpProbeConfineBasedOnChrPos = config.getBoolean("defaults.confine.snpProbeConfineBasedOnChrPos", false);
         } catch (Exception e) {
         }
 
