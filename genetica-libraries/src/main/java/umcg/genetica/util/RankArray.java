@@ -157,7 +157,6 @@ public class RankArray {
                 t.add(rank[k]);
             }
         }
-        System.out.println(t.toString());
         double newRank = JSci.maths.ArrayMath.mean(t.toArray());
         
         rank[i] = newRank;
