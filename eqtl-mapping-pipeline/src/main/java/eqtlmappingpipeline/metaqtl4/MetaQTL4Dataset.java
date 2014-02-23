@@ -296,6 +296,10 @@ public class MetaQTL4Dataset {
             double mean = Descriptives.mean(traitData.rawData[i]);
             traitVarianceAndMeanData.rawData[0][i] = mean;
             traitVarianceAndMeanData.rawData[1][i] = Descriptives.variance(traitData.rawData[i], mean);
+            if(traitData.rowObjects.get(i).equals("4010021")){
+                System.out.println("MEAN: "+mean);
+                System.out.println("VARIANCE: "+traitVarianceAndMeanData.rawData[1][i]);
+            }
         }
     }
 
