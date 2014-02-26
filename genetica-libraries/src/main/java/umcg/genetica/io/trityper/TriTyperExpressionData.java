@@ -280,7 +280,7 @@ public class TriTyperExpressionData {
                 Byte probeChr = null;
                 Integer probeChrStart = null;
                 Integer probeChrEnd = null;
-                boolean includeprobe = true;
+                boolean includeprobe = false;
                 String reason = "";
 
                 if (trityperformat && elems.length > 9) {
@@ -319,12 +319,13 @@ public class TriTyperExpressionData {
                         probeChrEnd = hashProbeChrStop.get(probe);
                         annotstr = hashAnnot.get(probe);
                         if (probeChr == null) {
-                            includeprobe = false;
                             reason += "Probe annotation not loaded for probe:\t" + probe;
                         } else if ((probesConfine == null || probesConfine.contains(probe))
                                 && (!confineToProbesThatMapToAnyChromosome || probeChr >= 1)
                                 && (confineToProbesMappingOnChromosome != null && confineToProbesMappingOnChromosome.equals((int) probeChr))) {
                             includeprobe = true;
+                        } else {
+                            reason += "Probe not in confine list or not mapping to a chr of interest";
                         }
                     } else if (!cistrans) {
                         throw new IOException("ERROR: probe annotation not loaded?");
@@ -333,6 +334,7 @@ public class TriTyperExpressionData {
                         probeChrStart = hashProbeChrStart.get(probe);
                         probeChrEnd = hashProbeChrStop.get(probe);
                         annotstr = hashAnnot.get(probe);
+                        includeprobe = true;
                     } else {
                         if ((probesConfine == null || probesConfine.contains(probe))) {
                             includeprobe = true;
@@ -341,7 +343,6 @@ public class TriTyperExpressionData {
                             probeChrEnd = -1;
                             annotstr = "-";
                         } else {
-                            includeprobe = false;
                             printreason = false;
                         }
                     }
@@ -352,7 +353,6 @@ public class TriTyperExpressionData {
 
                 if (!cistrans && includeprobe && probeChr == null && probeChrStart == null && probeChrEnd == null && !(probesConfine != null && !probesConfine.contains(probe))) {
                     reason += "WARNING: probe\t" + probe + "\thas no annotation at all! Will exclude this probe from further use.";
-                    includeprobe = false;
                 }
 
                 if (includeprobe) {

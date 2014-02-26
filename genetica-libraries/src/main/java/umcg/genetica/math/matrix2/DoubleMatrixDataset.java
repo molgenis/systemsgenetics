@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -65,11 +66,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     }
 
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
-        return loadDoubleData(fileName, "\t");
+        if ((fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
+            return loadDoubleTextData(fileName, "\t");
+        } else if (fileName.endsWith(".binary")){
+            return null;
+        } else {
+            throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
+        }
     }
 
-    public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName, String delimiter) throws IOException {
-
+    public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, String delimiter) throws IOException {
+        if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
+            throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
+        }
+        
         Pattern splitPatern = Pattern.compile(delimiter);
 
         int columnOffset = 1;
@@ -178,7 +188,125 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         return dataset;
     }
     
-    public static DoubleMatrixDataset<String, String> loadSubsetOfDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+//    public static DoubleMatrixDataset<String, String> loadDoubleBinData(String fileName) throws IOException {
+//        //ToDo Complete Implementation
+//        
+//        if (!(fileName.endsWith(".binary"))) {
+//            throw new IllegalArgumentException("File type must be .binary when delimiter is given (given filename: " + fileName + ")");
+//        }
+//        
+//        Pattern splitPatern = Pattern.compile(delimiter);
+//
+//        int columnOffset = 1;
+//
+//        TextFile in = new TextFile(fileName, TextFile.R);
+//        String str = in.readLine(); // header
+//        String[] data = splitPatern.split(str);
+//
+//        int tmpCols = (data.length - columnOffset);
+//
+//        LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
+//
+//        for (int s = 0; s < tmpCols; s++) {
+//            String colName = data[s + columnOffset];
+//            if (!colMap.containsKey(colName)) {
+//                colMap.put(colName, s);
+//            } else {
+//                LOGGER.warning("Duplicated column name!");
+//                throw (doubleMatrixDatasetNonUniqueHeaderException);
+//            }
+//        }
+//
+//        int tmpRows = 0;
+//
+//        while (in.readLine() != null) {
+//            tmpRows++;
+//        }
+//        in.close();
+//        
+//        DoubleMatrixDataset<String, String> dataset;
+//        
+//        if ((tmpRows * (long)tmpCols) < (Integer.MAX_VALUE-2)) {
+//            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
+//            DenseDoubleMatrix2D tmpMatrix = new DenseDoubleMatrix2D(tmpRows, tmpCols);
+//            
+//            in.open();
+//            in.readLine(); // read header
+//            int row = 0;
+//            
+//            boolean correctData = true;
+//            while ((str = in.readLine()) != null) {
+//                data = splitPatern.split(str);
+//
+//                if (!rowMap.containsKey(data[0])) {
+//                    rowMap.put(data[0], row);
+//                    for (int s = 0; s < tmpCols; s++) {
+//                        double d;
+//                        try {
+//                            d = Double.parseDouble(data[s + columnOffset]);
+//                        } catch (NumberFormatException e) {
+//                            correctData = false;
+//                            d = Double.NaN;
+//                        }
+//                        tmpMatrix.setQuick(row, s, d);
+//                    }
+//                    row++;
+//                } else {
+//                    LOGGER.warning("Duplicated row name!");
+//                    throw (doubleMatrixDatasetNonUniqueHeaderException);
+//                }           
+//            }
+//            if (!correctData) {
+//                LOGGER.warning("Your data contains NaN/unparseable values!");
+//            }
+//            in.close();
+//            
+//            dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
+//            
+//        } else {
+//            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
+//            DenseLargeDoubleMatrix2D tmpMatrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
+//            in.open();
+//            in.readLine(); // read header
+//            int row = 0;
+//
+//            boolean correctData = true;
+//            while ((str = in.readLine()) != null) {
+//                data = splitPatern.split(str);
+//
+//                if (!rowMap.containsKey(data[0])) {
+//                    rowMap.put(data[0], row);
+//                    for (int s = 0; s < tmpCols; s++) {
+//                        double d;
+//                        try {
+//                            d = Double.parseDouble(data[s + columnOffset]);
+//                        } catch (NumberFormatException e) {
+//                            correctData = false;
+//                            d = Double.NaN;
+//                        }
+//                        tmpMatrix.setQuick(row, s, d);
+//                    }
+//                    row++;
+//                } else {
+//                    LOGGER.warning("Duplicated row name!");
+//                    throw (doubleMatrixDatasetNonUniqueHeaderException);
+//                }           
+//            }
+//            if (!correctData) {
+//                LOGGER.warning("Your data contains NaN/unparseable values!");
+//            }
+//            in.close();
+//            dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
+//        }
+//
+//        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
+//        return dataset;
+//    }
+    
+    public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+        if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
+            throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
+        }
         
         LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
         
@@ -451,7 +579,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
-    public void OrderOnColumns() {
+    public void OrderOnColumnnames() {
         LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(this.matrix.columns() / 0.75));
         ArrayList<C> names = this.getColObjects();
         Collections.sort(names);
@@ -469,7 +597,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
      *
      * @param dataset DoubleMatrixDataset Expression matrix
      */
-    public void OrderOnRows() {
+    public void OrderOnRownames() {
         LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(this.matrix.rows() / 0.75));
         ArrayList<R> names = this.getRowObjects();
         Collections.sort(names);
@@ -484,43 +612,71 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     }
 
     public void reorderRows(LinkedHashMap<R, Integer> mappingIndex) {
-        DoubleMatrix2D newRawData;
-        if((this.rows() * (long)this.columns()) < (Integer.MAX_VALUE-2)){
-            newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
-        } else {
-            newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
+        boolean equal = compareHashRows(mappingIndex, this.hashRows);
+        if(!equal){
+            DoubleMatrix2D newRawData;
+            if((this.rows() * (long)this.columns()) < (Integer.MAX_VALUE-2)){
+                newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
+            } else {
+                newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
+            }
+
+            for (Map.Entry<R, Integer> ent : mappingIndex.entrySet() ){
+                int pos = this.getHashRows().get(ent.getKey());
+                for (int s = 0; s < this.columns(); ++s) {
+                    newRawData.set(ent.getValue(), s, this.getMatrix().get(pos, s));
+                }
+            }
+            this.setHashRows(mappingIndex);
+            this.setMatrix(newRawData);
         }
         
-        for (Map.Entry<R, Integer> ent : mappingIndex.entrySet() ){
-            int pos = this.getHashRows().get(ent.getKey());
-            for (int s = 0; s < this.columns(); ++s) {
-                newRawData.set(ent.getValue(), s, this.getMatrix().get(pos, s));
-            }
-        }
-        this.setHashRows(mappingIndex);
-        this.setMatrix(newRawData);
     }
     
     public void reorderCols(LinkedHashMap<C, Integer> mappingIndex) {
-        DoubleMatrix2D newRawData;
-        if((this.rows() * (long)this.columns()) < (Integer.MAX_VALUE-2)){
-            newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
-        } else {
-            newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
-        }
-        
-        for (Map.Entry<C, Integer> ent : mappingIndex.entrySet() ){
-            int pos = this.getHashCols().get(ent.getKey());
-            for (int p = 0; p < this.rows(); ++p) {
-                newRawData.set(p, ent.getValue(), this.getMatrix().get(p, pos));
+        boolean equal = compareHashCols(mappingIndex, this.hashCols);
+        if(!equal){
+            DoubleMatrix2D newRawData;
+            if((this.rows() * (long)this.columns()) < (Integer.MAX_VALUE-2)){
+                newRawData = new DenseDoubleMatrix2D(this.rows(), this.columns());
+            } else {
+                newRawData = new DenseLargeDoubleMatrix2D(this.rows(), this.columns());
             }
+
+            for (Map.Entry<C, Integer> ent : mappingIndex.entrySet() ){
+                int pos = this.getHashCols().get(ent.getKey());
+                for (int p = 0; p < this.rows(); ++p) {
+                    newRawData.set(p, ent.getValue(), this.getMatrix().get(p, pos));
+                }
+            }
+
+            this.setHashCols(mappingIndex);
+            this.setMatrix(newRawData);
         }
-        
-        this.setHashCols(mappingIndex);
-        this.setMatrix(newRawData);
     }
     
     public DoubleMatrixDataset<C, R> viewDice() {
         return new DoubleMatrixDataset<C, R>(matrix.viewDice(), hashCols, hashRows);
+    }
+
+    private boolean compareHashCols(LinkedHashMap<C, Integer> mappingIndex, LinkedHashMap<C, Integer> originalHash) {
+        
+        for(Entry<C, Integer> entry : mappingIndex.entrySet()){
+           if(entry.getValue()!=originalHash.get(entry.getKey())){
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    
+    private boolean compareHashRows(LinkedHashMap<R, Integer> mappingIndex, LinkedHashMap<R, Integer> originalHash) {
+        
+        for(Entry<R, Integer> entry : mappingIndex.entrySet()){
+           if(entry.getValue()!=originalHash.get(entry.getKey())){
+                return false;
+            }
+        }
+        return true;
     }
 }

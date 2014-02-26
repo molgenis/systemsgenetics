@@ -5,6 +5,8 @@
 package eqtlmappingpipeline.util;
 
 import eqtlmappingpipeline.binarymeta.meta.graphics.ZScorePlot;
+import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,9 +118,9 @@ public class eQTLFileCompare {
         HashSet<String> hashTestedSNPsThatPassedQC = null; //We can confine the analysis to only those eQTLs for which the SNP has been successfully passed QC, otherwise sometimes unfair comparisons are made. If requested, put the SNP name in this HashMap
 
         //Now load the eQTLs for file 1:
-        HashMap<String, String[]> hashEQTLs = new HashMap<String, String[]>();
-        HashSet<String> hashUniqueProbes = new HashSet<String>();
-        HashSet<String> hashUniqueGenes = new HashSet<String>();
+        THashMap<String, String[]> hashEQTLs = new THashMap<String, String[]>();
+        THashSet<String> hashUniqueProbes = new THashSet<String>();
+        THashSet<String> hashUniqueGenes = new THashSet<String>();
 
         TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
         TextFile in = new TextFile(file1, TextFile.R);
@@ -173,6 +175,11 @@ public class eQTLFileCompare {
             data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
         }
         in.close();
+        
+        int nrUniqueProbes = hashUniqueProbes.size();
+        int nrUniqueGenes = hashUniqueGenes.size();
+        hashUniqueProbes=null;
+        hashUniqueGenes=null;
 
         //Initialize Graphics2D for the Z-Score allelic direction comparison:
         int width = 1000;
@@ -522,8 +529,8 @@ public class eQTLFileCompare {
         TextFile outSummary = new TextFile(outputFile + "-Summary.txt", TextFile.W);
 
         System.out.println("");
-        System.out.println("Nr of eQTLs:\t" + hashEQTLs.size() + "\tin file:\t" + file1 + "\tNrUniqueProbes:\t" + hashUniqueProbes.size() + "\tNrUniqueGenes:\t" + hashUniqueGenes.size());
-        outSummary.writeln("Nr of eQTLs:\t" + hashEQTLs.size() + "\tin file:\t" + file1 + "\tNrUniqueProbes:\t" + hashUniqueProbes.size() + "\tNrUniqueGenes:\t" + hashUniqueGenes.size());
+        System.out.println("Nr of eQTLs:\t" + hashEQTLs.size() + "\tin file:\t" + file1 + "\tNrUniqueProbes:\t" + nrUniqueProbes + "\tNrUniqueGenes:\t" + nrUniqueGenes);
+        outSummary.writeln("Nr of eQTLs:\t" + hashEQTLs.size() + "\tin file:\t" + file1 + "\tNrUniqueProbes:\t" + nrUniqueProbes + "\tNrUniqueGenes:\t" + nrUniqueGenes);
 
         System.out.println("Nr of eQTLs:\t" + counterFile2 + "\tin file:\t" + file2 + "\tNrUniqueProbes:\t" + hashUniqueProbes2.size() + "\tNrUniqueGenes:\t" + hashUniqueGenes2.size());
         outSummary.writeln("Nr of eQTLs:\t" + counterFile2 + "\tin file:\t" + file2 + "\tNrUniqueProbes:\t" + hashUniqueProbes2.size() + "\tNrUniqueGenes:\t" + hashUniqueGenes2.size());

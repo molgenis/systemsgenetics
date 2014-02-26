@@ -52,8 +52,8 @@ public class MergeDoubleMatrices {
             throw new Exception("Warning indivduals merging. No equal number of columns");
         }
 
-        matrixI.OrderOnColumns();
-        matrixII.OrderOnColumns();
+        matrixI.OrderOnColumnnames();
+        matrixII.OrderOnColumnnames();
 
         HashSet<String> keepRowNames1 = new HashSet<String>();
         keepRowNames1.addAll(matrixI.getRowObjects());
@@ -137,8 +137,8 @@ public class MergeDoubleMatrices {
             throw new Exception("Warning invalid merging. No equal number of rows");
         }
 
-        matrixI.OrderOnRows();
-        matrixII.OrderOnRows();
+        matrixI.OrderOnRownames();
+        matrixII.OrderOnRownames();
 
         HashSet<String> keepColNames1 = new HashSet<String>();
         keepColNames1.addAll(matrixI.getColObjects());

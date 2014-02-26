@@ -27,7 +27,7 @@ public class MatrixTools {
     }
 
     public static void centerColum(DoubleMatrix2D mat) {
-        System.out.println("Standardizing probe mean and standard deviation");
+        System.out.println("Standardizing probe mean");
         for (int c = 0; c < mat.columns(); c++) {
             double mean = Descriptives.mean(mat.viewColumn(c).toArray());
             for (int r = 0; r < mat.rows(); r++) {
@@ -37,7 +37,7 @@ public class MatrixTools {
     }
 
     public static void scaleColum(DoubleMatrix2D mat) {
-        System.out.println("Standardizing probe mean and standard deviation");
+        System.out.println("Standardizing probe standard deviation");
         for (int c = 0; c < mat.columns(); c++) {
             double[] t = mat.viewColumn(c).toArray();
             double mean = Descriptives.mean(t);

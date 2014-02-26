@@ -225,7 +225,7 @@ public class MatrixHandling {
         return CreatSubsetBasedOnRows(dataset, probesToBeRemoved, true);
     }
 
-    private static void fixOrdering(LinkedHashMap<String, Integer> hashMap) {
+    public static void fixLinkedHashes(LinkedHashMap<String, Integer> hashMap) {
         int i=0;
         for(Entry<String, Integer> e : hashMap.entrySet()){
            e.setValue(i);
@@ -310,7 +310,7 @@ public class MatrixHandling {
                 if (!(rowNames.contains(rowObj.get(p)))) {
                     probeId++;
                     for (int s = 0; s < dataset.columns(); ++s) {
-                        matrix.setQuick(p, s, dataset.getMatrix().getQuick(p, s));
+                        matrix.setQuick(probeId, s, dataset.getMatrix().getQuick(p, s));
                     }
                 }
             }
@@ -319,7 +319,7 @@ public class MatrixHandling {
                 if ((rowNames.contains(rowObj.get(p)))) {
                     probeId++;
                     for (int s = 0; s < dataset.columns(); ++s) {
-                        matrix.setQuick(p, s, dataset.getMatrix().getQuick(p, s));
+                        matrix.setQuick(probeId, s, dataset.getMatrix().getQuick(p, s));
                     }
                 }
             }
@@ -329,7 +329,7 @@ public class MatrixHandling {
             dataset.hashRows.remove(r);
         }
 
-        fixOrdering(dataset.hashRows);
+        fixLinkedHashes(dataset.hashRows);
         
         return new DoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
     }
@@ -425,7 +425,7 @@ public class MatrixHandling {
             dataset.hashCols.remove(r);
         }
 
-        fixOrdering(dataset.hashCols);
+        fixLinkedHashes(dataset.hashCols);
         
         return new DoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
     }
@@ -443,4 +443,20 @@ public class MatrixHandling {
 
         dataset.setHashCols(newColNames);
     }
+    
+    /**
+     * Replace zero's with nulls.
+     *
+     * @param rawData
+     */
+    public static void ReplaceZerosToNull(DoubleMatrix2D rawData) {
+        for (int c = 0; c < rawData.columns(); ++c) {
+            for (int r = 0; r < rawData.rows(); ++r) {
+                if (rawData.getQuick(r, c) == 0.0d) {
+                    rawData.setQuick(r, c, Double.NaN);
+                }
+            }
+        }
+    }
+    
 }
