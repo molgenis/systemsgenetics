@@ -131,11 +131,11 @@ public class Main {
                     m2.init(settings, texttoreplace, replacetextwith);
                     m2.analyze();
 
-                    System.gc();
-                    System.gc();
-                    System.gc();
-                    System.gc();
-                    System.gc();
+//                    System.gc();
+//                    System.gc();
+//                    System.gc();
+//                    System.gc();
+//                    System.gc();
 
 
                     if (individualAnalysis) {
@@ -182,11 +182,11 @@ public class Main {
                         m2.init(settings, texttoreplace, replacetextwith);
                         m2.analyze();
 
-                        System.gc();
-                        System.gc();
-                        System.gc();
-                        System.gc();
-                        System.gc();
+//                        System.gc();
+//                        System.gc();
+//                        System.gc();
+//                        System.gc();
+//                        System.gc();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
