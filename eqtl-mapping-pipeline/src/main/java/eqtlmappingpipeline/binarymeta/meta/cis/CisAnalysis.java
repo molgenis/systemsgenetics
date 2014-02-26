@@ -176,8 +176,8 @@ public class CisAnalysis extends MetaAnalyze {
         super.initdatasets(locations, perm, dToUse);
 
 
-        System.gc();
-        System.gc();
+//        System.gc();
+//        System.gc();
 
         Descriptives.lookupSqrt(nrTotalSamples);
 
