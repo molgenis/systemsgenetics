@@ -58,12 +58,39 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		
 		for (RandomAccessGenotypeData genotypeData : genotypeDataCollection)
 		{
+			
+			String sequenceName = genotypeData.getSeqNames().get(0);
+			
+			LOGGER.info("Started loading chr " + sequenceName + " to multipart data");
+			
 			if (samples != null)
 			{
 				if (!genotypeData.getSamples().equals(samples))
 				{
+					
+					
+					
+					if(genotypeData.getSamples().size() != samples.size()){
+						throw new IncompatibleMultiPartGenotypeDataException(
+							"Incompatible multi part genotype data. All files should contain identical samples in same order. Number of samples is not identical for chr: "+ sequenceName);
+					}
+					
+					Iterator<Sample> newSampleIterator = genotypeData.getSamples().iterator();
+					Iterator<Sample> totalSampleIterator = samples.iterator();
+					
+					while(newSampleIterator.hasNext()){
+						Sample newSample = newSampleIterator.next();
+						Sample existingSample = totalSampleIterator.next();
+						
+						if(!newSample.equals(existingSample)){
+							throw new IncompatibleMultiPartGenotypeDataException(
+							"Incompatible multi part genotype data. All files should contain identical samples in same order. Found sample: " + newSample + " expected: " + existingSample + " for chr: " + sequenceName);
+						}
+						
+					}
+					
 					throw new IncompatibleMultiPartGenotypeDataException(
-							"Incompatible multi part genotype data. All files should contain identical samples in same order.");
+							"Incompatible multi part genotype data. All files should contain identical samples in same order. Cause of difference unkown for chr: " + sequenceName);
 				}
 			}
 			else
