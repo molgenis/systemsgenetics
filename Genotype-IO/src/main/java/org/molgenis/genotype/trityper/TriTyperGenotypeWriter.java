@@ -109,14 +109,17 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 		
 		// no need for buffered stream writer. data we write per SNP.
 		FileOutputStream genotypeDataFileWriter = new FileOutputStream(genotypeDataFile);
-		
+		FileOutputStream genotypeDosageDataFileWriter = new FileOutputStream(imputedDosageDataFile);
+
 		String[] samples = genotypeData.getSampleNames();
 		int sampleCount = samples.length;
 		
 		byte[] snpBuffer = new byte[sampleCount * 2];
-		
+		byte[] dosageBuffer = new byte[sampleCount];
+
 		for(GeneticVariant variant : genotypeData){
-			
+
+			float[] dosageValues = variant.getSampleDosages();
 			int i = 0;
 			for(Alleles sampleAlleles : variant.getSampleVariants()){
 				
@@ -127,15 +130,25 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 				
 				snpBuffer[i] = sampleAlleles.get(0).isSnpAllele() && sampleAlleles.get(0) != Allele.ZERO ? (byte) sampleAlleles.get(0).getAlleleAsSnp() : 0;
 				snpBuffer[i + sampleCount] = sampleAlleles.get(1).isSnpAllele() && sampleAlleles.get(1) != Allele.ZERO ? (byte) sampleAlleles.get(1).getAlleleAsSnp() : 0;
-				
+
+				float dosage = dosageValues[i];
+				if (dosage == -1)
+					dosageBuffer[i] = (byte) 127;
+				else {
+					int dosageInt = (int) Math.round(dosage * 100d);
+					dosageBuffer[i] = (byte) (Byte.MIN_VALUE + dosageInt);
+				}
+
 				++i;
 			}
 			
 			genotypeDataFileWriter.write(snpBuffer);
-			
+			genotypeDosageDataFileWriter.write(dosageBuffer);
+
 		}
 		
 		genotypeDataFileWriter.close();
+		genotypeDosageDataFileWriter.close();
 		
 	}
 	
