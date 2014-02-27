@@ -50,5 +50,23 @@ public class VcfGenotypeDataTest2 extends ResourceTest
 		
 	}
 
+	@Test
+	public void getProbs(){
+		
+		GeneticVariant var = genotypeData.getSnpVariantByPos("21", 9834467);
+		
+		assertEquals(var.getVariantAlleles(), Alleles.createAlleles(Allele.A, Allele.G));
+		assertEquals(var.getSampleVariants().get(2), Alleles.createAlleles(Allele.G, Allele.A));
+		
+		assertEquals(var.getSampleGenotypeProbilities()[0][0],0.878, 0.01);
+		assertEquals(var.getSampleGenotypeProbilities()[0][1],0.122, 0.01);
+		assertEquals(var.getSampleGenotypeProbilities()[0][2],0, 0.01);
+		
+		assertEquals(var.getSampleGenotypeProbilities()[2][0],0.635, 0.01);
+		assertEquals(var.getSampleGenotypeProbilities()[2][1],0.323, 0.01);
+		assertEquals(var.getSampleGenotypeProbilities()[2][2],0.042, 0.01);
+		
+	}
+	
 
 }
