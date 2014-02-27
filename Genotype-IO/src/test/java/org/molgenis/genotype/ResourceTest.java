@@ -20,6 +20,11 @@ public class ResourceTest
 		return getTestResourceFile("/test.vcf.gz");
 	}
 
+		protected File getTestVcfGz2() throws URISyntaxException
+	{
+		return getTestResourceFile("/chr21.imputed.head.vcf.gz");
+	}
+
 	protected File getTestVcf1() throws URISyntaxException
 	{
 		return getTestResourceFile("/test1.vcf");
@@ -28,6 +33,11 @@ public class ResourceTest
 	protected File getTestVcfGzTbi() throws URISyntaxException
 	{
 		return getTestResourceFile("/test.vcf.gz.tbi");
+	}
+	
+		protected File getTestVcfGz2Tbi() throws URISyntaxException
+	{
+		return getTestResourceFile("/chr21.imputed.head.vcf.gz.tbi");
 	}
 
 	protected File getTestMap() throws URISyntaxException
