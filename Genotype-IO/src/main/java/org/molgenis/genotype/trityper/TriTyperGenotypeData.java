@@ -452,15 +452,18 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
             boolean takeComplement = false;
             for (int ind = 0; ind < dosageValues.length; ind++) {
-                double dosagevalue = ((double) (-Byte.MIN_VALUE + dosageValues[ind])) / 100;
-                if (genotypes[ind] == 0 && dosagevalue > 1) {
-                    takeComplement = true;
-                    break;
-                }
-                if (genotypes[ind] == 2 && dosagevalue < 1) {
-                    takeComplement = true;
-                    break;
-                }
+				
+				if(dosageValues[ind] != 127){
+					double dosagevalue = ((double) (-Byte.MIN_VALUE + dosageValues[ind])) / 100;
+					if (genotypes[ind] == 0 && dosagevalue > 1) {
+						takeComplement = true;
+						break;
+					}
+					if (genotypes[ind] == 2 && dosagevalue < 1) {
+						takeComplement = true;
+						break;
+					}
+				}
             }
             if (takeComplement) {
                 for (int ind = 0; ind < dosageValues.length; ind++) {
@@ -471,7 +474,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
             float[] dosageValuesFloat = new float[includedSamples.size()];
             for (int i = 0, j = 0; i < dosageValues.length; i++) {
                 if (sampleFilter == null || sampleFilter.doesSamplePassFilter(samples.get(i))) {
-                    dosageValuesFloat[j] = ((float) (-Byte.MIN_VALUE + dosageValues[ i])) / 100;
+					if(dosageValues[i] == 127){
+						dosageValuesFloat[j] = -1;
+					} else {
+						dosageValuesFloat[j] = ((float) (-Byte.MIN_VALUE + dosageValues[ i])) / 100;
+					}
                     ++j;
                 }
             }
