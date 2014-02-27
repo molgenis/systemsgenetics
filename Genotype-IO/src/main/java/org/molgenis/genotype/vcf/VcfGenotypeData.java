@@ -280,8 +280,58 @@ public class VcfGenotypeData extends IndexedGenotypeData implements SampleVarian
 
 	@Override
 	public float[] getSampleDosage(GeneticVariant variant) {
-		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
-				variant.getVariantAlleles(), variant.getRefAllele());
+
+		RawLineQueryResult queryResult = index.createRawLineQuery().executeQuery(variant.getSequenceName(),
+				variant.getStartPos());
+
+		float[] dosages = null;
+
+		try {
+			for (String line : queryResult) {
+				List<String> alleles = variant.getVariantAlleles().getAllelesAsString();
+				VcfRecord record = new VcfRecord(line, reader.getColNames());
+				if (record.getChrom().equalsIgnoreCase(variant.getSequenceName())
+						&& (record.getPos() == variant.getStartPos()) && record.getAlleles().equals(alleles)) {
+
+
+					if (record.getFormat().contains("DS")) {
+
+						List<String> sampleNames = reader.getSampleNames();
+						dosages = new float[sampleNames.size()];
+						int i = 0;
+						for (String sampleName : sampleNames) {
+							String dosageString = record.getSampleValue(sampleName, "DS");
+							if (dosageString == null) {
+								throw new GenotypeDataException("Missing DS format value for sample ["
+										+ sampleName + "]");
+							}
+							float sampleDosage;
+							try {
+								sampleDosage = (Float.parseFloat(dosageString)-2)*-1;
+							} catch (NumberFormatException e) {
+								throw new GenotypeDataException("Error in sample dosage (DS) value for sample ["
+										+ sampleName + "], found value: " + dosageString);
+							}
+							dosages[i] = sampleDosage;
+							++i;
+						}
+
+					}
+
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			IOUtils.closeQuietly(queryResult);
+		}
+
+		if (dosages == null) {
+			dosages = CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
+					variant.getVariantAlleles(), variant.getRefAllele());
+		}
+
+		return dosages;
 	}
 
 	@Override
