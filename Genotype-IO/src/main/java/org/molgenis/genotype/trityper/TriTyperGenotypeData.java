@@ -467,8 +467,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
             }
             if (takeComplement) {
                 for (int ind = 0; ind < dosageValues.length; ind++) {
-                    byte dosageValue = (byte) (200 - (-Byte.MIN_VALUE + dosageValues[ind]) + Byte.MIN_VALUE);
-                    dosageValues[ind] = dosageValue;
+					if(dosageValues[ind] != 127){
+						byte dosageValue = (byte) (200 - (-Byte.MIN_VALUE + dosageValues[ind]) + Byte.MIN_VALUE);
+						dosageValues[ind] = dosageValue;
+					}
                 }
             }
             float[] dosageValuesFloat = new float[includedSamples.size()];
