@@ -11,9 +11,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeWriter;
+import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
+import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.util.GenotypeDataCompareTool;
 import static org.testng.Assert.*;
+
+import org.molgenis.genotype.variant.GeneticVariant;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -70,5 +74,41 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		assertTrue(GenotypeDataCompareTool.same(original, copy));
 		
 	}
-	
+
+	@Test
+	public void writeTriTyperDosage() throws Exception{
+
+		RandomAccessGenotypeData original = new GenGenotypeData(getTest2Gen(), getTest2Sample());
+
+		GenotypeWriter writer = new TriTyperGenotypeWriter(original);
+
+		writer.write(tmpOutputFolder.getAbsolutePath());
+
+		RandomAccessGenotypeData trityper = new TriTyperGenotypeData(tmpOutputFolder);
+
+		int numSamples = trityper.getSamples().size();
+
+		GeneticVariant variant = original.getSnpVariantByPos("1", 1);
+		GeneticVariant originalVariant = original.getSnpVariantByPos("1", 1);
+
+		float[] dosageValues = variant.getSampleDosages();
+		float[] originalDosageValues = originalVariant.getSampleDosages();
+
+		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+		for(int i = 0; i < numSamples; i++){
+			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
+		}
+
+
+		variant = original.getSnpVariantByPos("22", 14432918);
+		originalVariant = original.getSnpVariantByPos("22", 14432918);
+
+		dosageValues = variant.getSampleDosages();
+		originalDosageValues = originalVariant.getSampleDosages();
+
+		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+		for(int i = 0; i < numSamples; i++){
+			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
+		}
+	}
 }
