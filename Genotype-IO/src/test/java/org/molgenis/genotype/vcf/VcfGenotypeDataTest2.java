@@ -7,7 +7,6 @@ import java.net.URISyntaxException;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
-import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
