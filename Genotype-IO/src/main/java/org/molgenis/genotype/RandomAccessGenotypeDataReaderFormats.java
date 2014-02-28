@@ -254,4 +254,35 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		}
 
 	}
+	
+	/**
+	 * Samples are filtered first then the variant filter is applied.
+	 *
+	 * @param path
+	 * @param cacheSize
+	 * @param variantFilter
+	 * @param sampleFilter
+	 * @param forcedSequence null if not used
+	 * @param minimumPosteriorProbabilityToCall 
+	 * @return
+	 * @throws IOException
+	 */
+	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException {
+
+		switch (this) {
+			case TRITYPER:
+				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
+			default:
+				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize);
+				if (sampleFilter != null) {
+					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
+				}
+				if (variantFilter != null) {
+					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
+				}
+				return genotypeData;
+		}
+
+	}
+	
 }
