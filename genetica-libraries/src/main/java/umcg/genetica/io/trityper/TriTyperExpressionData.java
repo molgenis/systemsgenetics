@@ -125,7 +125,7 @@ public class TriTyperExpressionData {
         this.includeIndividuals = includedIndividuals;
     }
 
-    public void setConfineToProbesThatMapToChromosome(boolean chr) {
+    public void setConfineToProbesThatMapToAnyChromosome(boolean chr) {
         this.confineToProbesThatMapToAnyChromosome = chr;
     }
 
@@ -322,10 +322,10 @@ public class TriTyperExpressionData {
                             reason += "Probe annotation not loaded for probe:\t" + probe;
                         } else if ((probesConfine == null || probesConfine.contains(probe))
                                 && (!confineToProbesThatMapToAnyChromosome || probeChr >= 1)
-                                && (confineToProbesMappingOnChromosome != null && confineToProbesMappingOnChromosome.equals((int) probeChr))) {
+                                && (confineToProbesMappingOnChromosome == null || confineToProbesMappingOnChromosome.equals((int) probeChr))) {
                             includeprobe = true;
                         } else {
-                            reason += "Probe not in confine list or not mapping to a chr of interest";
+                            reason += "Probe not selected during confinement.";
                         }
                     } else if (!cistrans) {
                         throw new IOException("ERROR: probe annotation not loaded?");

@@ -74,7 +74,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         // load the expression data
         expressionData = new TriTyperExpressionData();
         expressionData.confineToProbes(settings.tsProbesConfine);
-        expressionData.setConfineToProbesThatMapToChromosome(settings.confineProbesToProbesMappingToAnyChromosome);
+        expressionData.setConfineToProbesThatMapToAnyChromosome(settings.confineProbesToProbesMappingToAnyChromosome);
         expressionData.setConfineToProbesThatMapToChromosome(settings.confineProbesToProbesThatMapToChromosome);
         expressionData.setIncludeIndividuals(includedExpressionIndividuals);
         expressionData.setPathwayDefinitions(pathwayDefinitions);
