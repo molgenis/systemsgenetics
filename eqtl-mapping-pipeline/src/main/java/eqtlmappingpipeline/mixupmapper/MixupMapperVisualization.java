@@ -82,17 +82,16 @@ public class MixupMapperVisualization {
 
                         String colName = colNames[c];
                         boolean valueIsFromRelative = false;
-                        if (relatives != null) {
-                            if (isChild) {
-                                if (colName.equals(relatives.parent1.sampleName) || colName.equals(relatives.parent2.sampleName)) {
-                                    valueIsFromRelative = true;
-                                }
-                            } else {
-                                if (colName.equals(relatives.child.sampleName)) {
-                                    valueIsFromRelative = true;
-                                }
+                        if (isChild) {
+                            if (colName.equals(relatives.parent1.sampleName) || colName.equals(relatives.parent2.sampleName)) {
+                                valueIsFromRelative = true;
+                            }
+                        } else {
+                            if (colName.equals(relatives.child.sampleName)) {
+                                valueIsFromRelative = true;
                             }
                         }
+
 
                         if (valueIsFromRelative) {
                             numParents++;

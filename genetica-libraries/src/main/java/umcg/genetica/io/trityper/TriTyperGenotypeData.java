@@ -4,10 +4,11 @@
  */
 package umcg.genetica.io.trityper;
 
+import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
@@ -23,8 +24,9 @@ public class TriTyperGenotypeData {
     private Boolean[] isCase;
     private Boolean[] isIncluded;
     private String[] individuals;
-    private HashMap<String, Integer> individualToId;
-    private HashMap<String, Integer> snpToSNPId;
+    private THashMap<String, Integer> individualToId;
+    //private THashMap<String, Integer> snpToSNPId;
+    private TObjectIntHashMap<String> snpToSNPId;
     private String genotypeFileName;
     private String dosageFileName;
     private byte[] chr;
@@ -47,7 +49,7 @@ public class TriTyperGenotypeData {
         String[] lineElems = t.readLineElemsReturnReference(TextFile.tab);
         ArrayList<String> alInd = new ArrayList<String>();
         int i = 0;
-        individualToId = new HashMap<String, Integer>();
+        individualToId = new THashMap<String, Integer>();
         while (lineElems != null) {
             String individual = new String(lineElems[0].getBytes("UTF-8"));
             individualToId.put(individual, i);
@@ -140,18 +142,24 @@ public class TriTyperGenotypeData {
         }
 
         String line = t.readLine();
-        int snpId = 0;
+        
         ArrayList<String> tmpSNP = new ArrayList<String>();
-        snpToSNPId = new HashMap<String, Integer>();
 
         while (line != null) {
             if (line.trim().length() > 0) {
-                String snp = new String(line.getBytes("UTF-8"));
-                snpToSNPId.put(snp, snpId);
+                String snp = new String(line.getBytes("UTF-8")).intern();
                 tmpSNP.add(snp);
-                snpId++;
+                
             }
             line = t.readLine();
+        }
+        
+        //value if absent now will be -9
+        snpToSNPId = new TObjectIntHashMap<String>(tmpSNP.size(), 0.85f, -9);
+        int snpId = 0;
+        for(String s : tmpSNP){
+            snpToSNPId.put(s, snpId);
+            snpId++;
         }
 
         SNPs = tmpSNP.toArray(new String[0]);
@@ -183,7 +191,7 @@ public class TriTyperGenotypeData {
                 Integer snpNum = snpToSNPId.get(snpStr);
                 boolean unknownchr = false;
                 boolean unknownchrpos = false;
-                if (snpNum != null && !"null".equals(lineElems[0]) && !"null".equals(lineElems[1])) {
+                if (snpNum != -9 && !"null".equals(lineElems[0]) && !"null".equals(lineElems[1])) {
 
                     if (lineElems[0].length() > 0 && !lineElems[0].equals("-1")) {
                         chr[snpNum] = ChrAnnotation.parseChr(lineElems[0]);
@@ -264,28 +272,28 @@ public class TriTyperGenotypeData {
     /**
      * @return the individualToId
      */
-    public HashMap<String, Integer> getIndividualToId() {
+    public THashMap<String, Integer> getIndividualToId() {
         return individualToId;
     }
 
     /**
      * @param individualToId the individualToId to set
      */
-    public void setIndividualToId(HashMap<String, Integer> individualToId) {
+    public void setIndividualToId(THashMap<String, Integer> individualToId) {
         this.individualToId = individualToId;
     }
 
     /**
      * @return the snpToSNPObject
      */
-    public HashMap<String, Integer> getSnpToSNPId() {
+    public TObjectIntHashMap<String> getSnpToSNPId() {
         return snpToSNPId;
     }
 
     /**
      * @param snpToSNPObject the snpToSNPObject to set
      */
-    public void setSnpToSNPObject(HashMap<String, Integer> snpToSNPObject) {
+    public void setSnpToSNPObject(TObjectIntHashMap<String> snpToSNPObject) {
         this.snpToSNPId = snpToSNPObject;
     }
 

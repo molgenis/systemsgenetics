@@ -180,13 +180,13 @@ public class EQTL implements Comparable<EQTL> {
                 }
             }
 
-            if (eQTLType == null) {
-                out.append(nullstr);
-                out.append(tabStr);
-            } else {
+//            if (eQTLType == null) {
+//                out.append(nullstr);
+//                out.append(tabStr);
+//            } else {
                 out.append(eQTLType);
                 out.append(tabStr);
-            }
+//            }
 
             if (alleles == null) {
                 System.err.println(rsName + " has null alleles..?'\n" + out.toString());

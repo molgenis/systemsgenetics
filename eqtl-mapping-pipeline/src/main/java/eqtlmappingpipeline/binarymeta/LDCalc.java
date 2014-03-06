@@ -49,7 +49,7 @@ public class LDCalc {
             Integer id = ds.getSnpToSNPId().get(snpsToQuery[i]);
 
 
-            if (id != null) {
+            if (id != -9) {
 
                 SNP snp1 = ds.getSNPObject(id);
                 loader.loadGenotypes(snp1);
@@ -63,7 +63,7 @@ public class LDCalc {
                         Integer id2 = ds.getSnpToSNPId().get(snpsToQuery[j]);
 
 
-                        if (id2 != null) {
+                        if (id2 != -9) {
                             SNP snp2 = ds.getSNPObject(id2);
 
 

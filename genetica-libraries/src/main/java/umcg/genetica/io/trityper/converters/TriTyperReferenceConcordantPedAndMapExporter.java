@@ -95,8 +95,8 @@ public class TriTyperReferenceConcordantPedAndMapExporter {
 			if (snpsExcluded.contains(s)) {
 			log.writeln(s + "\t excluded by user");
 			} else {
-			Integer refSNPId = referenceGenotypeDataset.getSnpToSNPId().get(s);
-			if (refSNPId == null) {
+			int refSNPId = referenceGenotypeDataset.getSnpToSNPId().get(s);
+			if (refSNPId == -9) {
 				// SNP IS NOT IN REFERENCE. EXCLUDE!
 				log.writeln(s + "\t is not in reference");
 				nrnotinref++;

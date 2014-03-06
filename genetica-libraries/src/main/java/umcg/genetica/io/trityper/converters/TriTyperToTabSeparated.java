@@ -40,8 +40,8 @@ public class TriTyperToTabSeparated {
         for (String s : query) {
             TextFile out = new TextFile(outDir + s + ".txt", TextFile.W);
 
-            Integer SNPId = ds.getSnpToSNPId().get(s);
-            if (SNPId == null) {
+            int SNPId = ds.getSnpToSNPId().get(s);
+            if (SNPId == -9) {
                 out.writeln("SNP " + s + " not present in dataset");
             } else {
                 SNP snpObj = ds.getSNPObject(SNPId);

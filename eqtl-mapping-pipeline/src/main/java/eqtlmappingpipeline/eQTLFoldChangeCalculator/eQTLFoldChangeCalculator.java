@@ -38,7 +38,7 @@ public class eQTLFoldChangeCalculator extends MetaQTL3 {
 		Integer snpId = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
 		Integer probeId = m_gg[d].getExpressionData().getProbeToId().get(probe);
 
-		if (snpId != null && probeId != null) {
+		if (snpId != -9 && probeId != null) {
 		    SNP snpObject = m_gg[d].getGenotypeData().getSNPObject(snpId);
 		    loader.loadGenotypes(snpObject);
 		    double[] expression = m_gg[d].getExpressionData().getMatrix()[probeId];

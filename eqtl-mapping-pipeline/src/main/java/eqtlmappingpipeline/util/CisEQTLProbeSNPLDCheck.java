@@ -113,7 +113,7 @@ public class CisEQTLProbeSNPLDCheck {
                 String snp = snpProbePair.getLeft();
                 Integer snpId = reference.getSnpToSNPId().get(snp);
 
-                if (snpId == null) {
+                if (snpId == -9) {
                     snpProbePairsTested.add(snpProbePair);
                     snpProbePairsTestedForThisReferenceDs.add(snpProbePair);
                     output.writeln(snpProbePair.toString() + "\tUNKNOWN: SNP not present in " + referenceDatasetName);

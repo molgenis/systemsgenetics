@@ -4,6 +4,7 @@
  */
 package umcg.genetica.io.trityper;
 
+import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         // load the genotype metadata
         genotypeData = new TriTyperGenotypeData();
         genotypeData.load(settings.genotypeLocation);
-        HashSet<String> includedExpressionIndividuals = new HashSet<String>();
+        THashSet<String> includedExpressionIndividuals = new THashSet<String>();
         Boolean[] isIncluded = genotypeData.getIsIncluded();
 
         // preload the sample coupling file
@@ -363,28 +364,20 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
 
     public HashMap<Integer, Integer> getGenotypeToExpressionIdHash() {
         HashMap<Integer, Integer> gte = new HashMap<Integer, Integer>();
-        int i = 0;
-        for (int entry : expressionToGenotypeIdArray) {
-            Integer genotypeIndId = entry;
-            Integer expressionIndId = i;
-            if (expressionIndId != null && genotypeIndId != null) {
-                gte.put(genotypeIndId, expressionIndId);
-            }
-            i++;
+        int expressionIndId = 0;
+        for (int genotypeIndId : expressionToGenotypeIdArray) {
+            gte.put(genotypeIndId, expressionIndId);
+            expressionIndId++;
         }
         return gte;
     }
 
     public HashMap<Integer, Integer> getExpressionToGenotypeIdHash() {
         HashMap<Integer, Integer> etg = new HashMap<Integer, Integer>();
-        int i = 0;
-        for (int entry : expressionToGenotypeIdArray) {
-            Integer genotypeIndId = entry;
-            Integer expressionIndId = i;
-            if (expressionIndId != null && genotypeIndId != null) {
-                etg.put(expressionIndId, genotypeIndId);
-            }
-            i++;
+        int expressionIndId = 0;
+        for (int genotypeIndId : expressionToGenotypeIdArray) {
+            etg.put(expressionIndId, genotypeIndId);
+            expressionIndId++;
         }
         return etg;
     }

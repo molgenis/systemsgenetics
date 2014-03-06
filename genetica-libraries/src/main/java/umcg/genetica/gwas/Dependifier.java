@@ -83,7 +83,7 @@ public class Dependifier {
     public HashSet<String> findProxiesForSNP(String snp, double proxyldthreshold, int maxproxydistance) throws IOException {
         HashSet<String> proxies = new HashSet<String>();
         Integer snpIdInReference = genotypeData.getSnpToSNPId().get(snp);
-        if (snpIdInReference != null) {
+        if (snpIdInReference != -9) {
 
             SNP snpObj = genotypeData.getSNPObject(snpIdInReference);
             byte chr = snpObj.getChr();

@@ -4,6 +4,8 @@
  */
 package umcg.genetica.gwas;
 
+import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,11 +47,11 @@ public class Independifier {
 
     public void selectSNPsWithSimilarMAFsAsRealInputSNPs(String[] snps) throws IOException {
 
-        HashMap<String, Integer> snpToSNPId = genotypeData.getSnpToSNPId();
+        TObjectIntHashMap<String> snpToSNPId = genotypeData.getSnpToSNPId();
 
         Vector vecMAFs = new Vector();
         for (int s = 0; s < snps.length; s++) {
-            if (snpToSNPId.get(snps[s]) != null) {
+            if (snpToSNPId.get(snps[s]) != -9) {
                 int id = snpToSNPId.get(snps[s]);
                 SNP snp = genotypeData.getSNPObject(id);
                 synchronized (snpLoader) {
@@ -98,10 +100,10 @@ public class Independifier {
     public String[] independify(String[] snps, double r2Threshold, int bpThreshold) throws IOException {
 
         // limit to SNPs present in genotype data
-        HashMap<String, Integer> snpToSNPId = genotypeData.getSnpToSNPId();
+        TObjectIntHashMap<String> snpToSNPId = genotypeData.getSnpToSNPId();
         Vector vecSNPsPresentInGenotypeData = new Vector();
         for (int s = 0; s < snps.length; s++) {
-            if (snpToSNPId.get(snps[s]) != null) {
+            if (snpToSNPId.get(snps[s]) == -9) {
                 vecSNPsPresentInGenotypeData.add(snps[s]);
             } else {
                 System.out.println("Error! SNP " + snps[s] + " is not present in the genotype data!!!!!!");
@@ -246,12 +248,11 @@ public class Independifier {
             throw new IllegalStateException("Dataset '" + permutationDataset + "' not set!");
         }
 
-        HashMap<String, Integer> snpToSNPId = genotypeData.getSnpToSNPId();
+        TObjectIntHashMap<String> snpToSNPId = genotypeData.getSnpToSNPId();
         Vector vecTopResults = new Vector();
         for (int s = 0; s < permDataset.nrCols; s++) {
             if (permDataset.rawData[permutation][s] < pThreshold) {
-                Integer snpId = snpToSNPId.get(permDataset.colObjects.get(s));
-                if (snpId == null) {
+                if (snpToSNPId.get(permDataset.colObjects.get(s)) == -9) {
 //                    System.err.println("SNP not in data! " + permDataset.colObjects.get(s));
                     continue;
                 }
