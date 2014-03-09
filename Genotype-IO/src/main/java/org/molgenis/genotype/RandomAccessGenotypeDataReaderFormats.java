@@ -273,7 +273,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			case TRITYPER:
 				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
 			default:
-				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize);
+				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
 				if (sampleFilter != null) {
 					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
 				}
