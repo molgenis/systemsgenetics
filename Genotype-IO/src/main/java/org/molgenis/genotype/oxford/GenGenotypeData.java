@@ -97,6 +97,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		}
 
 		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
+		
+		LOGGER.debug("Using " + minimumPosteriorProbabilityToCall + " as cutoff to call genotypes from: " + genFile.getAbsolutePath());
 
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		if (cacheSize > 0) {
@@ -109,6 +111,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
 		samples = oxfordSampleFile.getSamples();
+		
+		LOGGER.info("Loaded " + samples.size() + " samples from " + sampleFile.getAbsolutePath());
 
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
@@ -118,6 +122,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		hapsFileReader = new RandomAccessFile(genFile, "r");
 
 		byteToReadForSampleAlleles = loadVariants(forceSeqName);
+		
+		LOGGER.info("Loaded " + variants.size() + " variants from " + genFile.getAbsolutePath());
 
 	}
 
