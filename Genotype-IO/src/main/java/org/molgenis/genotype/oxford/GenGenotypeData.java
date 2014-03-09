@@ -48,7 +48,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final List<Sample> samples;
 	private final HashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
-	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
+	private static final Logger LOGGER = Logger.getLogger(GenGenotypeData.class);
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
