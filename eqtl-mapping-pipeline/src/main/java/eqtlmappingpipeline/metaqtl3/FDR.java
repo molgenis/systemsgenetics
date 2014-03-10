@@ -4,8 +4,11 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
+import gnu.trove.map.hash.TDoubleIntHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -108,7 +111,14 @@ public class FDR {
             System.out.println("Determining the FDR using all data");
         }
 
-        DenseDoubleMatrix2D permutedPValues = new DenseDoubleMatrix2D(nrPermutationsFDR, maxNrMostSignificantEQTLs);
+        DoubleMatrix2D permutedPValues;
+        
+        if ((nrPermutationsFDR * (long)maxNrMostSignificantEQTLs) < (Integer.MAX_VALUE - 2)) {
+            permutedPValues = new DenseDoubleMatrix2D(nrPermutationsFDR, maxNrMostSignificantEQTLs);
+        } else {
+            permutedPValues = new DenseLargeDoubleMatrix2D(nrPermutationsFDR, maxNrMostSignificantEQTLs);
+        }
+
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
         int nrEQTLs = -1;
         System.out.println("Reading permuted files");
@@ -328,15 +338,14 @@ public class FDR {
         // for all p-values, determine how many eQTL we find below its p-value, in comparison to random data
         double previousPValueThreshold = -1;
 
-        HashMap<Double, Integer> hashUniquePValues = new HashMap<Double, Integer>();
-        ArrayList<Double> vecUniquePValues = new ArrayList<Double>();
+
+        HashSet<Double> vecUPVs = new HashSet<Double>();
         double previousPValue = -1;
         for (int p = 0; p < nrRealDataEQTLs; p++) {
             double pValue = pValues[p];
             if (previousPValue != pValue) {
-                if (!hashUniquePValues.containsKey(pValue)) {
-                    hashUniquePValues.put(pValue, null);
-                    vecUniquePValues.add(pValue);
+                if (!vecUPVs.contains(pValue)) {
+                    vecUPVs.add(pValue);
                 }
                 previousPValue = pValue;
             }
@@ -344,26 +353,26 @@ public class FDR {
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             previousPValue = -1;
             for (int pPerm = 0; pPerm < maxNrMostSignificantEQTLs; pPerm++) {
-                double pValue = permutedPValues.getQuick(permutationRound, itr);
+                double pValue = permutedPValues.getQuick(permutationRound, pPerm);
                 if (previousPValue != pValue) {
-                    if (!hashUniquePValues.containsKey(pValue)) {
-                        hashUniquePValues.put(pValue, null);
-                        vecUniquePValues.add(pValue);
+                    if (!vecUPVs.contains(pValue)) {
+                        vecUPVs.add(pValue);
                     }
                     previousPValue = pValue;
                 }
             }
         }
-        double[] uniquePValues = new double[hashUniquePValues.size()];
+        double[] uniquePValues = new double[vecUPVs.size()];
+        ArrayList<Double> vecUniquePValues = new ArrayList<Double>(vecUPVs);
         Collections.sort(vecUniquePValues);
-        hashUniquePValues.clear();
+        
+        TDoubleIntHashMap hashUniquePValues = new TDoubleIntHashMap(uniquePValues.length);
         for (int u = 0; u < vecUniquePValues.size(); u++) {
             uniquePValues[u] = vecUniquePValues.get(u);
             hashUniquePValues.put(uniquePValues[u], u);
         }
 
         System.out.println("Number of unique P Values:\t" + hashUniquePValues.size());
-
         long[] uniquePValuesNrEQTLsWithThisPValue = new long[hashUniquePValues.size()];
         long[] uniquePValuesNrEQTLsWithThisPValueCumulative = new long[hashUniquePValues.size()];
         previousPValue = -1;
@@ -383,6 +392,7 @@ public class FDR {
             }
         }
 
+        //DensIntMatrix2d?
         int[][] permUniquePValuesNrEQTLsWithThisPValue = new int[hashUniquePValues.size()][nrPermutationsFDR];
         int[][] permUniquePValuesNrEQTLsWithThisPValueCumulative = new int[hashUniquePValues.size()][nrPermutationsFDR];
 
