@@ -77,7 +77,7 @@ public class Mediation extends IVAnalysis {
                     Integer cisProbeId = m_gg[d].getExpressionData().getProbeToId().get(cisprobe);
                     Integer transProbeId = m_gg[d].getExpressionData().getProbeToId().get(transprobe);
 
-                    if (snpId == null || cisProbeId == null || transProbeId == null) {
+                    if (snpId == -9 || cisProbeId == null || transProbeId == null) {
 //                        out.writeln(snp + "\t" + snpId + "\t" + cisprobe + "\t" + cisProbeId + "\t" + null + "\t" + transprobe + "\t" + transProbeId + "\t" + null + "\t" + null + "\t" + null + "\t" + null + "\t" + null + "\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA");
                     } else {
 

@@ -57,7 +57,7 @@ public class GenotypeDataQuery {
 
             for (String snp : snpstoquery) {
                 Integer snpid = tgd.getSnpToSNPId().get(snp);
-                if (snpid == null) {
+                if (snpid == -9) {
                     System.out.println("SNP " + snp + " does not exist in dataset");
                 } else {
 
@@ -98,7 +98,7 @@ public class GenotypeDataQuery {
 
             for (String snp : snpstoquery) {
                 Integer snpid = tgd.getSnpToSNPId().get(snp);
-                if (snpid == null) {
+                if (snpid == -9) {
                     System.out.println("SNP " + snp + " does not exist in dataset");
                 } else {
 
@@ -194,7 +194,7 @@ public class GenotypeDataQuery {
 
             for (String snp : snpstoquery) {
                 Integer snpid = tgd.getSnpToSNPId().get(snp);
-                if (snpid == null) {
+                if (snpid == -9) {
                     System.out.println("SNP " + snp + " does not exist in dataset");
                 } else {
 

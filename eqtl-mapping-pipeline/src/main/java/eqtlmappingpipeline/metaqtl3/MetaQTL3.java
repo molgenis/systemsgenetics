@@ -375,7 +375,7 @@ public class MetaQTL3 {
                     for (int d = 0; d < m_gg.length; d++) {
                         TriTyperGenotypeData ds = m_gg[d].getGenotypeData();
                         Integer snpId = ds.getSnpToSNPId().get(snpName);
-                        if (snpId == null) {
+                        if (snpId == -9) {
                             presentInAllDatasets = false;
                             reason.append(";Not present in dataset ").append(d);
                         } else {
@@ -480,7 +480,7 @@ public class MetaQTL3 {
                     boolean isPresentInAnyDataset = false;
                     for (int d = 0; d < m_gg.length; d++) {
                         Integer id = m_gg[d].getGenotypeData().getSnpToSNPId().get(next);
-                        if (id != null) {
+                        if (id != -9) {
                             isPresentInAnyDataset = true;
                         }
                     }
@@ -590,7 +590,7 @@ public class MetaQTL3 {
                         Integer chrPosStart2 = m_gg[d].getExpressionData().getChrStart()[probeId];
                         Integer chrPosEnd2 = m_gg[d].getExpressionData().getChrStop()[probeId];
 
-                        if (chr2 == null && chr != null) {
+                        if (chr2 == null) {
                             hasIdenticalMappingAcrossDatasets = false;
                         } else if (chrPosStart2 == null && chrPosStart != null) {
                             hasIdenticalMappingAcrossDatasets = false;

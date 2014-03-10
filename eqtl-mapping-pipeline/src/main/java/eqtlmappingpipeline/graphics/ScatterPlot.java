@@ -463,10 +463,10 @@ public class ScatterPlot {
             int plotX = x0 + (int) Math.round((x[i] - minX) / (maxX - minX) * (double) innerWidth);
             int plotY = y1 - (int) Math.round((y[i] - minY) / (maxY - minY) * (double) innerHeight);
 
-            Integer sex = gender[i];
+            int sex = gender[i];
             Integer g = group[i];
             
-            if( sex == null || !(sex == 0 || sex == 1 ) ){
+            if( !(sex == 0 || sex == 1 ) ){
                 g2d.drawRect(plotX -6, plotY-6, 12, 12);
                 g2d.setColor(colors[g]);
                 g2d.fillRect(plotX, plotY, 12, 12);

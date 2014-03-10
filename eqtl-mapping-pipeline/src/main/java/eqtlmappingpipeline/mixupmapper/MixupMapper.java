@@ -200,7 +200,7 @@ public class MixupMapper extends MetaQTL3 {
                 String snp = elems[1];
                 String probe = elems[4];
 
-                if (traitData.hashRows.containsKey(probe) && genotypeData.getSnpToSNPId().get(snp) != null) {
+                if (traitData.hashRows.containsKey(probe) && genotypeData.getSnpToSNPId().get(snp) != -9) {
                     Pair<String, String> p = new Pair<String, String>(snp, probe);
                     eQTLs.add(p);
                 } else {
@@ -316,7 +316,7 @@ public class MixupMapper extends MetaQTL3 {
                 Integer probeId = traitData.hashRows.get(probe);
                 Integer snpId = genotypeData.getSnpToSNPId().get(snp);
 
-                if (probeId == null || snpId == null) {
+                if (probeId == null || snpId == -9) {
                     // there is no such eQTL in the dataset!
                     System.out.println("Null trait or SNP ID:" + snpId + " (" + snp + ")\t" + probeId + " (" + snp + ")");
                     numNotTested++;

@@ -249,7 +249,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
                     TriTyperGeneticalGenomicsDataset d = m_gg[ds];
                     Integer gsnpid = d.getGenotypeData().getSnpToSNPId().get(gsnp);
                     Integer esnpid = d.getGenotypeData().getSnpToSNPId().get(esnp);
-                    if (gsnpid != null && esnpid != null) {
+                    if (gsnpid != -9 && esnpid != -9) {
                         SNP gsnpobj = d.getGenotypeData().getSNPObject(gsnpid);
                         SNP esnpobj = d.getGenotypeData().getSNPObject(esnpid);
                         if (gsnpobj != null && esnpobj != null) {

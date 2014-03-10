@@ -153,7 +153,7 @@ public class EQTLRegression {
                         if (!hashEQTLsMultipleRegressionRegressedOut.contains(e)) {
                             Integer snpId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
 
-                            if (snpId != null && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
+                            if (snpId != -9 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
                                 // load SNP
 
                                 SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);

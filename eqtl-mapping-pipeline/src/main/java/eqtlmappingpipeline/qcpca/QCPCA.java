@@ -461,7 +461,7 @@ public class QCPCA {
         ArrayList<Integer> ldSNPs = new ArrayList<Integer>();
         for (String s : list) {
             Integer snpId = ds.getGenotypeData().getSnpToSNPId().get(s);
-            if (snpId != null) {
+            if (snpId != -9) {
                 ldSNPs.add(snpId);
             }
         }
@@ -564,8 +564,8 @@ public class QCPCA {
 
         ArrayList<SortableSNP> snpsSorted = new ArrayList<SortableSNP>();
         for (Integer i : snpsOnChr) {
-            Integer chrPos = ds.getGenotypeData().getChrPos(i);
-            if (chrPos != null && chrPos > -1) {
+            int chrPos = ds.getGenotypeData().getChrPos(i);
+            if (chrPos > -1) {
                 snpsSorted.add(new SortableSNP(null, i, (byte) chr, chrPos, SortableSNP.SORTBY.CHRPOS));
             }
         }

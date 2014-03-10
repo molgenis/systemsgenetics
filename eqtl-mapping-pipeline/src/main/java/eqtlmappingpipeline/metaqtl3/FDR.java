@@ -4,7 +4,11 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
+import gnu.trove.map.hash.TDoubleIntHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -107,17 +111,26 @@ public class FDR {
             System.out.println("Determining the FDR using all data");
         }
 
-        double[][] permutedPValues = new double[nrPermutationsFDR][maxNrMostSignificantEQTLs];
+        DoubleMatrix2D permutedPValues;
+        
+        if ((nrPermutationsFDR * (long)maxNrMostSignificantEQTLs) < (Integer.MAX_VALUE - 2)) {
+            permutedPValues = new DenseDoubleMatrix2D(nrPermutationsFDR, maxNrMostSignificantEQTLs);
+        } else {
+            permutedPValues = new DenseLargeDoubleMatrix2D(nrPermutationsFDR, maxNrMostSignificantEQTLs);
+        }
+
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
         int nrEQTLs = -1;
         System.out.println("Reading permuted files");
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
             System.out.println(fileString);
+            
             // initialize the p-value matrix
-            for (int s = 0; s < maxNrMostSignificantEQTLs; s++) {
-                permutedPValues[permutationRound][s] = 1;
-            }
+            permutedPValues.assign(1);
+//            for (int s = 0; s < maxNrMostSignificantEQTLs; s++) {
+//                permutedPValues.set[permutationRound][s] = 1;
+//            }
 
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
@@ -195,9 +208,10 @@ public class FDR {
                         if (data.length > filteronColumn) {
 
                             if (!fdrId.equals("-") && !visitedEffects.contains(fdrId)) {
-                                permutedPValues[permutationRound][itr] = Double.parseDouble(data[0]);
+                                permutedPValues.setQuick(permutationRound, itr,Double.parseDouble(data[0]));
+//                                permutedPValues[permutationRound][itr] = Double.parseDouble(data[0]);
                                 visitedEffects.add(fdrId);
-                                if (itr > 0 && permutedPValues[permutationRound][itr - 1] > permutedPValues[permutationRound][itr]) {
+                                if (itr > 0 && permutedPValues.getQuick(permutationRound, (itr - 1)) > permutedPValues.getQuick(permutationRound, itr)) {
                                     System.err.println("Sorted P-Value list is not perfectly sorted!!!!");
                                     System.exit(-1);
                                 }
@@ -217,12 +231,12 @@ public class FDR {
             }
         }
 //        pb.close();
-        maxNrMostSignificantEQTLs = nrEQTLs;
-        double[][] actualPermutedPvals = new double[nrPermutationsFDR][nrEQTLs];
-        for (int p = 0; p < nrPermutationsFDR; p++) {
-            System.arraycopy(permutedPValues[p], 0, actualPermutedPvals[p], 0, nrEQTLs);
-        }
-        permutedPValues = actualPermutedPvals;
+//        maxNrMostSignificantEQTLs = nrEQTLs;
+//        double[][] actualPermutedPvals = new double[nrPermutationsFDR][nrEQTLs];
+//        for (int p = 0; p < nrPermutationsFDR; p++) {
+//            System.arraycopy(permutedPValues[p], 0, actualPermutedPvals[p], 0, nrEQTLs);
+//        }
+//        permutedPValues = actualPermutedPvals;
 
         //Load real data:
         double[] pValues = new double[maxNrMostSignificantEQTLs];
@@ -324,15 +338,14 @@ public class FDR {
         // for all p-values, determine how many eQTL we find below its p-value, in comparison to random data
         double previousPValueThreshold = -1;
 
-        HashMap<Double, Integer> hashUniquePValues = new HashMap<Double, Integer>();
-        ArrayList<Double> vecUniquePValues = new ArrayList<Double>();
+
+        HashSet<Double> vecUPVs = new HashSet<Double>();
         double previousPValue = -1;
         for (int p = 0; p < nrRealDataEQTLs; p++) {
             double pValue = pValues[p];
             if (previousPValue != pValue) {
-                if (!hashUniquePValues.containsKey(pValue)) {
-                    hashUniquePValues.put(pValue, null);
-                    vecUniquePValues.add(pValue);
+                if (!vecUPVs.contains(pValue)) {
+                    vecUPVs.add(pValue);
                 }
                 previousPValue = pValue;
             }
@@ -340,26 +353,26 @@ public class FDR {
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             previousPValue = -1;
             for (int pPerm = 0; pPerm < maxNrMostSignificantEQTLs; pPerm++) {
-                double pValue = permutedPValues[permutationRound][pPerm];
+                double pValue = permutedPValues.getQuick(permutationRound, pPerm);
                 if (previousPValue != pValue) {
-                    if (!hashUniquePValues.containsKey(pValue)) {
-                        hashUniquePValues.put(pValue, null);
-                        vecUniquePValues.add(pValue);
+                    if (!vecUPVs.contains(pValue)) {
+                        vecUPVs.add(pValue);
                     }
                     previousPValue = pValue;
                 }
             }
         }
-        double[] uniquePValues = new double[hashUniquePValues.size()];
+        double[] uniquePValues = new double[vecUPVs.size()];
+        ArrayList<Double> vecUniquePValues = new ArrayList<Double>(vecUPVs);
         Collections.sort(vecUniquePValues);
-        hashUniquePValues.clear();
+        
+        TDoubleIntHashMap hashUniquePValues = new TDoubleIntHashMap(uniquePValues.length);
         for (int u = 0; u < vecUniquePValues.size(); u++) {
             uniquePValues[u] = vecUniquePValues.get(u);
             hashUniquePValues.put(uniquePValues[u], u);
         }
 
         System.out.println("Number of unique P Values:\t" + hashUniquePValues.size());
-
         long[] uniquePValuesNrEQTLsWithThisPValue = new long[hashUniquePValues.size()];
         long[] uniquePValuesNrEQTLsWithThisPValueCumulative = new long[hashUniquePValues.size()];
         previousPValue = -1;
@@ -379,6 +392,7 @@ public class FDR {
             }
         }
 
+        //DensIntMatrix2d?
         int[][] permUniquePValuesNrEQTLsWithThisPValue = new int[hashUniquePValues.size()][nrPermutationsFDR];
         int[][] permUniquePValuesNrEQTLsWithThisPValueCumulative = new int[hashUniquePValues.size()][nrPermutationsFDR];
 
@@ -386,7 +400,7 @@ public class FDR {
             previousPValue = -1;
             pValueIndex = -1;
             for (int p = 0; p < maxNrMostSignificantEQTLs; p++) {
-                double pValue = permutedPValues[permutationRound][p];
+                double pValue = permutedPValues.getQuick(permutationRound, p);
                 if (previousPValue != pValue || pValueIndex == -1) {
                     pValueIndex = hashUniquePValues.get(pValue);
                     previousPValue = pValue;
@@ -509,7 +523,7 @@ public class FDR {
             QQPlot qq = new QQPlot();
             String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
             qq.draw(fileName, fdrcutoff, nrPermutationsFDR,
-                    maxNrMostSignificantEQTLs, permutedPValues, nrRealDataEQTLs, pValues,
+                    maxNrMostSignificantEQTLs, permutedPValues.toArray(), nrRealDataEQTLs, pValues,
                     pValueSignificant, nrSignificantEQTLs);
         }
 

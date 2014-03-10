@@ -69,13 +69,13 @@ public class LDCalculator {
 
             boolean test = true;
             String teststr = "";
-            if (snp1Id == null) {
+            if (snp1Id == -9) {
                 System.out.println(p.getLeft() + "\tnot present in dataset");
                 teststr = p.getLeft() + "\tnot present in dataset";
                 test = false;
             }
 
-            if (snp2Id == null) {
+            if (snp2Id == -9) {
                 System.out.println(p.getRight() + "\tnot present in dataset");
                 if (teststr.length() > 0) {
                     teststr += "\t" + p.getRight() + "\tnot present in dataset";
@@ -135,7 +135,7 @@ public class LDCalculator {
             String outputStr = snp;
             System.out.println(ctr + "/" + snpsToQuery.length);
             Integer refDatasetId = refDataset.getSnpToSNPId().get(snp);
-            if (refDatasetId == null) {
+            if (refDatasetId == -9) {
                 // this SNP is useless, we cannot find a proxy for a SNP we have no data for.
                 outputStr += "\t-\tNo proxy available - Not present in reference";
             } else {
@@ -180,10 +180,10 @@ public class LDCalculator {
             String outputStr = snp;
             Integer inDatasetId = inDataset.getSnpToSNPId().get(snp);
             Integer refDatasetId = refDataset.getSnpToSNPId().get(snp);
-            if (inDatasetId == null && refDatasetId == null) {
+            if (inDatasetId == -9 && refDatasetId == -9) {
                 // this SNP is useless, we cannot find a proxy for a SNP we have no data for.
                 outputStr += "\t-\tNo proxy available - Not present in reference and dataset";
-            } else if (inDatasetId == null && refDatasetId != null) {
+            } else if (inDatasetId == -9 && refDatasetId != -9) {
                 // possibly there is a proxy in our reference.
                 Triple<String, Double, Integer> proxy = findProxyThatIsAlsoInDatasetToTest(refDataset, inDataset, refLoader, datasetLoader, refDatasetId, r2threshold, mafThreshold, crthreshold, hwepthreshold, maxdistance);
                 if (proxy == null) {
@@ -191,7 +191,7 @@ public class LDCalculator {
                 } else {
                     outputStr += "\t" + proxy.getLeft() + "\t" + proxy.getMiddle() + "\t" + proxy.getRight();
                 }
-            } else if (inDatasetId != null && refDatasetId != null) {
+            } else if (inDatasetId != -9 && refDatasetId != -9) {
                 // we might need to look for a proxy, if the SNP in the inDataset does not conform to the thresholds set.
 
                 // we need to load the data first
@@ -214,7 +214,7 @@ public class LDCalculator {
 
 
 
-            } else if (inDatasetId != null && refDatasetId == null) {
+            } else if (inDatasetId != -9 && refDatasetId == -9) {
                 SNP snpInDataObj = inDataset.getSNPObject(inDatasetId);
                 datasetLoader.loadGenotypes(snpInDataObj);
                 snpInDataObj.clearGenotypes();
@@ -251,13 +251,11 @@ public class LDCalculator {
             if (refDataset.getChr(s) == chromosomeOfStartSNP && !snpIdInReference.equals(s)) {
                 // now check whether the SNP is actually in the in dataset.
                 String snpName = snpsInReference[s];
-                Integer chrPos = refDataset.getChrPos(s);
-                if (chrPos != null) {
-                    int distance = Math.abs(refDataset.getChrPos(s) - refDataset.getChrPos(snpIdInReference));
-                    if (distance < maxDistance) {
-                        if (inDataset.getSnpToSNPId().get(snpName) != null) {
-                            snpsToSort.add(new SortableSNP(snpName, s, chromosomeOfStartSNP, refDataset.getChrPos(s), SortableSNP.SORTBY.CHRPOS));
-                        }
+                int chrPos = refDataset.getChrPos(s);
+                int distance = Math.abs(refDataset.getChrPos(s) - refDataset.getChrPos(snpIdInReference));
+                if (distance < maxDistance) {
+                    if (inDataset.getSnpToSNPId().get(snpName) != -9) {
+                        snpsToSort.add(new SortableSNP(snpName, s, chromosomeOfStartSNP, refDataset.getChrPos(s), SortableSNP.SORTBY.CHRPOS));
                     }
                 }
 
