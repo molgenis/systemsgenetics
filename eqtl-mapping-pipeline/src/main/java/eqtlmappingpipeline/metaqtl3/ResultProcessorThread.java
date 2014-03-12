@@ -511,4 +511,8 @@ public class ResultProcessorThread extends Thread {
             et.close();
         }
     }
+    
+    public long getNrTestsPerformed() {
+        return nrTestsPerformed;
+    }
 }

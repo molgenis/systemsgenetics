@@ -799,7 +799,13 @@ public class MetaQTL3 {
             System.out.println("");
             resultQueue.clear();
             packageQueue.clear();
-
+            
+            if(permutationRound==0){
+                if( m_settings.maxNrMostSignificantEQTLs > resultthread.getNrTestsPerformed()){
+                    m_settings.maxNrMostSignificantEQTLs = (int) resultthread.getNrTestsPerformed();
+                }
+            }
+            
             resultQueue = null;
             packageQueue = null;
             permtime = null;
