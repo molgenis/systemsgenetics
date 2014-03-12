@@ -279,7 +279,8 @@ public class ResultProcessorThread extends Thread {
             if (m_createTEXTFiles) {
                 if(locationToStoreResult>0){
                     if(!sorted){
-                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
+                        Arrays.sort(finalEQTLs, 0, locationToStoreResult);
+//                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
                     }
                 }
                 writeTextResults();
@@ -409,7 +410,8 @@ public class ResultProcessorThread extends Thread {
                 totalcounter++;
             }
             if(locationToStoreResult==finalEQTLs.length){
-                inplaceArrayQuickSort.sort(finalEQTLs);
+//                inplaceArrayQuickSort.sort(finalEQTLs);
+                Arrays.sort(finalEQTLs);
                 sorted=true;
                 locationToStoreResult=m_maxResults;
                 maxSavedPvalue = finalEQTLs[(m_maxResults-1)].pvalue;
