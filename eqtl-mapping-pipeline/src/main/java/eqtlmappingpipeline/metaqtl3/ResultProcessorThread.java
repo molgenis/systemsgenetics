@@ -278,7 +278,7 @@ public class ResultProcessorThread extends Thread {
             if (m_createTEXTFiles) {
                 if(locationToStoreResult>0){
                     if(!sorted){
-                        java.util.Arrays.sort(finalEQTLs);
+                        java.util.Arrays.sort(finalEQTLs, 0, locationToStoreResult);
                     }
                 }
                 writeTextResults();
