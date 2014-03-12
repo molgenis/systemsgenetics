@@ -12,7 +12,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  *
  * @author harmjan
  */
-private class EQTL implements Comparable<EQTL> {
+public class QTL implements Comparable<QTL> {
 
     public double pvalue = Double.MAX_VALUE;
     public int pid = -1;
@@ -29,7 +29,7 @@ private class EQTL implements Comparable<EQTL> {
     public double finalbeta;
     public double finalbetase;
 
-    public EQTL(int datasets) {
+    public QTL(int datasets) {
         alleles = null;
         datasetZScores = null;
         datasetsSamples = null;
@@ -37,7 +37,7 @@ private class EQTL implements Comparable<EQTL> {
     }
 
     @Override
-    public int compareTo(EQTL o) {
+    public int compareTo(QTL o) {
         if (pvalue == o.pvalue) {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
                 return 0;
@@ -54,7 +54,7 @@ private class EQTL implements Comparable<EQTL> {
 
     }
 
-    public boolean equals(EQTL o) {
+    public boolean equals(QTL o) {
         if (pvalue == o.pvalue) {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
                 return true;
@@ -66,7 +66,7 @@ private class EQTL implements Comparable<EQTL> {
         }
     }
 
-    void copy(EQTL eQTL) {
+    void copy(QTL eQTL) {
         pvalue = eQTL.pvalue;
         pid = eQTL.pid;
         sid = eQTL.sid;

@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
-import eqtlmappingpipeline.metaqtl3.containers.EQTL;
+import eqtlmappingpipeline.metaqtl3.containers.QTL;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class ResultProcessorThread extends Thread {
 //    private final double m_pvaluePlotThreshold;
 //    private final static char m_tab = '\t';
 //    private int nrProcessed;
-//    private EQTL[] tmpEQTLBuffer;
+//    private QTL[] tmpEQTLBuffer;
 //    private int m_eQTLBufferCounter = 0;
 //    private int m_result_counter = 0;
 //    private int nrSet;
@@ -57,7 +57,7 @@ public class ResultProcessorThread extends Thread {
     private final LinkedBlockingQueue<WorkPackage> m_queue;
     private final WorkPackage[] m_availableWorkPackages;
     private long nrTestsPerformed = 0;
-    private EQTL[] finalEQTLs;
+    private QTL[] finalEQTLs;
     private double maxSavedPvalue = Double.NaN;
     private int locationToStoreResult=0;
     private boolean bufferHasOverFlown=false;
@@ -103,12 +103,12 @@ public class ResultProcessorThread extends Thread {
 
 //        m_totalNumberOfProbes = probelist.length;
 //        m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
-//        tmpEQTLBuffer = new EQTL[tmpbuffersize];
+//        tmpEQTLBuffer = new QTL[tmpbuffersize];
 //        m_result_counter = 0;
         
         m_numdatasets = m_gg.length;
 
-        finalEQTLs = new EQTL[(m_maxResults+tmpbuffersize)];
+        finalEQTLs = new QTL[(m_maxResults+tmpbuffersize)];
         nrSNPsTested = 0;
     }
 
@@ -388,7 +388,7 @@ public class ResultProcessorThread extends Thread {
                 
                 sorted=false;
                 
-                EQTL e = new EQTL(m_numdatasets);
+                QTL e = new QTL(m_numdatasets);
                 e.pvalue = pval;
                 e.pid = pid;
                 e.sid = sid;
@@ -420,7 +420,7 @@ public class ResultProcessorThread extends Thread {
                 pval=maxSavedPvalue;
             }
 
-            EQTL e = new EQTL(m_numdatasets);
+            QTL e = new QTL(m_numdatasets);
             e.pvalue = pval;
             e.pid = pid;
             e.sid = sid;
@@ -447,15 +447,15 @@ public class ResultProcessorThread extends Thread {
     }
 
 //    private void mergeResults() {
-//        EQTL[] toMerge = null;
+//        QTL[] toMerge = null;
 //        if (m_eQTLBufferCounter < tmpEQTLBuffer.length) {
-//            toMerge = new EQTL[m_eQTLBufferCounter];
+//            toMerge = new QTL[m_eQTLBufferCounter];
 //            System.arraycopy(tmpEQTLBuffer, 0, toMerge, 0, m_eQTLBufferCounter);
 //        } else {
 //            toMerge = tmpEQTLBuffer;
 //        }
 //
-//        EQTL[] tmp = new EQTL[finalEQTLs.length + toMerge.length];
+//        QTL[] tmp = new QTL[finalEQTLs.length + toMerge.length];
 //        System.arraycopy(toMerge, 0, tmp, 0, toMerge.length);
 //        System.arraycopy(finalEQTLs, 0, tmp, toMerge.length, finalEQTLs.length);
 //
@@ -465,7 +465,7 @@ public class ResultProcessorThread extends Thread {
 //        if (nrInFinalBuffer < m_maxResults) {
 //            finalEQTLs = tmp;
 //        } else {
-//            finalEQTLs = new EQTL[m_maxResults];
+//            finalEQTLs = new QTL[m_maxResults];
 //            System.arraycopy(tmp, 0, finalEQTLs, 0, m_maxResults);
 //            for (int i = m_maxResults; i < tmp.length; i++) {
 //                tmp[i].cleanUp();

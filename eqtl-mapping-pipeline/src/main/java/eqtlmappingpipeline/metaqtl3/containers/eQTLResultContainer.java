@@ -17,8 +17,8 @@ import umcg.genetica.io.trityper.eQTLTextFile;
  */
 public class eQTLResultContainer {
 
-    private EQTL[] tmpEQTLBuffer;
-    private EQTL[] finalEQTLs;
+    private QTL[] tmpEQTLBuffer;
+    private QTL[] finalEQTLs;
     public int totalcounter = 0;
     private int m_counter = 0;
     private int m_result_counter = 0;
@@ -29,7 +29,7 @@ public class eQTLResultContainer {
     private int nrInFinalBuffer = 0;
 
     public eQTLResultContainer(int size, int finalsize, int datasets) {
-        tmpEQTLBuffer = new EQTL[size];
+        tmpEQTLBuffer = new QTL[size];
         m_maxResults = finalsize;
         m_result_counter = 0;
         m_numdatasets = datasets;
