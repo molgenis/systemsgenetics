@@ -9,9 +9,10 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
 import gnu.trove.map.hash.TDoubleIntHashMap;
+import gnu.trove.set.hash.TDoubleHashSet;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import umcg.genetica.console.ProgressBar;
@@ -208,7 +209,7 @@ public class FDR {
                         if (data.length > filteronColumn) {
 
                             if (!fdrId.equals("-") && !visitedEffects.contains(fdrId)) {
-                                permutedPValues.setQuick(permutationRound, itr,Double.parseDouble(data[0]));
+                                permutedPValues.setQuick(permutationRound, itr, Double.parseDouble(data[0]));
 //                                permutedPValues[permutationRound][itr] = Double.parseDouble(data[0]);
                                 visitedEffects.add(fdrId);
                                 if (itr > 0 && permutedPValues.getQuick(permutationRound, (itr - 1)) > permutedPValues.getQuick(permutationRound, itr)) {
@@ -338,8 +339,7 @@ public class FDR {
         // for all p-values, determine how many eQTL we find below its p-value, in comparison to random data
         double previousPValueThreshold = -1;
 
-
-        HashSet<Double> vecUPVs = new HashSet<Double>();
+        TDoubleHashSet vecUPVs = new TDoubleHashSet();
         double previousPValue = -1;
         for (int p = 0; p < nrRealDataEQTLs; p++) {
             double pValue = pValues[p];
@@ -362,13 +362,11 @@ public class FDR {
                 }
             }
         }
-        double[] uniquePValues = new double[vecUPVs.size()];
-        ArrayList<Double> vecUniquePValues = new ArrayList<Double>(vecUPVs);
-        Collections.sort(vecUniquePValues);
+        double[] uniquePValues = vecUPVs.toArray();
+        Arrays.sort(uniquePValues);
         
-        TDoubleIntHashMap hashUniquePValues = new TDoubleIntHashMap(uniquePValues.length);
-        for (int u = 0; u < vecUniquePValues.size(); u++) {
-            uniquePValues[u] = vecUniquePValues.get(u);
+        TDoubleIntHashMap hashUniquePValues = new TDoubleIntHashMap(vecUPVs.size());
+        for (int u = 0; u < uniquePValues.length; u++) {
             hashUniquePValues.put(uniquePValues[u], u);
         }
 
