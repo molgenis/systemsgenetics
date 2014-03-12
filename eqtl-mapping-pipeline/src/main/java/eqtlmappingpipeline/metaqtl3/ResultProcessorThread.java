@@ -17,6 +17,7 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
+import umcg.genetica.util.inplaceArrayQuickSort;
 
 /**
  *
@@ -278,7 +279,7 @@ public class ResultProcessorThread extends Thread {
             if (m_createTEXTFiles) {
                 if(locationToStoreResult>0){
                     if(!sorted){
-                        java.util.Arrays.sort(finalEQTLs, 0, locationToStoreResult);
+                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
                     }
                 }
                 writeTextResults();
@@ -408,7 +409,7 @@ public class ResultProcessorThread extends Thread {
                 totalcounter++;
             }
             if(locationToStoreResult==finalEQTLs.length){
-                java.util.Arrays.sort(finalEQTLs);
+                inplaceArrayQuickSort.sort(finalEQTLs);
                 sorted=true;
                 locationToStoreResult=m_maxResults;
                 maxSavedPvalue = finalEQTLs[(m_maxResults-1)].pvalue;
