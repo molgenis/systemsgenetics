@@ -61,6 +61,7 @@ public class ResultProcessorThread extends Thread {
     private double maxSavedPvalue = Double.NaN;
     private int locationToStoreResult=0;
     private boolean bufferHasOverFlown=false;
+    private boolean sorted=false;
     public int totalcounter = 0;
     private int m_maxResults = 0;
     private int m_numdatasets = 0;
@@ -276,7 +277,7 @@ public class ResultProcessorThread extends Thread {
 
             if (m_createTEXTFiles) {
                 if(locationToStoreResult>0){
-                    if(!(bufferHasOverFlown&&locationToStoreResult==finalEQTLs.length)){
+                    if(!sorted){
                         java.util.Arrays.sort(finalEQTLs);
                     }
                 }
@@ -384,6 +385,9 @@ public class ResultProcessorThread extends Thread {
 
         if(bufferHasOverFlown){
             if(pval<maxSavedPvalue){
+                
+                sorted=false;
+                
                 EQTL e = new EQTL(m_numdatasets);
                 e.pvalue = pval;
                 e.pid = pid;
@@ -405,6 +409,7 @@ public class ResultProcessorThread extends Thread {
             }
             if(locationToStoreResult==finalEQTLs.length){
                 java.util.Arrays.sort(finalEQTLs);
+                sorted=true;
                 locationToStoreResult=m_maxResults;
                 maxSavedPvalue = finalEQTLs[(m_maxResults-1)].pvalue;
             }
