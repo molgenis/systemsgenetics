@@ -204,7 +204,7 @@ public class Main {
                 }
             }
         } else if (mode.equals("fdr")) {
-            if (in == null || nrPerm == null || nrEQTLs == null || cutoff == null) {
+            if (in == null || nrEQTLs == null || cutoff == null) {
                 System.out.println("Please specify --in --nrperm and --cutoff and --nreqtls [--skipqqplot]");
             } else {
                 try {

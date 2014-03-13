@@ -5,7 +5,6 @@
 package eqtlmappingpipeline.eQTLFoldChangeCalculator;
 
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
-import java.util.ArrayList;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
@@ -38,7 +37,7 @@ public class eQTLFoldChangeCalculator extends MetaQTL3 {
 		Integer snpId = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
 		Integer probeId = m_gg[d].getExpressionData().getProbeToId().get(probe);
 
-		if (snpId != null && probeId != null) {
+		if (snpId != -9 && probeId != null) {
 		    SNP snpObject = m_gg[d].getGenotypeData().getSNPObject(snpId);
 		    loader.loadGenotypes(snpObject);
 		    double[] expression = m_gg[d].getExpressionData().getMatrix()[probeId];

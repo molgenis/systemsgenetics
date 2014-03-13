@@ -40,7 +40,6 @@ public class MachImputedTransposedDosageToTriTyper {
         TextFile individuals = new TextFile(outputloc + "Individuals.txt", TextFile.W);
         TextFile phenotype = new TextFile(outputloc + "PhenotypeInformation.txt", TextFile.W);
 
-        if (headerfile != null) {
             TextFile t = new TextFile(headerfile, TextFile.R);
             String[] elems = t.readLineElemsReturnReference(TextFile.tab);
             for (int i = 7; i < elems.length; i++) {
@@ -49,7 +48,6 @@ public class MachImputedTransposedDosageToTriTyper {
                 numindividuals++;
             }
             t.close();
-        }
 
         individuals.close();
         phenotype.close();
@@ -89,7 +87,7 @@ public class MachImputedTransposedDosageToTriTyper {
             System.out.println("Pre-Processing file: " + file);
             TextFile g = new TextFile(location + file, false);
 
-            String[] elems = g.readLineElemsReturnReference(Strings.whitespace);
+            elems = g.readLineElemsReturnReference(Strings.whitespace);
 
             try {
                 boolean missingvalues = false;

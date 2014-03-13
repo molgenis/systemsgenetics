@@ -4,11 +4,7 @@
  */
 package eqtlmappingpipeline.mixupmapper;
 
-import eqtlmappingpipeline.metaqtl3.MetaQTL3;
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
-import java.util.ArrayList;
 import umcg.genetica.console.ConsoleGUIElems;
-import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
 
 /**
  *

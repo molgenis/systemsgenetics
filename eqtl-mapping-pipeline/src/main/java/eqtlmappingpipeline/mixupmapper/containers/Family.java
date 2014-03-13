@@ -6,7 +6,7 @@
 package eqtlmappingpipeline.mixupmapper.containers;
 
 import java.util.HashMap;
-import java.util.Vector;
+import java.util.ArrayList;
 
 /**
  *
@@ -14,11 +14,11 @@ import java.util.Vector;
  */
 public class Family {
     public String id;
-    public Vector<Individual> individuals = new Vector<Individual>();
+    public ArrayList<Individual> individuals = new ArrayList<Individual>();
     public HashMap<String, Individual> sampleToIndividual = new HashMap<String, Individual>();
     public HashMap<String, Trio> sampleToTrio = new HashMap<String, Trio>();
 
-    public Vector<Trio> trios = new Vector<Trio>();
+    public ArrayList<Trio> trios = new ArrayList<Trio>();
 
     void makeTrios() {
 	for(int i=0; i<individuals.size(); i++){

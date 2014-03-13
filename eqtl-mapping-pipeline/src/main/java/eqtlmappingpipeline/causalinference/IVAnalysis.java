@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -20,10 +19,8 @@ import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
 import umcg.genetica.math.stats.Correlation;
-import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Regression;
 import umcg.genetica.math.stats.TwoStepLeastSquares;
-import umcg.genetica.util.RankDoubleArray;
 
 /**
  *
@@ -238,7 +235,7 @@ public class IVAnalysis {
                     Integer cisProbeId = m_gg[d].getExpressionData().getProbeToId().get(cisprobe);
                     Integer transProbeId = m_gg[d].getExpressionData().getProbeToId().get(transprobe);
 
-                    if (snpId == null || cisProbeId == null || transProbeId == null) {
+                    if (snpId == -9 || cisProbeId == null || transProbeId == null) {
 //                        out.writeln(snp + "\t" + snpId + "\t" + cisprobe + "\t" + cisProbeId + "\t" + null + "\t" + transprobe + "\t" + transProbeId + "\t" + null + "\t" + null + "\t" + null + "\t" + null + "\t" + null + "\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA");
                     } else {
 

@@ -3,6 +3,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tint.IntMatrix2D;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,28 +20,28 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
 class WorkPackageProducer extends Thread {
 
     private String[] m_snpList;
-    private String[] m_probeList;
-    private Integer[][] m_probeTranslationTable;
-    private Integer[][] m_snpTranslationTable;
+//    private String[] m_probeList;
+//    private IntMatrix2D m_probeTranslationTable;
+//    private IntMatrix2D m_snpTranslationTable;
     private TriTyperGeneticalGenomicsDataset[] m_gg;
     private LinkedBlockingQueue<WorkPackage> m_queue;
     private WorkPackage[] m_workPackages;
     private SNPLoader[] m_SNPLoaders;
     private MetaQTL3Settings m_settings;
-    private int m_name, nrThreads;
+//    private int m_name, nrThreads;
     private double m_mafthreshold, m_hwethreshold, m_callratethreshold;
     public boolean done, semaphore;
     private boolean m_permuting;
     private final String m_outputdir;
 
-    WorkPackageProducer(LinkedBlockingQueue<WorkPackage> packageQueue, WorkPackage[] workPackages, String[] snpList, String[] probeList, Integer[][] probeTranslationTable,
-            Integer[][] snpTranslationTable, TriTyperGeneticalGenomicsDataset[] gg, SNPLoader[] snploaders, MetaQTL3Settings settings, boolean permuting) {
+    WorkPackageProducer(LinkedBlockingQueue<WorkPackage> packageQueue, WorkPackage[] workPackages, String[] snpList, String[] probeList, IntMatrix2D probeTranslationTable,
+            IntMatrix2D snpTranslationTable, TriTyperGeneticalGenomicsDataset[] gg, SNPLoader[] snploaders, MetaQTL3Settings settings, boolean permuting) {
         this.m_workPackages = workPackages;
         this.m_queue = packageQueue;
         this.m_snpList = snpList;
-        this.m_probeList = probeList;
-        this.m_probeTranslationTable = probeTranslationTable;
-        this.m_snpTranslationTable = snpTranslationTable;
+//        this.m_probeList = probeList;
+//        this.m_probeTranslationTable = probeTranslationTable;
+//        this.m_snpTranslationTable = snpTranslationTable;
         this.m_gg = gg;
         this.m_SNPLoaders = snploaders;
         this.m_settings = settings;

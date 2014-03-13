@@ -607,10 +607,10 @@ public class TriTyperDatasetCorrelator {
             int absent2 = 0;
             Iterator<String> i = confineSNPList.iterator();
             while (i.hasNext()) {
-                if (ggDataset1.getSnpToSNPId().get(i.next()) == null) {
+                if (ggDataset1.getSnpToSNPId().get(i.next()) == -9) {
                     absent1++;
                 }
-                if (ggDataset2.getSnpToSNPId().get(i.next()) == null) {
+                if (ggDataset2.getSnpToSNPId().get(i.next()) == -9) {
                     absent2++;
                 }
             }

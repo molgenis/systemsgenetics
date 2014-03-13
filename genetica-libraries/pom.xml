@@ -87,5 +87,11 @@
             <version>6.5.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>net.sf.trove4j</groupId>
+            <artifactId>trove4j</artifactId>
+            <version>3.0.3</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 </project>

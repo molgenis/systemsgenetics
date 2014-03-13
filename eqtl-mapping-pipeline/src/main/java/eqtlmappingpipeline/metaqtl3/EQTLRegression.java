@@ -153,7 +153,7 @@ public class EQTLRegression {
                         if (!hashEQTLsMultipleRegressionRegressedOut.contains(e)) {
                             Integer snpId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
 
-                            if (snpId != null && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
+                            if (snpId != -9 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
                                 // load SNP
 
                                 SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);
@@ -461,7 +461,7 @@ public class EQTLRegression {
             System.out.println(gg[d].getSettings().name + "\t" + nrEQTLsRegressedOut[d]);
         }
 
-        String output = "";
+        String output;
         System.out.println("\n");
         System.out.println("Proportion explained variance of genotypic variation on eQTLs per dataset:");
 

@@ -4,12 +4,8 @@
  */
 package eqtlmappingpipeline.metaqtl3.containers;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import umcg.genetica.containers.Pair;
+import cern.colt.matrix.tint.IntMatrix2D;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
-import umcg.genetica.io.trityper.eQTLTextFile;
 
 /**
  *
@@ -17,8 +13,8 @@ import umcg.genetica.io.trityper.eQTLTextFile;
  */
 public class eQTLResultContainer {
 
-    private EQTL[] tmpEQTLBuffer;
-    private EQTL[] finalEQTLs;
+    private QTL[] tmpEQTLBuffer;
+    private QTL[] finalEQTLs;
     public int totalcounter = 0;
     private int m_counter = 0;
     private int m_result_counter = 0;
@@ -29,7 +25,7 @@ public class eQTLResultContainer {
     private int nrInFinalBuffer = 0;
 
     public eQTLResultContainer(int size, int finalsize, int datasets) {
-        tmpEQTLBuffer = new EQTL[size];
+        tmpEQTLBuffer = new QTL[size];
         m_maxResults = finalsize;
         m_result_counter = 0;
         m_numdatasets = datasets;
@@ -43,7 +39,7 @@ public class eQTLResultContainer {
         m_result_counter = 0;
     }
 
-    public String getNextResult(WorkPackage[] workPackages, Integer[][] probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
+    public String getNextResult(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
         if (m_result_counter < finalEQTLs.length) {
             String output = finalEQTLs[m_result_counter].getDescription(workPackages, probeTranslation, gg, maxCisDistance);
 

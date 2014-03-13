@@ -515,7 +515,7 @@ public class CelltypeSpecificeQTLMappingMT {
             } else if (!testAllCovariates) {
                 System.out.println("Covariate not found in raw data: " + probe);
             }
-            if (snpId != null && probeIdInPCCorrectedData != null) {
+            if (snpId != -9 && probeIdInPCCorrectedData != null) {
                 if (snpsPassingQC.contains(snp)) {
                     snpProbeCombinationsToTest.add(p);
                 } else if (!snpsVisited.contains(snp)) {

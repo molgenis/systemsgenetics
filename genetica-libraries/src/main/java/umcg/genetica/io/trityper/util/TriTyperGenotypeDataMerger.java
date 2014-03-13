@@ -98,8 +98,8 @@ public class TriTyperGenotypeDataMerger {
 
             String rsName = snps1[snpID1];
             Integer snp2Id = genotypeDataset2.getSnpToSNPId().get(rsName);
-            if (snp2Id != null) {
-                if (hashSNPsConfine == null || hashSNPsConfine.isEmpty()) {
+            if (snp2Id != -9) {
+                if (hashSNPsConfine.isEmpty()) {
 
                     vectorSNP.add(rsName);
                 } else {
@@ -625,7 +625,7 @@ public class TriTyperGenotypeDataMerger {
             StringBuilder output = new StringBuilder();
             for (int d = 0; d < ds.length; d++) {
                 Integer snpId = ds[d].getSnpToSNPId().get(s);
-                if (snpId != null) {
+                if (snpId != -9) {
                     snps[d] = ds[d].getSNPObject(snpId);
                     loaders[d].loadGenotypes(snps[d]);
                     output.append("\t").append(BaseAnnot.toString(snps[d].getAlleles()[0])).append("/")
@@ -977,7 +977,7 @@ public class TriTyperGenotypeDataMerger {
                 String snpName = snpsInInput[s];
                 if (uniquesnps.contains(snpName)) {
                     Integer snpIdInOutput = output.getSnpToSNPId().get(snpsInInput[s]);
-                    if (snpIdInOutput != null) {
+                    if (snpIdInOutput != -9) {
                         SNP snpObjInOutput = output.getSNPObject(snpIdInOutput);
                         SNP snpObjInInput = input.getSNPObject(s);
                         SNP[] snpObjs = new SNP[]{snpObjInInput, snpObjInOutput};
