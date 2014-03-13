@@ -469,8 +469,7 @@ class GenotypeHarmonizer {
 		}
 		int genotypeDataCache = flankSnpsToConsider * 4;
 		final RandomAccessGenotypeData inputData;
-
-
+        
 		try {
 			inputData = inputType.createGenotypeData(inputBasePaths, genotypeDataCache, forceSeqName, minimumPosteriorProbability);
 		} catch (TabixFileNotFoundException e) {
