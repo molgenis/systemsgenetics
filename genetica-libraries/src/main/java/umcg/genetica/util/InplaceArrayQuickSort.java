@@ -8,7 +8,7 @@ package umcg.genetica.util;
  *
  * @author MarcJan
  */
-public class inplaceArrayQuickSort {
+public class InplaceArrayQuickSort {
 
     public static final Random RND = new Random();
  
