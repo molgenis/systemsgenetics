@@ -39,7 +39,7 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
  */
 public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
-	private final RandomAccessFile hapsFileReader;
+	private final RandomAccessFile genFileReader;
 	private Map<String, SampleAnnotation> sampleAnnotations;
 	private final int sampleVariantProviderUniqueId;
 	private final SampleVariantsProvider sampleVariantProvider;
@@ -48,7 +48,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final List<Sample> samples;
 	private final HashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
-	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
+	private static final Logger LOGGER = Logger.getLogger(GenGenotypeData.class);
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
@@ -82,8 +82,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	public GenGenotypeData(File genFile, File sampleFile, int cacheSize, String forceSeqName, double minimumPosteriorProbabilityToCall)
-			throws IOException {		
-		
+			throws IOException {
+
 		if (genFile == null) {
 			throw new IllegalArgumentException("genFile is null");
 		}
@@ -98,6 +98,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
 
+		LOGGER.debug("Using " + minimumPosteriorProbabilityToCall + " as cutoff to call genotypes from: " + genFile.getAbsolutePath());
+
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
@@ -110,14 +112,18 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
 		samples = oxfordSampleFile.getSamples();
 
+		LOGGER.info("Loaded " + samples.size() + " samples from " + sampleFile.getAbsolutePath());
+
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
 		variants = new GeneticVariantTreeSet<GeneticVariant>();
 		variantSampleAllelesIndex = new LinkedHashMap<GeneticVariant, Long>();
 		sequenceNames = new HashSet<String>();
-		hapsFileReader = new RandomAccessFile(genFile, "r");
+		genFileReader = new RandomAccessFile(genFile, "r");
 
 		byteToReadForSampleAlleles = loadVariants(forceSeqName);
+
+		LOGGER.info("Loaded " + variants.size() + " variants from " + genFile.getAbsolutePath());
 
 	}
 
@@ -180,7 +186,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 	@Override
 	public void close() throws IOException {
-		hapsFileReader.close();
+		genFileReader.close();
 	}
 
 	@Override
@@ -234,8 +240,8 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		while (!eol) {
 
-			posBeforeBufferRead = hapsFileReader.getFilePointer();
-			int bytesRead = hapsFileReader.read(buffer);
+			posBeforeBufferRead = genFileReader.getFilePointer();
+			int bytesRead = genFileReader.read(buffer);
 
 			if (bytesRead == -1) {
 				eol = true;
@@ -250,7 +256,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 								continue;
 							}
 							if (column != 5) {
-								LOGGER.fatal("Error reading haps file, did not detect first 5 columns with variant information \n"
+								LOGGER.fatal("Error reading gen file, did not detect first 5 columns with variant information \n"
 										+ "current column is:" + column + "\n"
 										+ "content in current column: " + stringBuilder.toString());
 								throw new GenotypeDataException("Error reading gen file, did not detect first 5 columns with variant information. Note gen files must be space separted");
@@ -333,57 +339,68 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 		int bytesRead;
 
 		try {
-			synchronized (hapsFileReader) {
-				hapsFileReader.seek(start);
-				bytesRead = hapsFileReader.read(buffer);
+			synchronized (genFileReader) {
+				genFileReader.seek(start);
+				bytesRead = genFileReader.read(buffer);
 			}
 		} catch (IOException ex) {
-			throw new GenotypeDataException("Error loading alleles for variant: " + variant.getPrimaryVariantId() + " from haps file");
+			throw new GenotypeDataException("Error loading probs for variant: " + variant.getPrimaryVariantId() + " from gen file");
 		}
 
 		if (bytesRead == -1) {
-			throw new GenotypeDataException("Error loading alleles for variant: " + variant.getPrimaryVariantId() + " from haps file");
+			throw new GenotypeDataException("Error loading probs for variant: " + variant.getPrimaryVariantId() + " from gen file");
 		}
 
-		try {
 
-			int i = 0;
-			for (int s = 0; s < samples.size(); ++s) {
 
-				float[] sampleProbs = new float[3];
-				int currentProbIndex = 0;
-				StringBuilder currentProb = new StringBuilder();
+		int i = 0;
+		for (int s = 0; s < samples.size(); ++s) {
 
-				while (currentProbIndex < 3) {
+			float[] sampleProbs = new float[3];
+			int currentProbIndex = 0;
+			StringBuilder currentProb = new StringBuilder();
 
-					if (i == bytesRead) {
+			while (currentProbIndex < 3) {
+
+				if (i == bytesRead) {
+
+					if (currentProb.length() == 0) {
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " empty prob");
+					}
+
+					try {
 						sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
-						++currentProbIndex;
-						break;
+					} catch (NumberFormatException e) {
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob: " + e.getMessage());
 					}
-
-					switch ((char) buffer[i]) {
-						case ' ':
-						case '\n':
-						case '\r':
-							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
-							currentProb = new StringBuilder();
-							++currentProbIndex;
-							break;
-						default:
-							currentProb.append((char) buffer[i]);
-					}
-
-					++i;
-
+					++currentProbIndex;
+					break;
 				}
 
-				probs[s] = sampleProbs;
+				switch ((char) buffer[i]) {
+					case ' ':
+					case '\n':
+					case '\r':
+						try {
+							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
+						} catch (NumberFormatException e) {
+							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob with value \"" + currentProb.toString() + "\": " + e.getMessage());
+						}
+						currentProb = new StringBuilder();
+						++currentProbIndex;
+						break;
+					default:
+						currentProb.append((char) buffer[i]);
+				}
+
+				++i;
 
 			}
-		} catch (NumberFormatException e) {
-			throw new GenotypeDataException("Error parsing probability value in gen file. " + e.getMessage());
+
+			probs[s] = sampleProbs;
+
 		}
+
 
 		return probs;
 

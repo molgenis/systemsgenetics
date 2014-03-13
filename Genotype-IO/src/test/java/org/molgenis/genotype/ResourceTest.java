@@ -149,4 +149,14 @@ public class ResourceTest
 	{
 		return getTestResourceFile("/test2.sample");
 	}
+	
+	protected File getTest3Bgen() throws URISyntaxException
+	{
+		return getTestResourceFile("/test3.bgen");
+	}
+	
+	protected File getTest3Sample() throws URISyntaxException
+	{
+		return getTestResourceFile("/test3.sample");
+	}	
 }

@@ -581,8 +581,15 @@ class GenotypeHarmonizer {
 		}
 
 		if (outputType == GenotypedDataWriterFormats.GEN && !inputData.isOnlyContaingSaveProbabilityGenotypes()) {
-			System.out.println("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
-			LOGGER.warn("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+
+			if (inputType == RandomAccessGenotypeDataReaderFormats.VCF || inputType == RandomAccessGenotypeDataReaderFormats.VCF_FOLDER) {
+				System.out.println("WARNING: writing dosage genotype data to .gen posterior probabilities file. If sample does not have the GP field for a genotype then using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+				LOGGER.warn("WARNING: writing dosage genotype data to .gen posterior probabilities file. If sample does not have the GP field for a genotype then using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+			} else {
+				System.out.println("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+				LOGGER.warn("WARNING: writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+			}
+
 		}
 
 
@@ -631,11 +638,11 @@ class GenotypeHarmonizer {
 	private static void printOptions(String[] inputBasePaths, RandomAccessGenotypeDataReaderFormats inputType, String refBasePath, RandomAccessGenotypeDataReaderFormats refType, String outputBasePath, GenotypedDataWriterFormats outputType, int minSnpsToAlignOn, int flankSnpsToConsider, double minLdToIncludeAlign, boolean ldCheck, boolean debugMode, boolean updateId, boolean keep, String forceSeqName, double maxMafForMafAlignment, double minimumPosteriorProbability) {
 
 		StringBuilder inputPaths = new StringBuilder();
-		for(String path : inputBasePaths){
+		for (String path : inputBasePaths) {
 			inputPaths.append(path);
 			inputPaths.append(' ');
 		}
-		
+
 		System.out.println("Interpreted arguments: ");
 		System.out.println(" - Input base path: " + inputPaths);
 		LOGGER.info("Input base path: " + inputPaths);
