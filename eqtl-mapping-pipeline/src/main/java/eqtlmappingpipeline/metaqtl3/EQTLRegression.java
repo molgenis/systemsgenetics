@@ -461,7 +461,7 @@ public class EQTLRegression {
             System.out.println(gg[d].getSettings().name + "\t" + nrEQTLsRegressedOut[d]);
         }
 
-        String output = "";
+        String output;
         System.out.println("\n");
         System.out.println("Proportion explained variance of genotypic variation on eQTLs per dataset:");
 

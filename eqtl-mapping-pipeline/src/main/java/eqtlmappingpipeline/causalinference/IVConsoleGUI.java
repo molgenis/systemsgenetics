@@ -4,7 +4,6 @@
  */
 package eqtlmappingpipeline.causalinference;
 
-import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import umcg.genetica.console.ConsoleGUIElems;
 
 /**

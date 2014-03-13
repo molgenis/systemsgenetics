@@ -14,6 +14,7 @@ public class TextResult implements Comparable<TextResult> {
     public String description;
     public double zscore;
 
+    @Override
      public int compareTo(TextResult o) {
         if(pvalue == o.pvalue){
             if(zscore == o.zscore){

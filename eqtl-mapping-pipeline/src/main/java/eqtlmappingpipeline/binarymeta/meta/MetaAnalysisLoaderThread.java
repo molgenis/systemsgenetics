@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.zip.DataFormatException;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.trityper.bin.BinaryResultDataset;
 import umcg.genetica.io.trityper.bin.BinaryResultSNP;

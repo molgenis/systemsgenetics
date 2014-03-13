@@ -9,8 +9,8 @@ import java.awt.*;
 import java.awt.image.*;
 
 import java.io.File;
+import java.util.ArrayList;
 
-import java.util.Vector;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.util.RankDoubleArray;
 
@@ -55,7 +55,7 @@ public class ChromosomeYExpressionPlot {
         //Iterate through probes that map to the Y chromosome:
         for (int d = 0; d < gg.length; d++) {
             int nrYProbes = 0;
-            Vector<Double> vecProbeMeans = new Vector<Double>();
+            ArrayList<Double> vecProbeMeans = new ArrayList<Double>();
             int probeCount = gg[d].getExpressionData().getProbes().length;
             for (int probe = 0; probe < probeCount; probe++) {
 

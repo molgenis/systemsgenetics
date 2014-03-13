@@ -8,7 +8,7 @@ import java.awt.Color;
 import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.util.HashMap;
-import java.util.Vector;
+import java.util.ArrayList;
 
 /**
  *
@@ -70,7 +70,7 @@ public class MixupMapperHeatMap extends Heatmap {
         }
 
         // determine range for gradient
-        double range = 0;
+        double range;
         if (min < 0 && max > 0) {
             range = max + Math.abs(min);
         } else {
@@ -109,8 +109,8 @@ public class MixupMapperHeatMap extends Heatmap {
                 correlationBoxWidth = 0;
             }
 
-            int calculatedWidth = 0;
-            int calculatedHeight = 0;
+            int calculatedWidth;
+            int calculatedHeight;
 
             double minRowEigenVectorValue = Double.MAX_VALUE;
             double maxRowEigenVectorValue = Double.MIN_VALUE;
@@ -307,7 +307,7 @@ public class MixupMapperHeatMap extends Heatmap {
         colEigenVector = colEig;
     }
 
-    public void setFamilyData(HashMap<String, String> sampleToFamilyId, HashMap<String, Vector<String>> familyToSampleIds, HashMap<String, String> etgNames) {
+    public void setFamilyData(HashMap<String, String> sampleToFamilyId, HashMap<String, ArrayList<String>> familyToSampleIds, HashMap<String, String> etgNames) {
         familyDataLoaded = true;
         this.expressionToGenotypeCouplingNames = etgNames;
     }

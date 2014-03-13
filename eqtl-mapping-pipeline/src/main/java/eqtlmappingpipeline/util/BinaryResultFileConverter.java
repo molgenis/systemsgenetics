@@ -86,7 +86,7 @@ public class BinaryResultFileConverter {
                                 if (distance > 250000) {
                                     z.append("Trans");
                                 } else {
-                                    z.append("Cis;" + distance);
+                                    z.append("Cis;").append(distance);
                                 }
                             }
 

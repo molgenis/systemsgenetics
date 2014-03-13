@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tint.IntMatrix2D;
 import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
@@ -19,7 +20,6 @@ import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
-import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 import umcg.genetica.io.trityper.SNP;
@@ -35,7 +35,7 @@ import umcg.genetica.math.stats.ZScores;
 class CalculationThread extends Thread {
 
     final TriTyperExpressionData[] m_expressiondata;
-    final Integer[][] m_probeTranslation;
+    final IntMatrix2D m_probeTranslation;
     int m_name;
     private int m_numProbes;
     private int m_numDatasets;
@@ -47,17 +47,17 @@ class CalculationThread extends Thread {
     private final LinkedBlockingQueue<WorkPackage> m_result_queue;
     int testsPerformed = 0;
     public boolean done = false;
-    private int failedQC;
+//    private int failedQC;
     private boolean cisOnly;
-    private boolean cisTrans;
+//    private boolean cisTrans;
     private boolean transOnly;
-    private boolean useAbsolutePValues;
+//    private boolean useAbsolutePValues;
     private final EQTLPlotter m_eQTLPlotter;
     private final double m_pvaluePlotThreshold;
     private boolean determinebeta = false;
     private boolean determinefoldchange = false;
     private WorkPackage currentWP;
-    private boolean m_binaryoutput = false;
+//    private boolean m_binaryoutput = false;
     private final DoubleMatrixDataset<String, String>[] m_covariates;
 
     private final boolean m_useAbsoluteZScores;
@@ -68,9 +68,9 @@ class CalculationThread extends Thread {
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
-            Integer[][] probeTranslationTable,
+            IntMatrix2D probeTranslationTable,
             int[][] expressionToGenotypeIds, MetaQTL3Settings settings, EQTLPlotter plotter, boolean binaryoutput, boolean useAbsoluteZScores, boolean testSNPsPresentInBothDatasets) {
-        m_binaryoutput = binaryoutput;
+//        m_binaryoutput = binaryoutput;
         m_name = i;
         m_workpackage_queue = packageQueue;
         m_result_queue = resultQueue;
@@ -82,8 +82,8 @@ class CalculationThread extends Thread {
         metaAnalyseModelCorrelationYHat = settings.metaAnalyseModelCorrelationYHat;
         m_useAbsoluteZScores = useAbsoluteZScores;
         m_name = i;
-        m_numProbes = m_probeTranslation[m_probeTranslation.length - 1].length;
-        m_numDatasets = m_probeTranslation.length;
+        m_numProbes =m_probeTranslation.columns();
+        m_numDatasets = m_probeTranslation.rows();
         m_expressionToGenotypeIds = expressionToGenotypeIds;
         probeVariance = new double[m_numDatasets][0];
         probeMean = new double[m_numDatasets][0];
@@ -99,7 +99,7 @@ class CalculationThread extends Thread {
         this.testSNPsPresentInBothDatasets = testSNPsPresentInBothDatasets;
 
         cisOnly = false;
-        cisTrans = false;
+//        cisTrans = false;
         transOnly = false;
 
         determinebeta = settings.provideBetasAndStandardErrors;
@@ -109,9 +109,10 @@ class CalculationThread extends Thread {
             cisOnly = true;
         } else if (!m_cis && m_trans) {
             transOnly = true;
-        } else if (m_cis && m_trans) {
-            cisTrans = true;
-        }
+        } 
+//        else if (m_cis && m_trans) {
+//            cisTrans = true;
+//        }
 
         m_eQTLPlotter = plotter;
         m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
@@ -237,8 +238,8 @@ class CalculationThread extends Thread {
 
                     for (int p = 0; p < probes.length; p++) {
                         int pid = probes[p];
-                        Integer probeId = m_probeTranslation[d][pid];
-                        if (probeId != null) {
+                        Integer probeId = m_probeTranslation.get(d, pid);
+                        if (probeId != -9) {
                             test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, covariates, dsResults);
                         } else {
                             dsResults.correlations[d][p] = Double.NaN;
@@ -274,8 +275,8 @@ class CalculationThread extends Thread {
                     dsResults.numSamples[d] = snpmeancorrectedgenotypes[d].length;
                     for (int pid = 0; pid < m_numProbes; pid++) {
                         if (probestoExclude == null || !probestoExclude.contains(pid)) {
-                            Integer probeId = m_probeTranslation[d][pid];
-                            if (probeId != null) {
+                            Integer probeId = m_probeTranslation.get(d, pid);
+                            if (probeId != -9) {
                                 test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults);
                             } else {
                                 dsResults.correlations[d][pid] = Double.NaN;
@@ -307,8 +308,8 @@ class CalculationThread extends Thread {
                     dsResults.numSamples[d] = snpmeancorrectedgenotypes[d].length;
 //                    RunTimer t2 = new RunTimer();
                     for (int pid = 0; pid < m_numProbes; pid++) {
-                        Integer probeId = m_probeTranslation[d][pid];
-                        if (probeId != null) {
+                        Integer probeId = m_probeTranslation.get(d, pid);
+                        if (probeId != -9) {
                             test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults);
                         } else {
                             dsResults.correlations[d][pid] = Double.NaN;
@@ -451,8 +452,8 @@ class CalculationThread extends Thread {
                 double betaInteraction = regressionParameters[3];
                 double seInteraction = regressionStandardErrors[3];
                 double tInteraction = betaInteraction / seInteraction;
-                double pValueInteraction = 1;
-                double zScoreInteraction = 0;
+                double pValueInteraction;
+                double zScoreInteraction;
                 DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
                 StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
                 if (tInteraction < 0) {
@@ -468,7 +469,7 @@ class CalculationThread extends Thread {
                     }
                     zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
                 }
-                                pValueInteraction *= 2;
+                pValueInteraction *= 2;
                 r.zscores[d][p] = zScoreInteraction;
                 r.correlations[d][p] = betaInteraction;
 
@@ -588,8 +589,8 @@ class CalculationThread extends Thread {
     }
 
     private void calculateRegressionCoefficients(double[] x, double meanx, double[] y, double meany, Result r, int d, int p) {
-        double beta = 0;
-        double alpha = 0;
+        double beta;
+        double alpha;
         double sxx = 0;
         double sxy = 0;
         double b = 0;

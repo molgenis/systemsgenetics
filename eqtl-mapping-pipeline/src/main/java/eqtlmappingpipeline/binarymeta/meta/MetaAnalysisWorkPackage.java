@@ -61,6 +61,7 @@ public class MetaAnalysisWorkPackage implements Comparable<MetaAnalysisWorkPacka
         return snpids[d];
     }
 
+    @Override
     public int compareTo(MetaAnalysisWorkPackage o) {
         Integer otherSNPId = o.getSNPId(sortForDataset);
         Integer currentSNPId = snpids[sortForDataset];
