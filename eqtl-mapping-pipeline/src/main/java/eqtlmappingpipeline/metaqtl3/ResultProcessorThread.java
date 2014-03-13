@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tint.IntMatrix2D;
 import eqtlmappingpipeline.metaqtl3.containers.QTL;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
@@ -17,7 +18,6 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
-import umcg.genetica.util.inplaceArrayQuickSort;
 
 /**
  *
@@ -48,7 +48,7 @@ public class ResultProcessorThread extends Thread {
     private boolean m_createBinaryFiles = false;
     private TriTyperGeneticalGenomicsDataset[] m_gg = null;
     private boolean m_cisOnly;
-    private Integer[][] m_probeTranslation;
+    private IntMatrix2D m_probeTranslation;
     private int m_midpointprobedist;
     private final String m_outputdir;
     private final boolean m_permuting;
@@ -75,7 +75,7 @@ public class ResultProcessorThread extends Thread {
     private TextFile[] zScoreRowNamesFile;
 
     public ResultProcessorThread(int nrThreads, LinkedBlockingQueue<WorkPackage> queue, boolean chargeOutput,
-            TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, Integer[][] pprobeTranslation,
+            TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, IntMatrix2D pprobeTranslation,
             boolean permuting, int round, String[] snplist, String[] probelist, WorkPackage[] allPackages) {
         m_availableWorkPackages = allPackages;
         m_createBinaryFiles = settings.createBinaryOutputFiles;
@@ -93,14 +93,13 @@ public class ResultProcessorThread extends Thread {
         m_probeList = probelist;
         m_maxResults = settings.maxNrMostSignificantEQTLs;
 
-        int tmpbuffersize = m_maxResults / 10;
+        int tmpbuffersize = (m_maxResults /10);
+        
         if (tmpbuffersize == 0) {
             tmpbuffersize = 10;
-        } 
-        
-//        else if (tmpbuffersize > 250000) {
-//            tmpbuffersize = 250000;
-//        }
+        } else if (tmpbuffersize > 250000) {
+            tmpbuffersize = 250000;
+        }
 
 //        m_totalNumberOfProbes = probelist.length;
 //        m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
@@ -386,7 +385,7 @@ public class ResultProcessorThread extends Thread {
     private void addEQTL(int pid, int sid, double pval, double zscore, double[] correlations, double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta, double[] betase, double finalbeta, double finalbetase) {
 
         if(bufferHasOverFlown){
-            if(pval<maxSavedPvalue){
+            if(pval<=maxSavedPvalue){
                 
                 sorted=false;
                 
@@ -515,7 +514,4 @@ public class ResultProcessorThread extends Thread {
         }
     }
     
-    public long getNrTestsPerformed() {
-        return nrTestsPerformed;
-    }
 }

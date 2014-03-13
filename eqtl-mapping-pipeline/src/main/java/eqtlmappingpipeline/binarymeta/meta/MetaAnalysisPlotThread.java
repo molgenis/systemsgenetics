@@ -6,21 +6,16 @@ package eqtlmappingpipeline.binarymeta.meta;
 
 import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
 import eqtlmappingpipeline.binarymeta.meta.graphics.ZScorePlot;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
 import umcg.genetica.io.trityper.bin.BinaryResultSNP;
 import umcg.genetica.math.stats.Descriptives;
 
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.bin.BinaryResultDataset;
-import umcg.genetica.io.trityper.util.BaseAnnot;
-import umcg.genetica.math.stats.FisherExactTest;
 
 /**
  *

@@ -197,7 +197,7 @@ public class TriTyperExpressionData {
 
             while (anelems != null) {
                 if (anelems.length >= 6 && (!filterplatform || (filterplatform && anelems[0].equals(m_platform)))) {
-                    String probe = new String(anelems[1].getBytes("UTF-8"));
+                    String probe = new String(anelems[1].getBytes("UTF-8")).intern();
                     Byte bchr = ChrAnnotation.parseChr(anelems[3]);
 
                     Integer ichrStart = -1;
@@ -385,7 +385,7 @@ public class TriTyperExpressionData {
                     if (annotstr == null) {
                         annotstr = "-";
                     }
-                    tmpAnnotation.add(annotstr);
+                    tmpAnnotation.add(annotstr.intern());
 
                     int samplePos = 0;
                     float[] tmpDt = new float[numIndsIncluded];

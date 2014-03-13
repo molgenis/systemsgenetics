@@ -1,7 +1,5 @@
 package eqtlmappingpipeline.binarymeta.meta;
 
-import eqtlmappingpipeline.metaqtl3.FDR;
-import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.binarymeta.meta.graphics.ZScorePlot;
 import java.io.IOException;
 import java.util.ArrayList;

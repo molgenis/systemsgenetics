@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -20,10 +19,8 @@ import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
 import umcg.genetica.math.stats.Correlation;
-import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Regression;
 import umcg.genetica.math.stats.TwoStepLeastSquares;
-import umcg.genetica.util.RankDoubleArray;
 
 /**
  *

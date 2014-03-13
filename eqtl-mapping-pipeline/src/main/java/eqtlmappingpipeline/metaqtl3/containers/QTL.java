@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3.containers;
 
+import cern.colt.matrix.tint.IntMatrix2D;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.BaseAnnot;
@@ -86,7 +87,7 @@ public class QTL implements Comparable<QTL> {
         zscore = eQTL.zscore;
     }
 
-    public String getDescription(WorkPackage[] workPackages, Integer[][] probeTranslation, TriTyperGeneticalGenomicsDataset[] gg,
+    public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg,
             int maxCisDistance) {
         String sepStr = ";";
         String nullstr = "-";
@@ -121,8 +122,8 @@ public class QTL implements Comparable<QTL> {
             Integer probeChrPos = null;
 
             for (int d = 0; d < snps.length; d++) {
-                if (probeTranslation[d][pid] != null) {
-                    int probeId = probeTranslation[d][pid];
+                if (probeTranslation.get(d, pid) != -9) {
+                    int probeId = probeTranslation.get(d, pid);
                     probe = gg[d].getExpressionData().getProbes()[probeId];
                     probeChr = gg[d].getExpressionData().getChr()[probeId];
                     probeChrPos = (gg[d].getExpressionData().getChrStart()[probeId] + gg[d].getExpressionData().getChrStop()[probeId]) / 2;
@@ -208,12 +209,12 @@ public class QTL implements Comparable<QTL> {
             for (int d = 0; d < gg.length; d++) {
                 if (!Double.isNaN(correlations[d])){
                     ds[d] = gg[d].getSettings().name;
-                    try {
-                        int probeId = probeTranslation[d][pid];
+                    if(probeTranslation.get(d, pid) != -9){
+                        int probeId = probeTranslation.get(d, pid);
                         probevars[d] = gg[d].getExpressionData().getOriginalProbeVariance()[probeId];
                         probemeans[d] = gg[d].getExpressionData().getOriginalProbeMean()[probeId];
                         hugo = gg[d].getExpressionData().getAnnotation()[probeId];
-                    } catch (NullPointerException e) {
+                    } else {
                         System.out.println("ERROR!!!");
                     }
                 } else {

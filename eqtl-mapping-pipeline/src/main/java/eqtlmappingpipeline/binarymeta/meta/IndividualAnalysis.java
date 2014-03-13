@@ -6,13 +6,9 @@ package eqtlmappingpipeline.binarymeta.meta;
 
 import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
 import eqtlmappingpipeline.binarymeta.meta.graphics.MultiVenn;
-import umcg.genetica.io.trityper.bin.BinaryResultDataset;
-import eqtlmappingpipeline.metaqtl3.FDR;
-import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.zip.DataFormatException;
-import umcg.genetica.io.Gpio;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
 

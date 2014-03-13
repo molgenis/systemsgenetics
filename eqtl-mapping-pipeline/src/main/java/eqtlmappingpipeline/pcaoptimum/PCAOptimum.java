@@ -7,7 +7,6 @@ package eqtlmappingpipeline.pcaoptimum;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
 import eqtlmappingpipeline.normalization.Normalizer;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

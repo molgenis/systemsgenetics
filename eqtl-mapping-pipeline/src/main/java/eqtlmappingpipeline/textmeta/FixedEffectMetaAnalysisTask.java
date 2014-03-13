@@ -35,6 +35,7 @@ public class FixedEffectMetaAnalysisTask implements Callable<String> {
         this.minimalNrSamples = minimalNrSamples;
     }
 
+    @Override
     public String call() throws Exception {
         ArrayList<EQTL> eqtls = new ArrayList<EQTL>();
         String snp = eqtl.getLeft();

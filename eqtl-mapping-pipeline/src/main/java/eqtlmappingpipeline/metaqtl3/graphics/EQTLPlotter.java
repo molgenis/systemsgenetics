@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3.graphics;
 
+import cern.colt.matrix.tint.IntMatrix2D;
 import umcg.genetica.math.stats.Descriptives;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
@@ -43,7 +44,7 @@ public class EQTLPlotter {
     private final TriTyperGeneticalGenomicsDataset[] m_gg;
     private final String m_outputDir;
     private final String[] m_probeList;
-    private final Integer[][] m_probeTranslation;
+    private final IntMatrix2D m_probeTranslation;
     private final boolean m_cisOnly;
     private final boolean m_parametricAnalysis;
     private final RankArray m_rda;
@@ -57,7 +58,7 @@ public class EQTLPlotter {
     private static final Color medgray = new Color(150, 150, 150);
     private final boolean m_giveTiesSameRank;
 
-    public EQTLPlotter(TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, String[] probeList, Integer[][] probeTranslation) {
+    public EQTLPlotter(TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, String[] probeList, IntMatrix2D probeTranslation) {
         this.m_gg = gg;
         this.m_outputDir = settings.plotOutputDirectory;
         m_probeList = probeList;
@@ -143,8 +144,8 @@ public class EQTLPlotter {
         }
         String probeAnnot = "";
         for (int d = 0; d < snps.length; d++) {
-            if (m_probeTranslation[d][probeId] != null) {
-                Integer realProbeId = m_probeTranslation[d][probeId];
+            if (m_probeTranslation.get(d, probeId) != -9) {
+                Integer realProbeId = m_probeTranslation.get(d, probeId);
                 TriTyperExpressionData expressionData = m_gg[d].getExpressionData();
                 probeAnnot = expressionData.getAnnotation()[realProbeId] + ", Chr: " + expressionData.getChr()[realProbeId] + " (" + expressionData.getChrStart()[realProbeId] + " - " + expressionData.getChrStop()[realProbeId] + ")";
                 break;

@@ -178,8 +178,8 @@ public class FDR {
                         System.out.println("Breaking because: " + itr);
                         break;
                     } else {
-                        int filteronColumn = -1;
-                        String fdrId = "";
+                        int filteronColumn;
+                        String fdrId;
                         if (f == FileFormat.REDUCED) {
                             if (m == FDRMethod.FULL) {
                                 fdrId = data[snpcol] + "-" + data[probecol];
@@ -365,7 +365,7 @@ public class FDR {
         double[] uniquePValues = vecUPVs.toArray();
         Arrays.sort(uniquePValues);
         
-        TDoubleIntHashMap hashUniquePValues = new TDoubleIntHashMap(vecUPVs.size());
+        TDoubleIntHashMap hashUniquePValues = new TDoubleIntHashMap(vecUPVs.size(),0.8f,-9.0d,-9);
         for (int u = 0; u < uniquePValues.length; u++) {
             hashUniquePValues.put(uniquePValues[u], u);
         }
@@ -452,7 +452,7 @@ public class FDR {
                 Integer pIndex = hashUniquePValues.get(p);
                 String output = "";
 
-                if (pIndex == null) {
+                if (pIndex == -9) {
                     double fdrEstimate = 1;
                     if (previousIndex + 1 < fdrUniquePValues.length) {
                         fdrEstimate = (fdrUniquePValues[previousIndex] + fdrUniquePValues[previousIndex + 1]) / 2;
@@ -489,7 +489,7 @@ public class FDR {
             double p = Double.parseDouble(data[0]);
             Integer pIndex = hashUniquePValues.get(p);
             String output = "";
-            if (pIndex == null) {
+            if (pIndex == -9) {
                 double fdrEstimate = 1;
                 if (previousIndex + 1 < fdrUniquePValues.length) {
                     fdrEstimate = (fdrUniquePValues[previousIndex] + fdrUniquePValues[previousIndex + 1]) / 2;

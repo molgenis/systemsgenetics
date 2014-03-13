@@ -5,7 +5,6 @@
 package eqtlmappingpipeline.eQTLFoldChangeCalculator;
 
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
-import java.util.ArrayList;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;

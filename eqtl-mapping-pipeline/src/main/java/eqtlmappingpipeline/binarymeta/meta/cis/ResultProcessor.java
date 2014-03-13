@@ -7,7 +7,6 @@ package eqtlmappingpipeline.binarymeta.meta.cis;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletionService;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.bin.BinaryFile;

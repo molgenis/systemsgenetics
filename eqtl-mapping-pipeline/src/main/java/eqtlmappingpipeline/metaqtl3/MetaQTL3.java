@@ -4,6 +4,9 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tint.IntMatrix2D;
+import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
+import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
 import com.lowagie.text.DocumentException;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
@@ -40,8 +43,13 @@ public class MetaQTL3 {
     protected TriTyperGeneticalGenomicsDataset[] m_gg = null;
     protected String[] m_snpList;
     protected String[] m_probeList;
-    protected Integer[][] m_probeTranslationTable;
-    protected Integer[][] m_snpTranslationTable;
+//    protected Integer[][] m_probeTranslationTable;
+//    protected Integer[][] m_snpTranslationTable;
+    
+//Defined -9 as null to not store it in an Integer
+    protected IntMatrix2D m_probeTranslationTable;
+    protected IntMatrix2D m_snpTranslationTable;
+    
     protected int numAvailableInds;
     protected WorkPackage[] m_workPackages;
     private boolean dataHasCovariates;
@@ -281,7 +289,13 @@ public class MetaQTL3 {
         createProbeList();
 
         // create WorkPackage objects
-        determineSNPProbeCombinations();
+        long maxNrOfTests = determineSNPProbeCombinations();
+        
+        if(m_settings.maxNrMostSignificantEQTLs>maxNrOfTests){
+            m_settings.maxNrMostSignificantEQTLs = (int) maxNrOfTests;
+        }
+         
+        
 
         if (m_workPackages == null || m_workPackages.length == 0) {
             System.err.println("Error: No work detected");
@@ -420,8 +434,7 @@ public class MetaQTL3 {
                         unknownchr.add(snpName);
                         reason.append("\tSNP has unknown chromosome");
                         excludeSNP = true;
-                    }
-                    if (chr1 >= 24) {
+                    } else if (chr1 >= 24) {
                         chrYSNPs.add(snpName);
                         reason.append("\tSNP is located on Y, MT, XY chromosome");
                         excludeSNP = true;
@@ -456,13 +469,25 @@ public class MetaQTL3 {
 
         m_snpList = availableSNPs.toArray(new String[0]);
 
-        // create snp translation table..
-        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
+        // create snp translation table..        
+        if ((m_gg.length * (long)m_snpList.length) < (Integer.MAX_VALUE - 2)) {
+            m_snpTranslationTable = new DenseIntMatrix2D(m_gg.length, m_snpList.length);
+        } else {
+            m_snpTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_snpList.length);
+        }
+        
+//        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
 
         for (int p = 0; p < m_snpList.length; p++) {
             String snp = m_snpList[p];
             for (int d = 0; d < m_gg.length; d++) {
-                m_snpTranslationTable[d][p] = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
+                Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
+                if(tmp==-9){
+                    m_snpTranslationTable.setQuick(d, p, -9);
+                } else {
+                    m_snpTranslationTable.setQuick(d, p, tmp);
+                }
+                
             }
         }
         excludedSNPs.close();
@@ -562,8 +587,8 @@ public class MetaQTL3 {
             int presence = 0;
 
             Byte chr = null;
-            Integer chrPosStart = null;
-            Integer chrPosEnd = null;
+            int chrPosStart = -1;
+            int chrPosEnd = -1;
 
             boolean hasIdenticalMappingAcrossDatasets = true;
             String mappingOutput = "";
@@ -587,20 +612,20 @@ public class MetaQTL3 {
                         if (chr2 == -1) {
                             chr2 = null;
                         }
-                        Integer chrPosStart2 = m_gg[d].getExpressionData().getChrStart()[probeId];
-                        Integer chrPosEnd2 = m_gg[d].getExpressionData().getChrStop()[probeId];
+                        int chrPosStart2 = m_gg[d].getExpressionData().getChrStart()[probeId];
+                        int chrPosEnd2 = m_gg[d].getExpressionData().getChrStop()[probeId];
 
                         if (chr2 == null) {
                             hasIdenticalMappingAcrossDatasets = false;
-                        } else if (chrPosStart2 == null && chrPosStart != null) {
+                        } else if (chrPosStart2 == -1 && chrPosStart != -1) {
                             hasIdenticalMappingAcrossDatasets = false;
-                        } else if (chrPosEnd2 == null && chrPosEnd != null) {
+                        } else if (chrPosEnd2 == -1 && chrPosEnd != -1) {
                             hasIdenticalMappingAcrossDatasets = false;
                         } else if (!chr.equals(chr2)) {
                             hasIdenticalMappingAcrossDatasets = false;
-                        } else if (!chrPosStart.equals(chrPosStart2)) {
+                        } else if (chrPosStart!=(chrPosStart2)) {
                             hasIdenticalMappingAcrossDatasets = false;
-                        } else if (!chrPosEnd.equals(chrPosEnd2)) {
+                        } else if (chrPosEnd!=(chrPosEnd2)) {
                             hasIdenticalMappingAcrossDatasets = false;
                         }
                         mappingOutput += "\t" + m_gg[d].getSettings().name + ": Chr " + chr2 + "; Pos " + chrPosStart2 + "-" + chrPosEnd2;
@@ -663,13 +688,23 @@ public class MetaQTL3 {
         }
         m_probeList = finalProbeList.toArray(new String[finalProbeList.size()]);
 
-        // create probe translation table..
-        m_probeTranslationTable = new Integer[m_gg.length][m_probeList.length];
+        // create probe translation table..        
+        if ((m_gg.length * (long)m_probeList.length) < (Integer.MAX_VALUE - 2)) {
+            m_probeTranslationTable = new DenseIntMatrix2D(m_gg.length, m_probeList.length);
+        } else {
+            m_probeTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_probeList.length);
+        }
 
         for (int p = 0; p < m_probeList.length; p++) {
             String probe = m_probeList[p];
             for (int d = 0; d < m_gg.length; d++) {
-                m_probeTranslationTable[d][p] = m_gg[d].getExpressionData().getProbeToId().get(probe);
+                Integer tmp = m_gg[d].getExpressionData().getProbeToId().get(probe);
+                if(tmp==null){
+                    m_probeTranslationTable.setQuick(d, p, -9);
+                } else {
+                    m_probeTranslationTable.setQuick(d, p, tmp);
+                }
+                
             }
         }
 
@@ -800,12 +835,6 @@ public class MetaQTL3 {
             resultQueue.clear();
             packageQueue.clear();
             
-            if(permutationRound==0){
-                if( m_settings.maxNrMostSignificantEQTLs > resultthread.getNrTestsPerformed()){
-                    m_settings.maxNrMostSignificantEQTLs = (int) resultthread.getNrTestsPerformed();
-                }
-            }
-            
             resultQueue = null;
             packageQueue = null;
             permtime = null;
@@ -869,7 +898,7 @@ public class MetaQTL3 {
         System.out.println("eQTL mapping elapsed:\t" + t.getTimeDesc() + "\n");
     }
 
-    protected void determineSNPProbeCombinations() throws IOException {
+    protected long determineSNPProbeCombinations() throws IOException {
 
         String loc = m_settings.outputReportsDir + "excludedSNPsBySNPProbeCombinationFilter.txt.gz";
         TextFile excludedSNPs = new TextFile(loc, TextFile.W);
@@ -882,8 +911,8 @@ public class MetaQTL3 {
 
         for (int p = 0; p < m_probeList.length; p++) {
             for (int d = 0; d < m_gg.length; d++) {
-                if (m_probeTranslationTable[d][p] != null && !visitedProbes.contains(m_probeList[p])) {
-                    int pid = m_probeTranslationTable[d][p];
+                if (m_probeTranslationTable.get(d, p) != -1 && !visitedProbes.contains(m_probeList[p])) {
+                    int pid = m_probeTranslationTable.get(d, p);
                     int start = m_gg[d].getExpressionData().getChrStart()[pid];
                     int stop = m_gg[d].getExpressionData().getChrStop()[pid];
                     midpoint[p] = (int) Math.floor((double) (stop + start) / 2);
@@ -952,8 +981,8 @@ public class MetaQTL3 {
 
             // load the genomic positions for this snp
             for (int d = 0; d < m_gg.length; d++) {
-                Integer snpId = m_snpTranslationTable[d][s];
-                if (snpId != null) {
+                Integer snpId = m_snpTranslationTable.getQuick(d, s);
+                if (snpId != -9) {
                     snps[d] = m_gg[d].getGenotypeData().getSNPObject(snpId);
                     snpchr = snps[d].getChr();
                     snppos = snps[d].getChrPos();
@@ -985,7 +1014,7 @@ public class MetaQTL3 {
 						probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
 					}
                     
-                    if (probesSelected != null) {
+                    if (probesSelected != null && probeNameToId!=null) {
                         probeToTest = new ArrayList<Integer>();
                         for (String probe : probesSelected) {
                             Integer probeId = probeNameToId.get(probe);
@@ -1020,7 +1049,7 @@ public class MetaQTL3 {
                         excludedSNPs.write(snpname + "\tNo probes to test.\n");
                     }
                 } else {
-                    int[] testprobes = null;
+                    int[] testprobes = new int[0];
                     if (probeToTest != null) {
                         testprobes = new int[probeToTest.size()];
                         for (int p = 0; p < testprobes.length; p++) {
@@ -1039,7 +1068,7 @@ public class MetaQTL3 {
                     if (cisOnly) {
                         maxNrTestsToPerform += testprobes.length;
                     } else {
-                        if (testprobes != null) {
+                        if (testprobes.length != 0) {
                             maxNrTestsToPerform += (m_probeList.length - testprobes.length);
                         } else {
                             maxNrTestsToPerform += (m_probeList.length);
@@ -1075,6 +1104,7 @@ public class MetaQTL3 {
 
         System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
         System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
+        return(maxNrTestsToPerform);
     }
 
     protected void printSummary() {
