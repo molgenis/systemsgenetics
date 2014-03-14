@@ -582,8 +582,11 @@ class CalculationThread extends Thread {
                 r.zscores[d][p] = zScore;
                 r.correlations[d][p] = correlation;
             } else {
-                System.err.println("Error! correlation invalid: " + correlation);
-                System.exit(-1);
+				// Ususally if the genotype variance is very low
+                System.err.println("Error! correlation invalid: " + correlation + "; genotype variance = " + varianceX + "; expression variance = " + varianceY);
+				r.zscores[d][p] = Double.NaN;
+				r.correlations[d][p] = Double.NaN;
+                //System.exit(-1);
             }
         }
     }
