@@ -13,9 +13,9 @@ import org.testng.annotations.Test;
  *
  * @author MarcJan
  */
-public class inplaceArrayQuickSortNGTest {
+public class SmoothSortNGTest {
     
-    public inplaceArrayQuickSortNGTest() {
+    public SmoothSortNGTest() {
     }
 
     @BeforeMethod
@@ -23,15 +23,15 @@ public class inplaceArrayQuickSortNGTest {
     }
 
     /**
-     * Test of sort method, of class InplaceArrayQuickSort.
+     * Test of sort method, of class SmoothSort.
      */
     @Test
     public void testSort() {
-
+        
         Integer[] l1 = { 5, 1024, 1, 88, 0, 1024 };
         Integer[] l1c = { 5, 1024, 1, 88, 0, 1024 };
         
-        InplaceArrayQuickSort.sort(l1);
+        SmoothSort.sort(l1);
         Arrays.sort(l1c);
         
         boolean correct=true;
@@ -46,7 +46,7 @@ public class inplaceArrayQuickSortNGTest {
         Double[] l3 = { 5.0d, 1024.5d, 1.0d, 88.0d, 0.0d, 1024.0d };
         Double[] l3c = { 5.0d, 1024.5d, 1.0d, 88.0d, 0.0d, 1024.0d };
         
-        InplaceArrayQuickSort.sort(l3,1,5);
+        SmoothSort.sort(l3,1,5);
         Arrays.sort(l3c,1,5);
         
         correct=true;
@@ -57,14 +57,11 @@ public class inplaceArrayQuickSortNGTest {
             }
         }
         assertEquals(correct, true);
-        
-        
-        
- 
+
         String[] l2 = { "gamma", "beta", "alpha", "zoolander" };
         String[] l2c = { "gamma", "beta", "alpha", "zoolander" };
 
-        InplaceArrayQuickSort.sort(l2);
+        SmoothSort.sort(l2);
         Arrays.sort(l2c);
         
         correct=true;
@@ -75,6 +72,5 @@ public class inplaceArrayQuickSortNGTest {
             }
         }
         assertEquals(correct, true);
-        
     }
 }

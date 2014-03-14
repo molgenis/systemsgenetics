@@ -875,6 +875,8 @@ public class MetaQTL3 {
             snploaders[d].close();
         }
 
+        //This should happen outside of the mapEQTLs. This porbably helps the GC to clean up un necessary stuff.
+        //Without the need of foced GC.
         if (!m_settings.runOnlyPermutations && hasResults) {
             if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
                 System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
