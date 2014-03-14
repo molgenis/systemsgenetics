@@ -99,25 +99,18 @@ public class Correlation {
         }
     }
 
-    //Requires mean of 0
-    public static double correlateMeanCenteredData(double[] x, double[] y, double varX, double varY) {
+    public static double correlate(double[] x, double[] y, double varX, double varY) {
+        double denominator = Math.sqrt(varX * varY);
         double covarianceInterim = 0;
         for (int i = 0; i < x.length; i++) {
             covarianceInterim += x[i] * y[i];
         }
-        return (covarianceInterim / (x.length - 1)) / Math.sqrt(varX * varY);
-    }
-    
-    //Requires mean of 0
-    public static double correlateMeanCenteredData(double[] x, double[] y, double sdXsdY) {
-        double covarianceInterim = 0;
-        for (int i = 0; i < x.length; i++) {
-            covarianceInterim += x[i] * y[i];
-        }
-        return (covarianceInterim / (x.length - 1)) / (sdXsdY);
+        double covariance = covarianceInterim / (x.length - 1);
+        double correlation = covariance / denominator;
+        return correlation;
     }
 
-//    public static double correlateMeanCenteredData(double[] x, double[] y) {
+//    public static double correlate(double[] x, double[] y) {
 //        
 //        double[] xNew = new double[x.length];
 //        double[] yNew = new double[y.length];
@@ -136,7 +129,7 @@ public class Correlation {
 //            xNew[i] -= meanX;
 //            yNew[i] -= meanY;
 //        }
-//        return correlateMeanCenteredData(xNew, yNew, varX, varY);
+//        return correlate(xNew, yNew, varX, varY);
 //    }
     /**
      * Fast correlation of two double[]
@@ -223,7 +216,7 @@ public class Correlation {
     }
 
     /**
-     * Fast covariation of two double[] ToDo change correlateMeanCenteredData code to covariate
+     * Fast covariation of two double[] ToDo change correlate code to covariate
      * code! ToDo add test
      *
      * @param x
@@ -257,7 +250,7 @@ public class Correlation {
 
     /**
      * Fast covariation of two double[] with their mean values ToDo change
-     * correlateMeanCenteredData code to covariate code! ToDo add test
+     * correlate code to covariate code! ToDo add test
      *
      * @param x
      * @param y
@@ -318,7 +311,7 @@ public class Correlation {
             if (var1 == 0 && var2 == 0) {
                 return (1.0);
             } else {
-                return (0.0); // impossible to correlateMeanCenteredData a null signal with another
+                return (0.0); // impossible to correlate a null signal with another
             }
         }
     }

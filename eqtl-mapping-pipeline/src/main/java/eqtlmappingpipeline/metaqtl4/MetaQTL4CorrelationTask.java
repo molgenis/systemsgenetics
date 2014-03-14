@@ -122,7 +122,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
                         zscores[datasetId] = Double.NaN;
                     } else {
                         //Calculate correlation coefficient:
-                        double correlation = Correlation.correlateMeanCenteredData(x, y, varianceX, varianceY);
+                        double correlation = Correlation.correlate(x, y, varianceX, varianceY);
                         double correlation2 = JSci.maths.ArrayMath.correlation(x, y);
                         System.out.println(correlation + "\t" + correlation2 + "\t" + x.length + "\t" + varianceX + "\t" + varianceYOrig + "\t" + varianceY + "\t" + Descriptives.variance(x) + "\t" + Descriptives.variance(y));
                         if (correlation >= -1 && correlation <= 1) {
