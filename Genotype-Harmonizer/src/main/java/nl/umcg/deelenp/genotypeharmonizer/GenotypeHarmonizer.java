@@ -567,6 +567,7 @@ class GenotypeHarmonizer {
                         snps.add(line);
                     }
                     snpIdFilter = new VariantIdIncludeFilter(snps);
+                    LOGGER.info("Filterig input on: "+snps.size()+" selected variants in file: "+seqFilterIn);
                 } catch (FileNotFoundException ex) {
                     java.util.logging.Logger.getLogger(GenotypeHarmonizer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
                 } catch (IOException e) {
@@ -574,9 +575,13 @@ class GenotypeHarmonizer {
                 }
             }
             if ((minCallRate != 0.0F) || (minMAF != 0.0F) || (minHwePvalue != 0.0D)) {
+                LOGGER.info("Filterig input on minimal call rate: "+minCallRate);
+                LOGGER.info("Filterig input on minimal call rate: "+minMAF);
+                LOGGER.info("Filterig input on minimal call rate: "+minHwePvalue);
                 snpQcFilter = new VariantQcChecker(minMAF, minCallRate, minHwePvalue);
             }
             if (seqFilterIn != null) {
+                LOGGER.info("Filterig input on chromosome: "+minCallRate);
                 seqFilter = new VariantFilterSeq(seqFilterIn);
             }
             varFilter = new VariantCombinedFilter(snpIdFilter, snpQcFilter, seqFilter);
@@ -593,6 +598,7 @@ class GenotypeHarmonizer {
                 while ((line = sampleIdFilterReader.readLine()) != null) {
                     samples.add(line);
                 }
+                LOGGER.info("Filterig input on: "+samples.size()+" selected Samples in file: "+sampleFilterListFile);
                 sampleFilter = new SampleIdIncludeFilter(samples);
             } catch (FileNotFoundException ex) {
                 java.util.logging.Logger.getLogger(GenotypeHarmonizer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
