@@ -562,10 +562,10 @@ public class TriTyperExpressionData {
         }
         
         //This is requered for the correlation matrix.
-        calcMeanAndVariance();
+        calcMeanAndVarianceOrg();
         for (int p = 0; p < matrix.length; p++) {
             for (int s = 0; s < matrix[p].length; s++) {
-                matrix[p][s] -= probeMean[p];
+                matrix[p][s] -= probeOriginalMean[p];
             }
         }
 
@@ -655,20 +655,29 @@ public class TriTyperExpressionData {
     private void calcMeanAndVariance() {
         //Precalculate means and variances. This will improve calculations substantially:
         int probeCount = probes.length;
-        probeOriginalMean = new double[probeCount];
-        probeOriginalVariance = new double[probeCount];
         probeMean = new double[probeCount];
         probeVariance = new double[probeCount];
 
         for (int f = 0; f < probeCount; ++f) {
             double[] probeData = getProbeData(f);
-            probeOriginalMean[f] = Descriptives.mean(probeData);
-            probeOriginalVariance[f] = Descriptives.variance(probeData, probeMean[f]);
             probeMean[f] = Descriptives.mean(probeData);
             probeVariance[f] = Descriptives.variance(probeData, probeMean[f]);
         }
     }
 
+    private void calcMeanAndVarianceOrg() {
+        //Precalculate means and variances. This will improve calculations substantially:
+        int probeCount = probes.length;
+        probeOriginalMean = new double[probeCount];
+        probeOriginalVariance = new double[probeCount];
+
+        for (int f = 0; f < probeCount; ++f) {
+            double[] probeData = getProbeData(f);
+            probeOriginalMean[f] = Descriptives.mean(probeData);
+            probeOriginalVariance[f] = Descriptives.variance(probeData, probeOriginalMean[f]);
+        }
+    }
+    
     private double[] getProbeData(int f) {
         double[] probeData = new double[individuals.length];
         System.arraycopy(matrix[f], 0, probeData, 0, individuals.length);
