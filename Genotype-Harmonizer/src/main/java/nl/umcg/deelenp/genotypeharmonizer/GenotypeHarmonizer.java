@@ -524,7 +524,7 @@ class GenotypeHarmonizer {
 
         double minHwePvalue;
         try {
-            minHwePvalue = commandLine.hasOption("hw") ? Double.parseDouble(commandLine.getOptionValue("hw")) : 0.0D;
+            minHwePvalue = commandLine.hasOption("hf") ? Double.parseDouble(commandLine.getOptionValue("hf")) : 0.0D;
         } catch (NumberFormatException e) {
             System.err.println(new StringBuilder().append("Error parsing --HWEPvalFilter \"").append(commandLine.getOptionValue("hw")).append("\" is not a double").toString());
             System.exit(1);
@@ -548,15 +548,13 @@ class GenotypeHarmonizer {
         }
 
         String variantFilterListFile = commandLine.hasOption("vf") ? commandLine.getOptionValue("vf") : null;
-        String seqFilterIn = commandLine.hasOption("cr") ? commandLine.getOptionValue("cr") : null;
+        String seqFilterIn = commandLine.hasOption("ch") ? commandLine.getOptionValue("ch") : null;
         String sampleFilterListFile = commandLine.hasOption("sf") ? commandLine.getOptionValue("sf") : null;
 
         VariantCombinedFilter varFilter = null;
 
         if ((minCallRate != 0.0F) || (minMAF != 0.0F) || (minHwePvalue != 0.0D) || (variantFilterListFile != null) || (seqFilterIn != null)) {
-            VariantIdIncludeFilter snpIdFilter = null;
-            VariantQcChecker snpQcFilter = null;
-            VariantFilterSeq seqFilter = null;
+            varFilter = new VariantCombinedFilter();
             if (variantFilterListFile != null) {
                 try {
                     HashSet snps = new HashSet();
@@ -566,8 +564,9 @@ class GenotypeHarmonizer {
                     while ((line = variantIdFilterReader.readLine()) != null) {
                         snps.add(line);
                     }
-                    snpIdFilter = new VariantIdIncludeFilter(snps);
-                    LOGGER.info("Filterig input on: "+snps.size()+" selected variants in file: "+seqFilterIn);
+                    VariantIdIncludeFilter snpIdFilter = new VariantIdIncludeFilter(snps);
+                    varFilter.add(snpIdFilter);
+                    LOGGER.info("Filterig input on: "+snps.size()+" selected variants in file: "+variantFilterListFile);
                 } catch (FileNotFoundException ex) {
                     java.util.logging.Logger.getLogger(GenotypeHarmonizer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
                 } catch (IOException e) {
@@ -576,15 +575,16 @@ class GenotypeHarmonizer {
             }
             if ((minCallRate != 0.0F) || (minMAF != 0.0F) || (minHwePvalue != 0.0D)) {
                 LOGGER.info("Filterig input on minimal call rate: "+minCallRate);
-                LOGGER.info("Filterig input on minimal call rate: "+minMAF);
-                LOGGER.info("Filterig input on minimal call rate: "+minHwePvalue);
-                snpQcFilter = new VariantQcChecker(minMAF, minCallRate, minHwePvalue);
+                LOGGER.info("Filterig input on minimal minor allel frequency: "+minMAF);
+                LOGGER.info("Filterig input on minimal HWE p vale: "+minHwePvalue);
+                VariantQcChecker snpQcFilter = new VariantQcChecker(minMAF, minCallRate, minHwePvalue);
+                varFilter.add(snpQcFilter);
             }
             if (seqFilterIn != null) {
                 LOGGER.info("Filterig input on chromosome: "+minCallRate);
-                seqFilter = new VariantFilterSeq(seqFilterIn);
+                VariantFilterSeq seqFilter = new VariantFilterSeq(seqFilterIn);
+                varFilter.add(seqFilter);
             }
-            varFilter = new VariantCombinedFilter(snpIdFilter, snpQcFilter, seqFilter);
         }
 
         SampleIdIncludeFilter sampleFilter = null;

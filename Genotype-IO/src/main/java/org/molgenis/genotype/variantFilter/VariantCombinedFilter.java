@@ -25,8 +25,13 @@ public class VariantCombinedFilter implements VariantFilter {
 	 *
 	 * @param variantFilters
 	 */
+    
 	public VariantCombinedFilter(VariantFilter... variantFilters) {
 		this.variantFilters = Arrays.asList(variantFilters);
+	}
+    
+    public VariantCombinedFilter() {
+		this.variantFilters = new ArrayList<VariantFilter>();
 	}
 
 	public VariantCombinedFilter(List<VariantFilter> variantFilters) {
@@ -37,7 +42,7 @@ public class VariantCombinedFilter implements VariantFilter {
 	public boolean doesVariantPassFilter(GeneticVariant variant) {
 
 		for (VariantFilter filter : variantFilters) {
-			if (!filter.doesVariantPassFilter(variant)) {
+            if(!filter.doesVariantPassFilter(variant)) {
 				return false;
 			}
 		}
@@ -55,6 +60,10 @@ public class VariantCombinedFilter implements VariantFilter {
 		}
 		return true;
 	}
+    
+    public void add(VariantFilter v){
+        variantFilters.add(v);
+    }
 	
 	
 }
