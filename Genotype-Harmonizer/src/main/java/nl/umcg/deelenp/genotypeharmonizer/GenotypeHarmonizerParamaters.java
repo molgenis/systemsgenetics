@@ -229,28 +229,28 @@ public class GenotypeHarmonizerParamaters {
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
 				.withDescription("The minimum hardy weinberg equilibrium p-value to include variant from input data")
-				.withLongOpt("HWEPvalFilter")
+				.withLongOpt("hwePvalFilter")
 				.create("hf");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("string")
 				.hasArg()
 				.withDescription("Filter input data on chromosome")
-				.withLongOpt("ChrFilter")
+				.withLongOpt("chrFilter")
 				.create("ch");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("string")
 				.hasArg()
 				.withDescription("Path to file with variant IDs to include from input data.")
-				.withLongOpt("VariantFilterList")
+				.withLongOpt("variantFilterList")
 				.create("vf");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("string")
 				.hasArg()
 				.withDescription("Path to file with samples IDs to include from input data. For plink data only the sample id (column 2) is used")
-				.withLongOpt("SampleFilterList")
+				.withLongOpt("sampleFilterList")
 				.create("sf");
 		OPTIONS.addOption(option);
 
