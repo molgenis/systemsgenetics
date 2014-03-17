@@ -5,7 +5,7 @@
 package eqtlmappingpipeline.gui;
 
 import eqtlmappingpipeline.Main;
-import eqtlmappingpipeline.celltypespecific.CelltypeSpecificeQTLMappingConsoleGUI;
+import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
 import eqtlmappingpipeline.eQTLFoldChangeCalculator.eQTLFoldChangeCalculatorGUI;
@@ -85,7 +85,7 @@ public class EQTLMappingPipelineConsole {
             } else if (mode.equals("iv")) {
                 IVConsoleGUI q = new IVConsoleGUI(args);
             } else if (mode.equals("celltypespecific")) {
-                CelltypeSpecificeQTLMappingConsoleGUI q = new CelltypeSpecificeQTLMappingConsoleGUI(args);
+                InteractionAnalysisConsoleGUI q = new InteractionAnalysisConsoleGUI(args);
             } else {
                 printUsage();
             }
