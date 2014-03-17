@@ -13,6 +13,8 @@ stored using different file formats with different and potentially unknown stran
 Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
 the [Genotype IO](https://github.com/PatrickDeelen/systemsgenetics/tree/master/Genotype-IO) package we can import and export different file format.
 
+Note: this manual is for version 1.3.4
+
 Getting started
 ----------------
 
