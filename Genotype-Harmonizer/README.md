@@ -93,6 +93,8 @@ Although there are many tools that can convert from one file type to an other it
 Arguments overview
 ----------------
 
+###Basic commands
+
 | Short | Long           | Description                                 |
 |-------|----------------|---------------------------------------------|
 | -i    | --input        | \* The base path of the data to align. The extensions are determined based on the input data type.|
@@ -101,15 +103,37 @@ Arguments overview
 | -R    | --refType      | The input data type. If not defined will attempt to automatically select the first matching dataset on the specified path (see refType options) |
 | -o    | --output       | \* The base path of the output data. |
 | -O    | --outputType   | The output data type. Defaults to --inputType or to PLINK_BED if there is no writer for the impute type. (--outputType options) |
+
+###Input data options
+
+| Short | Long           | Description                                 |
+|-------|----------------|---------------------------------------------|
+| -ip   | --inputProb         | The minimum posterior probability to call genotypes in the input data. Defaults to 0.4 |
+| -f    | --forceChr          | SHAPEIT2 does not output the sequence name in the first column of the haplotype file and for GEN files this can also be the case. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2` and `--inputType GEN` |
+| -cf   | --callRateFilter    | The minimum call rate to include variant from input data |
+| -ch   | --chrFilter         | Filter input data on chromosome |
+| -hf   | --hwePvalFilter     | The minimum hardy weinberg equilibrium p-value to include variant from input data |
+| -mf   | --mafFilter         | The minimum minor allele frequency to include variant from input data |
+| -sf   | --sampleFilterList  | Path to file with variant IDs to include from input data. |
+| -vf   | --variantFilterList | Path to file with samples IDs to include from input data. For plink data only the sample id (column 2) is used |
+
+###Strand aligment options
+
+| Short | Long           | Description                                 |
+|-------|----------------|---------------------------------------------|
 | -id   | --update-id    | Update the variant identifiers using the reference data. The identifiers of the output data will be the same as the reference data |
 | -l    | --min-ld       | The minimum LD (r2) between the variant to align and potential supporting variants. Defaults to 0.3 |
 | -m    | --min-variants | The minimum number of supporting variant before before we can do an alignment. Defaults to 3 |
 | -v    | --variants     | Number of flanking variants to consider. Defaults to 100 |
-| -f    | --forceChr     | SHAPEIT2 does not output the sequence name in the first column of the haplotype file and for GEN files this can also be the case. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2` and `--inputType GEN`
-| -ip   | --inputProb    | The minimum posterior probability to call genotypes in the input data. Defaults to 0.4 
-| -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded. |
+| -c    | --check-ld     | Also check the LD structure of non AT and non GC variants. Variants that do not pass the check are excluded.|
 | -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
 | -ma   | --mafAlign     | If there are not enough variants in LD and the minor allele frequency (MAF) of a variant <= the specified value in both study as in reference then the minor allele can be used as a backup for alignment. Defaults to 0 |
+
+###Other options
+
+| Short | Long           | Description                                 |
+|-------|----------------|---------------------------------------------|
+| -d    | --debug        | Activate debug mode. This will result in a more verbose log file |
 
 \* = required
 
@@ -140,6 +164,8 @@ Base path refers to either --input or --ref
  * Expects gen file at: `${base path}.gen` or without the extentions `${base path}`
  * Expects sample file at: `${base path}.sample`
  * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
+* TRITYPER
+  * Expects folder with TriTyper data. Can handle dosage matrix
 
 #####--outputType options
 
@@ -162,6 +188,10 @@ Regardless of the output type a log file will always be created at: `${base path
 * GEN
  * Writers gen file at: `${base path}.gen`
  * Writers sample file at: `${base path}.sample`
+* TRITYPER
+  * Create folder with TriTyper data
+  * Also created dosage matrix
+  * **NOTE:** Older software that uses TriTyper data cannot handle missing dosages. When converting GEN propabilities to TriTyper make sure to also supply this argument `--inputProb 0`
  
 ####Tweaking the alignment using the advanced options
 
