@@ -18,6 +18,13 @@ public class VariantFilterSeq implements VariantFilter {
 	public VariantFilterSeq() {
 		this.toIncludeSeqs = new HashSet<String>();
 	}
+    
+    public VariantFilterSeq(String... seq) {
+		this.toIncludeSeqs = new HashSet<String>();
+        for(String s: seq){
+            toIncludeSeqs.add(s);
+        }
+	}
 
 	public VariantFilterSeq(HashSet<String> toIncludeSeqs) {
 		this.toIncludeSeqs = toIncludeSeqs;

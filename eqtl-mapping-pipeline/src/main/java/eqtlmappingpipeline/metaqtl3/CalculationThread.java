@@ -382,6 +382,9 @@ class CalculationThread extends Thread {
                     itr++;
                 }
             }
+            meanY = sum / itr;
+
+            varianceY = Descriptives.variance(y, meanY);
 
             if (covariates != null) {
                 int covariateitr = 0;
@@ -397,14 +400,6 @@ class CalculationThread extends Thread {
                 }
             }
 
-            meanY = sum / itr;
-
-            double varsum = 0;
-            for (int i = 0; i < y.length; i++) {
-                y[i] -= meanY;
-                varsum += y[i] * y[i];
-            }
-            varianceY = varsum / (y.length - 1);
         } else {
             y = new double[x.length];
             System.arraycopy(rawData[probeId], 0, y, 0, x.length);
@@ -558,32 +553,42 @@ class CalculationThread extends Thread {
             }
         } else {
             //Calculate correlation coefficient:
-            double correlation = Correlation.correlate(x, y, varianceX, varianceY);
+            double stdevy = Math.sqrt(varianceY);
+            double stdevx = Math.sqrt(varianceX);
+            
+//                double stdevy = JSci.maths.ArrayMath.standardDeviation(y);
+//                double stdevx = JSci.maths.ArrayMath.standardDeviation(x);
+            
+            double correlation = Correlation.correlateMeanCenteredData(x, y, (stdevy*stdevx));
 
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
                 double[] xcopy = new double[x.length];
                 double meanx = JSci.maths.ArrayMath.mean(x);
-                double meany = JSci.maths.ArrayMath.mean(y);
-                double stdevy = JSci.maths.ArrayMath.standardDeviation(y);
-                double stdevx = JSci.maths.ArrayMath.standardDeviation(x);
+                double meany = meanY;
+//                double meany = JSci.maths.ArrayMath.mean(y);
                 for (int i = 0; i < y.length; i++) {
                     y[i] -= meany;
                     y[i] /= stdevy;
                     xcopy[i] = x[i] - meanx;
                     xcopy[i] /= stdevx;
                 }
-                meany = JSci.maths.ArrayMath.mean(y);
-                meanx = JSci.maths.ArrayMath.mean(xcopy);
-                calculateRegressionCoefficients(xcopy, meanx, y, meany, r, d, p);
+                meany = 0;
+                double meanxCopy = 0;
+//                meany = JSci.maths.ArrayMath.mean(y);
+//                double meanxCopy = JSci.maths.ArrayMath.mean(xcopy);
+                calculateRegressionCoefficients(xcopy, meanxCopy, y, meany, r, d, p);
                 if (determinefoldchange) {
                     determineFoldchange(originalGenotypes, y, r, d, p);
                 }
                 r.zscores[d][p] = zScore;
                 r.correlations[d][p] = correlation;
             } else {
-                System.err.println("Error! correlation invalid: " + correlation);
-                System.exit(-1);
+				// Ususally if the genotype variance is very low
+                System.err.println("Error! correlation invalid: " + correlation + "; genotype variance = " + varianceX + "; expression variance = " + varianceY);
+				r.zscores[d][p] = Double.NaN;
+				r.correlations[d][p] = Double.NaN;
+                //System.exit(-1);
             }
         }
     }
