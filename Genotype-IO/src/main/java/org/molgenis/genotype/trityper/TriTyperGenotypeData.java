@@ -430,8 +430,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
         // now transcode into dosage..
 
         // TODO: optimize this step: no need to get ALL alleles.
-        float[] genotypes = CalledDosageConvertor.convertCalledAllelesToDosage(variantProvider.getSampleVariants(variant),
-                variant.getVariantAlleles(), variant.getRefAllele());
+        float[] genotypes = CalledDosageConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles(), variant.getRefAllele());
         if (imputedDosageDataFile != null) {
 
             //This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
