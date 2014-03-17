@@ -13,7 +13,7 @@ stored using different file formats with different and potentially unknown stran
 Linkage disequilibrium (LD) patterns are used to determine the correct strand GC and AT SNPs and by using 
 the [Genotype IO](https://github.com/PatrickDeelen/systemsgenetics/tree/master/Genotype-IO) package we can import and export different file format.
 
-Note: this manual is for version 1.3.4
+Note: this manual is for version 1.3.4 of the Genotype Harmonizer. 
 
 Getting started
 ----------------
@@ -114,7 +114,7 @@ Arguments overview
 | -f    | --forceChr          | SHAPEIT2 does not output the sequence name in the first column of the haplotype file and for GEN files this can also be the case. Use this option to force the chromosome for all variants. This option is only valid in combination with `--inputType SHAPEIT2` and `--inputType GEN` |
 | -cf   | --callRateFilter    | The minimum call rate to include variant from input data |
 | -ch   | --chrFilter         | Filter input data on chromosome |
-| -hf   | --hwePvalFilter     | The minimum hardy weinberg equilibrium p-value to include variant from input data |
+| -hf   | --hweFilter     | The minimum hardy weinberg equilibrium p-value to include variant from input data |
 | -mf   | --mafFilter         | The minimum minor allele frequency to include variant from input data |
 | -sf   | --sampleFilterList  | Path to file with variant IDs to include from input data. |
 | -vf   | --variantFilterList | Path to file with samples IDs to include from input data. For plink data only the sample id (column 2) is used |

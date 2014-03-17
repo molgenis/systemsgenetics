@@ -229,7 +229,7 @@ public class GenotypeHarmonizerParamaters {
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
 				.withDescription("The minimum hardy weinberg equilibrium p-value to include variant from input data")
-				.withLongOpt("hwePvalFilter")
+				.withLongOpt("hweFilter")
 				.create("hf");
 		OPTIONS.addOption(option);
 
@@ -377,7 +377,7 @@ public class GenotypeHarmonizerParamaters {
 		try {
 			minHwePvalue = commandLine.hasOption("hf") ? Double.parseDouble(commandLine.getOptionValue("hf")) : 0.0D;
 		} catch (NumberFormatException e) {
-			throw new ParseException(new StringBuilder().append("Error parsing --HWEPvalFilter \"").append(commandLine.getOptionValue("hw")).append("\" is not a double").toString());
+			throw new ParseException(new StringBuilder().append("Error parsing --hweFilter \"").append(commandLine.getOptionValue("hw")).append("\" is not a double").toString());
 		}
 
 		try {
