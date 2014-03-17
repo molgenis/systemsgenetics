@@ -13,7 +13,7 @@ import umcg.genetica.io.trityper.util.ChrAnnotation;
  *
  * @author harm-jan
  */
-public class ProbeAnnotation {
+public final class ProbeAnnotation {
 
     private String[] probes;
     private int[] chrStart;
