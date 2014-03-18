@@ -2,7 +2,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>Genotype-Harmonizer</artifactId>
-	<version>1.3.3b</version>
+	<version>1.3.4</version>
 	<name>Genotype Harmonizer</name>
 	<packaging>jar</packaging>
 	<parent>
@@ -92,10 +92,10 @@
 							<!-- Classpath is added to the manifest of the created jar file. -->
 							<addClasspath>true</addClasspath>
 							<!--
-        Configures the classpath prefix. This configuration option is
-        used to specify that all needed libraries are found under lib/
-        directory.
-       -->
+							 Configures the classpath prefix. This configuration option is
+							 used to specify that all needed libraries are found under lib/
+							 directory.
+							-->
 							<classpathPrefix>lib/</classpathPrefix>
 							<!-- Specifies the main class of the application -->
 							<mainClass>nl.umcg.deelenp.genotypeharmonizer.GenotypeHarmonizer</mainClass>
