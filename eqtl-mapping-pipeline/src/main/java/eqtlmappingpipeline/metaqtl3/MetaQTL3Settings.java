@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.Main;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -683,7 +684,8 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     }
 
     public String summarize() {
-        String summary = "Following settings will be applied:\n"
+        String summary = "QTL mapping was performed using metaqtl version: "+ Main.VERSION+"\n\n\n"
+                +"Following settings will be applied:\n"
                 + "Settings\n----\n"
                 + "settingsTextToReplace\t" + settingsTextToReplace + "\n"
                 + "settingsTextReplaceWith\t" + settingsTextReplaceWith + "\n"

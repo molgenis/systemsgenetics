@@ -67,12 +67,13 @@ Our software is written in Java, which makes the software both fast and portable
     java –jar eQTLMappingPipeline.jar 
 ```
 
-* You need to specify the amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. Both switches (–Xmx and –d64) should be called prior to the –jar switch. An example where the program is allowed to use 4gb of memory:
+* You need to specify the maximal amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the -Xms option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. Both switches (–Xmx and –d64) should be called prior to the –jar switch. An example where the program is started with an allocation of 2gb of memmory and is allowed to use a maximum of 4gb of memory:
 ```    
-    java –d64 –Xmx4g –jar eQTLMappingPipeline.jar 
+    java –d64 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
 ```
 
 * Try to increase the –Xmx amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
+* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding –-XX:MaxPermSize=512m, before the -jar. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified.
 
 **IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the –Xmx switch from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
 

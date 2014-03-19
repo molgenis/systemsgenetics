@@ -279,8 +279,10 @@ public class ResultProcessorThread extends Thread {
             if (m_createTEXTFiles) {
                 if(locationToStoreResult>0){
                     if(!sorted){
-                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
+
 //                        Arrays.sort(finalEQTLs, 0, locationToStoreResult);
+
+                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
 //                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
                     }
                 }
