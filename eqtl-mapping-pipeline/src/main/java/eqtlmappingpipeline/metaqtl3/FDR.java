@@ -123,16 +123,19 @@ public class FDR {
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
         int nrEQTLs = -1;
         System.out.println("Reading permuted files");
-        for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
-            String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
-            System.out.println(fileString);
-            
-            // initialize the p-value matrix
-            permutedPValues.assign(1);
+        // initialize the p-value matrix
+        
+        permutedPValues.assign(1);
+        
+//        for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
 //            for (int s = 0; s < maxNrMostSignificantEQTLs; s++) {
 //                permutedPValues.set[permutationRound][s] = 1;
 //            }
-
+//        }
+        
+        for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
+            String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
+            System.out.println(fileString);
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
 
