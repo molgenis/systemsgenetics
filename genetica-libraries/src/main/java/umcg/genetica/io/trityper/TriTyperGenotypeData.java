@@ -6,6 +6,7 @@ package umcg.genetica.io.trityper;
 
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -139,7 +140,9 @@ public class TriTyperGenotypeData {
             t = new TextFile(loc + "SNPs.txt", TextFile.R);
         } else if (Gpio.exists(loc + "SNPs.txt.gz")) {
             t = new TextFile(loc + "SNPs.txt.gz", TextFile.R);
-        }
+        } else {
+			throw new FileNotFoundException("SNPs file not found");
+		}
 
         String line = t.readLine();
         
@@ -147,12 +150,12 @@ public class TriTyperGenotypeData {
 
         while (line != null) {
             if (line.trim().length() > 0) {
-                String snp = new String(line.getBytes("UTF-8")).intern();
-                tmpSNP.add(snp);
+                tmpSNP.add(line.intern());
                 
             }
             line = t.readLine();
         }
+		t.close();
         
         //value if absent now will be -9
         snpToSNPId = new TObjectIntHashMap<String>(tmpSNP.size(), 0.85f, -9);
@@ -164,7 +167,7 @@ public class TriTyperGenotypeData {
 
         SNPs = tmpSNP.toArray(new String[0]);
         
-        t.close();
+        
 
         System.out.println(SNPs.length + " snps loaded");
 
@@ -177,7 +180,9 @@ public class TriTyperGenotypeData {
             t = new TextFile(loc + "SNPMappings.txt", TextFile.R);
         } else if (Gpio.exists(loc + "SNPMappings.txt.gz")) {
             t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R);
-        }
+	    } else {
+			throw new FileNotFoundException("SNPMappings not found");
+		}
 
         lineElems = t.readLineElemsReturnReference(TextFile.tab);
 
@@ -187,8 +192,7 @@ public class TriTyperGenotypeData {
         int nrWoAnnotation = 0;
         while (lineElems != null) {
             if (lineElems.length > 2) {
-                String snpStr = lineElems[2];
-                Integer snpNum = snpToSNPId.get(snpStr);
+                int snpNum = snpToSNPId.get(lineElems[2]);
                 boolean unknownchr = false;
                 boolean unknownchrpos = false;
                 if (snpNum != -9 && !"null".equals(lineElems[0]) && !"null".equals(lineElems[1])) {
