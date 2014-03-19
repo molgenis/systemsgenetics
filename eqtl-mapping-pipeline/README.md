@@ -67,15 +67,15 @@ Our software is written in Java, which makes the software both fast and portable
     java –jar eQTLMappingPipeline.jar 
 ```
 
-* You need to specify the maximal amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the -Xms option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. Both switches (–Xmx and –d64) should be called prior to the –jar switch. An example where the program is started with an allocation of 2gb of memmory and is allowed to use a maximum of 4gb of memory:
+* You need to specify the maximal amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the -Xms option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. These java VM switches (–Xmx, -Xms, –d64 and others) should be called prior to the –jar switch. An example where the program is started with an allocation of 2gb of memmory and is allowed to use a maximum of 4gb of memory:
 ```    
     java –d64 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
 ```
 
 * Try to increase the –Xmx amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
-* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding –-XX:MaxPermSize=512m, before the -jar. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified.
+* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding –-XX:MaxPermSize=512m, before the -jar. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified. Due to this other representation, a dramatic speed increase can accieved if one would add another switch: '-XX:StringTableSize=1000003' especialy when imputed genotype data is used.
 
-**IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the –Xmx switch from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
+**IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the VM switches from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
 
 ###General information about software
 * The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: ```java –jar eQTLMappingPipeline.jar``` produces a list of available modes, while ```java –jar eQTLMappingPipeline.jar  --mode metaqtl``` produces a list of all available options for metaqtl.
