@@ -67,13 +67,14 @@ Our software is written in Java, which makes the software both fast and portable
     java –jar eQTLMappingPipeline.jar 
 ```
 
-* You need to specify the maximal amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the -Xms option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. These java VM switches (–Xmx, -Xms, –d64 and others) should be called prior to the –jar switch. An example where the program is started with an allocation of 2gb of memmory and is allowed to use a maximum of 4gb of memory:
+* You need to specify the maximal amount of memory available to the program using the command-line switch `–Xmx` (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the `-Xms` option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch `–d64`. These java VM switches (`–Xmx`, `-Xms`, `–d64` and others) should be called prior to the `–jar` switch. To be sure you have enough space to put SNP and probe information in you should also set `-XX:StringTableSize=`, chosing a prime number which is slighly higher than the amount of SNPs and probes combined will yield optimal performance. An example command where the program is started with an allocation of 2gb of initialy memmory, a maximum of 4gb of memory is allowed and roughly 1000000 SNPs and probes are tested will look like this:
+
 ```    
-    java –d64 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
+    java –d64 -XX:StringTableSize=1000003 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
 ```
 
-* Try to increase the –Xmx amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
-* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding –-XX:MaxPermSize=512m, before the -jar. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified. Due to this other representation, a dramatic speed increase can accieved if one would add another switch: '-XX:StringTableSize=1000003' especialy when imputed genotype data is used.
+* Try to increase the `–Xmx` amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
+* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding `-XX:MaxPermSize=512m`, before the `-jar`. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified.
 
 **IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the VM switches from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
 
@@ -729,9 +730,4 @@ In other words: by randomly shuffling the sample labels, we can compute the samp
 To identify sample mix-ups, MixupMapper uses each significantly detected *cis*-eQTL in the dataset. For each of these *cis*-eQTLs, the mean (μAA, μAB and μBB) and standard deviation (σAA, σAB and σBB) of the gene expression values were determined for each of the three genotypes (AA, AB and BB). For each pair of genotype and gene expression array we determined the SNP genotype (g), and calculated the number of standard deviations that the gene expression value (e) differed from the expected value associated with the SNP genotype using an absolute Z-score. For each sample pair the absolute Z-scores of all significant cis-eQTLs were summed and the average Z-score for each sample pair was determined to account for differences in the number of tested eQTLs per sample pair due to missing SNP genotypes.
 
 MixupMapper normalizes the Z-scores by subtracting the average of the overall Z-scores for the expression sample and divides it by the standard deviation of the overall Z-scores for this expression sample. Similarly, the Z-scores were normalized by subtracting the average of the overall Z-scores for the genotype sample and were divided by the standard deviation of the overall Z-scores for the genotype sample. After these normalizations MixupMapper determines what the expression array was with the lowest overall normalized Z-score for each genotyped sample. This expression sample was considered to reflect the particular genotyped sample. Once the best matching expression sample had been identified for each genotyped sample, it will be compared to what had been initially defined. 
-
-
-
-
-
 
