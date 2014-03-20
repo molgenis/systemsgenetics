@@ -67,13 +67,13 @@ Our software is written in Java, which makes the software both fast and portable
     java –jar eQTLMappingPipeline.jar 
 ```
 
-* You need to specify the maximal amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the -Xms option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. These java VM switches (–Xmx, -Xms, –d64 and others) should be called prior to the –jar switch. To be sure you have enough space to put SNP and probe information in you should also set "-XX:StringTableSize=", chosing a prime number which is slighly higher than the amount of SNPs and probes combined will yield optimal performance. An example command where the program is started with an allocation of 2gb of initialy memmory, a maximum of 4gb of memory is allowed and roughly 1000000 SNPs and probes are tested will look like this:
+* You need to specify the maximal amount of memory available to the program using the command-line switch –Xmx (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the -Xms option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch –d64. These java VM switches (–Xmx, -Xms, –d64 and others) should be called prior to the –jar switch. An example where the program is started with an allocation of 2gb of memmory and is allowed to use a maximum of 4gb of memory:
 ```    
-    java –d64 -XX:StringTableSize=1000003 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
+    java –d64 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
 ```
 
 * Try to increase the –Xmx amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
-* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding –-XX:MaxPermSize=512m, before the -jar. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified.
+* If the program return an " java.lang.OutOfMemoryError: PermGen space" error try adding –-XX:MaxPermSize=512m, before the -jar. In the later releases of the software we use another representation of SNPs which needs another memory setting to be specified. Due to this other representation, a dramatic speed increase can accieved if one would add another switch: '-XX:StringTableSize=1000003' especialy when imputed genotype data is used.
 
 **IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the VM switches from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
 
