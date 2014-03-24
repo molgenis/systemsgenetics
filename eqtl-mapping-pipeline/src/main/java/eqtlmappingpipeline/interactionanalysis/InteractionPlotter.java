@@ -7,6 +7,7 @@ package eqtlmappingpipeline.interactionanalysis;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
@@ -119,6 +120,8 @@ public class InteractionPlotter {
         colorarray[1] = new Color(98, 175, 255);
         colorarray[2] = new Color(204, 86, 78);
 
+        DecimalFormat decFormat = new DecimalFormat("#.###");
+        DecimalFormat decFormatSmall = new DecimalFormat("0.#E0");
         for (Triple<String, String, String> triple : triples) {
 
             String snp = triple.getLeft();
@@ -268,7 +271,16 @@ public class InteractionPlotter {
                         zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
                     }
                     pValueInteraction *= 2;
-                    ScatterPlot scatterPlot = new ScatterPlot(750, 500, dataCov, dataExp, dataGen, genotypeDescriptions, colorarray, ScatterPlot.OUTPUTFORMAT.PDF, outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".pdf", false);
+                    String pvalFormatted = "";
+                    if (pValueInteraction >= 0.001) {
+                        pvalFormatted = decFormat.format(pValueInteraction);
+                    } else {
+                        pvalFormatted = decFormatSmall.format(pValueInteraction);
+                    }
+                    ScatterPlot scatterPlot = new ScatterPlot(500, 500, dataCov, dataExp, dataGen, genotypeDescriptions, colorarray, ScatterPlot.OUTPUTFORMAT.PDF,
+                            "Interaction between SNP " + snp + ", probe " + probe + " and covariate " + covariateData.rowObjects.get(q),
+                            "Z: " + decFormat.format(zScoreInteraction) + " Pvalue: " + pvalFormatted + " n: " + nrCalled,
+                            outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".pdf", false);
 
                 }
 

@@ -7,7 +7,6 @@ package umcg.genetica.graphics;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfTemplate;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -17,6 +16,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import umcg.genetica.math.stats.Regression;
 import umcg.genetica.util.Primitives;
 
 /**
@@ -54,6 +55,8 @@ public class ScatterPlot {
     private Color[] colors;
     private String[] categoryDescriptions;
     private boolean crossAxisAtZero = true;
+    private String title;
+    private String subtitle;
 
     public enum OUTPUTFORMAT {
 
@@ -97,7 +100,7 @@ public class ScatterPlot {
         write();
     }
 
-    public ScatterPlot(int sizeX, int sizeY, double[] x, double[] y, int[] category, String[] categoryDescriptions, Color[] categoryColors, OUTPUTFORMAT format, String outfile, boolean crossAxisAtZero) {
+    public ScatterPlot(int sizeX, int sizeY, double[] x, double[] y, int[] category, String[] categoryDescriptions, Color[] categoryColors, OUTPUTFORMAT format, String title, String subtitle, String outfile, boolean crossAxisAtZero) {
         if (x.length != y.length) {
             throw new IllegalArgumentException("Error initializing scatterplot: X and Y do not have the same length! " + x.length + "x" + y.length);
         }
@@ -116,10 +119,14 @@ public class ScatterPlot {
         this.categoryDescriptions = categoryDescriptions;
         this.x = x;
         this.y = y;
+        this.title = title;
+        this.subtitle = subtitle;
 
         init();
         plot();
+        plotTitles();
         plotCategoryDescriptions();
+        plotCategoryTrendLines();
         write();
     }
 
@@ -249,12 +256,11 @@ public class ScatterPlot {
         Color originalColor = g2d.getColor();
         Font oriFont = g2d.getFont();
 
-        FontMetrics fontmetrics = g2d.getFontMetrics();
-        int tickFontHeight = fontmetrics.getHeight();
-
-        // draw categories top right
+// draw categories top right
         g2d.setFont(new Font("SansSerif", Font.PLAIN, 10));
         g2d.setColor(Color.gray);
+        FontMetrics fontmetrics = g2d.getFontMetrics();
+        int tickFontHeight = fontmetrics.getHeight();
 
         int minPixel = graphWidth;
         for (String categoryName : categoryDescriptions) {
@@ -280,15 +286,101 @@ public class ScatterPlot {
         g2d.setColor(originalColor);
     }
 
+    private void plotCategoryTrendLines() {
+
+        Color originalColor = g2d.getColor();
+        Font oriFont = g2d.getFont();
+
+// draw categories top right
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        g2d.setColor(Color.gray);
+        FontMetrics fontmetrics = g2d.getFontMetrics();
+        int fontHeight = fontmetrics.getHeight();
+
+        for (int cat = 0; cat < categoryDescriptions.length; cat++) {
+
+            g2d.setColor(colors[cat]);
+
+            ArrayList<Double> xvals = new ArrayList<Double>();
+            ArrayList<Double> yvals = new ArrayList<Double>();
+
+            double minXVal = Double.MAX_VALUE;
+            double maxXVal = -Double.MAX_VALUE;
+            for (int v = 0; v < x.length; v++) {
+                if (category[v] == cat) {
+                    if(x[v] > maxXVal){
+                        maxXVal = x[v];
+                    } 
+                    if(x[v]<minXVal){
+                        minXVal = x[v];
+                    }
+                    
+                    xvals.add(x[v]);
+                    yvals.add(y[v]);
+                }
+            }
+            double[] xvalsArr = Primitives.toPrimitiveArr(xvals.toArray(new Double[0]));
+            double[] yvalsArr = Primitives.toPrimitiveArr(yvals.toArray(new Double[0]));
+            double[] correlationValues = Regression.getLinearRegressionCoefficients(xvalsArr, yvalsArr);
+            double beta = correlationValues[0];
+            double alpha = correlationValues[1];
+
+            double startY = (beta*minXVal) + alpha;
+            double endY = (beta*maxXVal) + alpha;
+  
+            int posXStart = margin + (int) Math.ceil((Math.abs(minX - minXVal) / rangeX) * drawWidth);
+            int posXEnd = margin + (int) Math.ceil((Math.abs(minX - maxXVal) / rangeX) * drawWidth);
+            int posYStart = margin + drawHeight - (int) Math.ceil((Math.abs(minY - startY) / rangeY) * drawHeight);
+            int posYEnd = margin + drawHeight - (int) Math.ceil((Math.abs(minY - endY) / rangeY) * drawHeight);
+            
+            g2d.drawLine(posXStart, posYStart, posXEnd, posYEnd);
+
+        }
+
+        g2d.setFont(oriFont);
+        g2d.setColor(originalColor);
+    }
+
+    private void plotTitles() {
+        Color originalColor = g2d.getColor();
+        Font oriFont = g2d.getFont();
+        int fontheightTitle = 0;
+        if (title != null) {
+            g2d.setFont(new Font("Serif", Font.BOLD, 14));
+            g2d.setColor(Color.black);
+            FontMetrics fontmetrics = g2d.getFontMetrics();
+            int fontHeight = fontmetrics.getHeight();
+            g2d.drawString(title, margin, margin / 2);
+            fontheightTitle = fontHeight;
+        }
+
+        if (subtitle != null) {
+
+            // draw categories top right
+            g2d.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            g2d.setColor(Color.gray);
+
+            FontMetrics fontmetrics = g2d.getFontMetrics();
+            int fontHeight = fontmetrics.getHeight();
+
+            g2d.drawString(subtitle, margin, margin / 2 + fontheightTitle);
+
+        }
+
+        g2d.setFont(oriFont);
+        g2d.setColor(originalColor);
+    }
+
     private void drawAxis() {
         Color originalColor = g2d.getColor();
         Font oriFont = g2d.getFont();
 
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 9));
+        g2d.setColor(Color.gray);
+
         FontMetrics fontmetrics = g2d.getFontMetrics();
         int tickFontHeight = fontmetrics.getHeight();
 
-        g2d.setFont(new Font("SansSerif", Font.PLAIN, 9));
-        g2d.setColor(Color.gray);
         // x-axis
         int xposYAxis = 0;
         int yposXAxis = 0;
@@ -405,7 +497,7 @@ public class ScatterPlot {
         minX = Primitives.min(x);
         minY = Primitives.min(y);
 
-        if(crossAxisAtZero){
+        if (crossAxisAtZero) {
             if (minY > 0) {
                 minY = 0;
             }
@@ -420,7 +512,7 @@ public class ScatterPlot {
                 maxX = 0;
             }
         }
-        
+
         if (Double.isInfinite(maxX)) {
             maxX = Double.MAX_VALUE;
         }
@@ -440,7 +532,6 @@ public class ScatterPlot {
         rangeX = Math.abs(minX - maxX);
         rangeY = Math.abs(minY - maxY);
 //
-
 
 //        System.out.println("MinX: " + minX + "\nMaxX: " + maxX + "\nMinY: " + minY + "\nMaxY: " + maxY + "\nRangeX: " + rangeX + "\nRangeY: " + rangeY + "\nUnitX: " + unitX + "\nUnitY: " + unitY);
         if (Double.isNaN(unitX)) {
