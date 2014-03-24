@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
@@ -55,7 +54,7 @@ public class MetaQTL4 {
     }
 
     public MetaQTL4(String settings, String replaceText, String testToReplaceWith) throws IOException, Exception {
-        LOG.info("WARNING: MetaQTL4 is experimental code!");
+        LOG.warn("WARNING: MetaQTL4 is experimental code!");
         m_settings = new MetaQTL4Settings(settings, replaceText, testToReplaceWith);
         initialize();
         run();
@@ -141,8 +140,8 @@ public class MetaQTL4 {
         // create lookup table for ZScores 
         // TODO: put this in a nice test encapsulation thing
         int nrSamples = 0;
-        for (int d = 0; d < datasets.length; d++) {
-            nrSamples += datasets[d].getGenotypeToTraitCouplingInt().length;
+        for (MetaQTL4Dataset dataset : datasets) {
+            nrSamples += dataset.getGenotypeToTraitCouplingInt().length;
         }
         LOG.info("Meta-analysis will have " + nrSamples + " samples");
         Correlation.correlationToZScore(nrSamples);

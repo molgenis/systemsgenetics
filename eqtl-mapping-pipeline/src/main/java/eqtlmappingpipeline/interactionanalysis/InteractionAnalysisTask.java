@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.celltypespecific;
+package eqtlmappingpipeline.interactionanalysis;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
@@ -19,7 +19,7 @@ import umcg.genetica.math.stats.Correlation;
  *
  * @author harmjan
  */
-public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecificeQTLMappingResults> {
+public class InteractionAnalysisTask implements Callable<InteractionAnalysisResults> {
 
     private SNP eQTLSNPObj;
     private double[][] pcCorrectedData;
@@ -31,7 +31,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
     private TriTyperExpressionData expressionDataPCCorrected;
     private ArrayList<Pair<String, String>> eQTLsForSNP;
 
-    public CellTypeSpecificeQTLMappingTask(SNP snpObj, ArrayList<Pair<String, String>> eQTLsForSNP, double[][] pcCorrectedData,
+    public InteractionAnalysisTask(SNP snpObj, ArrayList<Pair<String, String>> eQTLsForSNP, double[][] pcCorrectedData,
             double[] cellcounts, String[] probesToUseAsCovariateArr, int[] wgaId,
             String[] expInds, DoubleMatrixDataset<String, String> expressionDataRaw, TriTyperExpressionData expressionDataPCCorrected) {
         this.eQTLSNPObj = snpObj;
@@ -46,7 +46,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
     }
 
     @Override
-    public CellTypeSpecificeQTLMappingResults call() throws Exception {
+    public InteractionAnalysisResults call() throws Exception {
 
 
         ArrayList<String> eQTLsTested = new ArrayList<String>();
@@ -280,7 +280,7 @@ public class CellTypeSpecificeQTLMappingTask implements Callable<CellTypeSpecifi
 
         // get genotypes, include missing ones
 
-        CellTypeSpecificeQTLMappingResults result = new CellTypeSpecificeQTLMappingResults(qcString, cellcountInterActionOutput, eQTLsTested, interactionVector);
+        InteractionAnalysisResults result = new InteractionAnalysisResults(qcString, cellcountInterActionOutput, eQTLsTested, interactionVector);
 
         eQTLSNPObj.clearGenotypes();
         eQTLSNPObj = null;

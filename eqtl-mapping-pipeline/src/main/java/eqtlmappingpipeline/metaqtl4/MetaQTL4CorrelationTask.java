@@ -7,7 +7,6 @@ package eqtlmappingpipeline.metaqtl4;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -17,6 +16,7 @@ import umcg.genetica.containers.Pair;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.ZScores;
+import umcg.genetica.text.Strings;
 import umcg.genetica.util.Primitives;
 
 /**
@@ -225,7 +225,7 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
 
             ProgressBar pb = new ProgressBar(nrVariants, "Running calculations...");
             for (int variantId = 0; variantId < nrVariants; variantId += threadIndex) {
-                pb.set(variantId);
+                pb.iterate();
                 // load the genotypes
                 double[][] genotypes = new double[nrDatasets][0];
                 double[] genotypeVariances = new double[nrDatasets];
@@ -308,7 +308,9 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
 
                             // reorder genotypes on the basis of the permuted sample links
                             for (int d = 0; d < datasets.length; d++) {
-                                genotypes[d] = permuteGenotypes(genotypes[d], rand);
+                                if (genotypes[d] != null) {
+                                    genotypes[d] = permuteGenotypes(genotypes[d], rand);
+                                }
                             }
                         } else {
                             dist = realDistribution;
@@ -322,6 +324,8 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
                             }
                         } else {
                             for (Integer trait : traitsToTest) {
+//                                MetaQTL4MetaTrait traitObj = availableTraits.get(trait);
+//                                System.out.println(Strings.concat(traitObj.getPlatformIds(), Strings.comma));
                                 int bin = test(sampleSizes, genotypes, genotypeVariances, trait, includeTraitSample);
                                 dist[bin]++;
                             }
@@ -336,4 +340,178 @@ public class MetaQTL4CorrelationTask implements Callable<Pair<int[], int[]>> {
         }
         return new Pair<int[], int[]>(realDistribution, permutedDistribution);
     }
+
+    private int test(int[] sampleSizes, double[][] genotypes, double[] genotypeVariances, Integer traitId, boolean[][] includeTraitSample) {
+        int nrDatasets = datasets.length;
+        double[] zscores = new double[nrDatasets];
+        for (int datasetId = 0; datasetId < nrDatasets; datasetId++) {
+
+            if (genotypes[datasetId] == null) {
+                zscores[datasetId] = Double.NaN;
+            } else {
+                double[] x = genotypes[datasetId];
+
+                if (x == null) {
+                    System.err.println("ERROR: genotype is null");
+                    zscores[datasetId] = Double.NaN;
+                } else {
+                    double varianceX = genotypeVariances[datasetId];
+                    boolean[] includeDatasetTraitSample = includeTraitSample[datasetId];
+
+                    double meanY;
+                    double varianceY;
+
+                    // re-normalize the trait data when the genotypes had missing values
+                    Integer datasetTraitId = traitIndex[datasetId][traitId];
+                    double[] y = datasets[datasetId].getTraitData(datasetTraitId);
+                    if (sampleSizes[datasetId] != y.length) {
+                        double[] newY = new double[x.length];
+                        int itr = 0;
+                        double sum = 0;
+
+                        // recalculate mean and variance
+                        for (int s = 0; s < y.length; s++) {
+                            if (includeDatasetTraitSample[s]) {
+                                newY[itr] = y[s];
+                                sum += newY[itr];
+                                itr++;
+                            }
+                        }
+
+                        y = newY;
+                        meanY = sum / itr;
+                        double varsum = 0;
+                        for (int i = 0; i < y.length; i++) {
+                            y[i] -= meanY;
+                            varsum += y[i] * y[i];
+                        }
+                        varianceY = varsum / (y.length - 1);
+                    } else {
+                        varianceY = datasets[datasetId].getTraitVariance(datasetTraitId);
+                    }
+
+                    if (varianceY == 0) {
+                        // trait has no variance
+                        zscores[datasetId] = Double.NaN;
+                    } else {
+                        //Calculate correlation coefficient:
+                        double correlation = Correlation.correlate(x, y, varianceX, varianceY);
+//                        double correlation2 = JSci.maths.ArrayMath.correlation(x, y);
+//
+//                        if (correlation != correlation2) {
+//                            System.err.println("ERROR: "+(correlation-correlation2));
+//                            double[] newY = new double[x.length];
+//                            int itr = 0;
+//                            double sum = 0;
+//
+//                            // recalculate mean and variance
+//                            for (int s = 0; s < y.length; s++) {
+//                                if (includeDatasetTraitSample[s]) {
+//                                    newY[itr] = y[s];
+//                                    sum += newY[itr];
+//                                    itr++;
+//                                }
+//                            }
+//
+//                            meanY = sum / itr;
+//                            double varsum = 0;
+//                            for (int i = 0; i < newY.length; i++) {
+//                                newY[i] -= meanY;
+//                                varsum += newY[i] * newY[i];
+//                            }
+//                            double varianceYRecalculated = varsum / (newY.length - 1);
+//                            System.err.println(correlation + "\t" + correlation2 + "\t"
+//                                    + x.length + "\t"
+//                                    + varianceYRecalculated + "\t"
+//                                    + varianceX + "\t"
+//                                    + varianceY + "\t"
+//                                    + datasets[datasetId].getTraitVariance(datasetTraitId) + "\t"
+//                                    + Descriptives.variance(x) + "\t"
+//                                    + Descriptives.variance(y)
+//                            );
+////                            for (int i = 0; i < y.length; i++) {
+////                                System.out.println(i + "\t" + y[i] + "\t" + x[i]);
+////                            }
+////                            System.exit(-1);
+//                        }
+
+                        if (correlation >= -1 && correlation <= 1) {
+                            zscores[datasetId] = Correlation.convertCorrelationToZScore(x.length, correlation);
+                        } else {
+                            System.err.println("Error! correlation invalid: " + correlation);
+                            System.exit(-1);
+                        }
+                    }
+                }
+            }
+        }
+
+        double metaZ = ZScores.getWeightedZ(zscores, sampleSizes);
+        double p = ZScores.zToP(metaZ);
+        int bin = (int) Math.round(p * distributionSize);
+        if (bin == distributionSize) {
+            bin--;
+        }
+
+        return bin;
+    }
+
+    private Pair<double[], Double> correctGenotypesForMissingValuesAndNormalize(int[] coupledTraitInt, GeneticVariant variant, float[] genotypesTMP, boolean[] includeTraitSample) {
+        int xLen = genotypesTMP.length;
+        int nrMissing = 0;
+        double[] snpmeancorrectedgenotypes;
+        double varianceX;
+        double meanX;
+        if (variant.getCallRate() < 1d) {
+            double sum = 0;
+            for (int i = 0; i < xLen; i++) {
+                if (genotypesTMP[i] < 0) {
+                    nrMissing++;
+                    int coupledTrait = coupledTraitInt[i]; // not really sure if this is still required..
+                    includeTraitSample[coupledTrait] = false;
+                } else {
+                    sum += genotypesTMP[i];
+                }
+            }
+            int newXLen = xLen - nrMissing;
+            meanX = sum / newXLen;
+            snpmeancorrectedgenotypes = new double[newXLen];
+
+            int itr = 0;
+            for (int i = 0; i < newXLen; i++) {
+                if (genotypesTMP[i] >= 0) {
+                    snpmeancorrectedgenotypes[itr] = genotypesTMP[i] - meanX;
+                    itr++;
+                }
+            }
+        } else {
+            double sum = 0;
+            snpmeancorrectedgenotypes = new double[xLen];
+            for (int i = 0; i < xLen; i++) {
+                double genotype = genotypesTMP[i];
+                sum += genotype;
+                snpmeancorrectedgenotypes[i] = genotype;
+            }
+            //  meanX = sum / genotypesTMP.length;
+        }
+
+        varianceX = JSci.maths.ArrayMath.variance(snpmeancorrectedgenotypes);
+        return new Pair<double[], Double>(snpmeancorrectedgenotypes, varianceX);
+    }
+
+    private double[] permuteGenotypes(double[] genotypes, Random rand) {
+        ArrayList<Double> availableGenotypes = new ArrayList<Double>();
+
+        if (genotypes == null) {
+            System.err.println("ERROR: genotypes null");
+            return null;
+        }
+
+        for (int i = 0; i < genotypes.length; i++) {
+            availableGenotypes.add(genotypes[i]);
+        }
+        Collections.shuffle(availableGenotypes, rand);
+        return Primitives.toPrimitiveArr(availableGenotypes.toArray(new Double[0]));
+    }
+
 }

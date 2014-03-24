@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.celltypespecific;
+package eqtlmappingpipeline.interactionanalysis;
 
 import umcg.genetica.graphics.ScatterPlot;
 import eqtlmappingpipeline.normalization.Normalizer;
@@ -37,7 +37,7 @@ import umcg.genetica.math.stats.concurrent.ConcurrentCorrelation;
  *
  * @author harm-jan Multi-threaded implementation of the OLS model
  */
-public class CelltypeSpecificeQTLMappingMT {
+public class InteractionAnalysisMultiThreaded {
 
     public void prepareDataForCelltypeSpecificEQTLMapping(String inexpraw, String outdirectory, Double correlationThreshold, String celltypeSpecificProbeFile, String mdsComponentFile, String cellCountFile, String gte, Integer threads) throws IOException {
         String rawExpressionDataFile = inexpraw;
@@ -608,7 +608,7 @@ public class CelltypeSpecificeQTLMappingMT {
         }
 
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
-        CompletionService<CellTypeSpecificeQTLMappingResults> pool = new ExecutorCompletionService<CellTypeSpecificeQTLMappingResults>(threadPool);
+        CompletionService<InteractionAnalysisResults> pool = new ExecutorCompletionService<InteractionAnalysisResults>(threadPool);
 
         int nrInOutput = 0;
         ProgressBar pb = new ProgressBar(snpProbeCombinationsToTest.size(), "Now testing available eQTL effects for cell type specificity.");
@@ -632,7 +632,7 @@ public class CelltypeSpecificeQTLMappingMT {
                 }
 
                 // push the actual work to thread..
-                CellTypeSpecificeQTLMappingTask t = new CellTypeSpecificeQTLMappingTask(snpObj, eQTLsForSNP, pcCorrectedData, cellcounts, probesToUseAsCovariateArr, wgaId, expInds, covariateData, pcCorrectedExpressionData);
+                InteractionAnalysisTask t = new InteractionAnalysisTask(snpObj, eQTLsForSNP, pcCorrectedData, cellcounts, probesToUseAsCovariateArr, wgaId, expInds, covariateData, pcCorrectedExpressionData);
                 pool.submit(t);
                 nrSubmitted++;
             }
@@ -645,7 +645,7 @@ public class CelltypeSpecificeQTLMappingMT {
                     // pick up results
 
                     try {
-                        CellTypeSpecificeQTLMappingResults result = pool.take().get();
+                        InteractionAnalysisResults result = pool.take().get();
                         if (proxyEffectFile != null) {
                             proxyEffectFile.writeln(result.getCellcountInterActionOutput());
                         }
@@ -680,7 +680,7 @@ public class CelltypeSpecificeQTLMappingMT {
             while (nrRetrieved < nrSubmitted) {
                 // pick up results
                 try {
-                    CellTypeSpecificeQTLMappingResults result = pool.take().get();
+                    InteractionAnalysisResults result = pool.take().get();
                     if (proxyEffectFile != null) {
                         proxyEffectFile.writeln(result.getCellcountInterActionOutput());
                     }
