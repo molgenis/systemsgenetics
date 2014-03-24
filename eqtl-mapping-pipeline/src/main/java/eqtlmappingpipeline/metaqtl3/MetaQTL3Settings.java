@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -75,6 +76,7 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean metaAnalyseModelCorrelationYHat = false;
     public String pathwayDefinition;
 	public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
+	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     
     public MetaQTL3Settings() {
     }
@@ -462,12 +464,9 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             for (String d : data) {
                 d = d.trim();
                 if (d.length() > 0) {
-                    String[] elems = d.split("\t");
+                    String[] elems = TAB_PATTERN.split(d);
                     d = elems[0].trim();
-                    while (d.startsWith(" ")) {
-                        d = d.substring(1);
-                    }
-                    tsSNPsConfine.add(new String(d.getBytes("UTF-8")));
+                    tsSNPsConfine.add(d.intern());
                 }
             }
             in.close();
