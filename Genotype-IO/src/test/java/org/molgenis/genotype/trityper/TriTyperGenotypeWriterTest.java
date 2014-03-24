@@ -14,6 +14,7 @@ import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.oxford.GenGenotypeData;
+import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.util.GenotypeDataCompareTool;
 import static org.testng.Assert.*;
 
@@ -110,5 +111,24 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
+		
+		RandomAccessGenotypeData trityper2 = new TriTyperGenotypeData(tmpOutputFolder, 0, null, new SampleIdIncludeFilter("1042", "1047"));
+		
+		assertEquals(trityper2.getSamples().size(),2);
+		
+		variant = trityper2.getSnpVariantByPos("1", 1);
+		originalVariant = original.getSnpVariantByPos("1", 1);
+		
+		float[] dosages = variant.getSampleDosages();
+		originalDosageValues = originalVariant.getSampleDosages();
+		
+		assertEquals(dosages[0], originalDosageValues[0], 0.00001);
+		assertEquals(dosages[1], originalDosageValues[5], 0.00001);
+		
+		
+		
+		
+		
+		
 	}
 }
