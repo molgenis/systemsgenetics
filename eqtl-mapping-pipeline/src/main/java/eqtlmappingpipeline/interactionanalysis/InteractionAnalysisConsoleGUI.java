@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.celltypespecific;
+package eqtlmappingpipeline.interactionanalysis;
 
 import java.io.IOException;
 import umcg.genetica.console.ConsoleGUIElems;
@@ -11,17 +11,17 @@ import umcg.genetica.console.ConsoleGUIElems;
  *
  * @author harm-jan
  */
-public class CelltypeSpecificeQTLMappingConsoleGUI {
+public class InteractionAnalysisConsoleGUI {
 
     enum RUNMODE {
 
-        NORMALIZE, CELLTYPESPECIFICEQTLMAPPING
+        NORMALIZE, CELLTYPESPECIFICEQTLMAPPING, PLOT
     };
 
     /**
      * @param args the command line arguments
      */
-    public CelltypeSpecificeQTLMappingConsoleGUI(String[] args) {
+    public InteractionAnalysisConsoleGUI(String[] args) {
         String inexpraw = null;
         String out = null;
         String celltypespecificprobefile = null;
@@ -37,7 +37,6 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
         boolean testAllCovariatesInCovariateData = false;
         Integer nrThreads = null;
 
-
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             String val = null;
@@ -47,10 +46,14 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
             }
 
             if (arg.equals("--step")) {
-                if (val.equals("normalize")) {
+                if (val == null) {
+
+                } else if (val.equals("normalize")) {
                     step = RUNMODE.NORMALIZE;
                 } else if (val.equals("mapeqtls")) {
                     step = RUNMODE.CELLTYPESPECIFICEQTLMAPPING;
+                } else if (val.equals("plot")) {
+                    step = RUNMODE.PLOT;
                 }
             } else if (arg.equals("--inexpraw")) {
                 inexpraw = val;
@@ -94,35 +97,16 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
             printUsage();
         }
 
-
         try {
-            CelltypeSpecificeQTLMappingMT qmt = new CelltypeSpecificeQTLMappingMT();
-            if (step == RUNMODE.NORMALIZE) {
-                System.out.println("Cell type specific cis-eQTL normalization");
-                boolean kill = false;
-                if (inexpraw == null) {
-                    System.err.println("Error: please supply --inexpraw");
-                    kill = true;
-                }
-                if (out == null) {
-                    System.err.println("Error: please supply --out");
-                    kill = true;
-                }
-                if (celltypespecificprobefile == null) {
-                    System.err.println("Error: please supply --celltypespecificprobes");
-                    kill = true;
-                }
-                if (kill) {
-                    System.err.println("");
-                    printUsage();
-                } else {
-                    qmt.prepareDataForCelltypeSpecificEQTLMapping(inexpraw, out, null, celltypespecificprobefile, mdscomponents, cellcountfile, gte, nrThreads);
-                }
-            } else if (step == RUNMODE.CELLTYPESPECIFICEQTLMAPPING) {
-                System.out.println("Cell type specific cis-eQTL mapping");
+            if (step == RUNMODE.PLOT) {
+                System.out.println("Interaction plotter");
                 boolean kill = false;
                 if (covariates == null) {
                     System.err.println("Error: please supply --covariates");
+                    kill = true;
+                }
+                if (in == null) {
+                    System.err.println("Error: please supply --in");
                     kill = true;
                 }
                 if (inexp == null) {
@@ -133,18 +117,63 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                     System.err.println("Error: please supply --out");
                     kill = true;
                 }
-                if (cellcountfile == null) {
-//                    System.err.println("Warning: yo please supply --cellcounts");
-                    //kill = true;
-                }
                 if (kill) {
                     System.err.println("");
                     printUsage();
                 } else {
-                    qmt.runCelltypeSpecificEQTLMapping(inexp, covariates, in, gte, snpprobecombofile, nrThreads, out, testAllCovariatesInCovariateData);
-//                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
+                    InteractionPlotter plotter = new InteractionPlotter(snpprobecombofile, in, inexp, covariates, gte, out);
                 }
+            } else {
+                InteractionAnalysisMultiThreaded qmt = new InteractionAnalysisMultiThreaded();
+                if (step == RUNMODE.NORMALIZE) {
+                    System.out.println("Cell type specific cis-eQTL normalization");
+                    boolean kill = false;
+                    if (inexpraw == null) {
+                        System.err.println("Error: please supply --inexpraw");
+                        kill = true;
+                    }
+                    if (out == null) {
+                        System.err.println("Error: please supply --out");
+                        kill = true;
+                    }
+                    if (celltypespecificprobefile == null) {
+                        System.err.println("Error: please supply --celltypespecificprobes");
+                        kill = true;
+                    }
+                    if (kill) {
+                        System.err.println("");
+                        printUsage();
+                    } else {
+                        qmt.prepareDataForCelltypeSpecificEQTLMapping(inexpraw, out, null, celltypespecificprobefile, mdscomponents, cellcountfile, gte, nrThreads);
+                    }
+                } else if (step == RUNMODE.CELLTYPESPECIFICEQTLMAPPING) {
+                    System.out.println("Cell type specific cis-eQTL mapping");
+                    boolean kill = false;
+                    if (covariates == null) {
+                        System.err.println("Error: please supply --covariates");
+                        kill = true;
+                    }
+                    if (inexp == null) {
+                        System.err.println("Error: please supply --inexp");
+                        kill = true;
+                    }
+                    if (out == null) {
+                        System.err.println("Error: please supply --out");
+                        kill = true;
+                    }
+                    if (cellcountfile == null) {
+//                    System.err.println("Warning: yo please supply --cellcounts");
+                        //kill = true;
+                    }
+                    if (kill) {
+                        System.err.println("");
+                        printUsage();
+                    } else {
+                        qmt.runCelltypeSpecificEQTLMapping(inexp, covariates, in, gte, snpprobecombofile, nrThreads, out, testAllCovariatesInCovariateData);
+//                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
+                    }
 
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -179,8 +208,19 @@ public class CelltypeSpecificeQTLMappingConsoleGUI {
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
                 + "--cellcounts\t\tString\t\tLocation of the cell count (or cell count proxy) file (optional)\n"
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
-                + "--testAllCovariates\t\tThis tests all covariates in covariate dataset (default only tests covariates matching to probes in --snpprobe)\n" //+ "--combineAllCovariatesInSingleModel\t\tCurrently not implemented"
-                );
+                + "--testAllCovariates\t\tThis tests all covariates in covariate dataset (default only tests covariates matching to probes in --snpprobe)\n");
+
+        System.out.println("");
+
+        System.out.print("Step 3: Plot effects\n" + ConsoleGUIElems.LINE);
+        System.out.println("--step plot\t\t\t\tTell the program to plot interaction effects.\n"
+                + "--inexp\tdir\t\tLocation of the dependent dataset\n"
+                + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
+                + "--gte\t\t\tString\t\tLocation of the genotype to expression coupling file\n"
+                + "--in\t\t\tdir\t\tLocation of the genotype data\n"
+                + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
+                + "--snpprobe\t\tString\t\tLocation of the SNP-Covariate-Probe combination file\n"
+        );
 
     }
 }

@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.celltypespecific;
+package eqtlmappingpipeline.interactionanalysis;
 
 import java.util.ArrayList;
 
@@ -10,7 +10,7 @@ import java.util.ArrayList;
  *
  * @author harmjan
  */
-public class CellTypeSpecificeQTLMappingResults {
+public class InteractionAnalysisResults {
     private final String qcString;
 
     
@@ -18,7 +18,7 @@ public class CellTypeSpecificeQTLMappingResults {
     private final ArrayList<String> eQTLsTested;
     private final double[][] interactionVector;
 
-    CellTypeSpecificeQTLMappingResults(String qcString, String cellcountInterActionOutput, ArrayList<String> eQTLsTested, double[][] interactionVector) {
+    InteractionAnalysisResults(String qcString, String cellcountInterActionOutput, ArrayList<String> eQTLsTested, double[][] interactionVector) {
         this.qcString = qcString;
         this.cellcountInterActionOutput = cellcountInterActionOutput;
         this.eQTLsTested = eQTLsTested;
