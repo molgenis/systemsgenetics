@@ -31,6 +31,12 @@ public class SmoothSort {
     
     private static <C extends Comparable<? super C>> void sortInternaly(C[] m,
             int lo, int hi) {
+		
+		
+		if(hi - lo > 7049156 ){
+			throw new IllegalArgumentException("Array to big to sort using this method");
+		}
+		
         int head = lo; // the offset of the first element of the prefix into m
 
         // These variables need a little explaining. If our string of heaps
