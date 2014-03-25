@@ -44,7 +44,7 @@ public class ResultProcessorThread extends Thread {
 //    private int nrInFinalBuffer = 0;
 //    private TextFile[] zScoreBinaryFile;
 //    private TextFile zScoreMetaAnalysisFile; 
-    
+//    private int m_numdatasets = 0;
     
     private boolean m_createBinaryFiles = false;
     private TriTyperGeneticalGenomicsDataset[] m_gg = null;
@@ -60,13 +60,11 @@ public class ResultProcessorThread extends Thread {
     private final WorkPackage[] m_availableWorkPackages;
     private long nrTestsPerformed = 0;
     private QTL[] finalEQTLs;
-    private double maxSavedPvalue = Double.NaN;
+    private double maxSavedPvalue = Double.MIN_VALUE;
     private int locationToStoreResult=0;
     private boolean bufferHasOverFlown=false;
     private boolean sorted=false;
-    public int totalcounter = 0;
     private int m_maxResults = 0;
-    private int m_numdatasets = 0;
     public double highestP = Double.MAX_VALUE;
     private int nrSNPsTested = 0;
     private final boolean m_useAbsoluteZScore;
@@ -105,9 +103,8 @@ public class ResultProcessorThread extends Thread {
 //        m_totalNumberOfProbes = probelist.length;
 //        m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
 //        tmpEQTLBuffer = new QTL[tmpbuffersize];
-//        m_result_counter = 0;
-        
-        m_numdatasets = m_gg.length;
+//        m_result_counter = 0;   
+//        m_numdatasets = m_gg.length;
 
         finalEQTLs = new QTL[(m_maxResults+tmpbuffersize)];
         nrSNPsTested = 0;
@@ -277,13 +274,13 @@ public class ResultProcessorThread extends Thread {
             }
 
             if (m_createTEXTFiles) {
-                if(locationToStoreResult>0){
-                    if(!sorted){
-
-//                        Arrays.sort(finalEQTLs, 0, locationToStoreResult);
-
-                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
+                if(!sorted){
+                    if(locationToStoreResult!=0){
+                        Arrays.sort(finalEQTLs, 0, locationToStoreResult);
+//                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
 //                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
+                        sorted=true;
+
                     }
                 }
                 writeTextResults();
@@ -393,56 +390,27 @@ public class ResultProcessorThread extends Thread {
                 
                 sorted=false;
                 
-                QTL e = new QTL(m_numdatasets);
-                e.pvalue = pval;
-                e.pid = pid;
-                e.sid = sid;
-                e.alleleAssessed = assessedAllele;
-                e.zscore = zscore;
-                e.alleles = alleles;
-                e.datasetZScores = zscores;
-                e.datasetsSamples = numSamples;
-                e.correlations = correlations;
-                e.datasetfc = fc;
-                e.datasetbeta = beta;
-                e.datasetbetase = betase;
-                e.finalbeta = finalbeta;
-                e.finalbetase = finalbetase;
+                QTL e = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
+
                 finalEQTLs[locationToStoreResult] = e;
                 locationToStoreResult++;
-                totalcounter++;
             }
+            
             if(locationToStoreResult==finalEQTLs.length){
-//                InplaceArrayQuickSort.sort(finalEQTLs);
-                SmoothSort.sort(finalEQTLs);
-//                Arrays.sort(finalEQTLs);
+
+                Arrays.sort(finalEQTLs);
+//                SmoothSort.sort(finalEQTLs);
+//                inplaceArrayQuickSort.sort(finalEQTLs);
                 sorted=true;
                 locationToStoreResult=m_maxResults;
-                maxSavedPvalue = finalEQTLs[(m_maxResults-1)].pvalue;
+                maxSavedPvalue = finalEQTLs[(m_maxResults-1)].getPvalue();
             }
         } else {
-            if(Double.isNaN(maxSavedPvalue)){
-                maxSavedPvalue = pval;
-            } else if(pval>maxSavedPvalue) {
+            if(pval>maxSavedPvalue) {
                 pval=maxSavedPvalue;
             }
 
-            QTL e = new QTL(m_numdatasets);
-            e.pvalue = pval;
-            e.pid = pid;
-            e.sid = sid;
-
-            e.alleleAssessed = assessedAllele;
-            e.zscore = zscore;
-            e.alleles = alleles;
-            e.datasetZScores = zscores;
-            e.datasetsSamples = numSamples;
-            e.correlations = correlations;
-            e.datasetfc = fc;
-            e.datasetbeta = beta;
-            e.datasetbetase = betase;
-            e.finalbeta = finalbeta;
-            e.finalbetase = finalbetase;
+            QTL e = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
 
             finalEQTLs[locationToStoreResult] = e;
             locationToStoreResult++;
@@ -488,6 +456,10 @@ public class ResultProcessorThread extends Thread {
         int nrOfEntriesToWrite = m_maxResults;
         if(locationToStoreResult<m_maxResults){
             nrOfEntriesToWrite = locationToStoreResult;
+        }
+        
+        if(!sorted){
+            System.out.println("Sorted P-Value list is not perfectly sorted!!!!");
         }
         
         System.out.println("Writing " + nrOfEntriesToWrite + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
