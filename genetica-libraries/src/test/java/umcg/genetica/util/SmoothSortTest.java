@@ -13,9 +13,9 @@ import org.testng.annotations.Test;
  *
  * @author MarcJan
  */
-public class SmoothSortNGTest {
+public class SmoothSortTest {
     
-    public SmoothSortNGTest() {
+    public SmoothSortTest() {
     }
 
     @BeforeMethod
