@@ -15,26 +15,46 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  */
 public class QTL implements Comparable<QTL> {
 
-    public double pvalue = Double.MAX_VALUE;
-    public int pid = -1;
-    public int sid = -1;
-    public byte alleleAssessed;
-    public double zscore = 0;
-    public byte[] alleles;
-    public double[] datasetZScores;
-    public int[] datasetsSamples;
-    public double[] correlations;
-    public double[] datasetfc;
-    public double[] datasetbeta;
-    public double[] datasetbetase;
-    public double finalbeta;
-    public double finalbetase;
+    private double pvalue = Double.MAX_VALUE;
+    private int pid = -1;
+    private int sid = -1;
+    private byte alleleAssessed;
+    private double zscore = 0;
+    private byte[] alleles;
+    private double[] datasetZScores;
+    private int[] datasetsSamples;
+    private double[] correlations;
+    private double[] datasetfc;
+    private double[] datasetbeta;
+    private double[] datasetbetase;
+    private double finalbeta;
+    private double finalbetase;
 
     public QTL(int datasets) {
         alleles = null;
         datasetZScores = null;
         datasetsSamples = null;
         correlations = null;
+    }
+    
+    public QTL() {
+    }
+
+    public QTL(double pval, int pid, int sid, byte assessedAllele, double zscore, byte[] alleles, double[] zscores, int[] numSamples, double[] correlations, double[] fc, double[] beta, double[] betase, double finalbeta, double finalbetase) {
+        this.pvalue = pval;
+        this.pid = pid;
+        this.sid = sid;
+        this.alleleAssessed = assessedAllele;
+        this.zscore = zscore;
+        this.alleles = alleles;
+        this.datasetZScores = zscores;
+        this.datasetsSamples = numSamples;
+        this.correlations = correlations;
+        this.datasetfc = fc;
+        this.datasetbeta = beta;
+        this.datasetbetase = betase;
+        this.finalbeta = finalbeta;
+        this.finalbetase = finalbetase;
     }
 
     @Override
@@ -67,31 +87,31 @@ public class QTL implements Comparable<QTL> {
         }
     }
 
-    void copy(QTL eQTL) {
-        pvalue = eQTL.pvalue;
-        pid = eQTL.pid;
-        sid = eQTL.sid;
-        alleles = eQTL.alleles;
-        datasetZScores = eQTL.datasetZScores;
-        datasetsSamples = eQTL.datasetsSamples;
-        correlations = eQTL.correlations;
-        alleleAssessed = eQTL.alleleAssessed;
-
-        datasetfc = eQTL.datasetfc;
-        datasetbeta = eQTL.datasetbeta;
-        datasetbetase = eQTL.datasetbetase;
-
-        finalbeta = eQTL.finalbeta;
-        finalbetase = eQTL.finalbetase;
-
-        zscore = eQTL.zscore;
-    }
+//    void copy(QTL eQTL) {
+//        this.pvalue = eQTL.pvalue;
+//        this.pid = eQTL.pid;
+//        this.sid = eQTL.sid;
+//        this.alleles = eQTL.alleles;
+//        this.datasetZScores = eQTL.datasetZScores;
+//        this.datasetsSamples = eQTL.datasetsSamples;
+//        this.correlations = eQTL.correlations;
+//        this.alleleAssessed = eQTL.alleleAssessed;
+//
+//        this.datasetfc = eQTL.datasetfc;
+//        this.datasetbeta = eQTL.datasetbeta;
+//        this.datasetbetase = eQTL.datasetbetase;
+//
+//        this.finalbeta = eQTL.finalbeta;
+//        this.finalbetase = eQTL.finalbetase;
+//
+//        this.zscore = eQTL.zscore;
+//    }
 
     public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg,
-            int maxCisDistance) {
+        int maxCisDistance) {
         String sepStr = ";";
         String nullstr = "-";
-        String tabStr = "\t";
+        char tabStr ='\t';
 
         StringBuilder out = new StringBuilder();
 
@@ -415,4 +435,16 @@ public class QTL implements Comparable<QTL> {
             correlations = null;
         }
     }
+
+    public double getPvalue() {
+        return pvalue;
+    }
+    public double getZscore() {
+        return zscore;
+    }
+
+    public double[] getCorrelations() {
+        return correlations;
+    }
+    
 }

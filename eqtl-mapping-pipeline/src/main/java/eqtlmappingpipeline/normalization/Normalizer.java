@@ -439,13 +439,7 @@ public class Normalizer {
             DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs, DoubleMatrixDataset<String, String> datasetEV) throws IOException {
         String expressionFile = fileNamePrefix;
         System.out.println("\nInitializing residual gene expression matrix");
-        DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(dataset.rowObjects.size(), dataset.colObjects.size());
-        datasetResidualExpressionBasedOnPCAOverSamples.rowObjects = dataset.rowObjects;
-        datasetResidualExpressionBasedOnPCAOverSamples.colObjects = dataset.colObjects;
-        for (int p = 0; p < dataset.rowObjects.size(); p++) {
-            System.arraycopy(dataset.getRawData()[p], 0, datasetResidualExpressionBasedOnPCAOverSamples.getRawData()[p], 0, dataset.colObjects.size());
-        }
-
+        
         if (dataset.colObjects.size() < nrPCAsOverSamplesToRemove) {
             int remainder = dataset.colObjects.size() % nrIntermediatePCAsOverSamplesToRemoveToOutput;
             nrPCAsOverSamplesToRemove = dataset.colObjects.size() - remainder;
@@ -454,19 +448,16 @@ public class Normalizer {
         for (int t = 0; t < nrPCAsOverSamplesToRemove; t++) {
             for (int p = 0; p < dataset.rowObjects.size(); p++) {
                 for (int s = 0; s < dataset.colObjects.size(); s++) {
-                    //datasetResidualExpressionBasedOnPCAOverSamples.rawData[p][s]-= datasetPCAOverSamplesPCAs.rawData[p][t] * datasetEV.rawData[s][t];
                     dataset.getRawData()[p][s] -= datasetPCAOverSamplesPCAs.getRawData()[p][t] * datasetEV.getRawData()[s][t];
                 }
             }
             int nrPCAs = t + 1;
             if (nrIntermediatePCAsOverSamplesToRemoveToOutput > 0 && nrPCAs % nrIntermediatePCAsOverSamplesToRemoveToOutput == 0) {
-                //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt");
                 dataset.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt.gz");
                 System.out.println("Removed\t" + nrPCAs + "\tPCs. File:\t" + expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt.gz");
             }
 
         }
-        //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved.txt");
         dataset.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved.txt.gz");
 
     }
