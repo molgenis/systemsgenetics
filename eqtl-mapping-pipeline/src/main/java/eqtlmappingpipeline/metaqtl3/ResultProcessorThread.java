@@ -60,7 +60,7 @@ public class ResultProcessorThread extends Thread {
     private final WorkPackage[] m_availableWorkPackages;
     private long nrTestsPerformed = 0;
     private QTL[] finalEQTLs;
-    private double maxSavedPvalue = Double.MIN_VALUE;
+    private double maxSavedPvalue = -Double.MAX_VALUE;
     private int locationToStoreResult=0;
     private boolean bufferHasOverFlown=false;
     private boolean sorted=false;
@@ -407,7 +407,7 @@ public class ResultProcessorThread extends Thread {
             }
         } else {
             if(pval>maxSavedPvalue) {
-                pval=maxSavedPvalue;
+                maxSavedPvalue = pval;
             }
 
             QTL e = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
