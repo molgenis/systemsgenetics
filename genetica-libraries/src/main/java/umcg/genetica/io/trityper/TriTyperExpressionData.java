@@ -299,19 +299,16 @@ public class TriTyperExpressionData {
                             } else {
                                 probesExcluded++;
                                 reason += "\tprobe does not map to chromosome:" + confineToProbesMappingOnChromosome + "\t" + bchr;
-                                includeprobe = false;
                             }
 
                         } else {
                             probesExcluded++;
                             reason += "\tprobe does not map to any chromosome:\t" + bchr;
-                            includeprobe = false;
                         }
                     } else {
                         probesExcluded++;
                         // reason += "\tprobe is not selected during confinement.";
                         printreason = false;
-                        includeprobe = false;
                     }
 
                 } else if (!trityperformat) {
@@ -354,6 +351,7 @@ public class TriTyperExpressionData {
                 }
 
                 if (!cistrans && includeprobe && probeChr == null && probeChrStart == null && probeChrEnd == null && !(probesConfine != null && !probesConfine.contains(probe))) {
+					includeprobe = false;
                     reason += "WARNING: probe\t" + probe + "\thas no annotation at all! Will exclude this probe from further use.";
                 }
 
@@ -408,6 +406,7 @@ public class TriTyperExpressionData {
                         System.out.println(probeNr + " probes parsed.");
                     }
                 } else if (printreason) {
+					probesExcluded++;
                     System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
                 }
             }
