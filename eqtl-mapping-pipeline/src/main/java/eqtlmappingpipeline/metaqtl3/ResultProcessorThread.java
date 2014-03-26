@@ -18,7 +18,6 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
-import umcg.genetica.util.SmoothSort;
 
 /**
  *
@@ -390,9 +389,7 @@ public class ResultProcessorThread extends Thread {
                 
                 sorted=false;
                 
-                QTL e = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
-
-                finalEQTLs[locationToStoreResult] = e;
+                finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
                 locationToStoreResult++;
             }
             
@@ -410,9 +407,7 @@ public class ResultProcessorThread extends Thread {
                 maxSavedPvalue = pval;
             }
 
-            QTL e = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
-
-            finalEQTLs[locationToStoreResult] = e;
+            finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
             locationToStoreResult++;
             
             if(locationToStoreResult==m_maxResults){
