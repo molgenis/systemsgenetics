@@ -180,9 +180,9 @@ public class GenGenotypeDataTest extends ResourceTest {
 		List<String> seqNames = genotypeData.getSeqNames();
 		assertNotNull(seqNames);
 		assertEquals(seqNames.size(), 3);
-		assertEquals(seqNames.get(0), "1");
-		assertEquals(seqNames.get(1), "22");
-		assertEquals(seqNames.get(2), "23");
+		assertEquals(seqNames.get(0), "22");
+		assertEquals(seqNames.get(1), "23");
+                assertEquals(seqNames.get(2), "1");
 	}
 
 	/**
