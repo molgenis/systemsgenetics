@@ -36,7 +36,7 @@ public class QTL implements Comparable<QTL> {
         datasetsSamples = null;
         correlations = null;
     }
-    
+
     public QTL() {
     }
 
@@ -106,12 +106,11 @@ public class QTL implements Comparable<QTL> {
 //
 //        this.zscore = eQTL.zscore;
 //    }
-
     public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg,
-        int maxCisDistance) {
+            int maxCisDistance) {
         String sepStr = ";";
         String nullstr = "-";
-        char tabStr ='\t';
+        char tabStr = '\t';
 
         StringBuilder out = new StringBuilder();
 
@@ -205,8 +204,8 @@ public class QTL implements Comparable<QTL> {
 //                out.append(nullstr);
 //                out.append(tabStr);
 //            } else {
-                out.append(eQTLType);
-                out.append(tabStr);
+            out.append(eQTLType);
+            out.append(tabStr);
 //            }
 
             if (alleles == null) {
@@ -227,9 +226,9 @@ public class QTL implements Comparable<QTL> {
 
             String hugo = nullstr;
             for (int d = 0; d < gg.length; d++) {
-                if (!Double.isNaN(correlations[d])){
+                if (!Double.isNaN(correlations[d])) {
                     ds[d] = gg[d].getSettings().name;
-                    if(probeTranslation.get(d, pid) != -9){
+                    if (probeTranslation.get(d, pid) != -9) {
                         int probeId = probeTranslation.get(d, pid);
                         probevars[d] = gg[d].getExpressionData().getOriginalProbeVariance()[probeId];
                         probemeans[d] = gg[d].getExpressionData().getOriginalProbeMean()[probeId];
@@ -439,6 +438,7 @@ public class QTL implements Comparable<QTL> {
     public double getPvalue() {
         return pvalue;
     }
+
     public double getZscore() {
         return zscore;
     }
@@ -446,5 +446,81 @@ public class QTL implements Comparable<QTL> {
     public double[] getCorrelations() {
         return correlations;
     }
-    
+
+    public String getPermutationDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
+        String nullstr = "-";
+        char tabStr = '\t';
+
+        StringBuilder out = new StringBuilder();
+
+        out.append(pvalue);
+        out.append(tabStr);
+
+        String rsName = null;
+
+        if (sid == -1 && pid == -1) {
+            return null;
+        } else {
+            SNP[] snps = workPackages[sid].getSnps();
+
+            for (int d = 0; d < snps.length; d++) {
+                if (snps[d] != null) {
+                    rsName = snps[d].getName();
+                    break;
+                }
+            }
+
+            String probe = null;
+            for (int d = 0; d < snps.length; d++) {
+                if (probeTranslation.get(d, pid) != -9) {
+                    int probeId = probeTranslation.get(d, pid);
+                    probe = gg[d].getExpressionData().getProbes()[probeId];
+                    break;
+                }
+            }
+
+            out.append(rsName);
+            out.append(tabStr);
+
+
+            if (probe == null) {
+                out.append(nullstr);
+                out.append(tabStr);
+            } else {
+                out.append(probe);
+                out.append(tabStr);
+            }
+            
+            String hugo = nullstr;
+            for (int d = 0; d < gg.length; d++) {
+                if (!Double.isNaN(correlations[d])) {
+                    if (probeTranslation.get(d, pid) != -9) {
+                        int probeId = probeTranslation.get(d, pid);
+                        hugo = gg[0].getExpressionData().getAnnotation()[probeId];
+                        if(hugo==null){
+                            hugo = nullstr;
+                        }
+                    }
+                }
+            }
+
+            out.append(hugo);
+            out.append(tabStr);
+            
+            if (alleles == null) {
+                System.err.println(rsName + " has null alleles..?'\n" + out.toString());
+                return null;
+            }
+
+            out.append(BaseAnnot.toString(alleles[0])).append("/").append(BaseAnnot.toString(alleles[1]));
+            out.append(tabStr);
+
+            out.append(BaseAnnot.toString(alleleAssessed));
+            out.append(tabStr);
+
+            out.append(zscore);
+            
+            return out.toString();
+        }
+    }
 }
