@@ -37,12 +37,11 @@ public class VariantQcChecker implements VariantFilter {
 	@Override
 	public boolean doesVariantPassFilter(GeneticVariant variant) {
 
-		if (variant.getMinorAlleleFrequency() < maf) {
+		if (variant.getCallRate() < callRate) {
 			return false;
 		}
-
-
-		if (variant.getCallRate() < callRate) {
+		
+		if (variant.getMinorAlleleFrequency() < maf) {
 			return false;
 		}
 
