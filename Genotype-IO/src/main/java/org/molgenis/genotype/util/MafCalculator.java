@@ -6,30 +6,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeDataException;
 
-public class MafCalculator
-{
+public class MafCalculator {
 
-	public static MafResult calculateMaf(Alleles alleles, Allele reference, List<Alleles> samplesAlleles)
-	{
+	public static MafResult calculateMaf(Alleles alleles, Allele reference, List<Alleles> samplesAlleles) {
+
+		if (alleles.getAlleles().isEmpty()) {
+			return new MafResult(Allele.ZERO, 0);
+		}
 
 		HashMap<Allele, AtomicInteger> alleleCounts = new HashMap<Allele, AtomicInteger>(alleles.getAlleles().size());
-		for (Allele allele : alleles.getAlleles())
-		{
+		for (Allele allele : alleles.getAlleles()) {
 			alleleCounts.put(allele, new AtomicInteger());
 		}
 
-		for (Alleles sampleAlleles : samplesAlleles)
-		{
-			if (sampleAlleles != null)
-			{
-				for (Allele sampleAllele : sampleAlleles.getAlleles())
-				{
-					if (sampleAllele != null && sampleAllele != Allele.ZERO)
-					{
-						if (!alleleCounts.containsKey(sampleAllele))
-						{
-							throw new NullPointerException("No counter for allele: " + sampleAllele  + " expected one of the following alleles: " + alleles);
+		for (Alleles sampleAlleles : samplesAlleles) {
+			if (sampleAlleles != null) {
+				for (Allele sampleAllele : sampleAlleles.getAlleles()) {
+					if (sampleAllele != null && sampleAllele != Allele.ZERO) {
+						if (!alleleCounts.containsKey(sampleAllele)) {
+							throw new GenotypeDataException("No counter for allele: " + sampleAllele + " expected one of the following alleles: " + alleles);
 						}
 						alleleCounts.get(sampleAllele).incrementAndGet();
 					}
@@ -44,15 +41,13 @@ public class MafCalculator
 		int provisionalMinorAlleleCount = alleleCounts.get(provisionalMinorAllele).get();
 		int totalAlleleCount = 0;
 
-		for (Allele allele : alleles.getAlleles())
-		{
+		for (Allele allele : alleles.getAlleles()) {
 
 			int alleleCount = alleleCounts.get(allele).get();
 
 			totalAlleleCount += alleleCount;
 
-			if (alleleCount < provisionalMinorAlleleCount)
-			{
+			if (alleleCount < provisionalMinorAlleleCount) {
 				provisionalMinorAlleleCount = alleleCount;
 				provisionalMinorAllele = allele;
 			}

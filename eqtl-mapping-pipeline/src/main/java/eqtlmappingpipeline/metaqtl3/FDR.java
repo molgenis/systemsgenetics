@@ -521,6 +521,7 @@ public class FDR {
         }
 
         if (createQQPlot) {
+			System.out.println("Creating QQ plot. This might take a while...");
             QQPlot qq = new QQPlot();
             String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
             qq.draw(fileName, fdrcutoff, nrPermutationsFDR,
