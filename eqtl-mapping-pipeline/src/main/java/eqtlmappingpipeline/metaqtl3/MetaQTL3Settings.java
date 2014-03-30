@@ -7,6 +7,7 @@ package eqtlmappingpipeline.metaqtl3;
 import eqtlmappingpipeline.Main;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
@@ -683,7 +684,8 @@ public class MetaQTL3Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     }
 
     public String summarize() {
-        String summary = "QTL mapping was performed using metaqtl version: "+ Main.VERSION+"\n\n\n"
+        Date currentDataTime = new Date();
+        String summary = "QTL mapping was performed using metaqtl version: "+ Main.VERSION+"\nCurrent date and time: " + Main.DATE_TIME_FORMAT.format(currentDataTime)+"\n\n"
                 +"Following settings will be applied:\n"
                 + "Settings\n----\n"
                 + "settingsTextToReplace\t" + settingsTextToReplace + "\n"
