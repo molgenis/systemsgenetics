@@ -252,6 +252,8 @@ public class GenotypeInfo {
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(variant.getSequenceName());
 				variantInfoWriter.append('\t');
+				variantInfoWriter.append(String.valueOf(variant.getStartPos()));
+				variantInfoWriter.append('\t');
 				boolean notFirst = false;
 				for(Allele a : variant.getVariantAlleles()){
 					if(notFirst){
@@ -260,8 +262,6 @@ public class GenotypeInfo {
 					variantInfoWriter.append(a.getAlleleAsString());
 					notFirst = true;
 				}
-				variantInfoWriter.append('\t');
-				variantInfoWriter.append(String.valueOf(variant.getStartPos()));
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(String.valueOf(variant.getMinorAllele()));
 				variantInfoWriter.append('\t');
