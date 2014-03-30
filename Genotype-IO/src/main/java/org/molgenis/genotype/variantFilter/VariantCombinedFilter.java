@@ -7,6 +7,7 @@ package org.molgenis.genotype.variantFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
@@ -62,6 +63,9 @@ public class VariantCombinedFilter implements VariantFilter {
 	}
     
     public void add(VariantFilter v){
+		if(v == this){
+			throw new GenotypeDataException("Can not add a variant filter to it self");
+		}
         variantFilters.add(v);
     }
 	

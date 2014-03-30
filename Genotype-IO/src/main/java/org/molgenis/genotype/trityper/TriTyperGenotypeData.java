@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.trityper;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -291,7 +292,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private void loadSNPAnnotation(GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws IOException {
 		TextFile tf = new TextFile(snpFile, TextFile.R);
 
-		HashMap<String, Integer> allSNPHash = new HashMap<String, Integer>();
+		final TObjectIntHashMap<String> allSNPHash = new TObjectIntHashMap<String>();
 
 		unfilteredSnpCount = 0;
 		for (String line : tf) {
@@ -331,7 +332,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				try {
 					pos = Integer.parseInt(chrPosId[1]);
 				} catch (NumberFormatException e) {
-					LOG.warn("Position defined for " + snp + " on chromosome " + chr + " is not an integer!");
+					throw new GenotypeDataException("Position defined for " + snp + " on chromosome " + chr + " is not an integer: " + chrPosId[1]);
 				}
 
 				//Index will be removed from snp hash so we can later iterator over remaing without a mapping
@@ -349,8 +350,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		tfSNPMap.close();
 
 		//loop over reaming variant without annotation
-		for (Entry<String, Integer> entry : allSNPHash.entrySet()) {
-			GeneticVariant variant = new ReadOnlyGeneticVariantTriTyper(entry.getKey(), 0, "0", variantProvider, entry.getValue());
+		for (String variantId : allSNPHash.keySet()) {
+			GeneticVariant variant = new ReadOnlyGeneticVariantTriTyper(variantId, 0, "0", variantProvider, allSNPHash.get(variantId));
 
 			if (variantFilter == null || variantFilter.doesVariantPassFilter(variant)) {
 				snpsFactory.addVariant(variant);
