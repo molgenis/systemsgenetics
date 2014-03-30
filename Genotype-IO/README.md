@@ -54,7 +54,7 @@ Usage notes
 
 ### VCF
 
-Currently, our VCF implementation only supports called genotypes. We will add support for dosage values in the near future.
+Currently, our VCF implementation only supports called genotypes and posterior probabilities. We will add support for dosage values in the near future.
 
 Only VCF files that are compressed using bgzip and indexed with a tabix are supported. This prevents having to read all data into memory.
 
@@ -73,6 +73,12 @@ make
 bgzip -c example.vcf > example.vcf.gz
 tabix -p vcf example.vcf.gz
 ```
+
+### Running commandline
+
+If you want summary statistics on a genotype data set of one the support formats you can run the jar. Help will be provided on running.
+
+`java -jar molgenis-genotype-reader-******-jar-with-dependencies.jar`
 
 Examples
 ------------------------

@@ -258,7 +258,37 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	/**
 	 * Samples are filtered first then the variant filter is applied.
 	 *
-	 * @param path
+	 * @param paths
+	 * @param cacheSize
+	 * @param variantFilter
+	 * @param sampleFilter
+	 * @param forcedSequence null if not used
+	 * @param minimumPosteriorProbabilityToCall 
+	 * @return
+	 * @throws IOException
+	 */
+	public RandomAccessGenotypeData createFilteredGenotypeData(String paths[], int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException {
+
+		switch (this) {
+			case TRITYPER:
+				return new TriTyperGenotypeData(new File(paths[0]), cacheSize, variantFilter, sampleFilter);
+			default:
+				RandomAccessGenotypeData genotypeData = createGenotypeData(paths, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+				if (sampleFilter != null) {
+					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
+				}
+				if (variantFilter != null) {
+					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
+				}
+				return genotypeData;
+		}
+
+	}
+	
+	/**
+	 * Samples are filtered first then the variant filter is applied.
+	 *
+	 * @param paths
 	 * @param cacheSize
 	 * @param variantFilter
 	 * @param sampleFilter
@@ -269,19 +299,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 */
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException {
 
-		switch (this) {
-			case TRITYPER:
-				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
-			default:
-				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
-				if (sampleFilter != null) {
-					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
-				}
-				if (variantFilter != null) {
-					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
-				}
-				return genotypeData;
-		}
+		return createFilteredGenotypeData(new String[]{path}, cacheSize, variantFilter, sampleFilter, forcedSequence, minimumPosteriorProbabilityToCall);
 
 	}
 	
