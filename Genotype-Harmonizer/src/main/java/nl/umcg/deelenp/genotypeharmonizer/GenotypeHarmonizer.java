@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -21,13 +22,12 @@ import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
-import org.molgenis.genotype.sampleFilter.SampleFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterSeq;
-import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
+import org.molgenis.genotype.variantFilter.VariantFilterSeqPos;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import org.molgenis.genotype.variantFilter.VariantQcChecker;
 
@@ -59,6 +59,7 @@ class GenotypeHarmonizer {
 	 * The lowest allowed minimum for the number of SNPs needed to align on
 	 */
 	protected static final int MIN_MIN_VARIANTS_TO_ALIGN_ON = 3;
+	private static final Pattern CHR_POS_SPLITTER = Pattern.compile("\\s+|:");
 
 	/**
 	 * @param args
@@ -170,7 +171,7 @@ class GenotypeHarmonizer {
 
 		VariantCombinedFilter varFilter = null;
 
-		if ((paramaters.getMinCallRate() != 0.0F) || (paramaters.getMinMAF() != 0.0F) || (paramaters.getMinHwePvalue() != 0.0D) || (paramaters.getVariantFilterListFile() != null) || (paramaters.getSeqFilterIn() != null)) {
+		if ((paramaters.getMinCallRate() != 0.0F) || (paramaters.getMinMAF() != 0.0F) || (paramaters.getMinHwePvalue() != 0.0D) || (paramaters.getVariantFilterListFile() != null) || (paramaters.getSeqFilterIn() != null) || (paramaters.getVariantPosFilterListFile() != null)) {
 			varFilter = new VariantCombinedFilter();
 			if (paramaters.getVariantFilterListFile() != null) {
 				try {
@@ -190,6 +191,35 @@ class GenotypeHarmonizer {
 				} catch (IOException e) {
 					System.err.println("Error reading file with variants to filter on at: " + paramaters.getVariantFilterListFile().getAbsolutePath() + " error: " + e.getMessage());
 					LOGGER.fatal("Error reading file with variants to filter on at: " + paramaters.getVariantFilterListFile(), e);
+					System.exit(1);
+				}
+			}
+			if (paramaters.getVariantPosFilterListFile() != null) {
+				VariantFilterSeqPos varPosFilter = new VariantFilterSeqPos();
+				try {
+					BufferedReader variantIdFilterReader = new BufferedReader(new FileReader(paramaters.getVariantPosFilterListFile()));
+					String line;
+					while ((line = variantIdFilterReader.readLine()) != null) {
+
+						String[] elements = CHR_POS_SPLITTER.split(line);
+
+						if (elements.length != 2) {
+							System.err.println("Error parsing chr pos for line: " + line + " skipping line");
+							LOGGER.error("Error parsing chr pos for line: " + line + " skipping line");
+							continue;
+						}
+
+						varPosFilter.addSeqPos(elements[0], Integer.parseInt(elements[1]));
+					}
+					varFilter.add(varPosFilter);
+
+				} catch (FileNotFoundException ex) {
+					System.err.println("Unable to find file with variant positions to filter on at: " + paramaters.getVariantFilterListFile().getAbsolutePath());
+					LOGGER.fatal("Unable to find file with variant positions to filter on at: " + paramaters.getVariantPosFilterListFile());
+					System.exit(1);
+				} catch (IOException e) {
+					System.err.println("Error reading file with variant positions to filter on at: " + paramaters.getVariantPosFilterListFile() + " error: " + e.getMessage());
+					LOGGER.fatal("Error reading file with variant positions to filter on at: " + paramaters.getVariantPosFilterListFile(), e);
 					System.exit(1);
 				}
 			}
@@ -226,10 +256,10 @@ class GenotypeHarmonizer {
 			}
 		}
 
-		RandomAccessGenotypeData inputData;
+		final RandomAccessGenotypeData inputData;
 
 		try {
-			inputData = paramaters.getInputType().createGenotypeData(paramaters.getInputBasePaths(), genotypeDataCache, paramaters.getForceSeqName(), paramaters.getMinimumPosteriorProbability());
+			inputData = paramaters.getInputType().createFilteredGenotypeData(paramaters.getInputBasePaths(), genotypeDataCache, varFilter, sampleFilter, paramaters.getForceSeqName(), paramaters.getMinimumPosteriorProbability());
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");
@@ -253,14 +283,6 @@ class GenotypeHarmonizer {
 			System.exit(1);
 			return;
 		}
-
-		if ((sampleFilter != null)) {
-			inputData = new SampleFilterableGenotypeDataDecorator(inputData, sampleFilter);
-		}
-		if ((varFilter != null)) {
-			inputData = new VariantFilterableGenotypeDataDecorator(inputData, varFilter);
-		}
-
 
 		System.out.println(
 				"Input data loaded");

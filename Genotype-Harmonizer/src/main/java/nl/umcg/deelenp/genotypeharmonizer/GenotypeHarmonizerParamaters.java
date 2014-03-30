@@ -43,6 +43,7 @@ public class GenotypeHarmonizerParamaters {
 	private final boolean ldCheck;
 	private final boolean keep;
 	private final File variantFilterListFile;
+	private final File variantPosFilterListFile;
 	private final String seqFilterIn;
 	private final File sampleFilterListFile;
 	private final File logFile;
@@ -253,6 +254,13 @@ public class GenotypeHarmonizerParamaters {
 				.withLongOpt("sampleFilterList")
 				.create("sf");
 		OPTIONS.addOption(option);
+		
+		option = OptionBuilder.withArgName("string")
+				.hasArg()
+				.withDescription("Path to file with variant CHR\tPOS or CHR:POS to include from input data.")
+				.withLongOpt("variantPosFilterList")
+				.create("pf");
+		OPTIONS.addOption(option);
 
 	}
 
@@ -371,6 +379,7 @@ public class GenotypeHarmonizerParamaters {
 		}
 
 		variantFilterListFile = commandLine.hasOption("vf") ? new File(commandLine.getOptionValue("vf")) : null;
+		variantPosFilterListFile = commandLine.hasOption("pf") ? new File(commandLine.getOptionValue("pf")) : null;
 		seqFilterIn = commandLine.hasOption("ch") ? commandLine.getOptionValue("ch") : null;
 		sampleFilterListFile = commandLine.hasOption("sf") ? new File(commandLine.getOptionValue("sf")) : null;
 
@@ -448,6 +457,11 @@ public class GenotypeHarmonizerParamaters {
 		if (variantFilterListFile != null) {
 			LOGGER.info("Filter input data to variants present in: " + variantFilterListFile);
 			System.out.println(" - Filter input data to variants present in: " + variantFilterListFile);
+		}
+		
+		if (variantPosFilterListFile != null) {
+			LOGGER.info("Filter input data to variants with postions present in: " + variantPosFilterListFile);
+			System.out.println(" - Filter input data to variants with postions present in: " + variantPosFilterListFile);
 		}
 
 		if (minMAF > 0) {
@@ -541,6 +555,10 @@ public class GenotypeHarmonizerParamaters {
 
 	public File getVariantFilterListFile() {
 		return variantFilterListFile;
+	}
+
+	public File getVariantPosFilterListFile() {
+		return variantPosFilterListFile;
 	}
 
 	public String getSeqFilterIn() {
