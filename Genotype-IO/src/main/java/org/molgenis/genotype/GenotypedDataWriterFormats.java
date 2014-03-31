@@ -4,6 +4,7 @@ import org.molgenis.genotype.oxford.GenGenotypeWriter;
 import org.molgenis.genotype.oxford.HapsGenotypeWriter;
 import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
 import org.molgenis.genotype.plink.PedMapGenotypeWriter;
+import org.molgenis.genotype.table.TableGenotypeWriter;
 import org.molgenis.genotype.trityper.TriTyperGenotypeWriter;
 
 public enum GenotypedDataWriterFormats
@@ -13,7 +14,8 @@ public enum GenotypedDataWriterFormats
 	SHAPEIT2("Impute2 haplotypes haps / sample files"), 
 	PLINK_BED("Plink BED / BIM / FAM files"),
 	GEN("Oxford GEN / SAMPLE files"),
-	TRITYPER("Trityper folder");
+	TRITYPER("Trityper folder"),
+	TABLE("Simple tab separated files with dosage and genotypes");
 
 	private final String name;
 
@@ -42,6 +44,8 @@ public enum GenotypedDataWriterFormats
 				return new GenGenotypeWriter(genotypeData);
 			case TRITYPER:
 				return new TriTyperGenotypeWriter(genotypeData);
+			case TABLE:
+				return new TableGenotypeWriter(genotypeData);
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
