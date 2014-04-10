@@ -391,7 +391,7 @@ public class QTL implements Comparable<QTL> {
             if (!Double.isNaN(correlations[d])) {
                 if (probeTranslation.get(d, pid) != -9) {
                     int probeId = probeTranslation.get(d, pid);
-                    hugo = gg[0].getExpressionData().getAnnotation()[probeId];
+                    hugo = gg[d].getExpressionData().getAnnotation()[probeId];
                     if (hugo == null) {
                         hugo = nullstr;
                     }
