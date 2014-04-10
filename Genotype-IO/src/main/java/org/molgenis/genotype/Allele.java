@@ -98,13 +98,13 @@ public final class Allele implements Comparable<Allele>
 			return ZERO;
 		}
 
-		if (pool.containsKey(alleleString))
-		{
-			return pool.get(alleleString);
+		Allele oldAllele = pool.get(alleleString);
+		if(oldAllele != null){
+			return oldAllele;
 		}
-		else
-		{
-			//Todo this to make sure not to save whole line in background after a split or tokanizer
+		else {
+			
+			//Do this to make sure not to save whole line in background after a split or tokenizer
 			alleleString = new String(alleleString);
 			Allele newAllele = new Allele(alleleString);
 			pool.put(alleleString, newAllele);
@@ -125,13 +125,11 @@ public final class Allele implements Comparable<Allele>
 			return Allele.ZERO;
 		}
 		
-		if (snpPool.containsKey(alleleChar))
-		{
-
-			return snpPool.get(alleleChar);
+		Allele oldAllele = snpPool.get(alleleChar);
+		if(oldAllele != null){
+			return oldAllele;
 		}
-		else
-		{
+		else {
 			Allele newAllele = new Allele(alleleChar);
 			snpPool.put(alleleChar, newAllele);
 			pool.put(newAllele.getAlleleAsString(), newAllele);
