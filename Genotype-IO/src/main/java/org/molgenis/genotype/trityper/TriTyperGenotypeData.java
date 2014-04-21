@@ -335,8 +335,8 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			}
 
 			if (allSNPHash.containsKey(chrPosId[2])) {
-				String snp = chrPosId[2];
 
+				String snp = new String(chrPosId[2]);//Remove rest of the line since we keep this string
 				int pos = 0;
 
 				String chr = chrPosId[0].intern();
