@@ -5,11 +5,14 @@
 package org.molgenis.genotype.trityper;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,7 +20,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Alleles;
@@ -42,8 +45,6 @@ import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.molgenis.genotype.variantFilter.VariantFilter;
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
 
 /**
  *
@@ -190,24 +191,27 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 	private void loadSamples() throws IOException {
 		// load sample list
-		int i = 0;
-		TextFile t = new TextFile(individualFile, TextFile.R);
-		String[] lineElems = t.readLineElemsReturnReference(TextFile.tab);
-		samples = new ArrayList<Sample>();
-		HashMap<String, Sample> sampleNameToSampleObj = new HashMap<String, Sample>();
-		while (lineElems != null) {
-			String individual = new String(lineElems[0].getBytes("UTF-8"));
-			Sample sample = new Sample(individual, null, null);
 
+		int i = 0;
+		HashMap<String, Sample> sampleNameToSampleObj = new HashMap<String, Sample>();
+		samples = new ArrayList<Sample>();
+		BufferedReader individualReader = new BufferedReader(new FileReader(individualFile));
+
+		String line;
+		String[] elements;
+		while ((line = individualReader.readLine()) != null) {
+			elements = StringUtils.split(line, '\t');
+			String individual = elements[0];
+			Sample sample = new Sample(individual, null, null);
 			sampleNameToSampleObj.put(individual, sample);
 			samples.add(sample);
 			i++;
-			lineElems = t.readLineElemsReturnReference(TextFile.tab);
 		}
-		t.close();
+
+		individualReader.close();
 
 		// load annotation
-		t = new TextFile(phenotypeAnnotationFile, TextFile.R);
+		BufferedReader phenotypeReader = new BufferedReader(new FileReader(phenotypeAnnotationFile));
 
 		int numIncluded = 0;
 		int numFemale = 0;
@@ -218,21 +222,25 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		int numUnknown = 0;
 		int numAnnotated = 0;
 
-		lineElems = t.readLineElemsReturnReference(TextFile.tab);
-
 		HashSet<Sample> visitedSamples = new HashSet<Sample>();
-		while (lineElems != null) {
-			String individual = lineElems[0];
+
+		while ((line = phenotypeReader.readLine()) != null) {
+			elements = StringUtils.split(line, '\t');
+
+			String individual = elements[0];
 			Sample sampleObj = sampleNameToSampleObj.get(individual);
 			if (sampleObj != null) {
+				if (elements.length < 4) {
+					throw new GenotypeDataException("Error parsing phenotype for sample: " + individual + " expected 4 columns but found: " + elements.length);
+				}
 				if (visitedSamples.contains(sampleObj)) {
 					LOG.warn("Sample " + sampleObj.getId() + " may have duplicate annotation in PhenotypeInformation.txt.");
 				} else {
-					Boolean includeSample = parseIncludeExcludeStatus(lineElems[2]);
+					Boolean includeSample = parseIncludeExcludeStatus(elements[2]);
 					if (!includeSample) {
 						numIncluded++;
 					}
-					CaseControlAnnotation caseControlStatus = CaseControlAnnotation.getCaseAnnotationForTriTyper(lineElems[1]);
+					CaseControlAnnotation caseControlStatus = CaseControlAnnotation.getCaseAnnotationForTriTyper(elements[1]);
 					if (caseControlStatus == CaseControlAnnotation.CASE) {
 						numCase++;
 					} else if (caseControlStatus == CaseControlAnnotation.CONTROL) {
@@ -240,7 +248,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 					} else {
 						numUnknown++;
 					}
-					SexAnnotation sex = SexAnnotation.getSexAnnotationForTriTyper(lineElems[3]);
+					SexAnnotation sex = SexAnnotation.getSexAnnotationForTriTyper(elements[3]);
 					if (sex == SexAnnotation.FEMALE) {
 						numFemale++;
 					} else if (sex == SexAnnotation.MALE) {
@@ -254,9 +262,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 					visitedSamples.add(sampleObj);
 				}
 			}
-			lineElems = t.readLineElemsReturnReference(TextFile.tab);
+
 		}
-		t.close();
+
+		phenotypeReader.close();
 
 		if (sampleFilter != null) {
 			includedSamples = new ArrayList<Sample>(numIncluded);
@@ -290,28 +299,36 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 
 	private void loadSNPAnnotation(GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws IOException {
-		TextFile tf = new TextFile(snpFile, TextFile.R);
+
+		unfilteredSnpCount = 0;
 
 		final TObjectIntHashMap<String> allSNPHash = new TObjectIntHashMap<String>();
 
-		unfilteredSnpCount = 0;
-		for (String line : tf) {
+		BufferedReader snpFileReader = new BufferedReader(new FileReader(snpFile));
+
+		String line;
+		while ((line = snpFileReader.readLine()) != null) {
 			if (variantFilter == null || variantFilter.doesIdPassFilter(line)) {
 				allSNPHash.put(line, unfilteredSnpCount);
 			}
 			++unfilteredSnpCount;
 		}
-		tf.close();
+		snpFileReader.close();
 
-
-		TextFile tfSNPMap = new TextFile(snpMapFile, TextFile.R);
 
 		int numberOfIncludedSNPsWithAnnotation = 0;
 
 		sequences = new HashMap<String, Sequence>();
 
 		int lineCount = 0;
-		for (String[] chrPosId : tfSNPMap.readLineElemsIterable(TextFile.tab)) {
+
+		BufferedReader snpMapFileReader = new BufferedReader(new FileReader(snpMapFile));
+
+		String[] chrPosId;
+		while ((line = snpMapFileReader.readLine()) != null) {
+
+			chrPosId = StringUtils.split(line, '\t');
+
 			++lineCount;
 			if (chrPosId.length != 3) {
 				throw new GenotypeDataException("Error in Trityper SNPMappings.txt. Line number " + lineCount + " does not contain 3 elements: ");
@@ -347,7 +364,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		}
 
-		tfSNPMap.close();
+		snpMapFileReader.close();
 
 		//loop over reaming variant without annotation
 		for (String variantId : allSNPHash.keySet()) {
@@ -369,7 +386,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		long expectedfilesize = (long) (unfilteredSnpCount * 2) * (long) samples.size();
 		long detectedsize = genotypeDataFile.length();
 		if (expectedfilesize != detectedsize) {
-			throw new GenotypeDataException("Size of GenotypeMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
+			throw new GenotypeDataException("Size of GenotypeMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
 		}
 
 		if (imputedDosageDataFile != null) {
@@ -377,7 +394,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			detectedsize = imputedDosageDataFile.length();
 
 			if (expectedfilesize != detectedsize) {
-				throw new GenotypeDataException("Size of ImputedDosageMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
+				throw new GenotypeDataException("Size of ImputedDosageMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
 			}
 		}
 	}
@@ -586,5 +603,26 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	@Override
 	public Iterator<GeneticVariant> iterator() {
 		return snps.iterator();
+	}
+
+	private static String humanizeFileSize(long s) {
+		String output = "";
+		DecimalFormat df = new DecimalFormat("##.##");
+		if (s == 0) {
+			output = "0b";
+		} else if (s > 1099511627776l) {
+			double nrtb = (double) s / 1099511627776l;
+			output = df.format(nrtb) + " TB";
+		} else if (s > 1073741824) {
+			double nrtb = (double) s / 1073741824;
+			output = df.format(nrtb) + " GB";
+		} else if (s > 1048576) {
+			double nrtb = (double) s / 1048576;
+			output = df.format(nrtb) + " MB";
+		} else if (s > 1024) {
+			double nrtb = (double) s / 1024;
+			output = df.format(nrtb) + " KB";
+		}
+		return output;
 	}
 }
