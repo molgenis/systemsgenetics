@@ -15,10 +15,9 @@ public class MafCalculator {
 			return new MafResult(Allele.ZERO, 0);
 		}
 
-		//HashMap<Allele, AtomicInteger> alleleCounts = new HashMap<Allele, AtomicInteger>(alleles.getAlleles().size());
 		TObjectIntHashMap<Allele> alleleCounts = new TObjectIntHashMap<Allele>(alleles.getAlleleCount());
-		
-		
+
+
 		for (Allele allele : alleles.getAlleles()) {
 			alleleCounts.put(allele, 0);
 		}
@@ -27,7 +26,7 @@ public class MafCalculator {
 			if (sampleAlleles != null) {
 				for (Allele sampleAllele : sampleAlleles.getAlleles()) {
 					if (sampleAllele != null && sampleAllele != Allele.ZERO) {
-						if(!alleleCounts.increment(sampleAllele)){
+						if (!alleleCounts.increment(sampleAllele)) {
 							throw new GenotypeDataException("No counter for allele: " + sampleAllele + " expected one of the following alleles: " + alleles);
 						}
 					}
