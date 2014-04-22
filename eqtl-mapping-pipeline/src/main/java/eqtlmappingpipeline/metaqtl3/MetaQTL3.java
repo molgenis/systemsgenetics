@@ -913,7 +913,7 @@ public class MetaQTL3 {
 
         for (int p = 0; p < m_probeList.length; p++) {
             for (int d = 0; d < m_gg.length; d++) {
-                if (m_probeTranslationTable.get(d, p) != -1 && !visitedProbes.contains(m_probeList[p])) {
+                if (m_probeTranslationTable.get(d, p) != -9 && !visitedProbes.contains(m_probeList[p])) {
                     int pid = m_probeTranslationTable.get(d, p);
                     int start = m_gg[d].getExpressionData().getChrStart()[pid];
                     int stop = m_gg[d].getExpressionData().getChrStop()[pid];
