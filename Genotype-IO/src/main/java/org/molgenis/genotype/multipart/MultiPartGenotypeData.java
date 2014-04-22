@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
+import org.molgenis.genotype.GenotypeDataException;
 
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
@@ -155,6 +156,10 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 				LOGGER.info("Adding to multipart data: " + file.getAbsolutePath());
 				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize));
 			} 
+		}
+		
+		if(genotypeDataSets.isEmpty()){
+			throw new GenotypeDataException("Did not detect any vcf.gz files at:" + vcfFolder.getAbsolutePath());
 		}
 
 		return new MultiPartGenotypeData(genotypeDataSets);
