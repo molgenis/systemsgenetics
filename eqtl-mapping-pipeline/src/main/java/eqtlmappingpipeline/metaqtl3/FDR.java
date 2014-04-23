@@ -343,26 +343,13 @@ public class FDR {
 		double previousPValueThreshold = -1;
 
 		TDoubleHashSet vecUPVs = new TDoubleHashSet();
-		double previousPValue = -1;
 		for (int p = 0; p < nrRealDataEQTLs; p++) {
-			double pValue = pValues[p];
-			if (previousPValue != pValue) {
-				if (!vecUPVs.contains(pValue)) {
-					vecUPVs.add(pValue);
-				}
-				previousPValue = pValue;
-			}
+			vecUPVs.add(pValues[p]);
 		}
+
 		for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
-			previousPValue = -1;
 			for (int pPerm = 0; pPerm < maxNrMostSignificantEQTLs; pPerm++) {
-				double pValue = permutedPValues.getQuick(permutationRound, pPerm);
-				if (previousPValue != pValue) {
-					if (!vecUPVs.contains(pValue)) {
-						vecUPVs.add(pValue);
-					}
-					previousPValue = pValue;
-				}
+				vecUPVs.add(permutedPValues.getQuick(permutationRound, pPerm));
 			}
 		}
 		double[] uniquePValues = vecUPVs.toArray();
@@ -376,7 +363,7 @@ public class FDR {
 		System.out.println("Number of unique P Values:\t" + hashUniquePValues.size());
 		long[] uniquePValuesNrEQTLsWithThisPValue = new long[hashUniquePValues.size()];
 		long[] uniquePValuesNrEQTLsWithThisPValueCumulative = new long[hashUniquePValues.size()];
-		previousPValue = -1;
+		double previousPValue = -1;
 		int pValueIndex = -1;
 		for (int p = 0; p < nrRealDataEQTLs; p++) {
 			double pValue = pValues[p];
