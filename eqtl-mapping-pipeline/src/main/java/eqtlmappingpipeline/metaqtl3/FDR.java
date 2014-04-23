@@ -337,11 +337,9 @@ public class FDR {
 			outFileNameAll = outputDir + "/eQTLsFDR.txt.gz";
 		}
 
-		double pValueThresholdCorrespondingToRequestedFDR = -1;
-
+		
 		// for all p-values, determine how many eQTL we find below its p-value, in comparison to random data
-		double previousPValueThreshold = -1;
-
+		
 		TDoubleHashSet vecUPVs = new TDoubleHashSet();
 		for (int p = 0; p < nrRealDataEQTLs; p++) {
 			vecUPVs.add(pValues[p]);
@@ -380,7 +378,7 @@ public class FDR {
 			}
 		}
 
-		//DensIntMatrix2d?
+		//DensIntMatrix2d? would help indeed
 		int[][] permUniquePValuesNrEQTLsWithThisPValue = new int[hashUniquePValues.size()][nrPermutationsFDR];
 		int[][] permUniquePValuesNrEQTLsWithThisPValueCumulative = new int[hashUniquePValues.size()][nrPermutationsFDR];
 
