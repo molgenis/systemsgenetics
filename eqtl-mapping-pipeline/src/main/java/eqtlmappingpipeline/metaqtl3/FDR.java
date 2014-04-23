@@ -249,7 +249,7 @@ public class FDR {
 		}
 		int nrRealDataEQTLs = 0;
 
-		ArrayList<String> alEQTLData = new ArrayList<String>();
+		
 
 		String fileString = baseDir + "/eQTLs.txt.gz";
 		if (!Gpio.exists(fileString)) {
@@ -263,7 +263,9 @@ public class FDR {
 
 		TextFile realEQTLs = new TextFile(fileString, TextFile.R);
 
-		System.out.println(realEQTLs.countLines() + " lines in " + realEQTLs.getFileName());
+		int eQqtCount = realEQTLs.countLines();
+		
+		System.out.println(eQqtCount + " lines in " + realEQTLs.getFileName());
 		String header = realEQTLs.readLine();
 		String str = realEQTLs.readLine();
 
@@ -271,12 +273,13 @@ public class FDR {
 		ProgressBar pb2 = new ProgressBar(maxNrMostSignificantEQTLs, "Now reading real data: " + fileString);
 		int itr = 0;
 		HashSet<String> visitedEffects = new HashSet<String>();
+		ArrayList<String> alEQTLData = new ArrayList<String>(eQqtCount);
 		while (str != null) {
 			if (itr > maxNrMostSignificantEQTLs - 1) {
 				break;
 			} else {
 				int filteronColumn = -1;
-				String fdrId = "";
+				String fdrId;
 				String[] data = Strings.tab.split(str);
 
 				if (m == FDRMethod.GENELEVEL) {
