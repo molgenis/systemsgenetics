@@ -95,7 +95,9 @@ public class VcfRecord
 					{
 						String infoToken = infoTokens[nrToken++];
 						int idx = infoToken.indexOf('=');
-						recycableVcfInfo.reset(infoToken.substring(0, idx), infoToken.substring(idx + 1));
+						String key = idx != -1 ? infoToken.substring(0, idx) : infoToken;
+						String val = idx != -1 ? infoToken.substring(idx + 1) : null;
+						recycableVcfInfo.reset(key, val);
 						return recycableVcfInfo;
 					}
 

@@ -98,12 +98,14 @@ public class VcfRecordTest
 	public void getInformation()
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);
-		String[] tokens = new String[]{"x", "x", "x", "x", "x", "x", "x", "K1=V1;K2=V2", "x"};
+		String[] tokens = new String[]{"x", "x", "x", "x", "x", "x", "x", "K1=V1;K2=V2;K3", "x"};
 		Iterator<VcfInfo> information = new VcfRecord(vcfMeta, tokens).getInformation().iterator();
 		assertTrue(information.hasNext());
 		assertEquals(information.next(), new VcfInfo(vcfMeta, "K1", "V1"));
 		assertTrue(information.hasNext());
 		assertEquals(information.next(), new VcfInfo(vcfMeta, "K2", "V2"));
+		assertTrue(information.hasNext());
+		assertEquals(information.next(), new VcfInfo(vcfMeta, "K3", null));
 		assertFalse(information.hasNext());
 	}
 
