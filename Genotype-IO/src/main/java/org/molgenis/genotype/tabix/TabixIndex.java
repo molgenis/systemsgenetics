@@ -48,8 +48,8 @@ public class TabixIndex implements GenotypeDataIndex
 	private TIndex[] mIndex;
 	private HashMap<String, Integer> mChr2tid;
 
-	private File bzipFile;
-	private VariantLineMapper variantLineMapper;
+	private final File bzipFile;
+	private final VariantLineMapper variantLineMapper;
 
 	public TabixIndex(File tabixIndexFile, File bzipFile, VariantLineMapper variantLineMapper) throws IOException
 	{
@@ -243,7 +243,7 @@ public class TabixIndex implements GenotypeDataIndex
 		return i;
 	}
 
-	protected TabixIterator queryTabixIndex(String sequence, final int beg, final int end,
+	public TabixIterator queryTabixIndex(String sequence, final int beg, final int end,
 			BlockCompressedInputStream bzipInputStream) throws IOException
 	{
 		TPair64[] off, chunks;
@@ -306,14 +306,14 @@ public class TabixIndex implements GenotypeDataIndex
 		return new TabixIterator(tid, beg, end, ret, bzipInputStream);
 	}
 
-	protected class TabixIterator
+	public class TabixIterator
 	{
 		private int i;
-		private int tid, beg, end;
-		private TPair64[] off;
+		private final int tid, beg, end;
+		private final TPair64[] off;
 		private long curr_off;
 		private boolean iseof;
-		private BlockCompressedInputStream inputStream;
+		private final BlockCompressedInputStream inputStream;
 
 		public TabixIterator(final int _tid, final int _beg, final int _end, final TPair64[] _off,
 				final BlockCompressedInputStream inputStream)
