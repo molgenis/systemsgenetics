@@ -85,16 +85,6 @@ public class AseVariantTest {
 		assertEquals(aseVariant.getA2Counts(), expResult);
 	}
 	
-	@Test
-	public void testGetBinomPvalues() {
-		DoubleArrayList pvalues = aseVariant.getBinomPvalues();
-		assertEquals(pvalues.get(0), 0.09874, 0.00001);
-		assertEquals(pvalues.get(1), 0.2026, 0.0001);
-		assertEquals(pvalues.get(2), 1, 0.00001);
-		assertEquals(pvalues.get(3), 0.2026, 0.0001);
-	}
-	
-	@Test
 	public void testGetZscore(){
 		assertEquals(aseVariant.getMetaZscore(), 0.8255035, 0.0001);
 	}

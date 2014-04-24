@@ -21,7 +21,6 @@ public class AseVariant {
 	private final Allele a2;
 	private final IntArrayList a1Counts;
 	private final IntArrayList a2Counts;
-	private final DoubleArrayList binomPvalues;
 	private double metaZscore;
 	private static final BinomialTest btest = new BinomialTest();
 	private static final NormalDistribution normalDist = new NormalDistribution();
@@ -34,7 +33,6 @@ public class AseVariant {
 		this.a2 = a2;
 		this.a1Counts = new IntArrayList();
 		this.a2Counts = new IntArrayList();
-		this.binomPvalues = new DoubleArrayList();
 		this.metaZscore = Double.NaN;
 	}
 
@@ -66,17 +64,16 @@ public class AseVariant {
 		return a2Counts;
 	}
 
-	public DoubleArrayList getBinomPvalues() {
-		return binomPvalues;
-	}
-
 	public void calculateMetaZscore() {
 		
 		double zscoreSum = 0;
-		
-		for (int i = 0 ; i < binomPvalues.size() ; ++i){
+				
+		for (int i = 0 ; i < a1Counts.size() ; ++i){
+			
+			double pvalue = btest.binomialTest(a1Counts.getQuick(i) + a2Counts.getQuick(i), a1Counts.getQuick(i), 0.5, AlternativeHypothesis.TWO_SIDED);
+						
 			// we used 2 sided test so divide by 2
-			double absZscore = normalDist.inverseCumulativeProbability(binomPvalues.getQuick(i)/2);
+			double absZscore = normalDist.inverseCumulativeProbability(pvalue/2);
 			
 			// Min / plus might look counter intuative but i omit 1 - p/2 above so here I have to swap
 			if(a1Counts.getQuick(i) < a2Counts.getQuick(i)){
@@ -86,8 +83,8 @@ public class AseVariant {
 			}
 		}
 		
-		metaZscore = zscoreSum / Math.sqrt(binomPvalues.size());
-		
+		metaZscore = zscoreSum / Math.sqrt(a1Counts.size());
+				
 		
 	}
 
@@ -105,7 +102,6 @@ public class AseVariant {
 		a1Counts.add(a1Count);
 		a2Counts.add(a2Count);
 
-		binomPvalues.add(btest.binomialTest(a1Count + a2Count, a1Count, 0.5, AlternativeHypothesis.TWO_SIDED));
 
 	}
 }

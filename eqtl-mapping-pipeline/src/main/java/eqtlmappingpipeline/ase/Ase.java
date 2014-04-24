@@ -149,7 +149,7 @@ public class Ase {
 		
 		for(AseVariant aseVariant : aseResuls ){
 			
-			
+			aseVariant.calculateMetaZscore();
 			
 		}
 		
