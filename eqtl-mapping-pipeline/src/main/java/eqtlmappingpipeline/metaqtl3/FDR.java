@@ -7,6 +7,8 @@ package eqtlmappingpipeline.metaqtl3;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
+import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
+import cern.jet.math.tint.IntFunctions;
 import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
 import gnu.trove.map.hash.TDoubleIntHashMap;
 import gnu.trove.set.hash.TDoubleHashSet;
@@ -278,7 +280,7 @@ public class FDR {
 			if (itr > maxNrMostSignificantEQTLs - 1) {
 				break;
 			} else {
-				int filteronColumn = -1;
+				int filteronColumn;
 				String fdrId;
 				String[] data = Strings.tab.split(str);
 
@@ -381,10 +383,9 @@ public class FDR {
 			}
 		}
 
-		//DensIntMatrix2d? would help indeed
-		int[][] permUniquePValuesNrEQTLsWithThisPValue = new int[hashUniquePValues.size()][nrPermutationsFDR];
-		int[][] permUniquePValuesNrEQTLsWithThisPValueCumulative = new int[hashUniquePValues.size()][nrPermutationsFDR];
-
+		DenseIntMatrix2D permUniquePValuesNrEQTLsWithThisPValue = new DenseIntMatrix2D(hashUniquePValues.size(), nrPermutationsFDR);
+		DenseIntMatrix2D permUniquePValuesNrEQTLsWithThisPValueCumulative = new DenseIntMatrix2D(hashUniquePValues.size(), nrPermutationsFDR);
+		
 		for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
 			previousPValue = -1;
 			pValueIndex = -1;
@@ -394,19 +395,22 @@ public class FDR {
 					pValueIndex = hashUniquePValues.get(pValue);
 					previousPValue = pValue;
 				}
-				permUniquePValuesNrEQTLsWithThisPValue[pValueIndex][permutationRound]++;
+				permUniquePValuesNrEQTLsWithThisPValue.setQuick(pValueIndex, permutationRound, permUniquePValuesNrEQTLsWithThisPValue.getQuick(pValueIndex, permutationRound) + 1);
 			}
 			for (int p = 0; p < hashUniquePValues.size(); p++) {
-				permUniquePValuesNrEQTLsWithThisPValueCumulative[p][permutationRound] = permUniquePValuesNrEQTLsWithThisPValue[p][permutationRound];
+				permUniquePValuesNrEQTLsWithThisPValueCumulative.setQuick(p, permutationRound, permUniquePValuesNrEQTLsWithThisPValue.getQuick(p,permutationRound));
 				if (p > 0) {
-					permUniquePValuesNrEQTLsWithThisPValueCumulative[p][permutationRound] += permUniquePValuesNrEQTLsWithThisPValueCumulative[p - 1][permutationRound];
+					
+					permUniquePValuesNrEQTLsWithThisPValueCumulative.setQuick(p, permutationRound, permUniquePValuesNrEQTLsWithThisPValueCumulative.getQuick(p, permutationRound) + permUniquePValuesNrEQTLsWithThisPValueCumulative.getQuick(p - 1, permutationRound));
+					
 				}
 			}
 		}
 
+		double nrPermutationsFDRd = (double) nrPermutationsFDR;
 		double[] fdrUniquePValues = new double[hashUniquePValues.size()];
 		for (int p = 0; p < hashUniquePValues.size(); p++) {
-			double meanNrEQTLsPerm = JSci.maths.ArrayMath.mean(permUniquePValuesNrEQTLsWithThisPValueCumulative[p]);
+			double meanNrEQTLsPerm = permUniquePValuesNrEQTLsWithThisPValueCumulative.viewRow(p).aggregate(IntFunctions.plus, IntFunctions.identity) / nrPermutationsFDRd;
 			double fdrVal = meanNrEQTLsPerm / (double) uniquePValuesNrEQTLsWithThisPValueCumulative[p];
 			if (fdrVal > 1) {
 				fdrVal = 1;
