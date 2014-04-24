@@ -12,6 +12,8 @@ public class VcfSample
 	private final VcfRecord vcfRecord;
 	private String[] tokens;
 
+	private transient List<String> cachedAlleles;
+	
 	public VcfSample(VcfRecord vcfRecord) {
 		this(vcfRecord, null);
 	}
@@ -51,50 +53,52 @@ public class VcfSample
 	}
 	
 	public List<String> getAlleles() {
-		// the first sub-field must always be the genotype if it is present
-		String[] dataTypes = vcfRecord.getFormat();
-		if(dataTypes.length == 0 || !dataTypes[0].equals(FIELD_GT)) return null;
-		String genotype = tokens[0];
-		
-		String referenceAllele = vcfRecord.getReferenceAllele();
-		List<String> alternateAlleles = vcfRecord.getAlternateAlleles();
-		
-		// performance optimization for the common case that a sample consists of two alleles
-		List<String> alleles = new ArrayList<String>(2);
-		final int nrGenotypeChars = genotype.length();
-		for (int j = 0, start = 0; j < nrGenotypeChars; ++j)
-		{
-			char c = genotype.charAt(j);
-			if (c == GENOTYPE_PHASED || c == GENOTYPE_UNPHASED || j == nrGenotypeChars - 1)
+		if(cachedAlleles == null) {
+			// the first sub-field must always be the genotype if it is present
+			String[] dataTypes = vcfRecord.getFormat();
+			if(dataTypes.length == 0 || !dataTypes[0].equals(FIELD_GT)) return null;
+			String genotype = tokens[0];
+			
+			String referenceAllele = vcfRecord.getReferenceAllele();
+			List<String> alternateAlleles = vcfRecord.getAlternateAlleles();
+			
+			// performance optimization for the common case that a sample consists of two alleles
+			cachedAlleles = new ArrayList<String>(2);
+			final int nrGenotypeChars = genotype.length();
+			for (int j = 0, start = 0; j < nrGenotypeChars; ++j)
 			{
-				if(j - start == 1) {
-					// performance optimization for the common case that an allele is described by one char
-					char alleleChar = j == nrGenotypeChars - 1 ?  c : genotype.charAt(j - 1);
-					if(alleleChar != '.') {
-						int alleleIndex = Character.digit(alleleChar, 10);
-						if(alleleIndex == 0)
-							alleles.add(referenceAllele);
-						else
-							alleles.add(alternateAlleles.get(alleleIndex - 1));
+				char c = genotype.charAt(j);
+				if (c == GENOTYPE_PHASED || c == GENOTYPE_UNPHASED || j == nrGenotypeChars - 1)
+				{
+					if(j - start == 1) {
+						// performance optimization for the common case that an allele is described by one char
+						char alleleChar = j == nrGenotypeChars - 1 ?  c : genotype.charAt(j - 1);
+						if(alleleChar != '.') {
+							int alleleIndex = Character.digit(alleleChar, 10);
+							if(alleleIndex == 0)
+								cachedAlleles.add(referenceAllele);
+							else
+								cachedAlleles.add(alternateAlleles.get(alleleIndex - 1));
+						} else {
+							cachedAlleles.add(null);
+						}
 					} else {
-						alleles.add(null);
+						String alleleIndexStr = j == nrGenotypeChars - 1 ? genotype.substring(start) : genotype.substring(start, j);
+						if (!alleleIndexStr.equals(".")) {
+							int alleleIndex = Integer.parseInt(alleleIndexStr);
+							if(alleleIndex == 0)
+								cachedAlleles.add(referenceAllele);
+							else
+								cachedAlleles.add(alternateAlleles.get(alleleIndex - 1));
+						} else {
+							cachedAlleles.add(null);
+						}
 					}
-				} else {
-					String alleleIndexStr = j == nrGenotypeChars - 1 ? genotype.substring(start) : genotype.substring(start, j);
-					if (!alleleIndexStr.equals(".")) {
-						int alleleIndex = Integer.parseInt(alleleIndexStr);
-						if(alleleIndex == 0)
-							alleles.add(referenceAllele);
-						else
-							alleles.add(alternateAlleles.get(alleleIndex - 1));
-					} else {
-						alleles.add(null);
-					}
+					start = j + 1;
 				}
-				start = j + 1;
 			}
 		}
-		return alleles;
+		return cachedAlleles;
 	}
 	
 	public VcfSample createClone() {
@@ -103,5 +107,6 @@ public class VcfSample
 	
 	public void reset(String[] tokens) {
 		this.tokens = tokens;
+		this.cachedAlleles = null;
 	}
 }
