@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.Cache;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GenotypeRecord;
 
 /**
  * Cached sample variant provider to prevent reloading a SNPs that is accessed
@@ -22,6 +24,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
 	private final Cache<GeneticVariant, float[][]> probCache;
+	private final Cache<GeneticVariant, FixedSizeIterable<GenotypeRecord>> genotypeRecordCache;
 	private final int cacheSize;
 	private final int sampleVariantProviderUniqueId;
 
@@ -33,6 +36,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(cacheSize);
 		this.dosageCache = new Cache<GeneticVariant, float[]>(cacheSize);
 		this.probCache = new Cache<GeneticVariant, float[][]>(cacheSize);
+		this.genotypeRecordCache = new Cache<GeneticVariant, FixedSizeIterable<GenotypeRecord>>(cacheSize);
 		this.cacheSize = cacheSize;
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
@@ -114,5 +118,18 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		float[][] probs = sampleVariantProvider.getSampleProbilities(variant);
 		probCache.put(variant, probs);
 		return probs;
+	}
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant)
+	{
+		if (genotypeRecordCache.containsKey(variant))
+		{
+			return genotypeRecordCache.get(variant);
+		}
+		
+		FixedSizeIterable<GenotypeRecord> sampleGenotypeRecords = sampleVariantProvider.getSampleGenotypeRecords(variant);
+		genotypeRecordCache.put(variant, sampleGenotypeRecords);
+		return sampleGenotypeRecords;
 	}
 }

@@ -25,7 +25,6 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  */
 public class ResultProcessorThread extends Thread {
 
-    
 //    private BinaryResultProbeSummary[] m_dsProbeSummary = null;
 //    private BinaryResultSNPSummary[] m_dsSNPSummary = null;
 //    private BinaryGZipFloatMatrix[] m_dsZScoreMatrix = null;
@@ -44,7 +43,6 @@ public class ResultProcessorThread extends Thread {
 //    private TextFile[] zScoreBinaryFile;
 //    private TextFile zScoreMetaAnalysisFile; 
 //    private int m_numdatasets = 0;
-    
     private boolean m_createBinaryFiles = false;
     private TriTyperGeneticalGenomicsDataset[] m_gg = null;
     private boolean m_cisOnly;
@@ -60,9 +58,9 @@ public class ResultProcessorThread extends Thread {
     private long nrTestsPerformed = 0;
     private QTL[] finalEQTLs;
     private double maxSavedPvalue = -Double.MAX_VALUE;
-    private int locationToStoreResult=0;
-    private boolean bufferHasOverFlown=false;
-    private boolean sorted=false;
+    private int locationToStoreResult = 0;
+    private boolean bufferHasOverFlown = false;
+    private boolean sorted = false;
     private int m_maxResults = 0;
     public double highestP = Double.MAX_VALUE;
     private int nrSNPsTested = 0;
@@ -91,8 +89,8 @@ public class ResultProcessorThread extends Thread {
         m_probeList = probelist;
         m_maxResults = settings.maxNrMostSignificantEQTLs;
 
-        int tmpbuffersize = (m_maxResults /10);
-        
+        int tmpbuffersize = (m_maxResults / 10);
+
         if (tmpbuffersize == 0) {
             tmpbuffersize = 10;
         } else if (tmpbuffersize > 250000) {
@@ -105,7 +103,7 @@ public class ResultProcessorThread extends Thread {
 //        m_result_counter = 0;   
 //        m_numdatasets = m_gg.length;
 
-        finalEQTLs = new QTL[(m_maxResults+tmpbuffersize)];
+        finalEQTLs = new QTL[(m_maxResults + tmpbuffersize)];
         nrSNPsTested = 0;
     }
 
@@ -144,7 +142,7 @@ public class ResultProcessorThread extends Thread {
 
             ProgressBar progressbar = new ProgressBar(m_availableWorkPackages.length);
             boolean poison = false;
-            int counter = 0;
+
             while (!poison) {
                 WorkPackage wp = m_queue.take();
                 Result r = wp.results;
@@ -158,9 +156,9 @@ public class ResultProcessorThread extends Thread {
 
                     nrTestsPerformed += wp.getNumTested();
 
-                    
+
                     double[] pvalues = r.pvalues;
-                    
+
                     //Is this working?
                     if (m_createBinaryFiles && !poison) {
                         writeBinaryResult(r);
@@ -255,7 +253,6 @@ public class ResultProcessorThread extends Thread {
                 }
 
                 progressbar.iterate();
-                counter++;
             }
 
             progressbar.close();
@@ -273,12 +270,11 @@ public class ResultProcessorThread extends Thread {
             }
 
             if (m_createTEXTFiles) {
-                if(!sorted){
-                    if(locationToStoreResult!=0){
+                if (!sorted) {
+                    if (locationToStoreResult != 0) {
                         Arrays.sort(finalEQTLs, 0, locationToStoreResult);
 //                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
 //                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
-                        sorted=true;
 
                     }
                 }
@@ -301,7 +297,7 @@ public class ResultProcessorThread extends Thread {
             } catch (NullPointerException e) {
                 System.out.println("ERROR: null result?");
             }
-           
+
             int wpId = r.wpid;
             WorkPackage currentWP = m_availableWorkPackages[wpId];
             double[][] zscores = r.zscores;
@@ -312,9 +308,9 @@ public class ResultProcessorThread extends Thread {
                     for (int i = 0; i < zscorestmp[d].length; i++) {
                         zscorestmp[d][i] = Double.NaN;
                     }
-                    for (int p = 0; p <probes.length; p++) {
+                    for (int p = 0; p < probes.length; p++) {
                         int probeId = probes[p];
-                        zscorestmp[d][probeId] = zscores[d][p]; 
+                        zscorestmp[d][probeId] = zscores[d][p];
                     }
                 }
                 zscores = zscorestmp;
@@ -349,7 +345,7 @@ public class ResultProcessorThread extends Thread {
                     for (double z : finalZscores) {
                         zScoreMetaAnalysisFile.writeDouble(z);
                     }
-                    
+
                 }
                 for (int d = 0; d < numDatasets; d++) {
                     double[] datasetZScores = zscores[d];
@@ -375,7 +371,7 @@ public class ResultProcessorThread extends Thread {
                         for (double z : datasetZScores) {
                             outfile.writeDouble(z);
                         }
-                        
+
                     }
                 }
             }
@@ -384,106 +380,61 @@ public class ResultProcessorThread extends Thread {
 
     private void addEQTL(int pid, int sid, double pval, double zscore, double[] correlations, double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta, double[] betase, double finalbeta, double finalbetase) {
 
-        if(bufferHasOverFlown){
-            if(pval<=maxSavedPvalue){
-                
-                sorted=false;
-                
+        if (bufferHasOverFlown) {
+            if (pval <= maxSavedPvalue) {
+
+                sorted = false;
+
                 finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
                 locationToStoreResult++;
+                
+                if (locationToStoreResult == finalEQTLs.length) {
+
+                    Arrays.sort(finalEQTLs);
+//                    SmoothSort.sort(finalEQTLs);
+//                    inplaceArrayQuickSort.sort(finalEQTLs);
+                    sorted = true;
+                    locationToStoreResult = m_maxResults;
+                    maxSavedPvalue = finalEQTLs[(m_maxResults - 1)].getPvalue();
+                }
             }
             
-            if(locationToStoreResult==finalEQTLs.length){
-
-                Arrays.sort(finalEQTLs);
-//                SmoothSort.sort(finalEQTLs);
-//                inplaceArrayQuickSort.sort(finalEQTLs);
-                sorted=true;
-                locationToStoreResult=m_maxResults;
-                maxSavedPvalue = finalEQTLs[(m_maxResults-1)].getPvalue();
-            }
         } else {
-            if(pval>maxSavedPvalue) {
+            if (pval > maxSavedPvalue) {
                 maxSavedPvalue = pval;
             }
 
             finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
             locationToStoreResult++;
-            
-            if(locationToStoreResult==m_maxResults){
-                bufferHasOverFlown=true;
+
+            if (locationToStoreResult == m_maxResults) {
+                bufferHasOverFlown = true;
             }
         }
     }
 
-//    private void mergeResults() {
-//        QTL[] toMerge = null;
-//        if (m_eQTLBufferCounter < tmpEQTLBuffer.length) {
-//            toMerge = new QTL[m_eQTLBufferCounter];
-//            System.arraycopy(tmpEQTLBuffer, 0, toMerge, 0, m_eQTLBufferCounter);
-//        } else {
-//            toMerge = tmpEQTLBuffer;
-//        }
-//
-//        QTL[] tmp = new QTL[finalEQTLs.length + toMerge.length];
-//        System.arraycopy(toMerge, 0, tmp, 0, toMerge.length);
-//        System.arraycopy(finalEQTLs, 0, tmp, toMerge.length, finalEQTLs.length);
-//
-//        java.util.Arrays.sort(tmp);
-//
-//        nrInFinalBuffer += toMerge.length;
-//        if (nrInFinalBuffer < m_maxResults) {
-//            finalEQTLs = tmp;
-//        } else {
-//            finalEQTLs = new QTL[m_maxResults];
-//            System.arraycopy(tmp, 0, finalEQTLs, 0, m_maxResults);
-//            for (int i = m_maxResults; i < tmp.length; i++) {
-//                tmp[i].cleanUp();
-//                tmp[i] = null;
-//            }
-//            nrInFinalBuffer = m_maxResults;
-//            highestP = finalEQTLs[m_maxResults - 1].pvalue;
-//        }
-//    }
-
     private void writeTextResults() throws IOException {
-        
+
         int nrOfEntriesToWrite = m_maxResults;
-        if(locationToStoreResult<m_maxResults){
+        if (locationToStoreResult < m_maxResults) {
             nrOfEntriesToWrite = locationToStoreResult;
         }
-        
-        if(!sorted){
-            System.out.println("Sorted P-Value list is not perfectly sorted!!!!");
-        }
-        
+
         System.out.println("Writing " + nrOfEntriesToWrite + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
-        String fileName = m_outputdir + "eQTLs.txt.gz";
+
         if (m_permuting) {
-            fileName = m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz";
-            TextFile gz = new TextFile(fileName, TextFile.W);
+            TextFile gz = new TextFile((m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz"), TextFile.W);
             gz.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
             for (int i = 0; i < nrOfEntriesToWrite; i++) {
-                String output = finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
-                String[] realout = output.split("\t");
-                String hugo = null;
-                if (realout[eQTLTextFile.HUGO] == null) {
-                    hugo = "-";
-                } else {
-                    hugo = realout[eQTLTextFile.HUGO];
-                }
-                String ln = realout[0] + "\t" + realout[1] + "\t" + realout[4] + "\t" + hugo + "\t" + realout[8] + "\t" + realout[9] + "\t" + realout[10];
-                gz.writeln(ln);
+                gz.writeln(finalEQTLs[i].getPermutationDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
             }
             gz.close();
         } else {
-            eQTLTextFile et = new eQTLTextFile(fileName, eQTLTextFile.W);
+            eQTLTextFile et = new eQTLTextFile((m_outputdir + "eQTLs.txt.gz"), eQTLTextFile.W);
             for (int i = 0; i < nrOfEntriesToWrite; i++) {
-                String output = finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
-                et.writeln(output);
+                et.writeln(finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
             }
             et.close();
         }
     }
-    
 }

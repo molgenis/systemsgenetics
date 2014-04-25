@@ -12,7 +12,13 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 public interface GeneticVariant extends Comparable<GeneticVariant>
 {
-
+	/**
+	 * Get the meta data for this variant
+	 * 
+	 * @return
+	 */
+	public GeneticVariantMeta getVariantMeta();
+	
 	/**
 	 * Get the primary variant ID
 	 * 
@@ -172,5 +178,4 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 * @return 
 	 */
 	public float[][] getSampleGenotypeProbilities();
-
 }

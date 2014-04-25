@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
@@ -46,7 +47,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final GeneticVariantTreeSet<GeneticVariant> variants;
 	private final LinkedHashMap<GeneticVariant, Long> variantSampleAllelesIndex;
 	private final List<Sample> samples;
-	private final HashSet<String> sequenceNames;
+	private final LinkedHashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
 	private static final Logger LOGGER = Logger.getLogger(GenGenotypeData.class);
 	private final double minimumPosteriorProbabilityToCall;
@@ -118,7 +119,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		variants = new GeneticVariantTreeSet<GeneticVariant>();
 		variantSampleAllelesIndex = new LinkedHashMap<GeneticVariant, Long>();
-		sequenceNames = new HashSet<String>();
+		sequenceNames = new LinkedHashSet<String>();
 		genFileReader = new RandomAccessFile(genFile, "r");
 
 		byteToReadForSampleAlleles = loadVariants(forceSeqName);
