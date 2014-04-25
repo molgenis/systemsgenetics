@@ -67,6 +67,15 @@ public class VcfRecordTest
 	}
 
 	@Test
+	public void getFilterStatus_missingValue()
+	{
+		VcfMeta vcfMeta = mock(VcfMeta.class);
+		String[] tokens = new String[]{"x", "x", "x", "x", "x", "x", "."};
+		String filterStatus = new VcfRecord(vcfMeta, tokens).getFilterStatus();
+		assertEquals(filterStatus, null);
+	}
+	
+	@Test
 	public void getFormat()
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);

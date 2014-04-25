@@ -65,13 +65,21 @@ public class VcfRecord
 		return cachedAlternateAlleles;
 	}
 	
+	/**
+	 * @return quality value or null if quality value is set to the missing value
+	 */
 	public String getQuality() {
 		String quality = tokens[VcfMeta.COL_QUAL_IDX];
 		return quality != null && quality.equals(".") ? null : quality;
 	}
 	
+	/**
+	 * 
+	 * @return filter status or null if filter status is set to the missign value
+	 */
 	public String getFilterStatus() {
-		return tokens[VcfMeta.COL_FILTER_IDX];
+		String filterStatus = tokens[VcfMeta.COL_FILTER_IDX];
+		return filterStatus != null && filterStatus.equals(".") ? null : filterStatus;
 	}
 	
 	public Iterable<VcfInfo> getInformation() {
