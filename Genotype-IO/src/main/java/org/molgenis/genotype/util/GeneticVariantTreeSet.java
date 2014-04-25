@@ -9,6 +9,7 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -86,7 +87,21 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 
 		public DummyGeneticVariant(String sequenceName, int startPos)
 		{
-			super();
+			super(new GeneticVariantMeta()
+			{
+				
+				@Override
+				public Type getRecordType(String recordId)
+				{
+					throw new UnsupportedOperationException();
+				}
+				
+				@Override
+				public Iterable<String> getRecordIds()
+				{
+					throw new UnsupportedOperationException();
+				}
+			});
 			this.sequenceName = sequenceName;
 			this.startPos = startPos;
 		}

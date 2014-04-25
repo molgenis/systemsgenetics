@@ -1,7 +1,5 @@
 package org.molgenis.genotype.variant;
 
-import java.util.Collections;
-import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.ChromosomeComparator;
@@ -13,7 +11,20 @@ import org.molgenis.genotype.util.LdCalculatorException;
 abstract public class AbstractGeneticVariant implements GeneticVariant {
 
     private static final ChromosomeComparator chrComparator = new ChromosomeComparator();
+	
+    private final GeneticVariantMeta variantMeta;
 
+    public AbstractGeneticVariant(GeneticVariantMeta variantMeta) {
+    	if(variantMeta == null) throw new IllegalArgumentException("variantMeta is null");
+    	this.variantMeta = variantMeta;
+    }
+    
+	@Override
+	public GeneticVariantMeta getVariantMeta()
+	{
+		return variantMeta;
+	}
+	
     @Override
     public final int compareTo(GeneticVariant other) {
         if (other == null) {

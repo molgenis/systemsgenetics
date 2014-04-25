@@ -23,10 +23,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	private MafResult mafResult = null;
 	protected final Map<String, ?> annotationValues;
 
-	private ReadOnlyGeneticVariant(GeneticVariantId variantId, int startPos, String sequenceName,
+	private ReadOnlyGeneticVariant(GeneticVariantMeta variantMeta, GeneticVariantId variantId, int startPos, String sequenceName,
 			Map<String, ?> annotationValues, SampleVariantsProvider sampleVariantsProvider, Alleles alleles,
 			Allele refAllele) {
-
+		super(variantMeta);
+		
 		alleles = alleles.createCopyWithoutDuplicates();
 
 		if (refAllele != null) {
@@ -55,95 +56,95 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 
 	}
 
-	public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
+	public static GeneticVariant createSnp(GeneticVariantMeta variantMeta, String snpId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, char allele1, char allele2) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnChars(allele1, allele2), null);
 	}
 
-	public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
+	public static GeneticVariant createSnp(GeneticVariantMeta variantMeta, String snpId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, char allele1, char allele2, char refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(snpId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnChars(allele1, allele2), Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createSnp(List<String> snpIds, int pos, String sequenceName,
+	public static GeneticVariant createSnp(GeneticVariantMeta variantMeta, List<String> snpIds, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, char allele1, char allele2) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpIds), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(snpIds), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnChars(allele1, allele2), null);
 	}
 
-	public static GeneticVariant createSnp(List<String> snpIds, int pos, String sequenceName,
+	public static GeneticVariant createSnp(GeneticVariantMeta variantMeta, List<String> snpIds, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, char allele1, char allele2, char refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(snpIds), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(snpIds), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnChars(allele1, allele2), Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, String allele1, String allele2) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(allele1, allele2), null);
 	}
 
-	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, Allele allele1, Allele allele2) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createAlleles(allele1, allele2), null);
 	}
 
-	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, String allele1, String allele2, String refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(allele1, allele2), Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createVariant(List<String> variantIds, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, List<String> variantIds, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, String allele1, String allele2) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(allele1, allele2), null);
 	}
 
-	public static GeneticVariant createVariant(List<String> variantIds, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, List<String> variantIds, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, String allele1, String allele2, String refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(allele1, allele2), Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, List<String> alleles) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(alleles), null);
 	}
 
-	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, List<String> alleles, String refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(alleles), Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createVariant(List<String> variantIds, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, List<String> variantIds, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, List<String> alleles) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(alleles), null);
 	}
 
-	public static GeneticVariant createVariant(List<String> variantIds, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, List<String> variantIds, int pos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, List<String> alleles, String refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantIds), pos, sequenceName, null,
 				sampleVariantsProvider, Alleles.createBasedOnString(alleles), Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createVariant(List<String> variantIds, int pos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, List<String> variantIds, int pos, String sequenceName,
 			Map<String, ?> annotationValues, SampleVariantsProvider sampleVariantsProvider, List<String> alleles,
 			String refAllele) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantIds), pos, sequenceName,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantIds), pos, sequenceName,
 				annotationValues, sampleVariantsProvider, Alleles.createBasedOnString(alleles),
 				Allele.create(refAllele));
 	}
 
-	public static GeneticVariant createVariant(String variantId, int startPos, String sequenceName,
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int startPos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, Alleles alleles) {
-		return new ReadOnlyGeneticVariant(GeneticVariantId.createVariantId(variantId), startPos, sequenceName, null,
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), startPos, sequenceName, null,
 				sampleVariantsProvider, alleles, null);
 	}
 
