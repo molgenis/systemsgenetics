@@ -55,10 +55,13 @@ public class VcfRecord
 		return tokens[VcfMeta.COL_REF_IDX];
 	}
 	
+	/**
+	 * @return list of alternate alleles or empty list if alternate alleles string is set to the missing value
+	 */
 	public List<String> getAlternateAlleles() {
 		if(cachedAlternateAlleles == null) {
 			String alternateBasesStr = tokens[VcfMeta.COL_ALT_IDX];
-			if(alternateBasesStr.length() == 0) {
+			if(alternateBasesStr == null || alternateBasesStr.length() == 0 || alternateBasesStr.equals(MISSING_VALUE)) {
 				cachedAlternateAlleles = Collections.emptyList();
 			} else {
 				cachedAlternateAlleles = Arrays.asList(StringUtils.split(alternateBasesStr, ','));

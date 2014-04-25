@@ -49,6 +49,15 @@ public class VcfRecordTest
 	}
 
 	@Test
+	public void getAlternateAlleles_missingValue()
+	{
+		VcfMeta vcfMeta = mock(VcfMeta.class);
+		String[] tokens = new String[]{"x", "x", "x", "x", "."};
+		List<String> alternateAlleles = new VcfRecord(vcfMeta, tokens).getAlternateAlleles();
+		assertEquals(alternateAlleles, Collections.emptyList());
+	}
+	
+	@Test
 	public void getChromosome()
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);
