@@ -261,7 +261,7 @@ public class FDR {
 		}
 
 		BufferedWriter outputWriterSignificant = new BufferedWriter(new FileWriter(outFileName));
-		BufferedWriter outputWriterAll = new BufferedWriter(new FileWriter(outFileName));
+		BufferedWriter outputWriterAll = new BufferedWriter(new FileWriter(outFileNameAll));
 
 		String fileString = baseDir + "/eQTLs.txt.gz";
 		if (!Gpio.exists(fileString)) {
