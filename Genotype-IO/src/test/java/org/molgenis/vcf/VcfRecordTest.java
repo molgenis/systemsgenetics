@@ -160,6 +160,14 @@ public class VcfRecordTest
 	}
 
 	@Test
+	public void getQuality_missingValue()
+	{
+		VcfMeta vcfMeta = mock(VcfMeta.class);
+		String[] tokens = new String[]{"x", "x", "x", "x", "x", "."};
+		assertEquals(new VcfRecord(vcfMeta, tokens).getQuality(), null);
+	}
+	
+	@Test
 	public void getReferenceAllele()
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);

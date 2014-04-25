@@ -66,7 +66,8 @@ public class VcfRecord
 	}
 	
 	public String getQuality() {
-		return tokens[VcfMeta.COL_QUAL_IDX];
+		String quality = tokens[VcfMeta.COL_QUAL_IDX];
+		return quality != null && quality.equals(".") ? null : quality;
 	}
 	
 	public String getFilterStatus() {
