@@ -86,7 +86,7 @@ Aligning pre-phased data, generated using tools like SHAPEIT2, is particularly u
 
 When combining different genotype datasets, either samples ran on multiple genotyping chips or different batches of samples, it is important to have identical strands. Merge data in Plink will give a warning when it detects strand issues in non AT or non GC SNPs but can not automatically correct this. AT and GC SNP swaps are not automatically detected. 
 
-The `--keep` option is particularly useful here to keep the SNPs not shared by both datasets. The `--update-id` will also make merging using Plink or other tools more easy.
+The `--keep` option is particularly useful here to keep the SNPs not shared by both datasets. The `--update-id` will also make merging using Plink (http://pngu.mgh.harvard.edu/~purcell/plink/dataman.shtml#merge) or other tools more easy.
 
 ### Conversion
 
