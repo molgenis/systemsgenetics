@@ -232,7 +232,7 @@ public class FDR {
 
 		double[] uniquePermutedPvaluesCounts = new double[uniquePermutedPvalues.length];
 
-		int cummulativeCount = 0;
+		long cummulativeCount = 0;
 		double nrPermutationsFDRd = (double) nrPermutationsFDR;
 		for (int i = 0; i < uniquePermutedPvalues.length; ++i) {
 
@@ -240,6 +240,8 @@ public class FDR {
 			uniquePermutedPvaluesCounts[i] = cummulativeCount / nrPermutationsFDRd;
 
 		}
+        permutedPvalues = null;
+        System.out.println("Number of unique permutation p-values: "+uniquePermutedPvalues.length);
 
 
 		String outFileName = "";
@@ -275,7 +277,6 @@ public class FDR {
 
 
 		TextFile realEQTLs = new TextFile(fileString, TextFile.R);
-
 
 		String header = realEQTLs.readLine();
 
@@ -317,10 +318,6 @@ public class FDR {
 
 
 				if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-
-
-
-
 					double eQtlPvalue = Double.parseDouble(data[0]);
 
 					if (itr > 0 && lastEqtlPvalue > eQtlPvalue) {
@@ -328,15 +325,13 @@ public class FDR {
 						System.exit(-1);
 					}
 
-
-
 					if (eQtlPvalue > currentPvalue) {
 						//Process old results for current pvalue
 
 						double fdr = 0;
 						if (currentPvalue > uniquePermutedPvalues[0]) {
 							
-							while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue) {
+							while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue && lastUsedPermutedPvalueIndex<uniquePermutedPvalues.length-1) {
 								++lastUsedPermutedPvalueIndex;
 							}
 							fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
@@ -386,10 +381,15 @@ public class FDR {
 		}
 
 		//Write buffer to files
-		while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue) {
-			++lastUsedPermutedPvalueIndex;
-		}
-		double fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+		double fdr = 0;
+        if (currentPvalue > uniquePermutedPvalues[0]) {
+
+            while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue && lastUsedPermutedPvalueIndex<uniquePermutedPvalues.length-1) {
+                ++lastUsedPermutedPvalueIndex;
+            }
+            fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+
+        }
 
 		for (String cachedEqtls : currentPvalueEqtls) {
 			outputWriterAll.append(cachedEqtls);
