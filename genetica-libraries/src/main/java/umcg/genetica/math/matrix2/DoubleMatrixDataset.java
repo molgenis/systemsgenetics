@@ -188,121 +188,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         return dataset;
     }
     
-//    public static DoubleMatrixDataset<String, String> loadDoubleBinData(String fileName) throws IOException {
-//        //ToDo Complete Implementation
-//        
-//        if (!(fileName.endsWith(".binary"))) {
-//            throw new IllegalArgumentException("File type must be .binary when delimiter is given (given filename: " + fileName + ")");
-//        }
-//        
-//        Pattern splitPatern = Pattern.compile(delimiter);
-//
-//        int columnOffset = 1;
-//
-//        TextFile in = new TextFile(fileName, TextFile.R);
-//        String str = in.readLine(); // header
-//        String[] data = splitPatern.split(str);
-//
-//        int tmpCols = (data.length - columnOffset);
-//
-//        LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
-//
-//        for (int s = 0; s < tmpCols; s++) {
-//            String colName = data[s + columnOffset];
-//            if (!colMap.containsKey(colName)) {
-//                colMap.put(colName, s);
-//            } else {
-//                LOGGER.warning("Duplicated column name!");
-//                throw (doubleMatrixDatasetNonUniqueHeaderException);
-//            }
-//        }
-//
-//        int tmpRows = 0;
-//
-//        while (in.readLine() != null) {
-//            tmpRows++;
-//        }
-//        in.close();
-//        
-//        DoubleMatrixDataset<String, String> dataset;
-//        
-//        if ((tmpRows * (long)tmpCols) < (Integer.MAX_VALUE-2)) {
-//            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
-//            DenseDoubleMatrix2D tmpMatrix = new DenseDoubleMatrix2D(tmpRows, tmpCols);
-//            
-//            in.open();
-//            in.readLine(); // read header
-//            int row = 0;
-//            
-//            boolean correctData = true;
-//            while ((str = in.readLine()) != null) {
-//                data = splitPatern.split(str);
-//
-//                if (!rowMap.containsKey(data[0])) {
-//                    rowMap.put(data[0], row);
-//                    for (int s = 0; s < tmpCols; s++) {
-//                        double d;
-//                        try {
-//                            d = Double.parseDouble(data[s + columnOffset]);
-//                        } catch (NumberFormatException e) {
-//                            correctData = false;
-//                            d = Double.NaN;
-//                        }
-//                        tmpMatrix.setQuick(row, s, d);
-//                    }
-//                    row++;
-//                } else {
-//                    LOGGER.warning("Duplicated row name!");
-//                    throw (doubleMatrixDatasetNonUniqueHeaderException);
-//                }           
-//            }
-//            if (!correctData) {
-//                LOGGER.warning("Your data contains NaN/unparseable values!");
-//            }
-//            in.close();
-//            
-//            dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
-//            
-//        } else {
-//            LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
-//            DenseLargeDoubleMatrix2D tmpMatrix = new DenseLargeDoubleMatrix2D(tmpRows, tmpCols);
-//            in.open();
-//            in.readLine(); // read header
-//            int row = 0;
-//
-//            boolean correctData = true;
-//            while ((str = in.readLine()) != null) {
-//                data = splitPatern.split(str);
-//
-//                if (!rowMap.containsKey(data[0])) {
-//                    rowMap.put(data[0], row);
-//                    for (int s = 0; s < tmpCols; s++) {
-//                        double d;
-//                        try {
-//                            d = Double.parseDouble(data[s + columnOffset]);
-//                        } catch (NumberFormatException e) {
-//                            correctData = false;
-//                            d = Double.NaN;
-//                        }
-//                        tmpMatrix.setQuick(row, s, d);
-//                    }
-//                    row++;
-//                } else {
-//                    LOGGER.warning("Duplicated row name!");
-//                    throw (doubleMatrixDatasetNonUniqueHeaderException);
-//                }           
-//            }
-//            if (!correctData) {
-//                LOGGER.warning("Your data contains NaN/unparseable values!");
-//            }
-//            in.close();
-//            dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
-//        }
-//
-//        LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
-//        return dataset;
-//    }
-    
     public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
         if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
             throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
@@ -442,31 +327,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     }
 
 
-    public void saveLowMemory(String fileName) throws IOException {
-        TextFile out = new TextFile(fileName, TextFile.W);
-
-        ArrayList<C> colObjects = new ArrayList<C>(hashCols.keySet());
-        ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
-
-        out.append('-');
-        for (int s = 0; s < matrix.columns(); s++) {
-            out.append('\t');
-            out.append(colObjects.get(s).toString());
-        }
-        out.append('\n');
-
-        for (int r = 0; r < matrix.rows(); r++) {
-            out.append(rowObjects.get(r).toString());
-            DoubleMatrix1D rowInfo = getMatrix().viewRow(r);
-            for (int s = 0; s < rowInfo.size(); s++) {
-                out.append('\t');
-                out.append(String.valueOf(rowInfo.get(s)));
-            }
-            out.append('\n');
-        }
-        out.close();
-    }
-
     public void save(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
 
@@ -474,19 +334,41 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
 
         out.append('-');
-        for (int s = 0; s < getMatrix().columns(); s++) {
+        for (int c = 0; c < matrix.columns(); c++) {
             out.append('\t');
-            out.append(colObjects.get(s).toString());
+            out.append(colObjects.get(c).toString());
         }
         out.append('\n');
-        double[][] rawData = getMatrix().toArray();
 
-        for (int p = 0; p < rawData.length; p++) {
-            out.append(rowObjects.get(p).toString());
-            
-            for (int s = 0; s < rawData[p].length; s++) {
+        for (int r = 0; r < matrix.rows(); r++) {
+            out.append(rowObjects.get(r).toString());
+            for (int c = 0; c < matrix.columns(); c++) {
                 out.append('\t');
-                out.append(String.valueOf(rawData[p][s]));
+                out.append(String.valueOf(matrix.getQuick(r, c)));
+            }
+            out.append('\n');
+        }
+        out.close();
+    }
+    
+    public void saveDice(String fileName) throws IOException {
+        TextFile out = new TextFile(fileName, TextFile.W);
+
+        ArrayList<R> colObjects = new ArrayList<R>(hashRows.keySet());
+        ArrayList<C> rowObjects = new ArrayList<C>(hashCols.keySet());
+
+        out.append('-');
+        for (int c = 0; c < matrix.rows(); c++) {
+            out.append('\t');
+            out.append(colObjects.get(c).toString());
+        }
+        out.append('\n');
+
+        for (int c = 0; c < matrix.columns(); c++) {
+            out.append(rowObjects.get(c).toString());
+            for (int r = 0; r < matrix.rows(); r++) {
+                out.append('\t');
+                out.append(String.valueOf(matrix.getQuick(r, c)));
             }
             out.append('\n');
         }
