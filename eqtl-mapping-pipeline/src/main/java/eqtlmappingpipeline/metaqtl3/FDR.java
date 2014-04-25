@@ -261,7 +261,7 @@ public class FDR {
 		}
 
 		BufferedWriter outputWriterSignificant = new BufferedWriter(new FileWriter(outFileName));
-		BufferedWriter outputWriterAll = new BufferedWriter(new FileWriter(outFileName));
+		BufferedWriter outputWriterAll = new BufferedWriter(new FileWriter(outFileNameAll));
 
 		String fileString = baseDir + "/eQTLs.txt.gz";
 		if (!Gpio.exists(fileString)) {
@@ -278,6 +278,13 @@ public class FDR {
 
 
 		String header = realEQTLs.readLine();
+
+		outputWriterAll.append(header);
+		outputWriterAll.append("\tFDR\n");
+
+		outputWriterSignificant.append(header);
+		outputWriterSignificant.append("\tFDR\n");
+
 		String str = realEQTLs.readLine();
 
 // REAL DATA PROCESSING
@@ -371,6 +378,31 @@ public class FDR {
 
 		}
 
+		//Write buffer to files
+		while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue) {
+			++lastUsedPermutedPvalueIndex;
+		}
+		double fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+
+		for (String cachedEqtls : currentPvalueEqtls) {
+			outputWriterAll.append(cachedEqtls);
+			outputWriterAll.append('\t');
+			outputWriterAll.append(String.valueOf(fdr));
+			outputWriterAll.append('\n');
+
+			if (fdr <= fdrcutoff) {
+				outputWriterSignificant.append(cachedEqtls);
+				outputWriterSignificant.append('\t');
+				outputWriterSignificant.append(String.valueOf(fdr));
+				outputWriterSignificant.append('\n');
+				++nrSignificantEQTLs;
+			}
+
+		}
+
+
+
+
 		realEQTLs.close();
 		outputWriterAll.close();
 		outputWriterSignificant.close();
@@ -378,7 +410,7 @@ public class FDR {
 		//Process a certain P-Value, determine how many are significant:
 		//System.out.println("\n");
 		//System.out.println("Significant detected eQTLs:");
-		
+
 
 		//System.out.println("");
 		String output = "Number of significant eQTLs:\t" + nrSignificantEQTLs;
@@ -392,9 +424,9 @@ public class FDR {
 		}
 
 		if (createQQPlot) {
-			
+
 			System.err.println("Sorry, QQ plot function is temporarily (or for a very long time) unavailable.");
-			
+
 			//System.out.println("Creating QQ plot. This might take a while...");
 			//QQPlot qq = new QQPlot();
 			//String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
