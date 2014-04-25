@@ -40,7 +40,7 @@ public class VcfRecord
 		if(cachedIdentifiers == null) {
 			String identifiersStr = tokens[VcfMeta.COL_ID_IDX];
 			
-			if (identifiersStr == null) {
+			if (identifiersStr == null || identifiersStr.equals(".")) {
 				cachedIdentifiers = Collections.emptyList();
 			} else {
 				cachedIdentifiers = Arrays.asList(StringUtils.split(identifiersStr, ';'));

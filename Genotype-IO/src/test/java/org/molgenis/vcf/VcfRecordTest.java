@@ -6,6 +6,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -94,6 +95,15 @@ public class VcfRecordTest
 		assertEquals(identifiers, Arrays.asList("id1", "id2", "id3"));
 	}
 
+	@Test
+	public void getIdentifiers_missingValue()
+	{
+		VcfMeta vcfMeta = mock(VcfMeta.class);
+		String[] tokens = new String[]{"x", "x", "."};
+		List<String> identifiers = new VcfRecord(vcfMeta, tokens).getIdentifiers();
+		assertEquals(identifiers, Collections.emptyList());
+	}
+	
 	@Test
 	public void getInformation()
 	{
