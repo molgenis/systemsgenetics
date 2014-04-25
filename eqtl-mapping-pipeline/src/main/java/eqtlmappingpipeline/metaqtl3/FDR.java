@@ -333,11 +333,18 @@ public class FDR {
 					if (eQtlPvalue > currentPvalue) {
 						//Process old results for current pvalue
 
-
-						while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue) {
-							++lastUsedPermutedPvalueIndex;
+						double fdr = 0;
+						if (currentPvalue > uniquePermutedPvalues[0]) {
+							
+							while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex] <= currentPvalue) {
+								++lastUsedPermutedPvalueIndex;
+							}
+							fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+							
 						}
-						double fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+
+
+
 
 						for (String cachedEqtls : currentPvalueEqtls) {
 							outputWriterAll.append(cachedEqtls);
