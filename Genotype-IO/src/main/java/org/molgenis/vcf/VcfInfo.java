@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.vcf.meta.VcfMeta;
 import org.molgenis.vcf.meta.VcfMetaInfo;
 
@@ -39,7 +40,12 @@ public class VcfInfo
 		// G: one value for each possible genotype
 		// .: number of possible values varies, is unknown, or is unbounded
 		String number = vcfMetaInfo.getNumber();
-		boolean isListValue = number.equals("A") || number.equals("R") || number.equals("G") || number.equals(".") || Integer.valueOf(number) > 1;
+		boolean isListValue;
+		try {
+			isListValue = number.equals("A") || number.equals("R") || number.equals("G") || number.equals(".") || Integer.valueOf(number) > 1;
+		} catch (NumberFormatException ex){
+			throw new GenotypeDataException("Error parsing length of vcf info field. " + number + " is not a valid int or expected preset (A, R, G, .)", ex);
+		}
 		switch(vcfMetaInfo.getType()) {
 			case CHARACTER:
 				if(isListValue) {
@@ -88,7 +94,7 @@ public class VcfInfo
 					return val;
 				}
 			default:
-				throw new RuntimeException("unknown vcf info type [" + vcfMetaInfo.getType() + "]");
+				throw new GenotypeDataException("unknown vcf info type [" + vcfMetaInfo.getType() + "]");
 		}
 	}
 	
