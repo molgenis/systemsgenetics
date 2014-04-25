@@ -24,8 +24,13 @@ public class VcfSample
 		this.tokens = tokens;
 	}
 	
+	/**
+	 * @param idx
+	 * @return data for the sample record at the given position or null if data is set to the missing value
+	 */
 	public String getData(int idx) {
-		return tokens[idx];
+		String data = tokens[idx];
+		return data != null && data.equals(VcfRecord.MISSING_VALUE) ? null : data;
 	}
 	
 	public List<Boolean> getPhasings() {

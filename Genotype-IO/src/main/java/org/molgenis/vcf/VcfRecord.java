@@ -9,7 +9,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.molgenis.vcf.meta.VcfMeta;
 
 public class VcfRecord
-{	
+{
+	static final String MISSING_VALUE = ".";
+	
 	private final VcfMeta vcfMeta;
 	private String[] tokens;
 
@@ -40,7 +42,7 @@ public class VcfRecord
 		if(cachedIdentifiers == null) {
 			String identifiersStr = tokens[VcfMeta.COL_ID_IDX];
 			
-			if (identifiersStr == null || identifiersStr.equals(".")) {
+			if (identifiersStr == null || identifiersStr.equals(MISSING_VALUE)) {
 				cachedIdentifiers = Collections.emptyList();
 			} else {
 				cachedIdentifiers = Arrays.asList(StringUtils.split(identifiersStr, ';'));
@@ -70,7 +72,7 @@ public class VcfRecord
 	 */
 	public String getQuality() {
 		String quality = tokens[VcfMeta.COL_QUAL_IDX];
-		return quality != null && quality.equals(".") ? null : quality;
+		return quality != null && quality.equals(MISSING_VALUE) ? null : quality;
 	}
 	
 	/**
@@ -79,7 +81,7 @@ public class VcfRecord
 	 */
 	public String getFilterStatus() {
 		String filterStatus = tokens[VcfMeta.COL_FILTER_IDX];
-		return filterStatus != null && filterStatus.equals(".") ? null : filterStatus;
+		return filterStatus != null && filterStatus.equals(MISSING_VALUE) ? null : filterStatus;
 	}
 	
 	public Iterable<VcfInfo> getInformation() {

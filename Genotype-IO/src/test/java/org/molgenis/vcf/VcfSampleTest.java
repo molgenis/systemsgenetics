@@ -107,7 +107,7 @@ public class VcfSampleTest
 	}
 
 	@Test
-	public void getDataint()
+	public void getData()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
 		String[] tokens = new String[]{"something", "0/."};
@@ -115,6 +115,15 @@ public class VcfSampleTest
 		assertEquals(data, "0/.");
 	}
 
+	@Test
+	public void getData_missingValue()
+	{
+		VcfRecord vcfRecord = mock(VcfRecord.class);
+		String[] tokens = new String[]{".", "0/."};
+		String data = new VcfSample(vcfRecord, tokens).getData(0);
+		assertEquals(data, null);
+	}
+	
 	@Test
 	public void getPhasings()
 	{
