@@ -22,7 +22,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	private final ModifiableGenotypeData modifiableGenotypeData;
 
 	public ModifiableGeneticVariant(GeneticVariant originalVariant, ModifiableGenotypeData modifiableGenotypeData) {
-		super();
+		super(originalVariant.getVariantMeta());
 		this.originalVariant = originalVariant;
 		this.modifiableGenotypeData = modifiableGenotypeData;
 	}
