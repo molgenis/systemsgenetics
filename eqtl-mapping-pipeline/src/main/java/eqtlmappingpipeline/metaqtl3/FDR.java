@@ -329,7 +329,7 @@ public class FDR {
                         //Process old results for current pvalue
 
                         double fdr = 0;
-                        if (currentPvalue > uniquePermutedPvalues[0]) {
+                        if (currentPvalue >= uniquePermutedPvalues[0]) {
 
                             while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex + 1] <= currentPvalue && lastUsedPermutedPvalueIndex < uniquePermutedPvalues.length - 2) {
                                 ++lastUsedPermutedPvalueIndex;
@@ -379,7 +379,7 @@ public class FDR {
 
         //Write buffer to files
         double fdr = 0;
-        if (currentPvalue > uniquePermutedPvalues[0]) {
+        if (currentPvalue >= uniquePermutedPvalues[0]) {
 
             while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex + 1] <= currentPvalue && lastUsedPermutedPvalueIndex < uniquePermutedPvalues.length - 2) {
                 ++lastUsedPermutedPvalueIndex;
