@@ -122,8 +122,8 @@ public class QTL implements Comparable<QTL> {
     public double[] getCorrelations() {
         return correlations;
     }
-    
-        public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
+
+    public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
         if (sid == -1 && pid == -1) {
             return null;
         }
