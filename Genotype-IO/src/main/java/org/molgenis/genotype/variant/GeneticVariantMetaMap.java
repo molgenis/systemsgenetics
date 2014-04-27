@@ -4,61 +4,47 @@
  */
 package org.molgenis.genotype.variant;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import org.molgenis.genotype.GenotypeDataException;
 
 /**
  *
  * @author Patrick Deelen
  */
-public class GenotypeRecordType {
+public class GeneticVariantMetaMap implements GeneticVariantMeta {
 
-	public enum Type {
-		INTEGER, FLOAT, STRING, CHAR, ALLELES, INTEGER_ARRAY, FLOAT_ARRAY, STRING_ARRAY, CHAR_ARRAY;
-	}
-	private final String id;
-	private final int number;
-	private final Type type;
-	private final String description;
-	
-	private static final HashMap<String, Type> RESEVERED_IDS;
-	
-	static{
-		RESEVERED_IDS = new HashMap<String, Type>();
-		RESEVERED_IDS.put("GT", Type.ALLELES);
+	private final Map<String, Type> metaMap;
+	private static final Map<String, Type> RESEVERED_IDS;
+	private static final Map<String, Type> GT_META_MAP = Collections.singletonMap("GT", Type.ALLELES);
+
+	static {
+		HashMap<String, Type> reservedIdsTmp = new HashMap<String, Type>();
+		reservedIdsTmp.put("GT", Type.ALLELES);
+		RESEVERED_IDS = Collections.unmodifiableMap(reservedIdsTmp);
 	}
 
-	public GenotypeRecordType(String id, int number, Type type, String description) {
-		
-		if(checkNotOverwriteReserved(id, type)){
-			throw new GenotypeDataException("Expected for genotype record: " + id + " type " + RESEVERED_IDS.get(id).name() + " but found: " + type);
-		}
-		
-		this.id = id;
-		this.number = number;
-		this.type = type;
-		this.description = description;
+	private GeneticVariantMetaMap(Map<String, Type> metaMap) {
+		this.metaMap = metaMap;
 	}
 
-	public GenotypeRecordType(String id, int number, String typeName, String description) {
-		this.id = id;
-		this.number = number;
-		try {
-			this.type = Type.valueOf(typeName.toUpperCase());
-		} catch (IllegalArgumentException ex) {
-			throw new GenotypeDataException("Invalid genotype record type", ex);			
-		}
-		
-		if(checkNotOverwriteReserved(id, type)){
-			throw new GenotypeDataException("Expected for genotype record: " + id + " type " + RESEVERED_IDS.get(id).name() + " but found: " + type);
-		}
-		
-		this.description = description;
+	public static GeneticVariantMeta createGeneticVariantMetaGt() {
+		return new GeneticVariantMetaMap(GT_META_MAP);
 	}
-	
-	private boolean checkNotOverwriteReserved(String id, Type type){
-		if(RESEVERED_IDS.containsKey(id)){
-			if(RESEVERED_IDS.get(id).equals(type)){
+
+	public static GeneticVariantMeta createGeneticVariantMeta(Map<String, Type> metaMap) {
+		for (Map.Entry<String, Type> entry : metaMap.entrySet()) {
+			if (checkNotOverwriteReserved(entry.getKey(), entry.getValue())) {
+				throw new GenotypeDataException("Using illiagle genotype field: " + entry.getKey() + " is reserved for: " + RESEVERED_IDS.get(entry.getKey()));
+			}
+		}
+		return new GeneticVariantMetaMap(Collections.unmodifiableMap(metaMap));
+	}
+
+	private static boolean checkNotOverwriteReserved(String id, Type type) {
+		if (RESEVERED_IDS.containsKey(id)) {
+			if (RESEVERED_IDS.get(id).equals(type)) {
 				return false;
 			} else {
 				return true;
@@ -66,5 +52,15 @@ public class GenotypeRecordType {
 		} else {
 			return false;
 		}
+	}
+
+	@Override
+	public Iterable<String> getRecordIds() {
+		return metaMap.keySet();
+	}
+
+	@Override
+	public Type getRecordType(String recordId) {
+		return metaMap.get(recordId);
 	}
 }
