@@ -78,7 +78,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	 * The original SNP count in the data regardless of number of read SNPs
 	 */
 	private final int originalSnpCount;
-	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.createGeneticVariantMetaGt();
+	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 
 	public BedBimFamGenotypeData(String basePath) throws IOException {
 		this(basePath, 100);

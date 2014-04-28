@@ -10,31 +10,31 @@ import org.molgenis.genotype.Alleles;
  *
  * @author Patrick Deelen
  */
-public class GenotypeRecordGt implements GenotypeRecord {
+public class GenotypeRecordProb implements GenotypeRecord {
+	
+	private final float[] probs;
 
-	private final Alleles alleles;
-
-	public GenotypeRecordGt(Alleles alleles) {
-		this.alleles = alleles;
+	public GenotypeRecordProb(float[] probs) {
+		this.probs = probs;
 	}
 	
 	@Override
 	public Object getGenotypeRecordData(String recordId) {
-		if(recordId.equals("GT")){
-			return alleles;
+		if(recordId.equals("GP")){
+			return probs;
 		} else {
 			return null;
 		}
 	}
-	
+
 	@Override
 	public Alleles getSampleAlleles() {
-		return alleles;
+		return null;
 	}
 
 	@Override
 	public float[] getSampleProbs() {
-		return null;
+		return probs;
 	}
 
 	@Override

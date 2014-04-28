@@ -13,6 +13,7 @@ import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -22,7 +23,6 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	private final ModifiableGenotypeData modifiableGenotypeData;
 
 	public ModifiableGeneticVariant(GeneticVariant originalVariant, ModifiableGenotypeData modifiableGenotypeData) {
-		super(originalVariant.getVariantMeta());
 		this.originalVariant = originalVariant;
 		this.modifiableGenotypeData = modifiableGenotypeData;
 	}
@@ -329,5 +329,10 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	 */
 	public void exclude() {
 		modifiableGenotypeData.excludeVariant(this);
+	}
+
+	@Override
+	public GeneticVariantMeta getVariantMeta() {
+		return originalVariant.getVariantMeta();
 	}
 }

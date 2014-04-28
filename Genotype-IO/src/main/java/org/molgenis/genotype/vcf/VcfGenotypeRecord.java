@@ -89,7 +89,13 @@ public class VcfGenotypeRecord implements GenotypeRecord
 	@Override
 	public Alleles getSampleAlleles()
 	{
-		return Alleles.createBasedOnString(vcfSample.getAlleles());
+		List<String> alleles = vcfSample.getAlleles();
+		if(vcfSample.getAlleles() != null){
+			return Alleles.createBasedOnString(alleles);
+		} else {
+			return null;
+		}
+		
 	}
 	
 	private boolean isListValue(String number) {
@@ -98,5 +104,32 @@ public class VcfGenotypeRecord implements GenotypeRecord
 		// G: one value for each possible genotype
 		// .: number of possible values varies, is unknown, or is unbounded
 		return number.equals("A") || number.equals("R") || number.equals("G") || number.equals(".") || Integer.valueOf(number) > 1;
+	}
+
+	@Override
+	public float[] getSampleProbs() {
+		
+		List<Double> probs = (List<Double>) getGenotypeRecordData("GP");
+		
+		if(probs != null){
+			float[] probsArray = new float[probs.size()];
+			
+			for(int i = 0 ; i < probs.size() ; ++i){
+				probsArray[i] = probs.get(i).floatValue();
+			}
+			
+			return probsArray;
+			
+		} else {
+			return null;
+		}
+		
+		
+	}
+
+	@Override
+	public float getSampleDosage() {
+		//TODO
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 }

@@ -58,7 +58,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	private final Cache<GeneticVariant, float[]> dosageCache;
 	private ArrayList<Sample> samples = new ArrayList<Sample>();
 	private Set<String> seqNames = new LinkedHashSet<String>();
-	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.createGeneticVariantMetaGt();
+	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 
 	public PedMapGenotypeData(String basePath) throws FileNotFoundException, IOException {
 		this(new File(basePath + ".ped"), new File(basePath + ".map"));

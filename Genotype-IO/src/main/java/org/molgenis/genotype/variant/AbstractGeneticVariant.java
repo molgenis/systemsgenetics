@@ -12,19 +12,6 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
 
     private static final ChromosomeComparator chrComparator = new ChromosomeComparator();
 	
-    private final GeneticVariantMeta variantMeta;
-
-    public AbstractGeneticVariant(GeneticVariantMeta variantMeta) {
-    	if(variantMeta == null) throw new IllegalArgumentException("variantMeta is null");
-    	this.variantMeta = variantMeta;
-    }
-    
-	@Override
-	public GeneticVariantMeta getVariantMeta()
-	{
-		return variantMeta;
-	}
-	
     @Override
     public final int compareTo(GeneticVariant other) {
         if (other == null) {

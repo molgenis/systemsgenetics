@@ -23,9 +23,14 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
+import org.molgenis.genotype.util.RecordIteratorCreators;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GeneticVariantMetaMap;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -49,6 +54,7 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private final LinkedHashSet<String> sequenceNames;
+	private final GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 	
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 
@@ -80,7 +86,7 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 				throw new GenotypeDataException("Only biallelic supported");
 			}
 			
-			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(variantInfo.getVariantId(), variantInfo.getStartPos(), variantInfo.getSequenceName(), this, variantInfo.getAlleles().get(0), variantInfo.getAlleles().get(1));
+			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, variantInfo.getVariantId(), variantInfo.getStartPos(), variantInfo.getSequenceName(), this, variantInfo.getAlleles().get(0), variantInfo.getAlleles().get(1));
 			variants.add(variant);
 			if(!sequenceNames.contains(variant.getSequenceName())){
 				sequenceNames.add(variant.getSequenceName());
@@ -198,6 +204,13 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 		}
 		
 		probabilitiesMatrix[variantAllelesIndex.get(variantInfo)][samples.get(sample)] = probabilities;
+		
+	}
+	
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
+		
+		return RecordIteratorCreators.createIteratorFromProbs(variant.getSampleGenotypeProbilities());
 		
 	}
 	

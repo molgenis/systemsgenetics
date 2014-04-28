@@ -31,6 +31,16 @@ public class GenotypeRecordMap implements GenotypeRecord {
 		return (Alleles) fields.get("GT");
 				
 	}
+
+	@Override
+	public float[] getSampleProbs() {
+		return (float[]) fields.get("GP");
+	}
+
+	@Override
+	public float getSampleDosage() {
+		return (Float) fields.get("DS");
+	}
 	
 	
 }

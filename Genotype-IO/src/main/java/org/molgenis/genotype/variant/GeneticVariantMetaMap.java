@@ -17,11 +17,14 @@ public class GeneticVariantMetaMap implements GeneticVariantMeta {
 
 	private final Map<String, Type> metaMap;
 	private static final Map<String, Type> RESEVERED_IDS;
-	private static final Map<String, Type> GT_META_MAP = Collections.singletonMap("GT", Type.ALLELES);
+	private static final GeneticVariantMetaMap GT_META_MAP = new GeneticVariantMetaMap(Collections.singletonMap("GT", Type.ALLELES));
+	private static final GeneticVariantMetaMap GP_META_MAP = new GeneticVariantMetaMap(Collections.singletonMap("GP", Type.FLOAT_LIST));
 
 	static {
 		HashMap<String, Type> reservedIdsTmp = new HashMap<String, Type>();
 		reservedIdsTmp.put("GT", Type.ALLELES);
+		reservedIdsTmp.put("GP", Type.FLOAT_LIST);
+		reservedIdsTmp.put("DS", Type.FLOAT);
 		RESEVERED_IDS = Collections.unmodifiableMap(reservedIdsTmp);
 	}
 
@@ -29,8 +32,12 @@ public class GeneticVariantMetaMap implements GeneticVariantMeta {
 		this.metaMap = metaMap;
 	}
 
-	public static GeneticVariantMeta createGeneticVariantMetaGt() {
-		return new GeneticVariantMetaMap(GT_META_MAP);
+	public static GeneticVariantMeta getGeneticVariantMetaGt() {
+		return GT_META_MAP;
+	}
+	
+	public static GeneticVariantMeta getGeneticVariantMetaGp() {
+		return GP_META_MAP;
 	}
 
 	public static GeneticVariantMeta createGeneticVariantMeta(Map<String, Type> metaMap) {

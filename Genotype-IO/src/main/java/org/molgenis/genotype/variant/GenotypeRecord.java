@@ -14,5 +14,7 @@ public interface GenotypeRecord {
 	
 	Object getGenotypeRecordData(String recordId);
 	Alleles getSampleAlleles();
+	float[] getSampleProbs();
+	float getSampleDosage();
 	
 }

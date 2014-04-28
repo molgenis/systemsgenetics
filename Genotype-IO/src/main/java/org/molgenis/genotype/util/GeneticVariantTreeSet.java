@@ -87,21 +87,6 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 
 		public DummyGeneticVariant(String sequenceName, int startPos)
 		{
-			super(new GeneticVariantMeta()
-			{
-				
-				@Override
-				public Type getRecordType(String recordId)
-				{
-					throw new UnsupportedOperationException();
-				}
-				
-				@Override
-				public Iterable<String> getRecordIds()
-				{
-					throw new UnsupportedOperationException();
-				}
-			});
 			this.sequenceName = sequenceName;
 			this.startPos = startPos;
 		}
@@ -244,6 +229,11 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 		public SampleVariantsProvider getSampleVariantsProvider()
 		{
 
+			return null;
+		}
+
+		@Override
+		public GeneticVariantMeta getVariantMeta() {
 			return null;
 		}
 

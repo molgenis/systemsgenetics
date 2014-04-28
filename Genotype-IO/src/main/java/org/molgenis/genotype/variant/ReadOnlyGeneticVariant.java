@@ -22,11 +22,13 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	private final Allele refAllele;
 	private MafResult mafResult = null;
 	protected final Map<String, ?> annotationValues;
+	private final GeneticVariantMeta variantMeta;
 
 	private ReadOnlyGeneticVariant(GeneticVariantMeta variantMeta, GeneticVariantId variantId, int startPos, String sequenceName,
 			Map<String, ?> annotationValues, SampleVariantsProvider sampleVariantsProvider, Alleles alleles,
 			Allele refAllele) {
-		super(variantMeta);
+		
+		this.variantMeta = variantMeta;
 		
 		alleles = alleles.createCopyWithoutDuplicates();
 
@@ -146,6 +148,12 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 			SampleVariantsProvider sampleVariantsProvider, Alleles alleles) {
 		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantId), startPos, sequenceName, null,
 				sampleVariantsProvider, alleles, null);
+	}
+	
+	@Override
+	public GeneticVariantMeta getVariantMeta()
+	{
+		return variantMeta;
 	}
 
 	@Override

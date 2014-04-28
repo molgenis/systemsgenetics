@@ -18,6 +18,7 @@ import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -239,5 +240,10 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	@Override
 	public SampleVariantsProvider getSampleVariantsProvider() {
 		return original.getSampleVariantsProvider();
+	}
+
+	@Override
+	public GeneticVariantMeta getVariantMeta() {
+		return original.getVariantMeta();
 	}
 }
