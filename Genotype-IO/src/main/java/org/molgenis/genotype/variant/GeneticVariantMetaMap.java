@@ -36,7 +36,7 @@ public class GeneticVariantMetaMap implements GeneticVariantMeta {
 	public static GeneticVariantMeta createGeneticVariantMeta(Map<String, Type> metaMap) {
 		for (Map.Entry<String, Type> entry : metaMap.entrySet()) {
 			if (checkNotOverwriteReserved(entry.getKey(), entry.getValue())) {
-				throw new GenotypeDataException("Using illiagle genotype field: " + entry.getKey() + " is reserved for: " + RESEVERED_IDS.get(entry.getKey()));
+				throw new GenotypeDataException("Using illegal genotype field: " + entry.getKey() + " is reserved for: " + RESEVERED_IDS.get(entry.getKey()));
 			}
 		}
 		return new GeneticVariantMetaMap(Collections.unmodifiableMap(metaMap));
