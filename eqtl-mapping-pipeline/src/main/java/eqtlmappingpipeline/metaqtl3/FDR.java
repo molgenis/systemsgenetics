@@ -286,6 +286,12 @@ public class FDR {
         outputWriterAll.append(header);
         outputWriterAll.append("\tFDR\n");
 
+        outputWriterEProbes.append(header);
+        outputWriterEProbes.append("\tFDR\n");
+        
+        outputWriterESNPs.append(header);
+        outputWriterESNPs.append("\tFDR\n");
+        
         outputWriterSignificant.append(header);
         outputWriterSignificant.append("\tFDR\n");
 
@@ -323,76 +329,75 @@ public class FDR {
                     fdrId = data[4];
                 }
 
+                double eQtlPvalue = Double.parseDouble(data[0]);
+
+                if (itr > 0 && lastEqtlPvalue > eQtlPvalue) {
+                    System.err.println("Sorted P-Value list is not perfectly sorted!!!!");
+                    System.exit(-1);
+                }
+
+                if (eQtlPvalue > currentPvalue) {
+                    //Process old results for current pvalue
+
+                    double fdr = 0;
+                    if (currentPvalue >= uniquePermutedPvalues[0]) {
+
+                        while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex + 1] <= currentPvalue && lastUsedPermutedPvalueIndex < uniquePermutedPvalues.length - 2) {
+                            ++lastUsedPermutedPvalueIndex;
+                        }
+                        fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+
+                    }
+
+                    for (int i = 0; i < currentPvalueEqtls.size(); ++i) {
+                        String cachedEqtls = currentPvalueEqtls.get(i);
+                        String cachedEqtlsProbe = currentPvalueEqtlProbes.get(i);
+                        String cachedEqtlsSnps = currentPvalueEqtlSnps.get(i);
+
+                        StringBuilder currentString = new StringBuilder();
+                        currentString.append(cachedEqtls).append('\t').append(String.valueOf(fdr)).append('\n');
+
+                        outputWriterAll.append(currentString.toString());
+
+                        if (fdr <= fdrcutoff) {
+                            if (!visitedProbes.contains(cachedEqtlsProbe)) {
+                                outputWriterEProbes.append(currentString.toString());
+                                visitedProbes.add(cachedEqtlsProbe);
+                            }
+                            if (!visitedSnps.contains(cachedEqtlsSnps)) {
+                                outputWriterESNPs.append(currentString.toString());
+                                visitedSnps.add(cachedEqtlsSnps);
+
+                            }
+
+                            outputWriterSignificant.append(currentString.toString());
+                            ++nrSignificantEQTLs;
+                        }
+
+                    }
 
 
+                    //Create new temp list for this pvalue
+                    currentPvalue = eQtlPvalue;
+                    currentPvalueEqtls.clear();
+                    currentPvalueEqtlProbes.clear();
+                    currentPvalueEqtlSnps.clear();
+                    currentPvalueEqtls.add(str);
+                    currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
+                    currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
+
+                } else {
+                    //add to current pvalue list
+                    currentPvalueEqtls.add(str);
+                    currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
+                    currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
+                }
+
+                lastEqtlPvalue = eQtlPvalue;
+                
                 if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                    double eQtlPvalue = Double.parseDouble(data[0]);
-
-                    if (itr > 0 && lastEqtlPvalue > eQtlPvalue) {
-                        System.err.println("Sorted P-Value list is not perfectly sorted!!!!");
-                        System.exit(-1);
-                    }
-
-                    if (eQtlPvalue > currentPvalue) {
-                        //Process old results for current pvalue
-
-                        double fdr = 0;
-                        if (currentPvalue >= uniquePermutedPvalues[0]) {
-
-                            while (uniquePermutedPvalues[lastUsedPermutedPvalueIndex + 1] <= currentPvalue && lastUsedPermutedPvalueIndex < uniquePermutedPvalues.length - 2) {
-                                ++lastUsedPermutedPvalueIndex;
-                            }
-                            fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
-
-                        }
-
-                        for (int i = 0; i < currentPvalueEqtls.size(); ++i) {
-                            String cachedEqtls = currentPvalueEqtls.get(i);
-                            String cachedEqtlsProbe = currentPvalueEqtlProbes.get(i);
-                            String cachedEqtlsSnps = currentPvalueEqtlSnps.get(i);
-
-                            StringBuilder currentString = new StringBuilder();
-                            currentString.append(cachedEqtls).append('\t').append(String.valueOf(fdr)).append('\n');
-
-                            outputWriterAll.append(currentString.toString());
-
-                            if (fdr <= fdrcutoff) {
-                                if (!visitedProbes.contains(cachedEqtlsProbe)) {
-                                    outputWriterEProbes.append(currentString.toString());
-                                    visitedSnps.add(cachedEqtlsProbe);
-                                }
-                                if (!visitedSnps.contains(cachedEqtlsSnps)) {
-                                    outputWriterESNPs.append(currentString.toString());
-                                    visitedSnps.add(cachedEqtlsSnps);
-
-                                }
-
-                                outputWriterSignificant.append(currentString.toString());
-                                ++nrSignificantEQTLs;
-                            }
-
-                        }
-
-
-                        //Create new temp list for this pvalue
-                        currentPvalue = eQtlPvalue;
-                        currentPvalueEqtls.clear();
-                        currentPvalueEqtlProbes.clear();
-                        currentPvalueEqtlSnps.clear();
-                        currentPvalueEqtls.add(str);
-                        currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
-                        currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
-
-                    } else {
-                        //add to current pvalue list
-                        currentPvalueEqtls.add(str);
-                        currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
-                        currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
-                    }
-
-                    lastEqtlPvalue = eQtlPvalue;
-                    visitedEffects.add(fdrId);
                     itr++;
+                    visitedEffects.add(fdrId);
                 }
 
                 str = realEQTLs.readLine();
@@ -449,7 +454,7 @@ public class FDR {
         System.out.println("Number of significant eQTLs:\t" + nrSignificantEQTLs);
         System.out.println(" - Number of unique SNPs, constituting an eQTL:\t" + visitedSnps.size());
         System.out.println(" - Number of unique probes, constituting an eQTL:\t" + visitedProbes.size());
-        
+
         if (createQQPlot) {
 
             System.err.println("Sorry, QQ plot function is temporarily (or for a very long time) unavailable.");
