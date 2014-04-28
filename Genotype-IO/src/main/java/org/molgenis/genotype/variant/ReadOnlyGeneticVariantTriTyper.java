@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -208,5 +209,10 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 	public GeneticVariantMeta getVariantMeta()
 	{
 		return variantMeta;
+	}	
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
+		return sampleVariantsProvider.getSampleGenotypeRecords(this);
 	}
 }

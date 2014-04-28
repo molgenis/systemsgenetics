@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
@@ -178,4 +179,12 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 * @return 
 	 */
 	public float[][] getSampleGenotypeProbilities();
+	
+	/**
+	 * Get the records that are available for this variants from the different samples
+	 * 
+	 * @return 
+	 */
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords();
+	
 }

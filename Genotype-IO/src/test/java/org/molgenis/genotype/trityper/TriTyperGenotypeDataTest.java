@@ -8,14 +8,17 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -169,6 +172,16 @@ public class TriTyperGenotypeDataTest extends ResourceTest {
 		{ 2, 1, 2, 2, 2, 1, 2, 2, 1 };
 
 		assertEquals(variant.getSampleCalledDosages(), expectedCalledDosage);
+		
+		FixedSizeIterable<GenotypeRecord> sampleRecords = variant.getSampleGenotypeRecords();
+		
+		assertEquals(sampleRecords.size(), expectedSampleAlleles.size());
+		Iterator<Alleles> expectedAllelesIterator = expectedSampleAlleles.iterator();
+		for(GenotypeRecord record : sampleRecords){
+			Alleles a = expectedAllelesIterator.next();
+			assertEquals(record.getSampleAlleles(), a);
+		}
+		
 
 	}
 	

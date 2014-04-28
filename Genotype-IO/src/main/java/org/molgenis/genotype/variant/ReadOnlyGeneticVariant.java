@@ -7,6 +7,7 @@ import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
@@ -258,4 +259,10 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	public byte[] getSampleCalledDosages() {
 		return sampleVariantsProvider.getSampleCalledDosage(this);
 	}
+	
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
+		return sampleVariantsProvider.getSampleGenotypeRecords(this);
+	}
+	
 }

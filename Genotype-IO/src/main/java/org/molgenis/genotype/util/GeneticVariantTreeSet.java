@@ -10,6 +10,7 @@ import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -234,6 +235,11 @@ public class GeneticVariantTreeSet<E extends GeneticVariant> extends TreeSet<E>
 
 		@Override
 		public GeneticVariantMeta getVariantMeta() {
+			return null;
+		}
+
+		@Override
+		public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
 			return null;
 		}
 
