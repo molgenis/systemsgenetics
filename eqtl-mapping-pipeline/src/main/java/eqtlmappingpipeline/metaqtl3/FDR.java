@@ -4,25 +4,18 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
-import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
-import cern.jet.math.tint.IntFunctions;
-import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
 import gnu.trove.map.hash.TDoubleIntHashMap;
-import gnu.trove.set.hash.TDoubleHashSet;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.eQTLTextFile;
 import umcg.genetica.text.Strings;
-import umcg.genetica.util.RankDoubleArray;
 
 /**
  *
@@ -244,8 +237,8 @@ public class FDR {
         System.out.println("Number of unique permutation p-values: " + uniquePermutedPvalues.length);
 
 
-        String outFileName = "";
-        String outFileNameAll = "";
+        String outFileName;
+        String outFileNameAll;
 
         if (outputDir == null) {
             outputDir = baseDir;
@@ -456,7 +449,7 @@ public class FDR {
         HashMap<String, Double> hashTopSNPsAbsZScore = new HashMap<String, Double>();
         HashMap<String, String> hashTopSNPsAnnotation = new HashMap<String, String>();
         ArrayList<String> vecTopSNPs = new ArrayList<String>();
-        String header = "";
+        String header;
 
         TextFile in = new TextFile(inputFile, TextFile.R);
         String str = in.readLine();
@@ -507,7 +500,7 @@ public class FDR {
         HashMap<String, Double> hashTopProbesAbsZScore = new HashMap<String, Double>();
         HashMap<String, String> hashTopProbesAnnotation = new HashMap<String, String>();
         ArrayList<String> vecTopProbes = new ArrayList<String>();
-        String header = "";
+        String header;
 
         TextFile in = new TextFile(inputFile, TextFile.R);
         String str = in.readLine();
