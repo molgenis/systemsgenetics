@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
@@ -16,6 +17,8 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 /**
@@ -115,20 +118,30 @@ public class Ase {
 					//Here we are going to do the ASE part
 
 					//Only if variant contains read depth field
-					
-					//For all samples in file
-						
-					int a1Count = 0;
-					int a2Count = 0;
 
-					if (a1Count + a2Count > configuration.getMinTotalReads()
-							&& (a1Count >= configuration.getMinAlleleReads()
-							|| a2Count >= configuration.getMinAlleleReads())) {
-						
+					if (variant.getVariantMeta().getRecordType("AD") != GeneticVariantMeta.Type.INTEGER_LIST) {
+
+						//include variant
+
+						for (GenotypeRecord record : variant.getSampleGenotypeRecords()) {
+							
+							List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
+							
+							int a1Count = counts.get(0);
+							int a2Count = counts.get(1);
+
+							if (a1Count + a2Count > configuration.getMinTotalReads()
+									&& (a1Count >= configuration.getMinAlleleReads()
+									|| a2Count >= configuration.getMinAlleleReads())) {
+
 								aseResuls.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
-						
-					}
 
+							}
+
+
+						}
+
+					}
 
 				}
 
@@ -146,13 +159,13 @@ public class Ase {
 			System.exit(1);
 			return;
 		}
-		
-		for(AseVariant aseVariant : aseResuls ){
-			
+
+		for (AseVariant aseVariant : aseResuls) {
+
 			aseVariant.calculateMetaZscore();
-			
+
 		}
-		
+
 
 	}
 
