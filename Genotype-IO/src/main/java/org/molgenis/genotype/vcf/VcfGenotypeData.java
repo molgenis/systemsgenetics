@@ -45,11 +45,13 @@ import org.molgenis.vcf.meta.VcfMetaInfo;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 
 public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 	private final File bzipVcfFile;
 	private final TabixIndex tabixIndex;
 	private final int sampleVariantProviderUniqueId;
+	private final SampleVariantsProvider variantProvider;
 	private final VcfMeta vcfMeta;
 	
 	private transient Map<String, Annotation> cachedSampleAnnotationsMap;
@@ -109,6 +111,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			this.vcfMeta = vcfReader.getVcfMeta();
 		} finally {
 			vcfReader.close();
+		}
+		
+		if (cacheSize <= 0) {
+			variantProvider = this;
+		} else {
+			variantProvider = new CachedSampleVariantProvider(this, cacheSize);
 		}
 		
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
@@ -484,7 +492,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		}
 		
 		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord); 
-		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, this, alleles, refAllele);
+		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, variantProvider, alleles, refAllele);
 		
 		cachedVcfRecord = vcfRecord;
 		cachedGeneticVariant = geneticVariant;
