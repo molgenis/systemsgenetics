@@ -30,13 +30,16 @@ import umcg.genetica.console.ConsoleGUIElems;
 public class EQTLMappingPipelineConsole {
 
     public void main(String[] args) {
-        printHeader();
-
-        String mode = null;
-
+        
 		if(args[0].equals("--ase")){
 			Ase.main(Arrays.copyOfRange(args, 1, args.length));
 		}
+		
+		printHeader();
+
+        String mode = null;
+
+		
 		
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];

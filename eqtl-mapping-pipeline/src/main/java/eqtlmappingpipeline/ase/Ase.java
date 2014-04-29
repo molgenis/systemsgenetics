@@ -98,10 +98,9 @@ public class Ase {
 		startLogging(configuration.getLogFile(), configuration.isDebugMode());
 		configuration.printOptions();
 
-		System.out.println("In total: " + configuration.getInputFiles().size() + " VCF files or folders will be included");
-		LOGGER.info("In total: " + configuration.getInputFiles().size() + " VCF files or folders will be included");
-
 		AseResults aseResults = new AseResults();
+		int sampleCounter = 0;
+		int fileCounter = 0;
 
 		try {
 
@@ -125,7 +124,7 @@ public class Ase {
 				//TODO test if VCF contains the read depth field
 
 				for (GeneticVariant variant : genotypeData) {
-
+					
 					//Here we are going to do the ASE part
 
 					//Only if variant contains read depth field
@@ -176,6 +175,13 @@ public class Ase {
 
 				}
 
+				fileCounter += 1;
+				
+				if(fileCounter % 100 == 0){
+					System.out.println("Loaded "  + fileCounter + " out of " + configuration.getInputFiles().size() + " files");
+				}
+				
+				sampleCounter += genotypeData.getSampleNames().length;
 
 			}
 
@@ -190,13 +196,23 @@ public class Ase {
 			System.exit(1);
 			return;
 		}
-
+		
+		LOGGER.info("Loading files complete. " + sampleCounter + " samples encountered");
+		System.out.println("Loading files complete. " + sampleCounter + " samples encountered");
+		
+		Iterator<AseVariant> aseIterator = aseResults.iterator();
+		while(aseIterator.hasNext()){
+			if(aseIterator.next().getSampleCount() < configuration.getMinSamples()){
+				aseIterator.remove();
+			}
+		}
+		
 		AseVariant[] aseVariants = new AseVariant[aseResults.getCount()];
 		{
 			int i = 0;
 			for (AseVariant aseVariant : aseResults) {
 
-				//This can be multithreaded if needed
+				//This can be made multithreaded if needed
 				aseVariant.calculateMetaZscoreAndPvalue();
 
 				aseVariants[i] = aseVariant;
@@ -211,47 +227,7 @@ public class Ase {
 		File outputFile = new File(configuration.getOutputFolder(), "result.txt");
 		try {
 
-			BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
-
-			outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
-
-
-			for (AseVariant aseVariant : aseVariants) {
-
-				outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
-				outputWriter.append('\t');
-				outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
-				outputWriter.append('\t');
-				outputWriter.append(aseVariant.getChr());
-				outputWriter.append('\t');
-				outputWriter.append(String.valueOf(aseVariant.getPos()));
-				outputWriter.append('\t');
-				outputWriter.append(aseVariant.getId().getPrimairyId() == null ? "." : aseVariant.getId().getPrimairyId());
-				outputWriter.append('\t');
-				outputWriter.append(aseVariant.getA1().getAlleleAsString());
-				outputWriter.append('\t');
-				outputWriter.append(aseVariant.getA2().getAlleleAsString());
-				outputWriter.append('\t');
-
-				for (int i = 0; i < aseVariant.getA1Counts().size(); ++i) {
-					if (i > 0) {
-						outputWriter.append(',');
-					}
-					outputWriter.append(String.valueOf(aseVariant.getA1Counts().getQuick(i)));
-				}
-				outputWriter.append('\t');
-				for (int i = 0; i < aseVariant.getA2Counts().size(); ++i) {
-					if (i > 0) {
-						outputWriter.append(',');
-					}
-					outputWriter.append(String.valueOf(aseVariant.getA2Counts().getQuick(i)));
-				}
-				outputWriter.append('\n');
-
-			}
-
-
-			outputWriter.close();
+			printAseResults(outputFile, aseVariants);
 
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
@@ -298,5 +274,60 @@ public class Ase {
 
 		System.out.println("Started logging");
 		System.out.println();
+	}
+
+	/**
+	 * 
+	 * @param outputFile
+	 * @param aseVariants
+	 * @throws UnsupportedEncodingException
+	 * @throws FileNotFoundException
+	 * @throws IOException 
+	 */
+	private static void printAseResults(File outputFile, AseVariant[] aseVariants) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		
+		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
+
+		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
+
+
+		for (AseVariant aseVariant : aseVariants) {
+
+			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
+			outputWriter.append('\t');
+			outputWriter.append(aseVariant.getChr());
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getPos()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getSampleCount()));
+			outputWriter.append('\t');
+			outputWriter.append(aseVariant.getId().getPrimairyId() == null ? "." : aseVariant.getId().getPrimairyId());
+			outputWriter.append('\t');
+			outputWriter.append(aseVariant.getA1().getAlleleAsString());
+			outputWriter.append('\t');
+			outputWriter.append(aseVariant.getA2().getAlleleAsString());
+			outputWriter.append('\t');
+
+			for (int i = 0; i < aseVariant.getA1Counts().size(); ++i) {
+				if (i > 0) {
+					outputWriter.append(',');
+				}
+				outputWriter.append(String.valueOf(aseVariant.getA1Counts().getQuick(i)));
+			}
+			outputWriter.append('\t');
+			for (int i = 0; i < aseVariant.getA2Counts().size(); ++i) {
+				if (i > 0) {
+					outputWriter.append(',');
+				}
+				outputWriter.append(String.valueOf(aseVariant.getA2Counts().getQuick(i)));
+			}
+			outputWriter.append('\n');
+
+		}
+
+
+		outputWriter.close();
 	}
 }

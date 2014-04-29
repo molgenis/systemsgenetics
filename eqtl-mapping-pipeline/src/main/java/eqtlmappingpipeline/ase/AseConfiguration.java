@@ -37,6 +37,7 @@ public class AseConfiguration {
 	private final int minAlleleReads;
 	private final File logFile;
 	private final boolean debugMode;
+	private final int minSamples;
 
 	static {
 
@@ -73,10 +74,17 @@ public class AseConfiguration {
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Min number of reads per alle");
+		OptionBuilder.withDescription("Min number of reads per allele");
 		OptionBuilder.withLongOpt("minAlleleReads");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create('a'));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Min number of samples per ASE effect");
+		OptionBuilder.withLongOpt("minNumSamples");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create('s'));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
@@ -146,6 +154,13 @@ public class AseConfiguration {
 			throw new ParseException("Error parsing --minAlleleReads \"" + commandLine.getOptionValue('a') + "\" is not an int");
 		}
 		
+		try {
+			minSamples = Integer.parseInt(commandLine.getOptionValue('s'));
+		} catch (NumberFormatException e) {
+			throw new ParseException("Error parsing --minNumSamples \"" + commandLine.getOptionValue('s') + "\" is not an int");
+		}
+		
+		
 		debugMode = commandLine.hasOption('d');
 
 
@@ -154,8 +169,8 @@ public class AseConfiguration {
 	public void printOptions() {
 
 		System.out.println("Interpreted arguments: ");
-		System.out.println(" - Input files or folders: ");
-		LOGGER.info("Input files or folders: ");
+		System.out.println(" - Input files or folders (" + inputFiles.size()  + " in total): ");
+		LOGGER.info("Input files or folders (" + inputFiles.size()  + " in total): ");
 		
 		for(File inputFile : inputFiles){
 			System.out.println("  * " + inputFile.getAbsolutePath());
@@ -170,6 +185,9 @@ public class AseConfiguration {
 		
 		System.out.println(" - Minimum number of reads per allele: " + minAlleleReads);
 		LOGGER.info("Minimum number of reads per allele: " + minAlleleReads);
+		
+		System.out.println(" - Minimum number of samples per ASE effect: " + minSamples);
+		LOGGER.info("Minimum number of samples per ASE effect: " + minSamples);
 		
 		LOGGER.debug("Debug mode activated");
 
@@ -212,6 +230,9 @@ public class AseConfiguration {
 	public boolean isDebugMode() {
 		return debugMode;
 	}
-	
+
+	public int getMinSamples() {
+		return minSamples;
+	}
 	
 }

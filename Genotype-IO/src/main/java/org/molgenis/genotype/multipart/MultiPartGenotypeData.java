@@ -62,7 +62,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			
 			String sequenceName = genotypeData.getSeqNames().get(0);
 			
-			LOGGER.info("Started loading chr " + sequenceName + " to multipart data");
+			LOGGER.debug("Started loading chr " + sequenceName + " to multipart data");
 			
 			if (samples != null)
 			{
@@ -153,13 +153,13 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 			if (matcher.matches())
 			{
-				LOGGER.info("Adding to multipart data: " + file.getAbsolutePath());
+				LOGGER.debug("Adding to multipart data: " + file.getAbsolutePath());
 				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize));
 			} 
 		}
 		
 		if(genotypeDataSets.isEmpty()){
-			throw new GenotypeDataException("Did not detect any vcf.gz files at:" + vcfFolder.getAbsolutePath());
+			throw new GenotypeDataException("Did not detect any vcf.gz files at: " + vcfFolder.getAbsolutePath());
 		}
 
 		return new MultiPartGenotypeData(genotypeDataSets);

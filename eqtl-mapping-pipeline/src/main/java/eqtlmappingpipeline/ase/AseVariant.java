@@ -140,6 +140,10 @@ public class AseVariant implements Comparable<AseVariant>{
 		}
 		
 	}
+
+	public int getSampleCount() {
+		return a1Counts.size();
+	}
 	
 	
 	

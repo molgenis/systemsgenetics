@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.ase;
 
+import com.google.common.collect.Iterables;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -41,6 +42,7 @@ public class AseResults implements Iterable<AseVariant> {
 
 	@Override
 	public Iterator<AseVariant> iterator() {
+		
 		return new AseResultIterator();
 	}
 
@@ -80,7 +82,7 @@ public class AseResults implements Iterable<AseVariant> {
 
 		@Override
 		public void remove() {
-			throw new UnsupportedOperationException("Not supported ever.");
+			variantIterator.remove();
 		}
 	}
 	
