@@ -97,7 +97,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		}
 
 		if (!tabixIndexFile.isFile()) {
-			throw new TabixFileNotFoundException("VCF tabix file not found at " + tabixIndexFile.getAbsolutePath(), tabixIndexFile.getAbsolutePath());
+			throw new TabixFileNotFoundException(tabixIndexFile.getAbsolutePath(), "VCF tabix file not found at " + tabixIndexFile.getAbsolutePath());
 		}
 
 		if (!tabixIndexFile.canRead()) {
