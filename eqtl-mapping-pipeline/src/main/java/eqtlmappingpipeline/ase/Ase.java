@@ -197,7 +197,7 @@ public class Ase {
 			for (AseVariant aseVariant : aseResults) {
 
 				//This can be multithreaded if needed
-				aseVariant.calculateMetaZscore();
+				aseVariant.calculateMetaZscoreAndPvalue();
 
 				aseVariants[i] = aseVariant;
 				++i;
@@ -213,11 +213,13 @@ public class Ase {
 
 			BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-			outputWriter.append("Meta_Z\tChr\tPos\tSnpId\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
+			outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
 
 
 			for (AseVariant aseVariant : aseVariants) {
 
+				outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
+				outputWriter.append('\t');
 				outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
 				outputWriter.append('\t');
 				outputWriter.append(aseVariant.getChr());
