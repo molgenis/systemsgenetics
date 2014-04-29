@@ -9,10 +9,12 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -98,117 +100,173 @@ public class Ase {
 		startLogging(configuration.getLogFile(), configuration.isDebugMode());
 		configuration.printOptions();
 
-		AseResults aseResults = new AseResults();
-		int sampleCounter = 0;
-		int fileCounter = 0;
+		final AseResults aseResults = new AseResults();
+		final AtomicInteger sampleCounter = new AtomicInteger(0);
+		final AtomicInteger fileCounter = new AtomicInteger(0);
 
-		try {
 
-			for (File inputFile : configuration.getInputFiles()) {
+		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
 
-				//Loading genotype files:
-				GenotypeData genotypeData;
-				if (inputFile.isDirectory()) {
+		int threadCount = configuration.getInputFiles().size() < 8 ? configuration.getInputFiles().size() : 8;
+		List<Thread> threads = new ArrayList<Thread>(threadCount);
+		for (int i = 0; i < threadCount; ++i) {
+
+			Runnable genotypeDataReader = new Runnable() {
+				@Override
+				public void run() {
+
+					int threadFileCount = 0;
 					try {
-						genotypeData = MultiPartGenotypeData.createFromVcfFolder(inputFile, 100);
-					} catch (IncompatibleMultiPartGenotypeDataException ex) {
-						System.err.println("Error reading folder with VCF files: " + ex.getMessage());
-						LOGGER.fatal("Error reading folder with VCF files: ", ex);
+
+						while(inputFileIterator.hasNext()){
+							
+							File inputFile;
+							synchronized(inputFileIterator){
+								if(inputFileIterator.hasNext()){
+									inputFile = inputFileIterator.next();
+								} else {
+									break;
+								}
+							}
+
+							//Loading genotype files:
+							GenotypeData genotypeData;
+							if (inputFile.isDirectory()) {
+								try {
+									genotypeData = MultiPartGenotypeData.createFromVcfFolder(inputFile, 100);
+								} catch (IncompatibleMultiPartGenotypeDataException ex) {
+									System.err.println("Error reading folder with VCF files: " + ex.getMessage());
+									LOGGER.fatal("Error reading folder with VCF files: ", ex);
+									System.exit(1);
+									return;
+								}
+							} else {
+								genotypeData = new VcfGenotypeData(inputFile, 100);
+							}
+
+							//TODO test if VCF contains the read depth field
+
+							for (GeneticVariant variant : genotypeData) {
+
+								//Here we are going to do the ASE part
+
+								//Only if variant contains read depth field
+
+								if (variant.getVariantMeta().getRecordType("AD") == GeneticVariantMeta.Type.INTEGER_LIST) {
+									//include variant
+
+									Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
+
+									for (GenotypeRecord record : variant.getSampleGenotypeRecords()) {
+
+										Sample sample = sampleIterator.next();
+
+										if (!record.containsGenotypeRecord("AD")) {
+											continue;
+										}
+
+										try {
+											Alleles alleles = record.getSampleAlleles();
+											if (alleles.getAlleleCount() != 2 || alleles.get(0) == alleles.get(1)) {
+												continue;
+											}
+
+											List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
+
+											int a1Count = counts.get(0);
+											int a2Count = counts.get(1);
+
+											if (a1Count + a2Count > configuration.getMinTotalReads()
+													&& (a1Count >= configuration.getMinAlleleReads()
+													|| a2Count >= configuration.getMinAlleleReads())) {
+
+												aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
+
+											}
+
+										} catch (GenotypeDataException ex) {
+											System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
+											LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
+											System.exit(1);
+											return;
+										}
+
+
+									}
+
+								}
+
+							}
+
+							fileCounter.incrementAndGet();
+							threadFileCount++;
+
+							genotypeData.close();
+
+							sampleCounter.addAndGet(genotypeData.getSampleNames().length);
+
+						}
+						
+						System.out.println("Thread file procced count " + threadFileCount);
+
+					} catch (IOException ex) {
+						System.err.println("Error reading input data: " + ex.getMessage());
+						LOGGER.fatal("Error reading input data", ex);
+						System.exit(1);
+						return;
+					} catch (GenotypeDataException ex) {
+						System.err.println("Error reading input data: " + ex.getMessage());
+						LOGGER.fatal("Error reading input data", ex);
 						System.exit(1);
 						return;
 					}
-				} else {
-					genotypeData = new VcfGenotypeData(inputFile, 100);
-				}
-
-				//TODO test if VCF contains the read depth field
-
-				for (GeneticVariant variant : genotypeData) {
-					
-					//Here we are going to do the ASE part
-
-					//Only if variant contains read depth field
-
-					if (variant.getVariantMeta().getRecordType("AD") == GeneticVariantMeta.Type.INTEGER_LIST) {
-						//include variant
-
-						Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
-
-						for (GenotypeRecord record : variant.getSampleGenotypeRecords()) {
-
-							Sample sample = sampleIterator.next();
-
-							if (!record.containsGenotypeRecord("AD")) {
-								continue;
-							}
-
-							try {
-								Alleles alleles = record.getSampleAlleles();
-								if(alleles.getAlleleCount() != 2 || alleles.get(0) == alleles.get(1)){
-									continue;
-								}
-								
-								List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
-
-								int a1Count = counts.get(0);
-								int a2Count = counts.get(1);
-
-								if (a1Count + a2Count > configuration.getMinTotalReads()
-										&& (a1Count >= configuration.getMinAlleleReads()
-										|| a2Count >= configuration.getMinAlleleReads())) {
-
-									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
-
-								}
-
-							} catch (GenotypeDataException ex) {
-								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
-								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
-								System.exit(1);
-								return;
-							}
 
 
-						}
-
-					}
 
 				}
+			};
 
-				fileCounter += 1;
-				
-				if(fileCounter % 100 == 0){
-					System.out.println("Loaded "  + fileCounter + " out of " + configuration.getInputFiles().size() + " files");
+			Thread worker = new Thread(genotypeDataReader);
+			worker.start();
+			threads.add(worker);
+
+		}
+
+		int running;
+		int lastCount = 0;
+		do {
+			running = 0;
+			for (Thread thread : threads) {
+				if (thread.isAlive()) {
+					running++;
 				}
-				
-				genotypeData.close();
-				
-				sampleCounter += genotypeData.getSampleNames().length;
-
+			}
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException ex) {
+			}
+			int currentCount = fileCounter.get();
+			
+			if (lastCount != currentCount && currentCount % 100 == 0) {
+				lastCount = currentCount;
+				System.out.println("Loaded " + currentCount + " out of " + configuration.getInputFiles().size() + " files");
 			}
 
-		} catch (IOException ex) {
-			System.err.println("Error reading input data: " + ex.getMessage());
-			LOGGER.fatal("Error reading input data", ex);
-			System.exit(1);
-			return;
-		} catch (GenotypeDataException ex) {
-			System.err.println("Error reading input data: " + ex.getMessage());
-			LOGGER.fatal("Error reading input data", ex);
-			System.exit(1);
-			return;
-		}
-		
+		} while (running > 0);
+
+
+
+
 		LOGGER.info("Loading files complete. " + sampleCounter + " samples encountered");
 		System.out.println("Loading files complete. " + sampleCounter + " samples encountered");
-		
+
 		Iterator<AseVariant> aseIterator = aseResults.iterator();
-		while(aseIterator.hasNext()){
-			if(aseIterator.next().getSampleCount() < configuration.getMinSamples()){
+		while (aseIterator.hasNext()) {
+			if (aseIterator.next().getSampleCount() < configuration.getMinSamples()) {
 				aseIterator.remove();
 			}
 		}
-		
+
 		AseVariant[] aseVariants = new AseVariant[aseResults.getCount()];
 		{
 			int i = 0;
@@ -279,15 +337,15 @@ public class Ase {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param outputFile
 	 * @param aseVariants
 	 * @throws UnsupportedEncodingException
 	 * @throws FileNotFoundException
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	private static void printAseResults(File outputFile, AseVariant[] aseVariants) throws UnsupportedEncodingException, FileNotFoundException, IOException {
-		
+
 		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
 		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
