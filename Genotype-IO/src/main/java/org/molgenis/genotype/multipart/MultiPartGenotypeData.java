@@ -50,7 +50,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		this(new HashSet<RandomAccessGenotypeData>(genotypeDataCollection));
 	}
 
-	public MultiPartGenotypeData(HashSet<RandomAccessGenotypeData> genotypeDataCollection)
+	public MultiPartGenotypeData(Set<RandomAccessGenotypeData> genotypeDataCollection)
 			throws IncompatibleMultiPartGenotypeDataException
 	{
 		
@@ -286,6 +286,9 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 	@Override
 	public void close() throws IOException {
+		for(RandomAccessGenotypeData g : genotypeDataCollection){
+			g.close();
+		}
 	}
 
 	@Override

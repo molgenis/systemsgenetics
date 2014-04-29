@@ -114,8 +114,7 @@ public class AseVariant implements Comparable<AseVariant>{
 		
 		a1Counts.add(a1Count);
 		a2Counts.add(a2Count);
-
-
+		
 	}
 
 	@Override

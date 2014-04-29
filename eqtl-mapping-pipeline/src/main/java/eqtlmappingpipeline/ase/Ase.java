@@ -181,6 +181,8 @@ public class Ase {
 					System.out.println("Loaded "  + fileCounter + " out of " + configuration.getInputFiles().size() + " files");
 				}
 				
+				genotypeData.close();
+				
 				sampleCounter += genotypeData.getSampleNames().length;
 
 			}
