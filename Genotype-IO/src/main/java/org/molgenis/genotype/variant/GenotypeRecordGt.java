@@ -41,5 +41,10 @@ public class GenotypeRecordGt implements GenotypeRecord {
 	public float getSampleDosage() {
 		return Float.NaN;
 	}
+
+	@Override
+	public boolean containsGenotypeRecord(String recordId) {
+		return recordId.equals("GT");
+	}
 	
 }

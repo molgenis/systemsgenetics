@@ -132,4 +132,9 @@ public class VcfGenotypeRecord implements GenotypeRecord
 		//TODO
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
+
+	@Override
+	public boolean containsGenotypeRecord(String recordId) {
+		return vcfRecord.getFormatIndex(recordId) != -1;
+	}
 }

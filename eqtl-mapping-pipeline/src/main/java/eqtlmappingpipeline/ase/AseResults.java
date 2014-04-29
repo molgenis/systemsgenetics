@@ -83,4 +83,14 @@ public class AseResults implements Iterable<AseVariant> {
 			throw new UnsupportedOperationException("Not supported ever.");
 		}
 	}
+	
+	public int getCount(){
+		int count = 0;
+		
+		for(TIntObjectHashMap<AseVariant> chrResults : results.values()){
+			count += chrResults.size();
+		}
+		return count;
+	}
+	
 }

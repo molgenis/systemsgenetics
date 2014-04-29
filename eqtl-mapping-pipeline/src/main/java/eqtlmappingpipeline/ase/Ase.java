@@ -1,19 +1,27 @@
 package eqtlmappingpipeline.ase;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
-import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -27,7 +35,7 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
  */
 public class Ase {
 
-	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
+//	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
 			"  /---------------------------------------\\\n"
 			+ "  |  Allele Specific Expression Mapper    |\n"
@@ -51,7 +59,7 @@ public class Ase {
 
 		System.out.println(HEADER);
 		System.out.println();
-		System.out.println("          --- Version: " + VERSION + " ---");
+//		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
 		System.out.println("More information: http://molgenis.org/systemsgenetics");
 		System.out.println();
@@ -82,7 +90,7 @@ public class Ase {
 			return;
 		}
 
-		if (!configuration.getOutputFolder().mkdirs()) {
+		if (!configuration.getOutputFolder().isDirectory() && !configuration.getOutputFolder().mkdirs()) {
 			System.err.println("Failed to create output folder: " + configuration.getOutputFolder().getAbsolutePath());
 			System.exit(1);
 		}
@@ -90,7 +98,10 @@ public class Ase {
 		startLogging(configuration.getLogFile(), configuration.isDebugMode());
 		configuration.printOptions();
 
-		AseResults aseResuls = new AseResults();
+		System.out.println("In total: " + configuration.getInputFiles().size() + " VCF files or folders will be included");
+		LOGGER.info("In total: " + configuration.getInputFiles().size() + " VCF files or folders will be included");
+
+		AseResults aseResults = new AseResults();
 
 		try {
 
@@ -119,23 +130,43 @@ public class Ase {
 
 					//Only if variant contains read depth field
 
-					if (variant.getVariantMeta().getRecordType("AD") != GeneticVariantMeta.Type.INTEGER_LIST) {
-
+					if (variant.getVariantMeta().getRecordType("AD") == GeneticVariantMeta.Type.INTEGER_LIST) {
 						//include variant
 
+						Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
+
 						for (GenotypeRecord record : variant.getSampleGenotypeRecords()) {
-							
-							List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
-							
-							int a1Count = counts.get(0);
-							int a2Count = counts.get(1);
 
-							if (a1Count + a2Count > configuration.getMinTotalReads()
-									&& (a1Count >= configuration.getMinAlleleReads()
-									|| a2Count >= configuration.getMinAlleleReads())) {
+							Sample sample = sampleIterator.next();
 
-								aseResuls.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
+							if (!record.containsGenotypeRecord("AD")) {
+								continue;
+							}
 
+							try {
+								Alleles alleles = record.getSampleAlleles();
+								if(alleles.getAlleleCount() != 2 || alleles.get(0) == alleles.get(1)){
+									continue;
+								}
+								
+								List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
+
+								int a1Count = counts.get(0);
+								int a2Count = counts.get(1);
+
+								if (a1Count + a2Count > configuration.getMinTotalReads()
+										&& (a1Count >= configuration.getMinAlleleReads()
+										|| a2Count >= configuration.getMinAlleleReads())) {
+
+									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
+
+								}
+
+							} catch (GenotypeDataException ex) {
+								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
+								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
+								System.exit(1);
+								return;
 							}
 
 
@@ -160,11 +191,82 @@ public class Ase {
 			return;
 		}
 
-		for (AseVariant aseVariant : aseResuls) {
+		AseVariant[] aseVariants = new AseVariant[aseResults.getCount()];
+		{
+			int i = 0;
+			for (AseVariant aseVariant : aseResults) {
 
-			aseVariant.calculateMetaZscore();
+				//This can be multithreaded if needed
+				aseVariant.calculateMetaZscore();
 
+				aseVariants[i] = aseVariant;
+				++i;
+
+			}
 		}
+
+
+		Arrays.sort(aseVariants);
+
+		File outputFile = new File(configuration.getOutputFolder(), "result.txt");
+		try {
+
+			BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
+
+			outputWriter.append("Meta_Z\tChr\tPos\tSnpId\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
+
+
+			for (AseVariant aseVariant : aseVariants) {
+
+				outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
+				outputWriter.append('\t');
+				outputWriter.append(aseVariant.getChr());
+				outputWriter.append('\t');
+				outputWriter.append(String.valueOf(aseVariant.getPos()));
+				outputWriter.append('\t');
+				outputWriter.append(aseVariant.getId().getPrimairyId() == null ? "." : aseVariant.getId().getPrimairyId());
+				outputWriter.append('\t');
+				outputWriter.append(aseVariant.getA1().getAlleleAsString());
+				outputWriter.append('\t');
+				outputWriter.append(aseVariant.getA2().getAlleleAsString());
+				outputWriter.append('\t');
+
+				for (int i = 0; i < aseVariant.getA1Counts().size(); ++i) {
+					if (i > 0) {
+						outputWriter.append(',');
+					}
+					outputWriter.append(String.valueOf(aseVariant.getA1Counts().getQuick(i)));
+				}
+				outputWriter.append('\t');
+				for (int i = 0; i < aseVariant.getA2Counts().size(); ++i) {
+					if (i > 0) {
+						outputWriter.append(',');
+					}
+					outputWriter.append(String.valueOf(aseVariant.getA2Counts().getQuick(i)));
+				}
+				outputWriter.append('\n');
+
+			}
+
+
+			outputWriter.close();
+
+		} catch (UnsupportedEncodingException ex) {
+			throw new RuntimeException(ex);
+		} catch (FileNotFoundException ex) {
+			System.err.println("Unable to create output file at " + outputFile.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFile.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		} catch (IOException ex) {
+			System.err.println("Unable to create output file at " + outputFile.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFile.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		}
+
+		System.out.println("Program completed");
+		LOGGER.info("Program completed");
 
 
 	}
@@ -188,7 +290,7 @@ public class Ase {
 
 		LOGGER.info(
 				"\n" + HEADER);
-		LOGGER.info("Version: " + VERSION);
+//		LOGGER.info("Version: " + VERSION);
 		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
 		LOGGER.info("Log level: " + LOGGER.getLevel());
 

@@ -4,7 +4,13 @@
  */
 package eqtlmappingpipeline.ase;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +30,7 @@ public class AseConfiguration {
 
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
+	public static final String ENCODING = "UTF-8";
 	private final List<File> inputFiles;
 	private final File outputFolder;
 	private final int minTotalReads;
@@ -34,15 +41,21 @@ public class AseConfiguration {
 	static {
 
 		LOGGER = Logger.getLogger(AseConfiguration.class);
+		
 
 		OPTIONS = new Options();
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Path to a vcf.gz file or a folder with per chr 1 vcf.gz file. Tabix file must be present");
+		OptionBuilder.withDescription("Paths to one or more vcf.gz files or folders with each per chr 1 vcf.gz file. Tabix file must be present");
 		OptionBuilder.withLongOpt("input");
-		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create('i'));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("One or more text files with on each line a path to a vcf.gz file or a folder with per chr 1 vcf.gz file. Tabix file must be present. Can be combined with --input");
+		OptionBuilder.withLongOpt("inputList");
+		OPTIONS.addOption(OptionBuilder.create('l'));
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
@@ -76,12 +89,44 @@ public class AseConfiguration {
 
 		final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, true);
 
-		String[] inputPaths = commandLine.getOptionValues('i');
-		ArrayList<File> inputFilesTmp = new ArrayList<File>(inputPaths.length);
-
-		for (String inputPath : inputPaths) {
-			inputFilesTmp.add(new File(inputPath));
+		if( !commandLine.hasOption('i') && !commandLine.hasOption('l') ){
+			throw new ParseException("At least --input or --inputList need to be supplied");
 		}
+				
+		ArrayList<File> inputFilesTmp = new ArrayList<File>();
+
+		if(commandLine.hasOption('i')) {
+			String[] inputPaths = commandLine.getOptionValues('i');
+			for (String inputPath : inputPaths) {
+				inputFilesTmp.add(new File(inputPath));
+			}
+		}
+		
+		if(commandLine.hasOption('l')){
+			String[] inputListFilePaths = commandLine.getOptionValues('l');
+			for (String inputListFilePath : inputListFilePaths) {
+				
+				try {
+					BufferedReader inputListFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(inputListFilePath), ENCODING));
+					
+					String line;
+					while( (line = inputListFileReader.readLine()) != null ){
+						inputFilesTmp.add(new File(line));
+					}
+					
+					
+				} catch (FileNotFoundException ex) {
+					throw new ParseException("Could not find file with list of input files: " + inputListFilePath);
+				} catch (UnsupportedEncodingException ex) {
+					throw new RuntimeException("Fatal error", ex);
+				} catch (IOException ex) {
+					throw new ParseException("Error reading list of input files: " + inputListFilePath);
+				}
+				
+				
+			}
+		}
+		
 
 		inputFiles = Collections.unmodifiableList(inputFilesTmp);
 
@@ -109,8 +154,8 @@ public class AseConfiguration {
 	public void printOptions() {
 
 		System.out.println("Interpreted arguments: ");
-		System.out.println(" - Input base path: ");
-		LOGGER.info("Input base path: ");
+		System.out.println(" - Input files or folders: ");
+		LOGGER.info("Input files or folders: ");
 		
 		for(File inputFile : inputFiles){
 			System.out.println("  * " + inputFile.getAbsolutePath());
@@ -130,6 +175,12 @@ public class AseConfiguration {
 
 
 		System.out.println();
+		
+		System.out.flush(); //flush to make sure config is before errors
+		try {
+			Thread.sleep(25); //Allows flush to complete
+		} catch (InterruptedException ex) {
+		}
 
 
 	}

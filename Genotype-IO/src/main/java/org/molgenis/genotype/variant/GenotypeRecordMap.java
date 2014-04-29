@@ -41,6 +41,11 @@ public class GenotypeRecordMap implements GenotypeRecord {
 	public float getSampleDosage() {
 		return (Float) fields.get("DS");
 	}
+
+	@Override
+	public boolean containsGenotypeRecord(String recordId) {
+		return fields.containsKey(recordId);
+	}
 	
 	
 }

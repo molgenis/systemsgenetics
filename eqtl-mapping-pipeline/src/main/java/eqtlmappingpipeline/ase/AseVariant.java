@@ -1,6 +1,5 @@
 package eqtlmappingpipeline.ase;
 
-import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.stat.inference.AlternativeHypothesis;
@@ -12,7 +11,7 @@ import org.molgenis.genotype.variant.id.GeneticVariantId;
  *
  * @author Patrick Deelen
  */
-public class AseVariant {
+public class AseVariant implements Comparable<AseVariant>{
 
 	private final String chr;
 	private final int pos;
@@ -104,4 +103,20 @@ public class AseVariant {
 
 
 	}
+
+	@Override
+	public int compareTo(AseVariant o) {
+		//TODO handle NAN
+		if(this.getMetaZscore() < o.getMetaZscore()){
+			return -1;
+		} else if(this.getMetaZscore() == o.getMetaZscore()){
+			return 0;
+		} else{
+			return 1;
+		}
+		
+	}
+	
+	
+	
 }

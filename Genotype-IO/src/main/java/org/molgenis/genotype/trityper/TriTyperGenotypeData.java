@@ -44,7 +44,6 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.GeneticVariantMetaMap;
 import org.molgenis.genotype.variant.GenotypeRecord;
-import org.molgenis.genotype.variant.GenotypeRecordMap;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariantTriTyper;
 import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
@@ -721,6 +720,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			@Override
 			public float getSampleDosage() {
 				return dosages[i];
+			}
+
+			@Override
+			public boolean containsGenotypeRecord(String recordId) {
+				return recordId.equals("GT") | recordId.equals("DS");
 			}
 		}
 	}

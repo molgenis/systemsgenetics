@@ -13,6 +13,7 @@ import org.molgenis.genotype.Alleles;
 public interface GenotypeRecord {
 	
 	Object getGenotypeRecordData(String recordId);
+	boolean containsGenotypeRecord(String recordId);
 	Alleles getSampleAlleles();
 	float[] getSampleProbs();
 	float getSampleDosage();
