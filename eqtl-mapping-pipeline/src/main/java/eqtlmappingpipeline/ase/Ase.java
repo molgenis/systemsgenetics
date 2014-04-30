@@ -242,7 +242,7 @@ public class Ase {
 				}
 			}
 			try {
-				Thread.sleep(2000);
+				Thread.sleep(500);
 			} catch (InterruptedException ex) {
 			}
 			int currentCount = fileCounter.get();
@@ -361,9 +361,9 @@ public class Ase {
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getPos()));
 			outputWriter.append('\t');
-			outputWriter.append(String.valueOf(aseVariant.getSampleCount()));
-			outputWriter.append('\t');
 			outputWriter.append(aseVariant.getId().getPrimairyId() == null ? "." : aseVariant.getId().getPrimairyId());
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getSampleCount()));
 			outputWriter.append('\t');
 			outputWriter.append(aseVariant.getA1().getAlleleAsString());
 			outputWriter.append('\t');
