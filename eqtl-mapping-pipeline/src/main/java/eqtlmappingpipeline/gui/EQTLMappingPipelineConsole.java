@@ -33,6 +33,7 @@ public class EQTLMappingPipelineConsole {
         
 		if(args[0].equals("--ase")){
 			Ase.main(Arrays.copyOfRange(args, 1, args.length));
+			return;
 		}
 		
 		printHeader();

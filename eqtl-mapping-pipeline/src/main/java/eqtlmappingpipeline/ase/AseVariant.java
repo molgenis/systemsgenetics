@@ -119,23 +119,16 @@ public class AseVariant implements Comparable<AseVariant>{
 
 	@Override
 	public int compareTo(AseVariant o) {
-				
-		if(Double.isNaN(this.getMetaPvalue())){
-			if (Double.isNaN(o.getMetaPvalue())){
-				return 0;
-			} else {
-				return 1;
-			}
-		} else if(Double.isNaN(o.getMetaPvalue())){
-			return -1;
-		}
+			
+		double thisZ = Math.abs(this.getMetaZscore());
+		double otherZ = Math.abs(o.getMetaZscore());
 		
-		if(this.getMetaPvalue() < o.getMetaPvalue()){
-			return -1;
-		} else if(this.getMetaPvalue() == o.getMetaPvalue()){
+		if(thisZ < otherZ){
+			return 1;
+		} else if(thisZ == otherZ){
 			return 0;
 		} else{
-			return 1;
+			return -1;
 		}
 		
 	}

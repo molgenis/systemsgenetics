@@ -20,16 +20,9 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
-import org.molgenis.genotype.Alleles;
-import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
-import org.molgenis.genotype.multipart.MultiPartGenotypeData;
-import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.genotype.variant.GeneticVariantMeta;
-import org.molgenis.genotype.variant.GenotypeRecord;
-import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 /**
  *
@@ -103,137 +96,45 @@ public class Ase {
 		final AseResults aseResults = new AseResults();
 		final AtomicInteger sampleCounter = new AtomicInteger(0);
 		final AtomicInteger fileCounter = new AtomicInteger(0);
+		final RandomAccessGenotypeData referenceGenotypes;
 
+		if (configuration.isRefSet()) {
+			try {
+				referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), 0);
+			} catch (IOException ex) {
+				System.err.println("Unable to load reference genotypes file.");
+				LOGGER.fatal("Unable to load reference genotypes file.", ex);
+				System.exit(1);
+				return;
+			} catch (IncompatibleMultiPartGenotypeDataException ex) {
+				System.err.println("Unable to load reference genotypes file.");
+				LOGGER.fatal("Unable to load reference genotypes file.", ex);
+				System.exit(1);
+				return;
+			} catch (GenotypeDataException ex) {
+				System.err.println("Unable to load reference genotypes file.");
+				LOGGER.fatal("Unable to load reference genotypes file.", ex);
+				System.exit(1);
+				return;
+			}
+		} else {
+			referenceGenotypes = null;
+		}
 
 		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
 
-		int threadCount = configuration.getInputFiles().size() < 8 ? configuration.getInputFiles().size() : 8;
+		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
 		List<Thread> threads = new ArrayList<Thread>(threadCount);
 		for (int i = 0; i < threadCount; ++i) {
 
-			Runnable genotypeDataReader = new Runnable() {
-				@Override
-				public void run() {
-
-					int threadFileCount = 0;
-					try {
-
-						while(inputFileIterator.hasNext()){
-							
-							File inputFile;
-							synchronized(inputFileIterator){
-								if(inputFileIterator.hasNext()){
-									inputFile = inputFileIterator.next();
-								} else {
-									break;
-								}
-							}
-
-							//Loading genotype files:
-							GenotypeData genotypeData;
-							if (inputFile.isDirectory()) {
-								try {
-									genotypeData = MultiPartGenotypeData.createFromVcfFolder(inputFile, 100);
-								} catch (IncompatibleMultiPartGenotypeDataException ex) {
-									System.err.println("Error reading folder with VCF files: " + ex.getMessage());
-									LOGGER.fatal("Error reading folder with VCF files: ", ex);
-									System.exit(1);
-									return;
-								}
-							} else {
-								genotypeData = new VcfGenotypeData(inputFile, 100);
-							}
-
-							//TODO test if VCF contains the read depth field
-
-							for (GeneticVariant variant : genotypeData) {
-
-								//Here we are going to do the ASE part
-
-								//Only if variant contains read depth field
-
-								if (variant.getVariantMeta().getRecordType("AD") == GeneticVariantMeta.Type.INTEGER_LIST) {
-									//include variant
-
-									Iterator<Sample> sampleIterator = genotypeData.getSamples().iterator();
-
-									for (GenotypeRecord record : variant.getSampleGenotypeRecords()) {
-
-										Sample sample = sampleIterator.next();
-
-										if (!record.containsGenotypeRecord("AD")) {
-											continue;
-										}
-
-										try {
-											Alleles alleles = record.getSampleAlleles();
-											if (alleles.getAlleleCount() != 2 || alleles.get(0) == alleles.get(1)) {
-												continue;
-											}
-
-											List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
-
-											int a1Count = counts.get(0);
-											int a2Count = counts.get(1);
-
-											if (a1Count + a2Count > configuration.getMinTotalReads()
-													&& (a1Count >= configuration.getMinAlleleReads()
-													|| a2Count >= configuration.getMinAlleleReads())) {
-
-												aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
-
-											}
-
-										} catch (GenotypeDataException ex) {
-											System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
-											LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
-											System.exit(1);
-											return;
-										}
-
-
-									}
-
-								}
-
-							}
-
-							fileCounter.incrementAndGet();
-							threadFileCount++;
-
-							genotypeData.close();
-
-							sampleCounter.addAndGet(genotypeData.getSampleNames().length);
-
-						}
-						
-						System.out.println("Thread file procced count " + threadFileCount);
-
-					} catch (IOException ex) {
-						System.err.println("Error reading input data: " + ex.getMessage());
-						LOGGER.fatal("Error reading input data", ex);
-						System.exit(1);
-						return;
-					} catch (GenotypeDataException ex) {
-						System.err.println("Error reading input data: " + ex.getMessage());
-						LOGGER.fatal("Error reading input data", ex);
-						System.exit(1);
-						return;
-					}
-
-
-
-				}
-			};
-
-			Thread worker = new Thread(genotypeDataReader);
+			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes));
 			worker.start();
 			threads.add(worker);
 
 		}
 
 		int running;
-		int lastCount = 0;
+		int nextReport = 100;
 		do {
 			running = 0;
 			for (Thread thread : threads) {
@@ -246,10 +147,11 @@ public class Ase {
 			} catch (InterruptedException ex) {
 			}
 			int currentCount = fileCounter.get();
-			
-			if (lastCount != currentCount && currentCount % 100 == 0) {
-				lastCount = currentCount;
-				System.out.println("Loaded " + currentCount + " out of " + configuration.getInputFiles().size() + " files");
+
+			if (currentCount > nextReport) {
+				//sometimes we skiped over report because of timing. This solved this
+				System.out.println("Loaded " + nextReport + " out of " + configuration.getInputFiles().size() + " files");
+				nextReport += 100;
 			}
 
 		} while (running > 0);
@@ -257,8 +159,8 @@ public class Ase {
 
 
 
-		LOGGER.info("Loading files complete. " + sampleCounter + " samples encountered");
-		System.out.println("Loading files complete. " + sampleCounter + " samples encountered");
+		LOGGER.info("Loading files complete.");
+		System.out.println("Loading files complete.");
 
 		Iterator<AseVariant> aseIterator = aseResults.iterator();
 		while (aseIterator.hasNext()) {
@@ -281,24 +183,50 @@ public class Ase {
 			}
 		}
 
+		int numberOfTests = aseVariants.length;
+		double bonferroniCutoff = 0.05 / numberOfTests;
+		System.out.println("Performed " + numberOfTests + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+		LOGGER.info("Performed " + numberOfTests + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+
 
 		Arrays.sort(aseVariants);
 
-		File outputFile = new File(configuration.getOutputFolder(), "result.txt");
+		File outputFileAll = new File(configuration.getOutputFolder(), "ase.txt");
 		try {
 
-			printAseResults(outputFile, aseVariants);
+			//print all restuls
+			printAseResults(outputFileAll, aseVariants);
 
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
 		} catch (FileNotFoundException ex) {
-			System.err.println("Unable to create output file at " + outputFile.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFile.getAbsolutePath(), ex);
+			System.err.println("Unable to create output file at " + outputFileAll.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFileAll.getAbsolutePath(), ex);
 			System.exit(1);
 			return;
 		} catch (IOException ex) {
-			System.err.println("Unable to create output file at " + outputFile.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFile.getAbsolutePath(), ex);
+			System.err.println("Unable to create output file at " + outputFileAll.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFileAll.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		}
+
+		File outputFileBonferroni = new File(configuration.getOutputFolder(), "ase_bonferroni.txt");
+		try {
+
+			//print bonferroni significant restuls
+			printAseResults(outputFileBonferroni, aseVariants, bonferroniCutoff);
+
+		} catch (UnsupportedEncodingException ex) {
+			throw new RuntimeException(ex);
+		} catch (FileNotFoundException ex) {
+			System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		} catch (IOException ex) {
+			System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
 			System.exit(1);
 			return;
 		}
@@ -345,6 +273,17 @@ public class Ase {
 	 * @throws IOException
 	 */
 	private static void printAseResults(File outputFile, AseVariant[] aseVariants) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		printAseResults(outputFile, aseVariants, 1);
+	}
+
+	/**
+	 *
+	 * @param outputFile
+	 * @throws UnsupportedEncodingException
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	private static void printAseResults(File outputFile, AseVariant[] aseVariants, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 
 		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
@@ -352,6 +291,10 @@ public class Ase {
 
 
 		for (AseVariant aseVariant : aseVariants) {
+
+			if (aseVariant.getMetaPvalue() > maxPvalue) {
+				continue;
+			}
 
 			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
 			outputWriter.append('\t');
