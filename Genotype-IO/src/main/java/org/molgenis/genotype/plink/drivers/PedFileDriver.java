@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -14,7 +15,6 @@ import java.util.StringTokenizer;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.plink.PlinkFileParser;
 import org.molgenis.genotype.plink.datatypes.PedEntry;
-import org.molgenis.util.TextFileUtils;
 
 /**
  * Driver to query PED files. A PED file contains family- and genotyping data
@@ -167,7 +167,7 @@ public class PedFileDriver implements PlinkFileParser, Iterable<PedEntry>
 
 	public long getNrOfElements() throws IOException
 	{
-		if (nrElements == -1) nrElements = TextFileUtils.getNumberOfNonEmptyLines(file, FILE_ENCODING);
+		if (nrElements == -1) nrElements = getNumberOfNonEmptyLines(file, FILE_ENCODING);
 		return nrElements;
 	}
 
@@ -181,6 +181,23 @@ public class PedFileDriver implements PlinkFileParser, Iterable<PedEntry>
 	{
 		if (this.reader != null) close();
 		this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), FILE_ENCODING));
+	}
+	
+	private static int getNumberOfNonEmptyLines(File file, Charset charset) throws IOException
+	{
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset));
+		try
+		{
+			int count = 0;
+			String line;
+			while ((line = reader.readLine()) != null)
+				if (!line.isEmpty()) ++count;
+			return count;
+		}
+		finally
+		{
+			reader.close();
+		}
 	}
 
 	private class PedFileIterator implements Iterator<PedEntry>
