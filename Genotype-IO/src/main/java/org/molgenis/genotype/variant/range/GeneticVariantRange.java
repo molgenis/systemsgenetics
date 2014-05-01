@@ -161,6 +161,10 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 	public List<GeneticVariant> getAllVrariantsInRange() {
 		return variants;
 	}
+	
+	public int size(){
+		return variants.size();
+	}
 
 	@Override
 	public Iterator<GeneticVariant> iterator() {
