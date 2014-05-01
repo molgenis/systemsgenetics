@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -12,7 +13,6 @@ import java.util.StringTokenizer;
 
 import org.molgenis.genotype.plink.PlinkFileParser;
 import org.molgenis.genotype.plink.datatypes.MapEntry;
-import org.molgenis.util.TextFileUtils;
 
 /**
  * Driver to query MAP files. By default, each line of the MAP file describes a
@@ -118,7 +118,7 @@ public class MapFileDriver implements PlinkFileParser
 
 	public long getNrOfElements() throws IOException
 	{
-		if (nrElements == -1) nrElements = TextFileUtils.getNumberOfNonEmptyLines(file, FILE_ENCODING);
+		if (nrElements == -1) nrElements = getNumberOfNonEmptyLines(file, FILE_ENCODING);
 		return nrElements;
 	}
 
@@ -132,6 +132,23 @@ public class MapFileDriver implements PlinkFileParser
 	{
 		if (this.reader != null) close();
 		this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), FILE_ENCODING));
+	}
+	
+	private static int getNumberOfNonEmptyLines(File file, Charset charset) throws IOException
+	{
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset));
+		try
+		{
+			int count = 0;
+			String line;
+			while ((line = reader.readLine()) != null)
+				if (!line.isEmpty()) ++count;
+			return count;
+		}
+		finally
+		{
+			reader.close();
+		}
 	}
 
 }
