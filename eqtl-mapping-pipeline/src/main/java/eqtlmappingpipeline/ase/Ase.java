@@ -1,5 +1,6 @@
 package eqtlmappingpipeline.ase;
 
+import eqtlmappingpipeline.Main;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,7 +31,7 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
  */
 public class Ase {
 
-//	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
+	private static final String VERSION = Main.VERSION;
 	private static final String HEADER =
 			"  /---------------------------------------\\\n"
 			+ "  |  Allele Specific Expression Mapper    |\n"
@@ -54,7 +55,7 @@ public class Ase {
 
 		System.out.println(HEADER);
 		System.out.println();
-//		System.out.println("          --- Version: " + VERSION + " ---");
+		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
 		System.out.println("More information: http://molgenis.org/systemsgenetics");
 		System.out.println();
@@ -258,7 +259,7 @@ public class Ase {
 
 		LOGGER.info(
 				"\n" + HEADER);
-//		LOGGER.info("Version: " + VERSION);
+		LOGGER.info("Version: " + VERSION);
 		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
 		LOGGER.info("Log level: " + LOGGER.getLevel());
 
