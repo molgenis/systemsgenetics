@@ -100,7 +100,9 @@ public class Ase {
 
 		if (configuration.isRefSet()) {
 			try {
-				referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), 0);
+				referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), configuration.getRefDataCacheSize());
+				System.out.println("Loading reference data complete");
+				LOGGER.info("Loading reference data complete");
 			} catch (IOException ex) {
 				System.err.println("Unable to load reference genotypes file.");
 				LOGGER.fatal("Unable to load reference genotypes file.", ex);

@@ -132,7 +132,7 @@ public class ReadCountsLoader implements Runnable {
 
 											GeneticVariant referenceVariant = genotypeReference.getSnpVariantByPos(variant.getSequenceName(), variant.getStartPos());
 											if(referenceVariant == null){
-												LOGGER.debug("Variant not found in reference " + variant.getSequenceName() + ":" + variant.getStartPos());
+												//LOGGER.debug("Variant not found in reference " + variant.getSequenceName() + ":" + variant.getStartPos());
 												continue;
 											}
 

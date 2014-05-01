@@ -43,6 +43,7 @@ public class AseConfiguration {
 	private final int threads;
 	private final String[] refBasePaths;
 	private final RandomAccessGenotypeDataReaderFormats refDataType;
+	private final int refDataCacheSize;
 
 	static {
 
@@ -115,6 +116,12 @@ public class AseConfiguration {
 				+ "* TRITYPER - TriTyper format folder");
 		OptionBuilder.withLongOpt("genotypesType");
 		OPTIONS.addOption(OptionBuilder.create("G"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Reference genotype data cache. Trade memory usage for speed");
+		OptionBuilder.withLongOpt("cache");
+		OPTIONS.addOption(OptionBuilder.create("c"));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
@@ -202,6 +209,17 @@ public class AseConfiguration {
 			threads = availCores;
 		}
 		
+		
+		if (commandLine.hasOption('c')) {
+			try {
+				refDataCacheSize = Integer.parseInt(commandLine.getOptionValue('c'));
+			} catch (NumberFormatException e) {
+				throw new ParseException("Error parsing --cache \"" + commandLine.getOptionValue('c') + "\" is not an int");
+			}
+		} else {
+			refDataCacheSize = 1000;
+		}
+		
 		if (commandLine.hasOption('g')){
 			refBasePaths = commandLine.getOptionValues('g');
 			try {
@@ -226,7 +244,7 @@ public class AseConfiguration {
 		}
 
 
-		debugMode = !commandLine.hasOption('d');
+		debugMode = commandLine.hasOption('d');
 
 
 	}
@@ -259,9 +277,13 @@ public class AseConfiguration {
 		
 		if(isRefSet()){
 			System.out.print(" - Reference genotypes " + refDataType.getName() + ":");
+			LOGGER.info("Reference genotypes " + refDataType.getName() + ":");
 			for(String path : refBasePaths){
 				System.out.print(" " + path);
+				LOGGER.info(" " + path);
 			}
+			System.out.println(" - Reference genotype cache size: " + refDataCacheSize);
+			LOGGER.info("Reference genotype cache size: " + refDataCacheSize);
 		}
 
 		LOGGER.debug("Debug mode activated");
@@ -324,6 +346,10 @@ public class AseConfiguration {
 	
 	public boolean isRefSet(){
 		return refBasePaths != null;
+	}
+
+	public int getRefDataCacheSize() {
+		return refDataCacheSize;
 	}
 	
 }
