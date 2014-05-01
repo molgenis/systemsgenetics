@@ -256,6 +256,13 @@ public class AseConfiguration {
 		
 		System.out.println(" - Number of threads to use: " + threads);
 		LOGGER.info("Number of threads to use: " + threads);
+		
+		if(isRefSet()){
+			System.out.print(" - Reference genotypes " + refDataType.getName() + ":");
+			for(String path : refBasePaths){
+				System.out.print(" " + path);
+			}
+		}
 
 		LOGGER.debug("Debug mode activated");
 
