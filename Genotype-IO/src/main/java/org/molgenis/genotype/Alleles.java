@@ -207,7 +207,15 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	@Override
 	public String toString()
 	{
-		return "VariantAlleles [alleles=" + getAllelesAsString() + ", snp=" + snp + "]";
+		StringBuilder s = new StringBuilder(3);
+		
+		s.append(allelesAsString.get(0));
+		for(int i = 1 ; i < alleles.size() ; ++i){
+			s.append('\\');
+			s.append(allelesAsString.get(i));
+		}
+		
+		return s.toString();
 	}
 
 	/**
@@ -243,7 +251,7 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		{
 			return false;
 		}
-		return this.alleles.containsAll(other.alleles);
+		return this.alleles.containsAll(other.alleles) && other.alleles.containsAll(this.alleles);
 	}
 
 	public boolean isAtOrGcSnp()
@@ -362,5 +370,6 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		return Alleles.createAlleles(new ArrayList<Allele>(uniqueAlleles));
 
 	}
+	
 
 }
