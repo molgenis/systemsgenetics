@@ -93,7 +93,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		}
 
 		if (!bzipVcfFile.canRead()) {
-			throw new IOException("Cannot read VCF file at: " + bzipVcfFile.getAbsolutePath());
+			throw new IOException("Cannot access VCF file at: " + bzipVcfFile.getAbsolutePath());
 		}
 
 		if (!tabixIndexFile.isFile()) {

@@ -6,12 +6,13 @@ package umcg.genetica.io.gtf;
 
 import java.util.Collections;
 import java.util.Map;
+import umcg.genetica.variantAnnotator.GenomicRange;
 
 /**
  *
  * @author Patrick Deelen
  */
-public class GffElement {
+public class GffElement implements GenomicRange{
 	
 	//http://mblab.wustl.edu/GTF22.html
 	
@@ -72,6 +73,7 @@ public class GffElement {
 		this.attributes = Collections.unmodifiableMap(attributes);
 	}
 
+	@Override
 	public String getSeqname() {
 		return seqname;
 	}
@@ -84,10 +86,12 @@ public class GffElement {
 		return feature;
 	}
 
+	@Override
 	public int getStart() {
 		return start;
 	}
 
+	@Override
 	public int getEnd() {
 		return end;
 	}

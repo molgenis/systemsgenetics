@@ -282,6 +282,7 @@ public class AseConfiguration {
 				System.out.print(" " + path);
 				LOGGER.info(" " + path);
 			}
+			System.out.println();
 			System.out.println(" - Reference genotype cache size: " + refDataCacheSize);
 			LOGGER.info("Reference genotype cache size: " + refDataCacheSize);
 		}

@@ -178,7 +178,7 @@ public class Ase {
 			for (AseVariant aseVariant : aseResults) {
 
 				//This can be made multithreaded if needed
-				aseVariant.calculateMetaZscoreAndPvalue();
+				aseVariant.calculateStatistics();
 
 				aseVariants[i] = aseVariant;
 				++i;
@@ -217,7 +217,7 @@ public class Ase {
 		File outputFileBonferroni = new File(configuration.getOutputFolder(), "ase_bonferroni.txt");
 		try {
 
-			//print bonferroni significant restuls
+			//print bonferroni significant results
 			printAseResults(outputFileBonferroni, aseVariants, bonferroniCutoff);
 
 		} catch (UnsupportedEncodingException ex) {
@@ -230,6 +230,26 @@ public class Ase {
 		} catch (IOException ex) {
 			System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
 			LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		}
+		
+		File outputFileBonferroniNonNegativeCountR = new File(configuration.getOutputFolder(), "ase_bonferroni_noNegativeCountR.txt");
+		try {
+
+			//print bonferroni significant results without negative count R
+			printAseResults(outputFileBonferroniNonNegativeCountR, aseVariants, bonferroniCutoff, true);
+
+		} catch (UnsupportedEncodingException ex) {
+			throw new RuntimeException(ex);
+		} catch (FileNotFoundException ex) {
+			System.err.println("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		} catch (IOException ex) {
+			System.err.println("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath());
+			LOGGER.fatal("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath(), ex);
 			System.exit(1);
 			return;
 		}
@@ -287,15 +307,25 @@ public class Ase {
 	 * @throws IOException
 	 */
 	private static void printAseResults(File outputFile, AseVariant[] aseVariants, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		
+		printAseResults(outputFile, aseVariants, maxPvalue, false);
+		
+	}
+
+	private static void printAseResults(File outputFile, AseVariant[] aseVariants, double maxPvalue, boolean excludeNegativeCountR) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 
 		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tRef_Counts\tAlt_Counts\n");
+		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tRef_Counts\tAlt_Counts\n");
 
 
 		for (AseVariant aseVariant : aseVariants) {
 
 			if (aseVariant.getMetaPvalue() > maxPvalue) {
+				continue;
+			}
+
+			if (excludeNegativeCountR && aseVariant.getCountPearsonR() < 0) {
 				continue;
 			}
 
@@ -314,6 +344,9 @@ public class Ase {
 			outputWriter.append(aseVariant.getA1().getAlleleAsString());
 			outputWriter.append('\t');
 			outputWriter.append(aseVariant.getA2().getAlleleAsString());
+			outputWriter.append('\t');
+
+			outputWriter.append(String.valueOf(aseVariant.getCountPearsonR()));
 			outputWriter.append('\t');
 
 			for (int i = 0; i < aseVariant.getA1Counts().size(); ++i) {
@@ -335,5 +368,6 @@ public class Ase {
 
 
 		outputWriter.close();
+
 	}
 }
