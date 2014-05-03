@@ -443,24 +443,23 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public void saveLowMemory(String fileName) throws IOException {
 		TextFile out = new TextFile(fileName, TextFile.W);
 
-		ArrayList<C> colObjects = new ArrayList<C>(hashCols.keySet());
-		ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
-
 		out.append('-');
-		for (int s = 0; s < matrix.columns(); s++) {
+		for(C col : hashCols.keySet()){
 			out.append('\t');
-			out.append(colObjects.get(s).toString());
+			out.append(col.toString());
 		}
 		out.append('\n');
 
-		for (int r = 0; r < matrix.rows(); r++) {
-			out.append(rowObjects.get(r).toString());
+		int r = 0;		
+		for(R row : hashRows.keySet()){
+			out.append(row.toString());
 			DoubleMatrix1D rowInfo = getMatrix().viewRow(r);
 			for (int s = 0; s < rowInfo.size(); s++) {
 				out.append('\t');
 				out.append(String.valueOf(rowInfo.get(s)));
 			}
 			out.append('\n');
+			++r;
 		}
 		out.close();
 	}
@@ -468,25 +467,24 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public void save(String fileName) throws IOException {
 		TextFile out = new TextFile(fileName, TextFile.W);
 
-		ArrayList<C> colObjects = new ArrayList<C>(hashCols.keySet());
-		ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
-
 		out.append('-');
-		for (int s = 0; s < getMatrix().columns(); s++) {
+		for(C col : hashCols.keySet()){
 			out.append('\t');
-			out.append(colObjects.get(s).toString());
+			out.append(col.toString());
 		}
 		out.append('\n');
 		double[][] rawData = getMatrix().toArray();
 
-		for (int p = 0; p < rawData.length; p++) {
-			out.append(rowObjects.get(p).toString());
+		int r = 0;		
+		for(R row : hashRows.keySet()){
+			out.append(row.toString());
 
-			for (int s = 0; s < rawData[p].length; s++) {
+			for (int s = 0; s < rawData[r].length; s++) {
 				out.append('\t');
-				out.append(String.valueOf(rawData[p][s]));
+				out.append(String.valueOf(rawData[r][s]));
 			}
 			out.append('\n');
+			++r;
 		}
 		out.close();
 	}
