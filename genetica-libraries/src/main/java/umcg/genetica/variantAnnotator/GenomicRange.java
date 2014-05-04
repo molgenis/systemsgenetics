@@ -4,14 +4,14 @@
  */
 package umcg.genetica.variantAnnotator;
 
+import umcg.genetica.collections.intervaltree.Range;
+
 /**
  *
  * @author Patrick Deelen
  */
-public interface GenomicRange {
+public interface GenomicRange extends Range{
 	
 	String getSeqname();
-	int getStart();
-	int getEnd();
 	
 }
