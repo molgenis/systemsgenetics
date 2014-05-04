@@ -127,7 +127,7 @@ public class AseConfiguration {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Optional .gtf file for annotations of ASE effects. Must be sorded by chromosome");
+		OptionBuilder.withDescription("Optional .gtf file for annotations of ASE effects. Must be grouped by chromosome");
 		OptionBuilder.withLongOpt("gtf");
 		OPTIONS.addOption(OptionBuilder.create("f"));
 
@@ -275,8 +275,6 @@ public class AseConfiguration {
 		}
 
 		debugMode = commandLine.hasOption('d');
-		System.out.println("debug mode: " + debugMode);
-
 
 	}
 
@@ -285,7 +283,7 @@ public class AseConfiguration {
 		System.out.println("Interpreted arguments: ");
 
 
-		System.out.println(" - Input files or folders (" + inputFiles.size() + " in total): ");
+		System.out.println(" - Input files or folders (" + Ase.DEFAULT_NUMBER_FORMATTER.format(inputFiles.size()) + " in total): ");
 		if (inputFiles.size() > 5) {
 			System.out.println("  * Reading more than 5 files. See log file for list.");
 		} else {
@@ -294,7 +292,7 @@ public class AseConfiguration {
 			}
 		}
 
-		LOGGER.info("Input files or folders (" + inputFiles.size() + " in total): ");
+		LOGGER.info("Input files or folders (" + Ase.DEFAULT_NUMBER_FORMATTER.format(inputFiles.size()) + " in total): ");
 		for (File inputFile : inputFiles) {
 			LOGGER.info(" * " + inputFile.getAbsolutePath());
 		}
@@ -327,8 +325,8 @@ public class AseConfiguration {
 				LOGGER.info(" " + path);
 			}
 			System.out.println();
-			System.out.println(" - Reference genotype cache size: " + refDataCacheSize);
-			LOGGER.info("Reference genotype cache size: " + refDataCacheSize);
+			System.out.println(" - Reference genotype cache size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(refDataCacheSize));
+			LOGGER.info("Reference genotype cache size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(refDataCacheSize));
 		}
 
 		if (isGtfSet()) {

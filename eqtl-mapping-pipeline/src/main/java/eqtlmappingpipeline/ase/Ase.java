@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +55,8 @@ public class Ase {
 	private static final Logger LOGGER = Logger.getLogger(Ase.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
+	
+	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
 	public static void main(String[] args) {
 
@@ -166,15 +169,15 @@ public class Ase {
 
 			if (currentCount > nextReport) {
 				//sometimes we skiped over report because of timing. This solved this
-				System.out.println("Loaded " + nextReport + " out of " + configuration.getInputFiles().size() + " files");
+				System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(nextReport) + " out of " + DEFAULT_NUMBER_FORMATTER.format(configuration.getInputFiles().size()) + " files");
 				nextReport += 100;
 			}
 
 		} while (running > 0);
 
 
-		LOGGER.info("Loading files complete.");
-		System.out.println("Loading files complete.");
+		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
+		System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
 
 		Iterator<AseVariant> aseIterator = aseResults.iterator();
 		while (aseIterator.hasNext()) {
@@ -199,8 +202,8 @@ public class Ase {
 
 		int numberOfTests = aseVariants.length;
 		double bonferroniCutoff = 0.05 / numberOfTests;
-		System.out.println("Performed " + numberOfTests + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
-		LOGGER.info("Performed " + numberOfTests + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+		System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+		LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
 
 
 		Arrays.sort(aseVariants);
@@ -210,8 +213,8 @@ public class Ase {
 			try {
 				System.out.println("Started loading GTF file.");
 				gtfAnnotations = new GtfReader(configuration.getGtf()).createIntervalTree();
-				System.out.println("Loaded " + gtfAnnotations.size() + " annotations from GTF file.");
-				LOGGER.info("Loaded " + gtfAnnotations.size() + " annotations from GTF file.");
+				System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(gtfAnnotations.size()) + " annotations from GTF file.");
+				LOGGER.info("Loaded " + DEFAULT_NUMBER_FORMATTER.format(gtfAnnotations.size()) + " annotations from GTF file.");
 			} catch (FileNotFoundException ex) {
 				System.err.println("Cannot read GENCODE gft file.");
 				LOGGER.fatal("Cannot read GENCODE gft file", ex);
@@ -295,7 +298,7 @@ public class Ase {
 	}
 
 	private static void startLogging(File logFile, boolean debugMode) {
-		System.out.println("debug mode2 " + debugMode);
+		
 		try {
 			FileAppender logAppender = new FileAppender(new SimpleLayout(), logFile.getCanonicalPath(), false);
 			Logger.getRootLogger().removeAllAppenders();
