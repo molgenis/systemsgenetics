@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +25,9 @@ import org.apache.log4j.SimpleLayout;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
+import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
+import umcg.genetica.io.gtf.GffElement;
+import umcg.genetica.io.gtf.GtfReader;
 
 /**
  *
@@ -124,6 +128,15 @@ public class Ase {
 			referenceGenotypes = null;
 		}
 
+		if (configuration.isGtfSet()) {
+			if (!configuration.getGtf().canRead()) {
+				System.err.println("Cannot read GENCODE gft file.");
+				LOGGER.fatal("Cannot read GENCODE gft file");
+				System.exit(1);
+				return;
+			}
+		}
+		
 		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
 
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
@@ -160,8 +173,6 @@ public class Ase {
 		} while (running > 0);
 
 
-
-
 		LOGGER.info("Loading files complete.");
 		System.out.println("Loading files complete.");
 
@@ -194,11 +205,34 @@ public class Ase {
 
 		Arrays.sort(aseVariants);
 
+		final PerChrIntervalTree<GffElement> gtfAnnotations;
+		if (configuration.isGtfSet()) {
+			try {
+				System.out.println("Started loading GTF file.");
+				gtfAnnotations = new GtfReader(configuration.getGtf()).createIntervalTree();
+				System.out.println("Loaded " + gtfAnnotations.size() + " annotations from GTF file.");
+				LOGGER.info("Loaded " + gtfAnnotations.size() + " annotations from GTF file.");
+			} catch (FileNotFoundException ex) {
+				System.err.println("Cannot read GENCODE gft file.");
+				LOGGER.fatal("Cannot read GENCODE gft file", ex);
+				System.exit(1);
+				return;
+			} catch (Exception ex) {
+				System.err.println("Cannot read GENCODE gft file. Error: " + ex.getMessage());
+				LOGGER.fatal("Cannot read GENCODE gft file", ex);
+				System.exit(1);
+				return;
+			}
+		} else {
+			gtfAnnotations = null;
+		}
+
+
 		File outputFileAll = new File(configuration.getOutputFolder(), "ase.txt");
 		try {
 
 			//print all restuls
-			printAseResults(outputFileAll, aseVariants);
+			printAseResults(outputFileAll, aseVariants, gtfAnnotations);
 
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
@@ -218,7 +252,7 @@ public class Ase {
 		try {
 
 			//print bonferroni significant results
-			printAseResults(outputFileBonferroni, aseVariants, bonferroniCutoff);
+			printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, bonferroniCutoff);
 
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
@@ -233,12 +267,12 @@ public class Ase {
 			System.exit(1);
 			return;
 		}
-		
+
 		File outputFileBonferroniNonNegativeCountR = new File(configuration.getOutputFolder(), "ase_bonferroni_noNegativeCountR.txt");
 		try {
 
 			//print bonferroni significant results without negative count R
-			printAseResults(outputFileBonferroniNonNegativeCountR, aseVariants, bonferroniCutoff, true);
+			printAseResults(outputFileBonferroniNonNegativeCountR, aseVariants, gtfAnnotations, bonferroniCutoff, true);
 
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
@@ -261,6 +295,7 @@ public class Ase {
 	}
 
 	private static void startLogging(File logFile, boolean debugMode) {
+		System.out.println("debug mode2 " + debugMode);
 		try {
 			FileAppender logAppender = new FileAppender(new SimpleLayout(), logFile.getCanonicalPath(), false);
 			Logger.getRootLogger().removeAllAppenders();
@@ -274,8 +309,6 @@ public class Ase {
 			System.err.println("Failed to create logger: " + e.getMessage());
 			System.exit(1);
 		}
-
-
 
 		LOGGER.info(
 				"\n" + HEADER);
@@ -295,8 +328,8 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static void printAseResults(File outputFile, AseVariant[] aseVariants) throws UnsupportedEncodingException, FileNotFoundException, IOException {
-		printAseResults(outputFile, aseVariants, 1);
+	private static void printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		printAseResults(outputFile, aseVariants, gtfAnnotations, 1);
 	}
 
 	/**
@@ -306,19 +339,19 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static void printAseResults(File outputFile, AseVariant[] aseVariants, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
-		
-		printAseResults(outputFile, aseVariants, maxPvalue, false);
-		
+	private static void printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+
+		printAseResults(outputFile, aseVariants, gtfAnnotations, maxPvalue, false);
+
 	}
 
-	private static void printAseResults(File outputFile, AseVariant[] aseVariants, double maxPvalue, boolean excludeNegativeCountR) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+	private static void printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue, boolean excludeNegativeCountR) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 
 		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tRef_Counts\tAlt_Counts\n");
+		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\n");
 
-
+		HashSet<String> genesPrinted = new HashSet<String>();
 		for (AseVariant aseVariant : aseVariants) {
 
 			if (aseVariant.getMetaPvalue() > maxPvalue) {
@@ -347,6 +380,35 @@ public class Ase {
 			outputWriter.append('\t');
 
 			outputWriter.append(String.valueOf(aseVariant.getCountPearsonR()));
+			outputWriter.append('\t');
+
+			if (gtfAnnotations != null) {
+
+				genesPrinted.clear();
+				
+				List<GffElement> elements = gtfAnnotations.searchPosition(aseVariant.getChr(), aseVariant.getPos());
+
+				
+				boolean first = true;
+				for (GffElement element : elements) {
+					
+					String geneId = element.getAttributeValue("gene_id");
+					
+					if(genesPrinted.contains(geneId)){
+						continue;
+					}
+					
+					if (first) {
+						first = false;
+					} else {
+						outputWriter.append(',');
+					}
+					outputWriter.append(geneId);
+					genesPrinted.add(geneId);
+				}
+
+			}
+
 			outputWriter.append('\t');
 
 			for (int i = 0; i < aseVariant.getA1Counts().size(); ++i) {

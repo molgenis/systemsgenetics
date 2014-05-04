@@ -162,9 +162,9 @@ public class ReadCountsLoader implements Runnable {
 								int a1Count = counts.get(0);
 								int a2Count = counts.get(1);
 
-								if (a1Count + a2Count > configuration.getMinTotalReads()
+								if (a1Count + a2Count >= configuration.getMinTotalReads()
 										&& (a1Count >= configuration.getMinAlleleReads()
-										|| a2Count >= configuration.getMinAlleleReads())) {
+										|| a2Count >= configuration.getMinAlleleReads()) && a1Count + a2Count <= configuration.getMaxTotalReads()) {
 
 									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
 

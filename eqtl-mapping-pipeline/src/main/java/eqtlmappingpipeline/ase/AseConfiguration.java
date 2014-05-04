@@ -44,6 +44,8 @@ public class AseConfiguration {
 	private final String[] refBasePaths;
 	private final RandomAccessGenotypeDataReaderFormats refDataType;
 	private final int refDataCacheSize;
+	private final int maxTotalReads;
+	private final File gencodeGtf;
 
 	static {
 
@@ -97,13 +99,13 @@ public class AseConfiguration {
 		OptionBuilder.withDescription("Maximum number of threads to start for parallel reading of multiple VCF files. Defaults to number of cores");
 		OptionBuilder.withLongOpt("threads");
 		OPTIONS.addOption(OptionBuilder.create('t'));
-		
+
 		OptionBuilder.withArgName("basePath");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("The path to the reference genotypes. These genotypes will be used to determine if a sample is hetrozygous");
 		OptionBuilder.withLongOpt("genotypes");
 		OPTIONS.addOption(OptionBuilder.create("g"));
-		
+
 		OptionBuilder.withArgName("type");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("The input data type. If not defined will attempt to automatically select the first matching dataset on the specified path\n"
@@ -116,12 +118,24 @@ public class AseConfiguration {
 				+ "* TRITYPER - TriTyper format folder");
 		OptionBuilder.withLongOpt("genotypesType");
 		OPTIONS.addOption(OptionBuilder.create("G"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Reference genotype data cache. Trade memory usage for speed");
 		OptionBuilder.withLongOpt("cache");
 		OPTIONS.addOption(OptionBuilder.create("c"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Optional .gtf file for annotations of ASE effects. Must be sorded by chromosome");
+		OptionBuilder.withLongOpt("gtf");
+		OPTIONS.addOption(OptionBuilder.create("f"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Maximum number of total reads");
+		OptionBuilder.withLongOpt("maxReads");
+		OPTIONS.addOption(OptionBuilder.create("m"));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
@@ -208,8 +222,8 @@ public class AseConfiguration {
 		} else {
 			threads = availCores;
 		}
-		
-		
+
+
 		if (commandLine.hasOption('c')) {
 			try {
 				refDataCacheSize = Integer.parseInt(commandLine.getOptionValue('c'));
@@ -219,8 +233,8 @@ public class AseConfiguration {
 		} else {
 			refDataCacheSize = 1000;
 		}
-		
-		if (commandLine.hasOption('g')){
+
+		if (commandLine.hasOption('g')) {
 			refBasePaths = commandLine.getOptionValues('g');
 			try {
 				if (commandLine.hasOption('G')) {
@@ -243,8 +257,25 @@ public class AseConfiguration {
 			refDataType = null;
 		}
 
+		if (commandLine.hasOption('m')) {
+			try {
+				maxTotalReads = Integer.parseInt(commandLine.getOptionValue('m'));
+			} catch (NumberFormatException e) {
+				throw new ParseException("Error parsing --maxReads \"" + commandLine.getOptionValue('m') + "\" is not an int");
+			}
+		} else {
+			maxTotalReads = Integer.MAX_VALUE;
+		}
+
+		if (commandLine.hasOption('f')) {
+			String gencodeGtfPath = commandLine.getOptionValue('f');
+			gencodeGtf = new File(gencodeGtfPath);
+		} else {
+			gencodeGtf = null;
+		}
 
 		debugMode = commandLine.hasOption('d');
+		System.out.println("debug mode: " + debugMode);
 
 
 	}
@@ -252,11 +283,19 @@ public class AseConfiguration {
 	public void printOptions() {
 
 		System.out.println("Interpreted arguments: ");
-		System.out.println(" - Input files or folders (" + inputFiles.size() + " in total): ");
-		LOGGER.info("Input files or folders (" + inputFiles.size() + " in total): ");
 
+
+		System.out.println(" - Input files or folders (" + inputFiles.size() + " in total): ");
+		if (inputFiles.size() > 5) {
+			System.out.println("  * Reading more than 5 files. See log file for list.");
+		} else {
+			for (File inputFile : inputFiles) {
+				System.out.println("  * " + inputFile.getAbsolutePath());
+			}
+		}
+
+		LOGGER.info("Input files or folders (" + inputFiles.size() + " in total): ");
 		for (File inputFile : inputFiles) {
-			System.out.println("  * " + inputFile.getAbsolutePath());
 			LOGGER.info(" * " + inputFile.getAbsolutePath());
 		}
 
@@ -269,16 +308,21 @@ public class AseConfiguration {
 		System.out.println(" - Minimum number of reads per allele: " + minAlleleReads);
 		LOGGER.info("Minimum number of reads per allele: " + minAlleleReads);
 
+		if (maxTotalReads != Integer.MAX_VALUE) {
+			System.out.println(" - Maximum number of reads per allele: " + maxTotalReads);
+			LOGGER.info("Maximum number of reads per allele: " + maxTotalReads);
+		}
+
 		System.out.println(" - Minimum number of samples per ASE effect: " + minSamples);
 		LOGGER.info("Minimum number of samples per ASE effect: " + minSamples);
-		
+
 		System.out.println(" - Number of threads to use: " + threads);
 		LOGGER.info("Number of threads to use: " + threads);
-		
-		if(isRefSet()){
+
+		if (isRefSet()) {
 			System.out.print(" - Reference genotypes " + refDataType.getName() + ":");
 			LOGGER.info("Reference genotypes " + refDataType.getName() + ":");
-			for(String path : refBasePaths){
+			for (String path : refBasePaths) {
 				System.out.print(" " + path);
 				LOGGER.info(" " + path);
 			}
@@ -287,7 +331,10 @@ public class AseConfiguration {
 			LOGGER.info("Reference genotype cache size: " + refDataCacheSize);
 		}
 
-		LOGGER.debug("Debug mode activated");
+		if (isGtfSet()) {
+			System.out.print(" - GTF file: " + gencodeGtf.getAbsolutePath());
+			LOGGER.info("GTF file: " + gencodeGtf.getAbsolutePath());
+		}
 
 
 		System.out.println();
@@ -344,13 +391,24 @@ public class AseConfiguration {
 	public RandomAccessGenotypeDataReaderFormats getRefDataType() {
 		return refDataType;
 	}
-	
-	public boolean isRefSet(){
+
+	public boolean isRefSet() {
 		return refBasePaths != null;
 	}
 
 	public int getRefDataCacheSize() {
 		return refDataCacheSize;
 	}
-	
+
+	public File getGtf() {
+		return gencodeGtf;
+	}
+
+	public int getMaxTotalReads() {
+		return maxTotalReads;
+	}
+
+	public boolean isGtfSet() {
+		return gencodeGtf != null;
+	}
 }
