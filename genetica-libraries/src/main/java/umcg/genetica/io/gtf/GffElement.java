@@ -119,5 +119,30 @@ public class GffElement implements GenomicRange{
 	public String getAttributeValue(String attributeName){
 		return attributes.get(attributeName);
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Seq: ");
+		builder.append(getSeqname());
+		builder.append("\nPos: ");
+		builder.append(getStart());
+		builder.append(" to ");
+		builder.append(getEnd());
+		builder.append("\nsource: ");
+		builder.append(getSource());
+		builder.append("\nfeature: ");
+		builder.append(getFeature());
+		builder.append("\nscore: ");
+		builder.append(getScore());
+		builder.append("\nstrand: ");
+		builder.append(getStrand());
+		builder.append("\nframe: ");
+		builder.append(getFrame());
+		builder.append("\nattributes: ");
+		builder.append(attributes.toString());
+		return builder.toString();
+		
+	}
 	
 }

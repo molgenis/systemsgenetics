@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @author Patrick Deelen
  */
-public class IntervalTree<E extends Range> implements Collection<E> {
+public class IntervalTree<E extends Range> {
 
 	private final IntervalTreeNode<E> rootNode;
 	private final int size;
@@ -88,68 +88,12 @@ public class IntervalTree<E extends Range> implements Collection<E> {
 
 	}
 
-	@Override
 	public int size() {
 		return size;
 	}
 
-	@Override
 	public boolean isEmpty() {
 		return size == 0;
 	}
 
-	@Override
-	public boolean contains(Object o) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public Iterator<E> iterator() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public Object[] toArray() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public <T> T[] toArray(T[] a) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public boolean add(E e) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public boolean remove(Object o) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public boolean containsAll(Collection<?> c) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public boolean addAll(Collection<? extends E> c) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public boolean removeAll(Collection<?> c) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public boolean retainAll(Collection<?> c) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public void clear() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
 }
