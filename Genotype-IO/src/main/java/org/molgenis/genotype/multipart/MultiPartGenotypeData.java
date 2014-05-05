@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.apache.log4j.Logger;
-
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;

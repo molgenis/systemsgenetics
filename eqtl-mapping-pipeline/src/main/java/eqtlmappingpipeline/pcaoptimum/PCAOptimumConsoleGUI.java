@@ -211,7 +211,8 @@ public class PCAOptimumConsoleGUI {
                 }
             } else {
                 if (settingsfile == null && (in == null || inexp == null || out == null)) {
-                    System.out.println("ERROR: Please supply settings file (--settings settings.xml) or --in, --out and --inexp");
+//                    System.out.println("ERROR: Please supply settings file (--settings settings.xml) or --in, --out and --inexp");
+                    System.out.println("ERROR: Please --in, --out and --inexp");
                     printUsage();
                 } else if (cissnps == null && transsnps == null) {
                     System.out.println("ERROR: please specify SNPs to test (using --cissnps and/or --transsnps).");

@@ -42,7 +42,7 @@ public class AseResults implements Iterable<AseVariant> {
 
 	@Override
 	public Iterator<AseVariant> iterator() {
-		
+
 		return new AseResultIterator();
 	}
 
@@ -85,14 +85,14 @@ public class AseResults implements Iterable<AseVariant> {
 			variantIterator.remove();
 		}
 	}
-	
+
 	public int getCount(){
 		int count = 0;
-		
+
 		for(TIntObjectHashMap<AseVariant> chrResults : results.values()){
 			count += chrResults.size();
 		}
 		return count;
 	}
-	
+
 }

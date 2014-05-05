@@ -55,7 +55,7 @@ public class Ase {
 	private static final Logger LOGGER = Logger.getLogger(Ase.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
-	
+
 	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
 	public static void main(String[] args) {
@@ -139,7 +139,7 @@ public class Ase {
 				return;
 			}
 		}
-		
+
 		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
 
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
@@ -298,7 +298,7 @@ public class Ase {
 	}
 
 	private static void startLogging(File logFile, boolean debugMode) {
-		
+
 		try {
 			FileAppender logAppender = new FileAppender(new SimpleLayout(), logFile.getCanonicalPath(), false);
 			Logger.getRootLogger().removeAllAppenders();
@@ -388,19 +388,19 @@ public class Ase {
 			if (gtfAnnotations != null) {
 
 				genesPrinted.clear();
-				
+
 				List<GffElement> elements = gtfAnnotations.searchPosition(aseVariant.getChr(), aseVariant.getPos());
 
-				
+
 				boolean first = true;
 				for (GffElement element : elements) {
-					
+
 					String geneId = element.getAttributeValue("gene_id");
-					
+
 					if(genesPrinted.contains(geneId)){
 						continue;
 					}
-					
+
 					if (first) {
 						first = false;
 					} else {

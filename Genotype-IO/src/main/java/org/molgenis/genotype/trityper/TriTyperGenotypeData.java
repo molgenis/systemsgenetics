@@ -639,7 +639,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		return output;
 	}
 
-	@Override
+    @Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 
 		if (imputedDosageDataFile != null) {
