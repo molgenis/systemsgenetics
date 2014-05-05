@@ -34,7 +34,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testGetChr() {
-		System.out.println("getChr");
 		String expResult = "chr1";
 		String result = instance.getChr();
 		assertEquals(result, expResult);
@@ -45,7 +44,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testGetChrPos() {
-		System.out.println("getChrPos");
 		int expResult = 20206;
 		int result = instance.getChrPos();
 		assertEquals(result, expResult);
@@ -56,7 +54,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testGetVariantId() {
-		System.out.println("getVariantId");
 		String expResult = "rs12239663";
 		String result = instance.getVariantId();
 		assertEquals(result, expResult);
@@ -67,7 +64,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testGetRegulomeDbScore() {
-		System.out.println("getRegulomeDbScore");
 		String expResult = "5";
 		String result = instance.getRegulomeDbScore();
 		assertEquals(result, expResult);
@@ -78,7 +74,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testGetSupportData() {
-		System.out.println("getSupportData");
 		Map<String, List<RegulomeDbSupportingData>> instanceSupportData = instance.getSupportData();
 		
 		assertEquals(instanceSupportData.containsKey("Motifs"), true);
@@ -112,7 +107,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testHashCode() throws Exception {
-		System.out.println("hashCode");
 		RegulomeDbEntry other = new RegulomeDbEntry("chr1\t20206\trs12239663\tMotifs|PWM|Zic1, Motifs|PWM|Zic3, Chromatin_Structure|DNase-seq|Sknmc\t5");
 		int expResult = other.hashCode();
 		int result = instance.hashCode();
@@ -124,7 +118,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testEquals() throws Exception {
-		System.out.println("equals");
 		RegulomeDbEntry other = new RegulomeDbEntry("chr1\t20206\trs12239663\tMotifs|PWM|Zic1, Motifs|PWM|Zic3, Chromatin_Structure|DNase-seq|Sknmc\t5");
 		boolean expResult = true;
 		boolean result = instance.equals(other);
@@ -173,7 +166,6 @@ public class RegulomeDbEntryNGTest {
 	 */
 	@Test
 	public void testHasSupportDataClass() {
-		System.out.println("hasSupportDataClass");
 		
 		assertEquals(instance.hasSupportDataClass("Motifs"), true);
 		assertEquals(instance.hasSupportDataClass("Chromatin_Structure"), true);

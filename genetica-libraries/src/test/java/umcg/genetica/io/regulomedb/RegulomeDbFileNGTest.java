@@ -4,8 +4,6 @@
  */
 package umcg.genetica.io.regulomedb;
 
-import umcg.genetica.io.regulomedb.RegulomeDbEntry;
-import umcg.genetica.io.regulomedb.RegulomeDbFile;
 import java.io.File;
 import java.util.Iterator;
 import static org.testng.Assert.*;
@@ -34,7 +32,7 @@ public class RegulomeDbFileNGTest {
 	 */
 	@Test
 	public void testIterator() throws Exception {
-		System.out.println("iterator");
+		
 		Iterator<RegulomeDbEntry> regulomeDbFileIterator = instance.iterator();
 		
 		RegulomeDbEntry currentEntry;

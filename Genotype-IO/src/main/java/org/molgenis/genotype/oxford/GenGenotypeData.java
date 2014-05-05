@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -26,9 +25,14 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
+import org.molgenis.genotype.util.RecordIteratorCreators;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GeneticVariantMetaMap;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
@@ -53,6 +57,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
+	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 
 	public GenGenotypeData(String path) throws IOException {
 		this(new File(path + ".gen"), new File(path + ".sample"));
@@ -295,7 +300,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 									break;
 								case 4:
 									allele2 = stringBuilder.toString();
-									GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(variantId, position, seqName, sampleVariantProvider, allele1, allele2);
+									GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, variantId, position, seqName, sampleVariantProvider, allele1, allele2);
 									variants.add(variant);
 									variantSampleAllelesIndex.put(variant, posBeforeBufferRead + i + 1);
 									++column;
@@ -407,5 +412,12 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 
 
+	}
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
+		
+		return RecordIteratorCreators.createIteratorFromProbs(variant.getSampleGenotypeProbilities());
+		
 	}
 }

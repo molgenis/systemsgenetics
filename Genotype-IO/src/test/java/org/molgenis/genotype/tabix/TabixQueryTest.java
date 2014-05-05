@@ -1,5 +1,6 @@
 package org.molgenis.genotype.tabix;
 
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -7,43 +8,37 @@ import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 import net.sf.samtools.util.BlockCompressedInputStream;
 
-import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.VariantQuery;
 import org.molgenis.genotype.VariantQueryResult;
-import org.molgenis.genotype.annotation.Annotation;
-import org.molgenis.genotype.util.CalledDosageConvertor;
-import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.VariantLineMapper;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
-import org.molgenis.genotype.vcf.VcfReader;
 import org.molgenis.genotype.vcf.VcfVariantLineMapper;
+import org.molgenis.vcf.VcfReader;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class TabixQueryTest extends ResourceTest implements SampleVariantsProvider {
+public class TabixQueryTest extends ResourceTest {
 
 	private VariantQuery query;
 	private TabixIndex index;
 	private VariantQueryResult result;
-	private final int sampleVariantProviderUniqueId = 0;
 
 	@BeforeClass
 	public void beforeClass() throws IOException, URISyntaxException {
 		VcfReader reader = new VcfReader(new BlockCompressedInputStream(getTestVcfGz()));
 
+		SampleVariantsProvider sampleVariantsProvider = mock(SampleVariantsProvider.class);
+		
 		try {
-			VariantLineMapper variantLineMapper = new VcfVariantLineMapper(reader.getColNames(),
-					Collections.<Annotation>emptyList(), Collections.<String, String>emptyMap(), this);
+			VariantLineMapper variantLineMapper = new VcfVariantLineMapper(reader.getVcfMeta(), sampleVariantsProvider);
 			index = new TabixIndex(getTestVcfGzTbi(), getTestVcfGz(), variantLineMapper);
 		} finally {
 			reader.close();
@@ -124,43 +119,5 @@ public class TabixQueryTest extends ResourceTest implements SampleVariantsProvid
 		assertFalse(query.executeQuery("x", 3172273).iterator().hasNext());
 		assertNotNull(query.executeQuery("1", 31722730));
 		assertFalse(query.executeQuery("1", 31722730).iterator().hasNext());
-	}
-
-	@Override
-	public List<Alleles> getSampleVariants(GeneticVariant variant) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public int cacheSize() {
-		return 0;
-	}
-
-	@Override
-	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public int getSampleVariantProviderUniqueId() {
-		return sampleVariantProviderUniqueId;
-	}
-
-	@Override
-	public byte[] getSampleCalledDosage(GeneticVariant variant) {
-		return CalledDosageConvertor.convertCalledAllelesToCalledDosage(getSampleVariants(variant),
-				variant.getVariantAlleles(), variant.getRefAllele());
-	}
-
-	@Override
-	public float[] getSampleDosage(GeneticVariant variant) {
-		return CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
-				variant.getVariantAlleles(), variant.getRefAllele());
-	}
-
-	@Override
-	public float[][] getSampleProbilities(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
 	}
 }

@@ -4,7 +4,6 @@
  */
 package eqtlmappingpipeline.ase;
 
-import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
@@ -16,15 +15,31 @@ import org.testng.annotations.Test;
  * @author Patrick Deelen
  */
 public class AseVariantTest {
-	
-	AseVariant aseVariant;
-	
+
+	private final AseVariant aseVariant1;
+	private final AseVariant aseVariant2;
+	private final AseVariant aseVariant3;
+	private final AseVariant aseVariant4;
+
 	public AseVariantTest() {
-		aseVariant = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
-		aseVariant.addCounts(10, 20);
-		aseVariant.addCounts(20, 30);
-		aseVariant.addCounts(20, 21);
-		aseVariant.addCounts(30, 20);
+		aseVariant1 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant1.addCounts(10, 20);
+		aseVariant1.addCounts(20, 30);
+		aseVariant1.addCounts(20, 21);
+		aseVariant1.addCounts(30, 20);
+
+		aseVariant2 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant2.addCounts(20, 10);
+
+		aseVariant3 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant3.addCounts(124, 99);
+		aseVariant3.addCounts(28, 179);
+
+		aseVariant4 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant4.addCounts(211, 27);
+		aseVariant4.addCounts(196, 45);
+		aseVariant4.addCounts(187, 54);
+
 	}
 
 	/**
@@ -32,7 +47,7 @@ public class AseVariantTest {
 	 */
 	@Test
 	public void testGetChr() {
-		assertEquals(aseVariant.getChr(), "1");
+		assertEquals(aseVariant1.getChr(), "1");
 	}
 
 	/**
@@ -40,7 +55,7 @@ public class AseVariantTest {
 	 */
 	@Test
 	public void testGetPos() {
-		assertEquals(aseVariant.getPos(), 1);
+		assertEquals(aseVariant1.getPos(), 1);
 	}
 
 	/**
@@ -48,7 +63,7 @@ public class AseVariantTest {
 	 */
 	@Test
 	public void testGetId() {
-		assertEquals(aseVariant.getId().getPrimairyId(), "rs1");
+		assertEquals(aseVariant1.getId().getPrimairyId(), "rs1");
 	}
 
 	/**
@@ -56,7 +71,7 @@ public class AseVariantTest {
 	 */
 	@Test
 	public void testGetA1() {
-		assertEquals(aseVariant.getA1(), Allele.A);
+		assertEquals(aseVariant1.getA1(), Allele.A);
 	}
 
 	/**
@@ -64,7 +79,7 @@ public class AseVariantTest {
 	 */
 	@Test
 	public void testGetA2() {
-		assertEquals(aseVariant.getA2(), Allele.C);
+		assertEquals(aseVariant1.getA2(), Allele.C);
 	}
 
 	/**
@@ -73,7 +88,7 @@ public class AseVariantTest {
 	@Test
 	public void testGetA1Counts() {
 		IntArrayList expResult = new IntArrayList(new int[]{10, 20, 20, 30});
-		assertEquals(aseVariant.getA1Counts(), expResult);
+		assertEquals(aseVariant1.getA1Counts(), expResult);
 	}
 
 	/**
@@ -82,11 +97,29 @@ public class AseVariantTest {
 	@Test
 	public void testGetA2Counts() {
 		IntArrayList expResult = new IntArrayList(new int[]{20, 30, 21, 20});
-		assertEquals(aseVariant.getA2Counts(), expResult);
+		assertEquals(aseVariant1.getA2Counts(), expResult);
 	}
-	
+
+	@Test
 	public void testGetZscore(){
-		assertEquals(aseVariant.getMetaZscore(), 0.8255035, 0.0001);
+		assertEquals(aseVariant1.getMetaZscore(), 0.8255035, 0.0001);
+		assertEquals(aseVariant2.getMetaZscore(), -1.651007, 0.0001);
+		assertEquals(aseVariant3.getMetaZscore(), 6.639489, 0.00001);
+
+	}
+
+	@Test
+	public void testGetPvalues(){
+		assertEquals(aseVariant1.getMetaPvalue(), 0.4090858, 0.00001);
+		assertEquals(aseVariant2.getMetaPvalue(), 0.09873715, 0.00001);
+		assertEquals(aseVariant3.getMetaPvalue(), 3.147722e-11, 0.00001);
+	}
+
+	@Test
+	public void testGetCountPearsonR(){
+
+		assertEquals(aseVariant4.getCountPearsonR(), -0.9989061, 0.00001);
+
 	}
 
 }

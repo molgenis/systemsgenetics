@@ -158,11 +158,11 @@ public class GenomicBoundaries<V> implements Iterable<GenomicBoundary<V>>{
 		while(gboit.hasNext()){
 			genomicBoundary = gboit.next();
 			
-			System.out.println("cur: " + genomicBoundary.getStart() + "-" + genomicBoundary.getStop());
+			//System.out.println("cur: " + genomicBoundary.getStart() + "-" + genomicBoundary.getStop());
 			//System.out.println("prev:" + previousGenomicBoundary.getStart() + "-" + previousGenomicBoundary.getStop());
 			
 			if(genomicBoundary.isPartOfBoundary(previousGenomicBoundary)){
-				System.out.println("REMOVING");
+				//System.out.println("REMOVING");
 				gboit.remove();
 				//genomicBoundaryList.remove(genomicBoundary);
 			}

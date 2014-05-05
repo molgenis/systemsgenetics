@@ -5,11 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GenotypeRecord;
 
 public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 {
-	private SampleVariantsProvider sampleVariantsProvider;
+	private final SampleVariantsProvider sampleVariantsProvider;
 	private final int sampleVariantProviderUniqueId;
 
 	public SwappingSampleVariantsProvider(SampleVariantsProvider sampleVariantsProvider)
@@ -65,6 +67,12 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return sampleVariantsProvider.getSampleProbilities(variant);
+	}
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant)
+	{
+		return sampleVariantsProvider.getSampleGenotypeRecords(variant);
 	}
 
 }

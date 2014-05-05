@@ -22,9 +22,14 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
+import org.molgenis.genotype.util.RecordIteratorCreators;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GeneticVariantMetaMap;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
@@ -54,6 +59,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final int byteToReadForSampleAlleles;
 	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
 	private AllelesAndPhasing last;
+	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 
 	public HapsGenotypeData(String path) throws IOException {
 		this(new File(path + ".haps"), new File(path + ".sample"));
@@ -284,7 +290,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 									break;
 								case 4:
 									allele2 = stringBuilder.toString();
-									GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(variantId, position, seqName, sampleVariantProvider, allele1, allele2);
+									GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, variantId, position, seqName, sampleVariantProvider, allele1, allele2);
 									variants.add(variant);
 									variantSampleAllelesIndex.put(variant, posBeforeBufferRead + i + 1);
 									++column;
@@ -408,6 +414,11 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
+	}
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
+		return RecordIteratorCreators.createIteratorFromAlleles(variant.getSampleVariants());
 	}
 
 	private static class AllelesAndPhasing {

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
-{	
+{
 	private static final Map<List<Allele>, Alleles> pool;
 
 	private final List<Allele> alleles;
@@ -20,25 +20,19 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	private final List<String> allelesAsString;
 	private final char[] allelesAsChar;
 	private final int hashCode;
-	
+
 	public static final Alleles BI_ALLELIC_MISSING;
-	
-	static{
+
+	static
+	{
 		pool = new HashMap<List<Allele>, Alleles>();
-		BI_ALLELIC_MISSING = createAlleles(Allele.ZERO, Allele.ZERO);				
+		BI_ALLELIC_MISSING = createAlleles(Allele.ZERO, Allele.ZERO);
 	}
 
 	private Alleles(List<Allele> alleles)
 	{
 		this.alleles = Collections.unmodifiableList(alleles);
-
-		int result = 1;
-		int i = 0;
-		for (Allele a : alleles)
-		{
-			result = result + i * a.hashCode();
-		}
-		hashCode = result;
+		hashCode = alleles.hashCode();// result;
 
 		boolean isSnp = true;
 		ArrayList<String> allelesAsStringBuilder = new ArrayList<String>(alleles.size());
@@ -56,7 +50,7 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		if (snp)
 		{
 			allelesAsChar = new char[alleles.size()];
-			i = 0;
+			int i = 0;
 			for (Allele allele : alleles)
 			{
 				allelesAsChar[i] = allele.getAlleleAsSnp();
@@ -101,20 +95,16 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 
 	}
 
-	public static Alleles createAlleles(List<Allele> alleles)
+	public static Alleles createAlleles(List<Allele> alleleList)
 	{
-
-		if (pool.containsKey(alleles))
+		Alleles alleles = pool.get(alleleList);
+		if (alleles == null)
 		{
-			return pool.get(alleles);
+			alleles = new Alleles(alleleList);
+			pool.put(alleleList, alleles);
+			alleles.addComplement();
 		}
-		else
-		{
-			Alleles newAlleles = new Alleles(alleles);
-			pool.put(alleles, newAlleles);
-			newAlleles.addComplement();
-			return newAlleles;
-		}
+		return alleles;
 	}
 
 	public static Alleles createAlleles(Allele... allele)
@@ -159,8 +149,7 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	}
 
 	/**
-	 * Add complement. Not done in constructor to prevent infinite loop. Pool
-	 * must be up to date before this is called
+	 * Add complement. Not done in constructor to prevent infinite loop. Pool must be up to date before this is called
 	 */
 	private void addComplement()
 	{
@@ -218,12 +207,19 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	@Override
 	public String toString()
 	{
-		return "VariantAlleles [alleles=" + getAllelesAsString() + ", snp=" + snp + "]";
+		StringBuilder s = new StringBuilder(3);
+		
+		s.append(allelesAsString.get(0));
+		for(int i = 1 ; i < alleles.size() ; ++i){
+			s.append('\\');
+			s.append(allelesAsString.get(i));
+		}
+		
+		return s.toString();
 	}
 
 	/**
-	 * Returns the complements of this variant alleles. Currently only works for
-	 * SNPs
+	 * Returns the complements of this variant alleles. Currently only works for SNPs
 	 * 
 	 * @return complement of current variant alleles
 	 */
@@ -239,8 +235,8 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	}
 
 	/**
-	 * Assess if two variantAllele instances have same alleles regardless of
-	 * order. Only true if also identical number of alleles
+	 * Assess if two variantAllele instances have same alleles regardless of order. Only true if also identical number
+	 * of alleles
 	 * 
 	 * @param other
 	 * @return
@@ -255,7 +251,7 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		{
 			return false;
 		}
-		return this.alleles.containsAll(other.alleles);
+		return this.alleles.containsAll(other.alleles) && other.alleles.containsAll(this.alleles);
 	}
 
 	public boolean isAtOrGcSnp()
@@ -278,10 +274,13 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 	{
 		return (alleles.contains(queryAllele));
 	}
-	
-	public boolean containsAll(Alleles queryAlleles){
-		for(Allele queryAllele : queryAlleles){
-			if(!contains(queryAllele)){
+
+	public boolean containsAll(Alleles queryAlleles)
+	{
+		for (Allele queryAllele : queryAlleles)
+		{
+			if (!contains(queryAllele))
+			{
 				return false;
 			}
 		}
@@ -354,19 +353,23 @@ public final class Alleles implements Iterable<Allele>, Comparable<Alleles>
 		else if (!alleles.equals(other.alleles)) return false;
 		return true;
 	}
-	
-	public Alleles createCopyWithoutDuplicates(){
-		
+
+	public Alleles createCopyWithoutDuplicates()
+	{
+
 		LinkedHashSet<Allele> uniqueAlleles = new LinkedHashSet<Allele>(alleles.size());
-		
-		for(Allele allele : alleles){
-			if(!uniqueAlleles.contains(allele)){
+
+		for (Allele allele : alleles)
+		{
+			if (!uniqueAlleles.contains(allele))
+			{
 				uniqueAlleles.add(allele);
 			}
 		}
-		
+
 		return Alleles.createAlleles(new ArrayList<Allele>(uniqueAlleles));
-		
+
 	}
+	
 
 }
