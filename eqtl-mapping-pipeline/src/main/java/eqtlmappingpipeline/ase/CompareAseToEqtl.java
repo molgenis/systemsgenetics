@@ -61,35 +61,34 @@ public class CompareAseToEqtl {
 			
 			EQTL eQtl = eQtls.get(elements[2] + ":" + elements[3]);
 			if(eQtl != null && aseGenes.contains(eQtl.getProbe())){
-								
-				++aseWithEQtl;
+					
+				if(eQtl.getRsChr() != 6 && eQtl.getRsChrPos() < 20000000 || eQtl.getRsChrPos() > 40000000) {
 				
-				
-				double aseZ = Double.parseDouble(elements[1]);
-				
-				if(elements[7].equals(eQtl.getAlleleAssessed())){
-					if(aseZ < 0 && eQtl.getZscore() < 0 ){
-						++sameDirection;
+					++aseWithEQtl;
+
+
+					double aseZ = Double.parseDouble(elements[1]);
+
+					if(elements[7].equals(eQtl.getAlleleAssessed())){
+
+						if (aseZ * eQtl.getZscore() > 0) {
+							++sameDirection;
+						} else {
+							++oppositeDirection;
+							System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[7] + "\t" + eQtl.getAlleleAssessed() + 
+									"\t" + aseZ + "\t" + eQtl.getZscore());
+						}
 					} else {
-						++oppositeDirection;
+						if (aseZ * eQtl.getZscore() > 0) {
+							++oppositeDirection;
+							System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[7] + "\t" + eQtl.getAlleleAssessed() + 
+									"\t" + aseZ + "\t" + eQtl.getZscore());
+						} else {
+							++sameDirection;
+						}
 					}
-				} else {
-					if(aseZ < 0 && eQtl.getZscore() < 0 ){
-						++oppositeDirection;
-					} else {
-						++sameDirection;
-					}
-				}
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
+
+				}				
 				
 			}
 			
