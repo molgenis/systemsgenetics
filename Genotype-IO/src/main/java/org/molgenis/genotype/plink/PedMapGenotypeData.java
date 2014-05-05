@@ -34,8 +34,13 @@ import org.molgenis.genotype.plink.drivers.PedFileDriver;
 import org.molgenis.genotype.plink.readers.MapFileReader;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.util.CalledDosageConvertor;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
+import org.molgenis.genotype.util.RecordIteratorCreators;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GeneticVariantMetaMap;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
@@ -53,6 +58,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	private final Cache<GeneticVariant, float[]> dosageCache;
 	private ArrayList<Sample> samples = new ArrayList<Sample>();
 	private Set<String> seqNames = new LinkedHashSet<String>();
+	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 
 	public PedMapGenotypeData(String basePath) throws FileNotFoundException, IOException {
 		this(new File(basePath + ".ped"), new File(basePath + ".map"));
@@ -164,7 +170,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 				}
 			}
 
-			GeneticVariant snp = ReadOnlyGeneticVariant.createVariant(id, startPos, sequenceName, this, alleles);
+			GeneticVariant snp = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, id, startPos, sequenceName, this, alleles);
 
 			rangeFactory.addVariant(snp);
 			snpIndexById.put(snp.getPrimaryVariantId(), index);
@@ -308,5 +314,12 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertCalledAllelesToProbability(variant.getSampleVariants(), variant.getVariantAlleles());
+	}
+	
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
+		
+		return RecordIteratorCreators.createIteratorFromAlleles(variant.getSampleVariants());
+		
 	}
 }

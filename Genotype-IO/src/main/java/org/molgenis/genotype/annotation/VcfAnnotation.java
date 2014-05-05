@@ -1,7 +1,7 @@
 package org.molgenis.genotype.annotation;
 
 import org.apache.commons.lang3.math.NumberUtils;
-import org.molgenis.genotype.vcf.VcfInfo;
+import org.molgenis.vcf.meta.VcfMetaInfo;
 
 public class VcfAnnotation extends Annotation
 {
@@ -12,7 +12,7 @@ public class VcfAnnotation extends Annotation
 	private final boolean perAltAllele;
 	private final boolean perGenotype;
 
-	public static VcfAnnotation fromVcfInfo(VcfInfo info)
+	public static VcfAnnotation fromVcfInfo(VcfMetaInfo info)
 	{
 		Annotation.Type type = VcfAnnotation.toAnnotationType(info.getType());
 
@@ -85,13 +85,13 @@ public class VcfAnnotation extends Annotation
 		return (number != null) && (number > 1) || perAltAllele || perGenotype || unbounded;
 	}
 
-	private static Annotation.Type toAnnotationType(VcfInfo.Type infoType)
+	private static Annotation.Type toAnnotationType(VcfMetaInfo.Type infoType)
 	{
-		if (infoType == VcfInfo.Type.CHARACTER) return Type.CHAR;
-		if (infoType == VcfInfo.Type.STRING) return Type.STRING;
-		if (infoType == VcfInfo.Type.FLAG) return Type.BOOLEAN;
-		if (infoType == VcfInfo.Type.FLOAT) return Type.FLOAT;
-		if (infoType == VcfInfo.Type.INTEGER) return Type.INTEGER;
+		if (infoType == VcfMetaInfo.Type.CHARACTER) return Type.CHAR;
+		if (infoType == VcfMetaInfo.Type.STRING) return Type.STRING;
+		if (infoType == VcfMetaInfo.Type.FLAG) return Type.BOOLEAN;
+		if (infoType == VcfMetaInfo.Type.FLOAT) return Type.FLOAT;
+		if (infoType == VcfMetaInfo.Type.INTEGER) return Type.INTEGER;
 		return Type.UNKOWN;
 	}
 }

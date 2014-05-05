@@ -6,15 +6,24 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import org.molgenis.genotype.vcf.VcfInfo;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.molgenis.vcf.meta.VcfMetaInfo;
 import org.testng.annotations.Test;
 
 public class VcfAnnotationTest
 {
 	@Test
-	public void fromVcfInfo()
+	public void fromVcfInfo_CharacterList()
 	{
-		VcfInfo info = new VcfInfo("ID", VcfInfo.Type.CHARACTER, "A", "Desc");
+		Map<String, String> properties = new HashMap<String, String>();
+		properties.put("ID", "ID");
+		properties.put("Type", "Character");
+		properties.put("Number", "A");
+		properties.put("Description", "Desc");
+		VcfMetaInfo info = new VcfMetaInfo(properties);
+		
 		VcfAnnotation annotation = VcfAnnotation.fromVcfInfo(info);
 		assertNotNull(annotation);
 		assertEquals(annotation.getId(), info.getId());
@@ -26,9 +35,19 @@ public class VcfAnnotationTest
 		assertFalse(annotation.isPerGenotype());
 		assertTrue(annotation.isList());
 		assertFalse(annotation.isUnbounded());
-
-		info = new VcfInfo("ID", VcfInfo.Type.FLAG, "G", "Desc");
-		annotation = VcfAnnotation.fromVcfInfo(info);
+	}
+	
+	@Test
+	public void fromVcfInfo_FlagList()
+	{
+		Map<String, String> properties = new HashMap<String, String>();
+		properties.put("ID", "ID");
+		properties.put("Type", "Flag");
+		properties.put("Number", "G");
+		properties.put("Description", "Desc");
+		VcfMetaInfo info = new VcfMetaInfo(properties);
+		
+		VcfAnnotation annotation = VcfAnnotation.fromVcfInfo(info);
 		assertNotNull(annotation);
 		assertEquals(annotation.getId(), info.getId());
 		assertEquals(annotation.getName(), info.getId());
@@ -39,9 +58,19 @@ public class VcfAnnotationTest
 		assertTrue(annotation.isPerGenotype());
 		assertTrue(annotation.isList());
 		assertFalse(annotation.isUnbounded());
-
-		info = new VcfInfo("ID", VcfInfo.Type.STRING, ".", "Desc");
-		annotation = VcfAnnotation.fromVcfInfo(info);
+	}
+	
+	@Test
+	public void fromVcfInfo_StringList()
+	{
+		Map<String, String> properties = new HashMap<String, String>();
+		properties.put("ID", "ID");
+		properties.put("Type", "String");
+		properties.put("Number", ".");
+		properties.put("Description", "Desc");
+		VcfMetaInfo info = new VcfMetaInfo(properties);
+		
+		VcfAnnotation annotation = VcfAnnotation.fromVcfInfo(info);
 		assertNotNull(annotation);
 		assertEquals(annotation.getId(), info.getId());
 		assertEquals(annotation.getName(), info.getId());
@@ -52,16 +81,25 @@ public class VcfAnnotationTest
 		assertFalse(annotation.isPerGenotype());
 		assertTrue(annotation.isList());
 		assertTrue(annotation.isUnbounded());
-
-		info = new VcfInfo("ID", VcfInfo.Type.UNKNOWN, "1", "Desc");
-		annotation = VcfAnnotation.fromVcfInfo(info);
+	}
+	
+	@Test
+	public void fromVcfInfo_Integer()
+	{
+		Map<String, String> properties = new HashMap<String, String>();
+		properties.put("ID", "ID");
+		properties.put("Type", "Integer");
+		properties.put("Number", "1");
+		properties.put("Description", "Desc");
+		VcfMetaInfo info = new VcfMetaInfo(properties);
+		
+		VcfAnnotation annotation = VcfAnnotation.fromVcfInfo(info);
 		assertNotNull(annotation);
 		assertEquals(annotation.getId(), info.getId());
 		assertEquals(annotation.getName(), info.getId());
 		assertEquals(annotation.getDescription(), info.getDescription());
-		assertNotNull(annotation.getNumber());
-		assertEquals(annotation.getNumber().intValue(), 1);
-		assertEquals(annotation.getType(), Annotation.Type.UNKOWN);
+		assertEquals(annotation.getNumber(), Integer.valueOf(info.getNumber()));
+		assertEquals(annotation.getType(), Annotation.Type.INTEGER);
 		assertFalse(annotation.isPerAltAllele());
 		assertFalse(annotation.isPerGenotype());
 		assertFalse(annotation.isList());

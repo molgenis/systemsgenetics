@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.gui;
 
 import eqtlmappingpipeline.Main;
+import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
@@ -18,6 +19,7 @@ import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.eQTLFileCompare;
+import java.util.Arrays;
 import umcg.genetica.console.ConsoleGUIElems;
 
 /**
@@ -28,10 +30,18 @@ import umcg.genetica.console.ConsoleGUIElems;
 public class EQTLMappingPipelineConsole {
 
     public void main(String[] args) {
-        printHeader();
+        
+		if(args[0].equals("--ase")){
+			Ase.main(Arrays.copyOfRange(args, 1, args.length));
+			return;
+		}
+		
+		printHeader();
 
         String mode = null;
 
+		
+		
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             String val = null;

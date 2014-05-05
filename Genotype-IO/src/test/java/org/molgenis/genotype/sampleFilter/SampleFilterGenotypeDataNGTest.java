@@ -5,7 +5,6 @@
 package org.molgenis.genotype.sampleFilter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
@@ -14,9 +13,10 @@ import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sample;
-import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -202,6 +202,7 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 	private void testFilteredRs11089130(GeneticVariant rs11089130){
 		
 		List<Alleles> sampleAlleles = rs11089130.getSampleVariants();
+		FixedSizeIterable<GenotypeRecord> sampleRecords = rs11089130.getSampleGenotypeRecords();
 		float[] sampleDosage = rs11089130.getSampleDosages();
 		byte[] sampleCalledDosage = rs11089130.getSampleCalledDosages();
 		List<Boolean> samplePhasing = rs11089130.getSamplePhasing();
@@ -230,6 +231,14 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 		byte[] expectedCalledDosage = {2, 1, 0, 2, 2, 2, 1, 1};
 		
 		assertEqualsByteArray(sampleCalledDosage, expectedCalledDosage);
+		
+		assertEquals(sampleRecords.size(), expectedAlleles.size());
+		Iterator<Alleles> expectedAllelesIterator = expectedAlleles.iterator();
+		for(GenotypeRecord record : sampleRecords){
+			System.out.println("- " + record.getSampleAlleles());
+			Alleles a = expectedAllelesIterator.next();
+			assertEquals(record.getSampleAlleles(), a);
+		}
 		
 				
 	}

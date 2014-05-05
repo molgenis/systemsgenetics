@@ -1,6 +1,7 @@
 package org.molgenis.genotype.vcf;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -9,11 +10,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import org.molgenis.genotype.Allele;
 
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sequence;
@@ -24,6 +24,8 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.Lists;
 
 public class VcfGenotypeDataTest extends ResourceTest
 {
@@ -109,13 +111,13 @@ public class VcfGenotypeDataTest extends ResourceTest
 	@Test
 	public void testGetVariant()
 	{
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("1", 565286);
+		List<GeneticVariant> variants = Lists.newArrayList(genotypeData.getVariantsByPos("1", 565286));
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
 		assertEquals(variants.get(0).getPrimaryVariantId(), "rs1578391");
 
 		assertNotNull(genotypeData.getVariantsByPos("bogus", 8));
-		assertTrue(genotypeData.getVariantsByPos("bogus", 8).isEmpty());
+		assertFalse(genotypeData.getVariantsByPos("bogus", 8).iterator().hasNext());
 	}
 
 	@Test
@@ -137,7 +139,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 	public void testGeneticVariantAnnotations()
 	{
 		// NS=1;DP=4;AF=1.000;ANNOT=INT;GI=PRDM16;TI=NM_022114.3;PI=NP_071397.3
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("1", 3171929);
+		List<GeneticVariant> variants = Lists.newArrayList(genotypeData.getVariantsByPos("1", 3171929));
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
 
@@ -167,13 +169,13 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void testStopPos()
+	public void testStopPos() throws IOException, URISyntaxException
 	{
-		List<GeneticVariant> variants = genotypeData.getVariantsByPos("1", 565286);
+		List<GeneticVariant> variants = Lists.newArrayList(genotypeData.getVariantsByPos("1", 565286));
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
 
-		variants = genotypeData.getVariantsByPos("3", 7569);
+		variants = Lists.newArrayList(genotypeData.getVariantsByPos("3", 7569));
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
 	}

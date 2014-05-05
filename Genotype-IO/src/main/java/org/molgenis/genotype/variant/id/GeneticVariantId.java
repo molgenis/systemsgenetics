@@ -190,7 +190,7 @@ public abstract class GeneticVariantId implements Iterable<String>
 		{
 			return createVariantId(alternativeIds);
 		}
-		else if (alternativeIds == null || alternativeIds.size() == 0)
+		else if (alternativeIds == null || alternativeIds.isEmpty())
 		{
 			return new SingleGeneticVariantId(primaryId);
 		}
@@ -199,5 +199,12 @@ public abstract class GeneticVariantId implements Iterable<String>
 			return new ListGeneticVariantId(primaryId, alternativeIds);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return getPrimairyId();
+	}
+	
+	
 
 }

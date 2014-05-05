@@ -6,12 +6,13 @@ package umcg.genetica.io.gtf;
 
 import java.util.Collections;
 import java.util.Map;
+import umcg.genetica.variantAnnotator.GenomicRange;
 
 /**
  *
  * @author Patrick Deelen
  */
-public class GffElement {
+public class GffElement implements GenomicRange{
 	
 	//http://mblab.wustl.edu/GTF22.html
 	
@@ -72,6 +73,7 @@ public class GffElement {
 		this.attributes = Collections.unmodifiableMap(attributes);
 	}
 
+	@Override
 	public String getSeqname() {
 		return seqname;
 	}
@@ -84,10 +86,12 @@ public class GffElement {
 		return feature;
 	}
 
+	@Override
 	public int getStart() {
 		return start;
 	}
 
+	@Override
 	public int getEnd() {
 		return end;
 	}
@@ -114,6 +118,31 @@ public class GffElement {
 	
 	public String getAttributeValue(String attributeName){
 		return attributes.get(attributeName);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Seq: ");
+		builder.append(getSeqname());
+		builder.append("\nPos: ");
+		builder.append(getStart());
+		builder.append(" to ");
+		builder.append(getEnd());
+		builder.append("\nsource: ");
+		builder.append(getSource());
+		builder.append("\nfeature: ");
+		builder.append(getFeature());
+		builder.append("\nscore: ");
+		builder.append(getScore());
+		builder.append("\nstrand: ");
+		builder.append(getStrand());
+		builder.append("\nframe: ");
+		builder.append(getFrame());
+		builder.append("\nattributes: ");
+		builder.append(attributes.toString());
+		return builder.toString();
+		
 	}
 	
 }
