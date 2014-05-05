@@ -15,31 +15,31 @@ import org.testng.annotations.Test;
  * @author Patrick Deelen
  */
 public class AseVariantTest {
-	
+
 	private final AseVariant aseVariant1;
 	private final AseVariant aseVariant2;
 	private final AseVariant aseVariant3;
 	private final AseVariant aseVariant4;
-	
+
 	public AseVariantTest() {
 		aseVariant1 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant1.addCounts(10, 20);
 		aseVariant1.addCounts(20, 30);
 		aseVariant1.addCounts(20, 21);
 		aseVariant1.addCounts(30, 20);
-		
+
 		aseVariant2 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant2.addCounts(20, 10);
-		
+
 		aseVariant3 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant3.addCounts(124, 99);
 		aseVariant3.addCounts(28, 179);
-		
+
 		aseVariant4 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant4.addCounts(211, 27);
 		aseVariant4.addCounts(196, 45);
 		aseVariant4.addCounts(187, 54);
-		
+
 	}
 
 	/**
@@ -99,27 +99,27 @@ public class AseVariantTest {
 		IntArrayList expResult = new IntArrayList(new int[]{20, 30, 21, 20});
 		assertEquals(aseVariant1.getA2Counts(), expResult);
 	}
-	
+
 	@Test
 	public void testGetZscore(){
 		assertEquals(aseVariant1.getMetaZscore(), 0.8255035, 0.0001);
 		assertEquals(aseVariant2.getMetaZscore(), -1.651007, 0.0001);
 		assertEquals(aseVariant3.getMetaZscore(), 6.639489, 0.00001);
-		
+
 	}
-	
+
 	@Test
 	public void testGetPvalues(){
 		assertEquals(aseVariant1.getMetaPvalue(), 0.4090858, 0.00001);
 		assertEquals(aseVariant2.getMetaPvalue(), 0.09873715, 0.00001);
 		assertEquals(aseVariant3.getMetaPvalue(), 3.147722e-11, 0.00001);
 	}
-	
+
 	@Test
 	public void testGetCountPearsonR(){
 
 		assertEquals(aseVariant4.getCountPearsonR(), -0.9989061, 0.00001);
-		
+
 	}
 
 }

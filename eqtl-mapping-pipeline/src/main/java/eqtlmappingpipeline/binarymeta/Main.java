@@ -227,6 +227,9 @@ public class Main {
                 }
             }
 
+        } else {
+            System.out.print("Invalid option, valid options are:");
+            System.out.println("fdr, ld, filter, allelecheck, individual, cismeta, meta");
         }
 
         System.exit(0);
