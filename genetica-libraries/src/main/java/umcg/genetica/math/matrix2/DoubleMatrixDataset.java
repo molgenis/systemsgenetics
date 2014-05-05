@@ -347,8 +347,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     public void save(String fileName) throws IOException {
         TextFile out = new TextFile(fileName, TextFile.W);
 
-        ArrayList<R> rowObjects = new ArrayList<R>(hashRows.keySet());
-
         out.append('-');
         for (C col : hashCols.keySet()) {
 
