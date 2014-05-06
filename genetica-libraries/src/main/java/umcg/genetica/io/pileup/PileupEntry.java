@@ -1,14 +1,13 @@
-package eqtlmappingpipeline.ase.pileup;
+package umcg.genetica.io.pileup;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-import java.util.ArrayList;
 import org.molgenis.genotype.Allele;
 
 /**
  *
  * @author Patrick Deelen
  */
-public class pileupEntry {
+public class PileupEntry {
 
 	private final String chr;
 	private final int pos;
@@ -25,7 +24,7 @@ public class pileupEntry {
 	 * @param readDepth
 	 * @param basesString
 	 */
-	public pileupEntry(String chr, int pos, Allele refAllele, int readDepth, String basesString) throws PileupParseException {
+	public PileupEntry(String chr, int pos, Allele refAllele, int readDepth, String basesString) throws PileupParseException {
 		this.chr = chr;
 		this.pos = pos;
 		this.refAllele = refAllele;
