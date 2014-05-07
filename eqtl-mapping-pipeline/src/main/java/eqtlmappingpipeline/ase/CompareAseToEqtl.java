@@ -87,13 +87,8 @@ public class CompareAseToEqtl {
 							++sameDirection;
 						}
 					}
-
-								
 				
 			}
-			
-			
-			
 			
 		}
 		
