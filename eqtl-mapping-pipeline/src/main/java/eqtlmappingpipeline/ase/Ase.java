@@ -448,18 +448,10 @@ public class Ase {
 		}
 		
 		@Override
-		@SuppressWarnings("deprecation")
 		public void uncaughtException(Thread t, Throwable e) {
 			
 			System.err.println("Fatal error: " + e.getMessage());
 			LOGGER.fatal("Fatal error: ", e);
-			
-			for(Thread thread : threads){
-				if(thread != t){
-					thread.stop();
-				}
-			}
-			
 			System.exit(1);
 		}
 		

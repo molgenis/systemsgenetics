@@ -51,7 +51,6 @@ public class AseConfiguration {
 
 		LOGGER = Logger.getLogger(AseConfiguration.class);
 
-
 		OPTIONS = new Options();
 
 		OptionBuilder.withArgName("path");
