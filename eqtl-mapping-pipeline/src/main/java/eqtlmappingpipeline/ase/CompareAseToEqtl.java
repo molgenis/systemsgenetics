@@ -62,7 +62,7 @@ public class CompareAseToEqtl {
 			EQTL eQtl = eQtls.get(elements[2] + ":" + elements[3]);
 			if(eQtl != null && aseGenes.contains(eQtl.getProbe())){
 					
-				if(eQtl.getRsChr() != 6 && eQtl.getRsChrPos() < 20000000 || eQtl.getRsChrPos() > 40000000) {
+				//if(eQtl.getRsChr() != 6 && eQtl.getRsChrPos() < 20000000 || eQtl.getRsChrPos() > 40000000) {
 				
 					++aseWithEQtl;
 
@@ -88,7 +88,7 @@ public class CompareAseToEqtl {
 						}
 					}
 
-				}				
+								
 				
 			}
 			
