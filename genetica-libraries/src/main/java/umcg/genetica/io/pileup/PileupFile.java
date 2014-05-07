@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 import org.molgenis.genotype.Allele;
 
 /**
@@ -20,6 +21,10 @@ public class PileupFile implements Iterable<PileupEntry> {
 	File pileupFile;
 	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
 
+	public PileupFile(String pileupFilePath) throws FileNotFoundException, IOException {
+		this(new File(pileupFilePath));
+	}
+	
 	public PileupFile(File pileupFile) throws FileNotFoundException, IOException {
 		this.pileupFile = pileupFile;
 
@@ -59,20 +64,20 @@ public class PileupFile implements Iterable<PileupEntry> {
 
 		BufferedReader reader = null;
 		try {
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream(pileupFile), "UTF-8"));
+			if(pileupFile.getAbsolutePath().endsWith(".gz")){
+				reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(pileupFile)), "UTF-8"));
+			} else {
+				reader = new BufferedReader(new InputStreamReader(new FileInputStream(pileupFile), "UTF-8"));
+			}
+			
 			return new pileupFileIterator(reader);
 		} catch (FileNotFoundException ex) {
 			throw new RuntimeException(ex);
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
-		} finally {
-			try {
-				if (reader != null) {
-					reader.close();
-				}
-			} catch (IOException ex) {
-			}
-		}
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		} 
 	}
 
 	private class pileupFileIterator implements Iterator<PileupEntry> {

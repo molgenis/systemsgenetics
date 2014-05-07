@@ -20,7 +20,9 @@ import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.eQTLFileCompare;
 import java.util.Arrays;
+import org.apache.commons.cli.ParseException;
 import umcg.genetica.console.ConsoleGUIElems;
+import umcg.genetica.io.pileup.PileupToVcf;
 
 /**
  *
@@ -29,10 +31,14 @@ import umcg.genetica.console.ConsoleGUIElems;
  */
 public class EQTLMappingPipelineConsole {
 
-    public void main(String[] args) {
+    public void main(String[] args) throws Exception {
         
 		if(args[0].equals("--ase")){
 			Ase.main(Arrays.copyOfRange(args, 1, args.length));
+			return;
+		}
+		if(args[0].equals("--pilupToVcf")){
+			PileupToVcf.main(Arrays.copyOfRange(args, 1, args.length));
 			return;
 		}
 		

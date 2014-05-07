@@ -4,7 +4,6 @@
  */
 package eqtlmappingpipeline.ase;
 
-import com.google.common.collect.Iterables;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -67,7 +66,13 @@ public class AseResults implements Iterable<AseVariant> {
 			if (variantIterator.hasNext()) {
 				return true;
 			} else {
-				return chrResultsIterator.hasNext();
+				while(chrResultsIterator.hasNext()){
+					variantIterator = chrResultsIterator.next().valueCollection().iterator();
+					if(variantIterator.hasNext()){
+						return true;
+					}
+				}
+				return false;
 			}
 		}
 
