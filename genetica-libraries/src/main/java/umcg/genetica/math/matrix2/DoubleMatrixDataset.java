@@ -7,12 +7,14 @@ package umcg.genetica.math.matrix2;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -63,6 +65,30 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         this.hashCols = hashCols;
         this.matrix = matrix;
     }
+	
+	public DoubleMatrixDataset(List<R> rowNames, List<C> colNames){
+		
+		hashRows = new LinkedHashMap<R, Integer>(rowNames.size());
+        hashCols = new LinkedHashMap<C, Integer>(colNames.size());
+		
+		int i = 0;
+		for(R row : rowNames){
+			hashRows.put(row, i);
+			++i;
+		}
+		
+		i = 0;
+		for(C col: colNames){
+			hashCols.put(col, i);
+		}
+		
+		if ((hashRows.size() * (long) hashCols.size()) < (Integer.MAX_VALUE - 2)) {
+            matrix = new DenseDoubleMatrix2D(hashRows.size(), hashCols.size());
+        } else {
+            matrix = new DenseLargeDoubleMatrix2D(hashRows.size(), hashCols.size());
+        }
+		
+	}
 
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
         if ((fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
@@ -343,9 +369,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
         return dataset;
     }
-
-    public void save(String fileName) throws IOException {
-        TextFile out = new TextFile(fileName, TextFile.W);
+	
+	public void save(File file) throws IOException{
+		TextFile out = new TextFile(file, TextFile.W);
 
         out.append('-');
         for (C col : hashCols.keySet()) {
@@ -365,6 +391,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             ++r;
         }
         out.close();
+	}
+
+    public void save(String fileName) throws IOException {
+        save(new File(fileName));
     }
 
     public void saveDice(String fileName) throws IOException {
