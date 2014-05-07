@@ -123,6 +123,10 @@ public class ReadCountsLoader implements Runnable {
 								if (genotypeReference == null) {
 									//Use this VCF to check if sample is hetrozygous for this variant
 									alleles = record.getSampleAlleles();
+									
+									if(alleles == null){
+										throw new RuntimeException("When using VCF file with out GT field you must provide a dataset with genotypes");
+									}
 
 								} else {
 									//Use reference VCF to check if sample is hetrozygous for this variant

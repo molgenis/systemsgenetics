@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -141,12 +142,14 @@ public class Ase {
 		}
 
 		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
-
+		
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
 		List<Thread> threads = new ArrayList<Thread>(threadCount);
+		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler(threads);
 		for (int i = 0; i < threadCount; ++i) {
 
 			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes));
+			worker.setUncaughtExceptionHandler(threadErrorHandler);
 			worker.start();
 			threads.add(worker);
 
@@ -435,4 +438,31 @@ public class Ase {
 		outputWriter.close();
 
 	}
+	
+	private static class ThreadErrorHandler implements UncaughtExceptionHandler {
+
+		private final List<Thread> threads;
+
+		public ThreadErrorHandler(List<Thread> threads) {
+			this.threads = threads;
+		}
+		
+		@Override
+		@SuppressWarnings("deprecation")
+		public void uncaughtException(Thread t, Throwable e) {
+			
+			System.err.println("Fatal error: " + e.getMessage());
+			LOGGER.fatal("Fatal error: ", e);
+			
+			for(Thread thread : threads){
+				if(thread != t){
+					thread.stop();
+				}
+			}
+			
+			System.exit(1);
+		}
+		
+	}
+	
 }
