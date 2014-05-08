@@ -401,14 +401,6 @@ public class GenotypeHarmonizerParamaters {
 			throw new ParseException(new StringBuilder().append("Error parsing --callRateFilter \"").append(commandLine.getOptionValue("cf")).append("\" is not an double").toString());
 		}
         
-        if(commandLine.getArgList().size()>0){
-            StringBuilder s = new StringBuilder();
-            s.append("Error parsing, non-valid options which are detected are:\n");
-            for(Object o : commandLine.getArgList()){
-                s.append("\t").append(o.toString());
-            }
-            throw new ParseException(s.toString());
-        }
 	}
 
 	public static void printHelp() {
