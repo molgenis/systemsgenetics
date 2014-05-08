@@ -371,19 +371,26 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 				if (i == bytesRead) {
 
 					if (currentProb.length() == 0) {
-						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " empty prob");
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " probability " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " empty probability");
 					}
 
 					try {
 						sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
 					} catch (NumberFormatException e) {
-						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob: " + e.getMessage());
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " probability " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " error: " + e.getMessage());
 					}
 					++currentProbIndex;
 					break;
 				}
-
+				
 				switch ((char) buffer[i]) {
+					case '\n':
+					case '\r':
+						//if not at last probability of line give error
+						if(s >= samples.size() && currentProbIndex == 2){
+							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " unexpected new line when parsing sample " + samples.get(s).getId() + " sample index: " + s);
+						}
+						//if not at end of line do not break instead just go to the parsing
 					case ' ':
 						try {
 							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
@@ -393,9 +400,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 						currentProb = new StringBuilder();
 						++currentProbIndex;
 						break;
-					case '\n':
-					case '\r':
-						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " unexpected new line when parsing sample " + samples.get(s).getId() + " sample index: " + s);
+					
 					default:
 						currentProb.append((char) buffer[i]);
 				}
