@@ -267,7 +267,7 @@ public class GenotypeHarmonizerParamaters {
 	public GenotypeHarmonizerParamaters(String... args) throws ParseException {
 
 		CommandLineParser parser = new PosixParser();
-		final CommandLine commandLine = parser.parse(OPTIONS, args, true);
+		final CommandLine commandLine = parser.parse(OPTIONS, args, false);
 
 		inputBasePaths = commandLine.getOptionValues('i');
 
@@ -400,7 +400,15 @@ public class GenotypeHarmonizerParamaters {
 		} catch (NumberFormatException e) {
 			throw new ParseException(new StringBuilder().append("Error parsing --callRateFilter \"").append(commandLine.getOptionValue("cf")).append("\" is not an double").toString());
 		}
-
+        
+        if(commandLine.getArgList().size()>0){
+            StringBuilder s = new StringBuilder();
+            s.append("Error parsing, non-valid options which are detected are:\n");
+            for(Object o : commandLine.getArgList()){
+                s.append("\t").append(o.toString());
+            }
+            throw new ParseException(s.toString());
+        }
 	}
 
 	public static void printHelp() {
@@ -421,32 +429,41 @@ public class GenotypeHarmonizerParamaters {
 		LOGGER.info("Input base path: " + inputPaths);
 		System.out.println(" - Input data type: " + inputType.getName());
 		LOGGER.info("Input data type: " + inputType.getName());
-		System.out.println(" - Reference base path: " + (refBasePath == null ? "no reference set" : refBasePath));
-		LOGGER.info("Reference base path: " + (refBasePath == null ? "no reference set" : refBasePath));
-		System.out.println(" - Reference data type: " + (refBasePath == null ? "no reference set" : refType.getName()));
-		LOGGER.info("Reference data type: " + (refBasePath == null ? "no reference set" : refType.getName()));
-		System.out.println(" - Output base path: " + outputBasePath);
+        System.out.println(" - Output base path: " + outputBasePath);
 		LOGGER.info("Output base path: " + outputBasePath);
 		System.out.println(" - Output data type: " + outputType.getName());
 		LOGGER.info("Output data type: " + outputType.getName());
-		System.out.println(" - Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
-		LOGGER.info("Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
-		System.out.println(" - Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
-		LOGGER.info("Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
-		System.out.println(" - Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
-		LOGGER.info("Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
-		System.out.println(" - Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
-		LOGGER.info("Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
-
-		System.out.println(" - Minimum posterior probability for input data: " + minimumPosteriorProbability);
-		LOGGER.info("Minimum posterior probability for input data: " + minimumPosteriorProbability);
-
+        
+        if(refBasePath != null){
+            System.out.println(" - Reference base path: " + refBasePath);
+            LOGGER.info("Reference base path: " +  refBasePath);
+            System.out.println(" - Reference data type: " + refType.getName());
+            LOGGER.info("Reference data type: " +  refType.getName());
+        
+            System.out.println(" - Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
+            LOGGER.info("Number of flank variants to consider for LD alignment: " + flankSnpsToConsider);
+            System.out.println(" - Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
+            LOGGER.info("Minimum LD of flanking variants before using for LD alignment: " + minLdToIncludeAlign);
+            System.out.println(" - Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
+            LOGGER.info("Minimum number of variants needed to for LD alignment: " + minSnpsToAlignOn);
+            System.out.println(" - Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
+            LOGGER.info("Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
+            System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
+            LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
+            System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
+            LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
+        } else {
+            System.out.println(" - Reference base path not set, not performing harmonization.");
+            LOGGER.info("Reference base path not set, not performing harmonization.");
+        }
+        
+        System.out.println(" - Minimum posterior probability for input data: " + minimumPosteriorProbability);
+        LOGGER.info("Minimum posterior probability for input data: " + minimumPosteriorProbability);
+        
 		System.out.println(" - LD checker " + (ldCheck ? "on" : "off"));
 		LOGGER.info("LD checker " + (ldCheck ? "on" : "off"));
-		System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
-		LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
-		LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
-		System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
+		
+		System.out.println(" - Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
 		LOGGER.info("Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
 
 		if (sampleFilterListFile != null) {
