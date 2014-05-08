@@ -5,27 +5,30 @@
 package org.molgenis.genotype.oxford;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+
 import static org.molgenis.genotype.GenotypeData.SAMPLE_MISSING_RATE_FLOAT;
+
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.annotation.Annotation;
-import static org.molgenis.genotype.annotation.Annotation.Type.BOOLEAN;
-import static org.molgenis.genotype.annotation.Annotation.Type.FLOAT;
-import static org.molgenis.genotype.annotation.Annotation.Type.INTEGER;
-import static org.molgenis.genotype.annotation.Annotation.Type.STRING;
+
 import org.molgenis.genotype.annotation.SampleAnnotation;
-import org.molgenis.genotype.util.Utils;
-import org.molgenis.io.csv.CsvReader;
-import org.molgenis.util.tuple.Tuple;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 /**
  *
@@ -66,29 +69,29 @@ public class OxfordSampleFile {
 		SampleAnnotation missingAnnotation = new SampleAnnotation(SAMPLE_MISSING_RATE_FLOAT, "missing", "Missing data proportion of each individual", Annotation.Type.FLOAT, SampleAnnotation.SampleAnnotationType.OTHER, false);
 		sampleAnnotations.put(missingAnnotation.getId(), missingAnnotation);
 
-		CsvReader reader = null;
+		CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream(sampleFile), Charset.forName("UTF-8")), ' ');
 		try {
-			reader = new CsvReader(sampleFile, ' ');
-
-			List<String> colNames = Utils.iteratorToList(reader.colNamesIterator());
-			Tuple dataTypes = reader.iterator().next();
+			
+			List<String> colNames = Arrays.asList(reader.readNext());
+			List<String> dataTypes = Arrays.asList(reader.readNext());
+			
 			for (int i = 3; i < colNames.size(); i++) {
 				SampleAnnotation annotation = null;
-				if (dataTypes.getString(i).equalsIgnoreCase("D")) {
+				if (dataTypes.get(i).equalsIgnoreCase("D")) {
 					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.STRING,
 							SampleAnnotation.SampleAnnotationType.COVARIATE, false);
 
-				} else if (dataTypes.getString(i).equalsIgnoreCase("C")) {
+				} else if (dataTypes.get(i).equalsIgnoreCase("C")) {
 					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.FLOAT,
 							SampleAnnotation.SampleAnnotationType.COVARIATE, false);
-				} else if (dataTypes.getString(i).equalsIgnoreCase("P")) {
+				} else if (dataTypes.get(i).equalsIgnoreCase("P")) {
 					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.FLOAT,
 							SampleAnnotation.SampleAnnotationType.PHENOTYPE, false);
-				} else if (dataTypes.getString(i).equalsIgnoreCase("B")) {
+				} else if (dataTypes.get(i).equalsIgnoreCase("B")) {
 					annotation = new SampleAnnotation(colNames.get(i), colNames.get(i), "", Annotation.Type.BOOLEAN,
 							SampleAnnotation.SampleAnnotationType.PHENOTYPE, false);
 				} else {
-					LOGGER.warn("Unknown datatype [" + dataTypes.getString(i) + "]");
+					LOGGER.warn("Unknown datatype [" + dataTypes.get(i) + "]");
 				}
 
 				if (annotation != null) {
@@ -98,26 +101,27 @@ public class OxfordSampleFile {
 		} finally {
 			IOUtils.closeQuietly(reader);
 		}
-
 	}
 
-	private void loadSamples() {
-
-		CsvReader reader = null;
+	private void loadSamples() throws IOException {
+		CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream(sampleFile), Charset.forName("UTF-8")), ' ');
 		try {
-			reader = new CsvReader(sampleFile, ' ');
-			Iterator<Tuple> it = reader.iterator();
+			// create col names index
+			Map<String, Integer> colNamesIndex = new HashMap<String, Integer>();
+			String[] colNames = reader.readNext();
+			for(int i = 0; i < colNames.length; ++i) {
+				colNamesIndex.put(colNames[i], i);
+			}
+			reader.readNext(); // skip datatypes row
+			
+			String[] tokens;
+			while((tokens = reader.readNext()) != null) {
 
-			it.next();// Datatype row
-
-			while (it.hasNext()) {
-				Tuple tuple = it.next();
-
-				String familyId = tuple.getString(0);
-				String sampleId = tuple.getString(1);
+				String familyId = tokens[0];
+				String sampleId = tokens[1];
 
 				Map<String, Object> annotationValues = new LinkedHashMap<String, Object>();
-				annotationValues.put(SAMPLE_MISSING_RATE_FLOAT, tuple.getString(2).equals("NA") ? Float.NaN : Float.parseFloat(tuple.getString(2)));
+				annotationValues.put(SAMPLE_MISSING_RATE_FLOAT, tokens[2].equals("NA") ? Float.NaN : Float.parseFloat(tokens[2]));
 
 
 				for (String colName : sampleAnnotations.keySet()) {
@@ -129,23 +133,23 @@ public class OxfordSampleFile {
 					SampleAnnotation annotation = sampleAnnotations.get(colName);
 
 					Object value = null;
-
+					String token = tokens[colNamesIndex.get(colName)];
 					switch (annotation.getType()) {
 						case STRING:
-							value = tuple.getString(colName);
+							value = token;
 							break;
 						case INTEGER:
-							value = tuple.getString(colName).equals("NA") ? null : tuple.getInt(colName);
+							value = token.equals("NA") ? null : Integer.valueOf(token);
 							break;
 						case BOOLEAN:
-							if (tuple.getString(colName).equals("-9") || tuple.getString(colName).equals("NA")) {
+							if (token.equals("-9") || token.equals("NA")) {
 								value = null;
 							} else {
-								value = tuple.getBoolean(colName);
+								value = token.equals("1") ? true : false;
 							}
 							break;
 						case FLOAT:
-							value = tuple.getString(colName).equals("NA") || tuple.getString(colName).equals("-9") ? Float.NaN : Float.parseFloat(tuple.getString(colName));
+							value = token.equals("NA") || token.equals("-9") ? Float.NaN : Float.parseFloat(token);
 							break;
 						default:
 							LOGGER.warn("Unsupported data type encountered for column [" + colName + "]");
@@ -157,13 +161,9 @@ public class OxfordSampleFile {
 
 				samples.add(new Sample(sampleId, familyId, annotationValues));
 			}
-
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException("File [" + sampleFile.getAbsolutePath() + "] does not exists", e);
 		} finally {
 			IOUtils.closeQuietly(reader);
 		}
-
 	}
 
 	public List<Sample> getSamples() {
