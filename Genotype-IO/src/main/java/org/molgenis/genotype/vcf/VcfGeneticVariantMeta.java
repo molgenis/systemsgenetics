@@ -7,38 +7,54 @@ import org.molgenis.vcf.VcfRecord;
 import org.molgenis.vcf.meta.VcfMeta;
 import org.molgenis.vcf.meta.VcfMetaFormat;
 
-public class VcfGeneticVariantMeta implements GeneticVariantMeta 
-{
+public class VcfGeneticVariantMeta implements GeneticVariantMeta {
+
 	private final VcfMeta vcfMeta;
 	private final VcfRecord vcfRecord;
 
 	public VcfGeneticVariantMeta(VcfMeta vcfMeta, VcfRecord vcfRecord) {
-		if(vcfMeta == null) throw new IllegalArgumentException("vcfMeta is null");
-		if(vcfRecord == null) throw new IllegalArgumentException("vcfRecord is null");
+		if (vcfMeta == null) {
+			throw new IllegalArgumentException("vcfMeta is null");
+		}
+		if (vcfRecord == null) {
+			throw new IllegalArgumentException("vcfRecord is null");
+		}
 		this.vcfMeta = vcfMeta;
 		this.vcfRecord = vcfRecord.createClone();
 	}
-	
+
 	@Override
-	public Iterable<String> getRecordIds()
-	{
+	public Iterable<String> getRecordIds() {
 		return Arrays.asList(vcfRecord.getFormat());
 	}
 
 	@Override
-	public Type getRecordType(String recordId)
-	{
+	public Type getRecordType(String recordId) {
+
+		boolean found = false;
+		for (String record : getRecordIds()) {
+			found = record.equals(recordId);
+			if (found) {
+				break;
+			}
+		}
+		if (!found) {
+			return null;
+		}
+
 		VcfMetaFormat format = vcfMeta.getFormatMeta(recordId);
-		if(format == null) return null;
-		
+		if (format == null) {
+			return null;
+		}
+
 		// A: one value per alternate allele
 		// R: one value for each possible allele (including the reference)
 		// G: one value for each possible genotype
 		// .: number of possible values varies, is unknown, or is unbounded
 		String number = format.getNumber();
 		boolean isListValue = number.equals("A") || number.equals("R") || number.equals("G") || number.equals(".") || Integer.valueOf(number) > 1;
- 
-		switch(format.getType()) {
+
+		switch (format.getType()) {
 			case CHARACTER:
 				return isListValue ? Type.CHAR_LIST : Type.CHAR;
 			case FLOAT:
@@ -49,7 +65,7 @@ public class VcfGeneticVariantMeta implements GeneticVariantMeta
 				return isListValue ? Type.STRING_LIST : Type.STRING;
 			default:
 				throw new IllegalArgumentException("invalid vcf format type [" + format.getType() + "]");
-			
+
 		}
 	}
 }
