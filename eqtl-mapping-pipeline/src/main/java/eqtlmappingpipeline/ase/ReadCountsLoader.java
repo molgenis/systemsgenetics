@@ -114,10 +114,6 @@ public class ReadCountsLoader implements Runnable {
 
 							Sample sample = sampleIterator.next();
 
-							if (!record.containsGenotypeRecord("AD")) {
-								continue;
-							}
-
 							try {
 								Alleles alleles;
 								if (genotypeReference == null) {
