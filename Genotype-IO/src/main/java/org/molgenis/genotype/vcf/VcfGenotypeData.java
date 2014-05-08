@@ -45,19 +45,20 @@ import org.molgenis.vcf.meta.VcfMetaInfo;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.apache.commons.io.IOUtils;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 
 public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
+
 	private final File bzipVcfFile;
 	private final TabixIndex tabixIndex;
 	private final int sampleVariantProviderUniqueId;
 	private final SampleVariantsProvider variantProvider;
 	private final VcfMeta vcfMeta;
-	
 	private transient Map<String, Annotation> cachedSampleAnnotationsMap;
 	private transient GeneticVariant cachedGeneticVariant;
 	private transient VcfRecord cachedVcfRecord;
-	
+
 	/**
 	 * VCF genotype reader with default cache of 100
 	 *
@@ -105,48 +106,44 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		}
 		this.bzipVcfFile = bzipVcfFile;
 		this.tabixIndex = new TabixIndex(tabixIndexFile, bzipVcfFile, null);
-		
+
 		VcfReader vcfReader = new VcfReader(new BlockCompressedInputStream(bzipVcfFile));
 		try {
 			this.vcfMeta = vcfReader.getVcfMeta();
 		} finally {
 			vcfReader.close();
 		}
-		
+
 		if (cacheSize <= 0) {
 			variantProvider = this;
 		} else {
 			variantProvider = new CachedSampleVariantProvider(this, cacheSize);
 		}
-		
+
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 	}
 
 	@Override
-	public Iterator<GeneticVariant> iterator()
-	{
+	public Iterator<GeneticVariant> iterator() {
 		final BlockCompressedInputStream inputStream;
 		try {
 			inputStream = new BlockCompressedInputStream(bzipVcfFile);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new GenotypeDataException(e);
 		}
-		
+
 		final VcfReader vcfReader = new VcfReader(inputStream);
 		return new Iterator<GeneticVariant>() {
 			private final Iterator<VcfRecord> it = vcfReader.iterator();
-			
+
 			@Override
-			public boolean hasNext()
-			{
+			public boolean hasNext() {
 				boolean hasNext = it.hasNext();
-				if(!hasNext) {
+				if (!hasNext) {
 					// close vcf reader
 					try {
 						vcfReader.close();
-					}
-					catch (IOException e) {
+					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}
 				}
@@ -154,30 +151,30 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			}
 
 			@Override
-			public GeneticVariant next()
-			{
+			public GeneticVariant next() {
 				VcfRecord vcfRecord = it.next();
 				return toGeneticVariant(vcfRecord);
 			}
 
 			@Override
-			public void remove()
-			{
+			public void remove() {
 				it.remove();
 			}
 		};
 	}
-	
+
 	@Override
 	public List<Alleles> getSampleVariants(final GeneticVariant variant) {
 		// get vcf record for variant
-		VcfRecord vcfRecord = getVcfRecord(variant);		
+		VcfRecord vcfRecord = getVcfRecord(variant);
 		int nrSamples = vcfRecord.getNrSamples();
-		if(nrSamples == 0) return Collections.emptyList();
-		
+		if (nrSamples == 0) {
+			return Collections.emptyList();
+		}
+
 		// convert vcf sample alleles to Alleles
 		List<Alleles> alleles = new ArrayList<Alleles>(nrSamples);
-		for(VcfSample vcfSample : vcfRecord.getSamples()) {
+		for (VcfSample vcfSample : vcfRecord.getSamples()) {
 			List<String> vcfAlleles = vcfSample.getAlleles();
 			alleles.add(Alleles.createBasedOnString(vcfAlleles));
 		}
@@ -200,7 +197,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public List<Sequence> getSequences() {
 		List<String> seqNames = getSeqNames();
-		
+
 		// get sequence length by sequence name
 		Map<String, Integer> sequenceLengthById = new HashMap<String, Integer>();
 		for (VcfMetaContig contig : vcfMeta.getContigMeta()) {
@@ -218,7 +215,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public List<Sample> getSamples() {
 		List<Sample> samples = new ArrayList<Sample>();
-		for(String sampleName : vcfMeta.getSampleNames()) {
+		for (String sampleName : vcfMeta.getSampleNames()) {
 			samples.add(new Sample(sampleName, null, null));
 		}
 		return samples;
@@ -232,12 +229,14 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
 		VcfRecord vcfRecord = getVcfRecord(variant);
-		
+
 		final int nrSamples = vcfRecord.getNrSamples();
-		if(nrSamples == 0) return Collections.emptyList();
-		
+		if (nrSamples == 0) {
+			return Collections.emptyList();
+		}
+
 		List<Boolean> phasings = new ArrayList<Boolean>(nrSamples);
-		for(VcfSample vcfSample : vcfRecord.getSamples()) {
+		for (VcfSample vcfSample : vcfRecord.getSamples()) {
 			phasings.addAll(vcfSample.getPhasings());
 		}
 		return phasings;
@@ -262,25 +261,27 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public float[] getSampleDosage(GeneticVariant variant) {
 		VcfRecord vcfRecord = getVcfRecord(variant);
-		
+
 		final int nrSamples = vcfRecord.getNrSamples();
-		if(nrSamples == 0) return new float[0];
-		
+		if (nrSamples == 0) {
+			return new float[0];
+		}
+
 		float[] dosages;
-		
+
 		int idx = vcfRecord.getFormatIndex("DS");
-		if(idx != -1) {
+		if (idx != -1) {
 			// retrieve sample dosage from sample info
 			dosages = new float[nrSamples];
 			int i = 0;
-			for(VcfSample vcfSample : vcfRecord.getSamples()) {				
+			for (VcfSample vcfSample : vcfRecord.getSamples()) {
 				String dosage = vcfSample.getData(idx);
-				if(dosage == null) {
+				if (dosage == null) {
 					throw new GenotypeDataException("Missing DS format value for sample [" + vcfMeta.getSampleName(i) + "]");
 				}
-				
+
 				try {
-					dosages[i++] = (Float.parseFloat(dosage)-2)*-1;
+					dosages[i++] = (Float.parseFloat(dosage) - 2) * -1;
 				} catch (NumberFormatException e) {
 					throw new GenotypeDataException("Error in sample dosage (DS) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + dosage);
 				}
@@ -306,29 +307,31 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		VcfRecord vcfRecord = getVcfRecord(variant);
-		
+
 		final int nrSamples = vcfRecord.getNrSamples();
-		if(nrSamples == 0) return new float[0][0];
-		
+		if (nrSamples == 0) {
+			return new float[0][0];
+		}
+
 		float[][] probs = null;
-		
+
 		int idx = vcfRecord.getFormatIndex("GP");
-		if(idx != -1) {
+		if (idx != -1) {
 			// retrieve sample probabilities from sample info
 			probs = new float[nrSamples][3];
 			int i = 0;
-			for(VcfSample vcfSample : vcfRecord.getSamples()) {				
+			for (VcfSample vcfSample : vcfRecord.getSamples()) {
 				String probabilitiesStr = vcfSample.getData(idx);
-				if(probabilitiesStr == null) {
+				if (probabilitiesStr == null) {
 					throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(i) + "]");
 				}
-				
+
 				String[] probabilities = StringUtils.split(probabilitiesStr, ',');
-				if(probabilities.length != 3){
+				if (probabilities.length != 3) {
 					throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
 				}
-				
-				for(int j = 0; j < 3; ++j){
+
+				for (int j = 0; j < 3; ++j) {
 					try {
 						probs[i][j] = Float.parseFloat(probabilities[j]);
 					} catch (NumberFormatException e) {
@@ -337,7 +340,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				}
 				++i;
 			}
-			
+
 		} else {
 			// calculate sample probabilities from sample dosage
 			probs = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
@@ -346,163 +349,165 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
-	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant)
-	{
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 		final VcfRecord vcfRecord = getVcfRecord(variant);
-		
-		return new FixedSizeIterable<GenotypeRecord>()
-		{
+
+		return new FixedSizeIterable<GenotypeRecord>() {
 			@Override
-			public Iterator<GenotypeRecord> iterator()
-			{
+			public Iterator<GenotypeRecord> iterator() {
 				Iterable<VcfSample> samples = vcfRecord.getSamples();
-				return Iterators.transform(samples.iterator(), new Function<VcfSample, GenotypeRecord>()
-				{
+				return Iterators.transform(samples.iterator(), new Function<VcfSample, GenotypeRecord>() {
 					@Override
-					public GenotypeRecord apply(VcfSample vcfSample)
-					{
+					public GenotypeRecord apply(VcfSample vcfSample) {
 						return toGenotypeRecord(vcfRecord, vcfSample);
 					}
 				});
 			}
 
 			@Override
-			public int size()
-			{
+			public int size() {
 				return vcfRecord.getNrSamples();
 			}
 		};
 	}
-	
+
 	@Override
-	public List<String> getSeqNames()
-	{
+	public List<String> getSeqNames() {
 		return new ArrayList<String>(tabixIndex.getSeqNames());
 	}
-	
+
 	@Override
-	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName)
-	{
+	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
 		return getVariantsByRange(seqName, 0, Integer.MAX_VALUE);
 	}
 
 	@Override
-	public Iterable<GeneticVariant> getVariantsByPos(final String seqName, final int startPos)
-	{
+	public Iterable<GeneticVariant> getVariantsByPos(final String seqName, final int startPos) {
 		return getVariantsByRange(seqName, startPos - 1, startPos);
 	}
 
 	@Override
-	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd)
-	{
-		return new Iterable<GeneticVariant>(){
+	public GeneticVariant getSnpVariantByPos(String seqName, int startPos) {
 
+		//NOTE this special version will complete the iteration and therefor the file connection will be closed
+		//This is kind of an ugly hack but is functional
+
+		Iterable<GeneticVariant> variants = getVariantsByPos(seqName, startPos);
+		GeneticVariant snp = null;
+		for (GeneticVariant variant : variants) {
+			if (snp == null && variant.isSnp()) {
+				snp = variant;
+			}
+		}
+
+		return snp;
+
+	}
+
+	@Override
+	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd) {
+
+
+		return new Iterable<GeneticVariant>() {
 			@Override
-			public Iterator<GeneticVariant> iterator()
-			{
-				try
-				{
-					return new Iterator<GeneticVariant>(){
+			public Iterator<GeneticVariant> iterator() {
+
+				try {
+					return new Iterator<GeneticVariant>() {
 						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
 						private String line = it != null ? it.next() : null;
-						
+
 						@Override
-						public boolean hasNext()
-						{
+						public boolean hasNext() {
 							return line != null;
 						}
 
 						@Override
-						public GeneticVariant next()
-						{
+						public GeneticVariant next() {
 							VcfRecord vcfRecord = new VcfRecord(vcfMeta, StringUtils.split(line, '\t'));
-							try
-							{
+							try {
 								line = it.next();
-							}
-							catch (IOException e)
-							{
+								if (line == null) {
+									IOUtils.closeQuietly(it);
+								}
+							} catch (IOException e) {
 								throw new GenotypeDataException(e);
 							}
 							return toGeneticVariant(vcfRecord);
 						}
 
 						@Override
-						public void remove()
-						{
+						public void remove() {
 							throw new UnsupportedOperationException();
 						}
 					};
-				}
-				catch (IOException e)
-				{
+				} catch (IOException e) {
 					throw new GenotypeDataException(e);
 				}
-			}};
+			}
+		};
 	}
-	
+
 	private VcfRecord getVcfRecord(GeneticVariant variant) {
-		if(!variant.equals(cachedGeneticVariant)) {
+		if (!variant.equals(cachedGeneticVariant)) {
 			TabixIterator it;
 			String line;
-			try
-			{
+			try {
 				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), new BlockCompressedInputStream(bzipVcfFile));
-				while((line = it.next()) != null) {
+				while ((line = it.next()) != null) {
 					VcfRecord vcfRecord = new VcfRecord(vcfMeta, StringUtils.split(line, '\t'));
-					if(variant.equals(toGeneticVariant(vcfRecord))) {
+					if (variant.equals(toGeneticVariant(vcfRecord))) {
 						cachedVcfRecord = vcfRecord;
 						cachedGeneticVariant = variant;
 						break;
 					}
 				}
-			}
-			catch (IOException e)
-			{
+			} catch (IOException e) {
 				throw new GenotypeDataException(e);
 			}
 		}
 		return cachedVcfRecord;
 	}
-	
+
 	/**
 	 * Convert VcfRecord to GeneticVariant
-	 * 
+	 *
 	 * @param vcfRecord
 	 * @return
 	 */
 	private GeneticVariant toGeneticVariant(VcfRecord vcfRecord) {
 		List<String> identifiers = vcfRecord.getIdentifiers();
 		int pos = vcfRecord.getPosition();
-		String sequenceName = vcfRecord.getChromosome();			
+		String sequenceName = vcfRecord.getChromosome();
 		String refAllele = vcfRecord.getReferenceAllele();
 		List<String> altAlleles = vcfRecord.getAlternateAlleles();
-		
+
 		Map<String, Object> annotationMap = new HashMap<String, Object>();
-		for(VcfInfo vcfInfo : vcfRecord.getInformation())
+		for (VcfInfo vcfInfo : vcfRecord.getInformation()) {
 			annotationMap.put(vcfInfo.getKey(), vcfInfo.getVal());
-		
+		}
+
 		List<String> alleles;
-		if(altAlleles == null || altAlleles.isEmpty()) {
+		if (altAlleles == null || altAlleles.isEmpty()) {
 			alleles = Collections.singletonList(refAllele);
 		} else {
 			alleles = new ArrayList<String>(altAlleles.size() + 1);
 			alleles.add(refAllele);
 			alleles.addAll(altAlleles);
 		}
-		
-		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord); 
+
+		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
 		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, variantProvider, alleles, refAllele);
-		
+
 		cachedVcfRecord = vcfRecord;
 		cachedGeneticVariant = geneticVariant;
 		return geneticVariant;
 	}
-	
+
 	/**
 	 * Convert VcfSample to GenotypeRecord
-	 * 
-	 * @param vcfRecord 
+	 *
+	 * @param vcfRecord
 	 * @param vcfSample
 	 * @return
 	 */

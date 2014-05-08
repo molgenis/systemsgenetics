@@ -385,16 +385,17 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 				switch ((char) buffer[i]) {
 					case ' ':
-					case '\n':
-					case '\r':
 						try {
 							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
 						} catch (NumberFormatException e) {
-							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob with value \"" + currentProb.toString() + "\": " + e.getMessage());
+							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " genotype probability value " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob with value \"" + currentProb.toString() + "\": " + e.getMessage());
 						}
 						currentProb = new StringBuilder();
 						++currentProbIndex;
 						break;
+					case '\n':
+					case '\r':
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " unexpected new line when parsing sample " + samples.get(s).getId() + " sample index: " + s);
 					default:
 						currentProb.append((char) buffer[i]);
 				}
