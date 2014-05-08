@@ -493,7 +493,6 @@ public class GenotypeHarmonizerParamaters {
 			System.out.println(" - Filter input data on variant on: " + seqFilterIn);
 		}
 
-		System.out.println(" - Force input sequence name: " + (forceSeqName == null ? "not forcing" : "forcing to: " + forceSeqName));
 		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
 
 
