@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
@@ -119,7 +120,7 @@ public class ReadCountsLoader implements Runnable {
 									alleles = record.getSampleAlleles();
 									
 									if(alleles == null){
-										throw new RuntimeException("When using VCF file with out GT field you must provide a dataset with genotypes");
+										throw new AseException("When using VCF file with out GT field you must provide a dataset with genotypes");
 									}
 
 								} else {
@@ -169,6 +170,11 @@ public class ReadCountsLoader implements Runnable {
 								}
 
 							} catch (GenotypeDataException ex) {
+								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
+								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
+								System.exit(1);
+								return;
+							} catch (AseException ex) {
 								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
 								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
 								System.exit(1);

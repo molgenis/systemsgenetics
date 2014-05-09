@@ -43,7 +43,7 @@ public class CompareAseToEqtl {
 		int sameDirection = 0;
 		int oppositeDirection = 0;
 				
-		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\test15\\ase_bonferroni.txt"));
+		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\test17_r200_a20_s10\\ase_bonferroni.txt"));
 		aseReader.readLine();//header
 		String line;
 		String[] elements;
