@@ -16,26 +16,6 @@
 			<useProjectArtifact>false</useProjectArtifact>
 			<outputDirectory>lib</outputDirectory>
 			<unpack>false</unpack>
-			<excludes>
-				<exclude>org.eclipse.persistence:eclipselink</exclude>
-				<exclude>org.apache.poi:poi-ooxml-schemas</exclude>
-				<exclude>net.sourceforge.parallelcolt:parallelcolt</exclude>
-				<exclude>org.apache.xmlbeans:xmlbeans</exclude>
-				<exclude>java3d:j3d-core</exclude>
-				<exclude>com.lowagie:itext</exclude>
-				<exclude>org.swinglabs:pdf-renderer</exclude>
-				<exclude>org.apache.ant:ant</exclude>
-				<exclude>org.apache.poi:poi</exclude>
-				<exclude>org.apache.commons:commons-math3</exclude>
-				<exclude>org.bouncycastle:bcprov-jdk14</exclude>
-				<exclude>ca.umontreal.iro:ssj</exclude>
-				<exclude>org.mockito:mockito-all</exclude>
-				<exclude>java3d:j3d-core-utils</exclude>
-				<exclude>jfree:jfreechart</exclude>
-				<exclude>xerces:xercesImpl</exclude>
-				<exclude>net.sourceforge.f2j:arpack_combined_all</exclude>
-				<exclude>org.apache.mahout:mahout-collections</exclude>	
-			</excludes>
 		</dependencySet>
 	</dependencySets>
 
