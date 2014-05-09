@@ -27,7 +27,7 @@ public class AseVariant implements Comparable<AseVariant>{
 	private double metaPvalue;
 	private double countPearsonR;
 	private static final BinomialTest btest = new BinomialTest();
-
+	private static final double LARGEST_ZSCORE = Probability.normalInverse(Double.MIN_NORMAL);
 
 	public AseVariant(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2) {
 		this.chr = chr;
@@ -80,12 +80,17 @@ public class AseVariant implements Comparable<AseVariant>{
 
 			regression.addData(a1Counts.getQuick(i), a2Counts.getQuick(i));
 
-			double pvalue = btest.binomialTest(a1Counts.getQuick(i) + a2Counts.getQuick(i), a1Counts.getQuick(i), 0.5, AlternativeHypothesis.TWO_SIDED);
+			final double pvalue = btest.binomialTest(a1Counts.getQuick(i) + a2Counts.getQuick(i), a1Counts.getQuick(i), 0.5, AlternativeHypothesis.TWO_SIDED);
 
 			// we used 2 sided test so divide by 2
 			//double zscore = normalDist.inverseCumulativeProbability(pvalue/2);
-			double zscore = Probability.normalInverse(pvalue / 2);
-
+			final double pvalueDiv2 = pvalue / 2;
+			final double zscore;
+			if (pvalueDiv2 < Double.MIN_NORMAL){
+				zscore = LARGEST_ZSCORE;	
+			} else {
+				zscore = Probability.normalInverse(pvalueDiv2);
+			}
 			// Min / plus might look counter intuative but i omit 1 - p/2 above so here I have to swap
 			if(a1Counts.getQuick(i) < a2Counts.getQuick(i)){
 				zscoreSum -= zscore;

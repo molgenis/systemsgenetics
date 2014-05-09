@@ -29,37 +29,9 @@
 			<outputDirectory>/</outputDirectory>
 		</file>
 		<file>
-			<source>src/test/resources/1000gCeuChr20Mb6.vcf.gz</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>src/test/resources/1000gCeuChr20Mb6.vcf.gz.tbi</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>src/test/resources/hapmap3CeuChr20B37Mb6RandomStrand.bed</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>src/test/resources/hapmap3CeuChr20B37Mb6RandomStrand.bim</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>src/test/resources/hapmap3CeuChr20B37Mb6RandomStrand.fam</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>src/test/resources/hapmap3CeuChr20B37Mb6RandomStrand.haps</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>src/test/resources/hapmap3CeuChr20B37Mb6RandomStrand.sample</source>
-			<outputDirectory>exampleData/</outputDirectory>
-		</file>
-		<file>
-			<source>${project.build.directory}/GenotypeHarmonizer-${project.version}.jar</source>
+			<source>${project.build.directory}/GeneticRiskScoreCalculator-${project.version}.jar</source>
 			<outputDirectory>/</outputDirectory>
-			<destName>GenotypeHarmonizer.jar</destName>
+			<destName>GeneticRiskScoreCalculator.jar</destName>
 		</file>
 	</files>
 
