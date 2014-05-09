@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package eqtlmappingpipeline.ase;
 
 import gnu.trove.map.TObjectIntMap;
@@ -54,11 +50,13 @@ public class ReadCountsLoader implements Runnable {
 	@Override
 	public void run() {
 
+		File inputFile = null;
+		
 		try {
 
 			while (inputFileIterator.hasNext()) {
 
-				File inputFile;
+				
 				synchronized (inputFileIterator) {
 					if (inputFileIterator.hasNext()) {
 						inputFile = inputFileIterator.next();
@@ -193,12 +191,14 @@ public class ReadCountsLoader implements Runnable {
 			}
 
 		} catch (IOException ex) {
-			System.err.println("Error reading input data: " + ex.getMessage());
-			LOGGER.fatal("Error reading input data", ex);
+			String inputFilePath = inputFile != null ? inputFile.getAbsolutePath() : "?";
+			System.err.println("Error reading input data at " + inputFilePath  + " error: " + ex.getMessage());
+			LOGGER.fatal("Error reading input data at " + inputFilePath, ex);
 			System.exit(1);
 		} catch (GenotypeDataException ex) {
-			System.err.println("Error reading input data: " + ex.getMessage());
-			LOGGER.fatal("Error reading input data", ex);
+			String inputFilePath = inputFile != null ? inputFile.getAbsolutePath() : "?";
+			System.err.println("Error reading input data at " + inputFilePath  + " error: " + ex.getMessage());
+			LOGGER.fatal("Error reading input data at " + inputFilePath, ex);
 			System.exit(1);
 		}
 
