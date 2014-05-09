@@ -87,11 +87,10 @@ public class AseVariant implements Comparable<AseVariant>{
 			final double pvalueDiv2 = pvalue / 2;
 			final double zscore;
 			if (pvalueDiv2 < Double.MIN_NORMAL){
-				zscore = Probability.normalInverse(pvalue / 2);
+				zscore = LARGEST_ZSCORE;	
 			} else {
-				zscore = LARGEST_ZSCORE;
+				zscore = Probability.normalInverse(pvalueDiv2);
 			}
-			
 			// Min / plus might look counter intuative but i omit 1 - p/2 above so here I have to swap
 			if(a1Counts.getQuick(i) < a2Counts.getQuick(i)){
 				zscoreSum -= zscore;
