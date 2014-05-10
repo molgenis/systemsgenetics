@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
@@ -52,12 +52,12 @@ public class ReadCountsLoader implements Runnable {
 	public void run() {
 
 		File inputFile = null;
-		
+
 		try {
 
 			while (inputFileIterator.hasNext()) {
 
-				
+
 				synchronized (inputFileIterator) {
 					if (inputFileIterator.hasNext()) {
 						inputFile = inputFileIterator.next();
@@ -118,10 +118,10 @@ public class ReadCountsLoader implements Runnable {
 								if (genotypeReference == null) {
 									//Use this VCF to check if sample is hetrozygous for this variant
 									alleles = record.getSampleAlleles();
-									
-									if(alleles == null){
-										throw new AseException("When using VCF file with out GT field you must provide a dataset with genotypes");
-									}
+
+//									if (alleles == null) {
+//										throw new AseException("When using VCF file with out GT field you must provide a dataset with genotypes");
+//									}
 
 								} else {
 									//Use reference VCF to check if sample is hetrozygous for this variant
@@ -130,7 +130,7 @@ public class ReadCountsLoader implements Runnable {
 										synchronized (genotypeReference) {
 
 											GeneticVariant referenceVariant = genotypeReference.getSnpVariantByPos(variant.getSequenceName(), variant.getStartPos());
-											if(referenceVariant == null){
+											if (referenceVariant == null) {
 												//LOGGER.debug("Variant not found in reference " + variant.getSequenceName() + ":" + variant.getStartPos());
 												continue;
 											}
@@ -145,14 +145,14 @@ public class ReadCountsLoader implements Runnable {
 
 									}
 									int sampleIndexRef = referenceSamples.get(sample.getId());
-									if(sampleIndexRef == -1){
+									if (sampleIndexRef == -1) {
 										throw new GenotypeDataException("Sample " + sample.getId() + " not found in data with refernece genotypes");
 									}
 									alleles = referenceVariantAlleles.get(sampleIndexRef);
 
 								}
 
-								if (alleles.getAlleleCount() != 2 || alleles.get(0) == alleles.get(1)) {
+								if (alleles != null && (alleles.getAlleleCount() != 2 || alleles.get(0) == alleles.get(1) || alleles.contains(Allele.ZERO))) {
 									continue;
 								}
 
@@ -162,8 +162,8 @@ public class ReadCountsLoader implements Runnable {
 								int a2Count = counts.get(1);
 
 								if (a1Count + a2Count >= configuration.getMinTotalReads()
-										&& (a1Count >= configuration.getMinAlleleReads()
-										|| a2Count >= configuration.getMinAlleleReads()) && a1Count + a2Count <= configuration.getMaxTotalReads()) {
+										&& (a1Count >= configuration.getMinAlleleReads() && a2Count >= configuration.getMinAlleleReads())
+										&& a1Count + a2Count <= configuration.getMaxTotalReads()) {
 
 									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
 
@@ -174,11 +174,11 @@ public class ReadCountsLoader implements Runnable {
 								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
 								System.exit(1);
 								return;
-							} catch (AseException ex) {
-								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
-								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
-								System.exit(1);
-								return;
+//							} catch (AseException ex) {
+//								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
+//								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
+//								System.exit(1);
+//								return;
 							}
 
 
@@ -198,12 +198,12 @@ public class ReadCountsLoader implements Runnable {
 
 		} catch (IOException ex) {
 			String inputFilePath = inputFile != null ? inputFile.getAbsolutePath() : "?";
-			System.err.println("Error reading input data at " + inputFilePath  + " error: " + ex.getMessage());
+			System.err.println("Error reading input data at " + inputFilePath + " error: " + ex.getMessage());
 			LOGGER.fatal("Error reading input data at " + inputFilePath, ex);
 			System.exit(1);
 		} catch (GenotypeDataException ex) {
 			String inputFilePath = inputFile != null ? inputFile.getAbsolutePath() : "?";
-			System.err.println("Error reading input data at " + inputFilePath  + " error: " + ex.getMessage());
+			System.err.println("Error reading input data at " + inputFilePath + " error: " + ex.getMessage());
 			LOGGER.fatal("Error reading input data at " + inputFilePath, ex);
 			System.exit(1);
 		}
