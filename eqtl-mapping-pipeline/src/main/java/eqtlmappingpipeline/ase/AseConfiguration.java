@@ -37,6 +37,7 @@ public class AseConfiguration {
 	private final File outputFolder;
 	private final int minTotalReads;
 	private final int minAlleleReads;
+	private final double minAlleleReadFraction;
 	private final File logFile;
 	private final boolean debugMode;
 	private final int minSamples;
@@ -85,6 +86,12 @@ public class AseConfiguration {
 		OptionBuilder.withLongOpt("minAlleleReads");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create('a'));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Min percentage of read per allele. Default 0. Can be used in combination --minAlleleReads");
+		OptionBuilder.withLongOpt("minAllelePercentage");
+		OPTIONS.addOption(OptionBuilder.create('p'));
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
@@ -194,18 +201,40 @@ public class AseConfiguration {
 
 		try {
 			minTotalReads = Integer.parseInt(commandLine.getOptionValue('r'));
+			if (minTotalReads <= 0) {
+				throw new ParseException("--minReads must be larger than 0");
+			}
 		} catch (NumberFormatException e) {
 			throw new ParseException("Error parsing --minReads \"" + commandLine.getOptionValue('r') + "\" is not an int");
 		}
 
 		try {
 			minAlleleReads = Integer.parseInt(commandLine.getOptionValue('a'));
+			if (minAlleleReads < 0) {
+				throw new ParseException("--minAlleleReads must be positive");
+			}
 		} catch (NumberFormatException e) {
 			throw new ParseException("Error parsing --minAlleleReads \"" + commandLine.getOptionValue('a') + "\" is not an int");
 		}
 
+		if (commandLine.hasOption('p')) {
+			try {
+				minAlleleReadFraction = Double.parseDouble(commandLine.getOptionValue('p')) / 100;
+				if(minAlleleReadFraction < 0 || minAlleleReadFraction >= 0.5){
+					throw new ParseException("--minAllelePercentage must be in interval [0, 50)");
+				}
+			} catch (NumberFormatException e) {
+				throw new ParseException("Error parsing --minAllelePercentage \"" + commandLine.getOptionValue('p') + "\" is not a double");
+			}
+		} else {
+			minAlleleReadFraction = 0;
+		}
+
 		try {
 			minSamples = Integer.parseInt(commandLine.getOptionValue('s'));
+			if (minSamples <= 0) {
+				throw new ParseException("--minNumSamples must be larger than 0");
+			}
 		} catch (NumberFormatException e) {
 			throw new ParseException("Error parsing --minNumSamples \"" + commandLine.getOptionValue('s') + "\" is not an int");
 		}
@@ -214,6 +243,9 @@ public class AseConfiguration {
 		if (commandLine.hasOption('t')) {
 			try {
 				int threadOption = Integer.parseInt(commandLine.getOptionValue('t'));
+				if (threadOption <= 0) {
+					throw new ParseException("--threads must be larger than 0");
+				}
 				threads = threadOption > availCores ? availCores : threadOption;
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
@@ -226,6 +258,9 @@ public class AseConfiguration {
 		if (commandLine.hasOption('c')) {
 			try {
 				refDataCacheSize = Integer.parseInt(commandLine.getOptionValue('c'));
+				if (refDataCacheSize < 0) {
+					throw new ParseException("--cache must be positive");
+				}
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --cache \"" + commandLine.getOptionValue('c') + "\" is not an int");
 			}
@@ -259,6 +294,9 @@ public class AseConfiguration {
 		if (commandLine.hasOption('m')) {
 			try {
 				maxTotalReads = Integer.parseInt(commandLine.getOptionValue('m'));
+				if (maxTotalReads <= 0) {
+					throw new ParseException("--maxReads must be larger than 0");
+				}
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --maxReads \"" + commandLine.getOptionValue('m') + "\" is not an int");
 			}
@@ -305,9 +343,12 @@ public class AseConfiguration {
 		System.out.println(" - Minimum number of reads per allele: " + minAlleleReads);
 		LOGGER.info("Minimum number of reads per allele: " + minAlleleReads);
 
+		System.out.println(" - Minimum percentage of reads per allele: " + minAlleleReadFraction * 100 + "%");
+		LOGGER.info("Minimum percentage of reads per allele: " + minAlleleReadFraction * 100 + "%");
+
 		if (maxTotalReads != Integer.MAX_VALUE) {
-			System.out.println(" - Maximum number of reads per allele: " + maxTotalReads);
-			LOGGER.info("Maximum number of reads per allele: " + maxTotalReads);
+			System.out.println(" - Maximum number of reads per genotype: " + maxTotalReads);
+			LOGGER.info("Maximum number of reads per genotype: " + maxTotalReads);
 		}
 
 		System.out.println(" - Minimum number of samples per ASE effect: " + minSamples);
@@ -407,5 +448,9 @@ public class AseConfiguration {
 
 	public boolean isGtfSet() {
 		return gencodeGtf != null;
+	}
+
+	public double getMinAlleleReadFraction() {
+		return minAlleleReadFraction;
 	}
 }
