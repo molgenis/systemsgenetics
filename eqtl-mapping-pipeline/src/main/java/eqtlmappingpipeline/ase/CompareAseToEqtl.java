@@ -27,6 +27,7 @@ public class CompareAseToEqtl {
 	/**
 	 * @param args the command line arguments
 	 */
+	@SuppressWarnings("ManualArrayToCollectionCopy")
 	public static void main(String[] args) throws Exception {
 
 		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation\\eQTLsFDR0.05-ProbeLevel.txt", false);

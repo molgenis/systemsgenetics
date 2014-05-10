@@ -160,10 +160,15 @@ public class ReadCountsLoader implements Runnable {
 
 								int a1Count = counts.get(0);
 								int a2Count = counts.get(1);
+								int totalReads = a1Count + a2Count;
+								
+								//save as double for divide below
+								double minReads = Math.min(a1Count, a2Count);
 
-								if (a1Count + a2Count >= configuration.getMinTotalReads()
-										&& (a1Count >= configuration.getMinAlleleReads() && a2Count >= configuration.getMinAlleleReads())
-										&& a1Count + a2Count <= configuration.getMaxTotalReads()) {
+								if (totalReads >= configuration.getMinTotalReads()
+										&& minReads >= configuration.getMinAlleleReads() 
+										&& totalReads <= configuration.getMaxTotalReads()
+										&& minReads / totalReads >= configuration.getMinAlleleReadFraction()) {
 
 									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
 
