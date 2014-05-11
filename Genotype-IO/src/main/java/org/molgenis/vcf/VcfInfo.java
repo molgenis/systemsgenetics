@@ -10,31 +10,35 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.vcf.meta.VcfMeta;
 import org.molgenis.vcf.meta.VcfMetaInfo;
 
-public class VcfInfo
-{
+public class VcfInfo {
+
 	private final VcfMeta vcfMeta;
 	private String key;
 	private String val;
-	
+
 	public VcfInfo(VcfMeta vcfMeta) {
 		this(vcfMeta, null, null);
 	}
-	
+
 	public VcfInfo(VcfMeta vcfMeta, String key, String val) {
-		if(vcfMeta == null) throw new IllegalArgumentException("vcfMeta is null");
+		if (vcfMeta == null) {
+			throw new IllegalArgumentException("vcfMeta is null");
+		}
 		this.vcfMeta = vcfMeta;
 		this.key = key;
 		this.val = val;
 	}
-	
+
 	public String getKey() {
 		return key;
 	}
-	
+
 	public Object getVal() {
 		VcfMetaInfo vcfMetaInfo = vcfMeta.getInfoMeta(key);
-		if(vcfMetaInfo == null) return val;
-		
+		if (vcfMetaInfo == null) {
+			return val;
+		}
+
 		// A: one value per alternate allele
 		// R: one value for each possible allele (including the reference)
 		// G: one value for each possible genotype
@@ -43,16 +47,18 @@ public class VcfInfo
 		boolean isListValue;
 		try {
 			isListValue = number.equals("A") || number.equals("R") || number.equals("G") || number.equals(".") || Integer.valueOf(number) > 1;
-		} catch (NumberFormatException ex){
+		} catch (NumberFormatException ex) {
 			throw new GenotypeDataException("Error parsing length of vcf info field. " + number + " is not a valid int or expected preset (A, R, G, .)", ex);
 		}
-		switch(vcfMetaInfo.getType()) {
+		switch (vcfMetaInfo.getType()) {
 			case CHARACTER:
-				if(isListValue) {
+				if (isListValue) {
 					String[] valTokens = StringUtils.split(val, ',');
-					if(valTokens.length == 0) return Collections.<Character>emptyList();
+					if (valTokens.length == 0) {
+						return Collections.<Character>emptyList();
+					}
 					List<Character> valList = new ArrayList<Character>(valTokens.length);
-					for(String valToken : valTokens) {
+					for (String valToken : valTokens) {
 						valList.add(Character.valueOf(valToken.charAt(0)));
 					}
 					return valList;
@@ -62,33 +68,66 @@ public class VcfInfo
 			case FLAG:
 				return null;
 			case FLOAT:
-				if(isListValue) {
+				if (isListValue) {
 					String[] valTokens = StringUtils.split(val, ',');
-					if(valTokens.length == 0) return Collections.<Float>emptyList();
+					if (valTokens.length == 0) {
+						return Collections.<Float>emptyList();
+					}
 					List<Float> valList = new ArrayList<Float>(valTokens.length);
-					for(String valToken : valTokens) {
-						valList.add(Float.valueOf(valToken));
+					for (String valToken : valTokens) {
+						if (valToken.equalsIgnoreCase("nan") || valToken.equalsIgnoreCase("Na")) {
+							valList.add(Float.NaN);
+						} else {
+							try {
+								valList.add(Float.valueOf(valToken));
+							} catch (NumberFormatException ex) {
+								throw new GenotypeDataException("Error parsing VCF info column value: " + valToken + " is not a float");
+							}
+						}
+
 					}
 					return valList;
 				} else {
-					return Float.valueOf(val);
+					if (val.equalsIgnoreCase("nan") || val.equalsIgnoreCase("Na")) {
+						return Float.NaN;
+					} else {
+						try {
+							return Float.valueOf(val);
+						} catch (NumberFormatException ex) {
+							throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a float");
+						}
+					}
 				}
 			case INTEGER:
-				if(isListValue) {
+				if (isListValue) {
 					String[] valTokens = StringUtils.split(val, ',');
-					if(valTokens.length == 0) return Collections.<Integer>emptyList();
+					if (valTokens.length == 0) {
+						return Collections.<Integer>emptyList();
+					}
 					List<Integer> valList = new ArrayList<Integer>(valTokens.length);
-					for(String valToken : valTokens) {
-						valList.add(Integer.valueOf(valToken));
+					for (String valToken : valTokens) {
+						try {
+							valList.add(Integer.valueOf(valToken));
+						} catch (NumberFormatException ex) {
+							throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+						}
 					}
 					return valList;
 				} else {
-					return Integer.valueOf(val);
+
+					try {
+						return Integer.valueOf(val);
+					} catch (NumberFormatException ex) {
+						throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+					}
+
 				}
 			case STRING:
-				if(isListValue) {
+				if (isListValue) {
 					String[] valTokens = StringUtils.split(val, ',');
-					if(valTokens.length == 0) return Collections.<String>emptyList();
+					if (valTokens.length == 0) {
+						return Collections.<String>emptyList();
+					}
 					return Arrays.asList(valTokens);
 				} else {
 					return val;
@@ -97,15 +136,14 @@ public class VcfInfo
 				throw new GenotypeDataException("unknown vcf info type [" + vcfMetaInfo.getType() + "]");
 		}
 	}
-	
+
 	public void reset(String key, String val) {
 		this.key = key;
 		this.val = val;
 	}
 
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((key == null) ? 0 : key.hashCode());
@@ -115,27 +153,38 @@ public class VcfInfo
 	}
 
 	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
 		VcfInfo other = (VcfInfo) obj;
-		if (key == null)
-		{
-			if (other.key != null) return false;
+		if (key == null) {
+			if (other.key != null) {
+				return false;
+			}
+		} else if (!key.equals(other.key)) {
+			return false;
 		}
-		else if (!key.equals(other.key)) return false;
-		if (val == null)
-		{
-			if (other.val != null) return false;
+		if (val == null) {
+			if (other.val != null) {
+				return false;
+			}
+		} else if (!val.equals(other.val)) {
+			return false;
 		}
-		else if (!val.equals(other.val)) return false;
-		if (vcfMeta == null)
-		{
-			if (other.vcfMeta != null) return false;
+		if (vcfMeta == null) {
+			if (other.vcfMeta != null) {
+				return false;
+			}
+		} else if (!vcfMeta.equals(other.vcfMeta)) {
+			return false;
 		}
-		else if (!vcfMeta.equals(other.vcfMeta)) return false;
 		return true;
 	}
 }
