@@ -22,13 +22,17 @@ public class Configuration {
 	private final String[] inputPaths;
 	private final RandomAccessGenotypeDataReaderFormats inputDataType;
 	private final File outputFile;
-
+	private final File risksnpsFile;
 	static {
 
 		LOGGER = Logger.getLogger(Configuration.class);
 
 		OPTIONS = new Options();
 
+                // isRequired gebruiken ja of nee
+                // commandline.hash option om te kijken of ie bestaat
+                
+                
 		OptionBuilder.withArgName("basePath");
 		OptionBuilder.hasArgs();
 		OptionBuilder.isRequired();
@@ -48,13 +52,22 @@ public class Configuration {
 				+ "* TRITYPER - TriTyper format folder");
 		OptionBuilder.withLongOpt("inputType");
 		OPTIONS.addOption(OptionBuilder.create("I"));
-		
+
+                OptionBuilder.withArgName("risksnps");
+		OptionBuilder.hasArgs();
+		OptionBuilder.isRequired();
+		OptionBuilder.withDescription("The input file with risk snps");
+		OptionBuilder.withLongOpt("risksnps");
+		OPTIONS.addOption(OptionBuilder.create("r"));
+                
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.isRequired();
 		OptionBuilder.withDescription("The output file with risk scores");
 		OptionBuilder.withLongOpt("output");
 		OPTIONS.addOption(OptionBuilder.create("o"));
+                
+
 
 	}
 
@@ -81,6 +94,7 @@ public class Configuration {
 			}
 			
 		outputFile = new File(commandLine.getOptionValue('o'));
+		risksnpsFile = new File(commandLine.getOptionValue('r'));
 		
 	}
 
@@ -121,9 +135,11 @@ public class Configuration {
 		return inputDataType;
 	}
 
-	public File getOutputFile() {
-		return outputFile;
+	public File getRisksnpsFile() {
+		return risksnpsFile;
 	}
 	
-	
+	public File getOutputFile() {
+		return outputFile;
+	}	
 }
