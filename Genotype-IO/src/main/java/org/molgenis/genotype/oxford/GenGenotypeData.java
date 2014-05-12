@@ -371,30 +371,36 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 				if (i == bytesRead) {
 
 					if (currentProb.length() == 0) {
-						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " empty prob");
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " probability " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " empty probability");
 					}
 
 					try {
 						sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
 					} catch (NumberFormatException e) {
-						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob: " + e.getMessage());
+						throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " probability " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " error: " + e.getMessage());
 					}
 					++currentProbIndex;
 					break;
 				}
-
+				
 				switch ((char) buffer[i]) {
-					case ' ':
 					case '\n':
 					case '\r':
+						//if not at last probability of line give error
+						if(s < samples.size() - 1 && currentProbIndex == 2){
+							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " unexpected new line when parsing sample " + samples.get(s).getId() + " sample index: " + s);
+						}
+						//if not at premature line ending just parse the last probability
+					case ' ':
 						try {
 							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
 						} catch (NumberFormatException e) {
-							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " prob " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing prob with value \"" + currentProb.toString() + "\": " + e.getMessage());
+							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " genotype probability value " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing probability with value \"" + currentProb.toString() + "\": " + e.getMessage());
 						}
 						currentProb = new StringBuilder();
 						++currentProbIndex;
 						break;
+					
 					default:
 						currentProb.append((char) buffer[i]);
 				}

@@ -1,5 +1,6 @@
 package org.molgenis.genotype.tabix;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -306,7 +307,7 @@ public class TabixIndex implements GenotypeDataIndex
 		return new TabixIterator(tid, beg, end, ret, bzipInputStream);
 	}
 
-	public class TabixIterator
+	public class TabixIterator implements Closeable
 	{
 		private int i;
 		private final int tid, beg, end;
@@ -435,6 +436,11 @@ public class TabixIndex implements GenotypeDataIndex
 				beg = end + 1;
 			}
 			return intv;
+		}
+
+		@Override
+		public void close() throws IOException {
+			inputStream.close();
 		}
 	};
 

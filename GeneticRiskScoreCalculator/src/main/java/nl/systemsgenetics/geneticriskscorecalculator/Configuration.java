@@ -73,7 +73,7 @@ public class Configuration {
 
 	public Configuration(String... args) throws ParseException {
 		
-		final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, true);
+		final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 		
 		inputPaths = commandLine.getOptionValues('i');
 			try {

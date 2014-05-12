@@ -80,6 +80,7 @@ public class PileupEntry {
 				case '<':
 				case 'N':
 				case 'n':
+				case '*':
 					break;
 				case 'a':
 				case 'c':
@@ -95,7 +96,7 @@ public class PileupEntry {
 					alleleCounts.increment(allele);
 					break;
 				default:
-					throw new PileupParseException("Unexpected char in pileup bases string");
+					throw new PileupParseException("Unexpected char in pileup bases string: " + basesChars[i] + " from : " + basesString);
 
 			}
 
@@ -121,5 +122,9 @@ public class PileupEntry {
 
 	public TObjectIntHashMap<Allele> getAlleleCounts() {
 		return alleleCounts;
+	}
+
+	public int getAlleleCount(Allele allele) {
+		return alleleCounts.get(allele);
 	}
 }

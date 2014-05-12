@@ -7,7 +7,6 @@ package eqtlmappingpipeline;
 import eqtlmappingpipeline.gui.EQTLMappingPipelineConsole;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  *
@@ -21,7 +20,7 @@ public class Main {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         EQTLMappingPipelineConsole app = new EQTLMappingPipelineConsole();
         app.main(args);

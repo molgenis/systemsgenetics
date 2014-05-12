@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -141,12 +142,14 @@ public class Ase {
 		}
 
 		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
-
+		
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
 		List<Thread> threads = new ArrayList<Thread>(threadCount);
+		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler(threads);
 		for (int i = 0; i < threadCount; ++i) {
 
 			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes));
+			worker.setUncaughtExceptionHandler(threadErrorHandler);
 			worker.start();
 			threads.add(worker);
 
@@ -255,8 +258,11 @@ public class Ase {
 		try {
 
 			//print bonferroni significant results
-			printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, bonferroniCutoff);
+			int bonferroniSignificantCount = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, bonferroniCutoff, false);
 
+			System.err.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
+			LOGGER.fatal("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
+			
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
 		} catch (FileNotFoundException ex) {
@@ -271,25 +277,6 @@ public class Ase {
 			return;
 		}
 
-		File outputFileBonferroniNonNegativeCountR = new File(configuration.getOutputFolder(), "ase_bonferroni_noNegativeCountR.txt");
-		try {
-
-			//print bonferroni significant results without negative count R
-			printAseResults(outputFileBonferroniNonNegativeCountR, aseVariants, gtfAnnotations, bonferroniCutoff, true);
-
-		} catch (UnsupportedEncodingException ex) {
-			throw new RuntimeException(ex);
-		} catch (FileNotFoundException ex) {
-			System.err.println("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		} catch (IOException ex) {
-			System.err.println("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFileBonferroniNonNegativeCountR.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		}
 
 		System.out.println("Program completed");
 		LOGGER.info("Program completed");
@@ -331,8 +318,8 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static void printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations) throws UnsupportedEncodingException, FileNotFoundException, IOException {
-		printAseResults(outputFile, aseVariants, gtfAnnotations, 1);
+	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		return printAseResults(outputFile, aseVariants, gtfAnnotations, 1);
 	}
 
 	/**
@@ -342,17 +329,19 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static void printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 
-		printAseResults(outputFile, aseVariants, gtfAnnotations, maxPvalue, false);
+		return printAseResults(outputFile, aseVariants, gtfAnnotations, maxPvalue, false);
 
 	}
 
-	private static void printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue, boolean excludeNegativeCountR) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue, boolean excludeNegativeCountR) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 
 		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
 		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\n");
+		
+		int counter = 0;
 
 		HashSet<String> genesPrinted = new HashSet<String>();
 		for (AseVariant aseVariant : aseVariants) {
@@ -364,6 +353,8 @@ public class Ase {
 			if (excludeNegativeCountR && aseVariant.getCountPearsonR() < 0) {
 				continue;
 			}
+			
+			++counter;
 
 			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
 			outputWriter.append('\t');
@@ -433,6 +424,26 @@ public class Ase {
 
 
 		outputWriter.close();
+		return counter;
 
 	}
+	
+	private static class ThreadErrorHandler implements UncaughtExceptionHandler {
+
+		private final List<Thread> threads;
+
+		public ThreadErrorHandler(List<Thread> threads) {
+			this.threads = threads;
+		}
+		
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			
+			System.err.println("Fatal error: " + e.getMessage());
+			LOGGER.fatal("Fatal error: ", e);
+			System.exit(1);
+		}
+		
+	}
+	
 }

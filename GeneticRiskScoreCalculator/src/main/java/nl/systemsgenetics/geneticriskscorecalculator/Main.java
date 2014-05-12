@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -24,7 +25,7 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
  */
 public class Main {
 
-	private static final String VERSION = Main.VERSION;
+	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
 			"  /---------------------------------------\\\n"
 			+ "  |  Allele Specific Expression Mapper    |\n"
