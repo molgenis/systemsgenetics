@@ -6,8 +6,8 @@ package eqtlmappingpipeline.ase;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.lang.String;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -23,75 +23,83 @@ public class CompareAseToEqtl {
 
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
 	private static final Pattern COMMA_PATTERN = Pattern.compile(",");
-	
+
 	/**
 	 * @param args the command line arguments
 	 */
+	@SuppressWarnings("ManualArrayToCollectionCopy")
 	public static void main(String[] args) throws Exception {
-		
-		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\eQTLSNPsFDR0.05-ProbeLevel.txt", false);
-		
-		HashMap<String, EQTL> eQtls = new HashMap<String, EQTL>();
-		
-		for(Iterator<EQTL> eQtlIt = eQTLsTextFile.getEQtlIterator() ; eQtlIt.hasNext() ; ){
+
+		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation\\eQTLsFDR0.05-ProbeLevel.txt", false);
+		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\test22_r10_a5_s5_noGeno\\ase_bonferroni.txt"));
+
+		HashMap<String, ArrayList<EQTL>> eQtls = new HashMap<String, ArrayList<EQTL>>();
+
+		for (Iterator<EQTL> eQtlIt = eQTLsTextFile.getEQtlIterator(); eQtlIt.hasNext();) {
 			EQTL eQtl = eQtlIt.next();
-			eQtls.put(eQtl.getRsChr() + ":" + eQtl.getRsChrPos(), eQtl);
+			String eQtlKey = eQtl.getRsChr() + ":" + eQtl.getRsChrPos();
+			ArrayList<EQTL> posEqtls = eQtls.get(eQtlKey);
+			if (posEqtls == null) {
+				posEqtls = new ArrayList<EQTL>(1);
+				eQtls.put(eQtlKey, posEqtls);
+			}
+			posEqtls.add(eQtl);
 		}
-		
+
 		int aseTotal = 0;
 		int aseWithEQtl = 0;
 		int sameDirection = 0;
 		int oppositeDirection = 0;
-				
-		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\test15\\ase_bonferroni.txt"));
+
 		aseReader.readLine();//header
 		String line;
 		String[] elements;
-		while ((line = aseReader.readLine()) != null){
-			
+		while ((line = aseReader.readLine()) != null) {
+
 			elements = TAB_PATTERN.split(line);
-			
-			
+
+
 			HashSet<String> aseGenes = new HashSet<String>();
-			for(String gene : COMMA_PATTERN.split(elements[9])){
+			for (String gene : COMMA_PATTERN.split(elements[9])) {
 				aseGenes.add(gene);
 			}
-			
+
 			++aseTotal;
-			
-			EQTL eQtl = eQtls.get(elements[2] + ":" + elements[3]);
-			if(eQtl != null && aseGenes.contains(eQtl.getProbe())){
-					
-				//if(eQtl.getRsChr() != 6 && eQtl.getRsChrPos() < 20000000 || eQtl.getRsChrPos() > 40000000) {
-				
-					++aseWithEQtl;
+
+			ArrayList<EQTL> posEqtls = eQtls.get(elements[2] + ":" + elements[3]);
+			if (posEqtls != null) {
+				for (EQTL eQtl : eQtls.get(elements[2] + ":" + elements[3])) {
+					if (eQtl != null && aseGenes.contains(eQtl.getProbe())) {
+
+						//if(eQtl.getRsChr() != 6 && eQtl.getRsChrPos() < 20000000 || eQtl.getRsChrPos() > 40000000) {
+
+						++aseWithEQtl;
 
 
-					double aseZ = Double.parseDouble(elements[1]);
+						double aseZ = Double.parseDouble(elements[1]);
 
-					if(elements[7].equals(eQtl.getAlleleAssessed())){
+						if (elements[7].equals(eQtl.getAlleleAssessed())) {
 
-						if (aseZ * eQtl.getZscore() > 0) {
-							++sameDirection;
+							if (aseZ * eQtl.getZscore() > 0) {
+								++sameDirection;
+							} else {
+								++oppositeDirection;
+//								System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[7] + "\t" + eQtl.getAlleleAssessed() + "\t" + aseZ + "\t" + eQtl.getZscore());
+							}
 						} else {
-							++oppositeDirection;
-							System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[7] + "\t" + eQtl.getAlleleAssessed() + 
-									"\t" + aseZ + "\t" + eQtl.getZscore());
+							if (aseZ * eQtl.getZscore() > 0) {
+								++oppositeDirection;
+								//System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[7] + "\t" + eQtl.getAlleleAssessed() + "\t" + aseZ + "\t" + eQtl.getZscore());
+							} else {
+								++sameDirection;
+							}
 						}
-					} else {
-						if (aseZ * eQtl.getZscore() > 0) {
-							++oppositeDirection;
-							System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[7] + "\t" + eQtl.getAlleleAssessed() + 
-									"\t" + aseZ + "\t" + eQtl.getZscore());
-						} else {
-							++sameDirection;
-						}
+
 					}
-				
+				}
 			}
-			
 		}
-		
+
 		NumberFormat numberFormat = NumberFormat.getInstance();
 		numberFormat.setMinimumFractionDigits(2);
 		numberFormat.setMaximumFractionDigits(2);
@@ -99,6 +107,6 @@ public class CompareAseToEqtl {
 		System.out.println("Ase SNP with eQTL effect: " + aseWithEQtl + " (" + numberFormat.format(aseWithEQtl / (double) aseTotal) + ")");
 		System.out.println(" - Same direction: " + sameDirection + " (" + numberFormat.format(sameDirection / (double) aseWithEQtl) + ")");
 		System.out.println(" - Opposite direction: " + oppositeDirection + " (" + numberFormat.format(oppositeDirection / (double) aseWithEQtl) + ")");
-	
+
 	}
 }
