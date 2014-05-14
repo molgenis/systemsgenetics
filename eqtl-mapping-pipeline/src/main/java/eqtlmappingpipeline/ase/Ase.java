@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -64,7 +65,6 @@ public class Ase {
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
-
 	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
 	public static void main(String[] args) {
@@ -115,7 +115,7 @@ public class Ase {
 		final AtomicInteger fileCounter = new AtomicInteger(0);
 		final RandomAccessGenotypeData referenceGenotypes;
 		final Map<String, String> refToStudySampleId;
-		
+
 		if (configuration.isRefSet()) {
 			try {
 				referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), configuration.getRefDataCacheSize());
@@ -137,9 +137,9 @@ public class Ase {
 				System.exit(1);
 				return;
 			}
-			
-			if(configuration.isSampleToRefSampleFileSet()){ 
-				try {				
+
+			if (configuration.isSampleToRefSampleFileSet()) {
+				try {
 					refToStudySampleId = readSampleMapping(configuration.getSampleToRefSampleFile());
 					System.out.println("Found " + refToStudySampleId.size() + " sample mappings");
 					LOGGER.info("Found " + refToStudySampleId.size() + " sample mappings");
@@ -157,7 +157,7 @@ public class Ase {
 			} else {
 				refToStudySampleId = null;
 			}
-			
+
 		} else {
 			referenceGenotypes = null;
 			refToStudySampleId = null;
@@ -172,7 +172,7 @@ public class Ase {
 		}
 
 		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
-		
+
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
 		List<Thread> threads = new ArrayList<Thread>(threadCount);
 		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler(threads);
@@ -234,9 +234,9 @@ public class Ase {
 		}
 
 		int numberOfTests = aseVariants.length;
-		double bonferroniCutoff = 0.05 / numberOfTests;
-		System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
-		LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+		//double bonferroniCutoff = 0.05 / numberOfTests;
+		//System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+		//LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
 
 
 		Arrays.sort(aseVariants);
@@ -264,49 +264,41 @@ public class Ase {
 		}
 
 
-		File outputFileAll = new File(configuration.getOutputFolder(), "ase.txt");
-		try {
+		for (MultipleTestingCorrectionMethod correctionMethod : EnumSet.of(MultipleTestingCorrectionMethod.NONE, MultipleTestingCorrectionMethod.BONFERRONI, MultipleTestingCorrectionMethod.HOLM)) {
 
-			//print all restuls
-			printAseResults(outputFileAll, aseVariants, gtfAnnotations);
+			File outputFileBonferroni = new File(configuration.getOutputFolder(), correctionMethod == MultipleTestingCorrectionMethod.NONE ? "ase.txt" : "ase_" + correctionMethod.toString().toLowerCase() + ".txt");
+			try {
 
-		} catch (UnsupportedEncodingException ex) {
-			throw new RuntimeException(ex);
-		} catch (FileNotFoundException ex) {
-			System.err.println("Unable to create output file at " + outputFileAll.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFileAll.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		} catch (IOException ex) {
-			System.err.println("Unable to create output file at " + outputFileAll.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFileAll.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
+				int writtenResults = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, correctionMethod);
+
+				if (correctionMethod == MultipleTestingCorrectionMethod.NONE) {
+					System.out.println("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
+					LOGGER.info("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
+				} else {
+					System.out.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
+					LOGGER.info("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
+				}
+
+
+			} catch (UnsupportedEncodingException ex) {
+				throw new RuntimeException(ex);
+			} catch (FileNotFoundException ex) {
+				System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
+				LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
+				System.exit(1);
+				return;
+			} catch (IOException ex) {
+				System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
+				LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
+				System.exit(1);
+				return;
+			} catch (AseException ex) {
+				System.err.println("Error creating output file: " + ex.getMessage());
+				LOGGER.fatal("Error creating output file.", ex);
+				System.exit(1);
+				return;
+			}
 		}
-
-		File outputFileBonferroni = new File(configuration.getOutputFolder(), "ase_bonferroni.txt");
-		try {
-
-			//print bonferroni significant results
-			int bonferroniSignificantCount = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, bonferroniCutoff, false);
-
-			System.err.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
-			LOGGER.info("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
-			
-		} catch (UnsupportedEncodingException ex) {
-			throw new RuntimeException(ex);
-		} catch (FileNotFoundException ex) {
-			System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		} catch (IOException ex) {
-			System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
-			LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		}
-
 
 		System.out.println("Program completed");
 		LOGGER.info("Program completed");
@@ -343,47 +335,74 @@ public class Ase {
 	/**
 	 *
 	 * @param outputFile
-	 * @param aseVariants
+	 * @param aseVariants must be sorted on significance
 	 * @throws UnsupportedEncodingException
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations) throws UnsupportedEncodingException, FileNotFoundException, IOException {
-		return printAseResults(outputFile, aseVariants, gtfAnnotations, 1);
+	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
+		return printAseResults(outputFile, aseVariants, gtfAnnotations, MultipleTestingCorrectionMethod.NONE);
 	}
 
 	/**
 	 *
 	 * @param outputFile
+	 * @param aseVariants must be sorted on significance
+	 * @param gtfAnnotations
+	 * @param onlyHolmSignificant
+	 * @return
 	 * @throws UnsupportedEncodingException
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+	private static int printAseResults(final File outputFile, final AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final MultipleTestingCorrectionMethod multipleTestingCorrectionMethod) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
 
-		return printAseResults(outputFile, aseVariants, gtfAnnotations, maxPvalue, false);
-
-	}
-
-	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, double maxPvalue, boolean excludeNegativeCountR) throws UnsupportedEncodingException, FileNotFoundException, IOException {
-
-		BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
+		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
 		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\n");
-		
+
+		final double significance = 0.05;
+
 		int counter = 0;
+		double lastAbsoluteZ = Double.POSITIVE_INFINITY;
+
+		final int totalNumberOfTests = aseVariants.length;
+		final double bonferroniCutoff = significance / totalNumberOfTests;
 
 		HashSet<String> genesPrinted = new HashSet<String>();
+		aseVariants:
 		for (AseVariant aseVariant : aseVariants) {
 
-			if (aseVariant.getMetaPvalue() > maxPvalue) {
-				continue;
+			double absZ = Math.abs(aseVariant.getMetaZscore());
+			if (absZ > lastAbsoluteZ) {
+				throw new AseException("ASE results not sorted");
+			}
+			lastAbsoluteZ = absZ;
+
+			switch (multipleTestingCorrectionMethod) {
+				case NONE:
+					break;
+				case NOMINAL:
+					if (aseVariant.getMetaPvalue() > significance) {
+						break aseVariants;
+					}
+					break;
+				case BONFERRONI:
+					if (aseVariant.getMetaPvalue() > bonferroniCutoff) {
+						break aseVariants;
+					}
+					break;
+				case HOLM:
+					final double holmCutoff = significance / (totalNumberOfTests - counter);
+					if (aseVariant.getMetaPvalue() > holmCutoff) {
+						break aseVariants;
+					}
+					break;
+				default:
+					throw new AseException("Multiple testing method: " + multipleTestingCorrectionMethod + " is not supported");
+
 			}
 
-			if (excludeNegativeCountR && aseVariant.getCountPearsonR() < 0) {
-				continue;
-			}
-			
 			++counter;
 
 			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
@@ -418,7 +437,7 @@ public class Ase {
 
 					String geneId = element.getAttributeValue("gene_id");
 
-					if(genesPrinted.contains(geneId)){
+					if (genesPrinted.contains(geneId)) {
 						continue;
 					}
 
@@ -459,31 +478,32 @@ public class Ase {
 	}
 
 	/**
-	 * 
-	 * 
-	 * @param sampleToRefSampleFile unmodifiable map with key sample ID in reference and value sample ID of study
-	 * @return 
+	 *
+	 *
+	 * @param sampleToRefSampleFile unmodifiable map with key sample ID in
+	 * reference and value sample ID of study
+	 * @return
 	 */
 	private static Map<String, String> readSampleMapping(File sampleToRefSampleFile) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
-		
+
 		HashMap<String, String> sampleMap = new HashMap<String, String>();
-		
+
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sampleToRefSampleFile), "UTF-8"));
-		
+
 		String line;
 		String[] elements;
-		
+
 		while ((line = reader.readLine()) != null) {
 			elements = TAB_PATTERN.split(line);
-			if(elements.length != 2){
+			if (elements.length != 2) {
 				throw new Exception("Detected " + elements.length + " columns instead of 2 for this line: " + line);
 			}
 			sampleMap.put(elements[1], elements[0]);
 		}
-		
+
 		return Collections.unmodifiableMap(sampleMap);
 	}
-	
+
 	private static class ThreadErrorHandler implements UncaughtExceptionHandler {
 
 		private final List<Thread> threads;
@@ -491,15 +511,13 @@ public class Ase {
 		public ThreadErrorHandler(List<Thread> threads) {
 			this.threads = threads;
 		}
-		
+
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
-			
+
 			System.err.println("Fatal error: " + e.getMessage());
 			LOGGER.fatal("Fatal error: ", e);
 			System.exit(1);
 		}
-		
 	}
-	
 }
