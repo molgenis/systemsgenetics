@@ -92,6 +92,7 @@ public class PileupToVcf {
 		vcfWriter.append("##fileformat=VCFv4.2\n");
 		vcfWriter.append("##source=ConvertPileupToVcf\n");
 		vcfWriter.append("##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed\">\n");
+		vcfWriter.append("##FORMAT=<ID=RQ,Number=R,Type=Float,Description=\"Average read quality of alleles\">\n");
 		vcfWriter.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + sample + "\n");
 		
 		for(PileupEntry pileupEntry : pileupFile){
@@ -117,10 +118,14 @@ public class PileupToVcf {
 				vcfWriter.append(refAllele.getAlleleAsString());
 				vcfWriter.append('\t');
 				vcfWriter.append(altAllele.getAlleleAsString());
-				vcfWriter.append("\t.\tPASS\t.\tAD\t");
+				vcfWriter.append("\t.\tPASS\t.\tAD:RQ\t");
 				vcfWriter.append(String.valueOf(refCount));
 				vcfWriter.append(',');
 				vcfWriter.append(String.valueOf(altCount));
+				vcfWriter.append(':');
+				vcfWriter.append(String.valueOf(pileupEntry.getAlleleAverageQuality(refAllele)));
+				vcfWriter.append(',');
+				vcfWriter.append(String.valueOf(pileupEntry.getAlleleAverageQuality(altAllele)));
 				vcfWriter.append('\n');
 				
 			}

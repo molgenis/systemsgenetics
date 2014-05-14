@@ -54,8 +54,11 @@ public class PileupFile implements Iterable<PileupEntry> {
 		}
 		
 		Allele allele = Allele.create(elements[2]);
-		
-		return new PileupEntry(elements[0], pos, allele, depth, elements[4]);
+		if(elements.length == 5){
+			return new PileupEntry(elements[0], pos, allele, depth, elements[4]);
+		} else {
+			return new PileupEntry(elements[0], pos, allele, depth, elements[4], elements[5]);
+		}
 		
 	}
 
