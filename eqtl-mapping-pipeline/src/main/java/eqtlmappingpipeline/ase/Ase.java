@@ -1,11 +1,14 @@
 package eqtlmappingpipeline.ase;
 
 import eqtlmappingpipeline.Main;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -14,11 +17,15 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -56,6 +63,7 @@ public class Ase {
 	private static final Logger LOGGER = Logger.getLogger(Ase.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
+	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
 
 	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
@@ -106,7 +114,8 @@ public class Ase {
 		final AtomicInteger sampleCounter = new AtomicInteger(0);
 		final AtomicInteger fileCounter = new AtomicInteger(0);
 		final RandomAccessGenotypeData referenceGenotypes;
-
+		final Map<String, String> refToStudySampleId;
+		
 		if (configuration.isRefSet()) {
 			try {
 				referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), configuration.getRefDataCacheSize());
@@ -128,8 +137,30 @@ public class Ase {
 				System.exit(1);
 				return;
 			}
+			
+			if(configuration.isSampleToRefSampleFileSet()){ 
+				try {				
+					refToStudySampleId = readSampleMapping(configuration.getSampleToRefSampleFile());
+					System.out.println("Found " + refToStudySampleId.size() + " sample mappings");
+					LOGGER.info("Found " + refToStudySampleId.size() + " sample mappings");
+				} catch (FileNotFoundException ex) {
+					System.err.println("Cannot find samples mapping file at: " + configuration.getSampleToRefSampleFile().getAbsolutePath());
+					LOGGER.fatal("Cannot find samples mapping file at: " + configuration.getSampleToRefSampleFile().getAbsolutePath(), ex);
+					System.exit(1);
+					return;
+				} catch (Exception ex) {
+					System.err.println("Error reading sample mapping file: " + ex.getMessage());
+					LOGGER.fatal("Error reading sample mapping file", ex);
+					System.exit(1);
+					return;
+				}
+			} else {
+				refToStudySampleId = null;
+			}
+			
 		} else {
 			referenceGenotypes = null;
+			refToStudySampleId = null;
 		}
 
 		if (configuration.isGtfSet()) {
@@ -137,7 +168,6 @@ public class Ase {
 				System.err.println("Cannot read GENCODE gft file.");
 				LOGGER.fatal("Cannot read GENCODE gft file");
 				System.exit(1);
-				return;
 			}
 		}
 
@@ -148,20 +178,20 @@ public class Ase {
 		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler(threads);
 		for (int i = 0; i < threadCount; ++i) {
 
-			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes));
+			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes, refToStudySampleId));
 			worker.setUncaughtExceptionHandler(threadErrorHandler);
 			worker.start();
 			threads.add(worker);
 
 		}
 
-		int running;
+		boolean running;
 		int nextReport = 100;
 		do {
-			running = 0;
+			running = false;
 			for (Thread thread : threads) {
 				if (thread.isAlive()) {
-					running++;
+					running = true;
 				}
 			}
 			try {
@@ -176,7 +206,7 @@ public class Ase {
 				nextReport += 100;
 			}
 
-		} while (running > 0);
+		} while (running);
 
 
 		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
@@ -261,7 +291,7 @@ public class Ase {
 			int bonferroniSignificantCount = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, bonferroniCutoff, false);
 
 			System.err.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
-			LOGGER.fatal("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
+			LOGGER.info("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(bonferroniSignificantCount) + " bonferroni significant ASE variants");
 			
 		} catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException(ex);
@@ -426,6 +456,32 @@ public class Ase {
 		outputWriter.close();
 		return counter;
 
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param sampleToRefSampleFile unmodifiable map with key sample ID in reference and value sample ID of study
+	 * @return 
+	 */
+	private static Map<String, String> readSampleMapping(File sampleToRefSampleFile) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
+		
+		HashMap<String, String> sampleMap = new HashMap<String, String>();
+		
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sampleToRefSampleFile), "UTF-8"));
+		
+		String line;
+		String[] elements;
+		
+		while ((line = reader.readLine()) != null) {
+			elements = TAB_PATTERN.split(line);
+			if(elements.length != 2){
+				throw new Exception("Detected " + elements.length + " columns instead of 2 for this line: " + line);
+			}
+			sampleMap.put(elements[1], elements[0]);
+		}
+		
+		return Collections.unmodifiableMap(sampleMap);
 	}
 	
 	private static class ThreadErrorHandler implements UncaughtExceptionHandler {
