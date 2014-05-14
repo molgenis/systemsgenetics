@@ -73,7 +73,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final int sampleVariantProviderUniqueId;
 	private final int cacheSize;
 	private final List<Boolean> phasing;
-	private final int bytesPerVariant;
+	private final long bytesPerVariant;
 	/**
 	 * The original SNP count in the data regardless of number of read SNPs
 	 */
@@ -137,7 +137,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
-		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f);
+		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f, -1);
 		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		sequences = new HashMap<String, Sequence>();
 		originalSnpCount = readBimFile(bimFile, snpsFactory);
@@ -216,6 +216,10 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 
 		int index = snpIndexces.get(variant);
+		
+		if(index == -1){
+			throw new GenotypeDataException("Error reading variant from bed file. ID: " + variant.getPrimaryVariantId() + " chr: " + variant.getSequenceName() + " pos: " + variant.getStartPos() + " alleles" + variant.getVariantAlleles().toString());
+		}
 
 		long startByte = (index * bytesPerVariant) + 3;
 
