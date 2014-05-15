@@ -177,7 +177,7 @@ public class ReadCountsLoader implements Runnable {
 									continue;
 								}
 
-								List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
+								List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");							
 
 								int a1Count = counts.get(0);
 								int a2Count = counts.get(1);
@@ -191,8 +191,13 @@ public class ReadCountsLoader implements Runnable {
 										&& totalReads <= configuration.getMaxTotalReads()
 										&& minReads / totalReads >= configuration.getMinAlleleReadFraction()) {
 
-									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
-
+									if (variant.getVariantMeta().getRecordType("RQ") == GeneticVariantMeta.Type.FLOAT_LIST) {
+										List<Double> meanAlleleBaseQualties = (List<Double>) record.getGenotypeRecordData("RQ");
+										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count, meanAlleleBaseQualties.get(0), meanAlleleBaseQualties.get(1));
+									} else {
+										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
+									}
+										
 								}
 
 							} catch (GenotypeDataException ex) {

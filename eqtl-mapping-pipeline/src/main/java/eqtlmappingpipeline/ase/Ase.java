@@ -175,7 +175,7 @@ public class Ase {
 
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
 		List<Thread> threads = new ArrayList<Thread>(threadCount);
-		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler(threads);
+		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler();
 		for (int i = 0; i < threadCount; ++i) {
 
 			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes, refToStudySampleId));
@@ -208,6 +208,7 @@ public class Ase {
 
 		} while (running);
 
+		final boolean encounteredBaseQuality = aseResults.isEncounteredBaseQuality();
 
 		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
 		System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
@@ -233,7 +234,7 @@ public class Ase {
 			}
 		}
 
-		int numberOfTests = aseVariants.length;
+		//int numberOfTests = aseVariants.length;
 		//double bonferroniCutoff = 0.05 / numberOfTests;
 		//System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
 		//LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
@@ -269,7 +270,7 @@ public class Ase {
 			File outputFileBonferroni = new File(configuration.getOutputFolder(), correctionMethod == MultipleTestingCorrectionMethod.NONE ? "ase.txt" : "ase_" + correctionMethod.toString().toLowerCase() + ".txt");
 			try {
 
-				int writtenResults = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, correctionMethod);
+				int writtenResults = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, correctionMethod, encounteredBaseQuality);
 
 				if (correctionMethod == MultipleTestingCorrectionMethod.NONE) {
 					System.out.println("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
@@ -340,8 +341,8 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
-		return printAseResults(outputFile, aseVariants, gtfAnnotations, MultipleTestingCorrectionMethod.NONE);
+	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final boolean encounteredBaseQuality) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
+		return printAseResults(outputFile, aseVariants, gtfAnnotations, MultipleTestingCorrectionMethod.NONE, encounteredBaseQuality);
 	}
 
 	/**
@@ -355,11 +356,16 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static int printAseResults(final File outputFile, final AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final MultipleTestingCorrectionMethod multipleTestingCorrectionMethod) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
+	private static int printAseResults(final File outputFile, final AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final MultipleTestingCorrectionMethod multipleTestingCorrectionMethod, final boolean encounteredBaseQuality) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\n");
+		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts");
+
+		if (encounteredBaseQuality) {
+			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
+		}
+		outputWriter.append('\n');
 
 		final double significance = 0.05;
 
@@ -459,13 +465,13 @@ public class Ase {
 			}
 
 			outputWriter.append('\t');
-
 			for (int i = 0; i < aseVariant.getA1Counts().size(); ++i) {
 				if (i > 0) {
 					outputWriter.append(',');
 				}
 				outputWriter.append(String.valueOf(aseVariant.getA1Counts().getQuick(i)));
 			}
+			
 			outputWriter.append('\t');
 			for (int i = 0; i < aseVariant.getA2Counts().size(); ++i) {
 				if (i > 0) {
@@ -473,6 +479,41 @@ public class Ase {
 				}
 				outputWriter.append(String.valueOf(aseVariant.getA2Counts().getQuick(i)));
 			}
+
+			if (encounteredBaseQuality) {
+
+				StringBuilder refMeanBaseQualities = new StringBuilder();
+				double sumRefMeanBaseQualities = 0;
+				for (int i = 0; i < aseVariant.getA1MeanBaseQualities().size(); ++i) {
+					sumRefMeanBaseQualities += aseVariant.getA1MeanBaseQualities().getQuick(i);
+					if (i > 0) {
+						refMeanBaseQualities.append(',');
+					}
+					refMeanBaseQualities.append(String.valueOf(aseVariant.getA1MeanBaseQualities().getQuick(i)));
+				}
+				outputWriter.append('\t');
+				outputWriter.append(String.valueOf( sumRefMeanBaseQualities / aseVariant.getA1MeanBaseQualities().size() ));
+				
+				StringBuilder altMeanBaseQualities = new StringBuilder();
+				double sumAtMeanBaseQualities = 0;
+				for (int i = 0; i < aseVariant.getA2MeanBaseQualities().size(); ++i) {
+					sumAtMeanBaseQualities += aseVariant.getA2MeanBaseQualities().getQuick(i);
+					if (i > 0) {
+						altMeanBaseQualities.append(',');
+					}
+					altMeanBaseQualities.append(String.valueOf(aseVariant.getA2MeanBaseQualities().getQuick(i)));
+				}
+				outputWriter.append('\t');
+				outputWriter.append(String.valueOf( sumAtMeanBaseQualities / aseVariant.getA2MeanBaseQualities().size() ));
+				outputWriter.append('\t');
+				outputWriter.append(refMeanBaseQualities);
+				outputWriter.append('\t');
+				outputWriter.append(altMeanBaseQualities);
+
+			}
+			
+			
+
 			outputWriter.append('\n');
 
 		}
@@ -511,12 +552,6 @@ public class Ase {
 	}
 
 	private static class ThreadErrorHandler implements UncaughtExceptionHandler {
-
-		private final List<Thread> threads;
-
-		public ThreadErrorHandler(List<Thread> threads) {
-			this.threads = threads;
-		}
 
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
