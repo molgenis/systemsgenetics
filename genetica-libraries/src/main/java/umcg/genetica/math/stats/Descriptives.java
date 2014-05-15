@@ -56,7 +56,7 @@ public class Descriptives {
     public static void zScoreToPValue() {
         //Fast look-up service for normal distribution:
         JSci.maths.statistics.NormalDistribution normDist = new JSci.maths.statistics.NormalDistribution();
-        double[] zScoreToPValue = new double[376500];
+        double[] zScoreToPValue = new double[376501];
         
         for (int z = 0; z <= 376500; z++) {
             double zScore = ((double) z - 188250d) / 5000d;
