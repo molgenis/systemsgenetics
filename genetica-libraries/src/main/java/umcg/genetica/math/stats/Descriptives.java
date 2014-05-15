@@ -56,9 +56,10 @@ public class Descriptives {
     public static void zScoreToPValue() {
         //Fast look-up service for normal distribution:
         JSci.maths.statistics.NormalDistribution normDist = new JSci.maths.statistics.NormalDistribution();
-        double[] zScoreToPValue = new double[300001];
-        for (int z = 0; z <= 300000; z++) {
-            double zScore = ((double) z - 150000d) / 5000d;
+        double[] zScoreToPValue = new double[376500];
+        
+        for (int z = 0; z <= 376500; z++) {
+            double zScore = ((double) z - 188250d) / 5000d;
             double pValue;
             //Avoid complementation:
             if (zScore > 0) {
@@ -76,6 +77,24 @@ public class Descriptives {
         }
         m_zScoreToPValue = zScoreToPValue;
     }
+    
+        public static double convertZscoreToPvalue(double zScore) {
+
+        int zScoreIndex = (int) (zScore * 5000.0d) + 188250;
+        if (zScoreIndex < 0) {
+            zScoreIndex = 0;
+        }
+        if (zScoreIndex > 376500) {
+            zScoreIndex = 376500;
+        }
+
+        if (m_zScoreToPValue == null) {
+            zScoreToPValue();
+        }
+        double pValueOverall = m_zScoreToPValue[zScoreIndex];
+        return pValueOverall;
+    }
+    
 
     public static double zScore(double value, double mean, double variance) {
         if (variance > 0.0 && mean > 0.0) {
@@ -137,23 +156,6 @@ public class Descriptives {
             zScoreIndex = 300000;
         }
         return zScoreIndex;
-    }
-
-    public static double convertZscoreToPvalue(double zScore) {
-
-        int zScoreIndex = (int) (zScore * 5000.0d) + 150000;
-        if (zScoreIndex < 0) {
-            zScoreIndex = 0;
-        }
-        if (zScoreIndex > 300000) {
-            zScoreIndex = 300000;
-        }
-
-        if (m_zScoreToPValue == null) {
-            zScoreToPValue();
-        }
-        double pValueOverall = m_zScoreToPValue[zScoreIndex];
-        return pValueOverall;
     }
 
     public static double getSqrt(int nrTotalSamples) {
