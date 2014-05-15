@@ -264,7 +264,7 @@ public class Ase {
 		}
 
 
-		for (MultipleTestingCorrectionMethod correctionMethod : EnumSet.of(MultipleTestingCorrectionMethod.NONE, MultipleTestingCorrectionMethod.BONFERRONI, MultipleTestingCorrectionMethod.HOLM)) {
+		for (MultipleTestingCorrectionMethod correctionMethod : EnumSet.of(MultipleTestingCorrectionMethod.NONE, MultipleTestingCorrectionMethod.BONFERRONI, MultipleTestingCorrectionMethod.HOLM, MultipleTestingCorrectionMethod.BH)) {
 
 			File outputFileBonferroni = new File(configuration.getOutputFolder(), correctionMethod == MultipleTestingCorrectionMethod.NONE ? "ase.txt" : "ase_" + correctionMethod.toString().toLowerCase() + ".txt");
 			try {
@@ -395,6 +395,12 @@ public class Ase {
 				case HOLM:
 					final double holmCutoff = significance / (totalNumberOfTests - counter);
 					if (aseVariant.getMetaPvalue() > holmCutoff) {
+						break aseVariants;
+					}
+					break;
+				case BH:
+					final double qvalue = ((counter + 1d) / totalNumberOfTests) * significance;
+					if (aseVariant.getMetaPvalue() > qvalue) {
 						break aseVariants;
 					}
 					break;

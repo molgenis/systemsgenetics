@@ -9,6 +9,7 @@ public enum MultipleTestingCorrectionMethod {
 	NONE,
 	NOMINAL,
 	BONFERRONI,
+	BH,
 	HOLM;
 	
 }
