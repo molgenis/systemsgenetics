@@ -4,13 +4,15 @@
  */
 package umcg.genetica.methylation;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+
 /**
  *
  * @author MarcJan
  */
-public class ConvertBetaToMvalue {
+public class ConvertBetaAndMvalues {
     
-    public static void transToMvalue(double[][] rawData){
+    public static void transformToMvalue(double[][] rawData){
         double minValue = Double.MAX_VALUE;
         double maxValue = Double.MIN_VALUE;
         
@@ -44,4 +46,31 @@ public class ConvertBetaToMvalue {
             }
         }
     }
+    
+    public static void transformMToBetavalue(DoubleMatrix2D rawData){
+        
+        int probeCount = rawData.rows();
+        int sampleCount = rawData.columns();
+        
+        for (int p=0; p<probeCount; p++) {
+            for (int s=0; s<sampleCount; s++) {
+                double tmpBeta = Math.pow(2, rawData.getQuick(p, s));
+                rawData.setQuick(p, s, tmpBeta/(tmpBeta+1));
+            }
+        }
+    }
+    
+    public static void transformMToBetavalue(double[][] rawData){
+        
+        int probeCount = rawData.length;
+        int sampleCount = rawData[probeCount-1].length;
+        
+        for (int p=0; p<probeCount; p++) {
+            for (int s=0; s<sampleCount; s++) {
+                double tmpBeta = Math.pow(2, rawData[p][s]);
+                rawData[p][s] = tmpBeta/(tmpBeta+1);
+            }
+        }
+    }
+    
 }
