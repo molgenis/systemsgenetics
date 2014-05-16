@@ -388,14 +388,14 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 					case '\r':
 						//if not at last probability of line give error
 						if(s < samples.size() - 1 && currentProbIndex == 2){
-							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " unexpected new line when parsing sample " + samples.get(s).getId() + " sample index: " + s);
+							throw new GenotypeDataException("Error parsing gen file: variant ID: " + variant.getPrimaryVariantId() + " unexpected new line when parsing sample " + samples.get(s).getId() + " sample index: " + s);
 						}
 						//if not at premature line ending just parse the last probability
 					case ' ':
 						try {
 							sampleProbs[currentProbIndex] = Float.parseFloat(currentProb.toString());
 						} catch (NumberFormatException e) {
-							throw new GenotypeDataException("Error parsing gen file: " + variant.getPrimaryVariantId() + " genotype probability value " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing probability with value \"" + currentProb.toString() + "\": " + e.getMessage());
+							throw new GenotypeDataException("Error parsing gen file: variant ID: " + variant.getPrimaryVariantId() + " genotype probability value " + (currentProbIndex + 1) + " of sample " + samples.get(s).getId() + " sample index: " + s + " problem parsing probability with value \"" + currentProb.toString() + "\": " + e.getMessage());
 						}
 						currentProb = new StringBuilder();
 						++currentProbIndex;

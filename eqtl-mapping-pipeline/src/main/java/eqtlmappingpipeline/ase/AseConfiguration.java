@@ -46,7 +46,8 @@ public class AseConfiguration {
 	private final RandomAccessGenotypeDataReaderFormats refDataType;
 	private final int refDataCacheSize;
 	private final int maxTotalReads;
-	private final File gencodeGtf;
+	private final File gtf;
+	private final File sampleToRefSampleFile;
 
 	static {
 
@@ -130,6 +131,12 @@ public class AseConfiguration {
 		OptionBuilder.withDescription("Reference genotype data cache. Trade memory usage for speed");
 		OptionBuilder.withLongOpt("cache");
 		OPTIONS.addOption(OptionBuilder.create("c"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Tab seperated file with column 1 sample ID and column 2 sample ID in reference genotype data, no header. If only contains a mapping for a subset of samples the original identifier in the refernece is used");
+		OptionBuilder.withLongOpt("sampleCoupling");
+		OPTIONS.addOption(OptionBuilder.create("sc"));
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
@@ -306,9 +313,16 @@ public class AseConfiguration {
 
 		if (commandLine.hasOption('f')) {
 			String gencodeGtfPath = commandLine.getOptionValue('f');
-			gencodeGtf = new File(gencodeGtfPath);
+			gtf = new File(gencodeGtfPath);
 		} else {
-			gencodeGtf = null;
+			gtf = null;
+		}
+		
+		
+		if (commandLine.hasOption("sc")) {
+			sampleToRefSampleFile = new File(commandLine.getOptionValue("sc"));
+		} else {
+			sampleToRefSampleFile = null;
 		}
 
 		debugMode = commandLine.hasOption('d');
@@ -367,11 +381,15 @@ public class AseConfiguration {
 			System.out.println();
 			System.out.println(" - Reference genotype cache size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(refDataCacheSize));
 			LOGGER.info("Reference genotype cache size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(refDataCacheSize));
+			if(isSampleToRefSampleFileSet()){
+				System.out.println(" - Sample mapping to reference file: " + sampleToRefSampleFile.getAbsolutePath());
+				LOGGER.info("Sample mapping to reference file: " + sampleToRefSampleFile.getAbsolutePath());
+			}
 		}
 
 		if (isGtfSet()) {
-			System.out.print(" - GTF file: " + gencodeGtf.getAbsolutePath());
-			LOGGER.info("GTF file: " + gencodeGtf.getAbsolutePath());
+			System.out.print(" - GTF file: " + gtf.getAbsolutePath());
+			LOGGER.info("GTF file: " + gtf.getAbsolutePath());
 		}
 
 
@@ -439,7 +457,7 @@ public class AseConfiguration {
 	}
 
 	public File getGtf() {
-		return gencodeGtf;
+		return gtf;
 	}
 
 	public int getMaxTotalReads() {
@@ -447,10 +465,19 @@ public class AseConfiguration {
 	}
 
 	public boolean isGtfSet() {
-		return gencodeGtf != null;
+		return gtf != null;
 	}
 
 	public double getMinAlleleReadFraction() {
 		return minAlleleReadFraction;
 	}
+
+	public File getSampleToRefSampleFile() {
+		return sampleToRefSampleFile;
+	}
+	
+	public boolean isSampleToRefSampleFileSet(){
+		return sampleToRefSampleFile != null;
+	}
+	
 }

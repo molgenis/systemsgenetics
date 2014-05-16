@@ -1,9 +1,8 @@
 package eqtlmappingpipeline.ase;
 
+import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
-import cern.jet.stat.Probability;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+import cern.jet.stat.tdouble.Probability;
 import org.apache.commons.math3.stat.inference.AlternativeHypothesis;
 import org.apache.commons.math3.stat.inference.BinomialTest;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
@@ -23,6 +22,8 @@ public class AseVariant implements Comparable<AseVariant>{
 	private final Allele a2;
 	private final IntArrayList a1Counts;
 	private final IntArrayList a2Counts;
+	private final DoubleArrayList a1MeanBaseQualities;
+	private final DoubleArrayList a2MeanBaseQualities;
 	private double metaZscore;
 	private double metaPvalue;
 	private double countPearsonR;
@@ -37,6 +38,8 @@ public class AseVariant implements Comparable<AseVariant>{
 		this.a2 = a2;
 		this.a1Counts = new IntArrayList();
 		this.a2Counts = new IntArrayList();
+		this.a1MeanBaseQualities = new DoubleArrayList();
+		this.a2MeanBaseQualities = new DoubleArrayList();
 		this.metaZscore = Double.NaN;
 		this.metaPvalue = Double.NaN;
 		this.countPearsonR = Double.NaN;
@@ -70,6 +73,14 @@ public class AseVariant implements Comparable<AseVariant>{
 		return a2Counts;
 	}
 
+	public DoubleArrayList getA1MeanBaseQualities() {
+		return a1MeanBaseQualities;
+	}
+
+	public DoubleArrayList getA2MeanBaseQualities() {
+		return a2MeanBaseQualities;
+	}
+	
 	public void calculateStatistics() {
 
 		double zscoreSum = 0;
@@ -105,7 +116,6 @@ public class AseVariant implements Comparable<AseVariant>{
 
 
 	}
-
 	public double getMetaZscore() {
 		if(Double.isNaN(metaZscore)){
 			calculateStatistics();
@@ -121,6 +131,10 @@ public class AseVariant implements Comparable<AseVariant>{
 	}
 
 	public synchronized void addCounts(int a1Count, int a2Count) {
+		addCounts(a1Count, a2Count, Double.NaN, Double.NaN);
+	}
+	
+	public synchronized void addCounts(int a1Count, int a2Count, double a1MeanBaseQuality, double a2MeanBaseQuality) {
 
 		this.metaZscore = Double.NaN;//Reset meta Z-score when adding new data
 		this.metaPvalue = Double.NaN;
@@ -128,6 +142,9 @@ public class AseVariant implements Comparable<AseVariant>{
 
 		a1Counts.add(a1Count);
 		a2Counts.add(a2Count);
+		
+		a1MeanBaseQualities.add(a1MeanBaseQuality);
+		a2MeanBaseQualities.add(a2MeanBaseQuality);
 
 	}
 
@@ -157,7 +174,5 @@ public class AseVariant implements Comparable<AseVariant>{
 		}
 		return countPearsonR;
 	}
-
-
 
 }

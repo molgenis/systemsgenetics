@@ -39,7 +39,7 @@ public class AseVariantTest {
 		aseVariant4.addCounts(211, 27);
 		aseVariant4.addCounts(196, 45);
 		aseVariant4.addCounts(187, 54);
-
+		
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class AseVariantTest {
 		assertEquals(aseVariant1.getMetaZscore(), 0.8255035, 0.0001);
 		assertEquals(aseVariant2.getMetaZscore(), -1.651007, 0.0001);
 		assertEquals(aseVariant3.getMetaZscore(), 6.639489, 0.00001);
-
+		
 	}
 
 	@Test

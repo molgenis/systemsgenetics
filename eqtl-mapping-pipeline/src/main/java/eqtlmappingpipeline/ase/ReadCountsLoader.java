@@ -4,8 +4,10 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
@@ -33,6 +35,7 @@ public class ReadCountsLoader implements Runnable {
 	private final AtomicInteger fileCounter;
 	private final AseConfiguration configuration;
 	private final RandomAccessGenotypeData genotypeReference;
+	Map<String, String> refToStudySampleId;
 	private static final Logger LOGGER = Logger.getLogger(ReadCountsLoader.class);
 
 	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration) {
@@ -40,16 +43,47 @@ public class ReadCountsLoader implements Runnable {
 	}
 
 	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference) {
+		this(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, genotypeReference, null);
+	}
+
+	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference, Map<String, String> refToStudySampleId) {
 		this.inputFileIterator = inputFileIterator;
 		this.aseResults = aseResults;
 		this.sampleCounter = sampleCounter;
 		this.fileCounter = fileCounter;
 		this.configuration = configuration;
 		this.genotypeReference = genotypeReference;
+		this.refToStudySampleId = refToStudySampleId == null ? (Map<String, String>) Collections.EMPTY_MAP : refToStudySampleId;
 	}
 
 	@Override
 	public void run() {
+
+		TObjectIntMap<String> referenceSamples = null;
+		try {
+			if (genotypeReference != null) {
+				String[] referenceSampleNames = genotypeReference.getSampleNames();
+				referenceSamples = new TObjectIntHashMap<String>(referenceSampleNames.length, 0.2f, -1);
+
+				int i = 0;
+				for (String sample : referenceSampleNames) {
+
+					String translatedSampleId = refToStudySampleId.get(sample);
+					if(translatedSampleId != null){
+						referenceSamples.put(translatedSampleId, i);
+					} else {
+						referenceSamples.put(sample, i);
+					}
+
+					++i;
+				}
+
+			}
+		} catch (Exception ex) {
+			System.err.println("Error reading samples from reference data: " + ex.getMessage());
+			LOGGER.fatal("Error reading samples from reference data.", ex);
+			System.exit(1);
+		}
 
 		File inputFile = null;
 
@@ -83,19 +117,6 @@ public class ReadCountsLoader implements Runnable {
 				//TODO test if VCF contains the read depth field
 
 				List<Sample> samples = genotypeData.getSamples();
-
-				TObjectIntMap<String> referenceSamples = null;
-				if (genotypeReference != null) {
-					String[] referenceSampleNames = genotypeReference.getSampleNames();
-					referenceSamples = new TObjectIntHashMap<String>(referenceSampleNames.length, 0.2f, -1);
-
-					int i = 0;
-					for (String sample : referenceSampleNames) {
-						referenceSamples.put(sample, i);
-						++i;
-					}
-
-				}
 
 				for (GeneticVariant variant : genotypeData) {
 
@@ -145,7 +166,7 @@ public class ReadCountsLoader implements Runnable {
 									}
 									int sampleIndexRef = referenceSamples.get(sample.getId());
 									if (sampleIndexRef == -1) {
-										throw new GenotypeDataException("Sample " + sample.getId() + " not found in data with refernece genotypes");
+										throw new GenotypeDataException("Sample " + sample.getId() + " not found in data with reference genotypes");
 									}
 									alleles = referenceVariantAlleles.get(sampleIndexRef);
 
@@ -155,22 +176,27 @@ public class ReadCountsLoader implements Runnable {
 									continue;
 								}
 
-								List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");
+								List<Integer> counts = (List<Integer>) record.getGenotypeRecordData("AD");							
 
 								int a1Count = counts.get(0);
 								int a2Count = counts.get(1);
 								int totalReads = a1Count + a2Count;
-								
+
 								//save as double for divide below
 								double minReads = Math.min(a1Count, a2Count);
 
 								if (totalReads >= configuration.getMinTotalReads()
-										&& minReads >= configuration.getMinAlleleReads() 
+										&& minReads >= configuration.getMinAlleleReads()
 										&& totalReads <= configuration.getMaxTotalReads()
 										&& minReads / totalReads >= configuration.getMinAlleleReadFraction()) {
 
-									aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
-
+									if (variant.getVariantMeta().getRecordType("RQ") == GeneticVariantMeta.Type.FLOAT_LIST) {
+										List<Double> meanAlleleBaseQualties = (List<Double>) record.getGenotypeRecordData("RQ");
+										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count, meanAlleleBaseQualties.get(0), meanAlleleBaseQualties.get(1));
+									} else {
+										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variant.getVariantId(), variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
+									}
+										
 								}
 
 							} catch (GenotypeDataException ex) {
