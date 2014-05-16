@@ -16,6 +16,7 @@ public class PileupEntry {
 	private final int readDepth;
 	private final TObjectIntHashMap<Allele> alleleCounts;
 	private final TObjectDoubleHashMap<Allele> alleleAverageQualities;
+	private final int minimumBaseQuality;
 
 	/**
 	 * Only handles SNPs
@@ -26,17 +27,18 @@ public class PileupEntry {
 	 * @param readDepth
 	 * @param basesString
 	 */
-	public PileupEntry(String chr, int pos, Allele refAllele, int readDepth, String basesString) throws PileupParseException {
-		this(chr, pos, refAllele, readDepth, basesString, null);
+	public PileupEntry(String chr, int pos, Allele refAllele, int readDepth, String basesString, int minimumBaseQuality) throws PileupParseException {
+		this(chr, pos, refAllele, readDepth, basesString, null, minimumBaseQuality);
 	}
 
-	public PileupEntry(String chr, int pos, Allele refAllele, int readDepth, String basesString, String basesQualityString) throws PileupParseException {
+	public PileupEntry(String chr, int pos, Allele refAllele, int readDepth, String basesString, String basesQualityString, int minimumBaseQuality) throws PileupParseException {
 		this.chr = chr;
 		this.pos = pos;
 		this.refAllele = refAllele;
 		this.readDepth = readDepth;
 		this.alleleCounts = new TObjectIntHashMap<Allele>();
 		this.alleleAverageQualities = new TObjectDoubleHashMap<Allele>();
+		this.minimumBaseQuality = minimumBaseQuality;
 
 		alleleCounts.put(Allele.A, 0);
 		alleleCounts.put(Allele.C, 0);
@@ -61,7 +63,7 @@ public class PileupEntry {
 	 *
 	 * @param basesString
 	 */
-	private void parseBasesString(final String basesString, final int[] basesQuality) throws PileupParseException {
+	private void parseBasesString(final String basesString, final int[] basesQualities) throws PileupParseException {
 
 		char[] basesChars = basesString.toCharArray();
 
@@ -71,9 +73,11 @@ public class PileupEntry {
 			switch (basesChars[i]) {
 				case '.':
 				case ',':
-					alleleCounts.increment(refAllele);
-					if (basesQuality != null) {
-						alleleAverageQualities.adjustValue(refAllele, basesQuality[basesQualityI]);
+					if(basesQualities == null || basesQualities[basesQualityI] >= minimumBaseQuality){
+						alleleCounts.increment(refAllele);
+						if (basesQualities != null) {
+							alleleAverageQualities.adjustValue(refAllele, basesQualities[basesQualityI]);
+						}
 					}
 					++basesQualityI;
 					break;
@@ -109,10 +113,12 @@ public class PileupEntry {
 				case 'C':
 				case 'T':
 				case 'G':
-					Allele allele = Allele.create(basesChars[i]);
-					alleleCounts.increment(allele);
-					if (basesQuality != null) {
-						alleleAverageQualities.adjustValue(allele, basesQuality[basesQualityI]);
+					if(basesQualities == null || basesQualities[basesQualityI] >= minimumBaseQuality){
+						Allele allele = Allele.create(basesChars[i]);
+						alleleCounts.increment(allele);
+						if (basesQualities != null) {
+							alleleAverageQualities.adjustValue(allele, basesQualities[basesQualityI]);
+						}
 					}
 					++basesQualityI;
 					break;
@@ -124,7 +130,7 @@ public class PileupEntry {
 		}
 
 		for (Allele allele : alleleAverageQualities.keySet()) {
-			if (basesQuality == null) {
+			if (basesQualities == null) {
 				alleleAverageQualities.put(allele, Double.NaN);
 			} else {
 				alleleAverageQualities.put(allele, alleleAverageQualities.get(allele) / alleleCounts.get(allele));
@@ -165,6 +171,10 @@ public class PileupEntry {
 		return alleleAverageQualities.get(allele);
 	}
 
+	public int getMinimumBaseQuality() {
+		return minimumBaseQuality;
+	}
+	
 	private int[] parseBasesQualityString(String basesQualityString) {
 
 		char[] basesQualityChars = basesQualityString.toCharArray();
