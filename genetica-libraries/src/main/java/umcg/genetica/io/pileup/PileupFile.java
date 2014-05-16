@@ -20,13 +20,15 @@ public class PileupFile implements Iterable<PileupEntry> {
 
 	File pileupFile;
 	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
+	private final int minimumBaseQuality;
 
-	public PileupFile(String pileupFilePath) throws FileNotFoundException, IOException {
-		this(new File(pileupFilePath));
+	public PileupFile(String pileupFilePath, int minimumBaseQuality) throws FileNotFoundException, IOException {
+		this(new File(pileupFilePath), minimumBaseQuality);
 	}
 	
-	public PileupFile(File pileupFile) throws FileNotFoundException, IOException {
+	public PileupFile(File pileupFile, int minimumBaseQuality) throws FileNotFoundException, IOException {
 		this.pileupFile = pileupFile;
+		this.minimumBaseQuality = minimumBaseQuality;
 
 		if (!pileupFile.isFile()) {
 			throw new FileNotFoundException("Cannot find pileup file at: " + pileupFile.getAbsolutePath());
@@ -37,7 +39,7 @@ public class PileupFile implements Iterable<PileupEntry> {
 
 	}
 	
-	public static PileupEntry parsePileupLine(String line) throws PileupParseException{
+	public static PileupEntry parsePileupLine(String line, int minimumBaseQuality) throws PileupParseException{
 		String[] elements = TAB_PATTERN.split(line);
 		
 		final int pos;
@@ -54,8 +56,11 @@ public class PileupFile implements Iterable<PileupEntry> {
 		}
 		
 		Allele allele = Allele.create(elements[2]);
-		
-		return new PileupEntry(elements[0], pos, allele, depth, elements[4]);
+		if(elements.length == 5){
+			return new PileupEntry(elements[0], pos, allele, depth, elements[4], minimumBaseQuality);
+		} else {
+			return new PileupEntry(elements[0], pos, allele, depth, elements[4], elements[5], minimumBaseQuality);
+		}
 		
 	}
 
@@ -79,6 +84,10 @@ public class PileupFile implements Iterable<PileupEntry> {
 			throw new RuntimeException(ex);
 		} 
 	}
+	
+	public String getAbsolutePath(){
+			return pileupFile.getAbsolutePath();
+		}
 
 	private class pileupFileIterator implements Iterator<PileupEntry> {
 
@@ -89,7 +98,7 @@ public class PileupFile implements Iterable<PileupEntry> {
 			this.reader = reader;
 			try {
 				String line = reader.readLine();
-				next = line == null ? null : parsePileupLine(line);
+				next = line == null ? null : parsePileupLine(line, minimumBaseQuality);
 			} catch (IOException ex) {
 				throw new RuntimeException(ex);
 			} catch (PileupParseException ex) {
@@ -107,7 +116,7 @@ public class PileupFile implements Iterable<PileupEntry> {
 			PileupEntry current = next;
 			try {
 				String line = reader.readLine();
-				next = line == null ? null : parsePileupLine(line);
+				next = line == null ? null : parsePileupLine(line, minimumBaseQuality);
 			} catch (IOException ex) {
 				throw new RuntimeException(ex);
 			} catch (PileupParseException ex) {
