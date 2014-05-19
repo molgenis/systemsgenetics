@@ -3,7 +3,9 @@ package org.molgenis.genotype.variant.sampleProvider;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GenotypeRecord;
 
 /**
  * Loads the sample variants for a variant. Is used to enable lazy loading of
@@ -22,6 +24,14 @@ public interface SampleVariantsProvider
 	 * @return
 	 */
 	List<Alleles> getSampleVariants(GeneticVariant variant);
+	
+	/**
+	 * Get information of each sample variant for a variant
+	 * 
+	 * @param variant
+	 * @return
+	 */
+	FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant);
 
 	/**
 	 * Returns for each sample if it phased or not

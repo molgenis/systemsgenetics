@@ -83,7 +83,6 @@ public class RegulomeDbSupportingDataNGTest {
 	 */
 	@Test
 	public void testHashCode() throws Exception {
-		System.out.println("hashCode");
 		RegulomeDbSupportingData instance = testData;
 		RegulomeDbSupportingData otherData = new RegulomeDbSupportingData("Chromatin_Structure|DNase-seq|Nb4");
 		int expResult = otherData.hashCode();
@@ -96,7 +95,6 @@ public class RegulomeDbSupportingDataNGTest {
 	 */
 	@Test
 	public void testEquals() throws Exception {
-		System.out.println("equals");
 		RegulomeDbSupportingData instance = testData;
 		RegulomeDbSupportingData otherData = new RegulomeDbSupportingData("Chromatin_Structure|DNase-seq|Nb4");
 		boolean expResult = true;

@@ -1,5 +1,6 @@
 package org.molgenis.genotype.variant;
 
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -20,7 +21,8 @@ import org.testng.annotations.Test;
 public class ReadOnlyGeneticVariantTest
 {
 	private GeneticVariant testInstance;
-
+	private GeneticVariantMeta variantMeta;
+	
 	@BeforeClass
 	public void setUp()
 	{
@@ -33,8 +35,8 @@ public class ReadOnlyGeneticVariantTest
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		SampleVariantsProvider sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);
 
-		testInstance = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", sampleAllelesProvider, 'A', 'C');
-
+		variantMeta = mock(GeneticVariantMeta.class);
+		testInstance = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", sampleAllelesProvider, 'A', 'C');
 	}
 
 	@Test
@@ -138,7 +140,7 @@ public class ReadOnlyGeneticVariantTest
 
 	private GeneticVariant createGeneticVariant(List<String> ids)
 	{
-		return ReadOnlyGeneticVariant.createSnp(ids, 1, "chr1", null, 'A', 'C');
+		return ReadOnlyGeneticVariant.createSnp(variantMeta, ids, 1, "chr1", null, 'A', 'C');
 	}
 
 	@Test
@@ -146,13 +148,13 @@ public class ReadOnlyGeneticVariantTest
 	{
 		assertEquals(testInstance.isAtOrGcSnp(), false);
 
-		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'G', 'C');
-		GeneticVariant testInstance3 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'C', 'G');
-		GeneticVariant testInstance4 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'A', 'T');
-		GeneticVariant testInstance5 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'T', 'A');
-		GeneticVariant testInstance6 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'C', 'A');
-		GeneticVariant testInstance7 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'G', 'A');
-		GeneticVariant testInstance8 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'G', 'T');
+		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'G', 'C');
+		GeneticVariant testInstance3 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'C', 'G');
+		GeneticVariant testInstance4 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'A', 'T');
+		GeneticVariant testInstance5 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'T', 'A');
+		GeneticVariant testInstance6 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'C', 'A');
+		GeneticVariant testInstance7 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'G', 'A');
+		GeneticVariant testInstance8 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'G', 'T');
 
 		assertEquals(testInstance2.isAtOrGcSnp(), true);
 		assertEquals(testInstance3.isAtOrGcSnp(), true);
@@ -168,7 +170,7 @@ public class ReadOnlyGeneticVariantTest
 	public void checkRefIsPartOfAlleles()
 	{
 		@SuppressWarnings("unused")
-		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "chr1", null, 'A', 'C', 'T');
+		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "chr1", null, 'A', 'C', 'T');
 	}
 
 	public void testMoveRefToFirstOfAlleles()
@@ -177,7 +179,7 @@ public class ReadOnlyGeneticVariantTest
 		alleles.add("A");
 		alleles.add("C");
 		alleles.add("T");
-		GeneticVariant testInstance2 = testInstance = ReadOnlyGeneticVariant.createVariant("rs1", 1, "chr1", null,
+		GeneticVariant testInstance2 = testInstance = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs1", 1, "chr1", null,
 				alleles, "T");
 
 		ArrayList<String> allelesExpectedOrder = new ArrayList<String>(3);

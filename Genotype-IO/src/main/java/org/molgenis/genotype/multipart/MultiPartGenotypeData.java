@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
-
+import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -33,7 +33,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	private static final Pattern VCF_PATTERN = Pattern.compile(".*vcf\\.gz$", Pattern.CASE_INSENSITIVE);
 	private final Map<String, Annotation> variantAnnotationsMap;
 	private final Map<String, SampleAnnotation> sampleAnnotationsMap;
-	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(MultiPartGenotypeData.class);
+	private static final Logger LOGGER = Logger.getLogger(MultiPartGenotypeData.class);
 
 	/**
 	 * Can map multiple times to same genotype dataset if a genotype dataset
@@ -50,7 +50,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		this(new HashSet<RandomAccessGenotypeData>(genotypeDataCollection));
 	}
 
-	public MultiPartGenotypeData(HashSet<RandomAccessGenotypeData> genotypeDataCollection)
+	public MultiPartGenotypeData(Set<RandomAccessGenotypeData> genotypeDataCollection)
 			throws IncompatibleMultiPartGenotypeDataException
 	{
 		
@@ -62,7 +62,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			
 			String sequenceName = genotypeData.getSeqNames().get(0);
 			
-			LOGGER.info("Started loading chr " + sequenceName + " to multipart data");
+			//LOGGER.debug("Started loading chr " + sequenceName + " to multipart data");
 			
 			if (samples != null)
 			{
@@ -153,13 +153,13 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 			if (matcher.matches())
 			{
-				LOGGER.info("Adding to multipart data: " + file.getAbsolutePath());
+				//LOGGER.debug("Adding to multipart data: " + file.getAbsolutePath());
 				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize));
 			} 
 		}
 		
 		if(genotypeDataSets.isEmpty()){
-			throw new GenotypeDataException("Did not detect any vcf.gz files at:" + vcfFolder.getAbsolutePath());
+			throw new GenotypeDataException("Did not detect any vcf.gz files at: " + vcfFolder.getAbsolutePath());
 		}
 
 		return new MultiPartGenotypeData(genotypeDataSets);
@@ -286,6 +286,9 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 	@Override
 	public void close() throws IOException {
+		for(RandomAccessGenotypeData g : genotypeDataCollection){
+			g.close();
+		}
 	}
 
 	@Override

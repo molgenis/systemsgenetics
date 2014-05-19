@@ -19,7 +19,13 @@ public class MafCalculator {
 
 
 		for (Allele allele : alleles.getAlleles()) {
-			alleleCounts.put(allele, 0);
+			if(allele != Allele.ZERO){
+				alleleCounts.put(allele, 0);
+			}
+		}
+		
+		if (alleleCounts.isEmpty()) {
+			return new MafResult(Allele.ZERO, 0);
 		}
 
 		for (Alleles sampleAlleles : samplesAlleles) {

@@ -1,7 +1,10 @@
 package org.molgenis.genotype.variant;
 
 import java.util.ArrayList;
+
 import org.molgenis.genotype.Alleles;
+
+import static org.mockito.Mockito.mock;
 import static org.testng.AssertJUnit.assertEquals;
 
 import org.molgenis.genotype.DummySampleVariantsProvider;
@@ -26,23 +29,26 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 	GeneticVariant variant11;
 	GeneticVariant variant12;
 
+	GeneticVariantMeta variantMeta;
+	
 	@BeforeMethod
 	public void setup()
 	{
 
 		SampleVariantsProvider provider1 = new DummySampleVariantsProvider(new ArrayList<Alleles>());
 		SampleVariantsProvider provider2 = new DummySampleVariantsProvider(new ArrayList<Alleles>());
-
-		variant1 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "1", provider1, 'A', 'T');
-		variant2 = ReadOnlyGeneticVariant.createSnp("rs2", 1, "1", provider1, 'A', 'T');
-		variant3 = ReadOnlyGeneticVariant.createSnp("rs3", 2, "1", provider1, 'A', 'T');
-		variant4 = ReadOnlyGeneticVariant.createSnp("rs4", 1, "2", provider1, 'A', 'T');
-		variant5 = ReadOnlyGeneticVariant.createSnp("rs5", 1, "1", provider1, 'G', 'T');
-		variant6 = ReadOnlyGeneticVariant.createVariant("rs6", 1, "1", provider1, "G", "AA");
-		variant7 = ReadOnlyGeneticVariant.createVariant("rs7", 1, "1", provider1, "GG", "T");
-		variant8 = ReadOnlyGeneticVariant.createVariant("rs8", 1, "X", provider1, "GG", "T");
-		variant9 = ReadOnlyGeneticVariant.createSnp("rs1", 1, "1", provider2, 'A', 'T');
-		variant10 = ReadOnlyGeneticVariant.createSnp("rs1", 3, "1", provider2, 'T', 'T');
+		variantMeta = mock(GeneticVariantMeta.class);
+		
+		variant1 = ReadOnlyGeneticVariant.createSnp(variantMeta , "rs1", 1, "1", provider1, 'A', 'T');
+		variant2 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs2", 1, "1", provider1, 'A', 'T');
+		variant3 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs3", 2, "1", provider1, 'A', 'T');
+		variant4 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs4", 1, "2", provider1, 'A', 'T');
+		variant5 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs5", 1, "1", provider1, 'G', 'T');
+		variant6 = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs6", 1, "1", provider1, "G", "AA");
+		variant7 = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs7", 1, "1", provider1, "GG", "T");
+		variant8 = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs8", 1, "X", provider1, "GG", "T");
+		variant9 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "1", provider2, 'A', 'T');
+		variant10 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 3, "1", provider2, 'T', 'T');
 		variant11 = new GeneticVariantTreeSet.DummyGeneticVariant("22", Integer.MIN_VALUE);
 		variant12 = new GeneticVariantTreeSet.DummyGeneticVariant("22", Integer.MAX_VALUE);
 
@@ -104,11 +110,11 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(Double.isNaN(variant.getHwePvalue()), true);
 		
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
 		assertEquals(variant.getHwePvalue(), 1d);
 		
 		
@@ -120,7 +126,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
 		assertEquals(variant.getHwePvalue(), 0.04761905d, 0.000001d);
 		
 		
@@ -131,7 +137,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
 		assertEquals(variant.getHwePvalue(), 0.04761905d, 0.000001d);
 		
 		
@@ -144,7 +150,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
 		assertEquals(variant.getHwePvalue(), 0.3650794d, 0.000001d);
 		
 		
@@ -155,7 +161,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
 		assertEquals(variant.getHwePvalue(), 0.3650794d, 0.000001d);
 		
 		sampleAlleles = new ArrayList<Alleles>();
@@ -166,7 +172,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C'}));
 		assertEquals(variant.getHwePvalue(), 0.3650794d, 0.000001d);
 		
 	}
@@ -187,7 +193,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 1d, 0.000001d);
 		
@@ -198,7 +204,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 0.8d, 0.000001d);
 		
@@ -210,7 +216,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 0.8d, 0.000001d);
 		
@@ -221,7 +227,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 0.8d, 0.000001d);
 		
@@ -232,7 +238,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 0.6d, 0.000001d);
 		
@@ -244,7 +250,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('\0', '\0'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 0.2d, 0.000001d);
 		
@@ -256,7 +262,7 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		sampleAlleles.add(Alleles.createBasedOnChars('\0', '\0'));
 		sampleAlleles.add(Alleles.createBasedOnChars('A', '\0'));
 		sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);	
-		variant = ReadOnlyGeneticVariant.createVariant("rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
+		variant = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs", 1, "chr", sampleAllelesProvider, Alleles.createBasedOnChars(new char[]{'A', 'C', 'G'}));
 		
 		assertEquals(variant.getCallRate(), 0.0d, 0.000001d);
 		

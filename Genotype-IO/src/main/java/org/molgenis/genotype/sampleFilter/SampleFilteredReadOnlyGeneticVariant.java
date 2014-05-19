@@ -14,10 +14,13 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -212,7 +215,7 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 
 	@Override
 	public float[][] getSampleGenotypeProbilities() {
-		
+
 		float[][] unfilteredProbs = original.getSampleGenotypeProbilities();
 		float[][] includedSamplesProbs = new float[genotypeData.getIncludedSampleCount()][3];
 
@@ -231,13 +234,69 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 		}
 
 		return includedSamplesProbs;
-		
+
 	}
-	
-	
 
 	@Override
 	public SampleVariantsProvider getSampleVariantsProvider() {
 		return original.getSampleVariantsProvider();
+	}
+
+	@Override
+	public GeneticVariantMeta getVariantMeta() {
+		return original.getVariantMeta();
+	}
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
+
+		final Iterator<GenotypeRecord> originalRecords = original.getSampleGenotypeRecords().iterator();
+
+		return new FixedSizeIterable<GenotypeRecord>() {
+			@Override
+			public int size() {
+				return genotypeData.getIncludedSampleCount();
+			}
+
+			@Override
+			public Iterator<GenotypeRecord> iterator() {
+				return new Iterator<GenotypeRecord>() {
+					int i = 0;
+					Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
+
+					@Override
+					public boolean hasNext() {
+						return i < genotypeData.getIncludedSampleCount();
+					}
+
+					@Override
+					public GenotypeRecord next() {
+						if (i < genotypeData.getIncludedSampleCount() ) {
+							try {
+								while (originalRecords.hasNext()) {
+									GenotypeRecord x = originalRecords.next();
+									if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
+										++i;
+										return x;
+									}
+								}
+								throw new GenotypeDataException("Error in filtering on included samples.");
+							} catch (NoSuchElementException e) {
+								throw new GenotypeDataException("Error in filtering on included samples. More records than samples detected", e);
+							}
+						} else {
+							throw new GenotypeDataException("Error in filtering on included samples.");
+						}
+					}
+
+					@Override
+					public void remove() {
+						throw new UnsupportedOperationException("Not supported yet.");
+					}
+				};
+			}
+		};
+
+
 	}
 }

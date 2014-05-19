@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,10 +22,15 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.util.CalledDosageConvertor;
-import org.molgenis.genotype.util.GeneticVariantTreeSet;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
+import org.molgenis.genotype.util.RecordIteratorCreators;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GeneticVariantMetaMap;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -42,13 +46,14 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 	private final float[][][] probabilitiesMatrix;
 	
 	private final int sampleVariantProviderUniqueId;
-	private final GeneticVariantTreeSet<GeneticVariant> variants;
+	private final GeneticVariantRange variants;
 	private final HashMap<VariantInformation, Integer> variantAllelesIndex;
 	private final LinkedHashMap<Sample, Integer> samples;
 	private static final Logger LOGGER = Logger.getLogger(GenotypeDataEditableProbabilities.class);
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private final LinkedHashSet<String> sequenceNames;
+	private final GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 	
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 
@@ -71,7 +76,7 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 			
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		
-		this.variants = new GeneticVariantTreeSet<GeneticVariant>();
+		GeneticVariantRange.ClassGeneticVariantRangeCreate variantFactory = GeneticVariantRange.createRangeFactory(variantAllelesIndex.size());
 		
 		this.sequenceNames = new LinkedHashSet<String>();
 		for(VariantInformation variantInfo : variantAllelesIndex.keySet()){
@@ -80,13 +85,15 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 				throw new GenotypeDataException("Only biallelic supported");
 			}
 			
-			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(variantInfo.getVariantId(), variantInfo.getStartPos(), variantInfo.getSequenceName(), this, variantInfo.getAlleles().get(0), variantInfo.getAlleles().get(1));
-			variants.add(variant);
+			GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, variantInfo.getVariantId(), variantInfo.getStartPos(), variantInfo.getSequenceName(), this, variantInfo.getAlleles().get(0), variantInfo.getAlleles().get(1));
+			variantFactory.addVariant(variant);
 			if(!sequenceNames.contains(variant.getSequenceName())){
 				sequenceNames.add(variant.getSequenceName());
 			}
 			
 		}
+		
+		this.variants = variantFactory.createRange();
 		
 		probabilitiesMatrix = new float[variants.size()][samples.size()][3];
 		
@@ -135,17 +142,17 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return variants.getSequencePosVariants(seqName, startPos);
+		return variants.getVariantAtPos(seqName, startPos);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return variants.getSequenceVariants(seqName);
+		return variants.getVariantsBySequence(seqName);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return variants.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
+		return variants.getVariantsByRange(seqName, rangeStart, rangeEnd);
 	}
 
 	@Override
@@ -198,6 +205,13 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 		}
 		
 		probabilitiesMatrix[variantAllelesIndex.get(variantInfo)][samples.get(sample)] = probabilities;
+		
+	}
+	
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
+		
+		return RecordIteratorCreators.createIteratorFromProbs(variant.getSampleGenotypeProbilities());
 		
 	}
 	

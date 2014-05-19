@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
@@ -21,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.util.GenotypeCountCalculator;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantFilterSeqPos;
 
@@ -33,6 +36,7 @@ public class GenotypeInfo {
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
 	private static final Pattern CHR_POS_SPLITTER = Pattern.compile("\\s+|:");
+	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
 	static {
 		
@@ -245,8 +249,9 @@ public class GenotypeInfo {
 			
 			BufferedWriter variantInfoWriter = new BufferedWriter(new FileWriter(variantInfoFile));
 			
-			variantInfoWriter.append("ID\tCHR\tPOS\tAlleles\tMA\tMAF\tCALL\tHWE\n");
+			variantInfoWriter.append("ID\tCHR\tPOS\tAlleles\tMA\tMAF\tCALL\tHWE\tGenotype_Counts\n");
 			
+			int i = 0;
 			for(GeneticVariant variant : inputData){
 				variantInfoWriter.append(variant.getPrimaryVariantId());
 				variantInfoWriter.append('\t');
@@ -270,7 +275,23 @@ public class GenotypeInfo {
 				variantInfoWriter.append(String.valueOf(variant.getCallRate()));
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(String.valueOf(variant.getHwePvalue()));
+				variantInfoWriter.append('\t');
+				
+				ArrayList<GenotypeCountCalculator.GenotypeCount> genotypeCounts = GenotypeCountCalculator.countGenotypes(variant);
+				for(GenotypeCountCalculator.GenotypeCount genotypeCount : genotypeCounts){
+					variantInfoWriter.append(genotypeCount.getGenotype().toString());
+					variantInfoWriter.append(": ");
+					variantInfoWriter.append(String.valueOf(genotypeCount.getCount()));
+					variantInfoWriter.append(", ");
+				}
+				
 				variantInfoWriter.append('\n');
+				
+				++i;
+				if( (i % 100000) == 0 ){
+					System.out.println("Processed " + DEFAULT_NUMBER_FORMATTER.format(i) + " variants");
+				}
+				
 			}
 			
 			variantInfoWriter.close();

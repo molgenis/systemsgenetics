@@ -1,6 +1,7 @@
 package org.molgenis.genotype.variant;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
@@ -40,5 +41,11 @@ public class SwappingSampleVariantsProviderTest
 		{ 'T', 'A' });
 		assertEquals(result.get(1).getAllelesAsChars(), new char[]
 		{ 'G', 'C' });
+	}
+	
+	@Test
+	public void getSampleGenotypeRecords() {
+		swappingSampleVariantsProvider.getSampleGenotypeRecords(mockSnpGeneticVariant);
+		verify(mockSampleVariantsProvider).getSampleGenotypeRecords(mockSnpGeneticVariant);
 	}
 }

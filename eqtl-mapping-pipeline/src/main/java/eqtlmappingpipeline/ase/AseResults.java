@@ -17,11 +17,29 @@ import org.molgenis.genotype.variant.id.GeneticVariantId;
 public class AseResults implements Iterable<AseVariant> {
 
 	private final HashMap<String, TIntObjectHashMap<AseVariant>> results; //Empty chr hashmaps will crash the iterator
+	private boolean encounteredBaseQuality = false;
 
 	public AseResults() {
 		results = new HashMap<String, TIntObjectHashMap<AseVariant>>();
 	}
 
+	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, double a1MeanBaseQuality, double a2MeanBaseQuality) {
+		
+		TIntObjectHashMap<AseVariant> chrResults = results.get(chr);
+		if (chrResults == null) {
+			chrResults = new TIntObjectHashMap<AseVariant>();
+			results.put(chr, chrResults);
+		}
+
+		AseVariant aseVariant = chrResults.get(pos);
+		if (aseVariant == null) {
+			aseVariant = new AseVariant(chr, pos, id, a1, a2);
+			chrResults.put(pos, aseVariant);
+		}
+		aseVariant.addCounts(a1Count, a2Count, a1MeanBaseQuality, a2MeanBaseQuality);
+		encounteredBaseQuality = true;
+	}
+	
 	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count) {
 
 		TIntObjectHashMap<AseVariant> chrResults = results.get(chr);
@@ -41,9 +59,14 @@ public class AseResults implements Iterable<AseVariant> {
 
 	@Override
 	public Iterator<AseVariant> iterator() {
+
 		return new AseResultIterator();
 	}
-
+	
+	public boolean isEncounteredBaseQuality() {
+		return encounteredBaseQuality;
+	}
+	
 	private class AseResultIterator implements Iterator<AseVariant> {
 
 		Iterator<TIntObjectHashMap<AseVariant>> chrResultsIterator;
@@ -65,7 +88,13 @@ public class AseResults implements Iterable<AseVariant> {
 			if (variantIterator.hasNext()) {
 				return true;
 			} else {
-				return chrResultsIterator.hasNext();
+				while(chrResultsIterator.hasNext()){
+					variantIterator = chrResultsIterator.next().valueCollection().iterator();
+					if(variantIterator.hasNext()){
+						return true;
+					}
+				}
+				return false;
 			}
 		}
 
@@ -80,7 +109,17 @@ public class AseResults implements Iterable<AseVariant> {
 
 		@Override
 		public void remove() {
-			throw new UnsupportedOperationException("Not supported ever.");
+			variantIterator.remove();
 		}
 	}
+
+	public int getCount(){
+		int count = 0;
+
+		for(TIntObjectHashMap<AseVariant> chrResults : results.values()){
+			count += chrResults.size();
+		}
+		return count;
+	}
+	
 }

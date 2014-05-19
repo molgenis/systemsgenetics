@@ -2,7 +2,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>Genotype-IO</artifactId>
-	<version>0.0.4-SNAPSHOT</version>
+	<version>0.0.5-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<parent>
 		<groupId>nl.systemsgenetics</groupId>
@@ -10,11 +10,6 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<dependencies>
-		<dependency>
-			<groupId>org.molgenis</groupId>
-			<artifactId>molgenis-core</artifactId>
-			<version>0.0.1</version>
-		</dependency>
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>
 			<artifactId>opencsv</artifactId>

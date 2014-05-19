@@ -10,9 +10,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
+import org.apache.log4j.Logger;
+import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
 
 /**
  *
@@ -25,6 +28,7 @@ public class GtfReader implements GffReaderInterface{
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
 	private static final Pattern SPACE_PATTERN = Pattern.compile(" ");
 	private static final Pattern SEMICOLON_PATTERN = Pattern.compile(";");
+	private static final Logger LOGGER = Logger.getLogger(GtfReader.class);
 	
 	private final BufferedReader gtfFileBufferedReader;
 
@@ -108,6 +112,31 @@ public class GtfReader implements GffReaderInterface{
 	@Override
 	public Iterator<GffElement> iterator() {
 		return new GffElementIterator(this);
+	}
+	
+	public PerChrIntervalTree<GffElement> createIntervalTree() throws Exception{
+		
+		PerChrIntervalTree<GffElement> perChrIntervalTree = new PerChrIntervalTree<GffElement>(GffElement.class);
+		
+		ArrayList<GffElement> currentChrElements = null;
+		String currentChr =  "-1";
+		
+		for(GffElement element : this){
+			if(!element.getSeqname().equals(currentChr)){
+				if(currentChrElements != null){
+					perChrIntervalTree.addChrElements(currentChr, currentChrElements);
+				}
+				currentChrElements = new ArrayList<GffElement>();
+				currentChr = element.getSeqname();
+				LOGGER.debug("Added chr " + currentChr + " to gtf interval tree");
+			}
+			currentChrElements.add(element);
+		}
+		
+		
+		return perChrIntervalTree;
+		
+		
 	}
 	
 }

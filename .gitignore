@@ -16,3 +16,6 @@ data/
 test-output/
 nbactions.xml
 *~
+
+eqtl-mapping-pipeline/nbactions-testAse.xml
+eqtl-mapping-pipeline/nbactions-testAse.xml

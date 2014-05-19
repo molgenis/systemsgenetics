@@ -6,6 +6,7 @@ import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculator;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -13,6 +14,8 @@ import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -22,7 +25,6 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	private final ModifiableGenotypeData modifiableGenotypeData;
 
 	public ModifiableGeneticVariant(GeneticVariant originalVariant, ModifiableGenotypeData modifiableGenotypeData) {
-		super();
 		this.originalVariant = originalVariant;
 		this.modifiableGenotypeData = modifiableGenotypeData;
 	}
@@ -329,5 +331,15 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	 */
 	public void exclude() {
 		modifiableGenotypeData.excludeVariant(this);
+	}
+
+	@Override
+	public GeneticVariantMeta getVariantMeta() {
+		return originalVariant.getVariantMeta();
+	}
+
+	@Override
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
+		throw new UnsupportedOperationException("Genotype records are currently not implemented for modifiable genetic variants.");
 	}
 }
