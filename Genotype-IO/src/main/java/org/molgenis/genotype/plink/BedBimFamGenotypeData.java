@@ -138,7 +138,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
 		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f, -1);
-		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
+		GeneticVariantRange.GeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		sequences = new HashMap<String, Sequence>();
 		originalSnpCount = readBimFile(bimFile, snpsFactory);
 		snps = snpsFactory.createRange();
@@ -332,7 +332,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	}
 
-	private int readBimFile(File bimFile, GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws FileNotFoundException, IOException {
+	private int readBimFile(File bimFile, GeneticVariantRange.GeneticVariantRangeCreate snpsFactory) throws FileNotFoundException, IOException {
 
 		BufferedReader bimFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(bimFile), FILE_ENCODING));
 

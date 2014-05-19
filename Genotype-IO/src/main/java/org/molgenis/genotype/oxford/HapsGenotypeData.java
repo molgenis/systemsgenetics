@@ -23,7 +23,6 @@ import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.FixedSizeIterable;
-import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.util.RecordIteratorCreators;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -31,6 +30,8 @@ import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.GeneticVariantMetaMap;
 import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.range.GeneticVariantRange;
+import org.molgenis.genotype.variant.range.GeneticVariantRange.GeneticVariantRangeCreate;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
@@ -52,7 +53,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private Map<String, SampleAnnotation> sampleAnnotations;
 	private final int sampleVariantProviderUniqueId;
 	private final SampleVariantsProvider sampleVariantProvider;
-	private final GeneticVariantTreeSet<GeneticVariant> variants;
+	private final GeneticVariantRange variants;
 	private final LinkedHashMap<GeneticVariant, Long> variantSampleAllelesIndex;
 	private final List<Sample> samples;
 	private final HashSet<String> sequenceNames;
@@ -104,12 +105,13 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 		sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
 		samples = oxfordSampleFile.getSamples();
 
-		variants = new GeneticVariantTreeSet<GeneticVariant>();
+		GeneticVariantRangeCreate variantRangeFactory = GeneticVariantRange.createRangeFactory();
 		variantSampleAllelesIndex = new LinkedHashMap<GeneticVariant, Long>();
 		sequenceNames = new HashSet<String>();
 		hapsFileReader = new RandomAccessFile(hapsFile, "r");
 
-		byteToReadForSampleAlleles = loadVariants(forceSeqName);
+		byteToReadForSampleAlleles = loadVariants(forceSeqName, variantRangeFactory);
+		variants = variantRangeFactory.createRange();
 
 	}
 
@@ -197,17 +199,17 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		return variants.getSequencePosVariants(seqName, startPos);
+		return variants.getVariantAtPos(seqName, startPos);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		return variants.getSequenceVariants(seqName);
+		return variants.getVariantsBySequence(seqName);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		return variants.getSequenceRangeVariants(seqName, rangeStart, rangeEnd);
+		return variants.getVariantsByRange(seqName, rangeStart, rangeEnd);
 	}
 
 	/**
@@ -217,7 +219,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	 * @return the number of bytes of the longest chunk of sample alleles
 	 * @throws IOException
 	 */
-	private int loadVariants(String forceSeqName) throws IOException {
+	private int loadVariants(String forceSeqName, GeneticVariantRangeCreate variantRangeFactory) throws IOException {
 		StringBuilder stringBuilder = new StringBuilder();
 		byte[] buffer = new byte[8192];
 		boolean eol = false;
@@ -291,7 +293,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 								case 4:
 									allele2 = stringBuilder.toString();
 									GeneticVariant variant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, variantId, position, seqName, sampleVariantProvider, allele1, allele2);
-									variants.add(variant);
+									variantRangeFactory.addVariant(variant);
 									variantSampleAllelesIndex.put(variant, posBeforeBufferRead + i + 1);
 									++column;
 									stringBuilder = new StringBuilder();
