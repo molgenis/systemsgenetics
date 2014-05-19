@@ -183,7 +183,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		loadSamples();
 		samplePhasing = Collections.nCopies(includedSamples.size(), false);
 
-		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
+		GeneticVariantRange.GeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		loadSNPAnnotation(snpsFactory);
 		snps = snpsFactory.createRange();
 
@@ -311,7 +311,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 	}
 
-	private void loadSNPAnnotation(GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws IOException {
+	private void loadSNPAnnotation(GeneticVariantRange.GeneticVariantRangeCreate snpsFactory) throws IOException {
 
 		unfilteredSnpCount = 0;
 

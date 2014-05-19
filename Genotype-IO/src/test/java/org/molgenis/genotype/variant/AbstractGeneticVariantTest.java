@@ -8,12 +8,11 @@ import static org.mockito.Mockito.mock;
 import static org.testng.AssertJUnit.assertEquals;
 
 import org.molgenis.genotype.DummySampleVariantsProvider;
-import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVariant>
+public class AbstractGeneticVariantTest
 {
 
 	GeneticVariant variant1;
@@ -26,8 +25,6 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 	GeneticVariant variant8;
 	GeneticVariant variant9;
 	GeneticVariant variant10;
-	GeneticVariant variant11;
-	GeneticVariant variant12;
 
 	GeneticVariantMeta variantMeta;
 	
@@ -49,8 +46,6 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		variant8 = ReadOnlyGeneticVariant.createVariant(variantMeta, "rs8", 1, "X", provider1, "GG", "T");
 		variant9 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 1, "1", provider2, 'A', 'T');
 		variant10 = ReadOnlyGeneticVariant.createSnp(variantMeta, "rs1", 3, "1", provider2, 'T', 'T');
-		variant11 = new GeneticVariantTreeSet.DummyGeneticVariant("22", Integer.MIN_VALUE);
-		variant12 = new GeneticVariantTreeSet.DummyGeneticVariant("22", Integer.MAX_VALUE);
 
 	}
 
@@ -67,8 +62,6 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		assertEquals(variant8.compareTo(variant3) > 0, true);
 		assertEquals(variant1.compareTo(variant10) < 0, true);
 		assertEquals(variant10.compareTo(variant1) > 0, true);
-		assertEquals(variant11.compareTo(variant12) < 0, true);
-//		assertEquals(variant12.compareTo(variant11) > 0, true);
 	}
 
 	@Test
@@ -87,8 +80,6 @@ public class AbstractGeneticVariantTest extends GeneticVariantTreeSet<GeneticVar
 		assertEquals(variant2.equals(variant3), false);
 		assertEquals(variant5.equals(variant6), false);
 		assertEquals(variant7.equals(variant8), false);
-		assertEquals(variant11.equals(variant12), false);
-		assertEquals(variant12.equals(variant11), false);
 
 	}
 	

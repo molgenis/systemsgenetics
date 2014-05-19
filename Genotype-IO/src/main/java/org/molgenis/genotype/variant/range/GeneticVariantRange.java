@@ -18,12 +18,12 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 
 	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(GeneticVariantRange.class);
 	
-	public static ClassGeneticVariantRangeCreate createRangeFactory() {
-		return new ClassGeneticVariantRangeCreate();
+	public static GeneticVariantRangeCreate createRangeFactory() {
+		return new GeneticVariantRangeCreate();
 	}
 
-	public static ClassGeneticVariantRangeCreate createRangeFactory(int expectedNumberVariants) {
-		return new ClassGeneticVariantRangeCreate(expectedNumberVariants);
+	public static GeneticVariantRangeCreate createRangeFactory(int expectedNumberVariants) {
+		return new GeneticVariantRangeCreate(expectedNumberVariants);
 	}
 	private final List<GeneticVariant> variants;
 
@@ -171,7 +171,7 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 		return getAllVrariantsInRange().iterator();
 	}
 
-	public static class ClassGeneticVariantRangeCreate {
+	public static class GeneticVariantRangeCreate {
 
 		private final ArrayList<GeneticVariant> variants;
 		private boolean isSorted;
@@ -184,18 +184,18 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 		 *
 		 * @param variants
 		 */
-		public ClassGeneticVariantRangeCreate(ArrayList<GeneticVariant> variants) {
+		public GeneticVariantRangeCreate(ArrayList<GeneticVariant> variants) {
 			this.variants = variants;
 			this.isSorted = false;
 			this.lastVariant = variants.get(variants.size());
 		}
 
-		public ClassGeneticVariantRangeCreate() {
+		public GeneticVariantRangeCreate() {
 			this.variants = new ArrayList<GeneticVariant>();
 			this.isSorted = true;
 		}
 
-		public ClassGeneticVariantRangeCreate(int expectedNumberVariants) {
+		public GeneticVariantRangeCreate(int expectedNumberVariants) {
 			this.variants = new ArrayList<GeneticVariant>(expectedNumberVariants);
 			this.isSorted = true;
 		}
