@@ -19,7 +19,7 @@ import umcg.genetica.text.Strings;
 
 /**
  *
- * @author harmjan
+ * @author harmjan, Patrick Deelen, Marc Jan Bonder
  */
 public class FDR {
 
@@ -263,10 +263,10 @@ public class FDR {
             outFileNameAll = outputDir + "/eQTLsFDR.txt.gz";
         }
 
-        BufferedWriter outputWriterSignificant = new BufferedWriter(new FileWriter(outFileName));
-        BufferedWriter outputWriterESNPs = new BufferedWriter(new FileWriter(outFileNameSnps));
-        BufferedWriter outputWriterEProbes = new BufferedWriter(new FileWriter(outFileNameProbes));
-        BufferedWriter outputWriterAll = new BufferedWriter(new FileWriter(outFileNameAll));
+        TextFile outputWriterSignificant = new TextFile(outFileName, TextFile.W);
+        TextFile outputWriterESNPs = new TextFile(outFileNameSnps, TextFile.W);
+        TextFile outputWriterEProbes = new TextFile(outFileNameProbes, TextFile.W);
+        TextFile outputWriterAll = new TextFile(outFileNameAll, TextFile.W);
 
         String fileString = baseDir + "/eQTLs.txt.gz";
         if (!Gpio.exists(fileString)) {
