@@ -282,7 +282,7 @@ public class MetaQTL4 {
         }
     }
 
-    // create a map from metaProbeId to 
+    // create a map from metaProbeId to dataset probes
     private void createTraitIndex() {
         // link them together in an index
         HashSet<MetaQTL4MetaTrait> tmpAvailableTraits = new HashSet<MetaQTL4MetaTrait>();

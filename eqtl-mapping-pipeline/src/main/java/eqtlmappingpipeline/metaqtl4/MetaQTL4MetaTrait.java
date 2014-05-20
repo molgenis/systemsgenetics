@@ -25,6 +25,7 @@ public class MetaQTL4MetaTrait implements Comparable<Object> {
     private final String annotation;
     private final String[] platformIds;
     private static final ChromosomeComparator chrComparator = new ChromosomeComparator();
+    private int currentMetaId;
 
     public MetaQTL4MetaTrait(int metaTraitId, String metaTraitName, String chr, int chrStart, int chrEnd, String annotation, String[] platformIds) {
         this.metaTraitId = metaTraitId;
@@ -123,5 +124,12 @@ public class MetaQTL4MetaTrait implements Comparable<Object> {
 
     public String[] getPlatformIds() {
         return platformIds;
+    }
+
+    void setMetaTraitId(int id) {
+        this.currentMetaId = id;
+    }
+    public int getCurrentMetaId(){
+        return currentMetaId;
     }
 }

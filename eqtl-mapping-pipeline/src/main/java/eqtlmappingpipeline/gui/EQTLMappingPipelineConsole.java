@@ -32,7 +32,7 @@ import umcg.genetica.io.pileup.PileupToVcf;
 public class EQTLMappingPipelineConsole {
 
     public void main(String[] args) throws Exception {
-        
+        if(args.length == 1){
 		if(args[0].equals("--ase")){
 			Ase.main(Arrays.copyOfRange(args, 1, args.length));
 			return;
@@ -41,9 +41,10 @@ public class EQTLMappingPipelineConsole {
 			PileupToVcf.main(Arrays.copyOfRange(args, 1, args.length));
 			return;
 		}
-		
-		printHeader();
-
+        }
+        
+	printHeader();
+        
         String mode = null;
 
 		
