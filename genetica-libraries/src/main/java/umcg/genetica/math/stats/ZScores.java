@@ -82,6 +82,7 @@ public class ZScores {
 
         if (normDist == null) {
             normDist = new NormalDistribution();
+            System.out.println("Creating new Normal Dist");
         }
         double p;
         if (z > 0) {
