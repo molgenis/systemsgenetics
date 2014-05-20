@@ -32,23 +32,11 @@ import umcg.genetica.io.pileup.PileupToVcf;
 public class EQTLMappingPipelineConsole {
 
     public void main(String[] args) throws Exception {
-        if(args.length == 1){
-		if(args[0].equals("--ase")){
-			Ase.main(Arrays.copyOfRange(args, 1, args.length));
-			return;
-		}
-		if(args[0].equals("--pilupToVcf")){
-			PileupToVcf.main(Arrays.copyOfRange(args, 1, args.length));
-			return;
-		}
-        }
-        
-	printHeader();
-        
+       
+        printHeader();
+
         String mode = null;
 
-		
-		
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             String val = null;
@@ -57,9 +45,17 @@ public class EQTLMappingPipelineConsole {
                 val = args[i + 1];
             }
 
+            if (arg.equals("--ase")) {
+                Ase.main(Arrays.copyOfRange(args, 1, args.length));
+                return;
+            }
+            if (arg.equals("--pilupToVcf")) {
+                PileupToVcf.main(Arrays.copyOfRange(args, 1, args.length));
+                return;
+            }
 
             if (arg.equals("--imputationtool")) {
-                
+
                 imputationtool.ImputationTool.main(args);
             }
 
@@ -114,7 +110,6 @@ public class EQTLMappingPipelineConsole {
     private void printHeader() {
 
         //Note: Version is null when running from netbeans but will be set when buidling a jar
-
         System.out.println("\n"
                 + ConsoleGUIElems.DOUBLELINE
                 + "Version: " + Main.VERSION + "\n"
