@@ -415,7 +415,23 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				try {
 					return new Iterator<GeneticVariant>() {
 						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
-						private String line = it != null ? it.next() : null;
+						private String line = readFirst(it);
+
+						private String readFirst(TabixIterator it) {
+							if (it == null) {
+								return null;
+							} else {
+								try {
+									String firstLine = it.next();
+									if (firstLine == null) {
+										IOUtils.closeQuietly(it);
+									}
+									return firstLine;
+								} catch (IOException e) {
+									throw new GenotypeDataException(e);
+								}
+							}
+						}
 
 						@Override
 						public boolean hasNext() {
