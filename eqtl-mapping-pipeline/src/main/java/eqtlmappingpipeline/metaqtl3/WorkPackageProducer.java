@@ -3,6 +3,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import java.io.IOException;
@@ -27,7 +28,7 @@ class WorkPackageProducer extends Thread {
     private LinkedBlockingQueue<WorkPackage> m_queue;
     private WorkPackage[] m_workPackages;
     private SNPLoader[] m_SNPLoaders;
-    private MetaQTL3Settings m_settings;
+    private Settings m_settings;
 //    private int m_name, nrThreads;
     private double m_mafthreshold, m_hwethreshold, m_callratethreshold;
     public boolean done, semaphore;
@@ -35,7 +36,7 @@ class WorkPackageProducer extends Thread {
     private final String m_outputdir;
 
     WorkPackageProducer(LinkedBlockingQueue<WorkPackage> packageQueue, WorkPackage[] workPackages, String[] snpList, String[] probeList, IntMatrix2D probeTranslationTable,
-            IntMatrix2D snpTranslationTable, TriTyperGeneticalGenomicsDataset[] gg, SNPLoader[] snploaders, MetaQTL3Settings settings, boolean permuting) {
+            IntMatrix2D snpTranslationTable, TriTyperGeneticalGenomicsDataset[] gg, SNPLoader[] snploaders, Settings settings, boolean permuting) {
         this.m_workPackages = workPackages;
         this.m_queue = packageQueue;
         this.m_snpList = snpList;

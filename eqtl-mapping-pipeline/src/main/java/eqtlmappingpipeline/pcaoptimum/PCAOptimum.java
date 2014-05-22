@@ -5,7 +5,7 @@
 package eqtlmappingpipeline.pcaoptimum;
 
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.normalization.Normalizer;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,7 +67,7 @@ public class PCAOptimum extends MetaQTL3 {
 
         String origInExp = inexp;
 
-        m_settings = new MetaQTL3Settings();
+        m_settings = new Settings();
         int nrProcs = Runtime.getRuntime().availableProcessors();
         if (threads != null && threads > 0 && threads <= nrProcs) {
             //
@@ -336,7 +336,7 @@ public class PCAOptimum extends MetaQTL3 {
 
         // set output dir
         // set standard cis-settings
-        m_settings = new MetaQTL3Settings();
+        m_settings = new Settings();
         TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
         s.name = "Dataset";

@@ -5,7 +5,7 @@
 package eqtlmappingpipeline.chromosomeyexpressionplotter;
 
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import java.io.IOException;
 import umcg.genetica.io.Gpio;
 
@@ -15,7 +15,7 @@ import umcg.genetica.io.Gpio;
  */
 public class ChromosomeYExpressionPlotter extends MetaQTL3 {
 
-    public void run(MetaQTL3Settings settings) {
+    public void run(Settings settings) {
         try {
             m_settings = settings;
             String origOutputDir = m_settings.outputReportsDir;

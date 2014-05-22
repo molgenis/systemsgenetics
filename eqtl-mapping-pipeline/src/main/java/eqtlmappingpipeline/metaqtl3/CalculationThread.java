@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
@@ -69,7 +70,7 @@ class CalculationThread extends Thread {
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
             IntMatrix2D probeTranslationTable,
-            int[][] expressionToGenotypeIds, MetaQTL3Settings settings, EQTLPlotter plotter, boolean binaryoutput, boolean useAbsoluteZScores, boolean testSNPsPresentInBothDatasets) {
+            int[][] expressionToGenotypeIds, Settings settings, EQTLPlotter plotter, boolean binaryoutput, boolean useAbsoluteZScores, boolean testSNPsPresentInBothDatasets) {
 //        m_binaryoutput = binaryoutput;
         m_name = i;
         m_workpackage_queue = packageQueue;

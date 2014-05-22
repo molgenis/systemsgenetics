@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.chromosomeyexpressionplotter;
 
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import java.util.ArrayList;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
@@ -68,9 +68,9 @@ public class ChrYExpressionPlotConsoleGUI {
                 printUsage();
             } else {
                 
-                MetaQTL3Settings s = null;
+                Settings s = null;
                 if(xmlSettingsFile != null){
-                    s = new MetaQTL3Settings();
+                    s = new Settings();
                     
                     s.settingsTextReplaceWith = settingstexttoreplace;
                     s.settingsTextToReplace = settingstexttoreplacewith;
@@ -86,7 +86,7 @@ public class ChrYExpressionPlotConsoleGUI {
                         printUsage();
                     } else {
                         // prepare settings object...
-                        s = new MetaQTL3Settings();
+                        s = new Settings();
                         s.expressionLocation = inexp;
                         s.expressionplatform = inexpplatform;
                         s.probeannotation = inexpannot;

@@ -91,7 +91,6 @@ public class ReadCountsLoader implements Runnable {
 
 			while (inputFileIterator.hasNext()) {
 
-
 				synchronized (inputFileIterator) {
 					if (inputFileIterator.hasNext()) {
 						inputFile = inputFileIterator.next();

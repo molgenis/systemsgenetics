@@ -18,7 +18,7 @@ import umcg.genetica.math.stats.QuantileNormalization;
 import umcg.genetica.math.stats.Regression;
 import umcg.genetica.math.stats.concurrent.ConcurrentCorrelation;
 import umcg.genetica.math.stats.concurrent.ConcurrentCovariation;
-import umcg.genetica.methylation.ConvertBetaToMvalue;
+import umcg.genetica.methylation.ConvertBetaAndMvalues;
 
 /**
  *
@@ -143,7 +143,7 @@ public class Normalizer {
 
     public String mValueTransform(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
         double[][] rawData = dataset.getRawData();
-        ConvertBetaToMvalue.transToMvalue(rawData);
+        ConvertBetaAndMvalues.transformToMvalue(rawData);
         DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
         fileNamePrefix += ".MvalueTransformed";
         datasetNormalized.save(fileNamePrefix + ".txt.gz");

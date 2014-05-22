@@ -6,7 +6,7 @@ package eqtlmappingpipeline.metaqtl3.graphics;
 
 import cern.colt.matrix.tint.IntMatrix2D;
 import umcg.genetica.math.stats.Descriptives;
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import java.awt.Color;
@@ -58,7 +58,7 @@ public class EQTLPlotter {
     private static final Color medgray = new Color(150, 150, 150);
     private final boolean m_giveTiesSameRank;
 
-    public EQTLPlotter(TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, String[] probeList, IntMatrix2D probeTranslation) {
+    public EQTLPlotter(TriTyperGeneticalGenomicsDataset[] gg, Settings settings, String[] probeList, IntMatrix2D probeTranslation) {
         this.m_gg = gg;
         this.m_outputDir = settings.plotOutputDirectory;
         m_probeList = probeList;
