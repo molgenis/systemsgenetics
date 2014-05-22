@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.WGAFileMatrixGenotype;
 import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
+import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 /**
  *
@@ -120,15 +121,15 @@ public class ImputeImputedToTriTyperV2 {
             nrSamplesToInclude = nrSamples;
         }
 
-
         long nrSNPsAvailable = 0;
         boolean proceed = true;
 
-
-        for (int chr = 1; chr < 23; chr++) {
+        for (int chr = 1; chr < 25; chr++) {
             // make a file list of batches for this chr....
+
+            String chrStr = ChrAnnotation.parseByte((byte) chr);
             String[] fileList = makeFileList(inputDir, chr, fileMatchRegEx);
-            System.out.println("Found " + fileList.length + " files for chr " + chr);
+            System.out.println("Found " + fileList.length + " files for chr " + chrStr);
 
             for (int f = 0; f < fileList.length; f++) {
                 Pattern whitespace = Pattern.compile("\\s");
@@ -143,7 +144,6 @@ public class ImputeImputedToTriTyperV2 {
                             str = str.replace("  ", " ");
                         }
                         String data[] = whitespace.split(str);
-
 
                         String snp = new String(data[1].getBytes());
                         if (snpsToInclude == null || snpsToInclude.contains(snp)) {
@@ -236,7 +236,6 @@ public class ImputeImputedToTriTyperV2 {
                     System.exit(-1);
                 }
 
-
             }
 
             int nrSNPs = (int) nrSNPsAvailable;
@@ -248,12 +247,9 @@ public class ImputeImputedToTriTyperV2 {
                 // make a file list of batches for this chr....
                 String[] fileList = makeFileList(inputDir, chr, fileMatchRegEx);
 
-
                 for (int f = 0; f < fileList.length; f++) {
 
-
                     Pattern whitespace = Pattern.compile("\\s");
-
 
                     String fileName = inputDir + "/" + fileList[f];
                     //String fileName = inputDir + "/chr" + chr + ".probs";
@@ -346,11 +342,9 @@ public class ImputeImputedToTriTyperV2 {
         ArrayList<String> filelist = new ArrayList<String>();
         Pattern regex1 = null;
 
-        String chrAsString = null;
-        if (fileMatchRegEx != null) {
-            chrAsString = String.valueOf(chr);
-        } else {
-            regex1 = Pattern.compile(".*chr-?_?" + chr + "\\D+.*");
+        String chrAsString = ChrAnnotation.parseByte((byte) chr).toLowerCase();
+        if (fileMatchRegEx == null) {
+            regex1 = Pattern.compile(".*chr-?_?" + chrAsString + "\\D+.*");
         }
 
         for (int i = 0; i < files.length; i++) {
@@ -371,7 +365,6 @@ public class ImputeImputedToTriTyperV2 {
                     }
                 }
             }
-
 
         }
 
