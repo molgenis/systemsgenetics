@@ -12,8 +12,8 @@ import umcg.genetica.containers.Pair;
  */
 public class Descriptives {
 
-    public static double[] m_zScoreToPValue;
-    public static double[] m_sqrtSample;
+    public static double[] m_zScoreToPValue = null;
+    public static double[] m_sqrtSample = null;
 
     /**
      * Calculate the mean for an array of floats
@@ -53,10 +53,10 @@ public class Descriptives {
         m_sqrtSample = sqrtSample;
     }
 
-    public static void zScoreToPValue() {
+    public static void initializeZScoreToPValue() {
         //Fast look-up service for normal distribution:
         JSci.maths.statistics.NormalDistribution normDist = new JSci.maths.statistics.NormalDistribution();
-        double[] zScoreToPValue = new double[376501];
+        m_zScoreToPValue = new double[376501];
         
         for (int z = 0; z <= 376500; z++) {
             double zScore = ((double) z - 188250d) / 5000d;
@@ -73,13 +73,18 @@ public class Descriptives {
             }
             pValue *= 2.0d;
             //Eventual P Value is stored:
-            zScoreToPValue[z] = pValue;
+            m_zScoreToPValue[z] = pValue;
         }
-        m_zScoreToPValue = zScoreToPValue;
     }
     
-        public static double convertZscoreToPvalue(double zScore) {
-
+    public static double convertZscoreToPvalue(double zScore) {
+        if(m_zScoreToPValue == null){
+            initializeZScoreToPValue();
+        }
+        return  m_zScoreToPValue[getZScorePvalueIndex(zScore)];
+    }
+        
+    public static int getZScorePvalueIndex(double zScore) {
         int zScoreIndex = (int) (zScore * 5000.0d) + 188250;
         if (zScoreIndex < 0) {
             zScoreIndex = 0;
@@ -87,12 +92,7 @@ public class Descriptives {
         if (zScoreIndex > 376500) {
             zScoreIndex = 376500;
         }
-
-        if (m_zScoreToPValue == null) {
-            zScoreToPValue();
-        }
-        double pValueOverall = m_zScoreToPValue[zScoreIndex];
-        return pValueOverall;
+        return zScoreIndex;
     }
     
 
@@ -145,17 +145,6 @@ public class Descriptives {
             ans += (v[i] - mean) * (v[i] - mean);
         }
         return ans / (v.length - 1);
-    }
-
-    public static int getZScorePvalueIndex(double zScore) {
-        int zScoreIndex = (int) (zScore * 5000.0d) + 150000;
-        if (zScoreIndex < 0) {
-            zScoreIndex = 0;
-        }
-        if (zScoreIndex > 300000) {
-            zScoreIndex = 300000;
-        }
-        return zScoreIndex;
     }
 
     public static double getSqrt(int nrTotalSamples) {

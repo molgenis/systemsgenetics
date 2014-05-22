@@ -735,7 +735,7 @@ public class MetaQTL3 {
         }
         Correlation.correlationToZScore(maxNrSamples);
         Descriptives.lookupSqrt(numAvailableInds);            // pre-calculate a square root lookup table
-        Descriptives.zScoreToPValue();
+        Descriptives.initializeZScoreToPValue();
 
         boolean permuting = false;
 
