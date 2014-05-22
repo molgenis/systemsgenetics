@@ -35,7 +35,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     // SNP QC
     // Analysis settings
     public boolean performParametricAnalysis = false;                          // Perform parametric analysis
-    public boolean performTwoPartModel = false;                          // Perform parametric analysis
     public boolean useAbsoluteZScorePValue = false;                            // Use absolute Z-score? (required for finding opposite allelic effects)
     public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;                       // Midpoint distance for declaring an eQTL effect CIS
     public int maxNrMostSignificantEQTLs = 500000;                             // Max number of results stored in memory
@@ -89,7 +88,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         String analysisType = null;
         String correlationType = null;
-        String modelType = null;
         Boolean useAbsPVal = null;
         Integer nrthread = null;
         Integer cisDist = null;
@@ -206,20 +204,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             }
         } else {
             performParametricAnalysis = true;
-        }
-        
-        try {
-            modelType = config.getString("defaults.analysis.model");
-        } catch (Exception e) {
-        }
-        if (modelType != null) {
-            if (modelType.toLowerCase().equals("twopart") || modelType.toLowerCase().equals("twopartmodel")) {
-                performTwoPartModel = true;
-            } else {
-                performTwoPartModel = false;
-            }
-        } else {
-            performTwoPartModel = false;
         }
 
         Boolean useIdenticalRanksForTies = null;
