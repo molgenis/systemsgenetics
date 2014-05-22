@@ -76,7 +76,7 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 			
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
 		
-		GeneticVariantRange.ClassGeneticVariantRangeCreate variantFactory = GeneticVariantRange.createRangeFactory(variantAllelesIndex.size());
+		GeneticVariantRange.GeneticVariantRangeCreate variantFactory = GeneticVariantRange.createRangeFactory(variantAllelesIndex.size());
 		
 		this.sequenceNames = new LinkedHashSet<String>();
 		for(VariantInformation variantInfo : variantAllelesIndex.keySet()){
