@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import eqtlmappingpipeline.metaqtl3.containers.QTL;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
@@ -71,7 +72,7 @@ public class ResultProcessorThread extends Thread {
     private TextFile[] zScoreRowNamesFile;
 
     public ResultProcessorThread(int nrThreads, LinkedBlockingQueue<WorkPackage> queue, boolean chargeOutput,
-            TriTyperGeneticalGenomicsDataset[] gg, MetaQTL3Settings settings, IntMatrix2D pprobeTranslation,
+            TriTyperGeneticalGenomicsDataset[] gg, Settings settings, IntMatrix2D pprobeTranslation,
             boolean permuting, int round, String[] snplist, String[] probelist, WorkPackage[] allPackages) {
         m_availableWorkPackages = allPackages;
         m_createBinaryFiles = settings.createBinaryOutputFiles;

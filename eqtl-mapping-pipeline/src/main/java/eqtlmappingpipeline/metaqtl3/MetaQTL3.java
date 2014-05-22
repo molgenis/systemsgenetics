@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
@@ -39,7 +40,7 @@ import umcg.genetica.util.RunTimer;
  */
 public class MetaQTL3 {
 
-    protected MetaQTL3Settings m_settings;
+    protected Settings m_settings;
     protected TriTyperGeneticalGenomicsDataset[] m_gg = null;
     protected String[] m_snpList;
     protected String[] m_probeList;
@@ -58,7 +59,7 @@ public class MetaQTL3 {
     public MetaQTL3() {
     }
 
-    public MetaQTL3(MetaQTL3Settings settings) throws IOException, Exception {
+    public MetaQTL3(Settings settings) throws IOException, Exception {
         m_settings = settings;
         initialize(null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null);
     }
@@ -100,7 +101,7 @@ public class MetaQTL3 {
                 System.exit(0);
             }
 
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
             s.name = "Dataset";
@@ -155,7 +156,7 @@ public class MetaQTL3 {
 
         } else if (m_settings == null && xmlSettingsFile != null) {
             // parse settings
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             m_settings.settingsTextReplaceWith = texttoreplacewith;
             m_settings.settingsTextToReplace = texttoreplace;
             m_settings.load(xmlSettingsFile);

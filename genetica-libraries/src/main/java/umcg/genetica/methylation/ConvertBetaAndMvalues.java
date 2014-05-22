@@ -4,7 +4,9 @@
  */
 package umcg.genetica.methylation;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.jet.math.tdouble.DoubleFunctions;
 
 /**
  *
@@ -48,12 +50,8 @@ public class ConvertBetaAndMvalues {
     }
     
     public static void transformMToBetavalue(DoubleMatrix2D rawData){
-        
-        int probeCount = rawData.rows();
-        int sampleCount = rawData.columns();
-        
-        for (int p=0; p<probeCount; p++) {
-            for (int s=0; s<sampleCount; s++) {
+        for (int p=0; p<rawData.rows(); p++) {
+            for (int s=0; s<rawData.columns(); s++) {
                 double tmpBeta = Math.pow(2, rawData.getQuick(p, s));
                 rawData.setQuick(p, s, tmpBeta/(tmpBeta+1));
             }
@@ -69,6 +67,17 @@ public class ConvertBetaAndMvalues {
             for (int s=0; s<sampleCount; s++) {
                 double tmpBeta = Math.pow(2, rawData[p][s]);
                 rawData[p][s] = tmpBeta/(tmpBeta+1);
+            }
+        }
+    }
+
+    public static void rescaleBetavalue(DoubleMatrix2D matrix) {
+        double min = matrix.getMinLocation()[0];
+        double denominator  = matrix.getMaxLocation()[0] - min;
+
+        for (int s=0; s<matrix.columns(); s++) {
+            for (int p=0; p<matrix.rows(); p++) {
+                matrix.setQuick(p, s, ((matrix.getQuick(p, s)-min)/denominator));
             }
         }
     }
