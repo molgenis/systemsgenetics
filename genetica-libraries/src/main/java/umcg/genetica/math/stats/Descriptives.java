@@ -85,7 +85,7 @@ public class Descriptives {
     }
         
     public static int getZScorePvalueIndex(double zScore) {
-        int zScoreIndex = (int) (zScore * 5000.0d) + 188250;
+        int zScoreIndex = (int) ((zScore * 5000.0d) + 188250);
         if (zScoreIndex < 0) {
             zScoreIndex = 0;
         }

@@ -147,9 +147,9 @@ public class DescriptivesNGTest {
     @Test
     public void testGetZScorePvalueIndex() {
         double Zscore1 = 37.66;
-        int index = 376500;
+        int index1 = 376500;
         
-        assertEquals(Descriptives.getZScorePvalueIndex(Zscore1), index);
+        assertEquals(Descriptives.getZScorePvalueIndex(Zscore1), index1);
     }
 
     /**
@@ -159,7 +159,7 @@ public class DescriptivesNGTest {
     public void testConvertZscoreToPvalue() {
         double Zscore1 = 2;
         double pValue1 = 0.0455003;
-        
+//        
         assertEquals(Descriptives.convertZscoreToPvalue(Zscore1), pValue1, 0.0000001);
         
         double Zscore2 = 36.65;
@@ -171,6 +171,11 @@ public class DescriptivesNGTest {
         double pValue3 = 9.813E-18;
 //        System.out.println(Descriptives.convertZscoreToPvalue(Zscore3)+"\t"+pValue3);
         assertEquals(Descriptives.convertZscoreToPvalue(Zscore3), pValue3, 0.0000001);
+        
+        double Zscore4 = 37.5955033;
+        double pValue4 = 2.546E-309;
+//        System.out.println(Descriptives.convertZscoreToPvalue(Zscore4)+"\t"+pValue4);
+        assertEquals(Descriptives.convertZscoreToPvalue(Zscore4), pValue4, 0.0000001);
     }
 
     /**
