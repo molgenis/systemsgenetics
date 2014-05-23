@@ -58,6 +58,9 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private transient Map<String, Annotation> cachedSampleAnnotationsMap;
 	private transient GeneticVariant cachedGeneticVariant;
 	private transient VcfRecord cachedVcfRecord;
+	private static int totalRandomAccessRequest = 0;
+	private static int currentlyOpenFileHandlers = 0;
+	private static int closedFileHandlers = 0;
 
 	/**
 	 * VCF genotype reader with default cache of 100
@@ -407,6 +410,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd) {
 
+		++totalRandomAccessRequest;
+		++currentlyOpenFileHandlers;
 
 		return new Iterable<GeneticVariant>() {
 			@Override
@@ -424,6 +429,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 								try {
 									String firstLine = it.next();
 									if (firstLine == null) {
+										--currentlyOpenFileHandlers;
+										--closedFileHandlers;
 										IOUtils.closeQuietly(it);
 									}
 									return firstLine;
@@ -444,6 +451,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 							try {
 								line = it.next();
 								if (line == null) {
+									--currentlyOpenFileHandlers;
+									--closedFileHandlers;
 									IOUtils.closeQuietly(it);
 								}
 							} catch (IOException e) {
@@ -457,6 +466,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 							throw new UnsupportedOperationException();
 						}
 					};
+				} catch (FileNotFoundException e) {
+					if (e.getMessage().equals("(Too many open files)")) {
+						throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
+					} else {
+						throw new GenotypeDataException(e);
+					}
 				} catch (IOException e) {
 					throw new GenotypeDataException(e);
 				}
@@ -468,8 +483,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		if (!variant.equals(cachedGeneticVariant)) {
 			TabixIterator it;
 			String line;
+			BlockCompressedInputStream stream = null;
+			++totalRandomAccessRequest;
+			++currentlyOpenFileHandlers;
 			try {
-				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), new BlockCompressedInputStream(bzipVcfFile));
+				stream = new BlockCompressedInputStream(bzipVcfFile);
+				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), stream);
 				while ((line = it.next()) != null) {
 					VcfRecord vcfRecord = new VcfRecord(vcfMeta, StringUtils.split(line, '\t'));
 					if (variant.equals(toGeneticVariant(vcfRecord))) {
@@ -478,8 +497,21 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 						break;
 					}
 				}
+				--currentlyOpenFileHandlers;
+				--closedFileHandlers;
+				IOUtils.closeQuietly(stream);
+			} catch (FileNotFoundException e) {
+				if (e.getMessage().equals("(Too many open files)")) {
+					throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
+				} else {
+					throw new GenotypeDataException(e);
+				}
 			} catch (IOException e) {
 				throw new GenotypeDataException(e);
+			} finally {
+				--currentlyOpenFileHandlers;
+				--closedFileHandlers;
+				IOUtils.closeQuietly(stream);
 			}
 		}
 		return cachedVcfRecord;

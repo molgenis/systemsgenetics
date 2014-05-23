@@ -33,7 +33,7 @@ public class CompareAseToEqtl {
 //		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation\\eQTLsFDR0.05-ProbeLevel.txt", false);
 		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\eQTLsFDR0.05-ProbeLevel.txt", false);
 
-		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\geuvadis_r20_a10_p0_s5_gatkGeno\\ase_bh.txt"));
+		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\geuvadis_maskAll_r20_a10_p0_s5_rq0_gatkGeno\\ase_bh.txt"));
 
 		HashMap<String, ArrayList<EQTL>> eQtls = new HashMap<String, ArrayList<EQTL>>();
 

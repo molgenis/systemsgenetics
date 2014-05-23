@@ -527,9 +527,9 @@ public class Ase {
 	/**
 	 *
 	 *
-	 * @param sampleToRefSampleFile unmodifiable map with key sample ID in
+	 * @param sampleToRefSampleFile 
 	 * reference and value sample ID of study
-	 * @return
+	 * @return unmodifiable map with key sample ID in
 	 */
 	private static Map<String, String> readSampleMapping(File sampleToRefSampleFile) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
 
