@@ -226,7 +226,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	public double getMinorAlleleFrequency() {
 		if (mafResult == null) {
 			try {
-				mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants());
+				mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants());
 			} catch (NullPointerException e) {
 				throw new GenotypeDataException("NullPointerException in maf caculation. " + getVariantAlleles() + " ref: "
 						+ getRefAllele(), e);
@@ -240,7 +240,7 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	@Override
 	public Allele getMinorAllele() {
 		if (mafResult == null) {
-			mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), getSampleVariants());
+			mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants());
 		}
 		return mafResult.getMinorAllele();
 	}
