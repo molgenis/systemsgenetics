@@ -44,6 +44,7 @@ public class ResultProcessorThread extends Thread {
 //    private TextFile[] zScoreBinaryFile;
 //    private TextFile zScoreMetaAnalysisFile; 
 //    private int m_numdatasets = 0;
+    long nrZ = 0;
     private boolean m_createBinaryFiles = false;
     private TriTyperGeneticalGenomicsDataset[] m_gg = null;
     private boolean m_cisOnly;
@@ -103,7 +104,6 @@ public class ResultProcessorThread extends Thread {
 //        tmpEQTLBuffer = new QTL[tmpbuffersize];
 //        m_result_counter = 0;   
 //        m_numdatasets = m_gg.length;
-
         finalEQTLs = new QTL[(m_maxResults + tmpbuffersize)];
         nrSNPsTested = 0;
     }
@@ -156,7 +156,6 @@ public class ResultProcessorThread extends Thread {
                 } else if (r.pvalues != null) {
 
                     nrTestsPerformed += wp.getNumTested();
-
 
                     double[] pvalues = r.pvalues;
 
@@ -302,31 +301,34 @@ public class ResultProcessorThread extends Thread {
             int wpId = r.wpid;
             WorkPackage currentWP = m_availableWorkPackages[wpId];
             double[][] zscores = r.zscores;
-            if (m_cisOnly) {
-                double[][] zscorestmp = new double[m_gg.length][m_probeList.length];
-                int[] probes = currentWP.getProbes();
-                for (int d = 0; d < zscorestmp.length; d++) {
-                    for (int i = 0; i < zscorestmp[d].length; i++) {
-                        zscorestmp[d][i] = Double.NaN;
-                    }
-                    for (int p = 0; p < probes.length; p++) {
-                        int probeId = probes[p];
-                        zscorestmp[d][probeId] = zscores[d][p];
-                    }
-                }
-                zscores = zscorestmp;
-            }
 
             if (zscores != null) {
                 SNP[] snps = currentWP.getSnps();
                 int numDatasets = zscores.length;
                 double[] finalZscores = r.finalZScore;
                 String snpoutput = null;
+
+//                if (m_cisOnly) {
+//                    int[] probes = currentWP.getProbes();
+//                    for (int d = 0; d < numDatasets; d++) {
+//                        for (int p = 0; p < probes.length; p++) {
+//                            int probeId = probes[p];
+//                            String probeName = m_probeList[probeId];
+//                            double z = zscores[d][p];
+//                            
+//                        }
+//                    }
+//                    if (m_gg.length > 1) {
+//                        // write meta-analysis results
+//                    }
+//                }
+                // if we're doing a meta-analysis, write the meta-analysis Z to a separate binaryFile
                 if (m_gg.length > 1) {
                     int totalSampleNr = 0;
+                    String snpname = null;
                     for (int d = 0; d < numDatasets; d++) {
                         if (snps[d] != null) {
-                            String snpname = snps[d].getName();
+                            snpname = snps[d].getName();
 
                             byte[] alleles = snps[d].getAlleles();
                             byte minorAllele = snps[d].getMinorAllele();
@@ -341,12 +343,31 @@ public class ResultProcessorThread extends Thread {
                             totalSampleNr += r.numSamples[d];
                         }
                     }
-                    zScoreMetaAnalysisRowNamesFile.writeln(snpoutput + "\t" + totalSampleNr);
 
-                    for (double z : finalZscores) {
-                        zScoreMetaAnalysisFile.writeDouble(z);
+                    StringBuilder sb = null;
+                    for (int p = 0; p < finalZscores.length; p++) {
+                        float z = (float) finalZscores[p];
+                        if (m_cisOnly) {
+                            int[] probes = currentWP.getProbes();
+                            int probeId = probes[p];
+                            String probeName = m_probeList[probeId];
+                            if (sb == null) {
+                                sb = new StringBuilder();
+                            } else {
+                                sb.append("\t");
+                            }
+                            sb.append(probeName);
+                            zScoreMetaAnalysisFile.writeFloat(z);
+                        } else {
+                            zScoreMetaAnalysisFile.writeFloat(z);
+                        }
                     }
 
+                    if (sb != null) {
+                        zScoreMetaAnalysisRowNamesFile.writeln(snpoutput + "\t" + totalSampleNr + "\t-\t-\t-\t" + finalZscores.length + "\t" + sb.toString());
+                    } else {
+                        zScoreMetaAnalysisRowNamesFile.writeln(snpoutput + "\t" + totalSampleNr + "\t-\t-\t-\t" + finalZscores.length + "\t-");
+                    }
                 }
                 for (int d = 0; d < numDatasets; d++) {
                     double[] datasetZScores = zscores[d];
@@ -367,10 +388,30 @@ public class ResultProcessorThread extends Thread {
                             alleleassessed = alleles[0];
                         }
                         TextFile snpfile = zScoreRowNamesFile[d];
-                        snpfile.writeln(snpname + "\t" + BaseAnnot.getAllelesDescription(alleles) + "\t" + BaseAnnot.toString(minorAllele) + "\t" + BaseAnnot.toString(alleleassessed) + "\t" + datasetSNP.getNrCalled() + "\t" + maf + "\t" + hwe + "\t" + cr);
+                        StringBuilder sb = null;
+                        for (int p = 0; p < datasetZScores.length; p++) {
+                            float z = (float) datasetZScores[p];
+                            if (m_cisOnly) {
+                                // take into account that not all probes have been tested..
+                                int[] probes = currentWP.getProbes();
+                                int probeId = probes[p];
+                                String probeName = m_probeList[probeId];
+                                outfile.writeFloat(z);
+                                if (sb == null) {
+                                    sb = new StringBuilder();
+                                } else {
+                                    sb.append("\t");
+                                }
+                                sb.append(probeName);
+                            } else {
+                                outfile.writeFloat(z);
+                            }
+                        }
 
-                        for (double z : datasetZScores) {
-                            outfile.writeDouble(z);
+                        if (sb != null) {
+                            snpfile.writeln(snpname + "\t" + BaseAnnot.getAllelesDescription(alleles) + "\t" + BaseAnnot.toString(minorAllele) + "\t" + BaseAnnot.toString(alleleassessed) + "\t" + datasetSNP.getNrCalled() + "\t" + maf + "\t" + hwe + "\t" + cr + "\t" + datasetZScores.length + "\t" + sb.toString());
+                        } else {
+                            snpfile.writeln(snpname + "\t" + BaseAnnot.getAllelesDescription(alleles) + "\t" + BaseAnnot.toString(minorAllele) + "\t" + BaseAnnot.toString(alleleassessed) + "\t" + datasetSNP.getNrCalled() + "\t" + maf + "\t" + hwe + "\t" + cr + "\t" + datasetZScores.length + "\t-");
                         }
 
                     }
@@ -388,7 +429,7 @@ public class ResultProcessorThread extends Thread {
 
                 finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
                 locationToStoreResult++;
-                
+
                 if (locationToStoreResult == finalEQTLs.length) {
 
                     Arrays.sort(finalEQTLs);
@@ -399,7 +440,7 @@ public class ResultProcessorThread extends Thread {
                     maxSavedPvalue = finalEQTLs[(m_maxResults - 1)].getPvalue();
                 }
             }
-            
+
         } else {
             if (pval > maxSavedPvalue) {
                 maxSavedPvalue = pval;
