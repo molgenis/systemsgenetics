@@ -65,30 +65,30 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         this.hashCols = hashCols;
         this.matrix = matrix;
     }
-	
-	public DoubleMatrixDataset(List<R> rowNames, List<C> colNames){
-		
-		hashRows = new LinkedHashMap<R, Integer>(rowNames.size());
+
+    public DoubleMatrixDataset(List<R> rowNames, List<C> colNames) {
+
+        hashRows = new LinkedHashMap<R, Integer>(rowNames.size());
         hashCols = new LinkedHashMap<C, Integer>(colNames.size());
-		
-		int i = 0;
-		for(R row : rowNames){
-			hashRows.put(row, i);
-			++i;
-		}
-		
-		i = 0;
-		for(C col: colNames){
-			hashCols.put(col, i);
-		}
-		
-		if ((hashRows.size() * (long) hashCols.size()) < (Integer.MAX_VALUE - 2)) {
+
+        int i = 0;
+        for (R row : rowNames) {
+            hashRows.put(row, i);
+            ++i;
+        }
+
+        i = 0;
+        for (C col : colNames) {
+            hashCols.put(col, i);
+        }
+
+        if ((hashRows.size() * (long) hashCols.size()) < (Integer.MAX_VALUE - 2)) {
             matrix = new DenseDoubleMatrix2D(hashRows.size(), hashCols.size());
         } else {
             matrix = new DenseLargeDoubleMatrix2D(hashRows.size(), hashCols.size());
         }
-		
-	}
+
+    }
 
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
         if ((fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
@@ -104,7 +104,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
             throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
         }
-
 
         Pattern splitPatern = Pattern.compile(delimiter);
 
@@ -135,19 +134,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         }
         in.close();
 
-
         DoubleMatrixDataset<String, String> dataset;
-
 
         if ((tmpRows * (long) tmpCols) < (Integer.MAX_VALUE - 2)) {
             LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
             DenseDoubleMatrix2D tmpMatrix = new DenseDoubleMatrix2D(tmpRows, tmpCols);
 
-
             in.open();
             in.readLine(); // read header
             int row = 0;
-
 
             boolean correctData = true;
             while ((str = in.readLine()) != null) {
@@ -177,9 +172,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             }
             in.close();
 
-
             dataset = new DoubleMatrixDataset<String, String>(tmpMatrix, rowMap, colMap);
-
 
         } else {
             LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpRows / 0.75));
@@ -227,9 +220,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
         }
 
-
         LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
-
 
         Pattern splitPatern = Pattern.compile(delimiter);
 
@@ -257,7 +248,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             }
         }
 
-
         LinkedHashSet<Integer> desiredRowPos = new LinkedHashSet<Integer>();
         int rowsToStore = 0;
         int totalRows = 0;
@@ -272,7 +262,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         }
         in.close();
 
-
         DoubleMatrixDataset<String, String> dataset;
 
         if ((rowsToStore * (long) tmpCols) < (Integer.MAX_VALUE - 2)) {
@@ -285,11 +274,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
             boolean correctData = true;
             while ((str = in.readLine()) != null) {
-
-
-
-
-
 
                 if (desiredRowPos.contains(totalRows)) {
                     data = splitPatern.split(str);
@@ -319,9 +303,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             }
             in.close();
 
-
             dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
-
 
         } else {
             DenseLargeDoubleMatrix2D matrix = new DenseLargeDoubleMatrix2D(rowsToStore, storedCols);
@@ -362,16 +344,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             }
             in.close();
 
-
             dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
         }
 
         LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
         return dataset;
     }
-	
-	public void save(File file) throws IOException{
-		TextFile out = new TextFile(file, TextFile.W);
+
+    public void save(File file) throws IOException {
+        TextFile out = new TextFile(file, TextFile.W);
 
         out.append('-');
         for (C col : hashCols.keySet()) {
@@ -391,7 +372,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             ++r;
         }
         out.close();
-	}
+    }
 
     public void save(String fileName) throws IOException {
         save(new File(fileName));
@@ -512,7 +493,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         ArrayList<C> names = this.getColObjects();
         Collections.sort(names);
 
-
         int pos = 0;
         for (C name : names) {
             newColHash.put(name, pos);
@@ -530,7 +510,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(this.matrix.rows() / 0.75));
         ArrayList<R> names = this.getRowObjects();
         Collections.sort(names);
-
 
         int pos = -1;
         for (R name : names) {
@@ -560,7 +539,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             this.setHashRows(mappingIndex);
             this.setMatrix(newRawData);
         }
-
 
     }
 
@@ -592,7 +570,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
     private boolean compareHashCols(LinkedHashMap<C, Integer> mappingIndex, LinkedHashMap<C, Integer> originalHash) {
 
-
         for (Entry<C, Integer> entry : mappingIndex.entrySet()) {
             if (entry.getValue() != originalHash.get(entry.getKey())) {
                 return false;
@@ -602,7 +579,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     }
 
     private boolean compareHashRows(LinkedHashMap<R, Integer> mappingIndex, LinkedHashMap<R, Integer> originalHash) {
-
 
         for (Entry<R, Integer> entry : mappingIndex.entrySet()) {
             if (entry.getValue() != originalHash.get(entry.getKey())) {
@@ -659,5 +635,17 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
                 throw new NoSuchElementException("Column not found: " + columnName.toString());
             }
         }
+    }
+
+    /**
+     * Get specific element.
+     *
+     * @param row
+     * @param column
+     * @return
+     */
+    public double getElement(int row, int column) {
+
+        return matrix.get(row, column);
     }
 }
