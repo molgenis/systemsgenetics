@@ -23,7 +23,19 @@ public class AseResults implements Iterable<AseVariant> {
 		results = new HashMap<String, TIntObjectHashMap<AseVariant>>();
 	}
 
-	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, double a1MeanBaseQuality, double a2MeanBaseQuality) {
+	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, String sampleId, double a1MeanBaseQuality, double a2MeanBaseQuality) {
+		
+		addToResults(chr, pos, id, a1, a2, a1Count, a2Count, sampleId, a1MeanBaseQuality, a2MeanBaseQuality);
+		encounteredBaseQuality = true;
+	}
+	
+	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, String sampleId) {
+
+		addToResults(chr, pos, id, a1, a2, a1Count, a2Count, sampleId, Double.NaN, Double.NaN);
+
+	}
+	
+	private synchronized void addToResults(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, String sampleId, double a1MeanBaseQuality, double a2MeanBaseQuality) {
 		
 		TIntObjectHashMap<AseVariant> chrResults = results.get(chr);
 		if (chrResults == null) {
@@ -36,25 +48,8 @@ public class AseResults implements Iterable<AseVariant> {
 			aseVariant = new AseVariant(chr, pos, id, a1, a2);
 			chrResults.put(pos, aseVariant);
 		}
-		aseVariant.addCounts(a1Count, a2Count, a1MeanBaseQuality, a2MeanBaseQuality);
-		encounteredBaseQuality = true;
-	}
-	
-	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count) {
-
-		TIntObjectHashMap<AseVariant> chrResults = results.get(chr);
-		if (chrResults == null) {
-			chrResults = new TIntObjectHashMap<AseVariant>();
-			results.put(chr, chrResults);
-		}
-
-		AseVariant aseVariant = chrResults.get(pos);
-		if (aseVariant == null) {
-			aseVariant = new AseVariant(chr, pos, id, a1, a2);
-			chrResults.put(pos, aseVariant);
-		}
-		aseVariant.addCounts(a1Count, a2Count);
-
+		aseVariant.addCounts(a1Count, a2Count, sampleId, a1MeanBaseQuality, a2MeanBaseQuality);
+		
 	}
 
 	@Override

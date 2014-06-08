@@ -4,6 +4,7 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -119,6 +120,10 @@ public class ReadCountsLoader implements Runnable {
 				//TODO test if VCF contains the read depth field
 
 				List<Sample> samples = genotypeData.getSamples();
+				ArrayList<String> sampleIds = new ArrayList<String>(samples.size());
+				for(Sample sample : samples){
+					sampleIds.add(sample.getId().intern());
+				}
 
 				variants:
 				for (GeneticVariant variant : genotypeData) {
@@ -131,13 +136,13 @@ public class ReadCountsLoader implements Runnable {
 
 						GeneticVariantId variantId = variant.getVariantId();
 						
-						Iterator<Sample> sampleIterator = samples.iterator();
+						Iterator<String> sampleIdIterator = sampleIds.iterator();
 
 						List<Alleles> referenceVariantAlleles = null;
 
 						for (GenotypeRecord record : variant.getSampleGenotypeRecords()) {
 
-							Sample sample = sampleIterator.next();
+							String sampleId = sampleIdIterator.next();
 
 							try {
 								Alleles alleles;
@@ -174,9 +179,9 @@ public class ReadCountsLoader implements Runnable {
 										}
 
 									}
-									int sampleIndexRef = referenceSamples.get(sample.getId());
+									int sampleIndexRef = referenceSamples.get(sampleId);
 									if (sampleIndexRef == -1) {
-										throw new GenotypeDataException("Sample " + sample.getId() + " not found in data with reference genotypes");
+										throw new GenotypeDataException("Sample " + sampleId + " not found in data with reference genotypes");
 									}
 									alleles = referenceVariantAlleles.get(sampleIndexRef);
 
@@ -202,16 +207,16 @@ public class ReadCountsLoader implements Runnable {
 
 									if (variant.getVariantMeta().getRecordType("RQ") == GeneticVariantMeta.Type.FLOAT_LIST) {
 										List<Double> meanAlleleBaseQualties = (List<Double>) record.getGenotypeRecordData("RQ");
-										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variantId, variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count, meanAlleleBaseQualties.get(0), meanAlleleBaseQualties.get(1));
+										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variantId, variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count, sampleId, meanAlleleBaseQualties.get(0), meanAlleleBaseQualties.get(1));
 									} else {
-										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variantId, variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count);
+										aseResults.addResult(variant.getSequenceName(), variant.getStartPos(), variantId, variant.getVariantAlleles().get(0), variant.getVariantAlleles().get(1), a1Count, a2Count, sampleId);
 									}
 										
 								}
 
 							} catch (GenotypeDataException ex) {
-								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId() + " " + ex.getMessage());
-								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sample.getId(), ex);
+								System.err.println("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sampleId + " " + ex.getMessage());
+								LOGGER.fatal("Error parsing " + variant.getSequenceName() + ":" + variant.getStartPos() + " for sample " + sampleId, ex);
 								System.exit(1);
 								return;
 //							} catch (AseException ex) {
