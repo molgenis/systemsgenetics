@@ -6,10 +6,10 @@ package eqtlmappingpipeline.ase;
  */
 public enum MultipleTestingCorrectionMethod {
 
+	NONE,
 	BONFERRONI,
 	HOLM,
 	BH,
-	NOMINAL,
-	NONE;
+	NOMINAL;
 	
 }
