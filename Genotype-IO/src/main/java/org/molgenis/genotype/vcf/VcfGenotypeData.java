@@ -238,11 +238,23 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			return Collections.emptyList();
 		}
 
-		List<Boolean> phasings = new ArrayList<Boolean>(nrSamples);
+		List<Boolean> phasing = new ArrayList<Boolean>(nrSamples);
 		for (VcfSample vcfSample : vcfRecord.getSamples()) {
-			phasings.addAll(vcfSample.getPhasings());
+			
+			List<Boolean> genotypePhasings = vcfSample.getPhasings();
+			
+			if(genotypePhasings == null || genotypePhasings.isEmpty()){
+				phasing.add(Boolean.FALSE);
+			} else if (genotypePhasings.size() == 1){
+				phasing.add(genotypePhasings.get(0));
+			} else if (genotypePhasings.contains(Boolean.FALSE)) {
+				phasing.add(Boolean.FALSE);
+			} else {
+				phasing.add(Boolean.TRUE);
+			}
+			
 		}
-		return phasings;
+		return phasing;
 	}
 
 	@Override
