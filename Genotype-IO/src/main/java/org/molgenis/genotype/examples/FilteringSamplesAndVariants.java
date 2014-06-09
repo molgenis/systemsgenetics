@@ -44,7 +44,7 @@ public class FilteringSamplesAndVariants {
 
 		String datasetPath = "/some/path/file"; //Note omition of extentions
 		
-		RandomAccessGenotypeData randomAccessGenotypeData = new VcfGenotypeData(new File(datasetPath));
+		RandomAccessGenotypeData randomAccessGenotypeData = new VcfGenotypeData(new File(datasetPath), 100, 0.8);
 
 		HashSet<String> includedSnps = new HashSet<String>();
 		includedSnps.add("rs1");

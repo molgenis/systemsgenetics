@@ -1,11 +1,13 @@
 package org.molgenis.vcf;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.genotype.Allele;
 import org.molgenis.vcf.meta.VcfMeta;
 
 public class VcfRecord
@@ -16,7 +18,7 @@ public class VcfRecord
 	private String[] tokens;
 
 	private transient List<String> cachedIdentifiers; 		
-	private transient List<String> cachedAlternateAlleles;
+	private transient List<Allele> cachedAlternateAlleles;
 	private transient String[] cachedSampleDataTypes;
 	
 	public VcfRecord(VcfMeta vcfMeta) {
@@ -51,20 +53,23 @@ public class VcfRecord
 		return cachedIdentifiers;
 	}
 	
-	public String getReferenceAllele() {
-		return tokens[VcfMeta.COL_REF_IDX];
+	public Allele getReferenceAllele() {
+		return Allele.create(tokens[VcfMeta.COL_REF_IDX]);
 	}
 	
 	/**
 	 * @return list of alternate alleles or empty list if alternate alleles string is set to the missing value
 	 */
-	public List<String> getAlternateAlleles() {
+	public List<Allele> getAlternateAlleles() {
 		if(cachedAlternateAlleles == null) {
 			String alternateBasesStr = tokens[VcfMeta.COL_ALT_IDX];
 			if(alternateBasesStr == null || alternateBasesStr.length() == 0 || alternateBasesStr.equals(MISSING_VALUE)) {
 				cachedAlternateAlleles = Collections.emptyList();
 			} else {
-				cachedAlternateAlleles = Arrays.asList(StringUtils.split(alternateBasesStr, ','));
+				cachedAlternateAlleles = new ArrayList<Allele>(1);
+				for(String altAllele : StringUtils.split(alternateBasesStr, ',')){
+					cachedAlternateAlleles.add(Allele.create(altAllele));
+				}
 			}
 		}
 		return cachedAlternateAlleles;

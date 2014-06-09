@@ -144,6 +144,13 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 				annotationValues, sampleVariantsProvider, Alleles.createBasedOnString(alleles),
 				Allele.create(refAllele));
 	}
+	
+	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, List<String> variantIds, int pos, String sequenceName,
+			Map<String, ?> annotationValues, SampleVariantsProvider sampleVariantsProvider, Alleles alleles,
+			Allele refAllele) {
+		return new ReadOnlyGeneticVariant(variantMeta, GeneticVariantId.createVariantId(variantIds), pos, sequenceName,
+				annotationValues, sampleVariantsProvider, alleles, refAllele);
+	}
 
 	public static GeneticVariant createVariant(GeneticVariantMeta variantMeta, String variantId, int startPos, String sequenceName,
 			SampleVariantsProvider sampleVariantsProvider, Alleles alleles) {

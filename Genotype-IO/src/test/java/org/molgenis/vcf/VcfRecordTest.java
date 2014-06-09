@@ -14,6 +14,7 @@ import org.molgenis.vcf.meta.VcfMeta;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.Lists;
+import org.molgenis.genotype.Allele;
 
 public class VcfRecordTest
 {
@@ -43,9 +44,9 @@ public class VcfRecordTest
 	public void getAlternateAlleles()
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);
-		String[] tokens = new String[]{"x", "x", "x", "x", "A,B,C"};
-		List<String> alternateAlleles = new VcfRecord(vcfMeta, tokens).getAlternateAlleles();
-		assertEquals(alternateAlleles, Arrays.asList("A", "B", "C"));
+		String[] tokens = new String[]{"x", "x", "x", "x", "A,C,TT"};
+		List<Allele> alternateAlleles = new VcfRecord(vcfMeta, tokens).getAlternateAlleles();
+		assertEquals(alternateAlleles, Arrays.asList(Allele.A, Allele.C, Allele.create("TT")));
 	}
 
 	@Test
@@ -53,7 +54,7 @@ public class VcfRecordTest
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);
 		String[] tokens = new String[]{"x", "x", "x", "x", "."};
-		List<String> alternateAlleles = new VcfRecord(vcfMeta, tokens).getAlternateAlleles();
+		List<Allele> alternateAlleles = new VcfRecord(vcfMeta, tokens).getAlternateAlleles();
 		assertEquals(alternateAlleles, Collections.emptyList());
 	}
 	
@@ -190,8 +191,8 @@ public class VcfRecordTest
 	{
 		VcfMeta vcfMeta = mock(VcfMeta.class);
 		String[] tokens = new String[]{"x", "x", "x", "A"};
-		String referenceAllele = new VcfRecord(vcfMeta, tokens).getReferenceAllele();
-		assertEquals(referenceAllele, "A");		
+		Allele referenceAllele = new VcfRecord(vcfMeta, tokens).getReferenceAllele();
+		assertEquals(referenceAllele, Allele.A);		
 	}
 
 	@Test

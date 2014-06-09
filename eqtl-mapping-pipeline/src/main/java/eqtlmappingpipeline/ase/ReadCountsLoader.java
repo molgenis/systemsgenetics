@@ -106,7 +106,7 @@ public class ReadCountsLoader implements Runnable {
 				GenotypeData genotypeData;
 				if (inputFile.isDirectory()) {
 					try {
-						genotypeData = MultiPartGenotypeData.createFromVcfFolder(inputFile, 100);
+						genotypeData = MultiPartGenotypeData.createFromVcfFolder(inputFile, 100, 0.8);
 					} catch (IncompatibleMultiPartGenotypeDataException ex) {
 						System.err.println("Error reading folder with VCF files: " + ex.getMessage());
 						LOGGER.fatal("Error reading folder with VCF files: ", ex);
@@ -114,7 +114,7 @@ public class ReadCountsLoader implements Runnable {
 						return;
 					}
 				} else {
-					genotypeData = new VcfGenotypeData(inputFile, 100);
+					genotypeData = new VcfGenotypeData(inputFile, 100, 0.8);
 				}
 
 				//TODO test if VCF contains the read depth field

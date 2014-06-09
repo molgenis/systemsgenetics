@@ -132,7 +132,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	 * @throws Exception
 	 *             If multiple files for one chr found
 	 */
-	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize) throws IOException,
+	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException
 	{
 
@@ -154,7 +154,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			if (matcher.matches())
 			{
 				//LOGGER.debug("Adding to multipart data: " + file.getAbsolutePath());
-				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize));
+				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize, minimumPosteriorProbabilityToCall));
 			} 
 		}
 		

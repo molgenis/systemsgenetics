@@ -95,7 +95,7 @@ public class LdCalculatorTest extends ResourceTest
 	public void calculateLd3() throws LdCalculatorException, Exception
 	{
 
-		RandomAccessGenotypeData testData = new VcfGenotypeData(getLdTestVcf(), getLdTestVcfTbi());
+		RandomAccessGenotypeData testData = new VcfGenotypeData(getLdTestVcf(), getLdTestVcfTbi(), 0.8);
 		try
 		{
 			GeneticVariant rs2073738 = testData.getSnpVariantByPos("22", 19170956);

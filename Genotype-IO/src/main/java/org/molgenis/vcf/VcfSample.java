@@ -2,6 +2,7 @@ package org.molgenis.vcf;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.molgenis.genotype.Allele;
 
 public class VcfSample
 {
@@ -12,7 +13,7 @@ public class VcfSample
 	private final VcfRecord vcfRecord;
 	private String[] tokens;
 
-	private transient List<String> cachedAlleles;
+	private transient List<Allele> cachedAlleles;
 	
 	public VcfSample(VcfRecord vcfRecord) {
 		this(vcfRecord, null);
@@ -57,18 +58,18 @@ public class VcfSample
 		return phasings;
 	}
 	
-	public List<String> getAlleles() {
+	public List<Allele> getAlleles() {
 		if(cachedAlleles == null) {
 			// the first sub-field must always be the genotype if it is present
 			String[] dataTypes = vcfRecord.getFormat();
 			if(dataTypes.length == 0 || !dataTypes[0].equals(FIELD_GT)) return null;
 			String genotype = tokens[0];
 			
-			String referenceAllele = vcfRecord.getReferenceAllele();
-			List<String> alternateAlleles = vcfRecord.getAlternateAlleles();
+			Allele referenceAllele = vcfRecord.getReferenceAllele();
+			List<Allele> alternateAlleles = vcfRecord.getAlternateAlleles();
 			
 			// performance optimization for the common case that a sample consists of two alleles
-			cachedAlleles = new ArrayList<String>(2);
+			cachedAlleles = new ArrayList<Allele>(2);
 			final int nrGenotypeChars = genotype.length();
 			for (int j = 0, start = 0; j < nrGenotypeChars; ++j)
 			{
@@ -85,7 +86,7 @@ public class VcfSample
 							else
 								cachedAlleles.add(alternateAlleles.get(alleleIndex - 1));
 						} else {
-							cachedAlleles.add(null);
+							cachedAlleles.add(Allele.ZERO);
 						}
 					} else {
 						String alleleIndexStr = j == nrGenotypeChars - 1 ? genotype.substring(start) : genotype.substring(start, j);
@@ -96,7 +97,7 @@ public class VcfSample
 							else
 								cachedAlleles.add(alternateAlleles.get(alleleIndex - 1));
 						} else {
-							cachedAlleles.add(null);
+							cachedAlleles.add(Allele.ZERO);
 						}
 					}
 					start = j + 1;

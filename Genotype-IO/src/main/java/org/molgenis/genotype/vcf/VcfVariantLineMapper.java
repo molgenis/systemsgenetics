@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.genotype.Allele;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
@@ -39,23 +41,24 @@ public class VcfVariantLineMapper implements VariantLineMapper
 		List<String> identifiers = vcfRecord.getIdentifiers();
 		int pos = vcfRecord.getPosition();
 		String sequenceName = vcfRecord.getChromosome();			
-		String refAllele = vcfRecord.getReferenceAllele();
-		List<String> altAlleles = vcfRecord.getAlternateAlleles();
+		Allele refAllele = vcfRecord.getReferenceAllele();
+		List<Allele> altAlleles = vcfRecord.getAlternateAlleles();
 		
 		Map<String, Object> annotationMap = new HashMap<String, Object>();
 		for(VcfInfo vcfInfo : vcfRecord.getInformation())
 			annotationMap.put(vcfInfo.getKey(), vcfInfo.getVal());
 		
-		List<String> alleles;
-		if(altAlleles == null || altAlleles.isEmpty()) {
-			alleles = Collections.singletonList(refAllele);
+		Alleles alleles;
+		if (altAlleles == null || altAlleles.isEmpty()) {
+			alleles = Alleles.createAlleles(refAllele);
 		} else {
-			alleles = new ArrayList<String>(altAlleles.size() + 1);
-			alleles.add(refAllele);
-			alleles.addAll(altAlleles);
+			ArrayList<Allele> allelesList = new ArrayList<Allele>(altAlleles.size() + 1);
+			allelesList.add(refAllele);
+			allelesList.addAll(altAlleles);
+			alleles = Alleles.createAlleles(allelesList);
 		}
-		
-		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord); 
+
+		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
 		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, sampleVariantsProvider, alleles, refAllele);
 		
 		return geneticVariant;
