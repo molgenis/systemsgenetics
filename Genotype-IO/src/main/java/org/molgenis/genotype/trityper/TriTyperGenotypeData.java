@@ -426,10 +426,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 
 		//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
-		int index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
+		long index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
 
 		int numIndividuals = samples.size();
-		long indexLong = (long) (index) * (numIndividuals * 2);
+		long indexLong = (index) * (numIndividuals * 2);
 
 		byte[] buffer = new byte[2 * numIndividuals];
 		try {

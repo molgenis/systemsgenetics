@@ -17,6 +17,8 @@ import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
+import org.molgenis.genotype.util.MafCalculator;
+import org.molgenis.genotype.util.MafResult;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
@@ -114,13 +116,29 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 
 	@Override
 	public double getMinorAlleleFrequency() {
-		return original.getMinorAlleleFrequency();
+		// Do not cache MAF results since sample filter might change
+		try {
+			MafResult mafResult = MafCalculator.calculateMaf(getVariantAlleles(), getRefAllele(), getSampleVariants());
+			return mafResult.getFreq();
+		} catch (NullPointerException e) {
+			throw new GenotypeDataException("NullPointerException in maf caculation. " + getVariantAlleles() + " ref: "
+					+ getRefAllele(), e);
+		}
+
 	}
 
 	@Override
 	public Allele getMinorAllele() {
-		return original.getMinorAllele();
+		// Do not cache MAF results since sample filter might change
+		try {
+			MafResult mafResult = MafCalculator.calculateMaf(getVariantAlleles(), getRefAllele(), getSampleVariants());
+			return mafResult.getMinorAllele();
+		} catch (NullPointerException e) {
+			throw new GenotypeDataException("NullPointerException in maf caculation. " + getVariantAlleles() + " ref: "
+					+ getRefAllele(), e);
+		}
 	}
+
 
 	@Override
 	public boolean isSnp() {

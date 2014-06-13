@@ -106,7 +106,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
             bimFileWriter.append(SEPARATOR);
             bimFileWriter.append(variant.getAlleleCount() == 0 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(0).toString());
             bimFileWriter.append(SEPARATOR);
-            bimFileWriter.append(variant.getAlleleCount() == 1 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(1).toString());
+            bimFileWriter.append(variant.getAlleleCount() <= 1 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(1).toString());
             bimFileWriter.append('\n');
 
             ++writtenVariantsCounter;
