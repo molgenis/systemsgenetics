@@ -332,13 +332,13 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					throw new GenotypeDataException("Error in sample dosage (DS) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + dosage);
 				}
 			}
+		} else if (vcfRecord.getFormatIndex("GP") != -1) {
+			dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(getSampleProbilities(variant), minimumPosteriorProbabilityToCall);
 		} else if (vcfRecord.getFormatIndex("GT") != -1) {
 			// calculate sample dosage from called alleles
 			dosages = CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 					variant.getVariantAlleles(), variant.getRefAllele());
-		} else if (vcfRecord.getFormatIndex("GP") != -1) {
-			dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(getSampleProbilities(variant), minimumPosteriorProbabilityToCall);
-		} else {
+		}  else {
 			dosages = new float[nrSamples];
 			for(int i = 0 ; i < nrSamples ; ++i){
 				dosages[i] = -1;
