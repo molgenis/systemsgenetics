@@ -7,7 +7,7 @@ public abstract class GeneticVariantId implements Iterable<String>
 
 	public static final String DEFAULT_ID_SEPARATOR = ";";
 
-	private static final BlankGeneticVariantId blankGeneticVariantId = new BlankGeneticVariantId();
+	public static final BlankGeneticVariantId BLANK_GENETIC_VARIANT_ID = new BlankGeneticVariantId();
 
 	/**
 	 * Get the Id as string
@@ -135,7 +135,7 @@ public abstract class GeneticVariantId implements Iterable<String>
 	 */
 	public static GeneticVariantId createVariantId()
 	{
-		return blankGeneticVariantId;
+		return BLANK_GENETIC_VARIANT_ID;
 	}
 
 	/**
@@ -146,9 +146,9 @@ public abstract class GeneticVariantId implements Iterable<String>
 	 */
 	public static GeneticVariantId createVariantId(String id)
 	{
-		if (id == null)
+		if (id == null || id.equals(".") || id.equals(" "))
 		{
-			return blankGeneticVariantId;
+			return BLANK_GENETIC_VARIANT_ID;
 		}
 		return new SingleGeneticVariantId(id);
 	}
@@ -164,7 +164,7 @@ public abstract class GeneticVariantId implements Iterable<String>
 	{
 		if (ids == null || ids.size() == 0)
 		{
-			return blankGeneticVariantId;
+			return BLANK_GENETIC_VARIANT_ID;
 		}
 		else if (ids.size() == 1)
 		{

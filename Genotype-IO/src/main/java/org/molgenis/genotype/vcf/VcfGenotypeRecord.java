@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.variant.GenotypeRecord;
@@ -89,9 +90,9 @@ public class VcfGenotypeRecord implements GenotypeRecord
 	@Override
 	public Alleles getSampleAlleles()
 	{
-		List<String> alleles = vcfSample.getAlleles();
+		List<Allele> alleles = vcfSample.getAlleles();
 		if(vcfSample.getAlleles() != null){
-			return Alleles.createBasedOnString(alleles);
+			return Alleles.createAlleles(alleles);
 		} else {
 			return null;
 		}

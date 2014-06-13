@@ -169,10 +169,11 @@ public class GenotypeInfo {
 			final VariantFilterSeqPos varFilter;
 			if(variantPosFilterListFile != null) {
 				varFilter = new VariantFilterSeqPos();
+				int includeCountVar = 0;
 				try {
-						BufferedReader variantIdFilterReader = new BufferedReader(new FileReader(variantPosFilterListFile));
+						BufferedReader variantChrPosFilterReader = new BufferedReader(new FileReader(variantPosFilterListFile));
 						String line;
-						while ((line = variantIdFilterReader.readLine()) != null) {
+						while ((line = variantChrPosFilterReader.readLine()) != null) {
 							
 							String[] elements = CHR_POS_SPLITTER.split(line);
 							
@@ -180,9 +181,11 @@ public class GenotypeInfo {
 								LOGGER.error("Error parsing chr pos for line: " + line + " skipping line");
 								continue;
 							}
-							
+							++includeCountVar;
 							varFilter.addSeqPos(elements[0], Integer.parseInt(elements[1]));
 						}
+						
+						LOGGER.info("Included " + DEFAULT_NUMBER_FORMATTER.format(includeCountVar) + " variants from file with chr and pos");
 						
 					} catch (FileNotFoundException ex) {
 						LOGGER.fatal("Unable to find file with variants to filter on at: " + variantPosFilterListFile.getAbsolutePath());

@@ -1,5 +1,6 @@
 package org.molgenis.genotype.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.molgenis.genotype.Allele;
@@ -81,6 +82,25 @@ public class CalledDosageConvertor
 		}
 
 		return dosage;
+	}
+
+	public static List<Alleles> convertDosageToAlleles(float[] sampleDosage, Alleles variantAlleles) {
+		
+		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(sampleDosage.length);
+		
+		for(float dosage : sampleDosage){
+			if(dosage < 0.5){
+				sampleAlleles.add(Alleles.createAlleles(variantAlleles.get(1), variantAlleles.get(1)));
+			} else if (dosage >= 1.5){
+				sampleAlleles.add(Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0)));
+			} else {
+				sampleAlleles.add(variantAlleles);
+			}
+		}
+		
+		return sampleAlleles;
+		
+		
 	}
 
 }

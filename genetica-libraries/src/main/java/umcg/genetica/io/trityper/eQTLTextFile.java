@@ -302,7 +302,11 @@ public class eQTLTextFile extends TextFile {
 			}
 
 			if (fdrpresent && !elems[elems.length - 1].equals(nullStr)) {
-				e.setFDR(Double.parseDouble(elems[elems.length - 1]));
+				try{
+					e.setFDR(Double.parseDouble(elems[elems.length - 1]));
+				} catch (java.lang.NumberFormatException ex){
+					//do nothing
+				}
 			}
 			try {
 				elems = readLineElemsReturnReference(tab);

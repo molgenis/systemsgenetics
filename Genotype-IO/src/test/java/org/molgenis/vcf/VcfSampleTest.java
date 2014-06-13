@@ -7,6 +7,7 @@ import static org.testng.Assert.assertNull;
 
 import java.util.Arrays;
 import java.util.List;
+import org.molgenis.genotype.Allele;
 
 import org.testng.annotations.Test;
 
@@ -38,72 +39,72 @@ public class VcfSampleTest
 	public void getAlleles_phased()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"1|0"};
-		List<String> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
-		assertEquals(Arrays.asList("C", "A"), alleles);
+		List<Allele> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
+		assertEquals(Arrays.asList(Allele.C, Allele.A), alleles);
 	}
 
 	@Test
 	public void getAlleles_unphased()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"1/0"};
-		List<String> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
-		assertEquals(Arrays.asList("C", "A"), alleles);
+		List<Allele> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
+		assertEquals(Arrays.asList(Allele.C, Allele.A), alleles);
 	}
 	
 	@Test
 	public void getAlleles_triploid()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C", "T", "G"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C, Allele.T, Allele.G));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"2/0/1"};
-		List<String> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
-		assertEquals(Arrays.asList("T", "A", "C"), alleles);
+		List<Allele> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
+		assertEquals(Arrays.asList(Allele.T, Allele.A, Allele.C), alleles);
 	}
 	
 	@Test
 	public void getAlleles_multipleChars()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C", "C", "C", "C", "T", "C", "C", "C", "C", "G"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C, Allele.C, Allele.C, Allele.C, Allele.T, Allele.C, Allele.C, Allele.C, Allele.C, Allele.G));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"10/./5"};
-		List<String> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
-		assertEquals(Arrays.asList("G", null, "T"), alleles);
+		List<Allele> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
+		assertEquals(Arrays.asList(Allele.G, Allele.ZERO, Allele.T), alleles);
 	}
 	
 	@Test
 	public void getAlleles_noCall()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"./0"};
-		List<String> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
-		assertEquals(Arrays.asList(null, "A"), alleles);
+		List<Allele> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
+		assertEquals(Arrays.asList(Allele.ZERO, Allele.A), alleles);
 	}
 	
 	@Test
 	public void getAlleles_noCall2()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.A));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"0/."};
-		List<String> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
-		assertEquals(Arrays.asList("A", null), alleles);
+		List<Allele> alleles = new VcfSample(vcfRecord, tokens).getAlleles();
+		assertEquals(Arrays.asList(Allele.A, Allele.ZERO), alleles);
 	}
 
 	@Test
@@ -128,8 +129,8 @@ public class VcfSampleTest
 	public void getPhasings()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C", "T", "G"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C, Allele.T, Allele.G));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		String[] tokens = new String[]{"2/0|1"};
 		List<Boolean> phasings = new VcfSample(vcfRecord, tokens).getPhasings();
@@ -156,13 +157,13 @@ public class VcfSampleTest
 	public void reset()
 	{
 		VcfRecord vcfRecord = mock(VcfRecord.class);
-		when(vcfRecord.getReferenceAllele()).thenReturn("A");
-		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList("C"));
+		when(vcfRecord.getReferenceAllele()).thenReturn(Allele.A);
+		when(vcfRecord.getAlternateAlleles()).thenReturn(Arrays.asList(Allele.C));
 		when(vcfRecord.getFormat()).thenReturn(new String[]{"GT"});
 		VcfSample vcfSample = new VcfSample(vcfRecord, new String[]{"1|0"});
-		assertEquals(Arrays.asList("C", "A"), vcfSample.getAlleles());
+		assertEquals(Arrays.asList(Allele.C, Allele.A), vcfSample.getAlleles());
 		
 		vcfSample.reset(new String[]{"0/1"});
-		assertEquals(Arrays.asList("A", "C"), vcfSample.getAlleles());
+		assertEquals(Arrays.asList(Allele.A, Allele.C), vcfSample.getAlleles());
 	}
 }
