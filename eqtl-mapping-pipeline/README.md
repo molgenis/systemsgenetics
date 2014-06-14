@@ -34,9 +34,9 @@ You can contact the authors of this software at westra.harmjan@gmail.com, or lud
 ##Downloading the software
 You can download the latest version of the software here: [Latest version](http://www.molgenis.org/jenkins/job/systemsgenetics/nl.systemsgenetics$eqtl-mapping-pipeline/lastBuild/).
 
-Make sure to download the stand alone jar: `eqtl-mapping-pipeline-******-jar-with-dependencies.jar`
+Make sure to download `eqtl-mapping-pipeline-*.*.*-SNAPSHOT-dist.zip` or `eqtl-mapping-pipeline-*.*.*-SNAPSHOT-dist.tar.gz`
 
-Please note that the manual refers to eQTLMappingPipeline.jar, while the name of the package described above may be different (because of different version numbers etc).
+Please note that the manual refers to eqtl-mapping-pipeline.jar, while the name of the package described above may be different (because of different version numbers etc).
 
 ##Before you start
 
@@ -46,13 +46,13 @@ Please note that our software expects full paths, although shorter relative path
 This manual will combine references to paths with commands that need to be issued for a certain task. For example, at some point in this manual we refer to your phenotype data as `traitfile`, which will be printed in a grey box. Commands will also be in grey boxes, and can make references to paths defined earlier (to keep the manual readable), as follows:
 
 ````
-java -jar eQTLMappingPipeline.jar --mode metaqtl --inexp traitfile
+java -jar eqtl-mapping-pipeline.jar --mode metaqtl --inexp traitfile
 ````
 
 To run the command in the example above, you have to replace the string `traitfile` with the full path of your `traitfile` after the command line switch `--inexp`. So if the full path to your `traitfile` would be `/path/to/traitfile.txt`, the final command would be:
 
 ````
-java -jar eQTLMappingPipeline.jar --mode metaqtl --inexp /path/to/traitfile.txt
+java -jar eqtl-mapping-pipeline.jar --mode metaqtl --inexp /path/to/traitfile.txt
 ````
 
 ###Java Virtual Machine
@@ -64,13 +64,13 @@ Our software is written in Java, which makes the software both fast and portable
 
 * Java executables are called jar-files. The eQTL mapping pipeline is such a jar-file. You can execute it by using the following command from a terminal / console:
 ```    
-    java –jar eQTLMappingPipeline.jar 
+    java –jar eqtl-mapping-pipeline.jar 
 ```
 
 * You need to specify the maximal amount of memory available to the program using the command-line switch `–Xmx` (case-sensitive!). It is also wise to set an initial amount of memory available to the program which can be specified with the `-Xms` option (case-sensitive!). The amount of memory can be specified in megabytes (using an m suffix) or in gigabytes (using a g suffix). To be sure your computer is running java at 64-bit, please add the switch `–d64`. These java VM switches (`–Xmx`, `-Xms`, `–d64` and others) should be called prior to the `–jar` switch. To be sure you have enough space to put SNP and probe information in you should also set `-XX:StringTableSize=`, chosing a prime number which is slighly higher than the amount of SNPs and probes combined will yield optimal performance. An example command where the program is started with an allocation of 2gb of initialy memmory, a maximum of 4gb of memory is allowed and roughly 1000000 SNPs and probes are tested will look like this:
 
 ```    
-    java –d64 -XX:StringTableSize=1000003 -Xms2g –Xmx4g –jar eQTLMappingPipeline.jar 
+    java –d64 -XX:StringTableSize=1000003 -Xms2g –Xmx4g –jar eqtl-mapping-pipeline.jar 
 ```
 
 * Try to increase the `–Xmx` amount when you get Out-Of-Memory-Errors or errors involving ‘heap space’
@@ -79,7 +79,7 @@ Our software is written in Java, which makes the software both fast and portable
 **IMPORTANT NOTE:** In this manual, we assume you understand the principle that you need to allocate sufficient amounts of RAM and therefore we excluded the VM switches from the example commands. Please be aware that you should use it, as some of the commands may require a substantial amount of memory (depending on your dataset and settings)!
 
 ###General information about software
-* The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: ```java –jar eQTLMappingPipeline.jar``` produces a list of available modes, while ```java –jar eQTLMappingPipeline.jar  --mode metaqtl``` produces a list of all available options for metaqtl.
+* The eQTL mapping pipeline is a command line program, which makes the user interface not very intuitive. In order to help you a bit, an overview of available switch options is displayed when a command is incomplete or incorrect. Furthermore, each mode of the program also has its own overview of available switches with a small description of its functionality. For example: ```java –jar eqtl-mapping-pipeline.jar``` produces a list of available modes, while ```java –jar eqtl-mapping-pipeline.jar  --mode metaqtl``` produces a list of all available options for metaqtl.
 * The software is able to process GZipped text files for most of the input files (not files in .tar archives however), which allows you to save some space on your hard drive.
 
 
@@ -130,7 +130,7 @@ Use the GenomeStudio files of your expression arrays. **Note:** Please do not us
 Our software is able to use both unimputed called genotypes, as well as imputed genotypes and their dosage values. However, currently our software can only interpret files that are in the [TriTyper](http://genenetwork.nl/wordpress/trityper/) format. We are working on a generic method of genotype input through [Genotype IO](https://github.com/harmjanwestra/systemsgenetics/tree/master/Genotype-IO). In the mean time, users of the eQTL mapping pipeline should convert their data to TriTyper using ImputationTool. This tool is also integrated in the eQTL mapping pipeline, and can be called using the following command (no separate download required):
 
 ```
-java –jar eQTLMappingPipeline.jar --imputationtool
+java –jar eqtl-mapping-pipeline.jar --imputationtool
 ```
 
 The documentation for the ImputationTool can be found at the [ImputationTool repository page](https://github.com/molgenis/systemsgenetics/tree/master/imputation-tool).
@@ -172,32 +172,32 @@ Note down the full path to your `traitfile`. The output of the normalization too
 To run the general normalization strategy described above, you can run the following command:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile
+java –jar eqtl-mapping-pipeline.jar --mode normalize --in traitfile
 ```
 
 You can specify an output directory with the following command (specifying an `outdir`):
 
 ```
-java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --out outdir
+java –jar eqtl-mapping-pipeline.jar --mode normalize --in traitfile --out outdir
 ```
 
 To run the general normalization strategy described above, and correct for covariates:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --adjustcovariates --cov covariatefile
+java –jar eqtl-mapping-pipeline.jar --mode normalize --in traitfile --adjustcovariates --cov covariatefile
 ```
 
 Individual elements of the normalization strategy can also be separately executed. For example to only run Quantile normalization, and Log<sub>2</sub> transformation run the following command:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode normalize --in traitfile --qqnorm --logtransform
+java –jar eqtl-mapping-pipeline.jar --mode normalize --in traitfile --qqnorm --logtransform
 ```
 
 **Note:**
 Several other parameters can be set to customize your normalization strategy (e.g. which procedures to run, number of PCs to remove, step size for PC removal, handling of missing values, etc). However, the order of procedures is fixed (Quantile Normalize > Log<sub>2</sub> transform > covariate adjustment > centering and scaling > PCA adjustment), irregardless of the order of each command line switch. To review the available options for normalization, issue the following command:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode normalize
+java –jar eqtl-mapping-pipeline.jar --mode normalize
 ```
 
 ###Check your data
@@ -237,7 +237,7 @@ For details how this exactly works, please have a look at the paper or read the 
 The *MixupMapper* analysis can be run using the following command:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode mixupmapper --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling
+java –jar eqtl-mapping-pipeline.jar --mode mixupmapper --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling
 ```
 
 By default, the software tests all SNPs in your genotype data, having a minor allele frequency of > 0.05, a Hardy-Weinberg P-value > 0.001 and a call-rate > 0.95. If you want to test a subset of SNPs, create a text file (`snpfile`) with one column, one SNP identifier per row, and append the command above with the following command line switch `--snps snpfile` (remember to use the full path).
@@ -344,7 +344,7 @@ Prior to eQTL mapping, we would like to determine whether removing PCs increases
 To run the analysis, not taking into account the genetic association of PCs with SNPs, use the following command:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode pcaoptimum --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling --cissnps cissnpfile --transsnps transsnpfile
+java –jar eqtl-mapping-pipeline.jar --mode pcaoptimum --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --gte genotypephenotypecoupling --cissnps cissnpfile --transsnps transsnpfile
 ```
 
 If you want to run this analysis specifically for *cis*-QTLs, you can omit the `--transsnps transsnpfile` part of the command. Conversely, if you only want to run the *trans*-QTL analysis, you can omit the `--cissnps cissnpfile` part of the command.
@@ -384,7 +384,7 @@ In a single command, the final QTL mapping can be performed. Standard settings f
 The default command for a *cis*-QTL analysis:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode metaqtl --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --cis
+java –jar eqtl-mapping-pipeline.jar --mode metaqtl --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --cis
 ```
 
 By replacing the `--cis` command line switch with `--trans` in the above command, a genome-wide *trans* analysis is performed. 
@@ -392,7 +392,7 @@ By replacing the `--cis` command line switch with `--trans` in the above command
 If you want to run both *cis* and *trans* analyses at once, you can supply the software with both command line switches:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode metaqtl --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --cis --trans
+java –jar eqtl-mapping-pipeline.jar --mode metaqtl --in genotypedir --out outdir --inexp traitfile --inexpplatform platformidentifier --inexpannot annotationfile --cis --trans
 ```
 
 If you want to confine your analysis to a certain set of SNPs, you can append the command with `--snps snplist`. Alternatively, you can supply a combination of SNPs and traits/probes/genes by appending `--snpprobe snpprobelist`.
@@ -479,7 +479,7 @@ Locate and/or download the following files (to avoid confusion, **use full paths
 -	CellCounts.txt: in order to determine whether PC1 actually reflects cell-type differences, we may ask you to supply this optional file. The program will determine and output the correlation between the proxy phenotype and the actual phenotype if this file is supplied. The format is identical to the `mdscomponents` file. We will call this file `cellcounts`
 
 ####Normalization - Step 2 - Run the normalization and QC
-``java –jar eQTLMappingPipeline.jar --mode celltypespecific --step normalize --inexpraw traitfile --out outputdir --celltypespecificprobes probelist --mdscomponents mdscomponents --gte genotypetotraitcoupling --cellcounts cellcounts``
+``java –jar eqtl-mapping-pipeline.jar --mode celltypespecific --step normalize --inexpraw traitfile --out outputdir --celltypespecificprobes probelist --mdscomponents mdscomponents --gte genotypetotraitcoupling --cellcounts cellcounts``
 
 **Please note that the --gte, --mdscomponents and --cellcount switches are optional** 
 
@@ -527,7 +527,7 @@ Locate and/or download the following files (to avoid confusion, **use full paths
 
 ####Association analysis - Step 2 - Run the association analysis
 
-``java –jar eQTLMappingPipeline.jar --mode celltypespecific --step mapeqtls --inexp traitfile --covariates covariates --cellcounts cellcountproxy --in genotypedir --out outputdir --snpprobe snpprobefile --threads nrThreads``
+``java –jar eqtl-mapping-pipeline.jar --mode celltypespecific --step mapeqtls --inexp traitfile --covariates covariates --cellcounts cellcountproxy --in genotypedir --out outputdir --snpprobe snpprobefile --threads nrThreads``
 
 **Please note that the --gte and --threads switches are optional**
 
@@ -546,7 +546,7 @@ After finalizing, the association analysis will have generated a couple of files
 ####Association analysis - Step 4 - Convert the binary output table to text (optional)
 If you want to investigate the data stored within the CellTypeSpecificityMatrix.binary.dat file, you can use the following command to convert the binary file to a text-based, tab-separated matrix:
 
-``java –jar eQTLMappingPipeline.jar --mode util --convertbinarymatrix --in /path/to/ CellTypeSpecificityMatrix.binary.dat --out /path/to/textoutput.txt``
+``java –jar eqtl-mapping-pipeline.jar --mode util --convertbinarymatrix --in /path/to/ CellTypeSpecificityMatrix.binary.dat --out /path/to/textoutput.txt``
 
 ##Meta-analysis and settings file
 The command line interface of this software allows for basic QTL analyses. However, our software has many more capabilities that are not accesible via the command line. In these cases, an XML file is required that describes the different settings (full path referred to as `settingsfile`). [An example `settingsfile` is provided in the repository](https://github.com/molgenis/systemsgenetics/blob/master/eqtl-mapping-pipeline/src/main/resources/settings.xml). Using a settings file allows you to quickly rerun certain analyses and to perform on-the-fly meta-analyses. A copy of the `settingsfile` will always be copied to your `outdir`. 
@@ -554,7 +554,7 @@ The command line interface of this software allows for basic QTL analyses. Howev
 Currently, `settingsfile` can only be used in the `--mode metaqtl` mode. You should note that a `settingsfile` overrides all command line switches. The `settingsfile` can be used as follows:
 
 ```
-java –jar eQTLMappingPipeline.jar --mode metaqtl --settings settingsfile
+java –jar eqtl-mapping-pipeline.jar --mode metaqtl --settings settingsfile
 ```
 
 ###Available options in settingsfile
