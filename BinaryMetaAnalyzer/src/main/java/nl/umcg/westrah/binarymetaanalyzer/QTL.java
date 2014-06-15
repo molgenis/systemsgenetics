@@ -113,6 +113,30 @@ public class QTL implements Comparable<QTL> {
         return correlations;
     }
 
+    public int getSNPId() {
+        return sid;
+    }
+
+    public int getMetaTraitId() {
+        return pid;
+    }
+
+    public String getAlleles() {
+        return BaseAnnot.getAllelesDescription(alleles);
+    }
+
+    public String getAlleleAssessed() {
+        return BaseAnnot.toString(alleleAssessed);
+    }
+
+    public double[] getDatasetZScores() {
+        return datasetZScores;
+    }
+
+    public int[] getDatasetSampleSizes() {
+        return datasetsSamples;
+    }
+
     
 
     
