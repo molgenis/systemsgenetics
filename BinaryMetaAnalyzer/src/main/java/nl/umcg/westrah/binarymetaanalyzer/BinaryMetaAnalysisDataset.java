@@ -5,13 +5,10 @@
  */
 package nl.umcg.westrah.binarymetaanalyzer;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
+import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -20,7 +17,7 @@ import umcg.genetica.io.text.TextFile;
  */
 public class BinaryMetaAnalysisDataset {
 
-    boolean isCisDataset = false;
+    private boolean isCisDataset = false;
     private final String datasetLoc;
     private MetaQTL4MetaTrait[][] snpCisProbeMap;
 
@@ -38,7 +35,7 @@ public class BinaryMetaAnalysisDataset {
     private final MetaQTL4TraitAnnotation probeAnnotation;
     private final int platformId;
 
-    public BinaryMetaAnalysisDataset(String dir, boolean isCisDataset, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
+    public BinaryMetaAnalysisDataset(String dir, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
         String matrix = dir;
         String probeFile = dir;
         String snpFile = dir;
@@ -53,7 +50,7 @@ public class BinaryMetaAnalysisDataset {
             probeFile += "Dataset-ColNames.txt.gz";
             snpFile += "Dataset-RowNames.txt.gz";
         }
-        this.isCisDataset = isCisDataset;
+
         this.datasetLoc = dir;
         // check presence of files
         if (!Gpio.exists(matrix)) {
@@ -66,6 +63,10 @@ public class BinaryMetaAnalysisDataset {
             throw new IOException("Could not find file: " + snpFile);
         }
 
+        BinaryFile f = new BinaryFile(matrix, BinaryFile.R);
+        int firstInt = f.readInt();
+        f.close();
+        isCisDataset = firstInt == 1;
         loadSNPs(snpFile);
         loadProbes(probeFile);
     }
@@ -95,6 +96,7 @@ public class BinaryMetaAnalysisDataset {
         int ln = 0;
 
         snps = new String[nrSNPs];
+        snpBytes[0] = 4; // account for magic number.
         while (elems != null) {
             String snp = new String(elems[0].getBytes("UTF-8")).intern();
             String allelesStr = new String(elems[1].getBytes("UTF-8")).intern();
@@ -153,7 +155,7 @@ public class BinaryMetaAnalysisDataset {
                     // get the list of probes for this particular SNP.
                     String probe = elems[e];
                     MetaQTL4MetaTrait t = probeAnnotation.getTraitForPlatformId(platformId, probe);
-                    snpProbeList[e-8] = t;
+                    snpProbeList[e - 8] = t;
                 }
                 snpCisProbeMap[ln] = snpProbeList;
             }
@@ -200,6 +202,10 @@ public class BinaryMetaAnalysisDataset {
 
     String getAlleleAssessed(int datasetSNPId) {
         return allelesAssessed[datasetSNPId];
+    }
+
+    boolean getIsCisDataset() {
+        return isCisDataset;
     }
 
 }

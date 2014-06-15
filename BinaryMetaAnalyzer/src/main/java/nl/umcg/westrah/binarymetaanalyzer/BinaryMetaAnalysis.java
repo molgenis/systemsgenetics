@@ -81,7 +81,7 @@ public class BinaryMetaAnalysis {
             datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
 
             for (int d = 0; d < datasets.length; d++) {
-                datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d), settings.getIsDatasetCis().get(d), permutation, settings.getDatasetannotations().get(d), probeAnnotation);
+                datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d), permutation, settings.getDatasetannotations().get(d), probeAnnotation);
             }
 
             // create meta-analysis SNP index. have to recreate this every permutation, 
@@ -134,17 +134,17 @@ public class BinaryMetaAnalysis {
                         ctr++;
                     }
 
-                    float[][] zScores = new float[cisProbeMap.size()][datasets.length];
+                    double[][] zScores = new double[cisProbeMap.size()][datasets.length];
 
                     // get list of probes to test for each dataset
                     for (int d = 0; d < datasets.length; d++) {
                         for (int p = 0; p < cisProbeMap.size(); p++) {
-                            zScores[p][d] = Float.NaN;
+                            zScores[p][d] = Double.NaN;
                         }
                         int datasetSNPId = snpIndex[snp][d];
                         float[] z = datasets[d].getZScores(datasetSNPId);
                         if (datasetSNPId != -9) {
-                            if (settings.getIsDatasetCis().get(d)) {
+                            if (datasets[d].getIsCisDataset()) {
 // this requires us to retrieve the z-scores differently
                                 // we need to figure out which probes match up, but their orders might be different
                                 // and the number of probes tested in each dataset might differ as well
@@ -187,15 +187,12 @@ public class BinaryMetaAnalysis {
                     // meta-analyze!
                     for (int probe = 0; probe < zScores.length; probe++) {
                         MetaQTL4MetaTrait t = cisProbeArray[probe];
-                        double[] datasetZScores = new double[datasets.length];
-                        for (int d = 0; d < datasets.length; d++) {
-                            datasetZScores[d] = zScores[probe][d];
-                        }
-                        double metaZ = ZScores.getWeightedZ(datasetZScores, sampleSizes);
+
+                        double metaZ = ZScores.getWeightedZ(zScores[probe], sampleSizes);
                         double p = ZScores.zToP(metaZ);
 
                         // create output object
-                        QTL q = new QTL(p, t.getMetaTraitId(), snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), datasetZScores, sampleSizes); // sort buffer if needed.
+                        QTL q = new QTL(p, t.getMetaTraitId(), snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), zScores[probe], sampleSizes); // sort buffer if needed.
                         addEQTL(q);
                     }
                 } else {
@@ -205,12 +202,63 @@ public class BinaryMetaAnalysis {
                         cisProbes = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getCisdistance());
                     }
                     // iterate over the probe index
-                    
-                    // meta-analyze
+
+                    double[][] zScores = new double[probeIndex.length][datasets.length];
+                    Set<MetaQTL4MetaTrait> traits = probeAnnotation.getMetatraits();
+                    for (int d = 0; d < datasets.length; d++) {
+                        if(datasets[d].getIsCisDataset()){
+                            System.err.println("ERROR: cannot run trans analysis on a cis dataset: "+settings.getDatasetlocations().get(d));
+                            System.exit(-1);
+                        }
+                        int datasetSNPId = snpIndex[snp][d];
+                        float[] z = datasets[d].getZScores(datasetSNPId);
+                        int p = 0;
+
+                        for (MetaQTL4MetaTrait t : traits) {
+                            if (cisProbes != null && cisProbes.contains(t)) {
+                                zScores[p][d] = Double.NaN;
+                            } else {
+                                Integer probeId = probeIndex[p][d];
+                                if (probeId != null) {
+                                    zScores[p][d] = z[probeId];
+                                    if (flipZScores[d]) {
+                                        zScores[p][d] *= -1;
+                                    }
+                                } else {
+                                    zScores[p][d] = Double.NaN;
+                                }
+                                p++;
+                            }
+                        }
+                    }
+
+                    // meta-analyze!
+                    int probe = 0;
+                    for (MetaQTL4MetaTrait t : traits) {
+
+                        double metaZ = ZScores.getWeightedZ(zScores[probe], sampleSizes);
+                        double pval = ZScores.zToP(metaZ);
+
+                        // create output object
+                        QTL q = new QTL(pval, t.getMetaTraitId(), snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), zScores[probe], sampleSizes); // sort buffer if needed.
+                        addEQTL(q);
+                        probe++;
+                    }
                 }
             }
+            
+            // write the results to disk    
         }
+        
+        /*
+        TODO:
+        - Plotting of z-scores
+        - writing of output file
+        - validation
+        - multithreadalize
+        */
 
+        
     }
 
     private void createSNPIndex() throws IOException {

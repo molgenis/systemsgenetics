@@ -121,7 +121,13 @@ public class ResultProcessorThread extends Thread {
                         metaAnalysisFileName += "-PermutationRound-" + m_permutationround;
                     }
                     zScoreMetaAnalysisFile = new BinaryFile(metaAnalysisFileName + ".dat", BinaryFile.W);
-                    
+                    // write magic number
+                    if (m_cisOnly) {
+                        zScoreMetaAnalysisFile.writeInt(1);
+                    } else {
+                        zScoreMetaAnalysisFile.writeInt(0);
+                    }
+
                     zScoreMetaAnalysisRowNamesFile = new TextFile(metaAnalysisFileName + "-RowNames.txt.gz", TextFile.W);
                     zScoreMetaAnalysisRowNamesFile.writeln("SNP\tAlleles\tMinorAllele\tAlleleAssessed\tNrCalled");
                     TextFile tf = new TextFile(metaAnalysisFileName + "-ColNames.txt.gz", TextFile.W);
@@ -134,6 +140,13 @@ public class ResultProcessorThread extends Thread {
                         fileName += "-PermutationRound-" + m_permutationround;
                     }
                     zScoreBinaryFile[d] = new BinaryFile(fileName + ".dat", BinaryFile.W);
+                    // write magic number
+                    if (m_cisOnly) {
+                        zScoreBinaryFile[d].writeInt(1);
+                    } else {
+                        zScoreBinaryFile[d].writeInt(0);
+                    }
+
                     TextFile tf = new TextFile(fileName + "-ColNames.txt.gz", TextFile.W);
                     tf.writeList(Arrays.asList(m_probeList));
                     tf.close();
