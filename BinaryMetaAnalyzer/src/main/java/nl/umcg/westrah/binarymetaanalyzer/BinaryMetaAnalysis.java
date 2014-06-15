@@ -14,9 +14,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.math.stats.ZScores;
+import umcg.genetica.text.Strings;
 
 /**
  *
@@ -72,6 +74,9 @@ public class BinaryMetaAnalysis {
 
     public void run() throws IOException {
 
+        String outdir = settings.getOutput();
+        outdir = Gpio.formatAsDirectory(outdir);
+        Gpio.createDir(outdir);
         // load probe annotation and index
         // this particular probe annotation can take multiple probes for a single location into account.
         loadProbeAnnotation();
@@ -206,8 +211,8 @@ public class BinaryMetaAnalysis {
                     double[][] zScores = new double[probeIndex.length][datasets.length];
                     Set<MetaQTL4MetaTrait> traits = probeAnnotation.getMetatraits();
                     for (int d = 0; d < datasets.length; d++) {
-                        if(datasets[d].getIsCisDataset()){
-                            System.err.println("ERROR: cannot run trans analysis on a cis dataset: "+settings.getDatasetlocations().get(d));
+                        if (datasets[d].getIsCisDataset()) {
+                            System.err.println("ERROR: cannot run trans analysis on a cis dataset: " + settings.getDatasetlocations().get(d));
                             System.exit(-1);
                         }
                         int datasetSNPId = snpIndex[snp][d];
@@ -246,19 +251,18 @@ public class BinaryMetaAnalysis {
                     }
                 }
             }
-            
-            // write the results to disk    
-        }
-        
-        /*
-        TODO:
-        - Plotting of z-scores
-        - writing of output file
-        - validation
-        - multithreadalize
-        */
 
-        
+            // write the results to disk  
+            writeBuffer(outdir, permutation);
+        }
+
+        /*
+         TODO:
+         - Plotting of z-scores
+         - writing of output file
+         - validation
+         - multithreadalize
+         */
     }
 
     private void createSNPIndex() throws IOException {
@@ -390,5 +394,84 @@ public class BinaryMetaAnalysis {
                 bufferHasOverFlown = true;
             }
         }
+    }
+
+    private void writeBuffer(String outdir, int permutation) throws IOException {
+        String outfilename = outdir + "eQTLs.txt.gz";
+        if (permutation > 0) {
+            outfilename = outdir + "PermutationRound-" + permutation + ".txt.gz";
+        }
+
+        MetaQTL4MetaTrait[] traits = new MetaQTL4MetaTrait[probeAnnotation.getMetatraits().size()];
+        int p = 0;
+        for (MetaQTL4MetaTrait t : probeAnnotation.getMetatraits()) {
+            traits[p] = t;
+            p++;
+        }
+
+        TextFile output = new TextFile(outfilename, TextFile.W);
+        String header = "PValue\tSNPName\tSNPChr\tSNPChrPos\tProbeName\tProbeChr\tProbeCenterChrPos\tCisTrans\tSNPType\t"
+                + "AlleleAssessed\tOverallZScore\tDatasetsWhereSNPProbePairIsAvailableAndPassesQC\tDatasetsZScores\tDatasetsNrSamples\t"
+                + "IncludedDatasetsMeanProbeExpression\tIncludedDatasetsProbeExpressionVariance\tHGNCName\tIncludedDatasetsCorrelationCoefficient";
+        output.writeln(header);
+        for (QTL q : finalEQTLs) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(q.getPvalue());
+            sb.append("\t");
+            int snpId = q.getSNPId();
+            sb.append(snpList[snpId]);
+            sb.append("\t");
+            sb.append(snpChr[snpId]);
+            sb.append("\t");
+            sb.append(snpPositions[snpId]);
+            sb.append("\t");
+            int metaTraitId = q.getMetaTraitId();
+            sb.append(traits[metaTraitId].getMetaTraitName());
+            sb.append("\t");
+            sb.append(traits[metaTraitId].getChr());
+            sb.append("\t");
+            sb.append(traits[metaTraitId].getChrMidpoint());
+            sb.append("\t");
+            if (settings.isCis()) {
+                sb.append("cis");
+            } else {
+                sb.append("trans");
+            }
+            sb.append("\t");
+            sb.append(q.getAlleles());
+            sb.append("\t");
+            sb.append(q.getAlleleAssessed());
+            sb.append("\t");
+            sb.append(q.getZscore());
+            
+            double[] datasetZScores = q.getDatasetZScores();
+            String[] dsBuilder = new String[datasets.length];
+            String[] dsNBuilder = new String[datasets.length];
+            for(int d=0;d<datasetZScores.length;d++){
+                if(datasetZScores[d]!=Double.NaN){
+                    dsBuilder[d] = settings.getDatasetnames().get(d);
+                    dsNBuilder[d] = ""+q.getDatasetSampleSizes()[d];
+                } else {
+                    dsBuilder[d] = "-";
+                    dsNBuilder[d] = "-";
+                }
+            }
+            
+            sb.append("\t");
+            sb.append(Strings.concat(dsBuilder,Strings.semicolon));
+            
+            sb.append("\t");
+            sb.append(Strings.concat(datasetZScores, Strings.semicolon));
+            
+            sb.append("\t");
+            sb.append(Strings.concat(dsNBuilder, Strings.semicolon));
+            sb.append("\t-\t-\t");
+            
+            sb.append(traits[metaTraitId].getAnnotation());
+            sb.append("\t-");
+            
+            output.writeln(sb.toString());
+        }
+        output.close();
     }
 }
