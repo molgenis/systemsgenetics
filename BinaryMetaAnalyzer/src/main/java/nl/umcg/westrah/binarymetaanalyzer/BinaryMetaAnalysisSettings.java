@@ -45,7 +45,7 @@ public class BinaryMetaAnalysisSettings {
     private String snpselection;
     private XMLConfiguration config;
     private String snpprobeselection;
-    private ArrayList<Boolean> datasetIsCis;
+
     private String snpAnnotationFile;
 
     public void parse(String settings, String texttoreplace, String replacetextwith) {
@@ -101,7 +101,7 @@ public class BinaryMetaAnalysisSettings {
             datasetlocations = new ArrayList<String>();
             datasetannotations = new ArrayList<String>();
             datasetPrefix = new ArrayList<String>();
-            datasetIsCis = new ArrayList<Boolean>();
+
             while (dataset != null) {
                 dataset = config.getString("datasets.dataset(" + i + ").name");  // see if a dataset is defined
                 if (dataset != null) {
@@ -118,9 +118,6 @@ public class BinaryMetaAnalysisSettings {
                         datasetlocation = datasetlocation.replace(texttoreplace, replacetextwith);
                     }
                     String datasetannotation = config.getString("datasets.dataset(" + i + ").expressionplatform");  // see if a dataset is defined
-
-                    Boolean b = config.getBoolean("datasets.dataset(" + i + ").isCisDataset");
-                    datasetIsCis.add(b);
 
                     datasetlocations.add(datasetlocation);
                     datasetannotations.add(datasetannotation);
@@ -493,10 +490,6 @@ public class BinaryMetaAnalysisSettings {
             Logger.getLogger(BinaryMetaAnalysisSettings.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-    }
-
-    public ArrayList<Boolean> getIsDatasetCis() {
-        return datasetIsCis;
     }
 
     public String getSNPAnnotationFile() {
