@@ -121,6 +121,7 @@ public class ResultProcessorThread extends Thread {
                         metaAnalysisFileName += "-PermutationRound-" + m_permutationround;
                     }
                     zScoreMetaAnalysisFile = new BinaryFile(metaAnalysisFileName + ".dat", BinaryFile.W);
+                    
                     zScoreMetaAnalysisRowNamesFile = new TextFile(metaAnalysisFileName + "-RowNames.txt.gz", TextFile.W);
                     zScoreMetaAnalysisRowNamesFile.writeln("SNP\tAlleles\tMinorAllele\tAlleleAssessed\tNrCalled");
                     TextFile tf = new TextFile(metaAnalysisFileName + "-ColNames.txt.gz", TextFile.W);
@@ -308,20 +309,6 @@ public class ResultProcessorThread extends Thread {
                 double[] finalZscores = r.finalZScore;
                 String snpoutput = null;
 
-//                if (m_cisOnly) {
-//                    int[] probes = currentWP.getProbes();
-//                    for (int d = 0; d < numDatasets; d++) {
-//                        for (int p = 0; p < probes.length; p++) {
-//                            int probeId = probes[p];
-//                            String probeName = m_probeList[probeId];
-//                            double z = zscores[d][p];
-//                            
-//                        }
-//                    }
-//                    if (m_gg.length > 1) {
-//                        // write meta-analysis results
-//                    }
-//                }
                 // if we're doing a meta-analysis, write the meta-analysis Z to a separate binaryFile
                 if (m_gg.length > 1) {
                     int totalSampleNr = 0;

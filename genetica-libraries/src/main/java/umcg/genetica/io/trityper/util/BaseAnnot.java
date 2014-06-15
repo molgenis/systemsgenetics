@@ -211,4 +211,13 @@ public class BaseAnnot {
     public static String getAllelesDescription(byte[] alleles) {
         return toString(alleles[0]) + "/" + toString(alleles[1]);
     }
+
+    public static byte[] toByteArray(String alleles) {
+        byte[] output = new byte[2];
+        String[] alleleStr = alleles.split("/");
+        for(int i=0;i<alleleStr.length;i++){
+            output[i] = toByte(alleleStr[i]);
+        }
+        return output;
+    }
 }
