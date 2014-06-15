@@ -496,25 +496,3 @@ public class BinaryMetaAnalysisSettings {
         return snpAnnotationFile;
     }
 }
-
-/*
- * String[] locations = { //
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/Results/2011-09-30-EGCUT-Trans-40PCs-GeneticVectorsNotRemoved-SNPs4PCVectorsNotRemoved/", //
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/Results/2011-10-20.RotterdamStudy.TRANS.40PCs.YES-GVR.YES-GWAS-PCs/",
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/Results/2011-10-25-Groningen-BloodH8v2-TRANS-40PCs-4GWASPCs-GeneticPCsNotRemoved/", //
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/Results/2011-10-25-Groningen-BloodHT12-TRANS-40PCs-4GWASPCs-GeneticPCsNotRemoved/", //
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/Results/2011-10-20_SHIP-TREND_CIS-TRANS_40PCs_YES-GVR_YES-GWASPCs/", // //
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/BloodHT12-40PC-GeneticVectorsNotRemoved/", //
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/BloodH8-40PC-GeneticVectorsNotRemoved/" };
- *
- * String[] datasetnames = { "Dataset", //Rotterdam "Dataset", //SHIP "Dataset", //Rotterdam "Dataset", //SHIP "Dataset" //SHIP // "Dataset", //EST //
- * "BloodH8v2-Imputed", //HT12 // "BloodHT12-Imputed" //H8 }; // String[] annotationused = { // "HumanHT-12_V3_0_R2_11283641_A.txt", //
- * "HumanHT-12_V4_0_R1_15002873_B.txt", "H8v2ConvToHT12", // "HumanHT-12_V3_0_R2_11283641_A.txt", // "HumanHT-12_V3_0_R2_11283641_A.txt" ////
- * "HumanHT-12_V3_0_R2_11283641_A.txt", // "H8v2ConvToHT12", // "HumanHT-12_V3_0_R2_11283641_A.txt" };
- *
- * // // HumanHT-12_V3_0_R2_11283641_A.txt	HumanHT-12_V3_0_R3_11283641_A.txt	HumanHT-12_V4_0_R1_15002873_B.txt	HumanHT-12_V4_0_R2_15002873_B.txt
- * HumanHT-12_V4_0_R2_15002873_B_WGDASL.txt // // HumanRef-8_V2_0_R4_11223162_A.txt	HUMANREF-8_V3_0_R1_11282963_A_WGDASL.txt // //
- * HumanRef-8_V3_0_R2_11282963_A.txt	HumanRef-8_V3_0_R3_11282963_A.txt	HumanWG-6_V2_0_R4_11223189_A.txt	HumanWG-6_V3_0_R2_11282955_A.txt
- * HumanWG-6_V3_0_R3_11282955_A.txt	H8v2ConvToHT12 // String output =
- * "/Volumes/Data2/MarjoleinHomeAccount/marjolein/Results/2011-10-25-METATEST.GroningenH8v2-40PCs.YES-GVR.YES-GWAS-PCS/"; // //
- */

@@ -258,8 +258,8 @@ public class BinaryMetaAnalysis {
 
         /*
          TODO:
+         - ZSCORE RETRIEVAL
          - Plotting of z-scores
-         - writing of output file
          - validation
          - multithreadalize
          */
@@ -374,8 +374,6 @@ public class BinaryMetaAnalysis {
                 if (locationToStoreResult == finalEQTLs.length) {
 
                     Arrays.sort(finalEQTLs);
-//                    SmoothSort.sort(finalEQTLs);
-//                    inplaceArrayQuickSort.sort(finalEQTLs);
                     sorted = true;
                     locationToStoreResult = settings.getFinalEQTLBufferMaxLength();
                     maxSavedPvalue = finalEQTLs[(settings.getFinalEQTLBufferMaxLength() - 1)].getPvalue();
