@@ -15,12 +15,6 @@
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
             <version>1.0.1-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>ssj</artifactId>
-                    <groupId>ca.umontreal.iro</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
