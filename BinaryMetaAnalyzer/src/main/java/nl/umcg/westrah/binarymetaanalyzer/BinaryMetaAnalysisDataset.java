@@ -6,6 +6,7 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
@@ -34,6 +35,7 @@ public class BinaryMetaAnalysisDataset {
     private String[] snps;
     private final MetaQTL4TraitAnnotation probeAnnotation;
     private final int platformId;
+    private RandomAccessFile raf;
 
     public BinaryMetaAnalysisDataset(String dir, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
         String matrix = dir;
@@ -69,6 +71,8 @@ public class BinaryMetaAnalysisDataset {
         isCisDataset = firstInt == 1;
         loadSNPs(snpFile);
         loadProbes(probeFile);
+
+        raf = new RandomAccessFile(matrix, "r");
     }
 
     private void loadSNPs(String snpFile) throws IOException {
@@ -181,7 +185,17 @@ public class BinaryMetaAnalysisDataset {
 
     public float[] getZScores(int snp) throws IOException {
         long snpBytePos = snpBytes[snp];
-        return null;
+        int nrZ = nrProbes;
+        if (snpCisProbeMap != null) {
+            nrZ = snpCisProbeMap[snp].length;
+        }
+        raf.seek(snpBytePos);
+        float[] output = new float[nrZ];
+        for (int i = 0; i < nrZ; i++) {
+            float f = raf.readFloat();
+            output[i] = f;
+        }
+        return output;
     }
 
     public String[] getSNPs() {
@@ -196,16 +210,20 @@ public class BinaryMetaAnalysisDataset {
         return n[datasetSNPId];
     }
 
-    String getAlleles(int datasetSNPId) {
+    public String getAlleles(int datasetSNPId) {
         return alleles[datasetSNPId];
     }
 
-    String getAlleleAssessed(int datasetSNPId) {
+    public String getAlleleAssessed(int datasetSNPId) {
         return allelesAssessed[datasetSNPId];
     }
 
-    boolean getIsCisDataset() {
+    public boolean getIsCisDataset() {
         return isCisDataset;
+    }
+
+    public void close() throws IOException {
+        raf.close();
     }
 
 }
