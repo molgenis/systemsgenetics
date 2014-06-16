@@ -431,7 +431,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         return new ArrayList<R>(hashRows.keySet());
     }
 
-    public void setRowObjects(ArrayList<R> arrayList) throws Exception {
+    public void setRowObjects(List<R> arrayList) throws Exception {
         LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<R, Integer>((int) Math.ceil(arrayList.size() / 0.75));
         int i = 0;
         for (R s : arrayList) {

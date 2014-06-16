@@ -29,9 +29,9 @@ public class Log2Transform {
         for (int p=0; p<probeCount; p++) {
             for (int s=0; s<sampleCount; s++) {
                 if (minValue <= 0) {
-                    rawData[p][s] = (float) (Math.log10(rawData[p][s] - minValue + 1) * multiplier);
+                    rawData[p][s] = (double) (Math.log10(rawData[p][s] - minValue + 1) * multiplier);
                 } else {
-                    rawData[p][s] = (float) (Math.log10(rawData[p][s] + 1) * multiplier);
+                    rawData[p][s] = (double) (Math.log10(rawData[p][s] + 1) * multiplier);
                 }
             }
         }
