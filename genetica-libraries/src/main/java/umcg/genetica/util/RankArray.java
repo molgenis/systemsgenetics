@@ -4,9 +4,11 @@
  */
 package umcg.genetica.util;
 
+import cern.colt.GenericSorting;
 import java.util.HashSet;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
-import org.apache.commons.collections.primitives.ArrayFloatList;
+import cern.colt.function.tint.IntComparator;
+import cern.colt.Swapper;
 
 /**
  *
@@ -39,12 +41,12 @@ public class RankArray {
 
     public double[] xdouble = null;
     public int[] ydouble = null;
-    public cern.colt.Swapper swapperdouble = null;
-    public cern.colt.function.tint.IntComparator compdouble = null;
+    public Swapper swapperdouble = null;
+    public IntComparator compdouble = null;
     public float[] x = null;
     public int[] y = null;
-    public cern.colt.Swapper swapper = null;
-    public cern.colt.function.tint.IntComparator comp = null;
+    public Swapper swapper = null;
+    public IntComparator comp = null;
 
     public RankArray() {
         swapperdouble = new cern.colt.Swapper() {
@@ -61,7 +63,7 @@ public class RankArray {
             }
         };
 
-        compdouble = new cern.colt.function.tint.IntComparator() {
+        compdouble = new IntComparator() {
             @Override
             public int compare(int a, int b) {
                 return xdouble[a] == xdouble[b] ? 0 : (xdouble[a] < xdouble[b] ? -1 : 1);
@@ -82,7 +84,7 @@ public class RankArray {
             }
         };
 
-        comp = new cern.colt.function.tint.IntComparator() {
+        comp = new IntComparator() {
             @Override
             public int compare(int a, int b) {
                 return x[a] == x[b] ? 0 : (x[a] < x[b] ? -1 : 1);
@@ -97,7 +99,7 @@ public class RankArray {
         for (int v = 0; v < x.length; v++) {
             ydouble[v] = v;
         }
-        cern.colt.GenericSorting.quickSort(0, x.length, compdouble, swapperdouble);
+        GenericSorting.quickSort(0, x.length, compdouble, swapperdouble);
         double[] rank = new double[x.length];
         for (int v = 0; v < x.length; v++) {
             rank[ydouble[v]] = v;
@@ -118,7 +120,7 @@ public class RankArray {
         for (int v = 0; v < x.length; v++) {
             y[v] = v;
         }
-        cern.colt.GenericSorting.quickSort(0, x.length, comp, swapper);
+        GenericSorting.quickSort(0, x.length, comp, swapper);
         float[] rank = new float[x.length];
         for (int v = 0; v < x.length; v++) {
             rank[y[v]] = v;
