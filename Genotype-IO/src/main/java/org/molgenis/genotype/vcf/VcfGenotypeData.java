@@ -67,6 +67,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private static int currentlyOpenFileHandlers = 0;
 	private static int closedFileHandlers = 0;
 	private final double minimumPosteriorProbabilityToCall;
+	private static int numberFilesOpenedSinceLastQc = 0;
 
 	/**
 	 * VCF genotype reader with default cache of 100
@@ -467,14 +468,24 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd) {
 
-		++totalRandomAccessRequest;
-		++currentlyOpenFileHandlers;
+
 
 		return new Iterable<GeneticVariant>() {
 			@Override
 			public Iterator<GeneticVariant> iterator() {
 
 				try {
+
+					++totalRandomAccessRequest;
+					++currentlyOpenFileHandlers;
+
+//					if (numberFilesOpenedSinceLastQc > 1000) {
+//						System.gc();
+//						numberFilesOpenedSinceLastQc = 0;
+//					}
+//
+//					++numberFilesOpenedSinceLastQc;
+
 					return new Iterator<GeneticVariant>() {
 						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
 						private String line = readFirst(it);
@@ -488,7 +499,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 									if (firstLine == null) {
 										--currentlyOpenFileHandlers;
 										++closedFileHandlers;
-										IOUtils.closeQuietly(it);
+										it.close();
 									}
 									return firstLine;
 								} catch (IOException e) {
@@ -510,7 +521,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 								if (line == null) {
 									--currentlyOpenFileHandlers;
 									++closedFileHandlers;
-									IOUtils.closeQuietly(it);
+									it.close();
 								}
 							} catch (IOException e) {
 								throw new GenotypeDataException(e);
@@ -544,6 +555,14 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			BlockCompressedInputStream stream = null;
 			++totalRandomAccessRequest;
 			++currentlyOpenFileHandlers;
+
+//			if (numberFilesOpenedSinceLastQc > 1000) {
+//				System.gc();
+//				numberFilesOpenedSinceLastQc = 0;
+//			}
+//
+//			++numberFilesOpenedSinceLastQc;
+
 			try {
 				stream = new BlockCompressedInputStream(bzipVcfFile);
 				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), stream);
@@ -555,9 +574,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 						break;
 					}
 				}
-				--currentlyOpenFileHandlers;
-				++closedFileHandlers;
-				IOUtils.closeQuietly(stream);
+				stream.close();
 			} catch (FileNotFoundException e) {
 				if (e.getMessage().endsWith("(Too many open files)")) {
 					handeleTooManyOpenFiles(e);
@@ -623,10 +640,21 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	private void handeleTooManyOpenFiles(Exception e) {
-		String procName = ManagementFactory.getRuntimeMXBean().getName();
-		String[] procNameParts = StringUtils.split(procName);
+
 		try {
 
+			System.gc();
+			System.gc();
+			System.gc();
+			System.gc();
+			System.gc();
+			System.gc();
+			System.gc();
+			System.gc();
+			Thread.sleep(10000);
+
+			String procName = ManagementFactory.getRuntimeMXBean().getName();
+			String[] procNameParts = StringUtils.split(procName);
 
 			ProcessBuilder checkFileProcessBuilder = new ProcessBuilder("lsof", "-p", procNameParts[0]);
 			checkFileProcessBuilder.redirectErrorStream(true);
@@ -643,8 +671,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			}
 			LOG.debug(checkFileProcessOutput);
 
-		} catch (IOException ex) {
-			LOG.fatal("Failed to run process to get open files: lsof -p " + procNameParts[0]);
+		} catch (Throwable ex) {
+			LOG.fatal("Failed to run process to get open files error: " + ex.getMessage());
 		}
 		throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 	}
