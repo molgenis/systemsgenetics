@@ -67,7 +67,6 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private static int currentlyOpenFileHandlers = 0;
 	private static int closedFileHandlers = 0;
 	private final double minimumPosteriorProbabilityToCall;
-	private static int numberFilesOpenedSinceLastQc = 0;
 
 	/**
 	 * VCF genotype reader with default cache of 100
@@ -479,13 +478,6 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					++totalRandomAccessRequest;
 					++currentlyOpenFileHandlers;
 
-//					if (numberFilesOpenedSinceLastQc > 1000) {
-//						System.gc();
-//						numberFilesOpenedSinceLastQc = 0;
-//					}
-//
-//					++numberFilesOpenedSinceLastQc;
-
 					return new Iterator<GeneticVariant>() {
 						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
 						private String line = readFirst(it);
@@ -536,8 +528,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					};
 				} catch (FileNotFoundException e) {
 					if (e.getMessage().endsWith("(Too many open files)")) {
-						handeleTooManyOpenFiles(e);
-						return null;//does noting above function will throw new error
+						throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 					} else {
 						throw new GenotypeDataException(e);
 					}
@@ -556,13 +547,6 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			++totalRandomAccessRequest;
 			++currentlyOpenFileHandlers;
 
-//			if (numberFilesOpenedSinceLastQc > 1000) {
-//				System.gc();
-//				numberFilesOpenedSinceLastQc = 0;
-//			}
-//
-//			++numberFilesOpenedSinceLastQc;
-
 			try {
 				stream = new BlockCompressedInputStream(bzipVcfFile);
 				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), stream);
@@ -577,7 +561,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				stream.close();
 			} catch (FileNotFoundException e) {
 				if (e.getMessage().endsWith("(Too many open files)")) {
-					handeleTooManyOpenFiles(e);
+					throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 				} else {
 					throw new GenotypeDataException(e);
 				}
@@ -638,42 +622,5 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private GenotypeRecord toGenotypeRecord(VcfRecord vcfRecord, VcfSample vcfSample) {
 		return new VcfGenotypeRecord(vcfMeta, vcfRecord, vcfSample);
 	}
-
-	private void handeleTooManyOpenFiles(Exception e) {
-
-		try {
-
-			System.gc();
-			System.gc();
-			System.gc();
-			System.gc();
-			System.gc();
-			System.gc();
-			System.gc();
-			System.gc();
-			Thread.sleep(10000);
-
-			String procName = ManagementFactory.getRuntimeMXBean().getName();
-			String[] procNameParts = StringUtils.split(procName);
-
-			ProcessBuilder checkFileProcessBuilder = new ProcessBuilder("lsof", "-p", procNameParts[0]);
-			checkFileProcessBuilder.redirectErrorStream(true);
-			Process checkFileProcess = checkFileProcessBuilder.start();
-
-			BufferedReader checkFileProcessOutputReader = new BufferedReader(new InputStreamReader(checkFileProcess.getInputStream()));
-
-			StringBuilder checkFileProcessOutput = new StringBuilder("lsof -p " + procNameParts[0]);
-
-			String checkFileProcessOutputLine;
-			while ((checkFileProcessOutputLine = checkFileProcessOutputReader.readLine()) != null) {
-				checkFileProcessOutput.append('\n');
-				checkFileProcessOutput.append(checkFileProcessOutputLine);
-			}
-			LOG.debug(checkFileProcessOutput);
-
-		} catch (Throwable ex) {
-			LOG.fatal("Failed to run process to get open files error: " + ex.getMessage());
-		}
-		throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
-	}
+	
 }

@@ -1,5 +1,6 @@
 package nl.umcg.deelenp.genotypeharmonizer;
 
+import com.google.common.collect.Lists;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -89,11 +91,11 @@ public class Aligner {
 				continue studyVariants;
 			}
 
-			Iterable<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos());
+			Iterator<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos()).iterator();
 
 			GeneticVariant refVariant = null;
 
-			if (!potentialRefVariants.iterator().hasNext()) {
+			if (!potentialRefVariants.hasNext()) {
 
 				if (keep) {
 					LOGGER.warn("No ref variant found for: " + studyVariant.getPrimaryVariantId() + " variant will not be aligned but will be written to output because of --keep");
@@ -105,9 +107,11 @@ public class Aligner {
 				continue studyVariants;
 
 			} else {
-
+				
+				ArrayList<GeneticVariant> potentialRefVariantsList = Lists.newArrayList(potentialRefVariants);
+				
 				//Find ref based on ID
-				for (GeneticVariant potentialRefVariant : potentialRefVariants) {
+				for (GeneticVariant potentialRefVariant : potentialRefVariantsList) {
 
 					if (potentialRefVariant.getVariantId().isSameId(studyVariant.getVariantId())) {
 
@@ -129,7 +133,7 @@ public class Aligner {
 				if (refVariant == null) {
 
 					//Find ref based on Alleles
-					for (GeneticVariant potentialRefVariant : potentialRefVariants) {
+					for (GeneticVariant potentialRefVariant : potentialRefVariantsList) {
 
 						//test if same alleles or complement
 						if (potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles())
