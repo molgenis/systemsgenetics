@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DateFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
@@ -60,6 +61,7 @@ class GenotypeHarmonizer {
      */
     protected static final int MIN_MIN_VARIANTS_TO_ALIGN_ON = 3;
     private static final Pattern CHR_POS_SPLITTER = Pattern.compile("\\s+|:");
+	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
     /**
      * @param args
@@ -352,9 +354,9 @@ class GenotypeHarmonizer {
                     "Alignment complete");
 
             System.out.println(
-                    "Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants during alignment phase");
+                    "Excluded in total " + DEFAULT_NUMBER_FORMATTER.format(aligedInputData.getExcludedVariantCount()) + " variants during alignment phase");
             LOGGER.info(
-                    "Excluded in total " + aligedInputData.getExcludedVariantCount() + " variants during alignment phase");
+                    "Excluded in total " + DEFAULT_NUMBER_FORMATTER.format(aligedInputData.getExcludedVariantCount()) + " variants during alignment phase");
         } else {
             refData = null;
             aligedInputData = null;

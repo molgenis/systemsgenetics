@@ -69,8 +69,8 @@ public class Aligner {
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
-				LOGGER.info("Iteration 1 - " + iterationCounter + " variants processed");
-				System.out.println("Iteration 1 - " + iterationCounter + " variants processed");
+				LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+				System.out.println("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 			}
 
 			if (!studyVariant.isMapped()) {
@@ -229,8 +229,8 @@ public class Aligner {
 			snpUpdateWriter.close();
 		}
 
-		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
-		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
+		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
+		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 		
 		if(studyVariantList.isEmpty()){
 			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
@@ -258,8 +258,8 @@ public class Aligner {
 				++iterationCounter;
 
 				if (iterationCounter % 10000 == 0) {
-					LOGGER.info("Iteration 2 - " + iterationCounter + " variants processed");
-					System.out.println("Iteration 2 - " + iterationCounter + " variants processed");
+					LOGGER.info("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+					System.out.println("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 				}
 
 				ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
@@ -296,7 +296,7 @@ public class Aligner {
 
 			LOGGER.info("Iteration 2 - Completed, non AT and non GC SNPs are LD checked");
 			System.out.println("Iteration 2 - Completed, non AT and non GC SNPs are LD checked ");
-			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " non AT and non GC SNPs based on inconsistencies in LD pattern");
+			LOGGER.info("Excluded " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(removedSnpsBasedOnLdCheck) + " non AT and non GC SNPs based on inconsistencies in LD pattern");
 
 
 		} else {
@@ -317,8 +317,8 @@ public class Aligner {
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
-				LOGGER.info("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered + " GC or AT SNPs checked)");
-				System.out.println("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered + " GC or AT SNPs checked)");
+				LOGGER.info("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
+				System.out.println("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
 			}
 
 			ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
@@ -404,10 +404,10 @@ public class Aligner {
 		}
 
 		if (ldCheck) {
-			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " AT or GC variants based on LD patterns");
-			System.out.println("Excluded " + removedSnpsBasedOnLdCheck + " AT or GC variants based on LD patterns");
+			LOGGER.info("Excluded " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(removedSnpsBasedOnLdCheck) + " AT or GC variants based on LD patterns");
+			System.out.println("Excluded " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(removedSnpsBasedOnLdCheck) + " AT or GC variants based on LD patterns");
 		}
-		LOGGER.info("Swapped " + swapBasedOnLdCount + " out " + GcAtSnpsEncountered + " AT or GC variants based on LD patterns");
+		LOGGER.info("Swapped " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(swapBasedOnLdCount) + " out of " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " AT or GC variants based on LD patterns");
 		System.out.println("Swapped " + swapBasedOnLdCount + " AT or GC variants based on LD patterns");
 
 		return aligendStudyData;
