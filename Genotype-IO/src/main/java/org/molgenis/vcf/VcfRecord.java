@@ -33,7 +33,7 @@ public class VcfRecord
 	}
 	
 	public String getChromosome() {
-		return tokens[VcfMeta.COL_CHROM_IDX];
+		return tokens[VcfMeta.COL_CHROM_IDX].intern();
 	}
 	
 	public int getPosition() {

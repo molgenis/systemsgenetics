@@ -45,12 +45,16 @@ import org.molgenis.vcf.meta.VcfMetaInfo;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
 import org.apache.commons.io.IOUtils;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 
 public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
+	private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(VcfGenotypeData.class);
 	private final File bzipVcfFile;
 	private final TabixIndex tabixIndex;
 	private final int sampleVariantProviderUniqueId;
@@ -74,7 +78,6 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	//public VcfGenotypeData(File bzipVcfFile, double minimumPosteriorProbabilityToCall) throws FileNotFoundException, IOException {
 	//	this(bzipVcfFile, 100, minimumPosteriorProbabilityToCall);
 	//}
-
 	public VcfGenotypeData(File bzipVcfFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws FileNotFoundException, IOException {
 		this(bzipVcfFile, new File(bzipVcfFile.getAbsolutePath() + ".tbi"), cacheSize, minimumPosteriorProbabilityToCall);
 	}
@@ -109,15 +112,15 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		if (!tabixIndexFile.canRead()) {
 			throw new IOException("Cannot read tabix file for VCF at: " + tabixIndexFile.getAbsolutePath());
 		}
-		
-		if(minimumPosteriorProbabilityToCall < 0 || minimumPosteriorProbabilityToCall > 1){
+
+		if (minimumPosteriorProbabilityToCall < 0 || minimumPosteriorProbabilityToCall > 1) {
 			throw new GenotypeDataException("Min posterior probability to call must be >0 and <=1 not:" + minimumPosteriorProbabilityToCall);
 		}
-		
+
 		this.bzipVcfFile = bzipVcfFile;
 		this.tabixIndex = new TabixIndex(tabixIndexFile, bzipVcfFile, null);
 		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
-		
+
 		VcfReader vcfReader = new VcfReader(new BlockCompressedInputStream(bzipVcfFile));
 		try {
 			this.vcfMeta = vcfReader.getVcfMeta();
@@ -185,7 +188,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		int idx = vcfRecord.getFormatIndex("GT");
 		if (idx != -1) {
-		
+
 			// convert vcf sample alleles to Alleles
 			List<Alleles> alleles = new ArrayList<Alleles>(nrSamples);
 			for (VcfSample vcfSample : vcfRecord.getSamples()) {
@@ -193,26 +196,26 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				alleles.add(Alleles.createAlleles(vcfAlleles));
 			}
 			return alleles;
-			
+
 		} else if (vcfRecord.getFormatIndex("GP") != -1) {
-			
+
 			return ProbabilitiesConvertor.convertProbabilitiesToAlleles(getSampleProbilities(variant), variant.getVariantAlleles(), minimumPosteriorProbabilityToCall);
-			
+
 		} else if (vcfRecord.getFormatIndex("DS") != -1) {
-			
+
 			return CalledDosageConvertor.convertDosageToAlleles(getSampleDosage(variant), variant.getVariantAlleles());
-			
+
 		} else {
-			
+
 			ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(nrSamples);
-			for(int i = 0 ; i < nrSamples ; ++i){
+			for (int i = 0; i < nrSamples; ++i) {
 				sampleAlleles.add(Alleles.BI_ALLELIC_MISSING);
 			}
 			return sampleAlleles;
 		}
-			
-		
-		
+
+
+
 	}
 
 	@Override
@@ -271,19 +274,19 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 		List<Boolean> phasing = new ArrayList<Boolean>(nrSamples);
 		for (VcfSample vcfSample : vcfRecord.getSamples()) {
-			
+
 			List<Boolean> genotypePhasings = vcfSample.getPhasings();
-			
-			if(genotypePhasings == null || genotypePhasings.isEmpty()){
+
+			if (genotypePhasings == null || genotypePhasings.isEmpty()) {
 				phasing.add(Boolean.FALSE);
-			} else if (genotypePhasings.size() == 1){
+			} else if (genotypePhasings.size() == 1) {
 				phasing.add(genotypePhasings.get(0));
 			} else if (genotypePhasings.contains(Boolean.FALSE)) {
 				phasing.add(Boolean.FALSE);
 			} else {
 				phasing.add(Boolean.TRUE);
 			}
-			
+
 		}
 		return phasing;
 	}
@@ -338,9 +341,9 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			// calculate sample dosage from called alleles
 			dosages = CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 					variant.getVariantAlleles(), variant.getRefAllele());
-		}  else {
+		} else {
 			dosages = new float[nrSamples];
-			for(int i = 0 ; i < nrSamples ; ++i){
+			for (int i = 0; i < nrSamples; ++i) {
 				dosages[i] = -1;
 			}
 		}
@@ -394,9 +397,9 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				++i;
 			}
 
-		} else if (vcfRecord.getFormatIndex("GT") != -1){
+		} else if (vcfRecord.getFormatIndex("GT") != -1) {
 			probs = ProbabilitiesConvertor.convertCalledAllelesToProbability(getSampleVariants(variant), variant.getVariantAlleles());
-		} else if (vcfRecord.getFormatIndex("DS") != -1){
+		} else if (vcfRecord.getFormatIndex("DS") != -1) {
 			// calculate sample probabilities from sample dosage
 			probs = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(getSampleDosage(variant));
 		} else {
@@ -484,7 +487,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 									String firstLine = it.next();
 									if (firstLine == null) {
 										--currentlyOpenFileHandlers;
-										--closedFileHandlers;
+										++closedFileHandlers;
 										IOUtils.closeQuietly(it);
 									}
 									return firstLine;
@@ -506,7 +509,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 								line = it.next();
 								if (line == null) {
 									--currentlyOpenFileHandlers;
-									--closedFileHandlers;
+									++closedFileHandlers;
 									IOUtils.closeQuietly(it);
 								}
 							} catch (IOException e) {
@@ -522,7 +525,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					};
 				} catch (FileNotFoundException e) {
 					if (e.getMessage().endsWith("(Too many open files)")) {
-						throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
+						handeleTooManyOpenFiles(e);
+						return null;//does noting above function will throw new error
 					} else {
 						throw new GenotypeDataException(e);
 					}
@@ -552,11 +556,11 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					}
 				}
 				--currentlyOpenFileHandlers;
-				--closedFileHandlers;
+				++closedFileHandlers;
 				IOUtils.closeQuietly(stream);
 			} catch (FileNotFoundException e) {
 				if (e.getMessage().endsWith("(Too many open files)")) {
-					throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
+					handeleTooManyOpenFiles(e);
 				} else {
 					throw new GenotypeDataException(e);
 				}
@@ -564,7 +568,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				throw new GenotypeDataException(e);
 			} finally {
 				--currentlyOpenFileHandlers;
-				--closedFileHandlers;
+				++closedFileHandlers;
 				IOUtils.closeQuietly(stream);
 			}
 		}
@@ -616,5 +620,32 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	 */
 	private GenotypeRecord toGenotypeRecord(VcfRecord vcfRecord, VcfSample vcfSample) {
 		return new VcfGenotypeRecord(vcfMeta, vcfRecord, vcfSample);
+	}
+
+	private void handeleTooManyOpenFiles(Exception e) {
+		String procName = ManagementFactory.getRuntimeMXBean().getName();
+		String[] procNameParts = StringUtils.split(procName);
+		try {
+
+
+			ProcessBuilder checkFileProcessBuilder = new ProcessBuilder("lsof", "-p", procNameParts[0]);
+			checkFileProcessBuilder.redirectErrorStream(true);
+			Process checkFileProcess = checkFileProcessBuilder.start();
+
+			BufferedReader checkFileProcessOutputReader = new BufferedReader(new InputStreamReader(checkFileProcess.getInputStream()));
+
+			StringBuilder checkFileProcessOutput = new StringBuilder("lsof -p " + procNameParts[0]);
+
+			String checkFileProcessOutputLine;
+			while ((checkFileProcessOutputLine = checkFileProcessOutputReader.readLine()) != null) {
+				checkFileProcessOutput.append('\n');
+				checkFileProcessOutput.append(checkFileProcessOutputLine);
+			}
+			LOG.debug(checkFileProcessOutput);
+
+		} catch (IOException ex) {
+			LOG.fatal("Failed to run process to get open files: lsof -p " + procNameParts[0]);
+		}
+		throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 	}
 }
