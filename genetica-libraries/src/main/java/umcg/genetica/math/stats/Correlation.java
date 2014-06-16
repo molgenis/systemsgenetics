@@ -4,8 +4,10 @@
  */
 package umcg.genetica.math.stats;
 
+import cern.jet.stat.tdouble.Probability;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.util.RankDoubleArray;
+
 
 /**
  *
@@ -77,14 +79,14 @@ public class Correlation {
                             if (pValueColt < 2.0E-323) {
                                 pValueColt = 2.0E-323;
                             }
-                            zScoreColt = cern.jet.stat.Probability.normalInverse(pValueColt);
+                            zScoreColt = Probability.normalInverse(pValueColt);
                             //zScoreColt = normDist.inverse(pValueColt);
                         } else {
                             pValueColt = tDistColt.cdf(-t);
                             if (pValueColt < 2.0E-323) {
                                 pValueColt = 2.0E-323;
                             }
-                            zScoreColt = -cern.jet.stat.Probability.normalInverse(pValueColt);
+                            zScoreColt = -Probability.normalInverse(pValueColt);
                             //zScoreColt = -normDist.inverse(pValueColt);
                         }
 

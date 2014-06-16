@@ -4,7 +4,8 @@
  */
 package umcg.genetica.math.stats;
 
-import cern.jet.stat.Probability;
+import cern.jet.stat.tdouble.Probability;
+
 
 /**
  *

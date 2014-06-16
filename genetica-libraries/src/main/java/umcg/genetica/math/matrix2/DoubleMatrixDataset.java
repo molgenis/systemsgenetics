@@ -91,18 +91,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     }
 
     public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
-        if ((fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
+        if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
             return loadDoubleTextData(fileName, "\t");
         } else if (fileName.endsWith(".binary")) {
             return null;
         } else {
-            throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
+            throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set to: \"tab\" \n Input filename: " + fileName);
         }
     }
 
     public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, String delimiter) throws IOException {
-        if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
-            throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
+        if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+            throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
         }
 
         Pattern splitPatern = Pattern.compile(delimiter);

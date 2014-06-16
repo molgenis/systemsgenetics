@@ -13,6 +13,10 @@ import umontreal.iro.lecuyer.probdist.AndersonDarlingDist;
  * ref 10th Aug 2012
  * 
  * @author juha
+ * 
+ * @warning. The ssj dependency, depended on colt_1.2.0. This dependency is no longer there. If in the background colt functions are used this could lead to errors.
+ * 
+ * 
  */
 public class AndersonDarling {
 

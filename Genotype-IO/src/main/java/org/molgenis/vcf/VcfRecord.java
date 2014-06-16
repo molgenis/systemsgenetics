@@ -33,13 +33,14 @@ public class VcfRecord
 	}
 	
 	public String getChromosome() {
-		return tokens[VcfMeta.COL_CHROM_IDX];
+		return tokens[VcfMeta.COL_CHROM_IDX].intern();
 	}
 	
 	public int getPosition() {
 		return Integer.valueOf(tokens[VcfMeta.COL_POS_IDX]);
 	}
 	
+	@SuppressWarnings("RedundantStringConstructorCall")
 	public List<String> getIdentifiers() {
 		if(cachedIdentifiers == null) {
 			String identifiersStr = tokens[VcfMeta.COL_ID_IDX];
@@ -47,6 +48,7 @@ public class VcfRecord
 			if (identifiersStr == null || identifiersStr.equals(MISSING_VALUE)) {
 				cachedIdentifiers = Collections.emptyList();
 			} else {
+				identifiersStr = new String(identifiersStr);
 				cachedIdentifiers = Arrays.asList(StringUtils.split(identifiersStr, ';'));
 			}
 		}

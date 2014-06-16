@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import umcg.genetica.io.text.TextFile;
+import cern.jet.stat.tdouble.Probability;
 
 /**
  *
@@ -99,7 +100,7 @@ public class CheckAssocationMultipleGeneProbes {
                 int cpgIndex = hashCpGSites.get(sites.get(p));
                 pSites[p] = pValues[cpgIndex];
                 chiSquare+=-2*Math.log(pSites[p]);
-                zSites[p] = cern.jet.stat.Probability.normalInverse(pSites[p]);
+                zSites[p] = Probability.normalInverse(pSites[p]);
             }
             //JSci.maths.statistics.ChiSqrDistribution dist = new JSci.maths.statistics.ChiSqrDistribution(2*sites.size());
             //double chiSquareP = 1 - dist.cumulative(chiSquare);
