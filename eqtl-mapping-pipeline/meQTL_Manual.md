@@ -1,4 +1,4 @@
-#EQTL mapping pipeline manual
+#MeQTL mapping pipeline manual
 This software allows for (e)QTL mapping using linear models and direct meta-analysis of such data through weighted Z-score analysis.
 
 ##Questions or suggestions?
