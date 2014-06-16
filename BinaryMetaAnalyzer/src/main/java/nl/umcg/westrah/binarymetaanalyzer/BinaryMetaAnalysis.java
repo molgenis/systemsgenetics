@@ -70,6 +70,8 @@ public class BinaryMetaAnalysis {
         } catch (IOException ex) {
             Logger.getLogger(BinaryMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+       
     }
 
     public void run() throws IOException {
@@ -252,7 +254,9 @@ public class BinaryMetaAnalysis {
                 }
             }
 
-            // write the results to disk  
+            for (BinaryMetaAnalysisDataset dataset : datasets) {
+                dataset.close();
+            }
             writeBuffer(outdir, permutation);
         }
 
