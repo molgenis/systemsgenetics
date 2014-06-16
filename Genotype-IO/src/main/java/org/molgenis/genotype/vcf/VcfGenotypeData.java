@@ -521,7 +521,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 						}
 					};
 				} catch (FileNotFoundException e) {
-					if (e.getMessage().equals("(Too many open files)")) {
+					if (e.getMessage().endsWith("(Too many open files)")) {
 						throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 					} else {
 						throw new GenotypeDataException(e);
@@ -555,7 +555,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				--closedFileHandlers;
 				IOUtils.closeQuietly(stream);
 			} catch (FileNotFoundException e) {
-				if (e.getMessage().equals("(Too many open files)")) {
+				if (e.getMessage().endsWith("(Too many open files)")) {
 					throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 				} else {
 					throw new GenotypeDataException(e);
