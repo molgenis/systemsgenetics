@@ -7,6 +7,7 @@ package nl.umcg.westrah.binarymetaanalyzer;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
@@ -31,26 +32,31 @@ public class BinaryMetaAnalysisDataset {
     private double[] hwes;
     private double[] mafs;
     private String[] probeList;
-    private int nrProbes;
+
     private String[] snps;
     private final MetaQTL4TraitAnnotation probeAnnotation;
     private final int platformId;
     private RandomAccessFile raf;
 
-    public BinaryMetaAnalysisDataset(String dir, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
+    public BinaryMetaAnalysisDataset(String dir, String prefix, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
+        dir = Gpio.formatAsDirectory(dir);
         String matrix = dir;
         String probeFile = dir;
         String snpFile = dir;
         this.probeAnnotation = probeAnnotation;
         this.platformId = probeAnnotation.getPlatformId(platform);
+        String pref = "Dataset";
+        if (prefix != null) {
+            pref = prefix;
+        }
         if (permutation > 0) {
-            matrix += "Dataset-PermutationRound-" + permutation + ".dat";
-            probeFile += "Dataset-PermutationRound-" + permutation + "-ColNames.txt.gz";
-            snpFile += "Dataset-PermutationRound-" + permutation + "-RowNames.txt.gz";
+            matrix += pref + "-PermutationRound-" + permutation + ".dat";
+            probeFile += pref + "-PermutationRound-" + permutation + "-ColNames.txt.gz";
+            snpFile += pref + "-PermutationRound-" + permutation + "-RowNames.txt.gz";
         } else {
-            matrix += "Dataset.dat";
-            probeFile += "Dataset-ColNames.txt.gz";
-            snpFile += "Dataset-RowNames.txt.gz";
+            matrix += pref + ".dat";
+            probeFile += pref + "-ColNames.txt.gz";
+            snpFile += pref + "-RowNames.txt.gz";
         }
 
         this.datasetLoc = dir;
@@ -69,8 +75,18 @@ public class BinaryMetaAnalysisDataset {
         int firstInt = f.readInt();
         f.close();
         isCisDataset = firstInt == 1;
+        System.out.println("Matrix: " + matrix);
+        System.out.println("SNPFile: " + snpFile);
+        System.out.println("ProbeFile: " + probeFile);
+        if (isCisDataset) {
+            System.out.println("This dataset is a cis- dataset.");
+        } else {
+            System.out.println("This dataset is a full size dataset.");
+        }
         loadSNPs(snpFile);
+        System.out.println(snps.length + " SNPs loaded");
         loadProbes(probeFile);
+        System.out.println(probeList.length + " probes loaded");
 
         raf = new RandomAccessFile(matrix, "r");
     }
@@ -78,8 +94,11 @@ public class BinaryMetaAnalysisDataset {
     private void loadSNPs(String snpFile) throws IOException {
         // get nr of lines
         TextFile tf = new TextFile(snpFile, TextFile.R);
+        tf.readLine(); // skip header
         int nrSNPs = tf.countLines();
         tf.close();
+
+        System.out.println(snpFile + "\t has " + nrSNPs + " SNPs");
 
         snpBytes = new long[nrSNPs];
         alleles = new String[nrSNPs];
@@ -91,11 +110,13 @@ public class BinaryMetaAnalysisDataset {
         mafs = new double[nrSNPs];
 
         if (isCisDataset) {
+
             // jagged array, hurrah
             snpCisProbeMap = new MetaQTL4MetaTrait[nrSNPs][0];
         }
 
         tf.open();
+        tf.readLine(); // skip header
         String[] elems = tf.readLineElems(TextFile.tab);
         int ln = 0;
 
@@ -150,7 +171,7 @@ public class BinaryMetaAnalysisDataset {
             mafs[ln] = maf;
 
             if (ln + 1 < nrSNPs) {
-                snpBytes[ln + 1] = snpBytes[ln] + (nrZScores * 2);
+                snpBytes[ln + 1] = snpBytes[ln] + (nrZScores * 4);
             }
 
             if (isCisDataset) {
@@ -172,10 +193,12 @@ public class BinaryMetaAnalysisDataset {
 
     private void loadProbes(String columns) throws IOException {
         TextFile tf = new TextFile(columns, TextFile.R);
-        nrProbes = tf.countLines();
-        tf.close();
-
+//        nrProbes = tf.countLines();
+//        tf.close();
+//
+//        tf.open();
         ArrayList<String> allProbes = tf.readAsArrayList();
+        tf.close();
         probeList = allProbes.toArray(new String[0]);
     }
 
@@ -185,16 +208,30 @@ public class BinaryMetaAnalysisDataset {
 
     public float[] getZScores(int snp) throws IOException {
         long snpBytePos = snpBytes[snp];
-        int nrZ = nrProbes;
-        if (snpCisProbeMap != null) {
-            nrZ = snpCisProbeMap[snp].length;
+
+        long snpByteNextPos = 0;
+        if (snp == snpBytes.length - 1) {
+            snpByteNextPos = raf.length();
+        } else {
+            snpByteNextPos = snpBytes[snp + 1];
         }
+
+//        
+//        if (snpCisProbeMap != null) {
+//            nrZ = snpCisProbeMap[snp].length;
+//        }
+//        System.out.println(snp + "\t" + snpBytePos + "\t" + snpByteNextPos);
+
         raf.seek(snpBytePos);
-        float[] output = new float[nrZ];
-        for (int i = 0; i < nrZ; i++) {
-            float f = raf.readFloat();
-            output[i] = f;
+        int readlen = (int) (snpByteNextPos - snpBytePos);
+        byte[] bytesToRead = new byte[readlen];
+        raf.read(bytesToRead);
+        ByteBuffer bytebuffer = ByteBuffer.wrap(bytesToRead);
+        float[] output = new float[readlen/4];
+        for (int i = 0; i < output.length; i++) {
+            output[i] = bytebuffer.getFloat();
         }
+
         return output;
     }
 
