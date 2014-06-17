@@ -99,7 +99,7 @@ public class BinaryMetaAnalysis {
         System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
         loadProbeAnnotation();
 
-        for (int permutation = 0; permutation < settings.getNrPermutations()+1; permutation++) {
+        for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
             // create dataset objects
             System.out.println("Running permutation " + permutation);
             datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
@@ -333,10 +333,13 @@ public class BinaryMetaAnalysis {
 
         HashSet<String> confineToTheseSNPs = null;
         if (settings.getSNPSelection() != null) {
+            System.out.println("Selecting SNPs from file: " + settings.getSNPSelection());
             confineToTheseSNPs = new HashSet<String>();
             TextFile tf = new TextFile(settings.getSNPSelection(), TextFile.R);
             confineToTheseSNPs.addAll(tf.readAsArrayList());
             tf.close();
+
+            System.out.println(confineToTheseSNPs.size() + " SNPs loaded.");
         }
 
         // create a list of all available SNPs
@@ -460,6 +463,12 @@ public class BinaryMetaAnalysis {
     }
 
     private void writeBuffer(String outdir, int permutation) throws IOException {
+
+        // sort the finalbuffer for a last time
+        if (locationToStoreResult != 0) {
+            Arrays.sort(finalEQTLs, 0, locationToStoreResult);
+        }
+
         String outfilename = outdir + "eQTLs.txt.gz";
         if (permutation > 0) {
             outfilename = outdir + "PermutationRound-" + permutation + ".txt.gz";
@@ -479,62 +488,64 @@ public class BinaryMetaAnalysis {
                 + "IncludedDatasetsMeanProbeExpression\tIncludedDatasetsProbeExpressionVariance\tHGNCName\tIncludedDatasetsCorrelationCoefficient";
         output.writeln(header);
         for (QTL q : finalEQTLs) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(q.getPvalue());
-            sb.append("\t");
-            int snpId = q.getSNPId();
-            sb.append(snpList[snpId]);
-            sb.append("\t");
-            sb.append(snpChr[snpId]);
-            sb.append("\t");
-            sb.append(snpPositions[snpId]);
-            sb.append("\t");
-            int metaTraitId = q.getMetaTraitId();
-            sb.append(traits[metaTraitId].getMetaTraitName());
-            sb.append("\t");
-            sb.append(traits[metaTraitId].getChr());
-            sb.append("\t");
-            sb.append(traits[metaTraitId].getChrMidpoint());
-            sb.append("\t");
-            if (settings.isCis()) {
-                sb.append("cis");
-            } else {
-                sb.append("trans");
-            }
-            sb.append("\t");
-            sb.append(q.getAlleles());
-            sb.append("\t");
-            sb.append(q.getAlleleAssessed());
-            sb.append("\t");
-            sb.append(q.getZscore());
-
-            double[] datasetZScores = q.getDatasetZScores();
-            String[] dsBuilder = new String[datasets.length];
-            String[] dsNBuilder = new String[datasets.length];
-            for (int d = 0; d < datasetZScores.length; d++) {
-                if (!Double.isNaN(datasetZScores[d])) {
-                    dsBuilder[d] = settings.getDatasetnames().get(d);
-                    dsNBuilder[d] = "" + q.getDatasetSampleSizes()[d];
+            if (q != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(q.getPvalue());
+                sb.append("\t");
+                int snpId = q.getSNPId();
+                sb.append(snpList[snpId]);
+                sb.append("\t");
+                sb.append(snpChr[snpId]);
+                sb.append("\t");
+                sb.append(snpPositions[snpId]);
+                sb.append("\t");
+                int metaTraitId = q.getMetaTraitId();
+                sb.append(traits[metaTraitId].getMetaTraitName());
+                sb.append("\t");
+                sb.append(traits[metaTraitId].getChr());
+                sb.append("\t");
+                sb.append(traits[metaTraitId].getChrMidpoint());
+                sb.append("\t");
+                if (settings.isCis()) {
+                    sb.append("cis");
                 } else {
-                    dsBuilder[d] = "-";
-                    dsNBuilder[d] = "-";
+                    sb.append("trans");
                 }
+                sb.append("\t");
+                sb.append(q.getAlleles());
+                sb.append("\t");
+                sb.append(q.getAlleleAssessed());
+                sb.append("\t");
+                sb.append(q.getZscore());
+
+                double[] datasetZScores = q.getDatasetZScores();
+                String[] dsBuilder = new String[datasets.length];
+                String[] dsNBuilder = new String[datasets.length];
+                for (int d = 0; d < datasetZScores.length; d++) {
+                    if (!Double.isNaN(datasetZScores[d])) {
+                        dsBuilder[d] = settings.getDatasetnames().get(d);
+                        dsNBuilder[d] = "" + q.getDatasetSampleSizes()[d];
+                    } else {
+                        dsBuilder[d] = "-";
+                        dsNBuilder[d] = "-";
+                    }
+                }
+
+                sb.append("\t");
+                sb.append(Strings.concat(dsBuilder, Strings.semicolon));
+
+                sb.append("\t");
+                sb.append(Strings.concat(datasetZScores, Strings.semicolon));
+
+                sb.append("\t");
+                sb.append(Strings.concat(dsNBuilder, Strings.semicolon));
+                sb.append("\t-\t-\t");
+
+                sb.append(traits[metaTraitId].getAnnotation());
+                sb.append("\t-");
+
+                output.writeln(sb.toString());
             }
-
-            sb.append("\t");
-            sb.append(Strings.concat(dsBuilder, Strings.semicolon));
-
-            sb.append("\t");
-            sb.append(Strings.concat(datasetZScores, Strings.semicolon));
-
-            sb.append("\t");
-            sb.append(Strings.concat(dsNBuilder, Strings.semicolon));
-            sb.append("\t-\t-\t");
-
-            sb.append(traits[metaTraitId].getAnnotation());
-            sb.append("\t-");
-
-            output.writeln(sb.toString());
         }
         output.close();
         System.out.println("Done.");
