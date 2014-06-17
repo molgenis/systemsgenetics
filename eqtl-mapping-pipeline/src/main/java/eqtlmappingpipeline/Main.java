@@ -15,7 +15,7 @@ import java.util.ResourceBundle;
  */
 public class Main {
 
-	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
+	public static final String VERSION = ResourceBundle.getBundle("version").getString("application.version");
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
