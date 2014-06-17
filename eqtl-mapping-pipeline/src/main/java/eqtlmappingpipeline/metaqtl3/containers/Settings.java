@@ -76,9 +76,10 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean metaAnalyseInteractionTerms = false;
     public boolean metaAnalyseModelCorrelationYHat = false;
     public String pathwayDefinition;
-	public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
-	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
-    
+    public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
+    private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
+    public boolean permuteCovariates;
+
     public Settings() {
     }
 
@@ -224,6 +225,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         Boolean metaAnalyzeInteractionTermsB = null;
         try {
             metaAnalyzeInteractionTermsB = config.getBoolean("defaults.analysis.metaAnalyseInteractionTerms");
+        } catch (Exception e) {
+        }
+
+        permuteCovariates = false;
+        try {
+            metaAnalyzeInteractionTermsB = config.getBoolean("defaults.analysis.permuteCovariates");
         } catch (Exception e) {
         }
         if (metaAnalyzeInteractionTermsB != null) {
@@ -451,8 +458,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             }
         } catch (Exception e) {
         }
-		
-		try {
+
+        try {
             snpProbeConfineBasedOnChrPos = config.getBoolean("defaults.confine.snpProbeConfineBasedOnChrPos", false);
         } catch (Exception e) {
         }
@@ -685,8 +692,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
     public String summarize() {
         Date currentDataTime = new Date();
-        String summary = "QTL mapping was performed using metaqtl version: "+ Main.VERSION+"\nCurrent date and time: " + Main.DATE_TIME_FORMAT.format(currentDataTime)+"\n\n"
-                +"Following settings will be applied:\n"
+        String summary = "QTL mapping was performed using metaqtl version: " + Main.VERSION + "\nCurrent date and time: " + Main.DATE_TIME_FORMAT.format(currentDataTime) + "\n\n"
+                + "Following settings will be applied:\n"
                 + "Settings\n----\n"
                 + "settingsTextToReplace\t" + settingsTextToReplace + "\n"
                 + "settingsTextReplaceWith\t" + settingsTextReplaceWith + "\n"

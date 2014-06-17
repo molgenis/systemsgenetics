@@ -293,21 +293,23 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         }
         expressionToGenotypeIdArray = indWGANew;
 
+    }
+
+    public void permuteCovariates() {
         // shuffle covariate, if any
         if (covariates != null) {
             System.out.println("Randomizing covariates");
             for (int covariate = 0; covariate < covariates.nrRows; covariate++) {
                 ArrayList<Double> covariateData = new ArrayList<Double>();
-                for (int col = 0; col < covariates.nrRows; col++) {
-                    covariateData.add(covariates.rawData[covariate][col]);
+                for (int sample = 0; sample < covariates.nrRows; sample++) {
+                    covariateData.add(covariates.rawData[covariate][sample]);
                 }
                 Collections.shuffle(covariateData);
-                for (int col = 0; col < covariates.nrRows; col++) {
-                    covariates.rawData[covariate][col] = covariateData.get(col);
+                for (int sample = 0; sample < covariates.nrRows; sample++) {
+                    covariates.rawData[covariate][sample] = covariateData.get(sample);
                 }
             }
         }
-
     }
 
     public void resetGenotypeToExpressionCouplings() throws IOException {
