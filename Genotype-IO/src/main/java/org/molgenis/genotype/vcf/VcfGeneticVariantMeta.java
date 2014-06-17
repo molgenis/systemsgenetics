@@ -1,38 +1,35 @@
 package org.molgenis.genotype.vcf;
 
-import java.util.Arrays;
-
 import org.molgenis.genotype.variant.GeneticVariantMeta;
-import org.molgenis.vcf.VcfRecord;
 import org.molgenis.vcf.meta.VcfMeta;
 import org.molgenis.vcf.meta.VcfMetaFormat;
 
 public class VcfGeneticVariantMeta implements GeneticVariantMeta {
 
 	private final VcfMeta vcfMeta;
-	private final VcfRecord vcfRecord;
+	private final Iterable<String> vcfRecordFormat;
 
-	public VcfGeneticVariantMeta(VcfMeta vcfMeta, VcfRecord vcfRecord) {
+	public VcfGeneticVariantMeta(VcfMeta vcfMeta, Iterable<String> vcfRecordFormat) {
 		if (vcfMeta == null) {
 			throw new IllegalArgumentException("vcfMeta is null");
 		}
-		if (vcfRecord == null) {
+		if (vcfRecordFormat == null) {
 			throw new IllegalArgumentException("vcfRecord is null");
 		}
 		this.vcfMeta = vcfMeta;
-		this.vcfRecord = vcfRecord.createClone();
+		this.vcfRecordFormat = vcfRecordFormat;
 	}
 
 	@Override
 	public Iterable<String> getRecordIds() {
-		return Arrays.asList(vcfRecord.getFormat());
+		return vcfRecordFormat;
 	}
 
 	@Override
 	public Type getRecordType(String recordId) {
 
 		boolean found = false;
-		for (String record : getRecordIds()) {
+		for (String record : vcfRecordFormat) {
 			found = record.equals(recordId);
 			if (found) {
 				break;

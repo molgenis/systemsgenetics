@@ -48,6 +48,7 @@ import com.google.common.collect.Iterators;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
@@ -604,7 +605,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			alleles = Alleles.createAlleles(allelesList);
 		}
 
-		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
+		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, Arrays.asList(vcfRecord.getFormat()));
 		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, variantProvider, alleles, refAllele);
 
 		cachedVcfRecord = vcfRecord;

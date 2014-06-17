@@ -95,7 +95,8 @@ public class VcfRecord
 	}
 	
 	public Iterable<VcfInfo> getInformation() {
-		final String[] infoTokens = StringUtils.split(tokens[VcfMeta.COL_INFO_IDX], ';');
+		//Do new string to prevent the whole token array is saved
+		final String[] infoTokens = StringUtils.split(new String(tokens[VcfMeta.COL_INFO_IDX]), ';');
 		return new Iterable<VcfInfo>() {
 			
 			@Override
@@ -133,7 +134,8 @@ public class VcfRecord
 	
 	public String[] getFormat() {
 		if(cachedSampleDataTypes == null) {
-			cachedSampleDataTypes = StringUtils.split(tokens[VcfMeta.COL_FORMAT_IDX], ':'); 
+			//Do new string to prevent the whole token array is saved
+			cachedSampleDataTypes = StringUtils.split(new String(tokens[VcfMeta.COL_FORMAT_IDX]), ':'); 
 		}
 		return cachedSampleDataTypes;
 	}
