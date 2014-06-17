@@ -65,7 +65,7 @@ class CalculationThread extends Thread {
     private final boolean testSNPsPresentInBothDatasets;
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
-    private RConnection rConnection;
+//    private RConnection rConnection;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
@@ -118,21 +118,21 @@ class CalculationThread extends Thread {
         m_eQTLPlotter = plotter;
         m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
 
-        if (covariates != null) {
-            try {
-                rConnection = new RConnection();
-                REXP x = rConnection.eval("R.version.string");
-                System.out.println("Thread made R Connection: " + x.asString());
-//                rConnection.voidEval("install.packages('sandwich')");
-                rConnection.voidEval("library(sandwich)");
-            } catch (RserveException ex) {
-                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-                rConnection = null;
-            } catch (REXPMismatchException ex) {
-                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-                rConnection = null;
-            }
-        }
+//        if (covariates != null) {
+//            try {
+//                rConnection = new RConnection();
+//                REXP x = rConnection.eval("R.version.string");
+//                System.out.println("Thread made R Connection: " + x.asString());
+////                rConnection.voidEval("install.packages('sandwich')");
+//                rConnection.voidEval("library(sandwich)");
+//            } catch (RserveException ex) {
+//                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+//                rConnection = null;
+//            } catch (REXPMismatchException ex) {
+//                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+//                rConnection = null;
+//            }
+//        }
     }
 
     @Override
@@ -152,9 +152,9 @@ class CalculationThread extends Thread {
             }
         }
         
-        if (rConnection != null) {
-            rConnection.close();
-        }
+//        if (rConnection != null) {
+//            rConnection.close();
+//        }
     }
 
     public void kill() {
