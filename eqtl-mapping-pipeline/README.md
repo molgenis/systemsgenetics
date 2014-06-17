@@ -1,8 +1,8 @@
-#EQTL mapping pipeline manual
-This software allows for (e)QTL mapping using linear models and direct meta-analysis of such data through weighted Z-score analysis.
+#QTL mapping pipeline information
+This software allows for QTL mapping using linear models and direct meta-analysis of such data through weighted Z-score analysis.
 
 ##Questions or suggestions?
-You can contact the authors of this software at westra.harmjan@gmail.com, or lude@ludesign.nl for questions or suggestions regarding the software or the manual. This manual was written in cooperation with Marjolein Peters and Joyce van Meurs.
+You can contact the authors of this software at westra.harmjan @ gmail.com, or lude @ ludesign.nl for questions or suggestions regarding the software or the manual.
 
 ##Manual contents
 
