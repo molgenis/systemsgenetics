@@ -34,8 +34,10 @@ public class EQTLMappingPipelineConsole {
     public void main(String[] args) throws Exception {
 
         if (args == null || args.length == 0) {
-
+            
             printHeader();
+            printUsage();
+            System.out.println("\nERROR: Please supply --mode\n");
             return;
         }
         if (args[0].equals("--ase")) {
@@ -117,10 +119,7 @@ public class EQTLMappingPipelineConsole {
                 + ConsoleGUIElems.DOUBLELINE
                 + "Version: " + Main.VERSION + "\n"
                 + "Department of Genetics, University Medical Centre Groningen\n"
-                + "Harm-Jan Westra, Lude Franke, Marjolein Peters, Tonu Esko, Claudia Schurmann\n"
-                + ConsoleGUIElems.LINE
-                + "Please note that this software comes with no warranty and should not be\n"
-                + "distributed to third parties without proper consent of the developers.\n"
+                + "Harm-Jan Westra, Patrick Deelen, Marc Jan Bonder, Dasha Zhernakova and Lude Franke\n"
                 + ConsoleGUIElems.DOUBLELINE + "\n");
     }
 
