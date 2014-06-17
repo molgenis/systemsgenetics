@@ -8,7 +8,7 @@ import JSci.maths.statistics.NormalDistribution;
 import cern.jet.random.tdouble.StudentT;
 //import cern.jet.random.tdouble.engine.DRand;
 //import cern.jet.random.tdouble.engine.DoubleRandomEngine;
-import cern.jet.stat.Probability;
+import cern.jet.stat.tdouble.Probability;
 
 /**
  *
@@ -82,6 +82,7 @@ public class ZScores {
 
         if (normDist == null) {
             normDist = new NormalDistribution();
+            System.out.println("Creating new Normal Dist");
         }
         double p;
         if (z > 0) {

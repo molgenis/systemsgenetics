@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.metaqtl4;
+package nl.umcg.westrah.binarymetaanalyzer;
 
 import org.molgenis.genotype.util.ChromosomeComparator;
 

@@ -389,12 +389,18 @@ public class ViolinBoxPlot {
         } else if (maxValue > 0 && minValue >= 0) {
             int startVal = (int) Math.ceil(minValue);
             int endVal = (int) Math.floor(maxValue);
+            
+            double unit = determineUnit(maxValue-minValue);
+            
             int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
             int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
 
             g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
             g2d.setFont(fontBold);
-            for (int v = startVal; v <= endVal; v++) {
+            
+            double remainder = startVal % unit;
+            startVal = (int) Math.ceil(startVal+remainder);
+            for (int v = startVal; v <= endVal; v+=unit) {
                 int posY = marginTop + innerHeight - (int) Math.round((double) innerHeight * (v - minValue) / (maxValue - minValue));
                 g2d.drawLine(marginLeft - 10, posY, marginLeft - 20, posY);
                 g2d.drawString(String.valueOf(v), marginLeft - 25 - (int) getWidth(String.valueOf(v), g2d.getFont()), posY + 3);

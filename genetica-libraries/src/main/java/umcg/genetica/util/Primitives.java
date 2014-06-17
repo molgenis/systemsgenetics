@@ -19,6 +19,18 @@ public class Primitives {
         return max;
     }
 
+    public static double max(double[][] values) {
+        double max = -Double.MAX_VALUE;
+        for (double[] x : values) {
+            for (double value : x) {
+                if (value > max) {
+                    max = value;
+                }
+            }
+        }
+        return max;
+    }
+
     public static char max(char[] values) {
         char max = Character.MIN_VALUE;
         for (char value : values) {
@@ -98,6 +110,18 @@ public class Primitives {
         for (double value : values) {
             if (value < min) {
                 min = value;
+            }
+        }
+        return min;
+    }
+
+    public static double min(double[][] values) {
+        double min = Double.MAX_VALUE;
+        for (double[] x : values) {
+            for (double value : x) {
+                if (value < min) {
+                    min = value;
+                }
             }
         }
         return min;
@@ -188,7 +212,7 @@ public class Primitives {
         }
         return output;
     }
-    
+
     public static double[] toPrimitiveArr(Double[] toArray) {
         double[] arr = new double[toArray.length];
         for (int i = 0; i < toArray.length; i++) {

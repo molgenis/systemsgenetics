@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.causalinference;
 
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,7 +29,7 @@ import umcg.genetica.math.stats.TwoStepLeastSquares;
 public class IVAnalysis {
 
     protected HashSet<Triple<String, String, String>> snpProbeCombos = new HashSet<Triple<String, String, String>>();
-    protected MetaQTL3Settings m_settings;
+    protected Settings m_settings;
     // snpProbeCombinationList (SNP cis trans)
     protected TriTyperGeneticalGenomicsDataset[] m_gg;
     protected final String outDir;
@@ -109,7 +109,7 @@ public class IVAnalysis {
                 System.exit(0);
             }
 
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
             s.name = "Dataset";
@@ -151,7 +151,7 @@ public class IVAnalysis {
 
         } else if (m_settings == null && xmlSettingsFile != null) {
             // parse settings
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             m_settings.load(xmlSettingsFile);
         } else if (m_settings == null) {
             System.out.println("ERROR: No input specified");
