@@ -4,9 +4,6 @@
  */
 package nl.umcg.westrah.binarymetaanalyzer;
 
-import cern.colt.matrix.tint.IntMatrix2D;
-import umcg.genetica.io.trityper.SNP;
-import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 
 /**
@@ -23,14 +20,11 @@ public class QTL implements Comparable<QTL> {
     private byte[] alleles;
     private double[] datasetZScores;
     private int[] datasetsSamples;
-    private double[] correlations;
-    
 
     public QTL(int datasets) {
         alleles = null;
         datasetZScores = null;
         datasetsSamples = null;
-        correlations = null;
     }
 
     public QTL() {
@@ -48,35 +42,60 @@ public class QTL implements Comparable<QTL> {
     }
 
     @Override
-    public int compareTo(QTL o) {
-        if (pvalue == o.pvalue) {
-            if (Math.abs(zscore) == Math.abs(o.zscore)) {
-                return 0;
-            } else if (Math.abs(zscore) < Math.abs(o.zscore)) {
-                return 1;
-            } else {
-                return -1;
-            }
-        } else if (pvalue > o.pvalue) {
-            return 1;
-        } else {
-            return -1;
-        }
-
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + (int) (Double.doubleToLongBits(this.pvalue) ^ (Double.doubleToLongBits(this.pvalue) >>> 32));
+        hash = 97 * hash + (int) (Double.doubleToLongBits(Math.abs(this.zscore)) ^ (Double.doubleToLongBits(Math.abs(this.zscore)) >>> 32));
+        return hash;
     }
 
-    public boolean equals(QTL o) {
-        if (pvalue == o.pvalue) {
-            if (Math.abs(zscore) == Math.abs(o.zscore)) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
             return false;
         }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final QTL other = (QTL) obj;
+
+        if (Double.doubleToLongBits(this.pvalue) != Double.doubleToLongBits(other.pvalue)) {
+            return false;
+        }
+        return Double.doubleToLongBits(Math.abs(this.zscore)) == Double.doubleToLongBits(Math.abs(other.zscore));
     }
 
+    @Override
+    public String toString() {
+        return "QTL{" + "pvalue=" + pvalue + ", zscore=" + zscore + '}';
+    }
+
+    @Override
+    public int compareTo(QTL o) {
+        int returnval = -1;
+        if (pvalue == o.pvalue) {
+            if (Math.abs(zscore) == Math.abs(o.zscore)) {
+                returnval = 0;
+            } else if (Math.abs(zscore) > Math.abs(o.zscore)) {
+                returnval = 1;
+            } else {
+                returnval = -1;
+            }
+        } else if (pvalue > o.pvalue) {
+            returnval = 1;
+        } else {
+            returnval = -1;
+        }
+        return returnval;
+    }
+
+//    public boolean equals(QTL o) {
+//        if (pvalue == o.pvalue) {
+//            return Math.abs(zscore) == Math.abs(o.zscore);
+//        } else {
+//            return false;
+//        }
+//    }
     public void cleanUp() {
 
         alleles = null;
@@ -93,12 +112,6 @@ public class QTL implements Comparable<QTL> {
             datasetsSamples = null;
         }
 
-        if (correlations != null) {
-            for (int i = 0; i < correlations.length; i++) {
-                correlations[i] = Double.NaN;
-            }
-            correlations = null;
-        }
     }
 
     public double getPvalue() {
@@ -107,10 +120,6 @@ public class QTL implements Comparable<QTL> {
 
     public double getZscore() {
         return zscore;
-    }
-
-    public double[] getCorrelations() {
-        return correlations;
     }
 
     public int getSNPId() {
@@ -137,7 +146,4 @@ public class QTL implements Comparable<QTL> {
         return datasetsSamples;
     }
 
-    
-
-    
 }
