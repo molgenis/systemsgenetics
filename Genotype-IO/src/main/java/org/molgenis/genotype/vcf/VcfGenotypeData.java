@@ -48,6 +48,7 @@ import com.google.common.collect.Iterators;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
@@ -467,14 +468,17 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd) {
 
-		++totalRandomAccessRequest;
-		++currentlyOpenFileHandlers;
+
 
 		return new Iterable<GeneticVariant>() {
 			@Override
 			public Iterator<GeneticVariant> iterator() {
 
 				try {
+
+					++totalRandomAccessRequest;
+					++currentlyOpenFileHandlers;
+
 					return new Iterator<GeneticVariant>() {
 						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
 						private String line = readFirst(it);
@@ -488,7 +492,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 									if (firstLine == null) {
 										--currentlyOpenFileHandlers;
 										++closedFileHandlers;
-										IOUtils.closeQuietly(it);
+										it.close();
 									}
 									return firstLine;
 								} catch (IOException e) {
@@ -510,7 +514,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 								if (line == null) {
 									--currentlyOpenFileHandlers;
 									++closedFileHandlers;
-									IOUtils.closeQuietly(it);
+									it.close();
 								}
 							} catch (IOException e) {
 								throw new GenotypeDataException(e);
@@ -525,8 +529,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					};
 				} catch (FileNotFoundException e) {
 					if (e.getMessage().endsWith("(Too many open files)")) {
-						handeleTooManyOpenFiles(e);
-						return null;//does noting above function will throw new error
+						throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 					} else {
 						throw new GenotypeDataException(e);
 					}
@@ -544,6 +547,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			BlockCompressedInputStream stream = null;
 			++totalRandomAccessRequest;
 			++currentlyOpenFileHandlers;
+
 			try {
 				stream = new BlockCompressedInputStream(bzipVcfFile);
 				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), stream);
@@ -555,12 +559,10 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 						break;
 					}
 				}
-				--currentlyOpenFileHandlers;
-				++closedFileHandlers;
-				IOUtils.closeQuietly(stream);
+				stream.close();
 			} catch (FileNotFoundException e) {
 				if (e.getMessage().endsWith("(Too many open files)")) {
-					handeleTooManyOpenFiles(e);
+					throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
 				} else {
 					throw new GenotypeDataException(e);
 				}
@@ -603,7 +605,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			alleles = Alleles.createAlleles(allelesList);
 		}
 
-		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
+		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, Arrays.asList(vcfRecord.getFormat()));
 		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, variantProvider, alleles, refAllele);
 
 		cachedVcfRecord = vcfRecord;
@@ -621,31 +623,5 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private GenotypeRecord toGenotypeRecord(VcfRecord vcfRecord, VcfSample vcfSample) {
 		return new VcfGenotypeRecord(vcfMeta, vcfRecord, vcfSample);
 	}
-
-	private void handeleTooManyOpenFiles(Exception e) {
-		String procName = ManagementFactory.getRuntimeMXBean().getName();
-		String[] procNameParts = StringUtils.split(procName);
-		try {
-
-
-			ProcessBuilder checkFileProcessBuilder = new ProcessBuilder("lsof", "-p", procNameParts[0]);
-			checkFileProcessBuilder.redirectErrorStream(true);
-			Process checkFileProcess = checkFileProcessBuilder.start();
-
-			BufferedReader checkFileProcessOutputReader = new BufferedReader(new InputStreamReader(checkFileProcess.getInputStream()));
-
-			StringBuilder checkFileProcessOutput = new StringBuilder("lsof -p " + procNameParts[0]);
-
-			String checkFileProcessOutputLine;
-			while ((checkFileProcessOutputLine = checkFileProcessOutputReader.readLine()) != null) {
-				checkFileProcessOutput.append('\n');
-				checkFileProcessOutput.append(checkFileProcessOutputLine);
-			}
-			LOG.debug(checkFileProcessOutput);
-
-		} catch (IOException ex) {
-			LOG.fatal("Failed to run process to get open files: lsof -p " + procNameParts[0]);
-		}
-		throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
-	}
+	
 }

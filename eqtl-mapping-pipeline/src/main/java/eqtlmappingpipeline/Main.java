@@ -7,6 +7,7 @@ package eqtlmappingpipeline;
 import eqtlmappingpipeline.gui.EQTLMappingPipelineConsole;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ResourceBundle;
 
 /**
  *
@@ -14,7 +15,7 @@ import java.text.SimpleDateFormat;
  */
 public class Main {
 
-	public static final String VERSION = Main.class.getPackage().getImplementationVersion();
+	public static final String VERSION = ResourceBundle.getBundle("version").getString("application.version");
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**

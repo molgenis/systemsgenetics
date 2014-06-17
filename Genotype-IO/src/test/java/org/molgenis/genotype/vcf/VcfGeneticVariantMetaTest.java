@@ -58,7 +58,7 @@ public class VcfGeneticVariantMetaTest
 		{ "1", "565286", "rs1578391", "C", "T", ".", "flt", "NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754",
 				"GT:DP:EC:CONFS", "1/1:5:5:5.300,5.300,1.000,1.000,1.000,1.000,1.000" };
 		VcfRecord vcfRecord = new VcfRecord(vcfMeta, tokens);
-		vcfGeneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
+		vcfGeneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, Arrays.asList(vcfRecord.getFormat()));
 	}
 
 	@Test(expectedExceptions = IllegalArgumentException.class)

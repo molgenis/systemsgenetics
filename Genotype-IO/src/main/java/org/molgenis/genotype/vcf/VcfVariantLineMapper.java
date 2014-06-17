@@ -1,6 +1,7 @@
 package org.molgenis.genotype.vcf;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +59,7 @@ public class VcfVariantLineMapper implements VariantLineMapper
 			alleles = Alleles.createAlleles(allelesList);
 		}
 
-		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
+		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, Arrays.asList(vcfRecord.getFormat()));
 		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, sampleVariantsProvider, alleles, refAllele);
 		
 		return geneticVariant;
