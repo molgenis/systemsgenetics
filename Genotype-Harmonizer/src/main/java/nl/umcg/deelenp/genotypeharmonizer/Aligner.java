@@ -417,6 +417,8 @@ public class Aligner {
 		LOGGER.info("Swapped " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(swapBasedOnLdCount) + " out of " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " AT or GC variants based on LD patterns");
 		System.out.println("Swapped " + swapBasedOnLdCount + " AT or GC variants based on LD patterns");
 
+		snpLogWriter.close();
+		
 		return aligendStudyData;
 
 	}
