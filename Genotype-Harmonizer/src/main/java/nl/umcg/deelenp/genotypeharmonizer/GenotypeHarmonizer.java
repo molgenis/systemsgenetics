@@ -49,6 +49,7 @@ class GenotypeHarmonizer {
             + "  |                                       |\n"
             + "  | Harm-Jan Westra, Joeri van der Velde, |\n"
             + "  |    Marc Jan Bonder, Erwin Winder,     |\n"
+			+ "  |           Dennis Hendriksen           |\n"
             + "  |      Lude Franke, Morris Swertz       |\n"
             + "  |                                       |\n"
             + "  |     Genomics Coordication Center      |\n"
