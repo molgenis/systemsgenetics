@@ -71,7 +71,7 @@ public class Aligner {
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
-				LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+				//LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 				System.out.println("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 			}
 
@@ -260,7 +260,7 @@ public class Aligner {
 				++iterationCounter;
 
 				if (iterationCounter % 10000 == 0) {
-					LOGGER.info("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+					//LOGGER.info("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 					System.out.println("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 				}
 
@@ -320,7 +320,7 @@ public class Aligner {
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
-				LOGGER.info("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
+				//LOGGER.info("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
 				System.out.println("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
 			}
 
