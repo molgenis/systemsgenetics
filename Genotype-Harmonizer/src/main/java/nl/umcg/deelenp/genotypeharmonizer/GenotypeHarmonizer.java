@@ -49,6 +49,7 @@ class GenotypeHarmonizer {
             + "  |                                       |\n"
             + "  | Harm-Jan Westra, Joeri van der Velde, |\n"
             + "  |    Marc Jan Bonder, Erwin Winder,     |\n"
+			+ "  |           Dennis Hendriksen           |\n"
             + "  |      Lude Franke, Morris Swertz       |\n"
             + "  |                                       |\n"
             + "  |     Genomics Coordication Center      |\n"
@@ -122,8 +123,6 @@ class GenotypeHarmonizer {
             System.err.println("Failed to create logger: " + e.getMessage());
             System.exit(1);
         }
-
-
 
         LOGGER.info(
                 "\n" + HEADER);
@@ -330,7 +329,7 @@ class GenotypeHarmonizer {
 
             try {
                 System.out.println("Beginning alignment");
-                aligedInputData = aligner.alignToRef(inputData, refData, paramaters.getMinLdToIncludeAlign(), paramaters.getMinSnpsToAlignOn(), paramaters.getFlankSnpsToConsider(), paramaters.isLdCheck(), paramaters.isUpdateId(), paramaters.isKeep(), paramaters.getSnpUpdateFile(), paramaters.getMaxMafForMafAlignment());
+                aligedInputData = aligner.alignToRef(inputData, refData, paramaters.getMinLdToIncludeAlign(), paramaters.getMinSnpsToAlignOn(), paramaters.getFlankSnpsToConsider(), paramaters.isLdCheck(), paramaters.isUpdateId(), paramaters.isKeep(), paramaters.getSnpUpdateFile(), paramaters.getMaxMafForMafAlignment(), paramaters.getSnpLogFile());
             } catch (LdCalculatorException e) {
                 System.err.println("Error in LD calculation" + e.getMessage());
                 LOGGER.fatal("Error in LD calculation" + e.getMessage(), e);

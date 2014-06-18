@@ -34,6 +34,16 @@
 			<outputDirectory>/</outputDirectory>
 			<destName>eqtl-mapping-pipeline.jar</destName>
 		</file>
+		<file>
+			<source>src/main/resources/cisSnps.txt.gz</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>cisSnps.txt.gz</destName>
+		</file>
+		<file>
+			<source>src/main/resources/transSnps.txt.gz</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>transSnps.txt.gz</destName>
+		</file>		
 	</files>
 
 	<fileSets>
