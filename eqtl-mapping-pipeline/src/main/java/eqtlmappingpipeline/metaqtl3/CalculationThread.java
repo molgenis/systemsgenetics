@@ -65,7 +65,7 @@ class CalculationThread extends Thread {
     private final boolean testSNPsPresentInBothDatasets;
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
-    private RConnection rConnection;
+//    private RConnection rConnection;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
@@ -83,7 +83,7 @@ class CalculationThread extends Thread {
         metaAnalyseModelCorrelationYHat = settings.metaAnalyseModelCorrelationYHat;
         m_useAbsoluteZScores = useAbsoluteZScores;
         m_name = i;
-        m_numProbes =m_probeTranslation.columns();
+        m_numProbes = m_probeTranslation.columns();
         m_numDatasets = m_probeTranslation.rows();
         m_expressionToGenotypeIds = expressionToGenotypeIds;
         probeVariance = new double[m_numDatasets][0];
@@ -110,7 +110,7 @@ class CalculationThread extends Thread {
             cisOnly = true;
         } else if (!m_cis && m_trans) {
             transOnly = true;
-        } 
+        }
 //        else if (m_cis && m_trans) {
 //            cisTrans = true;
 //        }
@@ -118,21 +118,21 @@ class CalculationThread extends Thread {
         m_eQTLPlotter = plotter;
         m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
 
-        if (covariates != null) {
-            try {
-                rConnection = new RConnection();
-                REXP x = rConnection.eval("R.version.string");
-                System.out.println("Thread made R Connection: " + x.asString());
-//                rConnection.voidEval("install.packages('sandwich')");
-                rConnection.voidEval("library(sandwich)");
-            } catch (RserveException ex) {
-                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-                rConnection = null;
-            } catch (REXPMismatchException ex) {
-                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-                rConnection = null;
-            }
-        }
+//        if (covariates != null) {
+//            try {
+//                rConnection = new RConnection();
+//                REXP x = rConnection.eval("R.version.string");
+//                System.out.println("Thread made R Connection: " + x.asString());
+////                rConnection.voidEval("install.packages('sandwich')");
+//                rConnection.voidEval("library(sandwich)");
+//            } catch (RserveException ex) {
+//                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+//                rConnection = null;
+//            } catch (REXPMismatchException ex) {
+//                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+//                rConnection = null;
+//            }
+//        }
     }
 
     @Override
@@ -151,10 +151,10 @@ class CalculationThread extends Thread {
                 ex.printStackTrace();
             }
         }
-        
-        if (rConnection != null) {
-            rConnection.close();
-        }
+
+//        if (rConnection != null) {
+//            rConnection.close();
+//        }
     }
 
     public void kill() {
@@ -362,7 +362,6 @@ class CalculationThread extends Thread {
             e.printStackTrace();
         }
 
-        
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
@@ -389,7 +388,7 @@ class CalculationThread extends Thread {
 
             if (covariates != null) {
                 int covariateitr = 0;
-                covariates = new double[covariateRawData.length][0];
+                covariates = new double[covariateRawData.length][0]; // take only the first covariate for now..
                 for (int covariate = 0; covariate < covariateRawData.length; covariate++) {
                     covariates[covariate] = new double[x.length];
                     for (int s = 0; s < sampleCount; s++) {
@@ -467,8 +466,10 @@ class CalculationThread extends Thread {
                 }
                 pValueInteraction *= 2;
                 r.zscores[d][p] = zScoreInteraction;
-                r.correlations[d][p] = betaInteraction;
-
+                r.correlations[d][p] = regressionFullWithInteraction.calculateRSquared();
+                r.se[d][p] = seInteraction;
+                r.beta[d][p] = betaInteraction;
+                
 //                if (rConnection != null) {
 //                    try {
 //                        if (rConnection.isConnected()) {
@@ -556,11 +557,10 @@ class CalculationThread extends Thread {
             //Calculate correlation coefficient:
             double stdevy = Math.sqrt(varianceY);
             double stdevx = Math.sqrt(varianceX);
-            
+
 //                double stdevy = JSci.maths.ArrayMath.standardDeviation(y);
 //                double stdevx = JSci.maths.ArrayMath.standardDeviation(x);
-            
-            double correlation = Correlation.correlateMeanCenteredData(x, y, (stdevy*stdevx));
+            double correlation = Correlation.correlateMeanCenteredData(x, y, (stdevy * stdevx));
 
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
@@ -585,10 +585,10 @@ class CalculationThread extends Thread {
                 r.zscores[d][p] = zScore;
                 r.correlations[d][p] = correlation;
             } else {
-				// Ususally if the genotype variance is very low
+                // Ususally if the genotype variance is very low
                 System.err.println("Error! correlation invalid: " + correlation + "; genotype variance = " + varianceX + "; expression variance = " + varianceY);
-				r.zscores[d][p] = Double.NaN;
-				r.correlations[d][p] = Double.NaN;
+                r.zscores[d][p] = Double.NaN;
+                r.correlations[d][p] = Double.NaN;
                 //System.exit(-1);
             }
         }

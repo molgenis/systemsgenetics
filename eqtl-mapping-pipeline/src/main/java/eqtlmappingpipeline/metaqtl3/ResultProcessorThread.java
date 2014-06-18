@@ -357,6 +357,7 @@ public class ResultProcessorThread extends Thread {
                                 sb.append("\t");
                             }
                             sb.append(probeName);
+                           
                             zScoreMetaAnalysisFile.writeFloat(z);
                         } else {
                             zScoreMetaAnalysisFile.writeFloat(z);
@@ -391,6 +392,10 @@ public class ResultProcessorThread extends Thread {
                         StringBuilder sb = null;
                         for (int p = 0; p < datasetZScores.length; p++) {
                             float z = (float) datasetZScores[p];
+                            if(currentWP.getFlipSNPAlleles()[d]){
+                                z *=-1;
+                            }
+                            // System.out.println(p + "\t" + alleleassessed + "\t" + m_probeList[p] + "\t" + z + "\t" + currentWP.getFlipSNPAlleles()[d]);
                             if (m_cisOnly) {
                                 // take into account that not all probes have been tested..
                                 int[] probes = currentWP.getProbes();

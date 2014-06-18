@@ -78,6 +78,9 @@ public class Descriptives {
     }
     
     public static double convertZscoreToPvalue(double zScore) {
+        if(Double.isNaN(zScore)){
+            return 1;
+        }
         if(m_zScoreToPValue == null){
             initializeZScoreToPValue();
         }
