@@ -209,10 +209,10 @@ public class Aligner {
 					//Alleles do not match we need to swap our study data.
 					studyVariant.swap();
 					//no need to check if there is a match now. We would not have gotten here if alleles where not comparable.
-					if (LOGGER.isDebugEnabled()) {
-						snpLogWriter.addToLog(studyVariant, "Swapped", "");
-						//LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on non ambiguous alleles. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
-					}
+					snpLogWriter.addToLog(studyVariant, "Swapped", "");
+//					if (LOGGER.isDebugEnabled()) {	
+//						LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on non ambiguous alleles. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
+//					}
 				}
 
 			}
@@ -417,6 +417,8 @@ public class Aligner {
 		LOGGER.info("Swapped " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(swapBasedOnLdCount) + " out of " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " AT or GC variants based on LD patterns");
 		System.out.println("Swapped " + swapBasedOnLdCount + " AT or GC variants based on LD patterns");
 
+		snpLogWriter.close();
+		
 		return aligendStudyData;
 
 	}
