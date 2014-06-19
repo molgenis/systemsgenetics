@@ -18,9 +18,9 @@ public class MetaQTL4MetaTrait implements Comparable<Object> {
 
     private final int metaTraitId;
     private final String metaTraitName;
-    private final String chr;
-    private final int chrStart;
-    private final int chrEnd;
+    private String chr = "-9";
+    private int chrStart = -9;
+    private int chrEnd = -9;
     private final int chrMidpoint;
     private final String annotation;
     private final String[] platformIds;
@@ -46,12 +46,25 @@ public class MetaQTL4MetaTrait implements Comparable<Object> {
     }
 
     @Override
+    public String toString() {
+        return "MetaQTL4MetaTrait{" + "metaTraitId=" + metaTraitId + ", metaTraitName=" + metaTraitName + ", chr=" + chr + ", chrStart=" + chrStart + ", chrEnd=" + chrEnd + ", chrMidpoint=" + chrMidpoint + ", annotation=" + annotation + ", platformIds=" + platformIds + ", currentMetaId=" + currentMetaId + '}';
+    }
+    
+
+    @Override
     public int compareTo(Object t) {
         if (this.equals(t)) {
             return 0;
         } else {
             MetaQTL4MetaTrait that = (MetaQTL4MetaTrait) t;
-            if (!this.getChr().equals(that.getChr())) {
+            String thatChr = that.getChr();
+            String thisChr = this.getChr();
+            if(thisChr == null || thatChr == null){
+                System.out.println(this.toString());
+                System.out.println(that.toString());
+            }
+            
+            if (!thisChr.equals(thatChr)) {
                 return chrComparator.compare(chr, that.getChr());
             } else {
                 if (this.getChrMidpoint() == that.getChrMidpoint()) {

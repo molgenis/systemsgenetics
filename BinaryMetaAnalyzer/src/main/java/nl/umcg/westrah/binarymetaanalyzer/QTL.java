@@ -13,7 +13,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
 public class QTL implements Comparable<QTL> {
 
     private double pvalue = Double.MAX_VALUE;
-    private int pid = -1;
+    private MetaQTL4MetaTrait trait;
     private int sid = -1;
     private byte alleleAssessed;
     private double zscore = 0;
@@ -30,9 +30,9 @@ public class QTL implements Comparable<QTL> {
     public QTL() {
     }
 
-    public QTL(double pval, int pid, int sid, byte assessedAllele, double zscore, byte[] alleles, double[] zscores, int[] numSamples) {
+    public QTL(double pval, MetaQTL4MetaTrait t, int sid, byte assessedAllele, double zscore, byte[] alleles, double[] zscores, int[] numSamples) {
         this.pvalue = pval;
-        this.pid = pid;
+        this.trait = t;
         this.sid = sid;
         this.alleleAssessed = assessedAllele;
         this.zscore = zscore;
@@ -126,10 +126,6 @@ public class QTL implements Comparable<QTL> {
         return sid;
     }
 
-    public int getMetaTraitId() {
-        return pid;
-    }
-
     public String getAlleles() {
         return BaseAnnot.getAllelesDescription(alleles);
     }
@@ -144,6 +140,10 @@ public class QTL implements Comparable<QTL> {
 
     public int[] getDatasetSampleSizes() {
         return datasetsSamples;
+    }
+
+    MetaQTL4MetaTrait getMetaTrait() {
+        return trait;
     }
 
 }
