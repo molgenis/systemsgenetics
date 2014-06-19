@@ -103,7 +103,8 @@
                     </descriptors>
                     <archive>
                         <manifest>
-                            <mainClass>org.sample.App</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>eqtlmappingpipeline.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
