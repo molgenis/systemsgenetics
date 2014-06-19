@@ -52,8 +52,8 @@ public class BinaryMetaAnalysis {
         System.exit(0);
 
     }
+    
     private MetaQTL4TraitAnnotation probeAnnotation;
-
     private BinaryMetaAnalysisDataset[] datasets = new BinaryMetaAnalysisDataset[0];
     private int[][] snpIndex;
     private String[] snpList;
