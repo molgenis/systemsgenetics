@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.text.Strings;
 
 /**
  *
@@ -175,13 +176,16 @@ public class BinaryMetaAnalysisDataset {
             }
 
             if (isCisDataset) {
-                MetaQTL4MetaTrait[] snpProbeList = new MetaQTL4MetaTrait[(elems.length - 8)];
-                for (int e = 8; e < elems.length; e++) {
+                MetaQTL4MetaTrait[] snpProbeList = new MetaQTL4MetaTrait[(elems.length - 9)];
+                for (int e = 9; e < elems.length; e++) {
                     // get the list of probes for this particular SNP.
+
                     String probe = elems[e];
                     MetaQTL4MetaTrait t = probeAnnotation.getTraitForPlatformId(platformId, probe);
-                    snpProbeList[e - 8] = t;
+                    // System.out.println(snp+"\t"+elems[e]);
+                    snpProbeList[e - 9] = t;
                 }
+
                 snpCisProbeMap[ln] = snpProbeList;
             }
             elems = tf.readLineElems(TextFile.tab);
@@ -221,13 +225,12 @@ public class BinaryMetaAnalysisDataset {
 //            nrZ = snpCisProbeMap[snp].length;
 //        }
 //        System.out.println(snp + "\t" + snpBytePos + "\t" + snpByteNextPos);
-
         raf.seek(snpBytePos);
         int readlen = (int) (snpByteNextPos - snpBytePos);
         byte[] bytesToRead = new byte[readlen];
         raf.read(bytesToRead);
         ByteBuffer bytebuffer = ByteBuffer.wrap(bytesToRead);
-        float[] output = new float[readlen/4];
+        float[] output = new float[readlen / 4];
         for (int i = 0; i < output.length; i++) {
             output[i] = bytebuffer.getFloat();
         }
