@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.text.Strings;
 
 /**
  *
