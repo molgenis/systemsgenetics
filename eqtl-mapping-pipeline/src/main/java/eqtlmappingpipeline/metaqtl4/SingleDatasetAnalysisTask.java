@@ -205,7 +205,7 @@ public class SingleDatasetAnalysisTask implements Callable<Boolean> {
                 //System.out.println(correlation + "\t" + correlation2 + "\t" + genotypes.length + "\t" + genotypeVariance + "\t" + varianceY + "\t" + varianceY + "\t" + Descriptives.variance(genotypes) + "\t" + Descriptives.variance(y));
                 if (correlation >= -1 && correlation <= 1) {
                     zscore = Correlation.convertCorrelationToZScore(genotypes.length, correlation);
-                    double metaZ = zscore;
+                    
                     double p = Descriptives.convertZscoreToPvalue(zscore);
                 } else {
                     System.err.println("Error! correlation invalid: " + correlation);

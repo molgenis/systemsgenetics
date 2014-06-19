@@ -8,6 +8,7 @@ package nl.umcg.westrah.binarymetaanalyzer;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -495,11 +496,19 @@ public class BinaryMetaAnalysis {
                 + "AlleleAssessed\tOverallZScore\tDatasetsWhereSNPProbePairIsAvailableAndPassesQC\tDatasetsZScores\tDatasetsNrSamples\t"
                 + "IncludedDatasetsMeanProbeExpression\tIncludedDatasetsProbeExpressionVariance\tHGNCName\tIncludedDatasetsCorrelationCoefficient";
         output.writeln(header);
+
+        DecimalFormat format = new DecimalFormat("###.#######");
+        DecimalFormat smallFormat = new DecimalFormat("0.#####E0");
         for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
             QTL q = finalEQTLs[i];
             if (q != null) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(q.getPvalue());
+                if (q.getPvalue() < 1E-4) {
+                    sb.append(smallFormat.format(q.getPvalue()));
+                } else {
+                    sb.append(format.format(q.getPvalue()));
+                }
+
                 sb.append("\t");
                 int snpId = q.getSNPId();
                 sb.append(snpList[snpId]);
@@ -530,7 +539,7 @@ public class BinaryMetaAnalysis {
                 sb.append("\t");
                 sb.append(q.getAlleleAssessed());
                 sb.append("\t");
-                sb.append(q.getZscore());
+                sb.append(format.format(q.getZscore()));
 
                 double[] datasetZScores = q.getDatasetZScores();
                 String[] dsBuilder = new String[datasets.length];
@@ -549,7 +558,7 @@ public class BinaryMetaAnalysis {
                 sb.append(Strings.concat(dsBuilder, Strings.semicolon));
 
                 sb.append("\t");
-                sb.append(Strings.concat(datasetZScores, Strings.semicolon));
+                sb.append(Strings.concat(datasetZScores, format, Strings.semicolon));
 
                 sb.append("\t");
                 sb.append(Strings.concat(dsNBuilder, Strings.semicolon));
