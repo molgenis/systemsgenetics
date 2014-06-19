@@ -10,6 +10,7 @@ import eqtlmappingpipeline.metaqtl3.containers.QTL;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import umcg.genetica.console.ProgressBar;
@@ -469,6 +470,8 @@ public class ResultProcessorThread extends Thread {
 
         System.out.println("Writing " + nrOfEntriesToWrite + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
 
+        
+        
         if (m_permuting) {
             TextFile gz = new TextFile((m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz"), TextFile.W);
             gz.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
