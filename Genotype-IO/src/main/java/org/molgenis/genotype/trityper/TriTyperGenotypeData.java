@@ -460,6 +460,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		// if there is a dosage file, read from there.. if not, conver genotypes.
 		// now transcode into dosage..
 
+		if(variant.getVariantAlleles().getAlleles().isEmpty()){
+			throw new GenotypeDataException("Cannot load dosage for variant: " + variant.getPrimaryVariantId() + " no variant alleles detected");
+		}
+		
+		
 		// TODO: optimize this step: no need to get ALL alleles.
 		float[] genotypes = CalledDosageConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles(), variant.getRefAllele());
 		if (imputedDosageDataFile != null) {
