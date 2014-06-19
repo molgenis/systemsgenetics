@@ -89,14 +89,14 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
     @Override
     public List<Alleles> getSampleVariants() {
-        List<Alleles> SampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
+        List<Alleles> sampleVariantAlleles = Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
         
         if (this.alleles == null) {
             //set alleles here
 
             LinkedHashSet<Allele> variantAlleles = new LinkedHashSet<Allele>(2);
 
-            for (Alleles alleles2 : SampleVariantAlleles) {
+            for (Alleles alleles2 : sampleVariantAlleles) {
                 for (Allele allele : alleles2) {
                     if (allele != allele.ZERO) {
                         variantAlleles.add(allele);
@@ -108,7 +108,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
 
         }
-        return SampleVariantAlleles;
+        return sampleVariantAlleles;
     }
 
     @Override
