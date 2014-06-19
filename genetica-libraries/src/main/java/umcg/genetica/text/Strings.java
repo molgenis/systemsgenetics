@@ -78,6 +78,19 @@ public class Strings {
         }
         return output.toString();
     }
+    
+    public static String concat(float[] s, DecimalFormat f, Pattern t) {
+
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < s.length; i++) {
+            if (i == 0) {
+                output.append(f.format(s[i]));
+            } else {
+                output.append(t.toString()).append(f.format(s[i]));
+            }
+        }
+        return output.toString();
+    }
 
     public static String concat(int[] s, Pattern t) {
 

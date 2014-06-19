@@ -177,19 +177,19 @@ public class BinaryMetaAnalysis {
                         ctr++;
                     }
 
-                    double[][] finalZScores = new double[cisProbeMap.size()][datasets.length];
+                    float[][] finalZScores = new float[cisProbeMap.size()][datasets.length];
 
                     // get list of probes to test for each dataset
                     for (int d = 0; d < datasets.length; d++) {
                         if (flipZScores[d] == null) {
                             // the allele could not be flipped. set the Z to NaN
-                            for (double[] zScore : finalZScores) {
-                                zScore[d] = Double.NaN;
+                            for (float[] zScore : finalZScores) {
+                                zScore[d] = Float.NaN;
                             }
                         } else {
                             //initialize z-score
                             for (int p = 0; p < cisProbeMap.size(); p++) {
-                                finalZScores[p][d] = Double.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
+                                finalZScores[p][d] = Float.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
                             }
                             // load the z-scores for the dataset
                             int datasetSNPId = snpIndex[snp][d];
@@ -209,7 +209,7 @@ public class BinaryMetaAnalysis {
                                         if (p != null) {
                                             Integer index = cisProbeMap.get(p);
                                             if (index != null) {
-                                                double datasetZ = datasetZScores[i];
+                                                float datasetZ = datasetZScores[i];
                                                 finalZScores[index][d] = datasetZ;
                                                 if (flipZScores[d]) {
                                                     finalZScores[index][d] *= -1;
@@ -262,7 +262,7 @@ public class BinaryMetaAnalysis {
                     }
 
                     // iterate over the probe index
-                    double[][] finalZScores = new double[probeIndex.length][datasets.length];
+                    float[][] finalZScores = new float[probeIndex.length][datasets.length];
 
                     for (int d = 0; d < datasets.length; d++) {
                         if (datasets[d].getIsCisDataset()) {
@@ -271,8 +271,8 @@ public class BinaryMetaAnalysis {
                         }
 
                         if (flipZScores[d] == null) {
-                            for (double[] zScore : finalZScores) {
-                                zScore[d] = Double.NaN;
+                            for (float[] zScore : finalZScores) {
+                                zScore[d] = Float.NaN;
                             }
                         } else {
                             int datasetSNPId = snpIndex[snp][d];
@@ -282,7 +282,7 @@ public class BinaryMetaAnalysis {
                             for (int p = 0; p < traitList.length; p++) {
                                 MetaQTL4MetaTrait t = traitList[p];
                                 if (cisProbes != null && cisProbes.contains(t)) {
-                                    finalZScores[p][d] = Double.NaN;
+                                    finalZScores[p][d] = Float.NaN;
                                 } else {
                                     Integer datasetProbeId = probeIndex[p][d];
                                     if (datasetProbeId != null) {
@@ -291,7 +291,7 @@ public class BinaryMetaAnalysis {
                                             finalZScores[p][d] *= -1;
                                         }
                                     } else {
-                                        finalZScores[p][d] = Double.NaN;
+                                        finalZScores[p][d] = Float.NaN;
                                     }
                                 }
                             }
@@ -541,11 +541,11 @@ public class BinaryMetaAnalysis {
                 sb.append("\t");
                 sb.append(format.format(q.getZscore()));
 
-                double[] datasetZScores = q.getDatasetZScores();
+                float[] datasetZScores = q.getDatasetZScores();
                 String[] dsBuilder = new String[datasets.length];
                 String[] dsNBuilder = new String[datasets.length];
                 for (int d = 0; d < datasetZScores.length; d++) {
-                    if (!Double.isNaN(datasetZScores[d])) {
+                    if (!Float.isNaN(datasetZScores[d])) {
                         dsBuilder[d] = settings.getDatasetnames().get(d);
                         dsNBuilder[d] = "" + q.getDatasetSampleSizes()[d];
                     } else {
