@@ -327,14 +327,18 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			for (VcfSample vcfSample : vcfRecord.getSamples()) {
 				String dosage = vcfSample.getData(idx);
 				if (dosage == null) {
-					throw new GenotypeDataException("Missing DS format value for sample [" + vcfMeta.getSampleName(i) + "]");
+					//throw new GenotypeDataException("Missing DS format value for sample [" + vcfMeta.getSampleName(i) + "] at variant [" + variant.getPrimaryVariantId() + "]");
+					dosages[i++] = -1;
+				} else {
+					try {
+						//Math abs to prevent -0 due to rounding
+						dosages[i++] = Math.abs((Float.parseFloat(dosage) - 2) * -1);
+					} catch (NumberFormatException e) {
+						throw new GenotypeDataException("Error in sample dosage (DS) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + dosage);
+					}
 				}
 
-				try {
-					dosages[i++] = (Float.parseFloat(dosage) - 2) * -1;
-				} catch (NumberFormatException e) {
-					throw new GenotypeDataException("Error in sample dosage (DS) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + dosage);
-				}
+
 			}
 		} else if (vcfRecord.getFormatIndex("GP") != -1) {
 			dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(getSampleProbilities(variant), minimumPosteriorProbabilityToCall);
@@ -380,19 +384,20 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			for (VcfSample vcfSample : vcfRecord.getSamples()) {
 				String probabilitiesStr = vcfSample.getData(idx);
 				if (probabilitiesStr == null) {
-					throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(i) + "]");
-				}
-
-				String[] probabilities = StringUtils.split(probabilitiesStr, ',');
-				if (probabilities.length != 3) {
-					throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
-				}
-
-				for (int j = 0; j < 3; ++j) {
-					try {
-						probs[i][j] = Float.parseFloat(probabilities[j]);
-					} catch (NumberFormatException e) {
+					//throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(i) + "]");
+					probs[i] = new float[]{0,0,0};
+				} else {
+					String[] probabilities = StringUtils.split(probabilitiesStr, ',');
+					if (probabilities.length != 3) {
 						throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+					}
+
+					for (int j = 0; j < 3; ++j) {
+						try {
+							probs[i][j] = Float.parseFloat(probabilities[j]);
+						} catch (NumberFormatException e) {
+							throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+						}
 					}
 				}
 				++i;
@@ -623,5 +628,4 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private GenotypeRecord toGenotypeRecord(VcfRecord vcfRecord, VcfSample vcfSample) {
 		return new VcfGenotypeRecord(vcfMeta, vcfRecord, vcfSample);
 	}
-	
 }
