@@ -442,12 +442,17 @@ public class FDR {
         if (createQQPlot) {
             System.out.println("Creating QQ plot. This might take a while...");
             String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
-            createQQPlots(permutationDir, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, nrRealDataEQTLs, fileName);
+            
+            if(maxNrMostSignificantEQTLs>10000){
+                createQQPlots(permutationDir, nrPermutationsFDR, 10000, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, nrRealDataEQTLs, fileName);
+            } else{
+                createQQPlots(permutationDir, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, nrRealDataEQTLs, fileName);
+            }
+            
         }
     }
 
     private static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, FileFormat f, FDRMethod m, double[] pValueRealData, ArrayList<Boolean> significantPvalue, int nrSignificantEQTLs, int nrRealDataEQTLs, String fileName) throws IOException {
-        //Take only the top 10,000
         DoubleMatrix2D permutedPValues;
 
         if ((nrPermutationsFDR * (long) maxNrMostSignificantEQTLs) < (Integer.MAX_VALUE - 2)) {
