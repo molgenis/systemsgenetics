@@ -492,11 +492,31 @@ public class BinaryMetaAnalysis {
         System.out.println("Writing output: " + outfilename);
 
         TextFile output = new TextFile(outfilename, TextFile.W);
-        String header = "PValue\tSNPName\tSNPChr\tSNPChrPos\tProbeName\tProbeChr\tProbeCenterChrPos\tCisTrans\tSNPType\t"
-                + "AlleleAssessed\tOverallZScore\tDatasetsWhereSNPProbePairIsAvailableAndPassesQC\tDatasetsZScores\tDatasetsNrSamples\t"
-                + "IncludedDatasetsMeanProbeExpression\tIncludedDatasetsProbeExpressionVariance\tHGNCName\tIncludedDatasetsCorrelationCoefficient";
+        String header = "PValue\t"
+                + "SNPName\t"
+                + "SNPChr\t"
+                + "SNPChrPos\t"
+                + "ProbeName\t"
+                + "ProbeChr\t"
+                + "ProbeCenterChrPos\t"
+                + "CisTrans\t"
+                + "SNPType\t"
+                + "AlleleAssessed\t"
+                + "OverallZScore\t"
+                + "DatasetsWhereSNPProbePairIsAvailableAndPassesQC\t"
+                + "DatasetsZScores\t"
+                + "DatasetsNrSamples\t"
+                + "IncludedDatasetsMeanProbeExpression\t"
+                + "IncludedDatasetsProbeExpressionVariance\t"
+                + "HGNCName\t"
+                + "IncludedDatasetsCorrelationCoefficient\t"
+                + "Meta-Beta (SE)\t"
+                + "Beta (SE)\t"
+                + "FoldChange";
+        
         output.writeln(header);
-
+// PValue	SNPName	SNPChr	SNPChrPos	ProbeName	ProbeChr	ProbeCenterChrPos	CisTrans	SNPType	AlleleAssessed	OverallZScore	DatasetsWhereSNPProbePairIsAvailableAndPassesQC	DatasetsZScores	DatasetsNrSamples	IncludedDatasetsMeanProbeExpression	IncludedDatasetsProbeExpressionVariance	HGNCName	IncludedDatasetsCorrelationCoefficient	Meta-Beta (SE)	Beta (SE)	FoldChange	FDR
+        
         DecimalFormat format = new DecimalFormat("###.#######");
         DecimalFormat smallFormat = new DecimalFormat("0.#####E0");
         for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
@@ -565,7 +585,7 @@ public class BinaryMetaAnalysis {
                 sb.append("\t-\t-\t");
 
                 sb.append(t.getAnnotation());
-                sb.append("\t-");
+                sb.append("\t-\t-\t-\t-");
 
                 output.writeln(sb.toString());
             }
