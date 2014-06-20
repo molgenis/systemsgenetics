@@ -447,7 +447,7 @@ public class FDR {
     }
 
     private static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, FileFormat f, FDRMethod m, double[] pValueRealData, ArrayList<Boolean> significantPvalue, int nrSignificantEQTLs, int nrRealDataEQTLs, String fileName) throws IOException {
-
+        //Take only the top 10,000
         DoubleMatrix2D permutedPValues;
 
         if ((nrPermutationsFDR * (long) maxNrMostSignificantEQTLs) < (Integer.MAX_VALUE - 2)) {
@@ -561,6 +561,8 @@ public class FDR {
             }
         }
         boolean[] significant = new boolean[significantPvalue.size()];
+        
+       
 
         int pos = 0;
         for (Boolean i : significantPvalue) {
