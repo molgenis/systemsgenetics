@@ -465,7 +465,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			for (int i = 0; i < dosageValuesFloat.length; i++) {
 				dosageValuesFloat[i] = -1;
 			}
-			return dosageValuesFloat
+			return dosageValuesFloat;
 		}
 		
 		
