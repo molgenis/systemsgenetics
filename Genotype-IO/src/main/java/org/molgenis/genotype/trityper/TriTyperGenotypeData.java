@@ -461,7 +461,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		// now transcode into dosage..
 
 		if(variant.getVariantAlleles().getAlleles().isEmpty()){
-			throw new GenotypeDataException("Cannot load dosage for variant: " + variant.getPrimaryVariantId() + " no variant alleles detected");
+			float[] dosageValuesFloat = new float[includedSamples.size()];
+			for (int i = 0; i < dosageValuesFloat.length; i++) {
+				dosageValuesFloat[i] = -1;
+			}
+			return dosageValuesFloat;
 		}
 		
 		

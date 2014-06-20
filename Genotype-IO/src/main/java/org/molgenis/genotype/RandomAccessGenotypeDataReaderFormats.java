@@ -239,20 +239,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 */
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
-		switch (this) {
-			case TRITYPER:
-				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
-			default:
-				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize);
-				if (sampleFilter != null) {
-					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
-				}
-				if (variantFilter != null) {
-					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
-				}
-				return genotypeData;
-		}
-
+		return createFilteredGenotypeData(path, cacheSize, variantFilter, sampleFilter, null, 0.34f);
+		
 	}
 	
 	/**
