@@ -9,9 +9,11 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -517,8 +519,8 @@ public class BinaryMetaAnalysis {
         output.writeln(header);
 // PValue	SNPName	SNPChr	SNPChrPos	ProbeName	ProbeChr	ProbeCenterChrPos	CisTrans	SNPType	AlleleAssessed	OverallZScore	DatasetsWhereSNPProbePairIsAvailableAndPassesQC	DatasetsZScores	DatasetsNrSamples	IncludedDatasetsMeanProbeExpression	IncludedDatasetsProbeExpressionVariance	HGNCName	IncludedDatasetsCorrelationCoefficient	Meta-Beta (SE)	Beta (SE)	FoldChange	FDR
         
-        DecimalFormat format = new DecimalFormat("###.#######");
-        DecimalFormat smallFormat = new DecimalFormat("0.#####E0");
+        DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
+        DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
         for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
             QTL q = finalEQTLs[i];
             if (q != null) {

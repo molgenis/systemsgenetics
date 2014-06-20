@@ -6,6 +6,9 @@ package eqtlmappingpipeline.metaqtl3.containers;
 
 import cern.colt.matrix.tint.IntMatrix2D;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.util.Locale;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.BaseAnnot;
@@ -124,8 +127,9 @@ public class QTL implements Comparable<QTL> {
         return correlations;
     }
 
-    private final static DecimalFormat format = new DecimalFormat("###.#######");
-    private final static DecimalFormat smallFormat = new DecimalFormat("0.#####E0");
+    private final static DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
+    private final static DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
+    
 
     public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
         if (sid == -1 && pid == -1) {
