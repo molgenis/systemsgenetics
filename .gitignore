@@ -9,6 +9,7 @@ target/
 *.pdf
 *.png
 *.txt.gz
+Tumbs.db
 .idea/
 git.properties
 molgenis-compute-core/test-output
