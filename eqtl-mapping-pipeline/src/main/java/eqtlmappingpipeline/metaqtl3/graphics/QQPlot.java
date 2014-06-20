@@ -21,7 +21,7 @@ public class QQPlot {
     private final static int FILE_TYPE_PDF = 2;
     private int outputPlotsFileType = FILE_TYPE_PDF;
 
-    public void draw(String fileName, double fdrCutOff, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double[][] permutedPValues, int nrPValues, double[] pValues, boolean[] pValueSignificant, int nrSignificantEQTLs) {
+    public void draw(String fileName, double fdrCutOff, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double[][] permutedPValues, double[] pValues, boolean[] pValueSignificant, int nrSignificantEQTLs) {
 
         System.setProperty("java.awt.headless", "true");
 
@@ -96,9 +96,9 @@ public class QQPlot {
         g2d.drawLine(x0, y1, x0, y0);
         g2d.drawLine(x0, y1, x1, y1);
 
-        double[] distLog10Observed = new double[nrPValues];
-        double[] distLog10Null = new double[nrPValues];
-        for (int p = 0; p < nrPValues; p++) {
+        double[] distLog10Observed = new double[maxNrMostSignificantEQTLs];
+        double[] distLog10Null = new double[maxNrMostSignificantEQTLs];
+        for (int p = 0; p < maxNrMostSignificantEQTLs; p++) {
             double log10Observed = -Math.log10(pValues[p]);
             distLog10Observed[p] = log10Observed;
             if (log10Observed > capLog) {
