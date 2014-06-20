@@ -23,9 +23,7 @@ public class QQPlot {
     private final static int FILE_TYPE_PDF = 2;
     private int outputPlotsFileType = FILE_TYPE_PDF;
 
-    public void draw(String fileName, double fdrCutOff, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, 
-            double[][] permutedPValues, int nrPValues, double[] pValues,
-            boolean[] pValueSignificant, int nrSignificantEQTLs  ){
+    public void draw(String fileName, double fdrCutOff, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double[][] permutedPValues, int nrPValues, double[] pValues, boolean[] pValueSignificant, int nrSignificantEQTLs  ){
 
         System.setProperty("java.awt.headless", "true");
         

@@ -4,13 +4,11 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
 import gnu.trove.map.hash.TDoubleIntHashMap;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -245,23 +243,18 @@ public class FDR {
         if (outputDir == null) {
             outputDir = baseDir;
         }
-
+        
+        String fileSuffix = "";
         if (m == FDRMethod.GENELEVEL) {
-            outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + "-GeneLevel.txt";
-            outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + "-GeneLevel.txt";
-            outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + "-GeneLevel.txt";
-            outFileNameAll = outputDir + "/eQTLsFDR-GeneLevel.txt.gz";
+            fileSuffix = "-GeneLevel";
         } else if (m == FDRMethod.PROBELEVEL) {
-            outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + "-ProbeLevel.txt";
-            outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + "-ProbeLevel.txt";
-            outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + "-ProbeLevel.txt";
-            outFileNameAll = outputDir + "/eQTLsFDR-ProbeLevel.txt.gz";
-        } else {
-            outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + ".txt";
-            outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + ".txt";
-            outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + ".txt";
-            outFileNameAll = outputDir + "/eQTLsFDR.txt.gz";
+            fileSuffix = "-ProbeLevel";
         }
+        
+        outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix+ ".txt";
+        outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + fileSuffix+ ".txt";
+        outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + fileSuffix+ ".txt";
+        outFileNameAll = outputDir + "/eQTLsFDR"+fileSuffix+".txt.gz";
 
         TextFile outputWriterSignificant = new TextFile(outFileName, TextFile.W);
         TextFile outputWriterESNPs = new TextFile(outFileNameSnps, TextFile.W);
@@ -457,14 +450,12 @@ public class FDR {
 
         if (createQQPlot) {
 
-            System.err.println("Sorry, QQ plot function is temporarily (or for a very long time) unavailable.");
-
-            //System.out.println("Creating QQ plot. This might take a while...");
-            //QQPlot qq = new QQPlot();
-            //String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
-            //qq.draw(fileName, fdrcutoff, nrPermutationsFDR,
-            //		maxNrMostSignificantEQTLs, permutedPValues.toArray(), nrRealDataEQTLs, pValues,
-            //		pValueSignificant, nrSignificantEQTLs);
+            System.out.println("Creating QQ plot. This might take a while...");
+            QQPlot qq = new QQPlot();
+            String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
+            qq.draw(fileName, fdrcutoff, nrPermutationsFDR,
+            		maxNrMostSignificantEQTLs, permutedPValues.toArray(), nrRealDataEQTLs, pValues,
+            		pValueSignificant, nrSignificantEQTLs);
         }
 
     }
