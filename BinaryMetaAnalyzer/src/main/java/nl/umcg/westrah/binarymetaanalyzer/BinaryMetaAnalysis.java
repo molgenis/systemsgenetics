@@ -8,6 +8,7 @@ package nl.umcg.westrah.binarymetaanalyzer;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -176,19 +177,19 @@ public class BinaryMetaAnalysis {
                         ctr++;
                     }
 
-                    double[][] finalZScores = new double[cisProbeMap.size()][datasets.length];
+                    float[][] finalZScores = new float[cisProbeMap.size()][datasets.length];
 
                     // get list of probes to test for each dataset
                     for (int d = 0; d < datasets.length; d++) {
                         if (flipZScores[d] == null) {
                             // the allele could not be flipped. set the Z to NaN
-                            for (double[] zScore : finalZScores) {
-                                zScore[d] = Double.NaN;
+                            for (float[] zScore : finalZScores) {
+                                zScore[d] = Float.NaN;
                             }
                         } else {
                             //initialize z-score
                             for (int p = 0; p < cisProbeMap.size(); p++) {
-                                finalZScores[p][d] = Double.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
+                                finalZScores[p][d] = Float.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
                             }
                             // load the z-scores for the dataset
                             int datasetSNPId = snpIndex[snp][d];
@@ -208,7 +209,7 @@ public class BinaryMetaAnalysis {
                                         if (p != null) {
                                             Integer index = cisProbeMap.get(p);
                                             if (index != null) {
-                                                double datasetZ = datasetZScores[i];
+                                                float datasetZ = datasetZScores[i];
                                                 finalZScores[index][d] = datasetZ;
                                                 if (flipZScores[d]) {
                                                     finalZScores[index][d] *= -1;
@@ -261,7 +262,7 @@ public class BinaryMetaAnalysis {
                     }
 
                     // iterate over the probe index
-                    double[][] finalZScores = new double[probeIndex.length][datasets.length];
+                    float[][] finalZScores = new float[probeIndex.length][datasets.length];
 
                     for (int d = 0; d < datasets.length; d++) {
                         if (datasets[d].getIsCisDataset()) {
@@ -270,8 +271,8 @@ public class BinaryMetaAnalysis {
                         }
 
                         if (flipZScores[d] == null) {
-                            for (double[] zScore : finalZScores) {
-                                zScore[d] = Double.NaN;
+                            for (float[] zScore : finalZScores) {
+                                zScore[d] = Float.NaN;
                             }
                         } else {
                             int datasetSNPId = snpIndex[snp][d];
@@ -281,7 +282,7 @@ public class BinaryMetaAnalysis {
                             for (int p = 0; p < traitList.length; p++) {
                                 MetaQTL4MetaTrait t = traitList[p];
                                 if (cisProbes != null && cisProbes.contains(t)) {
-                                    finalZScores[p][d] = Double.NaN;
+                                    finalZScores[p][d] = Float.NaN;
                                 } else {
                                     Integer datasetProbeId = probeIndex[p][d];
                                     if (datasetProbeId != null) {
@@ -290,7 +291,7 @@ public class BinaryMetaAnalysis {
                                             finalZScores[p][d] *= -1;
                                         }
                                     } else {
-                                        finalZScores[p][d] = Double.NaN;
+                                        finalZScores[p][d] = Float.NaN;
                                     }
                                 }
                             }
@@ -491,15 +492,43 @@ public class BinaryMetaAnalysis {
         System.out.println("Writing output: " + outfilename);
 
         TextFile output = new TextFile(outfilename, TextFile.W);
-        String header = "PValue\tSNPName\tSNPChr\tSNPChrPos\tProbeName\tProbeChr\tProbeCenterChrPos\tCisTrans\tSNPType\t"
-                + "AlleleAssessed\tOverallZScore\tDatasetsWhereSNPProbePairIsAvailableAndPassesQC\tDatasetsZScores\tDatasetsNrSamples\t"
-                + "IncludedDatasetsMeanProbeExpression\tIncludedDatasetsProbeExpressionVariance\tHGNCName\tIncludedDatasetsCorrelationCoefficient";
+        String header = "PValue\t"
+                + "SNPName\t"
+                + "SNPChr\t"
+                + "SNPChrPos\t"
+                + "ProbeName\t"
+                + "ProbeChr\t"
+                + "ProbeCenterChrPos\t"
+                + "CisTrans\t"
+                + "SNPType\t"
+                + "AlleleAssessed\t"
+                + "OverallZScore\t"
+                + "DatasetsWhereSNPProbePairIsAvailableAndPassesQC\t"
+                + "DatasetsZScores\t"
+                + "DatasetsNrSamples\t"
+                + "IncludedDatasetsMeanProbeExpression\t"
+                + "IncludedDatasetsProbeExpressionVariance\t"
+                + "HGNCName\t"
+                + "IncludedDatasetsCorrelationCoefficient\t"
+                + "Meta-Beta (SE)\t"
+                + "Beta (SE)\t"
+                + "FoldChange";
+        
         output.writeln(header);
+// PValue	SNPName	SNPChr	SNPChrPos	ProbeName	ProbeChr	ProbeCenterChrPos	CisTrans	SNPType	AlleleAssessed	OverallZScore	DatasetsWhereSNPProbePairIsAvailableAndPassesQC	DatasetsZScores	DatasetsNrSamples	IncludedDatasetsMeanProbeExpression	IncludedDatasetsProbeExpressionVariance	HGNCName	IncludedDatasetsCorrelationCoefficient	Meta-Beta (SE)	Beta (SE)	FoldChange	FDR
+        
+        DecimalFormat format = new DecimalFormat("###.#######");
+        DecimalFormat smallFormat = new DecimalFormat("0.#####E0");
         for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
             QTL q = finalEQTLs[i];
             if (q != null) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(q.getPvalue());
+                if (q.getPvalue() < 1E-4) {
+                    sb.append(smallFormat.format(q.getPvalue()));
+                } else {
+                    sb.append(format.format(q.getPvalue()));
+                }
+
                 sb.append("\t");
                 int snpId = q.getSNPId();
                 sb.append(snpList[snpId]);
@@ -530,13 +559,13 @@ public class BinaryMetaAnalysis {
                 sb.append("\t");
                 sb.append(q.getAlleleAssessed());
                 sb.append("\t");
-                sb.append(q.getZscore());
+                sb.append(format.format(q.getZscore()));
 
-                double[] datasetZScores = q.getDatasetZScores();
+                float[] datasetZScores = q.getDatasetZScores();
                 String[] dsBuilder = new String[datasets.length];
                 String[] dsNBuilder = new String[datasets.length];
                 for (int d = 0; d < datasetZScores.length; d++) {
-                    if (!Double.isNaN(datasetZScores[d])) {
+                    if (!Float.isNaN(datasetZScores[d])) {
                         dsBuilder[d] = settings.getDatasetnames().get(d);
                         dsNBuilder[d] = "" + q.getDatasetSampleSizes()[d];
                     } else {
@@ -549,14 +578,14 @@ public class BinaryMetaAnalysis {
                 sb.append(Strings.concat(dsBuilder, Strings.semicolon));
 
                 sb.append("\t");
-                sb.append(Strings.concat(datasetZScores, Strings.semicolon));
+                sb.append(Strings.concat(datasetZScores, format, Strings.semicolon));
 
                 sb.append("\t");
                 sb.append(Strings.concat(dsNBuilder, Strings.semicolon));
                 sb.append("\t-\t-\t");
 
                 sb.append(t.getAnnotation());
-                sb.append("\t-");
+                sb.append("\t-\t-\t-\t-");
 
                 output.writeln(sb.toString());
             }
