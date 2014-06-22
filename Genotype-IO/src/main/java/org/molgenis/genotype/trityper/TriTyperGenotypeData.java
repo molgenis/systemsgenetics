@@ -175,7 +175,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		} else {
 			dosageHandle = null;
 			dosageChannel = null;
-			geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
+			geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 		}
 
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
