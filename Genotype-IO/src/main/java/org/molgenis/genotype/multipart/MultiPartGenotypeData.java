@@ -1,12 +1,13 @@
 package org.molgenis.genotype.multipart;
 
+import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -47,7 +48,11 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	public MultiPartGenotypeData(Collection<RandomAccessGenotypeData> genotypeDataCollection)
 			throws IncompatibleMultiPartGenotypeDataException
 	{
-		this(new HashSet<RandomAccessGenotypeData>(genotypeDataCollection));
+		this(new LinkedHashSet<RandomAccessGenotypeData>(genotypeDataCollection));
+	}
+	
+	public MultiPartGenotypeData(RandomAccessGenotypeData... genotypeDataCollection){
+		this(new LinkedHashSet<RandomAccessGenotypeData>(Arrays.asList(genotypeDataCollection)));
 	}
 
 	public MultiPartGenotypeData(Set<RandomAccessGenotypeData> genotypeDataCollection)

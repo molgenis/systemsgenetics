@@ -68,9 +68,9 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private static int currentlyOpenFileHandlers = 0;
 	private static int closedFileHandlers = 0;
 	private final double minimumPosteriorProbabilityToCall;
-
+	
 	/**
-	 * VCF genotype reader with default cache of 100
+	 * VCF genotype reader
 	 *
 	 * @param bzipVcfFile
 	 * @throws IOException
