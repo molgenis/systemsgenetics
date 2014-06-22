@@ -71,7 +71,7 @@ public class CreateGeuvadisTestTrityper {
 		
 		
 		File folder = new File((this.getClass().getResource("/GeuvadisTestData/")).toURI());
-		File outputFile = new File(folder, "genotypes");
+		File outputFile = new File(folder, "trityper");
 		
 		System.out.println(outputFile.getAbsolutePath());
 		
