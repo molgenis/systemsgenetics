@@ -25,6 +25,7 @@ public class AseVariant implements Comparable<AseVariant>{
 	private final IntArrayList a2Counts;
 	private final DoubleArrayList a1MeanBaseQualities;
 	private final DoubleArrayList a2MeanBaseQualities;
+	private final DoubleArrayList pValues;
 	private final ArrayList<String> sampleIds;
 	private double metaZscore;
 	private double metaPvalue;
@@ -40,6 +41,7 @@ public class AseVariant implements Comparable<AseVariant>{
 		this.a2 = a2;
 		this.a1Counts = new IntArrayList();
 		this.a2Counts = new IntArrayList();
+		this.pValues = new DoubleArrayList();
 		this.a1MeanBaseQualities = new DoubleArrayList();
 		this.a2MeanBaseQualities = new DoubleArrayList();
 		this.sampleIds = new ArrayList<String>();
@@ -94,7 +96,7 @@ public class AseVariant implements Comparable<AseVariant>{
 
 			regression.addData(a1Counts.getQuick(i), a2Counts.getQuick(i));
 
-			final double pvalue = btest.binomialTest(a1Counts.getQuick(i) + a2Counts.getQuick(i), a1Counts.getQuick(i), 0.5, AlternativeHypothesis.TWO_SIDED);
+			final double pvalue = pValues.getQuick(i);
 
 			// we used 2 sided test so divide by 2
 			//double zscore = normalDist.inverseCumulativeProbability(pvalue/2);
@@ -146,6 +148,8 @@ public class AseVariant implements Comparable<AseVariant>{
 		a1Counts.add(a1Count);
 		a2Counts.add(a2Count);
 		
+		pValues.add(btest.binomialTest(a1Count + a2Count, a1Count, 0.5, AlternativeHypothesis.TWO_SIDED));
+		
 		a1MeanBaseQualities.add(a1MeanBaseQuality);
 		a2MeanBaseQualities.add(a2MeanBaseQuality);
 		
@@ -182,6 +186,10 @@ public class AseVariant implements Comparable<AseVariant>{
 
 	public ArrayList<String> getSampleIds() {
 		return sampleIds;
+	}
+
+	public DoubleArrayList getPValues() {
+		return pValues;
 	}
 	
 }

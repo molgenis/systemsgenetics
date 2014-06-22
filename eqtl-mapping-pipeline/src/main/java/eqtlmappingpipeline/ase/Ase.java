@@ -360,7 +360,7 @@ public class Ase {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tSampleIds");
+		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
 
 		if (encounteredBaseQuality) {
 			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
@@ -478,6 +478,14 @@ public class Ase {
 					outputWriter.append(',');
 				}
 				outputWriter.append(String.valueOf(aseVariant.getA2Counts().getQuick(i)));
+			}
+			
+			outputWriter.append('\t');
+			for (int i = 0; i < aseVariant.getPValues().size(); ++i) {
+				if (i > 0) {
+					outputWriter.append(',');
+				}
+				outputWriter.append(String.valueOf(aseVariant.getPValues().getQuick(i)));
 			}
 			
 			outputWriter.append('\t');
