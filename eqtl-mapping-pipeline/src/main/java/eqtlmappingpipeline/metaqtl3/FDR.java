@@ -206,8 +206,7 @@ public class FDR {
             gz.close();
 
         }
-
-
+        
         double[] uniquePermutedPvalues = permutedPvalues.keys();
         Arrays.sort(uniquePermutedPvalues);
 
@@ -322,6 +321,10 @@ public class FDR {
                             ++lastUsedPermutedPvalueIndex;
                         }
                         fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+                        
+                        if(fdr>1){
+                            fdr = 1;
+                        }
 
                     }
 
@@ -383,7 +386,6 @@ public class FDR {
             }
 
         }
-        int nrRealDataEQTLs = itr;
 
         //Write buffer to files
         double fdr = 0;
@@ -393,7 +395,10 @@ public class FDR {
                 ++lastUsedPermutedPvalueIndex;
             }
             fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
-
+            
+            if(fdr>1){
+                fdr = 1;
+            }
         }
 
         for (int i = 0; i < currentPvalueEqtls.size(); ++i) {
@@ -442,12 +447,19 @@ public class FDR {
         if (createQQPlot) {
             System.out.println("Creating QQ plot. This might take a while...");
             String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
-            createQQPlots(permutationDir, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, nrRealDataEQTLs, fileName);
+            if(maxNrMostSignificantEQTLs > pValueRealData.size()){
+                createQQPlots(permutationDir, nrPermutationsFDR, pValueRealData.size(), fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+            } else if(maxNrMostSignificantEQTLs>100000){
+                System.out.println("Only taking the top 100,000 for QQplot creation.");
+                createQQPlots(permutationDir, nrPermutationsFDR, 100000, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+            } else{
+                createQQPlots(permutationDir, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+            }
+            
         }
     }
 
-    private static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, FileFormat f, FDRMethod m, double[] pValueRealData, ArrayList<Boolean> significantPvalue, int nrSignificantEQTLs, int nrRealDataEQTLs, String fileName) throws IOException {
-
+    private static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, FileFormat f, FDRMethod m, double[] pValueRealData, ArrayList<Boolean> significantPvalue, int nrSignificantEQTLs, String fileName) throws IOException {
         DoubleMatrix2D permutedPValues;
 
         if ((nrPermutationsFDR * (long) maxNrMostSignificantEQTLs) < (Integer.MAX_VALUE - 2)) {
@@ -461,7 +473,6 @@ public class FDR {
 
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
-            System.out.println(fileString);
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
 
@@ -504,7 +515,6 @@ public class FDR {
 
                 if (data.length != 0) {
                     if (itr > maxNrMostSignificantEQTLs - 1) {
-                        System.out.println("Breaking because: " + itr);
                         break;
                     } else {
                         int filteronColumn;
@@ -560,15 +570,18 @@ public class FDR {
                 nrEQTLs = itr;
             }
         }
-        boolean[] significant = new boolean[significantPvalue.size()];
-
+        boolean[] significant = new boolean[100001];
+        
         int pos = 0;
         for (Boolean i : significantPvalue) {
             significant[pos] = i;
+            if(pos==100000){
+                break;
+            }
             pos++;
         }
 
         QQPlot qq = new QQPlot();
-        qq.draw(fileName, fdrcutoff, nrPermutationsFDR, maxNrMostSignificantEQTLs, permutedPValues.toArray(), nrRealDataEQTLs, pValueRealData, significant, nrSignificantEQTLs);
+        qq.draw(fileName, fdrcutoff, nrPermutationsFDR, maxNrMostSignificantEQTLs, permutedPValues.toArray(), pValueRealData, significant, nrSignificantEQTLs);
     }
 }

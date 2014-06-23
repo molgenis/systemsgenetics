@@ -10,7 +10,6 @@ import eqtlmappingpipeline.metaqtl3.containers.QTL;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import umcg.genetica.console.ProgressBar;
