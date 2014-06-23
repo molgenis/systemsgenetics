@@ -101,7 +101,7 @@ public class MixupMapperConsoleGUI {
                 + "--eqtls\t\t\tstring\t\tPath to eQTL file to use for MixupMapper\n"
                 + "--testall\t\t\t\tTest all possible combinations of genotype and gene expression samples\n"
                 + "--threads\t\tinteger\t\tNumber of threads to calculate with. Default is number of processors.\n"
-                + "--snps\\t\\tstring\\t\\tList of SNPs to test.");
+                + "--snps\t\tstring\t\tList of SNPs to test.");
         System.out.println("");
     }
 }
