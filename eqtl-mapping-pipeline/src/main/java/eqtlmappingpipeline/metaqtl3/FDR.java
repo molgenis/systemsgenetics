@@ -321,6 +321,10 @@ public class FDR {
                             ++lastUsedPermutedPvalueIndex;
                         }
                         fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
+                        
+                        if(fdr>1){
+                            fdr = 1;
+                        }
 
                     }
 
@@ -391,7 +395,10 @@ public class FDR {
                 ++lastUsedPermutedPvalueIndex;
             }
             fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
-
+            
+            if(fdr>1){
+                fdr = 1;
+            }
         }
 
         for (int i = 0; i < currentPvalueEqtls.size(); ++i) {
