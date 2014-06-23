@@ -206,8 +206,7 @@ public class FDR {
             gz.close();
 
         }
-
-
+        
         double[] uniquePermutedPvalues = permutedPvalues.keys();
         Arrays.sort(uniquePermutedPvalues);
 
@@ -441,8 +440,9 @@ public class FDR {
         if (createQQPlot) {
             System.out.println("Creating QQ plot. This might take a while...");
             String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
-            
-            if(maxNrMostSignificantEQTLs>100000){
+            if(maxNrMostSignificantEQTLs > pValueRealData.size()){
+                createQQPlots(permutationDir, nrPermutationsFDR, pValueRealData.size(), fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+            } else if(maxNrMostSignificantEQTLs>100000){
                 System.out.println("Only taking the top 100,000 for QQplot creation.");
                 createQQPlots(permutationDir, nrPermutationsFDR, 100000, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
             } else{
@@ -466,7 +466,6 @@ public class FDR {
 
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
-            System.out.println(fileString);
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
 
