@@ -1143,6 +1143,12 @@ public class MetaQTL3 {
         } else if (!m_settings.cisAnalysis && m_settings.transAnalysis) {
             System.out.println("- trans analysis");
         }
+        if(m_settings.metaAnalyseInteractionTerms){
+            System.out.println("- interaction analysis");
+            if(!m_settings.performParametricAnalysis){
+                System.out.println("- WARNING: running interaction model on non-parametric data!");
+            }
+        }
         if (!m_settings.performParametricAnalysis) {
             System.out.println("- non-parametric (Spearman ranked) correlation");
         } else {
