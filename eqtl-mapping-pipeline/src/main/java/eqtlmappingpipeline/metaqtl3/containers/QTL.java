@@ -129,7 +129,6 @@ public class QTL implements Comparable<QTL> {
 
     private final static DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
     private final static DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
-    
 
     public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
         if (sid == -1 && pid == -1) {
@@ -212,7 +211,7 @@ public class QTL implements Comparable<QTL> {
         out.append(tabStr);
         out.append(BaseAnnot.toString(alleleAssessed));
         out.append(tabStr);
-        if (zscore < 1E-4) {
+        if (Math.abs(zscore) < 1E-4) {
             out.append(smallFormat.format(zscore));
         } else {
             out.append(format.format(zscore));
@@ -282,10 +281,14 @@ public class QTL implements Comparable<QTL> {
                 if (correlations == null || Double.isNaN(correlations[d])) {
                     outcorrs.append(sepStr).append(nullstr);
                 } else {
+                    DecimalFormat f = format;
+                    if (Math.abs(correlations[d]) < 1E-4) {
+                        f = smallFormat;
+                    }
                     if (currentWP.getFlipSNPAlleles()[d]) {
-                        outcorrs.append(sepStr).append(format.format(-correlations[d]));
+                        outcorrs.append(sepStr).append(f.format(-correlations[d]));
                     } else {
-                        outcorrs.append(sepStr).append(format.format(correlations[d]));
+                        outcorrs.append(sepStr).append(f.format(correlations[d]));
                     }
 
                 }
@@ -293,10 +296,14 @@ public class QTL implements Comparable<QTL> {
                 if (datasetZScores == null || Double.isNaN(datasetZScores[d])) {
                     outzscores.append(sepStr).append(nullstr);
                 } else {
+                    DecimalFormat f = format;
+                    if (Math.abs(datasetZScores[d]) < 1E-4) {
+                        f = smallFormat;
+                    }
                     if (currentWP.getFlipSNPAlleles()[d]) {
-                        outzscores.append(sepStr).append(format.format(-datasetZScores[d]));
+                        outzscores.append(sepStr).append(f.format(-datasetZScores[d]));
                     } else {
-                        outzscores.append(sepStr).append(format.format(datasetZScores[d]));
+                        outzscores.append(sepStr).append(f.format(datasetZScores[d]));
                     }
 
                 }
@@ -329,10 +336,19 @@ public class QTL implements Comparable<QTL> {
                     outbeta.append(sepStr).append(nullstr);
                 } else {
 
+                    DecimalFormat f = format;
+                    if (Math.abs(datasetbeta[d]) < 1E-4) {
+                        f = smallFormat;
+                    }
+                    DecimalFormat f2 = format;
+                    if (Math.abs(datasetbetase[d]) < 1E-4) {
+                        f2 = smallFormat;
+                    }
+
                     if (currentWP.getFlipSNPAlleles()[d]) {
-                        outbeta.append(sepStr).append((format.format(-datasetbeta[d]))).append(" (").append(format.format(datasetbetase[d])).append(")");
+                        outbeta.append(sepStr).append((f.format(-datasetbeta[d]))).append(" (").append(f2.format(datasetbetase[d])).append(")");
                     } else {
-                        outbeta.append(sepStr).append((format.format(datasetbeta[d]))).append(" (").append(format.format(datasetbetase[d])).append(")");
+                        outbeta.append(sepStr).append((f.format(datasetbeta[d]))).append(" (").append(f2.format(datasetbetase[d])).append(")");
                     }
                 }
 
@@ -351,7 +367,15 @@ public class QTL implements Comparable<QTL> {
             out.append(tabStr);
             out.append(outcorrs.toString());
             out.append(tabStr);
-            out.append(format.format(finalbeta)).append(" (").append(format.format(finalbetase)).append(")");
+            DecimalFormat f = format;
+            if (Math.abs(finalbeta) < 1E-4) {
+                f = smallFormat;
+            }
+            DecimalFormat f2 = format;
+            if (Math.abs(finalbetase) < 1E-4) {
+                f2 = smallFormat;
+            }
+            out.append(f.format(finalbeta)).append(" (").append(f2.format(finalbetase)).append(")");
             out.append(tabStr);
             out.append(outbeta.toString());
             out.append(tabStr);
