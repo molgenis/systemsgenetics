@@ -62,6 +62,11 @@ public class MixupMapper extends MetaQTL3 {
             // clear memory
             m_gg = null;
         }
+        
+        if(!Gpio.exists(inputeQTLs)){
+            System.err.println("Something went wrong during eQTL mapping: most probably the FDR calculations failed.\nCheck the files in: "+m_settings.outputReportsDir);
+            System.exit(-1);
+        }
 
         System.out.println("Using: " + inputeQTLs + " as input for MixupMapper");
 

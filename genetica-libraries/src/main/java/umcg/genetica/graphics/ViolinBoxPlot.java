@@ -223,7 +223,7 @@ public class ViolinBoxPlot {
             // now get the sorted results per category within this dataset
             ArrayList<Triple<Integer, Integer, Integer>> sortedPValuesForDataset = new ArrayList<Triple<Integer, Integer, Integer>>();
             for (Pair<Double, Triple<Integer, Integer, Integer>> pvalueTriplePair : sortedPValuesPerCategory) {
-                System.out.println(pvalueTriplePair.toString());
+//                System.out.println(pvalueTriplePair.toString());
                 if (pvalueTriplePair.getRight().getLeft().equals(datasetNumber)) {
                     // this result belongs to this dataset
                     sortedPValuesForDataset.add(pvalueTriplePair.getRight());
@@ -360,10 +360,10 @@ public class ViolinBoxPlot {
         g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
         g2d.setColor(new Color(100, 100, 100));
 
-        System.out.println("MAX: " + maxValue);
-        System.out.println("MIN: " + minValue);
+//        System.out.println("MAX: " + maxValue);
+//        System.out.println("MIN: " + minValue);
         if (maxValue <= 1 && minValue >= 0) {
-            System.out.println("New code...");
+//            System.out.println("New code...");
             double diff = maxValue - minValue;
             double unitY = determineUnit(diff);
 
@@ -375,7 +375,7 @@ public class ViolinBoxPlot {
             int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
             int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
 
-            System.out.println(posY1 + "\t" + posY2);
+//            System.out.println(posY1 + "\t" + posY2);
 
             g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
             g2d.setFont(fontBold);
