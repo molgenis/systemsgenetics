@@ -23,18 +23,18 @@
 		</multipletesting>
 		
 		<output>
-			<outputdirectory></outputdirectory>
-			<outputplotthreshold>0</outputplotthreshold>
-			<outputplotdirectory></outputplotdirectory>
+			<outputdirectory>ReplacementTxt\outMeta\</outputdirectory>
+			<outputplotthreshold>1E-10</outputplotthreshold>
+			<outputplotdirectory>ReplacementTxt\outMeta\Plot\</outputplotdirectory>
 			<maxnreqtlresults>500000</maxnreqtlresults>
 			<generatesnpsummarystatistics>false</generatesnpsummarystatistics>
 			<generateeqtlpvaluetable>false</generateeqtlpvaluetable>
 		</output>
 		
 		<confine>
-			<snp></snp>
+			<snp/>
 			<snpProbe/>
-			<probe></probe>
+			<probe/>
 			<confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets>
 			<confineSNPsSelectSNPInStrongestLD>false</confineSNPsSelectSNPInStrongestLD>
 			<confineProbesThatMapToKnownChromosome>true</confineProbesThatMapToKnownChromosome>
@@ -43,21 +43,21 @@
 	<datasets>
 		<dataset>
 			<name>Guevadis_YRI</name>
-			<location></location>
-			<genometoexpressioncoupling></genometoexpressioncoupling>
-			<expressiondata></expressiondata>
-			<probeannotation></probeannotation>
-			<expressionplatform></expressionplatform>
+			<location>ReplacementTxt\trityper</location>
+			<genometoexpressioncoupling>ReplacementTxt\Geuvadis_YRI_gte.txt</genometoexpressioncoupling>
+			<expressiondata>ReplacementTxt\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
+			<probeannotation>ReplacementTxt\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
+			<expressionplatform>Ensembl_v.71</expressionplatform>
 			<quantilenormalize>false</quantilenormalize>
 			<logtranform>false</logtranform>
 		</dataset>
 		<dataset>
 			<name>Guevadis_CEU</name>
-			<location></location>
-			<genometoexpressioncoupling></genometoexpressioncoupling>
-			<expressiondata></expressiondata>
-			<probeannotation></probeannotation>
-			<expressionplatform></expressionplatform>
+			<location>ReplacementTxt\trityper</location>
+			<genometoexpressioncoupling>ReplacementTxt\Geuvadis_CEU_gte.txt</genometoexpressioncoupling>
+			<expressiondata>ReplacementTxt\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
+			<probeannotation>ReplacementTxt\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
+			<expressionplatform>Ensembl_v.71</expressionplatform>
 			<quantilenormalize>false</quantilenormalize>
 			<logtranform>false</logtranform>
 		</dataset>
