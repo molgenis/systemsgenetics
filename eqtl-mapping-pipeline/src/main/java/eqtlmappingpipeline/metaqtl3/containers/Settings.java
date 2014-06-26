@@ -600,7 +600,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             probeannotation = null;
             try {
                 probeannotation = config.getString("datasets.dataset(" + i + ").probeannotation");
-                if (settingsTextToReplace != null && expressionData.contains(settingsTextToReplace)) {
+                if (settingsTextToReplace != null && probeannotation.contains(settingsTextToReplace)) {
                     probeannotation = probeannotation.replace(settingsTextToReplace, settingsTextReplaceWith);
                 }
                 if (probeannotation.length() == 0) {
