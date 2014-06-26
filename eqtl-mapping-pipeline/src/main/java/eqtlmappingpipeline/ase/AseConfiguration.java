@@ -134,7 +134,7 @@ public class AseConfiguration {
 		
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Tab seperated file with column 1 sample ID and column 2 sample ID in reference genotype data, no header. If only contains a mapping for a subset of samples the original identifier in the refernece is used");
+		OptionBuilder.withDescription("Tab separated file with column 1 sample ID and column 2 sample ID in reference genotype data, no header. If only contains a mapping for a subset of samples the original identifier in the reference is used");
 		OptionBuilder.withLongOpt("sampleCoupling");
 		OPTIONS.addOption(OptionBuilder.create("sc"));
 
