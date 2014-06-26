@@ -239,7 +239,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             String colName = data[s + columnOffset];
             if (!colMap.containsKey(colName) && (desiredCols == null || desiredCols.contains(colName) || desiredCols.isEmpty())) {
                 colMap.put(colName, storedCols);
-                desiredColPos.add(storedCols);
+                desiredColPos.add((s));
                 storedCols++;
             } else if (colMap.containsKey(colName)) {
                 LOGGER.warning("Duplicated column name!");
@@ -279,6 +279,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
                     data = splitPatern.split(str);
                     if (!rowMap.containsKey(data[0])) {
                         rowMap.put(data[0], storingRow);
+                        int storingCol = 0;
                         for (int s : desiredColPos) {
                             double d;
                             try {
@@ -287,7 +288,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
                                 correctData = false;
                                 d = Double.NaN;
                             }
-                            matrix.setQuick(storingRow, s, d);
+                            matrix.setQuick(storingRow, storingCol, d);
+                            storingCol++;
                         }
                         storingRow++;
                     } else if (rowMap.containsKey(data[0])) {
@@ -320,6 +322,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
                     data = splitPatern.split(str);
                     if (!rowMap.containsKey(data[0])) {
                         rowMap.put(data[0], storingRow);
+                        int storingCol = 0;
                         for (int s : desiredColPos) {
                             double d;
                             try {
@@ -328,7 +331,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
                                 correctData = false;
                                 d = Double.NaN;
                             }
-                            matrix.setQuick(storingRow, s, d);
+                            matrix.setQuick(storingRow, storingCol, d);
+                            storingCol++;
                         }
                         storingRow++;
                     } else if (rowMap.containsKey(data[0])) {
