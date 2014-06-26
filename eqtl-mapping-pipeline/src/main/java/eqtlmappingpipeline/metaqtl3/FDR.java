@@ -206,7 +206,7 @@ public class FDR {
             gz.close();
 
         }
-        
+
         double[] uniquePermutedPvalues = permutedPvalues.keys();
         Arrays.sort(uniquePermutedPvalues);
 
@@ -285,7 +285,6 @@ public class FDR {
 
         TDoubleArrayList pValueRealData = new TDoubleArrayList();
         ArrayList<Boolean> significantPvalue = new ArrayList<Boolean>();
-
         int lastUsedPermutedPvalueIndex = 0;
 
         int nrSignificantEQTLs = 0;
@@ -321,8 +320,8 @@ public class FDR {
                             ++lastUsedPermutedPvalueIndex;
                         }
                         fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
-                        
-                        if(fdr>1){
+
+                        if (fdr > 1) {
                             fdr = 1;
                         }
 
@@ -357,7 +356,6 @@ public class FDR {
                         }
 
                     }
-
 
                     //Create new temp list for this pvalue
                     currentPvalue = eQtlPvalue;
@@ -395,8 +393,8 @@ public class FDR {
                 ++lastUsedPermutedPvalueIndex;
             }
             fdr = uniquePermutedPvaluesCounts[lastUsedPermutedPvalueIndex] / itr;
-            
-            if(fdr>1){
+
+            if (fdr > 1) {
                 fdr = 1;
             }
         }
@@ -415,12 +413,11 @@ public class FDR {
             if (fdr <= fdrcutoff) {
                 if (!visitedProbes.contains(cachedEqtlsProbe)) {
                     outputWriterEProbes.append(currentString.toString());
-                    visitedSnps.add(cachedEqtlsProbe);
+                    visitedProbes.add(cachedEqtlsProbe);
                 }
                 if (!visitedSnps.contains(cachedEqtlsSnps)) {
                     outputWriterESNPs.append(currentString.toString());
                     visitedSnps.add(cachedEqtlsSnps);
-
                 }
 
                 significantPvalue.add(true);
@@ -429,9 +426,7 @@ public class FDR {
             } else {
                 significantPvalue.add(false);
             }
-
         }
-
 
         realEQTLs.close();
         outputWriterAll.close();
@@ -447,15 +442,15 @@ public class FDR {
         if (createQQPlot) {
             System.out.println("Creating QQ plot. This might take a while...");
             String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
-            if(maxNrMostSignificantEQTLs > pValueRealData.size()){
+            if (maxNrMostSignificantEQTLs > pValueRealData.size()) {
                 createQQPlots(permutationDir, nrPermutationsFDR, pValueRealData.size(), fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
-            } else if(maxNrMostSignificantEQTLs>100000){
+            } else if (maxNrMostSignificantEQTLs > 100000) {
                 System.out.println("Only taking the top 100,000 for QQplot creation.");
                 createQQPlots(permutationDir, nrPermutationsFDR, 100000, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
-            } else{
+            } else {
                 createQQPlots(permutationDir, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, f, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
             }
-            
+
         }
     }
 
@@ -570,14 +565,11 @@ public class FDR {
                 nrEQTLs = itr;
             }
         }
-        boolean[] significant = new boolean[100001];
-        
+        boolean[] significant = new boolean[significantPvalue.size()];
+
         int pos = 0;
         for (Boolean i : significantPvalue) {
             significant[pos] = i;
-            if(pos==100000){
-                break;
-            }
             pos++;
         }
 
