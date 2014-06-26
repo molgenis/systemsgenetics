@@ -12,7 +12,7 @@ public class Primitives {
     public static double max(double[] values) {
         double max = -Double.MAX_VALUE;
         for (double value : values) {
-            if (value > max) {
+            if (!Double.isNaN(value) && value > max) {
                 max = value;
             }
         }
@@ -23,7 +23,7 @@ public class Primitives {
         double max = -Double.MAX_VALUE;
         for (double[] x : values) {
             for (double value : x) {
-                if (value > max) {
+                if (!Double.isNaN(value) && value > max) {
                     max = value;
                 }
             }
@@ -108,7 +108,7 @@ public class Primitives {
     public static double min(double[] values) {
         double min = Double.MAX_VALUE;
         for (double value : values) {
-            if (value < min) {
+            if (!Double.isNaN(value) &&value < min) {
                 min = value;
             }
         }
@@ -119,7 +119,7 @@ public class Primitives {
         double min = Double.MAX_VALUE;
         for (double[] x : values) {
             for (double value : x) {
-                if (value < min) {
+                if (!Double.isNaN(value) &&value < min) {
                     min = value;
                 }
             }
@@ -220,4 +220,5 @@ public class Primitives {
         }
         return arr;
     }
+
 }
