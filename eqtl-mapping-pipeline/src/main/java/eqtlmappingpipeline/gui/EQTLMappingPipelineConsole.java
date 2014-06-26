@@ -138,7 +138,7 @@ public class EQTLMappingPipelineConsole {
 				+ "       ase\t\tAllele Specific Expression mapping\n"
 				+ "       pileupToVcf\tConvert a pileup file to vcf for usage in ASE mapping");
 		System.out.println("");
-		System.out.println("More information: www.molgenis.org/systemsgenetics");
+		System.out.println("More information: www.molgenis.org/systemsgenetics/QTL-mapping-pipeline");
 
 	}
 }
