@@ -73,7 +73,7 @@ public class Ase {
 		System.out.println();
 		System.out.println("          --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: http://molgenis.org/systemsgenetics");
+		System.out.println("More information: http://www.molgenis.org/systemsgenetics/Allele-Specific-Expression");
 		System.out.println();
 
 		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
