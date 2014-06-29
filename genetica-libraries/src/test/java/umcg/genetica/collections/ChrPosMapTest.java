@@ -40,6 +40,11 @@ public class ChrPosMapTest {
 		assertEquals(map.get("1", 0), "Test2");
 		assertEquals(map.get("2", 1), "Test3");
 		
+		map.put("1", 0, "Test4");
+		assertEquals(map.get("1", 1), "Test1");
+		assertEquals(map.get("1", 0), "Test4");
+		assertEquals(map.get("2", 1), "Test3");
+		
 	}
 
 }
