@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.gui;
 
 import eqtlmappingpipeline.Main;
+import eqtlmappingpipeline.ase.AnnotateAseWithSnpEffVcf;
 import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
@@ -100,6 +101,9 @@ public class EQTLMappingPipelineConsole {
 				return;
 			} else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("aseSnpEff")) {
+				AnnotateAseWithSnpEffVcf.annotateAseWithSnpEffVcf(args[2], args[3], args[4]);
 				return;
 			} else {
 				printUsage();
