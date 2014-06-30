@@ -163,12 +163,12 @@ public class AseVariant implements Comparable<AseVariant>{
 	@Override
 	public int compareTo(AseVariant o) {
 
-		double thisZ = Math.abs(this.getMetaZscore());
-		double otherZ = Math.abs(o.getMetaZscore());
+		double thisRatioD = Math.abs(this.getMle().getRatioD());
+		double otherRatioD = Math.abs(o.getMle().getRatioD());
 
-		if(thisZ < otherZ){
+		if(thisRatioD < otherRatioD){
 			return 1;
-		} else if(thisZ == otherZ){
+		} else if(thisRatioD == otherRatioD){
 			return 0;
 		} else{
 			return -1;

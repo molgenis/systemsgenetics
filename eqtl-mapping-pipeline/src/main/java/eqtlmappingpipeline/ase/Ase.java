@@ -360,7 +360,7 @@ public class Ase {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tLikelihoodRatioP\tLikelihoodRatioD\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
+		outputWriter.append("LikelihoodRatioP\tLikelihoodRatioD\teffect\tMeta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
 
 //		if (encounteredBaseQuality) {
 //			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
@@ -370,7 +370,7 @@ public class Ase {
 		final double significance = 0.05;
 
 		int counter = 0;
-		double lastAbsoluteZ = Double.POSITIVE_INFINITY;
+		double lastRatioD = Double.POSITIVE_INFINITY;
 
 		final int totalNumberOfTests = aseVariants.length;
 		final double bonferroniCutoff = significance / totalNumberOfTests;
@@ -379,34 +379,34 @@ public class Ase {
 		aseVariants:
 		for (AseVariant aseVariant : aseVariants) {
 
-			double absZ = Math.abs(aseVariant.getMetaZscore());
-			if (absZ > lastAbsoluteZ) {
+			double ratioD = aseVariant.getMle().getRatioD();
+			if (ratioD > lastRatioD) {
 				throw new AseException("ASE results not sorted");
 			}
-			lastAbsoluteZ = absZ;
+			lastRatioD = ratioD;
 
 			switch (multipleTestingCorrectionMethod) {
 				case NONE:
 					break;
 				case NOMINAL:
-					if (aseVariant.getMetaPvalue() > significance) {
+					if (aseVariant.getMle().getRatioP() > significance) {
 						break aseVariants;
 					}
 					break;
 				case BONFERRONI:
-					if (aseVariant.getMetaPvalue() > bonferroniCutoff) {
+					if (aseVariant.getMle().getRatioP() > bonferroniCutoff) {
 						break aseVariants;
 					}
 					break;
 				case HOLM:
 					final double holmCutoff = significance / (totalNumberOfTests - counter);
-					if (aseVariant.getMetaPvalue() > holmCutoff) {
+					if (aseVariant.getMle().getRatioP() > holmCutoff) {
 						break aseVariants;
 					}
 					break;
 				case BH:
 					final double qvalue = ((counter + 1d) / totalNumberOfTests) * significance;
-					if (aseVariant.getMetaPvalue() > qvalue) {
+					if (aseVariant.getMle().getRatioP() > qvalue) {
 						break aseVariants;
 					}
 					break;
@@ -417,13 +417,16 @@ public class Ase {
 
 			++counter;
 
-			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
-			outputWriter.append('\t');
-			outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
-			outputWriter.append('\t');
+			
 			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioP()));
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioD()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMle().getMaxLikelihoodP()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
 			outputWriter.append('\t');
 			outputWriter.append(aseVariant.getChr());
 			outputWriter.append('\t');

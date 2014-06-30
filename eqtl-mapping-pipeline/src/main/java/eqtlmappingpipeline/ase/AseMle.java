@@ -52,7 +52,9 @@ public class AseMle {
 
 		maxLikelihood = provisionalMaxLikelihood;
 		maxLikelihoodP = provisionalMaxLikelihoodP;
-		ratioD = (-2d * likelihoodNull) + (2d * maxLikelihoodP);
+		
+		double ratioD2 = (-2d * likelihoodNull) + (2d * maxLikelihood);
+		ratioD = ratioD2 < 0 ? 0 : ratioD2;
 		ratioP = Probability.chiSquareComplemented(1, ratioD);
 
 //		System.out.println("Max: " + maxLikelihood);
@@ -73,6 +75,23 @@ public class AseMle {
 			int totalReads = a1Count + a2Counts.getQuick(i);
 			double logLikelihood = Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) (totalReads - a1Count) * Math.log(1 - p);
 			sumLogLikelihood += logLikelihood;
+			
+//			if(p == 0.5){
+//				System.out.println("======");
+//				System.out.println(Math.log(bico(totalReads, a1Count)));
+//				System.out.println((double) a1Count * Math.log(p));
+//				System.out.println((double) (totalReads - a1Count));
+//				System.out.println(Math.log(1 - p));
+//				System.out.println(Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) (totalReads - a1Count) * Math.log(1 - p));
+//				System.out.println("-------");
+//				int a2Count = a2Counts.getQuick(i);
+//				System.out.println(Math.log(bico(totalReads, a2Count)));
+//				System.out.println((double) a2Count * Math.log(p));
+//				System.out.println((double) (totalReads - a2Count));
+//				System.out.println(Math.log(1 - p));
+//				System.out.println(Math.log(bico(totalReads, a2Count)) + (double) a2Count * Math.log(p) + (double) (totalReads - a2Count) * Math.log(1 - p));
+//				System.out.println("=======");
+//			}
 
 		}
 		return sumLogLikelihood;
@@ -96,7 +115,7 @@ public class AseMle {
 	}
 
 	//Some borrowed functions below. Source unknown
-	public static double gammln(final double xx) {
+	private static double gammln(final double xx) {
 		int j;
 		double x, tmp, y, ser;
 		if (xx <= 0) {
@@ -118,7 +137,7 @@ public class AseMle {
 	 * @param n
 	 * @return
 	 */
-	public static double factrl(final int n) {
+	private static double factrl(final int n) {
 		if (n < 0 || n > 170) {
 			throw new IllegalArgumentException("factrl out of range");
 		}
@@ -131,7 +150,7 @@ public class AseMle {
 	 * @param n
 	 * @return
 	 */
-	public static double factln(final int n) {
+	private static double factln(final int n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("negative arg in factln");
 		}
@@ -148,7 +167,7 @@ public class AseMle {
 	 * @param k
 	 * @return
 	 */
-	public static double bico(final int n, final int k) {
+	private static double bico(final int n, final int k) {
 		if (n < 0 || k < 0 || k > n) {
 			throw new IllegalArgumentException("bad args in bico");
 		}
