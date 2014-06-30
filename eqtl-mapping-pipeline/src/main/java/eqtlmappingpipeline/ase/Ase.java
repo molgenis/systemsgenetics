@@ -360,11 +360,11 @@ public class Ase {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
+		outputWriter.append("Meta_P\tMeta_Z\tLikelihoodRatioP\tLikelihoodRatioD\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
 
-		if (encounteredBaseQuality) {
-			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
-		}
+//		if (encounteredBaseQuality) {
+//			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
+//		}
 		outputWriter.append('\n');
 
 		final double significance = 0.05;
@@ -420,6 +420,10 @@ public class Ase {
 			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioP()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioD()));
 			outputWriter.append('\t');
 			outputWriter.append(aseVariant.getChr());
 			outputWriter.append('\t');
@@ -496,37 +500,37 @@ public class Ase {
 				outputWriter.append(aseVariant.getSampleIds().get(i));
 			}
 			
-			if (encounteredBaseQuality) {
-
-				StringBuilder refMeanBaseQualities = new StringBuilder();
-				double sumRefMeanBaseQualities = 0;
-				for (int i = 0; i < aseVariant.getA1MeanBaseQualities().size(); ++i) {
-					sumRefMeanBaseQualities += aseVariant.getA1MeanBaseQualities().getQuick(i);
-					if (i > 0) {
-						refMeanBaseQualities.append(',');
-					}
-					refMeanBaseQualities.append(String.valueOf(aseVariant.getA1MeanBaseQualities().getQuick(i)));
-				}
-				outputWriter.append('\t');
-				outputWriter.append(String.valueOf( sumRefMeanBaseQualities / aseVariant.getA1MeanBaseQualities().size() ));
-				
-				StringBuilder altMeanBaseQualities = new StringBuilder();
-				double sumAtMeanBaseQualities = 0;
-				for (int i = 0; i < aseVariant.getA2MeanBaseQualities().size(); ++i) {
-					sumAtMeanBaseQualities += aseVariant.getA2MeanBaseQualities().getQuick(i);
-					if (i > 0) {
-						altMeanBaseQualities.append(',');
-					}
-					altMeanBaseQualities.append(String.valueOf(aseVariant.getA2MeanBaseQualities().getQuick(i)));
-				}
-				outputWriter.append('\t');
-				outputWriter.append(String.valueOf( sumAtMeanBaseQualities / aseVariant.getA2MeanBaseQualities().size() ));
-				outputWriter.append('\t');
-				outputWriter.append(refMeanBaseQualities);
-				outputWriter.append('\t');
-				outputWriter.append(altMeanBaseQualities);
-
-			}
+//			if (encounteredBaseQuality) {
+//
+//				StringBuilder refMeanBaseQualities = new StringBuilder();
+//				double sumRefMeanBaseQualities = 0;
+//				for (int i = 0; i < aseVariant.getA1MeanBaseQualities().size(); ++i) {
+//					sumRefMeanBaseQualities += aseVariant.getA1MeanBaseQualities().getQuick(i);
+//					if (i > 0) {
+//						refMeanBaseQualities.append(',');
+//					}
+//					refMeanBaseQualities.append(String.valueOf(aseVariant.getA1MeanBaseQualities().getQuick(i)));
+//				}
+//				outputWriter.append('\t');
+//				outputWriter.append(String.valueOf( sumRefMeanBaseQualities / aseVariant.getA1MeanBaseQualities().size() ));
+//				
+//				StringBuilder altMeanBaseQualities = new StringBuilder();
+//				double sumAtMeanBaseQualities = 0;
+//				for (int i = 0; i < aseVariant.getA2MeanBaseQualities().size(); ++i) {
+//					sumAtMeanBaseQualities += aseVariant.getA2MeanBaseQualities().getQuick(i);
+//					if (i > 0) {
+//						altMeanBaseQualities.append(',');
+//					}
+//					altMeanBaseQualities.append(String.valueOf(aseVariant.getA2MeanBaseQualities().getQuick(i)));
+//				}
+//				outputWriter.append('\t');
+//				outputWriter.append(String.valueOf( sumAtMeanBaseQualities / aseVariant.getA2MeanBaseQualities().size() ));
+//				outputWriter.append('\t');
+//				outputWriter.append(refMeanBaseQualities);
+//				outputWriter.append('\t');
+//				outputWriter.append(altMeanBaseQualities);
+//
+//			}
 			
 			
 
