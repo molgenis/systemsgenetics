@@ -71,48 +71,14 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
         writtenVariantsCounter = 0;
         excludedVariantsCounter = 0;
 
-        writeBimFile(bimFile);
-        writeFamFile(famFile);
-        writeBedFile(bedFile);
+        writeBimBedFile(bimFile, bedFile);
+		writeFamFile(famFile);
 
         LOGGER.info("Binary plink data write completed.\n"
                 + " - Number of samples: " + writtenSamplesCounter + "\n"
                 + " - Number of SNPs: " + writtenVariantsCounter + "\n"
                 + " - Excluded non biallelic SNPs: " + excludedVariantsCounter);
 
-
-    }
-
-    private void writeBimFile(File bimFile) throws IOException {
-        Utils.createEmptyFile(bimFile, "bim");
-
-        BufferedWriter bimFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(bimFile), FILE_ENCODING));
-
-        for (GeneticVariant variant : genotypeData) {
-
-            if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
-                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
-                ++excludedVariantsCounter;
-                continue;
-            }
-
-            bimFileWriter.append(variant.getSequenceName());
-            bimFileWriter.append(SEPARATOR);
-            bimFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
-            bimFileWriter.append(SEPARATOR);
-            bimFileWriter.append('0');
-            bimFileWriter.append(SEPARATOR);
-            bimFileWriter.append(String.valueOf(variant.getStartPos()));
-            bimFileWriter.append(SEPARATOR);
-            bimFileWriter.append(variant.getAlleleCount() == 0 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(0).toString());
-            bimFileWriter.append(SEPARATOR);
-            bimFileWriter.append(variant.getAlleleCount() <= 1 ? Allele.ZERO.toString() : variant.getVariantAlleles().get(1).toString());
-            bimFileWriter.append('\n');
-
-            ++writtenVariantsCounter;
-        }
-
-        bimFileWriter.close();
 
     }
 
@@ -142,10 +108,13 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 
     }
 
-    private void writeBedFile(File bedFile) throws IOException {
-        Utils.createEmptyFile(bedFile, "bed");
+	private void writeBimBedFile(File bimFile, File bedFile) throws IOException {
+		Utils.createEmptyFile(bimFile, "bim");
+		Utils.createEmptyFile(bedFile, "bed");
 
-        BufferedOutputStream bedStreamWriter;
+        BufferedWriter bimFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(bimFile), FILE_ENCODING));
+		
+		BufferedOutputStream bedStreamWriter;
         FileOutputStream stream;
         try {
             stream = new FileOutputStream(bedFile);
@@ -160,11 +129,26 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 
         for (GeneticVariant variant : genotypeData) {
 
-            if (variant.getAlleleCount() > 2 || !variant.isSnp()) {
-                continue; //Can only write biallelic snps to binary plink. This is logged when writing bim
+			Alleles variantAlleles = variant.getVariantAlleles();
+			
+            if (variantAlleles.getAlleleCount() > 2 || !variantAlleles.isSnp()) {
+                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
+                ++excludedVariantsCounter;
+                continue;
             }
 
-            Alleles variantAlleles = variant.getVariantAlleles();
+			bimFileWriter.append(variant.getSequenceName());
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append('0');
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(String.valueOf(variant.getStartPos()));
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(variantAlleles.getAlleleCount() == 0 ? Allele.ZERO.toString() : variantAlleles.get(0).toString());
+            bimFileWriter.append(SEPARATOR);
+            bimFileWriter.append(variantAlleles.getAlleleCount() <= 1 ? Allele.ZERO.toString() : variantAlleles.get(1).toString());
+            bimFileWriter.append('\n');			
 
             Alleles homozygoteFirst = Alleles.createAlleles(variantAlleles.get(0), variantAlleles.get(0));
             Alleles homozygoteSecond = null;
@@ -204,12 +188,16 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
                 }
                 bedStreamWriter.write(currentByte);
             }
+			
+			++writtenVariantsCounter;
 
         }
 
+		bimFileWriter.close();
         bedStreamWriter.close();
         stream.close();
-    }
+		
+	}
 
     private double getPhenotype(Sample sample) {
 
