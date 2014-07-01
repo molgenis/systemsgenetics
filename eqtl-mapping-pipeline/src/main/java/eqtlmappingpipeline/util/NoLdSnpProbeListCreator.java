@@ -89,6 +89,7 @@ public class NoLdSnpProbeListCreator {
 				snpProbeToTestWriter.append(variant.getPrimaryVariantId());
 				snpProbeToTestWriter.append('\t');
 				snpProbeToTestWriter.append(probeName);
+				snpProbeToTestWriter.append('\n');
 
 			}
 
