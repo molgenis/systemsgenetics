@@ -201,9 +201,9 @@ public class Ase {
 				}
 
 				for (int startChunk = 0; referenceGenotypes.getVariantsByRange(chr, startChunk, Integer.MAX_VALUE).iterator().hasNext(); startChunk += chunkSize) {
-					System.out.println("Chr: " + chr + " chunk: " + startChunk + "-" + (startChunk + chunkSize));
-					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize), false);
-					System.out.println("Current number of ASE targets: " + aseResults.getCount());
+					System.out.println("Chr: " + chr + " chunk: " + DEFAULT_NUMBER_FORMATTER.format(startChunk) + "-" + DEFAULT_NUMBER_FORMATTER.format(startChunk + chunkSize));
+					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize - 1), false);
+					//System.out.println("Current number of ASE targets: " + aseResults.getCount());
 				}
 				//Clean up ASE that do not meet minimum number of samples	
 				for (Iterator<AseVariant> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
@@ -211,7 +211,7 @@ public class Ase {
 						aseChrIterator.remove();
 					}
 				}
-				System.out.println("Current number of ASE targets after checking sample count: " + aseResults.getCount());
+				//System.out.println("Current number of ASE targets after checking sample count: " + aseResults.getCount());
 
 			}
 
