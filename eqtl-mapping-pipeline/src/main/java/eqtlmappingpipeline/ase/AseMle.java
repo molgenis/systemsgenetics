@@ -54,12 +54,12 @@ public class AseMle {
 
 		maxLogLikelihood = provisionalMaxLogLikelihood;
 		maxLogLikelihoodP = provisionalMaxLogLikelihoodP;
-		
+
 		double ratioD2 = (-2d * logLikelihoodNull) + (2d * maxLogLikelihood);
 		ratioD = ratioD2 < 0 ? 0 : ratioD2;
 		ratioP = Probability.chiSquareComplemented(1, ratioD);
-		
-		if(Double.isInfinite(ratioD) || Double.isNaN(ratioD)){
+
+		if (Double.isInfinite(ratioD) || Double.isNaN(ratioD)) {
 			LOGGER.warn("Warning invalid ratio D: " + ratioD2 + ". max log likelihood: " + maxLogLikelihood + " null log likelihood: " + logLikelihoodNull + " max log likelihood p: " + maxLogLikelihoodP);
 		}
 
@@ -72,36 +72,35 @@ public class AseMle {
 	}
 
 	private double calculateLogLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double p) {
-		
+
 		double sumLogLikelihood = 0;
 
 		for (int i = 0; i < a1Counts.size(); ++i) {
 
 			int a1Count = a1Counts.getQuick(i);
-			int totalReads = a1Count + a2Counts.getQuick(i);
-			double logLikelihood = Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) (totalReads - a1Count) * Math.log(1 - p);
+			int a2Count = a2Counts.getQuick(i);
+			int totalReads = a1Count + a2Count;
+			double logLikelihood = Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) a2Count * Math.log(1 - p);
 			sumLogLikelihood += logLikelihood;
-			
-//			if(p == 0.5){
-//				System.out.println("======");
-//				System.out.println(Math.log(bico(totalReads, a1Count)));
-//				System.out.println((double) a1Count * Math.log(p));
-//				System.out.println((double) (totalReads - a1Count));
-//				System.out.println(Math.log(1 - p));
-//				System.out.println(Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) (totalReads - a1Count) * Math.log(1 - p));
-//				System.out.println("-------");
-//				int a2Count = a2Counts.getQuick(i);
-//				System.out.println(Math.log(bico(totalReads, a2Count)));
-//				System.out.println((double) a2Count * Math.log(p));
-//				System.out.println((double) (totalReads - a2Count));
-//				System.out.println(Math.log(1 - p));
-//				System.out.println(Math.log(bico(totalReads, a2Count)) + (double) a2Count * Math.log(p) + (double) (totalReads - a2Count) * Math.log(1 - p));
-//				System.out.println("=======");
-//			}
+
+			if (Double.isInfinite(logLikelihood)) {
+				System.out.println("======");
+				System.out.println("a1 count: " + a1Count);
+				System.out.println("a2 count: " + a2Count);
+				System.out.println("p: " + p);
+				System.out.println("bico(totalReads, a1Count): " + bico(totalReads, a1Count));
+				System.out.println("Math.log(bico(totalReads, a1Count)): " + Math.log(bico(totalReads, a1Count)));
+				System.out.println("(double) a1Count * Math.log(p): " + (double) a1Count * Math.log(p));
+				System.out.println("(double) (totalReads - a1Count): " + (double) (totalReads - a1Count));
+				System.out.println("Math.log(1 - p): " + Math.log(1 - p));
+				System.out.println("log likelihood: " + logLikelihood);
+				System.out.println("======");
+			}
 
 		}
+
 		return sumLogLikelihood;
-		
+
 	}
 
 	public double getMaxLikelihood() {

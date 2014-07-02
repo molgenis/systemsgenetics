@@ -161,6 +161,13 @@ public class AseConfiguration {
 		OptionBuilder.withDescription("Confine analysis to specified chromosome");
 		OptionBuilder.withLongOpt("chr");
 		OPTIONS.addOption(OptionBuilder.create("ch"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("In the case of reference genotype data anayslis can be faster when chucked");
+		OptionBuilder.withLongOpt("chunkSize");
+		OPTIONS.addOption(OptionBuilder.create("cs"));
+
 
 	}
 

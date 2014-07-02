@@ -9,11 +9,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
-import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
@@ -33,31 +33,35 @@ public class ReadCountsLoader implements Runnable {
 
 	private final Iterator<File> inputFileIterator;
 	private final AseResults aseResults;
-	private final AtomicInteger sampleCounter;
+	private final Set<String> detectedSampleSet;
 	private final AtomicInteger fileCounter;
 	private final AseConfiguration configuration;
 	private final RandomAccessGenotypeData genotypeReference;
 	Map<String, String> refToStudySampleId;
 	private final String chr;
+	private final int start;
+	private final int stop;
 	private static final Logger LOGGER = Logger.getLogger(ReadCountsLoader.class);
 
-	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration) {
-		this(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, null);
+	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, Set<String> detectedSampleSet, AtomicInteger fileCounter, AseConfiguration configuration) {
+		this(inputFileIterator, aseResults, detectedSampleSet, fileCounter, configuration, null);
 	}
 
-	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference) {
-		this(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, genotypeReference, null, null);
+	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, Set<String> detectedSampleSet, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference) {
+		this(inputFileIterator, aseResults, detectedSampleSet, fileCounter, configuration, genotypeReference, null, null, 0, Integer.MAX_VALUE);
 	}
 
-	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference, Map<String, String> refToStudySampleId, String chr) {
+	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, Set<String> detectedSampleSet, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference, Map<String, String> refToStudySampleId, String chr, int start, int stop) {
 		this.inputFileIterator = inputFileIterator;
 		this.aseResults = aseResults;
-		this.sampleCounter = sampleCounter;
+		this.detectedSampleSet = detectedSampleSet;
 		this.fileCounter = fileCounter;
 		this.configuration = configuration;
 		this.genotypeReference = genotypeReference;
 		this.refToStudySampleId = refToStudySampleId == null ? (Map<String, String>) Collections.EMPTY_MAP : refToStudySampleId;
 		this.chr = chr;
+		this.start = start;
+		this.stop = stop;
 	}
 
 	@Override
@@ -126,13 +130,12 @@ public class ReadCountsLoader implements Runnable {
 					sampleIds.add(sample.getId().intern());
 				}
 
-				Iterable<GeneticVariant> variants = (chr == null) ? genotypeData : genotypeData.getSequenceGeneticVariants(chr);
+				Iterable<GeneticVariant> variants = (chr == null) ? genotypeData : genotypeData.getVariantsByRange(chr, start, stop);
 				
 				variants:
 				for (GeneticVariant variant : variants) {
 
 					
-
 					//Only if variant contains read depth field
 					if (variant.getVariantMeta().getRecordType("AD") == GeneticVariantMeta.Type.INTEGER_LIST) {
 						//include variant
@@ -240,7 +243,9 @@ public class ReadCountsLoader implements Runnable {
 
 				genotypeData.close();
 
-				sampleCounter.addAndGet(genotypeData.getSampleNames().length);
+				for(String sample : genotypeData.getSampleNames()){
+					detectedSampleSet.add(sample);
+				}
 
 			}
 
