@@ -109,6 +109,8 @@ public class Ase {
 
 		startLogging(configuration.getLogFile(), configuration.isDebugMode());
 		configuration.printOptions();
+		
+		LOGGER.debug("Java version: " + System.getProperty("java.version"));
 
 		final AseResults aseResults = new AseResults();
 		final AtomicInteger sampleCounter = new AtomicInteger(0);
@@ -178,7 +180,7 @@ public class Ase {
 		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler();
 		for (int i = 0; i < threadCount; ++i) {
 
-			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes, refToStudySampleId));
+			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes, refToStudySampleId, configuration.getChrFilter()));
 			worker.setUncaughtExceptionHandler(threadErrorHandler);
 			worker.start();
 			threads.add(worker);

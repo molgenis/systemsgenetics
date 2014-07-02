@@ -38,6 +38,7 @@ public class ReadCountsLoader implements Runnable {
 	private final AseConfiguration configuration;
 	private final RandomAccessGenotypeData genotypeReference;
 	Map<String, String> refToStudySampleId;
+	private final String chr;
 	private static final Logger LOGGER = Logger.getLogger(ReadCountsLoader.class);
 
 	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration) {
@@ -45,10 +46,10 @@ public class ReadCountsLoader implements Runnable {
 	}
 
 	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference) {
-		this(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, genotypeReference, null);
+		this(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, genotypeReference, null, null);
 	}
 
-	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference, Map<String, String> refToStudySampleId) {
+	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, AtomicInteger sampleCounter, AtomicInteger fileCounter, AseConfiguration configuration, RandomAccessGenotypeData genotypeReference, Map<String, String> refToStudySampleId, String chr) {
 		this.inputFileIterator = inputFileIterator;
 		this.aseResults = aseResults;
 		this.sampleCounter = sampleCounter;
@@ -56,6 +57,7 @@ public class ReadCountsLoader implements Runnable {
 		this.configuration = configuration;
 		this.genotypeReference = genotypeReference;
 		this.refToStudySampleId = refToStudySampleId == null ? (Map<String, String>) Collections.EMPTY_MAP : refToStudySampleId;
+		this.chr = chr;
 	}
 
 	@Override
@@ -102,7 +104,7 @@ public class ReadCountsLoader implements Runnable {
 				}
 
 				//Loading genotype files:
-				GenotypeData genotypeData;
+				RandomAccessGenotypeData genotypeData;
 				if (inputFile.isDirectory()) {
 					try {
 						genotypeData = MultiPartGenotypeData.createFromVcfFolder(inputFile, 100, 0.8);
@@ -124,8 +126,10 @@ public class ReadCountsLoader implements Runnable {
 					sampleIds.add(sample.getId().intern());
 				}
 
+				Iterable<GeneticVariant> variants = (chr == null) ? genotypeData : genotypeData.getSequenceGeneticVariants(chr);
+				
 				variants:
-				for (GeneticVariant variant : genotypeData) {
+				for (GeneticVariant variant : variants) {
 
 					
 

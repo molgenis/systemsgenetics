@@ -2,6 +2,7 @@ package eqtlmappingpipeline.ase;
 
 import cern.colt.list.tint.IntArrayList;
 import cern.jet.stat.tdouble.Probability;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -9,8 +10,8 @@ import cern.jet.stat.tdouble.Probability;
  */
 public class AseMle {
 
-	private final double maxLikelihoodP;
-	private final double maxLikelihood;
+	private final double maxLogLikelihoodP;
+	private final double maxLogLikelihood;
 	private final double ratioD;
 	private final double ratioP;
 	private static final double[] cof = {57.1562356658629235, -59.5979603554754912,
@@ -21,6 +22,7 @@ public class AseMle {
 	private static final double[] a = new double[171];
 	private static final int NTOP = 2000;
 	private static final double[] aa = new double[NTOP];
+	private static final Logger LOGGER = Logger.getLogger(AseMle.class);
 
 	static {
 		a[0] = 1.;
@@ -34,28 +36,32 @@ public class AseMle {
 
 	public AseMle(IntArrayList a1Counts, IntArrayList a2Counts) {
 
-		double provisionalMaxLikelihood = Double.NEGATIVE_INFINITY;
-		double provisionalMaxLikelihoodP = 0.5;
+		double provisionalMaxLogLikelihood = Double.NEGATIVE_INFINITY;
+		double provisionalMaxLogLikelihoodP = 0.5;
 
-		double likelihoodNull = calculateLikelihood(a1Counts, a2Counts, 0.5);
+		double logLikelihoodNull = calculateLogLikelihood(a1Counts, a2Counts, 0.5);
 
 		for (double p = 0.001d; p <= 0.999d; p += 0.001d) {
 
-			double sumLogLikelihood = calculateLikelihood(a1Counts, a2Counts, p);
+			double sumLogLikelihood = calculateLogLikelihood(a1Counts, a2Counts, p);
 
-			if (sumLogLikelihood > provisionalMaxLikelihood) {
-				provisionalMaxLikelihood = sumLogLikelihood;
-				provisionalMaxLikelihoodP = p;
+			if (sumLogLikelihood > provisionalMaxLogLikelihood) {
+				provisionalMaxLogLikelihood = sumLogLikelihood;
+				provisionalMaxLogLikelihoodP = p;
 			}
 
 		}
 
-		maxLikelihood = provisionalMaxLikelihood;
-		maxLikelihoodP = provisionalMaxLikelihoodP;
+		maxLogLikelihood = provisionalMaxLogLikelihood;
+		maxLogLikelihoodP = provisionalMaxLogLikelihoodP;
 		
-		double ratioD2 = (-2d * likelihoodNull) + (2d * maxLikelihood);
+		double ratioD2 = (-2d * logLikelihoodNull) + (2d * maxLogLikelihood);
 		ratioD = ratioD2 < 0 ? 0 : ratioD2;
 		ratioP = Probability.chiSquareComplemented(1, ratioD);
+		
+		if(Double.isInfinite(ratioD) || Double.isNaN(ratioD)){
+			LOGGER.warn("Warning invalid ratio D: " + ratioD2 + ". max log likelihood: " + maxLogLikelihood + " null log likelihood: " + logLikelihoodNull + " max log likelihood p: " + maxLogLikelihoodP);
+		}
 
 //		System.out.println("Max: " + maxLikelihood);
 //		System.out.println("Max p: " + maxLikelihoodP);
@@ -65,7 +71,7 @@ public class AseMle {
 
 	}
 
-	private double calculateLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double p) {
+	private double calculateLogLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double p) {
 		
 		double sumLogLikelihood = 0;
 
@@ -99,11 +105,11 @@ public class AseMle {
 	}
 
 	public double getMaxLikelihood() {
-		return maxLikelihood;
+		return maxLogLikelihood;
 	}
 
 	public double getMaxLikelihoodP() {
-		return maxLikelihoodP;
+		return maxLogLikelihoodP;
 	}
 
 	public double getRatioD() {
