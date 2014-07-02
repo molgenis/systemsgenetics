@@ -177,7 +177,7 @@ public class Ase {
 		final List<File> inputFiles = configuration.getInputFiles();
 
 		if (referenceGenotypes == null) {
-			loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter());
+			loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter(), true);
 
 			Iterator<AseVariant> aseIterator = aseResults.iterator();
 			while (aseIterator.hasNext()) {
@@ -202,7 +202,7 @@ public class Ase {
 
 				for (int startChunk = 0; referenceGenotypes.getVariantsByRange(chr, startChunk, Integer.MAX_VALUE).iterator().hasNext(); startChunk += chunkSize) {
 					System.out.println("Chr: " + chr + " chunk: " + startChunk + "-" + (startChunk + chunkSize));
-					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize));
+					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize), false);
 					System.out.println("Current number of ASE targets: " + aseResults.getCount());
 				}
 				//Clean up ASE that do not meet minimum number of samples	
@@ -587,11 +587,11 @@ public class Ase {
 		}
 	}
 
-	private static void loadAseData(List<File> inputFiles, AseResults aseResults, Set<String> detectedSampleSet, AseConfiguration configuration, RandomAccessGenotypeData referenceGenotypes, Map<String, String> refToStudySampleId, String chr) {
-		loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, 0, Integer.MAX_VALUE);
+	private static void loadAseData(List<File> inputFiles, AseResults aseResults, Set<String> detectedSampleSet, AseConfiguration configuration, RandomAccessGenotypeData referenceGenotypes, Map<String, String> refToStudySampleId, String chr, boolean showFileProgress) {
+		loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, 0, Integer.MAX_VALUE, showFileProgress);
 	}
 
-	private static void loadAseData(List<File> inputFiles, AseResults aseResults, Set<String> detectedSampleSet, AseConfiguration configuration, RandomAccessGenotypeData referenceGenotypes, Map<String, String> refToStudySampleId, String chr, int start, int stop) {
+	private static void loadAseData(List<File> inputFiles, AseResults aseResults, Set<String> detectedSampleSet, AseConfiguration configuration, RandomAccessGenotypeData referenceGenotypes, Map<String, String> refToStudySampleId, String chr, int start, int stop, boolean showFileProgress) {
 
 		final AtomicInteger fileCounter = new AtomicInteger(0);
 		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
@@ -622,12 +622,15 @@ public class Ase {
 				Thread.sleep(500);
 			} catch (InterruptedException ex) {
 			}
-			int currentCount = fileCounter.get();
+			
+			if(showFileProgress){
+				int currentCount = fileCounter.get();
 
-			if (currentCount > nextReport) {
-				//sometimes we skiped over report because of timing. This solved this
-				System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(nextReport) + " out of " + DEFAULT_NUMBER_FORMATTER.format(configuration.getInputFiles().size()) + " files");
-				nextReport += 100;
+				if (currentCount > nextReport) {
+					//sometimes we skiped over report because of timing. This solved this
+					System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(nextReport) + " out of " + DEFAULT_NUMBER_FORMATTER.format(configuration.getInputFiles().size()) + " files");
+					nextReport += 100;
+				}
 			}
 
 		} while (running);

@@ -80,22 +80,22 @@ public class AseMle {
 			int a1Count = a1Counts.getQuick(i);
 			int a2Count = a2Counts.getQuick(i);
 			int totalReads = a1Count + a2Count;
-			double logLikelihood = Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) a2Count * Math.log(1 - p);
+			double logLikelihood = lnbico(totalReads, a1Count) + (double) a1Count * Math.log(p) + (double) a2Count * Math.log(1 - p);
 			sumLogLikelihood += logLikelihood;
 
-			if (Double.isInfinite(logLikelihood)) {
-				System.out.println("======");
-				System.out.println("a1 count: " + a1Count);
-				System.out.println("a2 count: " + a2Count);
-				System.out.println("p: " + p);
-				System.out.println("bico(totalReads, a1Count): " + bico(totalReads, a1Count));
-				System.out.println("Math.log(bico(totalReads, a1Count)): " + Math.log(bico(totalReads, a1Count)));
-				System.out.println("(double) a1Count * Math.log(p): " + (double) a1Count * Math.log(p));
-				System.out.println("(double) (totalReads - a1Count): " + (double) (totalReads - a1Count));
-				System.out.println("Math.log(1 - p): " + Math.log(1 - p));
-				System.out.println("log likelihood: " + logLikelihood);
-				System.out.println("======");
-			}
+//			if (Double.isInfinite(logLikelihood)) {
+//				System.out.println("======");
+//				System.out.println("a1 count: " + a1Count);
+//				System.out.println("a2 count: " + a2Count);
+//				System.out.println("p: " + p);
+//				System.out.println("bico(totalReads, a1Count): " + bico(totalReads, a1Count));
+//				System.out.println("Math.log(bico(totalReads, a1Count)): " + Math.log(bico(totalReads, a1Count)));
+//				System.out.println("(double) a1Count * Math.log(p): " + (double) a1Count * Math.log(p));
+//				System.out.println("(double) (totalReads - a1Count): " + (double) (totalReads - a1Count));
+//				System.out.println("Math.log(1 - p): " + Math.log(1 - p));
+//				System.out.println("log likelihood: " + logLikelihood);
+//				System.out.println("======");
+//			}
 
 		}
 
@@ -172,7 +172,7 @@ public class AseMle {
 	 * @param k
 	 * @return
 	 */
-	private static double bico(final int n, final int k) {
+	protected static double bico(final int n, final int k) {
 		if (n < 0 || k < 0 || k > n) {
 			throw new IllegalArgumentException("bad args in bico");
 		}
@@ -180,5 +180,15 @@ public class AseMle {
 			return Math.floor(0.5 + factrl(n) / (factrl(k) * factrl(n - k)));
 		}
 		return Math.floor(0.5 + Math.exp(factln(n) - factln(k) - factln(n - k)));
+	}
+
+	protected static double lnbico(final int n, final int k) {
+		if (n < 0 || k < 0 || k > n) {
+			throw new IllegalArgumentException("bad args in bico");
+		}
+		if (n < 171) {
+			return Math.log(Math.floor(0.5 + factrl(n) / (factrl(k) * factrl(n - k))));
+		}
+		return factln(n) - factln(k) - factln(n - k);
 	}
 }
