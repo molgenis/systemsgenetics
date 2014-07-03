@@ -163,16 +163,11 @@ public class AseVariant implements Comparable<AseVariant>{
 	@Override
 	public int compareTo(AseVariant o) {
 
-		double thisRatioD = Math.abs(this.getMle().getRatioD());
-		double otherRatioD = Math.abs(o.getMle().getRatioD());
-
-		if(thisRatioD < otherRatioD){
-			return 1;
-		} else if(thisRatioD == otherRatioD){
-			return 0;
-		} else{
-			return -1;
-		}
+		double thisRatioD = this.getMle().getRatioD();
+		double otherRatioD = o.getMle().getRatioD();
+		
+		//Reverse compare. Largest first
+		return Double.compare(otherRatioD, thisRatioD);
 
 	}
 

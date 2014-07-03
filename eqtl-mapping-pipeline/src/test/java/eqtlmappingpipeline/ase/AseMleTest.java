@@ -25,7 +25,7 @@ public class AseMleTest {
 		
 		int nrSamples = 100;
 		for (int s = 0; s < nrSamples; s++) {
-			int nrReads = 10 + (int) (Math.random() * 1000d); //Simulate random number of reads, assume this is unrelated to tissue
+			int nrReads = 1000 + (int) (Math.random() * 1000d); //Simulate random number of reads, assume this is unrelated to tissue
 			int readsWT = 0;
 			int readsAlt = 0;
 			for (int r = 0; r < nrReads; r++) {
@@ -48,6 +48,16 @@ public class AseMleTest {
 		System.out.println(mle.getRatioD());
 		System.out.println(mle.getRatioP());
 
+	}
+	
+	@Test
+	public void testLnBico(){
+		
+		assertEquals(AseMle.lnbico(1369, 689), 945.052036055064, 0.000001);
+		assertEquals(AseMle.lnbico(12345, 6789), 8490.2927640914, 0.000001);
+		assertEquals(AseMle.lnbico(123456, 67890), 84950.948114749, 0.000001);
+		assertEquals(AseMle.lnbico(20, 10), 12.126791314602454, 0.000001);
+		assertEquals(AseMle.lnbico(200, 10), 37.6501117434664266, 0.000001);
 	}
 
 	
