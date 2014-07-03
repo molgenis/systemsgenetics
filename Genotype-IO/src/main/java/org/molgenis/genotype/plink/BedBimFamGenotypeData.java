@@ -65,7 +65,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
-	private final HashMap<String, Sequence> sequences;
+	private final LinkedHashMap<String, Sequence> sequences;
 	private final GeneticVariantRange snps;
 	private final TObjectIntHashMap<GeneticVariant> snpIndexces;
 	private final RandomAccessFile bedFileReader;
@@ -139,7 +139,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f, -1);
 		GeneticVariantRange.GeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
-		sequences = new HashMap<String, Sequence>();
+		sequences = new LinkedHashMap<String, Sequence>();
 		originalSnpCount = readBimFile(bimFile, snpsFactory);
 		snps = snpsFactory.createRange();
 

@@ -48,6 +48,7 @@ public class AseConfiguration {
 	private final int maxTotalReads;
 	private final File gtf;
 	private final File sampleToRefSampleFile;
+	private final String chrFilter;
 
 	static {
 
@@ -154,6 +155,19 @@ public class AseConfiguration {
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
 		OptionBuilder.withLongOpt("debug");
 		OPTIONS.addOption(OptionBuilder.create('d'));
+		
+		OptionBuilder.withArgName("string");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Confine analysis to specified chromosome");
+		OptionBuilder.withLongOpt("chr");
+		OPTIONS.addOption(OptionBuilder.create("ch"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("In the case of reference genotype data anayslis can be faster when chucked");
+		OptionBuilder.withLongOpt("chunkSize");
+		OPTIONS.addOption(OptionBuilder.create("cs"));
+
 
 	}
 
@@ -324,6 +338,8 @@ public class AseConfiguration {
 		} else {
 			sampleToRefSampleFile = null;
 		}
+		
+		chrFilter = commandLine.hasOption("ch") ? commandLine.getOptionValue("ch") : null;
 
 		debugMode = commandLine.hasOption('d');
 
@@ -370,6 +386,11 @@ public class AseConfiguration {
 
 		System.out.println(" - Number of threads to use: " + threads);
 		LOGGER.info("Number of threads to use: " + threads);
+		
+		if(chrFilter != null){
+			System.out.println(" - Confine analysis to chr: " + chrFilter);
+			LOGGER.info("Confine analysis to chr: " + chrFilter);
+		}
 
 		if (isRefSet()) {
 			System.out.print(" - Reference genotypes " + refDataType.getName() + ":");
@@ -479,5 +500,9 @@ public class AseConfiguration {
 	public boolean isSampleToRefSampleFileSet(){
 		return sampleToRefSampleFile != null;
 	}
-	
+
+	public String getChrFilter() {
+		return chrFilter;
+	}
+	 
 }

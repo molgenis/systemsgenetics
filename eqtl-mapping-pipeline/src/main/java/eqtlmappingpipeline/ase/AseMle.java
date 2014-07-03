@@ -2,6 +2,7 @@ package eqtlmappingpipeline.ase;
 
 import cern.colt.list.tint.IntArrayList;
 import cern.jet.stat.tdouble.Probability;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -9,8 +10,8 @@ import cern.jet.stat.tdouble.Probability;
  */
 public class AseMle {
 
-	private final double maxLikelihoodP;
-	private final double maxLikelihood;
+	private final double maxLogLikelihoodP;
+	private final double maxLogLikelihood;
 	private final double ratioD;
 	private final double ratioP;
 	private static final double[] cof = {57.1562356658629235, -59.5979603554754912,
@@ -21,6 +22,7 @@ public class AseMle {
 	private static final double[] a = new double[171];
 	private static final int NTOP = 2000;
 	private static final double[] aa = new double[NTOP];
+	private static final Logger LOGGER = Logger.getLogger(AseMle.class);
 
 	static {
 		a[0] = 1.;
@@ -34,28 +36,32 @@ public class AseMle {
 
 	public AseMle(IntArrayList a1Counts, IntArrayList a2Counts) {
 
-		double provisionalMaxLikelihood = Double.NEGATIVE_INFINITY;
-		double provisionalMaxLikelihoodP = 0.5;
+		double provisionalMaxLogLikelihood = Double.NEGATIVE_INFINITY;
+		double provisionalMaxLogLikelihoodP = 0.5;
 
-		double likelihoodNull = calculateLikelihood(a1Counts, a2Counts, 0.5);
+		double logLikelihoodNull = calculateLogLikelihood(a1Counts, a2Counts, 0.5);
 
 		for (double p = 0.001d; p <= 0.999d; p += 0.001d) {
 
-			double sumLogLikelihood = calculateLikelihood(a1Counts, a2Counts, p);
+			double sumLogLikelihood = calculateLogLikelihood(a1Counts, a2Counts, p);
 
-			if (sumLogLikelihood > provisionalMaxLikelihood) {
-				provisionalMaxLikelihood = sumLogLikelihood;
-				provisionalMaxLikelihoodP = p;
+			if (sumLogLikelihood > provisionalMaxLogLikelihood) {
+				provisionalMaxLogLikelihood = sumLogLikelihood;
+				provisionalMaxLogLikelihoodP = p;
 			}
 
 		}
 
-		maxLikelihood = provisionalMaxLikelihood;
-		maxLikelihoodP = provisionalMaxLikelihoodP;
-		
-		double ratioD2 = (-2d * likelihoodNull) + (2d * maxLikelihood);
+		maxLogLikelihood = provisionalMaxLogLikelihood;
+		maxLogLikelihoodP = provisionalMaxLogLikelihoodP;
+
+		double ratioD2 = (-2d * logLikelihoodNull) + (2d * maxLogLikelihood);
 		ratioD = ratioD2 < 0 ? 0 : ratioD2;
 		ratioP = Probability.chiSquareComplemented(1, ratioD);
+
+		if (Double.isInfinite(ratioD) || Double.isNaN(ratioD)) {
+			LOGGER.warn("Warning invalid ratio D: " + ratioD2 + ". max log likelihood: " + maxLogLikelihood + " null log likelihood: " + logLikelihoodNull + " max log likelihood p: " + maxLogLikelihoodP);
+		}
 
 //		System.out.println("Max: " + maxLikelihood);
 //		System.out.println("Max p: " + maxLikelihoodP);
@@ -65,45 +71,44 @@ public class AseMle {
 
 	}
 
-	private double calculateLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double p) {
-		
+	private double calculateLogLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double p) {
+
 		double sumLogLikelihood = 0;
 
 		for (int i = 0; i < a1Counts.size(); ++i) {
 
 			int a1Count = a1Counts.getQuick(i);
-			int totalReads = a1Count + a2Counts.getQuick(i);
-			double logLikelihood = Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) (totalReads - a1Count) * Math.log(1 - p);
+			int a2Count = a2Counts.getQuick(i);
+			int totalReads = a1Count + a2Count;
+			double logLikelihood = lnbico(totalReads, a1Count) + (double) a1Count * Math.log(p) + (double) a2Count * Math.log(1 - p);
 			sumLogLikelihood += logLikelihood;
-			
-//			if(p == 0.5){
+
+//			if (Double.isInfinite(logLikelihood)) {
 //				System.out.println("======");
-//				System.out.println(Math.log(bico(totalReads, a1Count)));
-//				System.out.println((double) a1Count * Math.log(p));
-//				System.out.println((double) (totalReads - a1Count));
-//				System.out.println(Math.log(1 - p));
-//				System.out.println(Math.log(bico(totalReads, a1Count)) + (double) a1Count * Math.log(p) + (double) (totalReads - a1Count) * Math.log(1 - p));
-//				System.out.println("-------");
-//				int a2Count = a2Counts.getQuick(i);
-//				System.out.println(Math.log(bico(totalReads, a2Count)));
-//				System.out.println((double) a2Count * Math.log(p));
-//				System.out.println((double) (totalReads - a2Count));
-//				System.out.println(Math.log(1 - p));
-//				System.out.println(Math.log(bico(totalReads, a2Count)) + (double) a2Count * Math.log(p) + (double) (totalReads - a2Count) * Math.log(1 - p));
-//				System.out.println("=======");
+//				System.out.println("a1 count: " + a1Count);
+//				System.out.println("a2 count: " + a2Count);
+//				System.out.println("p: " + p);
+//				System.out.println("bico(totalReads, a1Count): " + bico(totalReads, a1Count));
+//				System.out.println("Math.log(bico(totalReads, a1Count)): " + Math.log(bico(totalReads, a1Count)));
+//				System.out.println("(double) a1Count * Math.log(p): " + (double) a1Count * Math.log(p));
+//				System.out.println("(double) (totalReads - a1Count): " + (double) (totalReads - a1Count));
+//				System.out.println("Math.log(1 - p): " + Math.log(1 - p));
+//				System.out.println("log likelihood: " + logLikelihood);
+//				System.out.println("======");
 //			}
 
 		}
+
 		return sumLogLikelihood;
-		
+
 	}
 
 	public double getMaxLikelihood() {
-		return maxLikelihood;
+		return maxLogLikelihood;
 	}
 
 	public double getMaxLikelihoodP() {
-		return maxLikelihoodP;
+		return maxLogLikelihoodP;
 	}
 
 	public double getRatioD() {
@@ -167,7 +172,7 @@ public class AseMle {
 	 * @param k
 	 * @return
 	 */
-	private static double bico(final int n, final int k) {
+	protected static double bico(final int n, final int k) {
 		if (n < 0 || k < 0 || k > n) {
 			throw new IllegalArgumentException("bad args in bico");
 		}
@@ -175,5 +180,15 @@ public class AseMle {
 			return Math.floor(0.5 + factrl(n) / (factrl(k) * factrl(n - k)));
 		}
 		return Math.floor(0.5 + Math.exp(factln(n) - factln(k) - factln(n - k)));
+	}
+
+	protected static double lnbico(final int n, final int k) {
+		if (n < 0 || k < 0 || k > n) {
+			throw new IllegalArgumentException("bad args in bico");
+		}
+		if (n < 171) {
+			return Math.log(Math.floor(0.5 + factrl(n) / (factrl(k) * factrl(n - k))));
+		}
+		return factln(n) - factln(k) - factln(n - k);
 	}
 }
