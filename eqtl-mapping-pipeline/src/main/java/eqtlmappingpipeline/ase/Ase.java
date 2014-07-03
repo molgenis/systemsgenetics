@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.ParseException;
@@ -110,11 +111,13 @@ public class Ase {
 		startLogging(configuration.getLogFile(), configuration.isDebugMode());
 		configuration.printOptions();
 
+		LOGGER.debug("Java version: " + System.getProperty("java.version"));
+
 		final AseResults aseResults = new AseResults();
-		final AtomicInteger sampleCounter = new AtomicInteger(0);
-		final AtomicInteger fileCounter = new AtomicInteger(0);
+		final Set<String> detectedSampleSet = Collections.synchronizedSet(new HashSet<String>());
 		final RandomAccessGenotypeData referenceGenotypes;
 		final Map<String, String> refToStudySampleId;
+		final int minimumNumberSamples = configuration.getMinSamples();
 
 		if (configuration.isRefSet()) {
 			try {
@@ -171,54 +174,54 @@ public class Ase {
 			}
 		}
 
-		final Iterator<File> inputFileIterator = configuration.getInputFiles().iterator();
+		final List<File> inputFiles = configuration.getInputFiles();
 
-		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
-		List<Thread> threads = new ArrayList<Thread>(threadCount);
-		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler();
-		for (int i = 0; i < threadCount; ++i) {
+		if (referenceGenotypes == null) {
+			loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter(), true);
 
-			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, sampleCounter, fileCounter, configuration, referenceGenotypes, refToStudySampleId));
-			worker.setUncaughtExceptionHandler(threadErrorHandler);
-			worker.start();
-			threads.add(worker);
-
-		}
-
-		boolean running;
-		int nextReport = 100;
-		do {
-			running = false;
-			for (Thread thread : threads) {
-				if (thread.isAlive()) {
-					running = true;
+			Iterator<AseVariant> aseIterator = aseResults.iterator();
+			while (aseIterator.hasNext()) {
+				if (aseIterator.next().getSampleCount() < minimumNumberSamples) {
+					aseIterator.remove();
 				}
 			}
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException ex) {
-			}
-			int currentCount = fileCounter.get();
 
-			if (currentCount > nextReport) {
-				//sometimes we skiped over report because of timing. This solved this
-				System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(nextReport) + " out of " + DEFAULT_NUMBER_FORMATTER.format(configuration.getInputFiles().size()) + " files");
-				nextReport += 100;
+		} else {
+
+			//We have reference genotypes. This means a lot of random access to this single genotype data which slowed down the analyis a lot. 
+			//Chucking the analysis will be used so that we can efficiently cache the reference genotypes.
+
+			final int chunkSize = 10000000;
+			//final int chunkSize = Integer.MAX_VALUE;
+
+			for (String chr : referenceGenotypes.getSeqNames()) {
+
+				if (configuration.getChrFilter() != null && !configuration.getChrFilter().equals(chr)) {
+					continue;
+				}
+
+				for (int startChunk = 0; referenceGenotypes.getVariantsByRange(chr, startChunk, Integer.MAX_VALUE).iterator().hasNext(); startChunk += chunkSize) {
+					System.out.println("Chr: " + chr + " chunk: " + DEFAULT_NUMBER_FORMATTER.format(startChunk) + "-" + DEFAULT_NUMBER_FORMATTER.format(startChunk + chunkSize));
+					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize - 1), false);
+					//System.out.println("Current number of ASE targets: " + aseResults.getCount());
+				}
+				//Clean up ASE that do not meet minimum number of samples	
+				for (Iterator<AseVariant> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
+					if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
+						aseChrIterator.remove();
+					}
+				}
+				//System.out.println("Current number of ASE targets after checking sample count: " + aseResults.getCount());
+
 			}
 
-		} while (running);
+
+		}
 
 		final boolean encounteredBaseQuality = aseResults.isEncounteredBaseQuality();
 
-		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
-		System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(sampleCounter) + " samples.");
-
-		Iterator<AseVariant> aseIterator = aseResults.iterator();
-		while (aseIterator.hasNext()) {
-			if (aseIterator.next().getSampleCount() < configuration.getMinSamples()) {
-				aseIterator.remove();
-			}
-		}
+		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
+		System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
 
 		AseVariant[] aseVariants = new AseVariant[aseResults.getCount()];
 		{
@@ -360,17 +363,17 @@ public class Ase {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("Meta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
+		outputWriter.append("LikelihoodRatioP\tLikelihoodRatioD\teffect\tMeta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
 
-		if (encounteredBaseQuality) {
-			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
-		}
+//		if (encounteredBaseQuality) {
+//			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
+//		}
 		outputWriter.append('\n');
 
 		final double significance = 0.05;
 
 		int counter = 0;
-		double lastAbsoluteZ = Double.POSITIVE_INFINITY;
+		double lastRatioD = Double.POSITIVE_INFINITY;
 
 		final int totalNumberOfTests = aseVariants.length;
 		final double bonferroniCutoff = significance / totalNumberOfTests;
@@ -379,34 +382,34 @@ public class Ase {
 		aseVariants:
 		for (AseVariant aseVariant : aseVariants) {
 
-			double absZ = Math.abs(aseVariant.getMetaZscore());
-			if (absZ > lastAbsoluteZ) {
+			double ratioD = aseVariant.getMle().getRatioD();
+			if (ratioD > lastRatioD) {
 				throw new AseException("ASE results not sorted");
 			}
-			lastAbsoluteZ = absZ;
+			lastRatioD = ratioD;
 
 			switch (multipleTestingCorrectionMethod) {
 				case NONE:
 					break;
 				case NOMINAL:
-					if (aseVariant.getMetaPvalue() > significance) {
+					if (aseVariant.getMle().getRatioP() > significance) {
 						break aseVariants;
 					}
 					break;
 				case BONFERRONI:
-					if (aseVariant.getMetaPvalue() > bonferroniCutoff) {
+					if (aseVariant.getMle().getRatioP() > bonferroniCutoff) {
 						break aseVariants;
 					}
 					break;
 				case HOLM:
 					final double holmCutoff = significance / (totalNumberOfTests - counter);
-					if (aseVariant.getMetaPvalue() > holmCutoff) {
+					if (aseVariant.getMle().getRatioP() > holmCutoff) {
 						break aseVariants;
 					}
 					break;
 				case BH:
 					final double qvalue = ((counter + 1d) / totalNumberOfTests) * significance;
-					if (aseVariant.getMetaPvalue() > qvalue) {
+					if (aseVariant.getMle().getRatioP() > qvalue) {
 						break aseVariants;
 					}
 					break;
@@ -417,6 +420,13 @@ public class Ase {
 
 			++counter;
 
+
+			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioP()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioD()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMle().getMaxLikelihoodP()));
+			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMetaZscore()));
@@ -471,7 +481,7 @@ public class Ase {
 				}
 				outputWriter.append(String.valueOf(aseVariant.getA1Counts().getQuick(i)));
 			}
-			
+
 			outputWriter.append('\t');
 			for (int i = 0; i < aseVariant.getA2Counts().size(); ++i) {
 				if (i > 0) {
@@ -479,7 +489,7 @@ public class Ase {
 				}
 				outputWriter.append(String.valueOf(aseVariant.getA2Counts().getQuick(i)));
 			}
-			
+
 			outputWriter.append('\t');
 			for (int i = 0; i < aseVariant.getPValues().size(); ++i) {
 				if (i > 0) {
@@ -487,7 +497,7 @@ public class Ase {
 				}
 				outputWriter.append(String.valueOf(aseVariant.getPValues().getQuick(i)));
 			}
-			
+
 			outputWriter.append('\t');
 			for (int i = 0; i < aseVariant.getSampleIds().size(); ++i) {
 				if (i > 0) {
@@ -495,40 +505,40 @@ public class Ase {
 				}
 				outputWriter.append(aseVariant.getSampleIds().get(i));
 			}
-			
-			if (encounteredBaseQuality) {
 
-				StringBuilder refMeanBaseQualities = new StringBuilder();
-				double sumRefMeanBaseQualities = 0;
-				for (int i = 0; i < aseVariant.getA1MeanBaseQualities().size(); ++i) {
-					sumRefMeanBaseQualities += aseVariant.getA1MeanBaseQualities().getQuick(i);
-					if (i > 0) {
-						refMeanBaseQualities.append(',');
-					}
-					refMeanBaseQualities.append(String.valueOf(aseVariant.getA1MeanBaseQualities().getQuick(i)));
-				}
-				outputWriter.append('\t');
-				outputWriter.append(String.valueOf( sumRefMeanBaseQualities / aseVariant.getA1MeanBaseQualities().size() ));
-				
-				StringBuilder altMeanBaseQualities = new StringBuilder();
-				double sumAtMeanBaseQualities = 0;
-				for (int i = 0; i < aseVariant.getA2MeanBaseQualities().size(); ++i) {
-					sumAtMeanBaseQualities += aseVariant.getA2MeanBaseQualities().getQuick(i);
-					if (i > 0) {
-						altMeanBaseQualities.append(',');
-					}
-					altMeanBaseQualities.append(String.valueOf(aseVariant.getA2MeanBaseQualities().getQuick(i)));
-				}
-				outputWriter.append('\t');
-				outputWriter.append(String.valueOf( sumAtMeanBaseQualities / aseVariant.getA2MeanBaseQualities().size() ));
-				outputWriter.append('\t');
-				outputWriter.append(refMeanBaseQualities);
-				outputWriter.append('\t');
-				outputWriter.append(altMeanBaseQualities);
+//			if (encounteredBaseQuality) {
+//
+//				StringBuilder refMeanBaseQualities = new StringBuilder();
+//				double sumRefMeanBaseQualities = 0;
+//				for (int i = 0; i < aseVariant.getA1MeanBaseQualities().size(); ++i) {
+//					sumRefMeanBaseQualities += aseVariant.getA1MeanBaseQualities().getQuick(i);
+//					if (i > 0) {
+//						refMeanBaseQualities.append(',');
+//					}
+//					refMeanBaseQualities.append(String.valueOf(aseVariant.getA1MeanBaseQualities().getQuick(i)));
+//				}
+//				outputWriter.append('\t');
+//				outputWriter.append(String.valueOf( sumRefMeanBaseQualities / aseVariant.getA1MeanBaseQualities().size() ));
+//				
+//				StringBuilder altMeanBaseQualities = new StringBuilder();
+//				double sumAtMeanBaseQualities = 0;
+//				for (int i = 0; i < aseVariant.getA2MeanBaseQualities().size(); ++i) {
+//					sumAtMeanBaseQualities += aseVariant.getA2MeanBaseQualities().getQuick(i);
+//					if (i > 0) {
+//						altMeanBaseQualities.append(',');
+//					}
+//					altMeanBaseQualities.append(String.valueOf(aseVariant.getA2MeanBaseQualities().getQuick(i)));
+//				}
+//				outputWriter.append('\t');
+//				outputWriter.append(String.valueOf( sumAtMeanBaseQualities / aseVariant.getA2MeanBaseQualities().size() ));
+//				outputWriter.append('\t');
+//				outputWriter.append(refMeanBaseQualities);
+//				outputWriter.append('\t');
+//				outputWriter.append(altMeanBaseQualities);
+//
+//			}
 
-			}
-			
-			
+
 
 			outputWriter.append('\n');
 
@@ -543,8 +553,7 @@ public class Ase {
 	/**
 	 *
 	 *
-	 * @param sampleToRefSampleFile 
-	 * reference and value sample ID of study
+	 * @param sampleToRefSampleFile reference and value sample ID of study
 	 * @return unmodifiable map with key sample ID in
 	 */
 	private static Map<String, String> readSampleMapping(File sampleToRefSampleFile) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
@@ -576,5 +585,55 @@ public class Ase {
 			LOGGER.fatal("Fatal error: ", e);
 			System.exit(1);
 		}
+	}
+
+	private static void loadAseData(List<File> inputFiles, AseResults aseResults, Set<String> detectedSampleSet, AseConfiguration configuration, RandomAccessGenotypeData referenceGenotypes, Map<String, String> refToStudySampleId, String chr, boolean showFileProgress) {
+		loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, 0, Integer.MAX_VALUE, showFileProgress);
+	}
+
+	private static void loadAseData(List<File> inputFiles, AseResults aseResults, Set<String> detectedSampleSet, AseConfiguration configuration, RandomAccessGenotypeData referenceGenotypes, Map<String, String> refToStudySampleId, String chr, int start, int stop, boolean showFileProgress) {
+
+		final AtomicInteger fileCounter = new AtomicInteger(0);
+		int threadCount = configuration.getInputFiles().size() < configuration.getThreads() ? configuration.getInputFiles().size() : configuration.getThreads();
+		List<Thread> threads = new ArrayList<Thread>(threadCount);
+		final ThreadErrorHandler threadErrorHandler = new ThreadErrorHandler();
+
+		Iterator<File> inputFileIterator = inputFiles.iterator();
+
+		for (int i = 0; i < threadCount; ++i) {
+
+			Thread worker = new Thread(new ReadCountsLoader(inputFileIterator, aseResults, detectedSampleSet, fileCounter, configuration, referenceGenotypes, refToStudySampleId, chr, start, stop));
+			worker.setUncaughtExceptionHandler(threadErrorHandler);
+			worker.start();
+			threads.add(worker);
+
+		}
+
+		boolean running;
+		int nextReport = 100;
+		do {
+			running = false;
+			for (Thread thread : threads) {
+				if (thread.isAlive()) {
+					running = true;
+				}
+			}
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException ex) {
+			}
+			
+			if(showFileProgress){
+				int currentCount = fileCounter.get();
+
+				if (currentCount > nextReport) {
+					//sometimes we skiped over report because of timing. This solved this
+					System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(nextReport) + " out of " + DEFAULT_NUMBER_FORMATTER.format(configuration.getInputFiles().size()) + " files");
+					nextReport += 100;
+				}
+			}
+
+		} while (running);
+
 	}
 }

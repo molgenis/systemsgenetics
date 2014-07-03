@@ -23,13 +23,14 @@ public class AseVariant implements Comparable<AseVariant>{
 	private final Allele a2;
 	private final IntArrayList a1Counts;
 	private final IntArrayList a2Counts;
-	private final DoubleArrayList a1MeanBaseQualities;
-	private final DoubleArrayList a2MeanBaseQualities;
+	//private final DoubleArrayList a1MeanBaseQualities;
+	//private final DoubleArrayList a2MeanBaseQualities;
 	private final DoubleArrayList pValues;
 	private final ArrayList<String> sampleIds;
 	private double metaZscore;
 	private double metaPvalue;
 	private double countPearsonR;
+	private AseMle mle;
 	private static final BinomialTest btest = new BinomialTest();
 	private static final double LARGEST_ZSCORE = Probability.normalInverse(Double.MIN_NORMAL);
 
@@ -42,12 +43,13 @@ public class AseVariant implements Comparable<AseVariant>{
 		this.a1Counts = new IntArrayList();
 		this.a2Counts = new IntArrayList();
 		this.pValues = new DoubleArrayList();
-		this.a1MeanBaseQualities = new DoubleArrayList();
-		this.a2MeanBaseQualities = new DoubleArrayList();
+		//this.a1MeanBaseQualities = new DoubleArrayList();
+		//this.a2MeanBaseQualities = new DoubleArrayList();
 		this.sampleIds = new ArrayList<String>();
 		this.metaZscore = Double.NaN;
 		this.metaPvalue = Double.NaN;
 		this.countPearsonR = Double.NaN;
+		this.mle = null;
 	}
 
 	public String getChr() {
@@ -78,13 +80,13 @@ public class AseVariant implements Comparable<AseVariant>{
 		return a2Counts;
 	}
 
-	public DoubleArrayList getA1MeanBaseQualities() {
-		return a1MeanBaseQualities;
-	}
-
-	public DoubleArrayList getA2MeanBaseQualities() {
-		return a2MeanBaseQualities;
-	}
+//	public DoubleArrayList getA1MeanBaseQualities() {
+//		return a1MeanBaseQualities;
+//	}
+//
+//	public DoubleArrayList getA2MeanBaseQualities() {
+//		return a2MeanBaseQualities;
+//	}
 	
 	public void calculateStatistics() {
 
@@ -118,7 +120,7 @@ public class AseVariant implements Comparable<AseVariant>{
 		countPearsonR = regression.getR();
 		metaZscore = zscoreSum / Math.sqrt(a1Counts.size());
 		metaPvalue = 2 * Probability.normal(-Math.abs(metaZscore));
-
+		mle = new AseMle(a1Counts, a2Counts);
 
 	}
 	public double getMetaZscore() {
@@ -144,14 +146,15 @@ public class AseVariant implements Comparable<AseVariant>{
 		this.metaZscore = Double.NaN;//Reset meta Z-score when adding new data
 		this.metaPvalue = Double.NaN;
 		this.countPearsonR = Double.NaN;
+		this.mle = null;
 
 		a1Counts.add(a1Count);
 		a2Counts.add(a2Count);
 		
 		pValues.add(btest.binomialTest(a1Count + a2Count, a1Count, 0.5, AlternativeHypothesis.TWO_SIDED));
 		
-		a1MeanBaseQualities.add(a1MeanBaseQuality);
-		a2MeanBaseQualities.add(a2MeanBaseQuality);
+		//a1MeanBaseQualities.add(a1MeanBaseQuality);
+		//a2MeanBaseQualities.add(a2MeanBaseQuality);
 		
 		sampleIds.add(sampleId);
 
@@ -160,16 +163,11 @@ public class AseVariant implements Comparable<AseVariant>{
 	@Override
 	public int compareTo(AseVariant o) {
 
-		double thisZ = Math.abs(this.getMetaZscore());
-		double otherZ = Math.abs(o.getMetaZscore());
-
-		if(thisZ < otherZ){
-			return 1;
-		} else if(thisZ == otherZ){
-			return 0;
-		} else{
-			return -1;
-		}
+		double thisRatioD = this.getMle().getRatioD();
+		double otherRatioD = o.getMle().getRatioD();
+		
+		//Reverse compare. Largest first
+		return Double.compare(otherRatioD, thisRatioD);
 
 	}
 
@@ -190,6 +188,13 @@ public class AseVariant implements Comparable<AseVariant>{
 
 	public DoubleArrayList getPValues() {
 		return pValues;
+	}
+
+	public AseMle getMle() {
+		if(mle == null){
+			calculateStatistics();
+		}
+		return mle;
 	}
 	
 }
