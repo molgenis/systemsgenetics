@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.molgenis.genotype.snpeff.SnpEffEffect;
-import org.molgenis.genotype.snpeff.SnpEffEffect.FunctionalClass;
 import umcg.genetica.collections.ChrPosMap;
 
 /**
@@ -39,8 +38,8 @@ public class AnnotateAseWithSnpEffVcf {
 
 			String[] aseLineElements = StringUtils.split(line, '\t');
 
-			String chr = aseLineElements[2];
-			int pos = Integer.parseInt(aseLineElements[3]);
+			String chr = aseLineElements[5];
+			int pos = Integer.parseInt(aseLineElements[6]);
 
 			SnpEffEffect[] snpEffAnnotation = snpEffAnnotations.get(chr, pos);
 
