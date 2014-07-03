@@ -38,12 +38,22 @@ public class AseMle {
 
 		double provisionalMaxLogLikelihood = Double.NEGATIVE_INFINITY;
 		double provisionalMaxLogLikelihoodP = 0.5;
+		
+		
+		//First calculate binominal coefficients
+		double[] logBinominalCoefficients = new double[a1Counts.size()];
+		for (int i = 0; i < a1Counts.size(); ++i) {
+			int a1Count = a1Counts.getQuick(i);
+			int totalReads = a1Count + a2Counts.getQuick(i);
+			logBinominalCoefficients[i] = lnbico(totalReads, a1Count);
+		}
 
-		double logLikelihoodNull = calculateLogLikelihood(a1Counts, a2Counts, 0.5);
+		double logLikelihoodNull = calculateLogLikelihood(a1Counts, a2Counts, logBinominalCoefficients, 0.5);
 
-		for (double p = 0.001d; p <= 0.999d; p += 0.001d) {
+		for (int i = 1; i <= 999; ++i) {
 
-			double sumLogLikelihood = calculateLogLikelihood(a1Counts, a2Counts, p);
+			double p = 0.001 * i;
+			double sumLogLikelihood = calculateLogLikelihood(a1Counts, a2Counts, logBinominalCoefficients, p);
 
 			if (sumLogLikelihood > provisionalMaxLogLikelihood) {
 				provisionalMaxLogLikelihood = sumLogLikelihood;
@@ -52,51 +62,42 @@ public class AseMle {
 
 		}
 
-		maxLogLikelihood = provisionalMaxLogLikelihood;
-		maxLogLikelihoodP = provisionalMaxLogLikelihoodP;
+		/*
+		 * Due to mathematic persion of each time adding 0.001 it might be that
+		 * the null model is never really exacted tested. So now check if the
+		 * null model is actually a better.
+		 */
+		if (logLikelihoodNull >= provisionalMaxLogLikelihood) {
+			maxLogLikelihood = logLikelihoodNull;
+			maxLogLikelihoodP = 0.5;
+			ratioD = 0;
+			ratioP = 1;
+		} else {
 
-		double ratioD2 = (-2d * logLikelihoodNull) + (2d * maxLogLikelihood);
-		ratioD = ratioD2 < 0 ? 0 : ratioD2;
-		ratioP = Probability.chiSquareComplemented(1, ratioD);
+			maxLogLikelihood = provisionalMaxLogLikelihood;
+			maxLogLikelihoodP = provisionalMaxLogLikelihoodP;
 
-		if (Double.isInfinite(ratioD) || Double.isNaN(ratioD)) {
-			LOGGER.warn("Warning invalid ratio D: " + ratioD2 + ". max log likelihood: " + maxLogLikelihood + " null log likelihood: " + logLikelihoodNull + " max log likelihood p: " + maxLogLikelihoodP);
+			double ratioD2 = (-2d * logLikelihoodNull) + (2d * maxLogLikelihood);
+			ratioD = ratioD2 < 0 ? 0 : ratioD2;
+			ratioP = Probability.chiSquareComplemented(1, ratioD);
+
+			if (Double.isInfinite(ratioD) || Double.isNaN(ratioD)) {
+				LOGGER.warn("Warning invalid ratio D: " + ratioD2 + ". max log likelihood: " + maxLogLikelihood + " null log likelihood: " + logLikelihoodNull + " max log likelihood p: " + maxLogLikelihoodP);
+			}
+
 		}
-
-//		System.out.println("Max: " + maxLikelihood);
-//		System.out.println("Max p: " + maxLikelihoodP);
-//		System.out.println("Null: " + likelihoodNull);
-//		System.out.println("ratio D: " + ratioD);
-//		System.out.println("ratio P: " + ratioP);
 
 	}
 
-	private double calculateLogLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double p) {
+	private double calculateLogLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double[] logBinominalCoefficients, double p) {
 
 		double sumLogLikelihood = 0;
+		
+		double logP = Math.log(p);
+		double log1minP = Math.log(1 - p);
 
 		for (int i = 0; i < a1Counts.size(); ++i) {
-
-			int a1Count = a1Counts.getQuick(i);
-			int a2Count = a2Counts.getQuick(i);
-			int totalReads = a1Count + a2Count;
-			double logLikelihood = lnbico(totalReads, a1Count) + (double) a1Count * Math.log(p) + (double) a2Count * Math.log(1 - p);
-			sumLogLikelihood += logLikelihood;
-
-//			if (Double.isInfinite(logLikelihood)) {
-//				System.out.println("======");
-//				System.out.println("a1 count: " + a1Count);
-//				System.out.println("a2 count: " + a2Count);
-//				System.out.println("p: " + p);
-//				System.out.println("bico(totalReads, a1Count): " + bico(totalReads, a1Count));
-//				System.out.println("Math.log(bico(totalReads, a1Count)): " + Math.log(bico(totalReads, a1Count)));
-//				System.out.println("(double) a1Count * Math.log(p): " + (double) a1Count * Math.log(p));
-//				System.out.println("(double) (totalReads - a1Count): " + (double) (totalReads - a1Count));
-//				System.out.println("Math.log(1 - p): " + Math.log(1 - p));
-//				System.out.println("log likelihood: " + logLikelihood);
-//				System.out.println("======");
-//			}
-
+			sumLogLikelihood += logBinominalCoefficients[i] + (double) a1Counts.getQuick(i) * logP + (double) a2Counts.getQuick(i) * log1minP;
 		}
 
 		return sumLogLikelihood;
