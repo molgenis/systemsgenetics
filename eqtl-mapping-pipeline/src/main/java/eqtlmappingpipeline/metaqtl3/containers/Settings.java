@@ -82,7 +82,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
     private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     public boolean permuteCovariates;
-    
     public Random r;
     private long rSeed = System.currentTimeMillis();
 
@@ -288,12 +287,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             randomseed = config.getInt("defaults.analysis.randomseed");
         } catch (Exception e) {
         }
-        
-        if(randomseed != null){
+
+        if (randomseed != null) {
             rSeed = randomseed;
         }
-        r = new  Random(rSeed);
-        
+        r = new Random(rSeed);
+
         // multiple testing
         try {
             correctiontype = config.getString("defaults.multipletesting.type");
@@ -321,7 +320,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (numPermutations != null) {
             nrPermutationsFDR = numPermutations;
         }
-        
+
         try {
             fdrtype = config.getString("defaults.multipletesting.fdrtype", null);
             fdrtype = fdrtype.toLowerCase();
@@ -330,12 +329,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } catch (Exception e) {
         }
         if (numPermutations != null) {
-            if(fdrtype.equals("gene")){
+            if (fdrtype.equals("gene")) {
                 fdrType = FDRMethod.GENELEVEL;
-            } else if(fdrtype.equals("probe")){
+            } else if (fdrtype.equals("probe")) {
                 fdrType = FDRMethod.PROBELEVEL;
-            } else if(fdrtype.equals("snpprobe") || fdrtype.equals("full")){
-                fdrType = FDRMethod.FULL;    
+            } else if (fdrtype.equals("snpprobe") || fdrtype.equals("full")) {
+                fdrType = FDRMethod.FULL;
             }
         }
 
