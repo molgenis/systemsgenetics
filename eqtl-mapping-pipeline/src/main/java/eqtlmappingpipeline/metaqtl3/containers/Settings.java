@@ -319,7 +319,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             if(fdrtype.equals("gene")){
                 fdrType = FDRMethod.GENELEVEL;
             } else if(fdrtype.equals("probe")){
-                fdrType = FDRMethod.GENELEVEL;
+                fdrType = FDRMethod.PROBELEVEL;
             } else if(fdrtype.equals("snpprobe") || fdrtype.equals("full")){
                 fdrType = FDRMethod.FULL;    
             }
