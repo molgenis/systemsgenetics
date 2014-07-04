@@ -270,7 +270,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
     /**
      * Permutes the mapping between genotype and gene expression samples
      */
-    public void permuteSampleLables() {
+    public void permuteSampleLables(Random r) {
         ArrayList<Short> alIndWGA = new ArrayList<Short>();
         int numSamples = expressionToGenotypeIdArray.length;
         for (int i = 0; i < numSamples; i++) {
@@ -286,7 +286,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             if (expressionToGenotypeIdArray[i] == -1) {
                 indWGANew[i] = -1;
             } else {
-                short genotypeId = alIndWGA.remove((int) (Math.random() * (double) alIndWGA.size()));
+                short genotypeId = alIndWGA.remove((int) (r.nextDouble() * (double) alIndWGA.size()));
                 indWGANew[i] = genotypeId;
 
                 genotypeToExpressionIdArray[genotypeId] = (short) i;
