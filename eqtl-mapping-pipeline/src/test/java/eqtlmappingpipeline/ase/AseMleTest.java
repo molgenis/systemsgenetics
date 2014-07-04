@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.ase;
 
 import cern.colt.list.tint.IntArrayList;
+import java.util.Random;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -20,45 +21,45 @@ public class AseMleTest {
 	@Test
 	public void test() {
 
+		Random random = new Random(1);
+		
 		final IntArrayList a1Counts = new IntArrayList();
 		final IntArrayList a2Counts = new IntArrayList();
-		
+
 		int nrSamples = 100;
 		for (int s = 0; s < nrSamples; s++) {
-			int nrReads = 1000 + (int) (Math.random() * 1000d); //Simulate random number of reads, assume this is unrelated to tissue
+			int nrReads = 1000 + (int) (random.nextDouble() * 1000d); //Simulate random number of reads, assume this is unrelated to tissue
 			int readsWT = 0;
 			int readsAlt = 0;
 			for (int r = 0; r < nrReads; r++) {
-				if (Math.random() < 0.6d) {
+				if (random.nextDouble() < 0.6d) {
 					readsWT++;
 				} else {
 					readsAlt++;
 				}
 			}
-			
+
 			a1Counts.add(readsWT);
 			a2Counts.add(readsAlt);
-			
+
 		}
-		
+
 		AseMle mle = new AseMle(a1Counts, a2Counts);
-		
-		System.out.println(mle.getMaxLikelihood());
-		System.out.println(mle.getMaxLikelihoodP());
-		System.out.println(mle.getRatioD());
-		System.out.println(mle.getRatioP());
+
+		assertEquals(mle.getMaxLikelihood(), -428.3175944807302, 0.00001);
+		assertEquals(mle.getMaxLikelihoodP(), 0.599, 0.00001);
+		assertEquals(mle.getRatioD(), 5966.782310979877, 0.00001);
+		assertEquals(mle.getRatioP(), 0, 0.00001);
 
 	}
-	
+
 	@Test
-	public void testLnBico(){
-		
+	public void testLnBico() {
+
 		assertEquals(AseMle.lnbico(1369, 689), 945.052036055064, 0.000001);
 		assertEquals(AseMle.lnbico(12345, 6789), 8490.2927640914, 0.000001);
 		assertEquals(AseMle.lnbico(123456, 67890), 84950.948114749, 0.000001);
 		assertEquals(AseMle.lnbico(20, 10), 12.126791314602454, 0.000001);
 		assertEquals(AseMle.lnbico(200, 10), 37.6501117434664266, 0.000001);
 	}
-
-	
 }
