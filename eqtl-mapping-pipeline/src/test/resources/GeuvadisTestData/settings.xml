@@ -25,9 +25,9 @@
 		</multipletesting>
 		
 		<output>
-			<outputdirectory>ReplacementTxt\outMeta\</outputdirectory>
+			<outputdirectory>ReplacementTxt\outMeta1\</outputdirectory>
 			<outputplotthreshold>1E-10</outputplotthreshold>
-			<outputplotdirectory>ReplacementTxt\outMeta\Plot\</outputplotdirectory>
+			<outputplotdirectory>ReplacementTxt\outMeta1\Plot\</outputplotdirectory>
 			<maxnreqtlresults>500000</maxnreqtlresults>
 			<generatesnpsummarystatistics>false</generatesnpsummarystatistics>
 			<generateeqtlpvaluetable>false</generateeqtlpvaluetable>
