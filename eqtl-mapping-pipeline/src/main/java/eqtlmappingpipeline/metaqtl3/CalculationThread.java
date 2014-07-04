@@ -14,15 +14,9 @@ import umcg.genetica.math.stats.Descriptives;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLPlotter;
 import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.math3.distribution.FDistribution;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
-import org.rosuda.REngine.REXP;
-import org.rosuda.REngine.REXPMismatchException;
-import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
@@ -62,9 +56,10 @@ class CalculationThread extends Thread {
     private final DoubleMatrixDataset<String, String>[] m_covariates;
 
     private final boolean m_useAbsoluteZScores;
-    private final boolean testSNPsPresentInBothDatasets;
+    private final boolean testSNPsPresentInBothDatasets; 
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
+    private DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
 //    private RConnection rConnection;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
@@ -449,7 +444,7 @@ class CalculationThread extends Thread {
                 double tInteraction = betaInteraction / seInteraction;
                 double pValueInteraction;
                 double zScoreInteraction;
-                DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                
                 StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
                 if (tInteraction < 0) {
                     pValueInteraction = tDistColt.cdf(tInteraction);
