@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.ConfigurationException;
@@ -81,6 +82,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
     private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     public boolean permuteCovariates;
+    
+    public Random r;
+    private long rSeed = System.currentTimeMillis();
 
     public Settings() {
     }
@@ -98,6 +102,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         Double HWE = null;
         Double callrate = null;
         String correctiontype = null;
+        Integer randomseed = null;
         String fdrtype = null;
         Double mtThreshold = null;
         Integer numPermutations = null;
@@ -279,7 +284,16 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 nrThreads = nrthread;
             }
         }
-
+        try {
+            randomseed = config.getInt("defaults.analysis.randomseed");
+        } catch (Exception e) {
+        }
+        
+        if(randomseed != null){
+            rSeed = randomseed;
+        }
+        r = new  Random(rSeed);
+        
         // multiple testing
         try {
             correctiontype = config.getString("defaults.multipletesting.type");
@@ -720,6 +734,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 + "createEQTLPValueTable\t" + createEQTLPValueTable + "\n"
                 + "outputReportsDir\t" + outputReportsDir + "\n"
                 + "\nAnalysis\n----\n"
+                + "randomseed\t" + rSeed + "\n"
                 + "performCiseQTLAnalysis\t" + cisAnalysis + "\n"
                 + "performTranseQTLAnalysis\t" + transAnalysis + "\n"
                 + "performParametricAnalysis\t" + performParametricAnalysis + "\n"

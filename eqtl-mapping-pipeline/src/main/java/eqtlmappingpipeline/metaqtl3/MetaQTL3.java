@@ -765,7 +765,7 @@ public class MetaQTL3 {
                     int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
                     m_gg[d].permuteSampleLables();
                     if(m_settings.permuteCovariates){
-                        m_gg[d].permuteCovariates();
+                        m_gg[d].permuteCovariates(m_settings.r);
                     }
 
                     int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
