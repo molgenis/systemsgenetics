@@ -214,7 +214,7 @@ public class Main {
                 System.out.println("Please specify --in --nrperm and --cutoff and --nreqtls [--skipqqplot]");
             } else {
                 try {
-                    FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null);
+                    FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

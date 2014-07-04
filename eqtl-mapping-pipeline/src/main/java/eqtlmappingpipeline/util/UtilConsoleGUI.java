@@ -6,6 +6,7 @@ package eqtlmappingpipeline.util;
 
 import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
+import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
@@ -253,7 +254,7 @@ public class UtilConsoleGUI {
                             System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
                             printUsage();
                         } else {
-                            FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null);
+                            FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL);
                         }
 
                         break;
