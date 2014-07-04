@@ -762,21 +762,21 @@ public class MetaQTL3 {
                 System.out.print("Permuting data, round: " + permutationRound + " of " + m_settings.nrPermutationsFDR + "\n" + ConsoleGUIElems.LINE);
 
                 for (int d = 0; d < m_gg.length; d++) {
-                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
-                    m_gg[d].permuteSampleLables();
+//                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
+                    m_gg[d].permuteSampleLables(m_settings.r);
                     if(m_settings.permuteCovariates){
-                        m_gg[d].permuteCovariates();
+                        m_gg[d].permuteCovariates(m_settings.r);
                     }
 
-                    int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
-                    int identical = 0;
-                    for (int i = 0; i < indWGAPerm.length; i++) {
-                        if (indWGAOriginal[i] == indWGAPerm[i]) {
-                            identical++;
-                        }
-                    }
-
-//                    System.out.println("After permuting: " + identical + " unchanged, " + indWGAOriginal.length + " total");
+//                    int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
+////                    int identical = 0;
+////                    for (int i = 0; i < indWGAPerm.length; i++) {
+////                        if (indWGAOriginal[i] == indWGAPerm[i]) {
+////                            identical++;
+////                        }
+////                    }
+////
+//////                    System.out.println("After permuting: " + identical + " unchanged, " + indWGAOriginal.length + " total");
                 }
                 permuting = true;
             } else {

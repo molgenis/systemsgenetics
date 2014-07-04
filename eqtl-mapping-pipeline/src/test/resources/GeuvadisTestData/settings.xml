@@ -14,18 +14,20 @@
 			<regressOutEQTLEffects></regressOutEQTLEffects>
 			<threads>2</threads>
 			<onlypermutations>false</onlypermutations>
+            <randomseed>0</randomseed>
 		</analysis>
 		
 		<multipletesting>
 			<type>fdr</type>
 			<threshold>0.05</threshold>
 			<permutations>100</permutations>
+            <fdrtype>FULL</fdrtype>
 		</multipletesting>
 		
 		<output>
-			<outputdirectory>ReplacementTxt\outMeta\</outputdirectory>
+			<outputdirectory>ReplacementTxt\outMeta1\</outputdirectory>
 			<outputplotthreshold>1E-10</outputplotthreshold>
-			<outputplotdirectory>ReplacementTxt\outMeta\Plot\</outputplotdirectory>
+			<outputplotdirectory>ReplacementTxt\outMeta1\Plot\</outputplotdirectory>
 			<maxnreqtlresults>500000</maxnreqtlresults>
 			<generatesnpsummarystatistics>false</generatesnpsummarystatistics>
 			<generateeqtlpvaluetable>false</generateeqtlpvaluetable>
