@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.metaqtl3.containers;
 
 import eqtlmappingpipeline.Main;
+import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,19 +37,20 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     // Analysis settings
     public boolean performParametricAnalysis = false;                          // Perform parametric analysis
     public boolean useAbsoluteZScorePValue = false;                            // Use absolute Z-score? (required for finding opposite allelic effects)
-    public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;                       // Midpoint distance for declaring an eQTL effect CIS
+    public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;              // Midpoint distance for declaring an eQTL effect CIS
     public int maxNrMostSignificantEQTLs = 500000;                             // Max number of results stored in memory
-    public boolean performParametricAnalysisGetAccuratePValueEstimates;         // Use an accurate estimation of the P-values
-    public Integer nrThreads;                                                      // Use this number of threads
+    public boolean performParametricAnalysisGetAccuratePValueEstimates;        // Use an accurate estimation of the P-values
+    public Integer nrThreads;                                                  // Use this number of threads
     // Multiple testing correction
-    public double fdrCutOff = 0.05;                                                   // Cutoff for FDR procedure
-    public int nrPermutationsFDR = 1;                                              // Number of permutations to determine FDR
+    public double fdrCutOff = 0.05;                                            // Cutoff for FDR procedure
+    public int nrPermutationsFDR = 1;                                          // Number of permutations to determine FDR
+    public FDRMethod fdrType = FDRMethod.ALL;                                         // Number of permutations to determine FDR
     // confinements
     public boolean performEQTLAnalysisOnSNPProbeCombinationSubset;             // Confine to a certain set of probe/snp combinations?
-    public Byte confineToSNPsThatMapToChromosome;                               // Confine SNP to be assessed to SNPs mapped on this chromosome
+    public Byte confineToSNPsThatMapToChromosome;                              // Confine SNP to be assessed to SNPs mapped on this chromosome
     public boolean expressionDataLoadOnlyProbesThatMapToChromosome = false;    // Only load expression data for probes with a known chromosome mapping
-    public HashSet<String> tsSNPsConfine;                           // Confine analysis to the SNPs in this hash
-    public HashMap<String, HashSet<String>> tsSNPProbeCombinationsConfine;           // Confine analysis to the combinations of SNP and Probes in this hash
+    public HashSet<String> tsSNPsConfine;                                      // Confine analysis to the SNPs in this hash
+    public HashMap<String, HashSet<String>> tsSNPProbeCombinationsConfine;     // Confine analysis to the combinations of SNP and Probes in this hash
     // plots
     public double plotOutputPValueCutOff;                                      // Use this p-value as a cutoff for drawing plots
     public String plotOutputDirectory;                                         // Print the plots in this directory
@@ -96,6 +98,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         Double HWE = null;
         Double callrate = null;
         String correctiontype = null;
+        String fdrtype = null;
         Double mtThreshold = null;
         Integer numPermutations = null;
         String outdir = null;
@@ -303,8 +306,23 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         }
         if (numPermutations != null) {
             nrPermutationsFDR = numPermutations;
-        } else {
-            nrPermutationsFDR = 0;
+        }
+        
+        try {
+            fdrtype = config.getString("defaults.multipletesting.fdrtype", null);
+            fdrtype = fdrtype.toLowerCase();
+            fdrtype = fdrtype.replaceAll("-", "");
+            fdrtype = fdrtype.replaceAll("level", "");
+        } catch (Exception e) {
+        }
+        if (numPermutations != null) {
+            if(fdrtype.equals("gene")){
+                fdrType = FDRMethod.GENELEVEL;
+            } else if(fdrtype.equals("probe")){
+                fdrType = FDRMethod.PROBELEVEL;
+            } else if(fdrtype.equals("snpprobe") || fdrtype.equals("full")){
+                fdrType = FDRMethod.FULL;    
+            }
         }
 
         // output settings
@@ -711,6 +729,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 + "performParametricAnalysisGetAccuratePValueEstimates\t" + performParametricAnalysisGetAccuratePValueEstimates + "\n"
                 + "nrThreads\t" + nrThreads + "\n"
                 + "fdrCutOff\t" + fdrCutOff + "\n"
+                + "fdrType\t" + fdrType + "\n"
                 + "nrPermutationsFDR\t" + nrPermutationsFDR + "\n"
                 + "regressOutEQTLEffectFileName\t" + regressOutEQTLEffectFileName + "\n"
                 + "snpQCCallRateThreshold\t" + snpQCCallRateThreshold + "\n"

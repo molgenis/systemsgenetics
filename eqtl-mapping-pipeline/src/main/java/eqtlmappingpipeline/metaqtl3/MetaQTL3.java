@@ -882,7 +882,7 @@ public class MetaQTL3 {
         if (!m_settings.runOnlyPermutations && hasResults) {
             if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
                 System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
-                FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null);
+                FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType);
 
                 if (m_settings.createDotPlot) {
                     EQTLDotPlot edp = new EQTLDotPlot();
