@@ -61,7 +61,7 @@ public class MetaQTL3 {
 
     public MetaQTL3(Settings settings) throws IOException, Exception {
         m_settings = settings;
-        initialize(null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null);
+        initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null);
     }
 
     public void setOutputPlotThreshold(double d) {
@@ -70,7 +70,7 @@ public class MetaQTL3 {
 
     }
 
-    public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
+    public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith, String texttoreplace2, String texttoreplace2with,
             String ingt, String inexp, String inexpplatform, String inexpannot,
             String gte, String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads, Integer maxNrResults,
             String regressouteqtls, String snpprobecombofile) throws IOException, Exception {
@@ -159,6 +159,8 @@ public class MetaQTL3 {
             m_settings = new Settings();
             m_settings.settingsTextReplaceWith = texttoreplacewith;
             m_settings.settingsTextToReplace = texttoreplace;
+            m_settings.settingsTextReplace2With = texttoreplace2with;
+            m_settings.settingsTextToReplace2 = texttoreplace2;
             m_settings.load(xmlSettingsFile);
         } else if (m_settings == null) {
             System.out.println("ERROR: No input specified");
@@ -171,6 +173,7 @@ public class MetaQTL3 {
             m_settings.cisAnalysis = true;
         }
 
+        m_settings.r = new Random(m_settings.rSeed);
         m_settings.writeSettingsToDisk();
 
         int numDatasets = m_settings.datasetSettings.size();
