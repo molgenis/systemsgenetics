@@ -58,6 +58,11 @@ public class UtilConsoleGUI {
         Integer minnrsamples = null;
 
         boolean createQQPlot = true;
+        boolean fullFdrOutput = true;
+        
+        boolean geneLevelFDR = false;
+        boolean probeLevelFDR = false;
+        boolean fullFDR = false;
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -139,7 +144,16 @@ public class UtilConsoleGUI {
                 dist = Integer.parseInt(val);
             } else if (arg.equals("--skipqqplot")) {
                 createQQPlot = false;
+            } else if (arg.equals("--skipFullFdr")) {
+                fullFdrOutput = false;
+            } else if (arg.equals("--fdrProbeLevel")) {
+                fullFdrOutput = false;
+            } else if (arg.equals("--fdrGeneLevel")) {
+                fullFdrOutput = false;
+            } else if (arg.equals("--fdrFull")) {
+                fullFdrOutput = false;
             }
+            
         }
         if (run == null) {
             System.err.println("Please specify an util.");
@@ -254,7 +268,19 @@ public class UtilConsoleGUI {
                             System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
                             printUsage();
                         } else {
-                            FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL);
+                            if(!probeLevelFDR && !geneLevelFDR && !fullFDR){
+                                FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL, fullFdrOutput);
+                            } else {
+                                if(probeLevelFDR){
+                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.PROBELEVEL, fullFdrOutput);
+                                }
+                                if(geneLevelFDR){
+                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.GENELEVEL, fullFdrOutput);
+                                } 
+                                if(fullFDR){
+                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.FULL, fullFdrOutput);
+                                }
+                            }
                         }
 
                         break;

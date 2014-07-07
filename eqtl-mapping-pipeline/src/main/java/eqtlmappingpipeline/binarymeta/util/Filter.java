@@ -79,7 +79,7 @@ public class Filter {
 
 
 	FDR f = new FDR();
-	f.calculateFDR(outdir, permutedFileList.size(), minimumNrOfEQTLs, 0.05, true, null, null, FDRMethod.ALL);
+	f.calculateFDR(outdir, permutedFileList.size(), minimumNrOfEQTLs, 0.05, true, null, null, FDRMethod.ALL, false);
 	EQTLDotPlot edp = new EQTLDotPlot();
         try {
             edp.draw(outdir + "/eQTLsFDR" + 0.05 + ".txt", outdir + "/DotPlot-FDR" + 0.05 + ".png", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
