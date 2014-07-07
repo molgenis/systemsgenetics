@@ -436,6 +436,7 @@ class CalculationThread extends Thread {
                 r.correlations[d][p] = correlationspearman;
                 r.beta[d][p] = regressionFullWithInteraction.calculateRSquared();
             } else if (metaAnalyseInteractionTerms) {
+
                 double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
                 double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
 
