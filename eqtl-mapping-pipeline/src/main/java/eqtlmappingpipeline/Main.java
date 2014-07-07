@@ -25,7 +25,6 @@ public class Main {
 
         EQTLMappingPipelineConsole app = new EQTLMappingPipelineConsole();
         app.main(args);
-        System.exit(0);
         
     }
 }
