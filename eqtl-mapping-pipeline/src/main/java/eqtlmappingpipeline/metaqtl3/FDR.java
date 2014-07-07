@@ -353,6 +353,7 @@ public class FDR {
                         if(createLargeFdrFiles){
                             outputWriterAll.append(currentString.toString());
                         }
+                        
                         if (fdr <= fdrcutoff) {
                             if (!visitedProbes.contains(cachedEqtlsProbe)) {
                                 outputWriterEProbes.append(currentString.toString());
