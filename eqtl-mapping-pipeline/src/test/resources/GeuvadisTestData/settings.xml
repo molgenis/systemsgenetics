@@ -8,27 +8,29 @@
 		</qc>
 		
 		<analysis>
-			<analysistype>cis</analysistype>
-			<cisanalysisprobedistance>250000</cisanalysisprobedistance>
+			<analysistype>trans</analysistype>
+			<cisanalysisprobedistance>500000</cisanalysisprobedistance>
 			<correlationtype>nonparametric</correlationtype>
 			<regressOutEQTLEffects></regressOutEQTLEffects>
 			<threads>2</threads>
 			<onlypermutations>false</onlypermutations>
             <randomseed>0</randomseed>
+            <createdotplot>false</createdotplot>
+            <createqqplot>false</createqqplot>
 		</analysis>
 		
 		<multipletesting>
 			<type>fdr</type>
 			<threshold>0.05</threshold>
-			<permutations>100</permutations>
+			<permutations>5</permutations>
             <fdrtype>FULL</fdrtype>
             <fullFdrOutput>false</fullFdrOutput>
 		</multipletesting>
 		
 		<output>
-			<outputdirectory>ReplacementTxt\outMeta1\</outputdirectory>
-			<outputplotthreshold>1E-10</outputplotthreshold>
-			<outputplotdirectory>ReplacementTxt\outMeta1\Plot\</outputplotdirectory>
+			<outputdirectory>${OutputFolder}</outputdirectory>
+			<outputplotthreshold>0</outputplotthreshold>
+			<outputplotdirectory>${OutputFolder}\Plot\</outputplotdirectory>
 			<maxnreqtlresults>500000</maxnreqtlresults>
 			<generatesnpsummarystatistics>false</generatesnpsummarystatistics>
 			<generateeqtlpvaluetable>false</generateeqtlpvaluetable>
@@ -36,7 +38,7 @@
 		
 		<confine>
 			<snp/>
-			<snpProbe/>
+			<snpProbe>${InputFolder}\snpProbeCombinations_transQTL.txt</snpProbe>
 			<probe/>
 			<confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets>
 			<confineSNPsSelectSNPInStrongestLD>false</confineSNPsSelectSNPInStrongestLD>
@@ -46,20 +48,20 @@
 	<datasets>
 		<dataset>
 			<name>Guevadis_YRI</name>
-			<location>ReplacementTxt\trityper</location>
-			<genometoexpressioncoupling>ReplacementTxt\Geuvadis_YRI_gte.txt</genometoexpressioncoupling>
-			<expressiondata>ReplacementTxt\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
-			<probeannotation>ReplacementTxt\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
+			<location>${InputFolder}\trityper</location>
+			<genometoexpressioncoupling>${InputFolder}\Geuvadis_YRI_gte.txt</genometoexpressioncoupling>
+			<expressiondata>${InputFolder}\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
+			<probeannotation>${InputFolder}\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
 			<expressionplatform>Ensembl_v.71</expressionplatform>
 			<quantilenormalize>false</quantilenormalize>
 			<logtranform>false</logtranform>
 		</dataset>
 		<dataset>
 			<name>Guevadis_CEU</name>
-			<location>ReplacementTxt\trityper</location>
-			<genometoexpressioncoupling>ReplacementTxt\Geuvadis_CEU_gte.txt</genometoexpressioncoupling>
-			<expressiondata>ReplacementTxt\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
-			<probeannotation>ReplacementTxt\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
+			<location>${InputFolder}\trityper</location>
+			<genometoexpressioncoupling>${InputFolder}\Geuvadis_CEU_gte.txt</genometoexpressioncoupling>
+			<expressiondata>${InputFolder}\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
+			<probeannotation>${InputFolder}\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
 			<expressionplatform>Ensembl_v.71</expressionplatform>
 			<quantilenormalize>false</quantilenormalize>
 			<logtranform>false</logtranform>
