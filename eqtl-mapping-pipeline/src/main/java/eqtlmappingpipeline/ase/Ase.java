@@ -206,9 +206,11 @@ public class Ase {
 					//System.out.println("Current number of ASE targets: " + aseResults.getCount());
 				}
 				//Clean up ASE that do not meet minimum number of samples	
-				for (Iterator<AseVariant> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
-					if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
-						aseChrIterator.remove();
+				if(aseResults.chrIterator(chr) != null){
+					for (Iterator<AseVariant> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
+						if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
+							aseChrIterator.remove();
+						}
 					}
 				}
 				//System.out.println("Current number of ASE targets after checking sample count: " + aseResults.getCount());
