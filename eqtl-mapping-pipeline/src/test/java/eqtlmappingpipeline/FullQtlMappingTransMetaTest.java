@@ -59,9 +59,6 @@ public class FullQtlMappingTransMetaTest {
 		System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
 	}
     
-    /**
-	 * Test of main method, of class GenotypeHarmonizer.
-	 */
 	@Test
 	public void testMain() throws Exception {
 		String setingsFile = testFilesFolder + fileSep + "settings.xml";

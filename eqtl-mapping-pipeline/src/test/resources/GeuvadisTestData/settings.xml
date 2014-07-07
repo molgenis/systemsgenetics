@@ -23,7 +23,7 @@
 			<type>fdr</type>
 			<threshold>0.05</threshold>
 			<permutations>5</permutations>
-            <fdrtype>FULL</fdrtype>
+            <fdrtype>probe</fdrtype>
             <fullFdrOutput>false</fullFdrOutput>
 		</multipletesting>
 		
