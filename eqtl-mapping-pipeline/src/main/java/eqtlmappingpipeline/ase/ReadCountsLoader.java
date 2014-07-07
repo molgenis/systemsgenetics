@@ -209,7 +209,7 @@ public class ReadCountsLoader implements Runnable {
 								if (totalReads >= configuration.getMinTotalReads()
 										&& minReads >= configuration.getMinAlleleReads()
 										&& totalReads <= configuration.getMaxTotalReads()
-										&& minReads / totalReads >= configuration.getMinAlleleReadFraction()) {
+										&& (minReads / totalReads) >= configuration.getMinAlleleReadFraction()) {
 
 									if (variant.getVariantMeta().getRecordType("RQ") == GeneticVariantMeta.Type.FLOAT_LIST) {
 										List<Double> meanAlleleBaseQualties = (List<Double>) record.getGenotypeRecordData("RQ");

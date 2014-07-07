@@ -15,11 +15,11 @@ import static org.testng.Assert.*;
  *
  * @author MarcJan
  */
-public class SmoothSortTestQtl {
+public class SmoothSortQtlTest {
 
 	private static final Random random = new Random(1);
 	
-	public SmoothSortTestQtl() {
+	public SmoothSortQtlTest() {
 	}
 
 	@BeforeMethod
@@ -32,6 +32,8 @@ public class SmoothSortTestQtl {
 	@Test
 	public void testSortBig() {
 
+		System.out.println("Testing sort");
+		
 		QTL[] eqtls = new QTL[100000];
 		
 		int numberToSort = 90000;
