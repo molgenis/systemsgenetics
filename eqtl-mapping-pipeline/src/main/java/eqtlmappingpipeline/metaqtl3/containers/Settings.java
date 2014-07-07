@@ -105,7 +105,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         Double callrate = null;
         String correctiontype = null;
         Integer randomseed = null;
-        String fdrtype = null;
+        String fdrtype = "probe";
         boolean largeFdrFileOut = true;
         Double mtThreshold = null;
         Integer numPermutations = null;
@@ -315,7 +315,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         }
 
         try {
-            fdrtype = config.getString("defaults.multipletesting.fdrtype", null);
+            fdrtype = config.getString("defaults.multipletesting.fdrtype", "probe");
             fdrtype = fdrtype.toLowerCase();
             fdrtype = fdrtype.replaceAll("-", "");
             fdrtype = fdrtype.replaceAll("level", "");
