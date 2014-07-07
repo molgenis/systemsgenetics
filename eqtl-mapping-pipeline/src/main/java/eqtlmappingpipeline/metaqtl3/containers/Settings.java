@@ -45,7 +45,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     // Multiple testing correction
     public double fdrCutOff = 0.05;                                            // Cutoff for FDR procedure
     public int nrPermutationsFDR = 1;                                          // Number of permutations to determine FDR
-    public FDRMethod fdrType = FDRMethod.ALL;                                         // Number of permutations to determine FDR
+    public FDRMethod fdrType = FDRMethod.ALL;                                 // Type of FDRs to calculate
+    public boolean fullFdrOutput = false;                                     // Skip out on large FDR files
     // confinements
     public boolean performEQTLAnalysisOnSNPProbeCombinationSubset;             // Confine to a certain set of probe/snp combinations?
     public Byte confineToSNPsThatMapToChromosome;                              // Confine SNP to be assessed to SNPs mapped on this chromosome
@@ -103,6 +104,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         String correctiontype = null;
         Integer randomseed = null;
         String fdrtype = null;
+        boolean largeFdrFileOut = true;
         Double mtThreshold = null;
         Integer numPermutations = null;
         String outdir = null;
@@ -336,6 +338,14 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             } else if (fdrtype.equals("snpprobe") || fdrtype.equals("full")) {
                 fdrType = FDRMethod.FULL;
             }
+        }
+        
+        try {
+            largeFdrFileOut = config.getBoolean("defaults.multipletesting.fullFdrOutput", true);
+        } catch (Exception e) {
+        }
+        if (largeFdrFileOut == true) {
+            fullFdrOutput = true;
         }
 
         // output settings

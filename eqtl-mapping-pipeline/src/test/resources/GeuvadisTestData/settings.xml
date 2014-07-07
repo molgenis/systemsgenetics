@@ -22,6 +22,7 @@
 			<threshold>0.05</threshold>
 			<permutations>100</permutations>
             <fdrtype>FULL</fdrtype>
+            <fullFdrOutput>false</fullFdrOutput>
 		</multipletesting>
 		
 		<output>
