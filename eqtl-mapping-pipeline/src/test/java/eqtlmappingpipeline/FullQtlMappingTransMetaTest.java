@@ -10,12 +10,15 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+import umcg.genetica.io.trityper.EQTL;
+import umcg.genetica.io.trityper.eQTLTextFile;
 /**
  *
  * @author MarcJan
@@ -65,5 +68,19 @@ public class FullQtlMappingTransMetaTest {
 		System.out.println(setingsFile);
 
 		Main.main("--mode", "metaqtl", "--settings", setingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
+        
+        //Read in expected results
+        eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
+        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
+
+        Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
+        Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
+        
+        while(eExpIterator.hasNext() && eActualIterator.hasNext()){
+            assertTrue(eActualIterator.next().sameQTL(eExpIterator.next()), "eQTL not identical");
+        }
+        
+        assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found");
+        assertFalse(eActualIterator.hasNext(), "found more eQTL than expected");
     }
 }

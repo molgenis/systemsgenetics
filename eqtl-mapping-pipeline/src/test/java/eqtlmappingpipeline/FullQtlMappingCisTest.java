@@ -4,18 +4,23 @@
  */
 package eqtlmappingpipeline;
 
+import eqtlmappingpipeline.util.eQTLDotPlotter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+import umcg.genetica.io.trityper.EQTL;
+import umcg.genetica.io.trityper.eQTLTextFile;
 /**
  *
  * @author MarcJan
@@ -68,7 +73,25 @@ public class FullQtlMappingCisTest {
         
 		System.out.println(inputDir);
 
-		Main.main("--mode", "metaqtl", "--in", inputDir, "--out", tmpOutputFolder.getAbsolutePath(), "--cis", "--perm", "10", "--inexp", inputExprs, "--inexpannot", inputExprsAnnot, "--inexpplatform", "Ensembl_v.71", "--gte", inputGte);
+		Main.main("--mode", "metaqtl", "--in", inputDir, "--out", tmpOutputFolder.getAbsolutePath(), "--cis", "--perm", "10", "--inexp", inputExprs, "--inexpannot", inputExprsAnnot, "--inexpplatform", "Ensembl_v.71", "--gte", inputGte, "--skipqqplot", "--skipdotplot" , "--rseed", "0");
+        
+        
+        
+        //Read in expected results
+        eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Cis-CEU-eQTLsFDR0.05.txt", eQTLTextFile.R);
+        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05.txt", eQTLTextFile.R);
+        
+        Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
+        Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
+        
+        while(eExpIterator.hasNext() && eActualIterator.hasNext()){
+            assertTrue(eActualIterator.next().sameQTL(eExpIterator.next()), "eQTL not identical");
+        }
+        
+        assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found");
+        assertFalse(eActualIterator.hasNext(), "found more eQTL than expected");
+        
+        
     }
     
 }
