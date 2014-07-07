@@ -39,6 +39,9 @@ public class MetaQTL3ConsoleGUI {
         Integer nrEQTLsToOutput = null;
 
         String snpprobecombofile = null;
+        boolean skipqqplot = false;
+        boolean skipdotplot = false;
+        Long rSeed = System.currentTimeMillis();
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -124,6 +127,20 @@ public class MetaQTL3ConsoleGUI {
                     System.err.println("Error --maxresults should be an integer");
                 }
 
+            } else if (arg.equals(
+                    "--skipdotplot")) {
+                skipdotplot = true;
+            } else if (arg.equals(
+                    "--skipqqplot")) {
+                skipqqplot = true;
+            } else if (arg.equals(
+                    "--rseed")) {
+                try {
+                    rSeed = Long.parseLong(val);
+                } catch (NumberFormatException e) {
+                    System.err.println("Error --rseed should be an integer");
+                }
+
             }
         }
         try {
@@ -135,7 +152,7 @@ public class MetaQTL3ConsoleGUI {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile);
+                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed);
                 
                 if(outputPlotThresold!=null){
                     m.setOutputPlotThreshold(outputPlotThresold);
