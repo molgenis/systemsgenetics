@@ -13,16 +13,16 @@
             <correlationtype>nonparametric</correlationtype>
             <equalrankforties>false</equalrankforties>
             <regressOutEQTLEffects></regressOutEQTLEffects>
-            <regressOutEQTLEffectsSaveOutput></regressOutEQTLEffectsSaveOutput>
+            <regressOutEQTLEffectsSaveOutput>false</regressOutEQTLEffectsSaveOutput>
             <pathwaydefinition></pathwaydefinition>
             <threads>2</threads>
             <onlypermutations>false</onlypermutations>
             <randomseed>0</randomseed>
             <createdotplot>false</createdotplot>
             <createqqplot>false</createqqplot>
-            <metaAnalyseInteractionTerms></metaAnalyseInteractionTerms>
-            <permuteCovariates></permuteCovariates>
-            <metaAnalyseModelCorrelationYHat></metaAnalyseModelCorrelationYHat>
+            <metaAnalyseInteractionTerms>false</metaAnalyseInteractionTerms>
+            <permuteCovariates>false</permuteCovariates>
+            <metaAnalyseModelCorrelationYHat>false</metaAnalyseModelCorrelationYHat>
             <useabsolutepvalue>false</useabsolutepvalue>
         </analysis>
 		
@@ -41,11 +41,11 @@
             <maxnreqtlresults>500000</maxnreqtlresults>
             <generatesnpsummarystatistics>false</generatesnpsummarystatistics>
             <generatesnppvaluesummarystatistics>false</generatesnppvaluesummarystatistics>
-            <generatefoldchangevalues></generatefoldchangevalues>
-            <generatebetaandfoldchanges></generatebetaandfoldchanges>
+            <generatefoldchangevalues>false</generatefoldchangevalues>
+            <generatebetaandfoldchanges>false</generatebetaandfoldchanges>
             <generateeqtlpvaluetable>false</generateeqtlpvaluetable>
-            <binaryoutput></binaryoutput>
-            <textoutput></textoutput>
+            <binaryoutput>false</binaryoutput>
+            <textoutput>true</textoutput>
         </output>
 		
         <confine>
