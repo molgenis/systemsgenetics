@@ -167,21 +167,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         } catch (Exception e) {
         }
 
-        try {
-            String strStartWithPermutation = config.getString("defaults.analysis.startwithpermutation", null);
-
-            if (settingsTextToReplace != null && strStartWithPermutation.contains(settingsTextToReplace)) {
-                strStartWithPermutation = strStartWithPermutation.replace(settingsTextToReplace, settingsTextReplaceWith);
-            }
-            
-            if (settingsTextToReplace2 != null && strStartWithPermutation.contains(settingsTextToReplace2)) {
-                strStartWithPermutation = strStartWithPermutation.replace(settingsTextToReplace2, settingsTextReplace2With);
-            }
-            startWithPermutation = Integer.parseInt(strStartWithPermutation);
-
-        } catch (Exception e) {
-        }
-
         if (analysisType != null) {
             if (analysisType.toLowerCase().equals("cis")) {
                 cisAnalysis = true;
@@ -383,24 +368,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             System.out.println("Error: please supply an output directory.");
             System.exit(-1);
         }
-
-        try {
-            String probeConversionFileLoc = config.getString("defaults.analysis.probeconversion", null);
-            if (probeConversionFileLoc != null && probeConversionFileLoc.length() > 0) {
-                System.out.println(probeConversionFileLoc);
-
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-
-        try {
-            outputplotthreshold = config.getDouble("defaults.output.outputplotthreshold");
-        } catch (Exception e) {
-        }
-
+        
         try {
             createBinaryOutputFiles = config.getBoolean("defaults.output.binaryoutput", false);
             createTEXTOutputFiles = config.getBoolean("defaults.output.textoutput", true);
