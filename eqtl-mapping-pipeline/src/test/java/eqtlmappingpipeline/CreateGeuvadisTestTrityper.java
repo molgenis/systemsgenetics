@@ -21,7 +21,6 @@ import org.testng.annotations.Test;
  */
 public class CreateGeuvadisTestTrityper {
 
-	@Test
     public void createGeuvadisTestTrityper() throws Exception {
 		
 		//GeuvadisTestData/Geuvadis_chr1.vcf.gz
