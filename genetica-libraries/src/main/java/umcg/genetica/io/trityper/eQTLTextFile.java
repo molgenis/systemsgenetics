@@ -86,8 +86,7 @@ public class eQTLTextFile extends TextFile {
 			+ "IncludedDatasetsCorrelationCoefficient\t"
 			+ "Meta-Beta (SE)\t"
 			+ "Beta (SE)\t"
-			+ "FoldChange\t"
-			+ "FDR";
+			+ "FoldChange";
 
 	public eQTLTextFile(String loc, boolean W) throws IOException {
 		super(loc, W);
