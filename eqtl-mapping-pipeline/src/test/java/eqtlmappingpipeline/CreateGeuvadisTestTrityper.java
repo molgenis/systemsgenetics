@@ -13,7 +13,6 @@ import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
-import org.testng.annotations.Test;
 
 /**
  *
