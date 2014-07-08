@@ -37,7 +37,7 @@
         <output>
             <outputdirectory>${OutputFolder}</outputdirectory>
             <outputplotthreshold>0</outputplotthreshold>
-            <outputplotdirectory>${OutputFolder}\Plot\</outputplotdirectory>
+            <outputplotdirectory>${OutputFolder}/Plot/</outputplotdirectory>
             <maxnreqtlresults>500000</maxnreqtlresults>
             <generatesnpsummarystatistics>false</generatesnpsummarystatistics>
             <generatesnppvaluesummarystatistics>false</generatesnppvaluesummarystatistics>
@@ -61,10 +61,10 @@
     <datasets>
         <dataset>
             <name>Guevadis_YRI</name>
-            <location>${InputFolder}\trityper</location>
-            <genometoexpressioncoupling>${InputFolder}\Geuvadis_YRI_gte.txt</genometoexpressioncoupling>
-            <expressiondata>${InputFolder}\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
-            <probeannotation>${InputFolder}\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
+            <location>${InputFolder}/trityper</location>
+            <genometoexpressioncoupling>${InputFolder}/Geuvadis_YRI_gte.txt</genometoexpressioncoupling>
+            <expressiondata>${InputFolder}/Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
+            <probeannotation>${InputFolder}/Geuvadis_CEU_YRI_Annot.txt</probeannotation>
             <covariates></covariates>
             <expressionplatform>Ensembl_v.71</expressionplatform>
             <quantilenormalize>false</quantilenormalize>
@@ -72,10 +72,10 @@
         </dataset>
         <dataset>
             <name>Guevadis_CEU</name>
-            <location>${InputFolder}\trityper</location>
-            <genometoexpressioncoupling>${InputFolder}\Geuvadis_CEU_gte.txt</genometoexpressioncoupling>
-            <expressiondata>${InputFolder}\Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
-            <probeannotation>${InputFolder}\Geuvadis_CEU_YRI_Annot.txt</probeannotation>
+            <location>${InputFolder}/trityper</location>
+            <genometoexpressioncoupling>${InputFolder}/Geuvadis_CEU_gte.txt</genometoexpressioncoupling>
+            <expressiondata>${InputFolder}/Geuvadis_CEU_YRI_Expr.txt.gz</expressiondata>
+            <probeannotation>${InputFolder}/Geuvadis_CEU_YRI_Annot.txt</probeannotation>
             <covariates></covariates>
             <expressionplatform>Ensembl_v.71</expressionplatform>
             <quantilenormalize>false</quantilenormalize>
