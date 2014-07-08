@@ -9,7 +9,7 @@ package umcg.genetica.io.trityper;
  * @author harmjan
  */
 public class EQTL implements Comparable<EQTL> {
-
+    
     private Double pvalue = 1d;
     private Double pvalueAbs = 1d;
     private String rsName;
@@ -36,7 +36,7 @@ public class EQTL implements Comparable<EQTL> {
     private String beta;
     private String fc;
     private boolean useAbsoluteZScore = false;
-
+    
     public EQTL() {
     }
 
@@ -365,19 +365,19 @@ public class EQTL implements Comparable<EQTL> {
     public void setCorrelations(Double[] correlations) {
         this.correlations = correlations;
     }
-
+    
     public void setFDR(double d) {
         this.FDR = d;
     }
-
+    
     public Double getFDR() {
         return FDR;
     }
-
+    
     public String compare(EQTL test) {
         boolean identical = true;
         String reason = "";
-
+        
         if (!test.getProbe().equals(this.probe)) {
             reason += "Diff probes:\t" + test.getProbe() + "\t" + getProbe() + "\t";
             identical = false;
@@ -393,7 +393,7 @@ public class EQTL implements Comparable<EQTL> {
 //                }
             }
         }
-
+        
         if (!test.getRsName().equals(this.rsName)) {
             reason += "Diff rsName:\t" + test.getRsName() + "\t" + getRsName() + "\t";
             identical = false;
@@ -410,14 +410,14 @@ public class EQTL implements Comparable<EQTL> {
 //                }
             }
         }
-
+        
         if (test.getPvalue() != pvalue) {
             reason += "Diff pval:\t" + test.getPvalue() + "\t" + getPvalue() + "\t";
             identical = false;
         } else {
             reason += "";
         }
-
+        
         if (test.getZscore() != zscore.doubleValue()) {
             if (Math.abs(test.getZscore()) - Math.abs(zscore.doubleValue()) > 0.0001) {
                 if (test.getAlleleAssessed().equals(alleleAssessed)) {
@@ -426,7 +426,7 @@ public class EQTL implements Comparable<EQTL> {
                 }
             }
         }
-
+        
         if (!identical) {
             return reason;
         } else {
@@ -441,7 +441,7 @@ public class EQTL implements Comparable<EQTL> {
         hash += rsName.hashCode();
         return hash;
     }
-
+    
     @Override
     public boolean equals(Object obj) {
         if (obj == null) {
@@ -459,7 +459,7 @@ public class EQTL implements Comparable<EQTL> {
         }
         return true;
     }
-
+    
     @Override
     public String toString() {
         String sepStr = ";";
@@ -467,7 +467,7 @@ public class EQTL implements Comparable<EQTL> {
         char tabStr = '\t';
         EQTL e = this;
         StringBuilder out = new StringBuilder();
-
+        
         if (useAbsoluteZScore) {
             if (pvalueAbs == null) {
                 out.append(nullstr);
@@ -476,7 +476,7 @@ public class EQTL implements Comparable<EQTL> {
                 out.append(e.getPvalueAbs());
                 out.append(tabStr);
             }
-
+            
         } else {
             if (pvalue == null) {
                 out.append(nullstr);
@@ -485,7 +485,7 @@ public class EQTL implements Comparable<EQTL> {
                 out.append(e.getPvalue());
                 out.append(tabStr);
             }
-
+            
         }
         if (rsName == null) {
             out.append(nullstr);
@@ -494,7 +494,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getRsName());
             out.append(tabStr);
         }
-
+        
         if (rsChr == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -502,7 +502,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getRsChr());
             out.append(tabStr);
         }
-
+        
         if (rsChrPos == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -510,7 +510,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getRsChrPos());
             out.append(tabStr);
         }
-
+        
         if (probe == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -518,7 +518,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getProbe());
             out.append(tabStr);
         }
-
+        
         if (probeChr == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -526,7 +526,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getProbeChr());
             out.append(tabStr);
         }
-
+        
         if (probeChrPos == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -534,7 +534,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getProbeChrPos());
             out.append(tabStr);
         }
-
+        
         if (eQTLType == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -542,7 +542,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getType());
             out.append(tabStr);
         }
-
+        
         if (alleles == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -550,7 +550,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getAlleles());
             out.append(tabStr);
         }
-
+        
         if (alleleAssessed == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -558,7 +558,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(e.getAlleleAssessed());
             out.append(tabStr);
         }
-
+        
         if (useAbsoluteZScore) {
             if (zscoreAbs == null) {
                 out.append(nullstr);
@@ -576,11 +576,11 @@ public class EQTL implements Comparable<EQTL> {
                 out.append(tabStr);
             }
         }
-
-
-
-
-
+        
+        
+        
+        
+        
         String[] ds = e.getDatasets();
 //        Double[] corrs = e.getCorrelations();
 //        Double[] zscores = e.getDatasetZScores();
@@ -593,7 +593,7 @@ public class EQTL implements Comparable<EQTL> {
         StringBuilder outsamples = new StringBuilder();
         StringBuilder outmeans = new StringBuilder();
         StringBuilder outvars = new StringBuilder();
-
+        
         if (ds == null) {
             out.append(nullstr);
             out.append(tabStr);
@@ -616,68 +616,68 @@ public class EQTL implements Comparable<EQTL> {
                     } else {
                         out.append(ds[d]);
                     }
-
+                    
                     if (correlations == null || correlations[d] == null) {
                         outcorrs.append(nullstr);
                     } else {
                         outcorrs.append(correlations[d]);
                     }
-
+                    
                     if (datasetZScores == null || datasetZScores[d] == null) {
                         outzscores.append(nullstr);
                     } else {
                         outzscores.append(datasetZScores[d]);
                     }
-
+                    
                     if (datasetsSamples == null || datasetsSamples[d] == null) {
                         outsamples.append(nullstr);
                     } else {
                         outsamples.append(datasetsSamples[d]);
                     }
-
+                    
                     if (probeMeans == null || probeMeans[d] == null) {
                         outmeans.append(nullstr);
                     } else {
                         outmeans.append(probemeans[d]);
                     }
-
+                    
                     if (probeVariance == null || probeVariance[d] == null) {
                         outvars.append(nullstr);
                     } else {
                         outvars.append(probeVariance[d]);
                     }
-
+                    
                 } else {
                     if (datasets[d] == null) {
                         out.append(sepStr).append(nullstr);
                     } else {
                         out.append(sepStr).append(ds[d]);
                     }
-
+                    
                     if (correlations == null || correlations[d] == null) {
                         outcorrs.append(sepStr).append(nullstr);
                     } else {
                         outcorrs.append(sepStr).append(correlations[d]);
                     }
-
+                    
                     if (datasetZScores == null || datasetZScores[d] == null) {
                         outzscores.append(sepStr).append(nullstr);
                     } else {
                         outzscores.append(sepStr).append(datasetZScores[d]);
                     }
-
+                    
                     if (datasetsSamples == null || datasetsSamples[d] == null) {
                         outsamples.append(sepStr).append(nullstr);
                     } else {
                         outsamples.append(sepStr).append(datasetsSamples[d]);
                     }
-
+                    
                     if (probeMeans == null || probeMeans[d] == null) {
                         outmeans.append(sepStr).append(nullstr);
                     } else {
                         outmeans.append(sepStr).append(probemeans[d]);
                     }
-
+                    
                     if (probeVariance == null || probeVariance[d] == null) {
                         outvars.append(sepStr).append(nullstr);
                     } else {
@@ -685,7 +685,7 @@ public class EQTL implements Comparable<EQTL> {
                     }
                 }
             }
-
+            
             out.append(tabStr);
             out.append(outzscores.toString());
             out.append(tabStr);
@@ -724,13 +724,13 @@ public class EQTL implements Comparable<EQTL> {
             } else {
                 out.append(e.getFDR());
             }
-
+            
         }
-
-
+        
+        
         return out.toString();
     }
-
+    
     @Override
     public int compareTo(EQTL o) {
         if (useAbsoluteZScore) {
@@ -763,7 +763,7 @@ public class EQTL implements Comparable<EQTL> {
             }
         }
     }
-
+    
     public boolean equals(EQTL o) {
         if (useAbsoluteZScore) {
             if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {
@@ -789,8 +789,8 @@ public class EQTL implements Comparable<EQTL> {
     }
     
     public boolean sameQTL(EQTL o) {
-        if (zscore.doubleValue() == o.zscore.doubleValue() && probe.equals(o.probe) && rsName.equals(o.rsName)) {
-          return true;
+        if (zscore.doubleValue() == o.zscore.doubleValue() && probe.equals(o.probe) && rsName.equals(o.rsName) && FDR.equals(o.FDR)) {
+            return true;
         } else {
             return false;
         }
@@ -803,27 +803,27 @@ public class EQTL implements Comparable<EQTL> {
     public void setMetaBeta(String string) {
         metabeta = string;
     }
-
+    
     public void setBeta(String string) {
         beta = string;
     }
-
+    
     public void setFC(String string) {
         fc = string;
     }
-
+    
     public String getMetaBeta() {
         return metabeta;
     }
-
+    
     public String getBeta() {
         return beta;
     }
-
+    
     public String getFC() {
         return fc;
     }
-
+    
     public void clearData() {
 //	pvalue = null;
         rsName = null;
@@ -848,27 +848,27 @@ public class EQTL implements Comparable<EQTL> {
         beta = null;
         fc = null;
     }
-
+    
     public void setZscoreAbs(double zScoreAbs) {
         this.zscoreAbs = zScoreAbs;
     }
-
+    
     public void setPvalueAbs(double pValueOverallAbs) {
         this.pvalueAbs = pValueOverallAbs;
     }
-
+    
     public Double getZscoreAbs() {
         return zscoreAbs;
     }
-
+    
     public Double getPvalueAbs() {
         return pvalueAbs;
     }
-
+    
     public void setUseAbsoluteZScore() {
         this.useAbsoluteZScore = true;
     }
-
+    
     public boolean getUseAbsoluteZScore() {
         return useAbsoluteZScore;
     }
