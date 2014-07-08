@@ -37,6 +37,8 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
+import umcg.genetica.io.bedgraph.BedGraphEntry;
+import umcg.genetica.io.bedgraph.BedGraphFile;
 import umcg.genetica.io.gtf.GffElement;
 import umcg.genetica.io.gtf.GtfReader;
 
@@ -176,6 +178,7 @@ public class Ase {
 
 		final List<File> inputFiles = configuration.getInputFiles();
 
+		System.out.println("Loading sample allele counts");
 		if (referenceGenotypes == null) {
 			loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter(), true);
 
@@ -191,8 +194,7 @@ public class Ase {
 			//We have reference genotypes. This means a lot of random access to this single genotype data which slowed down the analyis a lot. 
 			//Chucking the analysis will be used so that we can efficiently cache the reference genotypes.
 
-			final int chunkSize = 10000000;
-			//final int chunkSize = Integer.MAX_VALUE;
+			final int chunkSize = configuration.getChunkSize();
 
 			for (String chr : referenceGenotypes.getSeqNames()) {
 
@@ -201,12 +203,17 @@ public class Ase {
 				}
 
 				for (int startChunk = 0; referenceGenotypes.getVariantsByRange(chr, startChunk, Integer.MAX_VALUE).iterator().hasNext(); startChunk += chunkSize) {
-					System.out.println("Chr: " + chr + " chunk: " + DEFAULT_NUMBER_FORMATTER.format(startChunk) + "-" + DEFAULT_NUMBER_FORMATTER.format(startChunk + chunkSize));
+					if (chunkSize == Integer.MAX_VALUE) {
+						System.out.println("Chr: " + chr);
+					} else {
+						System.out.println("Chr: " + chr + " chunk: " + DEFAULT_NUMBER_FORMATTER.format(startChunk) + "-" + DEFAULT_NUMBER_FORMATTER.format(startChunk + chunkSize));
+					}
+
 					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize - 1), false);
 					//System.out.println("Current number of ASE targets: " + aseResults.getCount());
 				}
 				//Clean up ASE that do not meet minimum number of samples	
-				if(aseResults.chrIterator(chr) != null){
+				if (aseResults.chrIterator(chr) != null) {
 					for (Iterator<AseVariant> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
 						if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
 							aseChrIterator.remove();
@@ -224,6 +231,65 @@ public class Ase {
 
 		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
 		System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
+
+		if (configuration.isMappabilityTrackSet()) {
+			
+			int removeNoMappabilityInfo = 0;
+			int removeLowMappability = 0;
+			
+			double minimumMappability = configuration.getMappabilityMinimum();
+
+			PerChrIntervalTree<BedGraphEntry> mappabilities;
+			try {
+				BedGraphFile bedGraphFile = new BedGraphFile(configuration.getMappabilityTrackFile());
+				mappabilities = bedGraphFile.createIntervalTree();
+			} catch (FileNotFoundException ex) {
+				System.err.println("Could not find mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+				LOGGER.fatal("Could not find mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+				System.exit(1);
+				return;
+			} catch (IOException ex) {
+				System.err.println("Could not read mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+				LOGGER.fatal("Could not read mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+				System.exit(1);
+				return;
+			} catch (Exception ex) {
+				System.err.println("Error reading mappability file " + ex.getMessage());
+				LOGGER.fatal("Error reading mappability file " + ex.getMessage());
+				System.exit(1);
+				return;
+			}
+
+
+			for (Iterator<AseVariant> aseIterator = aseResults.iterator(); aseIterator.hasNext();) {
+				AseVariant ase = aseIterator.next();
+				List<BedGraphEntry> aseMappabilities = mappabilities.searchPosition(ase.getChr(), ase.getPos());
+				if (aseMappabilities.isEmpty()) {
+					aseIterator.remove();
+					++removeNoMappabilityInfo;
+					continue;
+				} else if (aseMappabilities.size() > 1) {
+					System.err.println("Error reading mappability file " + ase.getChr() + ":" + ase.getPos() + " contains multiple mappability scores");
+					LOGGER.fatal("Error reading mappability file " + ase.getChr() + ":" + ase.getPos() + " contains multiple mappability scores");
+					System.exit(1);
+					return;
+				} else if(aseMappabilities.get(0).getValue() < minimumMappability){
+					++removeLowMappability;
+					aseIterator.remove();
+				}
+
+			}
+
+			System.out.println("ASE removed due to low mappability: " + DEFAULT_NUMBER_FORMATTER.format(removeLowMappability));
+			LOGGER.info("ASE removed due to low mappability: " + DEFAULT_NUMBER_FORMATTER.format(removeLowMappability));
+			
+			if(removeNoMappabilityInfo != 0){
+				System.out.println("ASE removed due to no mappability info present: " + DEFAULT_NUMBER_FORMATTER.format(removeNoMappabilityInfo));
+				LOGGER.info("ASE removed due to no mappability info present: " + DEFAULT_NUMBER_FORMATTER.format(removeNoMappabilityInfo));
+			}
+
+		}
+
 
 		AseVariant[] aseVariants = new AseVariant[aseResults.getCount()];
 		{
@@ -624,8 +690,8 @@ public class Ase {
 				Thread.sleep(500);
 			} catch (InterruptedException ex) {
 			}
-			
-			if(showFileProgress){
+
+			if (showFileProgress) {
 				int currentCount = fileCounter.get();
 
 				if (currentCount > nextReport) {
