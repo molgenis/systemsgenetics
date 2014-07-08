@@ -6,6 +6,7 @@ package eqtlmappingpipeline.metaqtl3.containers;
 
 import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -542,7 +543,13 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (snpProbeConfine != null && snpProbeConfine.trim().length() > 0 && Gpio.exists(snpProbeConfine)) {
             loadSNPProbeConfinement(snpProbeConfine);
         } else if (snpProbeConfine != null && snpProbeConfine.trim().length() > 0 && !Gpio.exists(snpProbeConfine)) {
-            throw new IOException("Error! SNP-Probe confinement file: " + snpProbeConfine + " could not be found.");
+			if(!new File(snpProbeConfine).exists()){
+				throw new IOException("Error! SNP-Probe confinement file: " + snpProbeConfine + " could not be found.");
+			} else if (!new File(snpProbeConfine).canRead()){
+				throw new IOException("Error! SNP-Probe confinement file: " + snpProbeConfine + " could not be read.");
+			} else {
+				throw new IOException("Error! SNP-Probe confinement file: " + snpProbeConfine + " read error.");
+			}
         }
 
         // confine to snp present in all datasets

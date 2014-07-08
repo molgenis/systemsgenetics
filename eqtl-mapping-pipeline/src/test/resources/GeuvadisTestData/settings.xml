@@ -50,7 +50,7 @@
 		
         <confine>
             <snp></snp>
-            <snpProbe>${InputFolder}\snpProbeCombinations_transQTL.txt</snpProbe>
+            <snpProbe>${InputFolder}/snpProbeCombinations_transQTL.txt</snpProbe>
             <probe></probe>
             <snpProbeConfineBasedOnChrPos></snpProbeConfineBasedOnChrPos>
             <confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets>
