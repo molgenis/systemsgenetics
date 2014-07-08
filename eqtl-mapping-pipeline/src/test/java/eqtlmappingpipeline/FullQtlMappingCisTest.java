@@ -78,7 +78,7 @@ public class FullQtlMappingCisTest {
             EQTL buffer_Expected = eExpIterator.next();
             if(!buffer_Actual.sameQTL(buffer_Expected) && eExpIterator.hasNext() && eActualIterator.hasNext()){
                 assertTrue(buffer_Actual.sameQTL(eExpIterator.next()), "eQTL not identical");
-                assertTrue(eExpIterator.next().sameQTL(buffer_Expected), "eQTL not identical");
+                assertTrue(eActualIterator.next().sameQTL(buffer_Expected), "eQTL not identical");
             } else {
                 assertTrue(buffer_Actual.sameQTL(buffer_Expected), "eQTL not identical");
             }
