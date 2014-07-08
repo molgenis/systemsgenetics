@@ -6,15 +6,11 @@ package eqtlmappingpipeline;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
-import org.molgenis.genotype.Allele;
-import org.molgenis.genotype.Alleles;
 import static org.testng.Assert.*;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import umcg.genetica.io.trityper.EQTL;
@@ -25,10 +21,8 @@ import umcg.genetica.io.trityper.eQTLTextFile;
  */
 public class FullQtlMappingTransMetaTest {
     private File tmpOutputFolder;
-	private String fileSep = System.getProperty("file.separator");
-	private File testFilesFolder;
-	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
-	private static final Alleles MISSING_ALLELES = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
+	private final String fileSep = System.getProperty("file.separator");
+	private final File testFilesFolder;
     
     public FullQtlMappingTransMetaTest() throws URISyntaxException {
 		testFilesFolder = new File(this.getClass().getResource("/GeuvadisTestData/").toURI());
@@ -69,7 +63,6 @@ public class FullQtlMappingTransMetaTest {
 
 		Main.main("--mode", "metaqtl", "--settings", setingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
         
-        //Read in expected results
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
         eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
 
