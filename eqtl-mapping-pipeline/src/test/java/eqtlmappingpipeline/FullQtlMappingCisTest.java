@@ -67,9 +67,6 @@ public class FullQtlMappingCisTest {
 
 		Main.main("--mode", "metaqtl", "--in", inputDir, "--out", tmpOutputFolder.getAbsolutePath(), "--cis", "--perm", "10", "--inexp", inputExprs, "--inexpannot", inputExprsAnnot, "--inexpplatform", "Ensembl_v.71", "--gte", inputGte, "--skipqqplot", "--skipdotplot" , "--rseed", "0");
         
-        
-        
-        //Read in expected results
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Cis-CEU-eQTLsFDR0.05.txt", eQTLTextFile.R);
         eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05.txt", eQTLTextFile.R);
         
@@ -77,7 +74,14 @@ public class FullQtlMappingCisTest {
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
         
         while(eExpIterator.hasNext() && eActualIterator.hasNext()){
-            assertTrue(eActualIterator.next().sameQTL(eExpIterator.next()), "eQTL not identical");
+            EQTL buffer_Actual = eActualIterator.next();
+            EQTL buffer_Expected = eExpIterator.next();
+            if(!buffer_Actual.sameQTL(buffer_Expected) && eExpIterator.hasNext() && eActualIterator.hasNext()){
+                assertTrue(buffer_Actual.sameQTL(eExpIterator.next()), "eQTL not identical");
+                assertTrue(eExpIterator.next().sameQTL(buffer_Expected), "eQTL not identical");
+            } else {
+                assertTrue(buffer_Actual.sameQTL(buffer_Expected), "eQTL not identical");
+            }
         }
         
         assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found");
