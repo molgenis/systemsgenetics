@@ -736,7 +736,15 @@ public class EQTL implements Comparable<EQTL> {
         if (useAbsoluteZScore) {
             if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {
                 if (zscoreAbs.doubleValue() == o.zscoreAbs.doubleValue()) {
-                    return 0;
+                    if(rsName.compareTo(o.rsName)==0){
+                        if(probe.compareTo(o.probe)==0){
+                            return 0;
+                        } else {
+                            return probe.compareTo(o.probe);
+                        }
+                    } else {
+                        return rsName.compareTo(o.rsName);
+                    }
                 } else if (zscoreAbs.doubleValue() < o.zscoreAbs.doubleValue()) {
                     return 1;
                 } else {
@@ -750,7 +758,15 @@ public class EQTL implements Comparable<EQTL> {
         } else {
             if (pvalue.doubleValue() == o.pvalue.doubleValue()) {
                 if (Math.abs(zscore.doubleValue()) == Math.abs(o.zscore.doubleValue())) {
-                    return 0;
+                    if(rsName.compareTo(o.rsName)==0){
+                        if(probe.compareTo(o.probe)==0){
+                            return 0;
+                        } else {
+                            return probe.compareTo(o.probe);
+                        }
+                    } else {
+                        return rsName.compareTo(o.rsName);
+                    }
                 } else if (Math.abs(zscore.doubleValue()) < Math.abs(o.zscore.doubleValue())) {
                     return 1;
                 } else {
@@ -768,7 +784,15 @@ public class EQTL implements Comparable<EQTL> {
         if (useAbsoluteZScore) {
             if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {
                 if (zscoreAbs.doubleValue() == o.zscoreAbs.doubleValue()) {
-                    return true;
+                    if (probe.equals(o.probe)) {
+                        if (rsName.equals(o.rsName)) {
+                            return true;
+                        } else{
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }
@@ -778,7 +802,15 @@ public class EQTL implements Comparable<EQTL> {
         } else {
             if (pvalue.doubleValue() == o.pvalue.doubleValue()) {
                 if (Math.abs(zscore.doubleValue()) == Math.abs(o.zscore.doubleValue())) {
-                    return true;
+                    if (probe.equals(o.probe)) {
+                        if (rsName.equals(o.rsName)) {
+                            return true;
+                        } else{
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }
