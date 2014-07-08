@@ -2,6 +2,9 @@ package eqtlmappingpipeline.ase;
 
 import cern.colt.list.tint.IntArrayList;
 import cern.jet.stat.tdouble.Probability;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import org.apache.log4j.Logger;
 
 /**
@@ -23,6 +26,11 @@ public class AseMle {
 	private static final int NTOP = 2000;
 	private static final double[] aa = new double[NTOP];
 	private static final Logger LOGGER = Logger.getLogger(AseMle.class);
+	private static final BigDecimal probabilityStep = new BigDecimal(0.001);
+	private static final MathContext mathContextProbability = new MathContext(3, RoundingMode.HALF_UP);//Must fit step percision
+	protected static final double[] probabilities;
+	protected static final double[] logProbabilities;
+	protected static final double[] log1minProbabilities;
 
 	static {
 		a[0] = 1.;
@@ -34,12 +42,34 @@ public class AseMle {
 		}
 	}
 
+	static {
+		BigDecimal one = new BigDecimal(1);
+
+		int stepCount = ((int) (1 / probabilityStep.doubleValue())) - 1;
+
+		probabilities = new double[stepCount];
+		logProbabilities = new double[stepCount];
+		log1minProbabilities = new double[stepCount];
+
+		int i = 0;
+		for (BigDecimal p = probabilityStep; p.compareTo(one) < 0; p = p.add(probabilityStep)) {
+
+			double p2 = p.round(mathContextProbability).doubleValue();
+			probabilities[i] = p2;
+			logProbabilities[i] = Math.log(p2);
+			log1minProbabilities[i] = Math.log(1 - p2);
+
+			++i;
+		}
+
+	}
+
 	public AseMle(IntArrayList a1Counts, IntArrayList a2Counts) {
 
 		double provisionalMaxLogLikelihood = Double.NEGATIVE_INFINITY;
 		double provisionalMaxLogLikelihoodP = 0.5;
-		
-		
+
+
 		//First calculate binominal coefficients
 		double[] logBinominalCoefficients = new double[a1Counts.size()];
 		for (int i = 0; i < a1Counts.size(); ++i) {
@@ -48,25 +78,31 @@ public class AseMle {
 			logBinominalCoefficients[i] = lnbico(totalReads, a1Count);
 		}
 
-		double logLikelihoodNull = calculateLogLikelihood(a1Counts, a2Counts, logBinominalCoefficients, 0.5);
+		double logLikelihoodNull = Double.NaN;
 
-		for (int i = 1; i <= 999; ++i) {
+		for (int i = 0; i < probabilities.length; ++i) {
 
-			double p = 0.001 * i;
-			double sumLogLikelihood = calculateLogLikelihood(a1Counts, a2Counts, logBinominalCoefficients, p);
+			double sumLogLikelihood = 0;
+			for (int s = 0; s < a1Counts.size(); ++s) {
+				sumLogLikelihood += logBinominalCoefficients[s] + (double) a1Counts.getQuick(s) * logProbabilities[i] + (double) a2Counts.getQuick(s) * log1minProbabilities[i];
+			}
 
 			if (sumLogLikelihood > provisionalMaxLogLikelihood) {
 				provisionalMaxLogLikelihood = sumLogLikelihood;
-				provisionalMaxLogLikelihoodP = p;
+				provisionalMaxLogLikelihoodP = probabilities[i];
+			}
+			
+			if(probabilities[i] == 0.5){
+				logLikelihoodNull = sumLogLikelihood;
 			}
 
 		}
+		
+		if(Double.isNaN(logLikelihoodNull)){
+			throw new RuntimeException("Something went wrong during ASE analysis. This should nog happen, please contact developers");
+		}
 
-		/*
-		 * Due to mathematic persion of each time adding 0.001 it might be that
-		 * the null model is never really exacted tested. So now check if the
-		 * null model is actually a better.
-		 */
+		//Make sure to use null model in case of tie
 		if (logLikelihoodNull >= provisionalMaxLogLikelihood) {
 			maxLogLikelihood = logLikelihoodNull;
 			maxLogLikelihoodP = 0.5;
@@ -86,21 +122,6 @@ public class AseMle {
 			}
 
 		}
-
-	}
-
-	private double calculateLogLikelihood(IntArrayList a1Counts, IntArrayList a2Counts, double[] logBinominalCoefficients, double p) {
-
-		double sumLogLikelihood = 0;
-		
-		double logP = Math.log(p);
-		double log1minP = Math.log(1 - p);
-
-		for (int i = 0; i < a1Counts.size(); ++i) {
-			sumLogLikelihood += logBinominalCoefficients[i] + (double) a1Counts.getQuick(i) * logP + (double) a2Counts.getQuick(i) * log1minP;
-		}
-
-		return sumLogLikelihood;
 
 	}
 
