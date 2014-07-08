@@ -5,7 +5,6 @@ package eqtlmappingpipeline;
  * and open the template in the editor.
  */
 
-import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 
 /**

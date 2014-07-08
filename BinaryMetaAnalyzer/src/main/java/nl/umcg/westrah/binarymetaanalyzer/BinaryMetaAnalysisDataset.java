@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.text.Strings;
 
 /**
  *
@@ -75,7 +74,7 @@ public class BinaryMetaAnalysisDataset {
         BinaryFile f = new BinaryFile(matrix, BinaryFile.R);
         int firstInt = f.readInt();
         f.close();
-        isCisDataset = firstInt == 1;
+        isCisDataset = (firstInt == 1);
         System.out.println("Matrix: " + matrix);
         System.out.println("SNPFile: " + snpFile);
         System.out.println("ProbeFile: " + probeFile);

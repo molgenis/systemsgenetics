@@ -10,7 +10,13 @@ import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.cis.CisAnalysis;
 import eqtlmappingpipeline.binarymeta.util.SNPAlleleCheck;
 import eqtlmappingpipeline.metaqtl3.FDR;
+import eqtlmappingpipeline.util.NoLdSnpProbeListCreator;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -120,7 +126,7 @@ public class Main {
         }
 
         if (mode == null) {
-            System.out.println("Specify metamode (meta, cismeta, summary, splitzscoretable, allelecheck, filter or fdr, crosshybparser)");
+            System.out.println("Specify metamode (meta, cismeta, summary, splitzscoretable, allelecheck, filter or fdr, crosshybparser, determineSnpProbList)");
         } else if (mode.equals("meta")) {
             if (settings == null) {
                 System.out.println("Specify settings");
@@ -208,7 +214,7 @@ public class Main {
                 System.out.println("Please specify --in --nrperm and --cutoff and --nreqtls [--skipqqplot]");
             } else {
                 try {
-                    FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null);
+                    FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -227,6 +233,18 @@ public class Main {
                 }
             }
 
+        } else if (mode.equals("determineSnpProbList")) {
+            try {
+                NoLdSnpProbeListCreator.main(Arrays.copyOfRange(args, 2, args.length));
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             System.out.print("Invalid option, valid options are:");
             System.out.println("fdr, ld, filter, allelecheck, individual, cismeta, meta");

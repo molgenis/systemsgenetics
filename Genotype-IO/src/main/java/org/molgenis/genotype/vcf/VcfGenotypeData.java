@@ -473,7 +473,9 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd) {
 
-
+        if(rangeStart < 0){
+            throw new GenotypeDataException("Illegal start pos for VCF variant query: " + rangeStart);
+        }
 
 		return new Iterable<GeneticVariant>() {
 			@Override

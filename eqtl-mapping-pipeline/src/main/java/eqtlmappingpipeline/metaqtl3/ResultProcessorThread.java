@@ -469,6 +469,8 @@ public class ResultProcessorThread extends Thread {
 
         System.out.println("Writing " + nrOfEntriesToWrite + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
 
+        
+        
         if (m_permuting) {
             TextFile gz = new TextFile((m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz"), TextFile.W);
             gz.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");

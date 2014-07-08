@@ -18,7 +18,7 @@ public class QTL implements Comparable<QTL> {
     private byte alleleAssessed;
     private double zscore = 0;
     private byte[] alleles;
-    private double[] datasetZScores;
+    private float[] datasetZScores;
     private int[] datasetsSamples;
 
     public QTL(int datasets) {
@@ -30,7 +30,7 @@ public class QTL implements Comparable<QTL> {
     public QTL() {
     }
 
-    public QTL(double pval, MetaQTL4MetaTrait t, int sid, byte assessedAllele, double zscore, byte[] alleles, double[] zscores, int[] numSamples) {
+    public QTL(double pval, MetaQTL4MetaTrait t, int sid, byte assessedAllele, double zscore, byte[] alleles, float[] zscores, int[] numSamples) {
         this.pvalue = pval;
         this.trait = t;
         this.sid = sid;
@@ -101,7 +101,7 @@ public class QTL implements Comparable<QTL> {
         alleles = null;
         if (datasetZScores != null) {
             for (int i = 0; i < datasetZScores.length; i++) {
-                datasetZScores[i] = Double.NaN;
+                datasetZScores[i] = Float.NaN;
             }
             datasetZScores = null;
         }
@@ -134,7 +134,7 @@ public class QTL implements Comparable<QTL> {
         return BaseAnnot.toString(alleleAssessed);
     }
 
-    public double[] getDatasetZScores() {
+    public float[] getDatasetZScores() {
         return datasetZScores;
     }
 

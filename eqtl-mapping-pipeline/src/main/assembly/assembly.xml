@@ -4,7 +4,6 @@
 	<formats>
 		<format>zip</format>
 		<format>tar.gz</format>
-		<format>jar</format>
 	</formats>
 
 	<!-- Adds dependencies to zip package under lib directory -->

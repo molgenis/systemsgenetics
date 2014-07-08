@@ -142,7 +142,7 @@ public class CisAnalysis extends MetaAnalyze {
                 int nrEQTLs = eQTLFile.countLines() - 1;
                 eQTLFile.close();
 
-                FDR.calculateFDR(m_settings.getOutput() + "/Sorted/", m_settings.getNrPermutations(), nrEQTLs, m_settings.getFdrthreshold(), true, null, null);
+                FDR.calculateFDR(m_settings.getOutput() + "/Sorted/", m_settings.getNrPermutations(), nrEQTLs, m_settings.getFdrthreshold(), true, null, null, FDR.FDRMethod.ALL, true);
                 EQTLDotPlot edp = new EQTLDotPlot();
                 try {
                     edp.draw(m_settings.getOutput() + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", m_settings.getOutput() + "/DotPlot-FDR" + m_settings.getFdrthreshold() + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"

@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -269,7 +270,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
     /**
      * Permutes the mapping between genotype and gene expression samples
      */
-    public void permuteSampleLables() {
+    public void permuteSampleLables(Random r) {
         ArrayList<Short> alIndWGA = new ArrayList<Short>();
         int numSamples = expressionToGenotypeIdArray.length;
         for (int i = 0; i < numSamples; i++) {
@@ -285,7 +286,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             if (expressionToGenotypeIdArray[i] == -1) {
                 indWGANew[i] = -1;
             } else {
-                short genotypeId = alIndWGA.remove((int) (Math.random() * (double) alIndWGA.size()));
+                short genotypeId = alIndWGA.remove((int) (r.nextDouble() * (double) alIndWGA.size()));
                 indWGANew[i] = genotypeId;
 
                 genotypeToExpressionIdArray[genotypeId] = (short) i;
@@ -295,7 +296,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
 
     }
 
-    public void permuteCovariates() {
+    public void permuteCovariates(Random r) {
         // shuffle covariate, if any
         if (covariates != null) {
             System.out.println("Randomizing covariates");
@@ -304,7 +305,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
                 for (int sample = 0; sample < covariates.nrRows; sample++) {
                     covariateData.add(covariates.rawData[covariate][sample]);
                 }
-                Collections.shuffle(covariateData);
+                Collections.shuffle(covariateData, r);
                 for (int sample = 0; sample < covariates.nrRows; sample++) {
                     covariates.rawData[covariate][sample] = covariateData.get(sample);
                 }

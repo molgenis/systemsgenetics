@@ -5,6 +5,10 @@
 package eqtlmappingpipeline.metaqtl3.containers;
 
 import cern.colt.matrix.tint.IntMatrix2D;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.util.Locale;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.BaseAnnot;
@@ -123,6 +127,9 @@ public class QTL implements Comparable<QTL> {
         return correlations;
     }
 
+    private final static DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
+    private final static DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
+
     public String getDescription(WorkPackage[] workPackages, IntMatrix2D probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int maxCisDistance) {
         if (sid == -1 && pid == -1) {
             return null;
@@ -134,14 +141,17 @@ public class QTL implements Comparable<QTL> {
 
         StringBuilder out = new StringBuilder();
 
-        out.append(pvalue);
+        if (pvalue < 1E-4) {
+            out.append(smallFormat.format(pvalue));
+        } else {
+            out.append(format.format(pvalue));
+        }
+
         out.append(tabStr);
 
         String rsName = null;
         String rsChr = nullstr;
         String rsChrPos = nullstr;
-
-
 
         WorkPackage currentWP = workPackages[sid];
         SNP[] snps = workPackages[sid].getSnps();
@@ -182,7 +192,6 @@ public class QTL implements Comparable<QTL> {
         out.append(probeChrPos);
         out.append(tabStr);
 
-
         String eQTLType = "trans";
         if (!rsChr.equals(nullstr) && !probeChr.equals(nullstr) && !probeChrPos.equals(nullstr) && !rsChrPos.equals(nullstr)) {
             if (rsChr.equals(probeChr) && Math.abs(Integer.parseInt(probeChrPos) - Integer.parseInt(rsChrPos)) < maxCisDistance) {
@@ -202,7 +211,12 @@ public class QTL implements Comparable<QTL> {
         out.append(tabStr);
         out.append(BaseAnnot.toString(alleleAssessed));
         out.append(tabStr);
-        out.append(zscore);
+        if (Math.abs(zscore) < 1E-4) {
+            out.append(smallFormat.format(zscore));
+        } else {
+            out.append(format.format(zscore));
+        }
+
         out.append(tabStr);
 
         String[] ds = new String[gg.length];
@@ -267,10 +281,14 @@ public class QTL implements Comparable<QTL> {
                 if (correlations == null || Double.isNaN(correlations[d])) {
                     outcorrs.append(sepStr).append(nullstr);
                 } else {
+                    DecimalFormat f = format;
+                    if (Math.abs(correlations[d]) < 1E-4) {
+                        f = smallFormat;
+                    }
                     if (currentWP.getFlipSNPAlleles()[d]) {
-                        outcorrs.append(sepStr).append(-correlations[d]);
+                        outcorrs.append(sepStr).append(f.format(-correlations[d]));
                     } else {
-                        outcorrs.append(sepStr).append(correlations[d]);
+                        outcorrs.append(sepStr).append(f.format(correlations[d]));
                     }
 
                 }
@@ -278,10 +296,14 @@ public class QTL implements Comparable<QTL> {
                 if (datasetZScores == null || Double.isNaN(datasetZScores[d])) {
                     outzscores.append(sepStr).append(nullstr);
                 } else {
+                    DecimalFormat f = format;
+                    if (Math.abs(datasetZScores[d]) < 1E-4) {
+                        f = smallFormat;
+                    }
                     if (currentWP.getFlipSNPAlleles()[d]) {
-                        outzscores.append(sepStr).append(-datasetZScores[d]);
+                        outzscores.append(sepStr).append(f.format(-datasetZScores[d]));
                     } else {
-                        outzscores.append(sepStr).append(datasetZScores[d]);
+                        outzscores.append(sepStr).append(f.format(datasetZScores[d]));
                     }
 
                 }
@@ -295,28 +317,38 @@ public class QTL implements Comparable<QTL> {
                 if (probemeans == null || probemeans[d] == null) {
                     outmeans.append(sepStr).append(nullstr);
                 } else {
-                    outmeans.append(sepStr).append(probemeans[d]);
+                    outmeans.append(sepStr).append(format.format(probemeans[d]));
                 }
 
                 if (probevars == null || probevars[d] == null) {
                     outvars.append(sepStr).append(nullstr);
                 } else {
-                    outvars.append(sepStr).append(probevars[d]);
+                    outvars.append(sepStr).append(format.format(probevars[d]));
                 }
 
                 if (datasetfc == null || Double.isNaN(datasetfc[d])) {
                     outfc.append(sepStr).append(nullstr);
                 } else {
-                    outfc.append(sepStr).append(datasetfc[d]);
+                    outfc.append(sepStr).append(format.format(datasetfc[d]));
                 }
 
                 if (datasetbeta == null || Double.isNaN(datasetbeta[d])) {
                     outbeta.append(sepStr).append(nullstr);
                 } else {
+
+                    DecimalFormat f = format;
+                    if (Math.abs(datasetbeta[d]) < 1E-4) {
+                        f = smallFormat;
+                    }
+                    DecimalFormat f2 = format;
+                    if (Math.abs(datasetbetase[d]) < 1E-4) {
+                        f2 = smallFormat;
+                    }
+
                     if (currentWP.getFlipSNPAlleles()[d]) {
-                        outbeta.append(sepStr).append((-datasetbeta[d])).append(" (").append(datasetbetase[d]).append(")");
+                        outbeta.append(sepStr).append((f.format(-datasetbeta[d]))).append(" (").append(f2.format(datasetbetase[d])).append(")");
                     } else {
-                        outbeta.append(sepStr).append((datasetbeta[d])).append(" (").append(datasetbetase[d]).append(")");
+                        outbeta.append(sepStr).append((f.format(datasetbeta[d]))).append(" (").append(f2.format(datasetbetase[d])).append(")");
                     }
                 }
 
@@ -335,7 +367,15 @@ public class QTL implements Comparable<QTL> {
             out.append(tabStr);
             out.append(outcorrs.toString());
             out.append(tabStr);
-            out.append(finalbeta).append(" (").append(finalbetase).append(")");
+            DecimalFormat f = format;
+            if (Math.abs(finalbeta) < 1E-4) {
+                f = smallFormat;
+            }
+            DecimalFormat f2 = format;
+            if (Math.abs(finalbetase) < 1E-4) {
+                f2 = smallFormat;
+            }
+            out.append(f.format(finalbeta)).append(" (").append(f2.format(finalbetase)).append(")");
             out.append(tabStr);
             out.append(outbeta.toString());
             out.append(tabStr);
@@ -356,7 +396,12 @@ public class QTL implements Comparable<QTL> {
 
         StringBuilder out = new StringBuilder();
 
-        out.append(pvalue);
+        if (pvalue < 1E-4) {
+            out.append(smallFormat.format(pvalue));
+        } else {
+            out.append(format.format(pvalue));
+        }
+//        out.append(pvalue);
         out.append(tabStr);
 
         String rsName = null;
@@ -385,7 +430,6 @@ public class QTL implements Comparable<QTL> {
         out.append(probe);
         out.append(tabStr);
 
-
         String hugo = nullstr;
         for (int d = 0; d < gg.length; d++) {
             if (!Double.isNaN(correlations[d])) {
@@ -413,7 +457,11 @@ public class QTL implements Comparable<QTL> {
         out.append(BaseAnnot.toString(alleleAssessed));
         out.append(tabStr);
 
-        out.append(zscore);
+        if (zscore < 1E-4) {
+            out.append(smallFormat.format(zscore));
+        } else {
+            out.append(format.format(zscore));
+        }
 
         return out.toString();
     }
