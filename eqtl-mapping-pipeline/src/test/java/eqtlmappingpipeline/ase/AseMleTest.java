@@ -62,4 +62,26 @@ public class AseMleTest {
 		assertEquals(AseMle.lnbico(20, 10), 12.126791314602454, 0.000001);
 		assertEquals(AseMle.lnbico(200, 10), 37.6501117434664266, 0.000001);
 	}
+	
+	@Test
+	public void preCalculateP(){
+		
+		int expectedLenght = 999;
+		assertEquals(AseMle.probabilities.length, expectedLenght);
+		assertEquals(AseMle.logProbabilities.length, expectedLenght);
+		assertEquals(AseMle.log1minProbabilities.length, expectedLenght);
+		
+		assertEquals(AseMle.probabilities[0], 0.001);
+		assertEquals(AseMle.probabilities[499], 0.5);
+		assertEquals(AseMle.probabilities[998], 0.999);
+		
+		assertEquals(AseMle.logProbabilities[0], -6.907755, 0.00001);
+		assertEquals(AseMle.logProbabilities[499], -0.693147, 0.00001);
+		assertEquals(AseMle.logProbabilities[998], -0.00100050, 0.00001);
+		
+		assertEquals(AseMle.log1minProbabilities[0], -0.00100050, 0.00001);
+		assertEquals(AseMle.log1minProbabilities[499], -0.693147, 0.00001);
+		assertEquals(AseMle.log1minProbabilities[998], -6.907755, 0.00001);
+		
+	}
 }
