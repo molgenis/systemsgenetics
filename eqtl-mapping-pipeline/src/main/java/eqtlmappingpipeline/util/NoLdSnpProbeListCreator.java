@@ -150,9 +150,14 @@ public class NoLdSnpProbeListCreator {
             windowsStart = windowsStart < 0 ? 0 : windowsStart;
 			int windowStop = probeStopPos + windowHalfSize;
 
-
-			ArrayList<GeneticVariant> probeVariants = Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)));
-
+            ArrayList<GeneticVariant> probeVariants = new ArrayList<GeneticVariant>();
+            
+            for (GeneticVariant probeVariant : Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)))) {
+                if(probeVariant.isBiallelic()){
+                    probeVariants.add(probeVariant);
+                }
+            }
+            
 			variants:
 			for (GeneticVariant variant : genotypeData.getVariantsByRange(chr, windowsStart, windowStop)) {
 
@@ -160,7 +165,10 @@ public class NoLdSnpProbeListCreator {
 				if (variant.getStartPos() >= (probeStartPos - probeMargin) && variant.getStartPos() <= (probeStopPos + probeMargin)) {
 					continue variants;
 				}
-
+                if (!variant.isBiallelic()) {
+					continue variants;
+				}
+                
 				for (GeneticVariant probeVariant : probeVariants) {
 
 					Ld ld = variant.calculateLd(probeVariant);
