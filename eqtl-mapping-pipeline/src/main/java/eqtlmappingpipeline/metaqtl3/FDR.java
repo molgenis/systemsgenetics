@@ -690,10 +690,9 @@ public class FDR {
 
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
-            System.out.println(fileString);
+            System.out.print(fileString);
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
-
 
             String[] header = gz.readLineElems(TextFile.tab);
             int snpcol = -1;
@@ -756,7 +755,22 @@ public class FDR {
 
                         // take top effect per gene / probe
                         if (selectionOfSnpProbes != null || selectionOfSnps != null) {
-                            if(selectionOfSnps != null && selectionOfSnps.contains(data[snpcol])){
+                            if(selectionOfSnps != null && selectionOfSnps.contains(data[snpcol]) && selectionOfSnpProbes != null && selectionOfSnpProbes.contains(data[snpcol]+"-"+data[probecol])){
+                                if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                    if (m != FDRMethod.FULL) {
+                                        visitedEffects.add(fdrId);
+                                    }
+
+                                    double permutedP = Double.parseDouble(data[0]);
+                                    if (permutedPvalues.containsKey(permutedP)) {
+                                        permutedPvalues.increment(permutedP);
+                                    } else {
+                                        permutedPvalues.put(permutedP, 1);
+                                    }
+
+                                    itr++;
+                                }
+                            } else if(selectionOfSnps != null && selectionOfSnps.contains(data[snpcol])){
                                 if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
                                     if (m != FDRMethod.FULL) {
                                         visitedEffects.add(fdrId);
@@ -808,6 +822,7 @@ public class FDR {
 
                 }
             }
+            System.out.println("\tUsed from permutation "+permutationRound+" : "+itr + " rows.");
             gz.close();
 
         }
@@ -905,13 +920,22 @@ public class FDR {
 
                 String fdrId = null;
                 String[] data = Strings.tab.split(str);
-
+                
+                if(snpselectionlist!=null && !snpselectionlist.contains(data[eQTLTextFile.SNP])){
+                    str = realEQTLs.readLine();
+                    continue;
+                }
+                if(snpprobeselectionlist!= null && !snpprobeselectionlist.contains(data[eQTLTextFile.SNP]+"-"+data[eQTLTextFile.PROBE])){
+                    str = realEQTLs.readLine();
+                    continue;
+                }
+                
                 if (m == FDRMethod.GENELEVEL) {
                     fdrId = data[eQTLTextFile.HUGO];
                 } else if (m == FDRMethod.PROBELEVEL) {
                     fdrId = data[4];
                 }
-
+                
                 double eQtlPvalue = Double.parseDouble(data[0]);
 
                 if (itr > 0 && lastEqtlPvalue > eQtlPvalue) {
