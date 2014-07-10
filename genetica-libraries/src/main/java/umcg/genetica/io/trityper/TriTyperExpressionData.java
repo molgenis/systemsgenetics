@@ -561,13 +561,12 @@ public class TriTyperExpressionData {
         }
         
         //This is requered for the correlation matrix.
-        calcMeanAndVariance();
+        calcMean();
         for (int p = 0; p < matrix.length; p++) {
             for (int s = 0; s < matrix[p].length; s++) {
                 matrix[p][s] -= probeMean[p];
             }
         }
-
         calcMeanAndVariance();
 
         System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
@@ -663,8 +662,20 @@ public class TriTyperExpressionData {
             double[] probeData = getProbeData(f);
             probeOriginalMean[f] = Descriptives.mean(probeData);
             probeOriginalVariance[f] = Descriptives.variance(probeData, probeMean[f]);
-            probeMean[f] = Descriptives.mean(probeData);
-            probeVariance[f] = Descriptives.variance(probeData, probeMean[f]);
+            probeMean[f] = probeOriginalMean[f];
+            probeVariance[f] = probeOriginalVariance[f];
+        }
+    }
+    
+    private void calcMean() {
+        //Precalculate means and variances. This will improve calculations substantially:
+        int probeCount = probes.length;
+        probeOriginalMean = new double[probeCount];
+        probeMean = new double[probeCount];
+
+        for (int f = 0; f < probeCount; ++f) {
+            probeOriginalMean[f] = Descriptives.mean(getProbeData(f));
+            probeMean[f] = probeOriginalMean[f];
         }
     }
 
