@@ -1,7 +1,6 @@
 package eqtlmappingpipeline.util;
 
 import com.google.common.collect.Lists;
-import eqtlmappingpipeline.ase.AseConfiguration;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -181,7 +180,7 @@ public class NoLdSnpProbeListCreator {
                     snpProbeToTestWriter.append(variantPrimaryId);
                 }
                 
-				snpProbeToTestWriter.append('\t');
+				snpProbeToTestWriter.append('-');
 				snpProbeToTestWriter.append(probeName);
 				snpProbeToTestWriter.append('\n');
 
@@ -191,8 +190,4 @@ public class NoLdSnpProbeListCreator {
 
         snpProbeToTestWriter.close();
 	}
-
-    private static void printHelp() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 }
