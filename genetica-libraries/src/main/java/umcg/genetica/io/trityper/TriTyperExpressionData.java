@@ -574,7 +574,7 @@ public class TriTyperExpressionData {
 //            }
 //        }
 //        calcMeanAndVariance();
-
+        setVarianceAndMean();
         System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
 
         return true;
@@ -660,6 +660,7 @@ public class TriTyperExpressionData {
         //Precalculate means and variances. If data is ranked afterwards this does not satisfy the mean and variance set here.
         //This will improve calculations substantially:
         
+        //Shouldnt we actualy store the old results of mean and variance in the Original ecuivelents?
         for (int f = 0; f < probes.length; ++f) {
             probeOriginalMean[f] = Descriptives.mean(getProbeData(f));
             probeMean[f] = probeOriginalMean[f];
@@ -712,7 +713,7 @@ public class TriTyperExpressionData {
     public void rankAllExpressionData(boolean rankWithTies) {
 
         RankArray r = new RankArray();
-        setVarianceAndMean();
+//        setVarianceAndMean();
 
         for (int p = 0; p < probes.length; ++p) {
             double[] probeData = getProbeData(p);
