@@ -7,7 +7,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx10g -Xms10g -classpath %classpath eqtlmappingpipeline.Main --mode ase -i D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185022\ERR188398\ERS185022.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185023\ERR188110\ERS185023.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185024\ERR188253\ERS185024.alleleCount3.vcf.gz -o D:\UMCG\Genetica\Projects\RnaSeqEqtl\testAse\chunk2 -a 10 -r 20 -s 2 -g D:\UMCG\Genetica\Projects\RnaSeqEqtl\batch9_genotypes\plink\batch9 -G PLINK_BED -m 249 -p 0 -d</exec.args>
+                <exec.args>-Xmx10g -Xms10g -classpath %classpath eqtlmappingpipeline.Main --mode ase -i D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185022\ERR188398\ERS185022.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185023\ERR188110\ERS185023.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185024\ERR188253\ERS185024.alleleCount3.vcf.gz -o D:\UMCG\Genetica\Projects\RnaSeqEqtl\testAse\chunk2 -a 10 -r 20 -s 2 -g D:\UMCG\Genetica\Projects\RnaSeqEqtl\batch9_genotypes\plink\batch9 -G PLINK_BED -m 249 -p 0 -d -cs 10</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -18,7 +18,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx10g -Xms10g -classpath %classpath eqtlmappingpipeline.Main --mode ase -i D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185022\ERR188398\ERS185022.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185023\ERR188110\ERS185023.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185024\ERR188253\ERS185024.alleleCount3.vcf.gz -o D:\UMCG\Genetica\Projects\RnaSeqEqtl\testAse\chunk2 -a 10 -r 20 -s 2 -g D:\UMCG\Genetica\Projects\RnaSeqEqtl\batch9_genotypes\plink\batch9 -G PLINK_BED -m 249 -p 0 -d</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx10g -Xms10g -classpath %classpath eqtlmappingpipeline.Main --mode ase -i D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185022\ERR188398\ERS185022.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185023\ERR188110\ERS185023.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185024\ERR188253\ERS185024.alleleCount3.vcf.gz -o D:\UMCG\Genetica\Projects\RnaSeqEqtl\testAse\chunk2 -a 10 -r 20 -s 2 -g D:\UMCG\Genetica\Projects\RnaSeqEqtl\batch9_genotypes\plink\batch9 -G PLINK_BED -m 249 -p 0 -d -cs 10</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -30,7 +30,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>${profiler.args} -Xmx10g -Xms10g -classpath %classpath eqtlmappingpipeline.Main --mode ase -i D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185022\ERR188398\ERS185022.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185023\ERR188110\ERS185023.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185024\ERR188253\ERS185024.alleleCount3.vcf.gz -o D:\UMCG\Genetica\Projects\RnaSeqEqtl\testAse\chunk2 -a 10 -r 20 -s 2 -g D:\UMCG\Genetica\Projects\RnaSeqEqtl\batch9_genotypes\plink\batch9 -G PLINK_BED -m 249 -p 0 -d</exec.args>
+                <exec.args>${profiler.args} -Xmx10g -Xms10g -classpath %classpath eqtlmappingpipeline.Main --mode ase -i D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185022\ERR188398\ERS185022.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185023\ERR188110\ERS185023.alleleCount3.vcf.gz D:\UMCG\Genetica\Projects\RnaSeqEqtl\data\ERP001942\ERS185024\ERR188253\ERS185024.alleleCount3.vcf.gz -o D:\UMCG\Genetica\Projects\RnaSeqEqtl\testAse\chunk2 -a 10 -r 20 -s 2 -g D:\UMCG\Genetica\Projects\RnaSeqEqtl\batch9_genotypes\plink\batch9 -G PLINK_BED -m 249 -p 0 -d -cs 10</exec.args>
                 <exec.executable>${profiler.java}</exec.executable>
             </properties>
         </action>
