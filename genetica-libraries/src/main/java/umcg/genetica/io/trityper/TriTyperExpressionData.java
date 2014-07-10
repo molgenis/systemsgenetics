@@ -562,11 +562,19 @@ public class TriTyperExpressionData {
         
         //This is requered for the correlation matrix.
         calcMean();
+        
+        probeMean = new double[probes.length];
+        
         for (int p = 0; p < matrix.length; p++) {
             for (int s = 0; s < matrix[p].length; s++) {
                 matrix[p][s] -= probeMean[p];
             }
         }
+        
+        probeOriginalMean = new double[probes.length];
+        probeVariance = new double[probes.length];
+        probeOriginalVariance = new double[probes.length];
+        
         calcMeanAndVariance();
 
         System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
@@ -651,31 +659,20 @@ public class TriTyperExpressionData {
     }
 
     private void calcMeanAndVariance() {
-        //Precalculate means and variances. This will improve calculations substantially:
-        int probeCount = probes.length;
-        probeOriginalMean = new double[probeCount];
-        probeOriginalVariance = new double[probeCount];
-        probeMean = new double[probeCount];
-        probeVariance = new double[probeCount];
-
-        for (int f = 0; f < probeCount; ++f) {
-            double[] probeData = getProbeData(f);
-            probeOriginalMean[f] = Descriptives.mean(probeData);
-            probeOriginalVariance[f] = Descriptives.variance(probeData, probeMean[f]);
+        //Precalculate means and variances. If data is ranked afterwards this does not satisfy the mean and variance set here.
+        //This will improve calculations substantially:
+        
+        for (int f = 0; f < probes.length; ++f) {
+            probeOriginalMean[f] = Descriptives.mean(getProbeData(f));
             probeMean[f] = probeOriginalMean[f];
-            probeVariance[f] = probeOriginalVariance[f];HEAD
+            probeOriginalVariance[f] = Descriptives.variance(getProbeData(f), probeMean[f]);
+            probeVariance[f] = probeOriginalVariance[f];
         }
     }
     
     private void calcMean() {
-        //Precalculate means and variances. This will improve calculations substantially:
-        int probeCount = probes.length;
-        probeOriginalMean = new double[probeCount];
-        probeMean = new double[probeCount];
-
-        for (int f = 0; f < probeCount; ++f) {
-            probeOriginalMean[f] = Descriptives.mean(getProbeData(f));
-            probeMean[f] = probeOriginalMean[f];
+        for (int f = 0; f < probes.length; ++f) {
+            probeMean[f] = Descriptives.mean(getProbeData(f));
         }
     }
 
