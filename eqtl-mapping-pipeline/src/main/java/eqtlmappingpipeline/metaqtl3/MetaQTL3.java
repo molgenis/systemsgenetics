@@ -274,6 +274,8 @@ public class MetaQTL3 {
             if (!m_settings.performParametricAnalysis) {
                 m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
             }
+            m_gg[i].getExpressionData().calcAndSubtractMean();
+            m_gg[i].getExpressionData().calcMeanAndVariance();
             numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
         }
 

@@ -560,22 +560,20 @@ public class TriTyperExpressionData {
 
         }
         
-        //This is requered for the correlation matrix.
-        calcMean();
-        
+        //This is requered for the correlation matrix.        
         probeMean = new double[probes.length];
-        
-        for (int p = 0; p < matrix.length; p++) {
-            for (int s = 0; s < matrix[p].length; s++) {
-                matrix[p][s] -= probeMean[p];
-            }
-        }
-        
         probeOriginalMean = new double[probes.length];
         probeVariance = new double[probes.length];
         probeOriginalVariance = new double[probes.length];
-        
-        calcMeanAndVariance();
+
+//        calcMean();
+//        
+//        for (int p = 0; p < matrix.length; p++) {
+//            for (int s = 0; s < matrix[p].length; s++) {
+//                matrix[p][s] -= probeMean[p];
+//            }
+//        }
+//        calcMeanAndVariance();
 
         System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
 
@@ -658,7 +656,7 @@ public class TriTyperExpressionData {
         return individualNameToId.get(key);
     }
 
-    private void calcMeanAndVariance() {
+    public void calcMeanAndVariance() {
         //Precalculate means and variances. If data is ranked afterwards this does not satisfy the mean and variance set here.
         //This will improve calculations substantially:
         
@@ -670,9 +668,19 @@ public class TriTyperExpressionData {
         }
     }
     
-    private void calcMean() {
-        for (int f = 0; f < probes.length; ++f) {
-            probeMean[f] = Descriptives.mean(getProbeData(f));
+    public void calcAndSubtractMean() {
+        for (int p = 0; p < probes.length; ++p) {
+            probeMean[p] = Descriptives.mean(getProbeData(p));
+            for (int s = 0; s < matrix[p].length; s++) {
+                matrix[p][s] -= probeMean[p];
+            }
+        }
+    }
+    
+    private void setVarianceAndMean() {
+        for (int p = 0; p < probes.length; ++p) {
+            probeMean[p] = Descriptives.mean(getProbeData(p));
+            probeVariance[p] = Descriptives.variance(getProbeData(p), probeMean[p]);
         }
     }
 
@@ -704,10 +712,11 @@ public class TriTyperExpressionData {
     public void rankAllExpressionData(boolean rankWithTies) {
 
         RankArray r = new RankArray();
+        setVarianceAndMean();
 
         for (int p = 0; p < probes.length; ++p) {
             double[] probeData = getProbeData(p);
-
+            
             if (probeVariance[p] == 0) {
                 System.out.println("Excluding probe that has no variance in expression:\t" + probes[p] + "\t" + annotation[p]);
             } else {
