@@ -10,7 +10,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
@@ -116,27 +115,8 @@ public class GtfReader implements GffReaderInterface{
 	
 	public PerChrIntervalTree<GffElement> createIntervalTree() throws Exception{
 		
-		PerChrIntervalTree<GffElement> perChrIntervalTree = new PerChrIntervalTree<GffElement>(GffElement.class);
-		
-		ArrayList<GffElement> currentChrElements = null;
-		String currentChr =  "-1";
-		
-		for(GffElement element : this){
-			if(!element.getSeqname().equals(currentChr)){
-				if(currentChrElements != null){
-					perChrIntervalTree.addChrElements(currentChr, currentChrElements);
-				}
-				currentChrElements = new ArrayList<GffElement>();
-				currentChr = element.getSeqname();
-				LOGGER.debug("Added chr " + currentChr + " to gtf interval tree");
-			}
-			currentChrElements.add(element);
-		}
-		
-		
-		return perChrIntervalTree;
-		
-		
+		return PerChrIntervalTree.createFromChrGroupedIterable(this, GffElement.class);
+				
 	}
 	
 }

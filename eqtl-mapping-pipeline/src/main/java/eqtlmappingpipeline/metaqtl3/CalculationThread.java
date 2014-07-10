@@ -59,7 +59,7 @@ class CalculationThread extends Thread {
     private final boolean testSNPsPresentInBothDatasets; 
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
-    private DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
+    private static DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
 //    private RConnection rConnection;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
@@ -236,7 +236,7 @@ class CalculationThread extends Thread {
                         int pid = probes[p];
                         Integer probeId = m_probeTranslation.get(d, pid);
                         if (probeId != -9) {
-                            test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, covariates, dsResults);
+                            test(d, p, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, covariates, dsResults, this.currentWP, this.metaAnalyseModelCorrelationYHat, this.metaAnalyseInteractionTerms, this.determinefoldchange);
                         } else {
                             dsResults.correlations[d][p] = Double.NaN;
                             dsResults.zscores[d][p] = Double.NaN;
@@ -273,7 +273,7 @@ class CalculationThread extends Thread {
                         if (probestoExclude == null || !probestoExclude.contains(pid)) {
                             Integer probeId = m_probeTranslation.get(d, pid);
                             if (probeId != -9) {
-                                test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults);
+                                test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults, this.currentWP, this.metaAnalyseModelCorrelationYHat, this.metaAnalyseInteractionTerms, this.determinefoldchange);
                             } else {
                                 dsResults.correlations[d][pid] = Double.NaN;
                                 dsResults.zscores[d][pid] = Double.NaN;
@@ -306,7 +306,7 @@ class CalculationThread extends Thread {
                     for (int pid = 0; pid < m_numProbes; pid++) {
                         Integer probeId = m_probeTranslation.get(d, pid);
                         if (probeId != -9) {
-                            test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults);
+                            test(d, pid, probeId, snpmeancorrectedgenotypes[d], originalgenotypes[d], snpvariances[d], varY[probeId], meanY[probeId], includeExpressionSample[d], samplecount, rawData, null, dsResults, this.currentWP, this.metaAnalyseModelCorrelationYHat, this.metaAnalyseInteractionTerms, this.determinefoldchange);
                         } else {
                             dsResults.correlations[d][pid] = Double.NaN;
                             dsResults.zscores[d][pid] = Double.NaN;
@@ -360,8 +360,8 @@ class CalculationThread extends Thread {
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
-    private void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r) {
-        double[] y = null;
+    protected static void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r, WorkPackage wp, boolean metaAnalyseModelCorrelationYHat, boolean metaAnalyseInteractionTerms, boolean determinefoldchange) {
+        final double[] y;
         double[][] covariates = covariateRawData;
         if (x.length != sampleCount) {
             y = new double[x.length];
@@ -576,7 +576,7 @@ class CalculationThread extends Thread {
 //                double meanxCopy = JSci.maths.ArrayMath.mean(xcopy);
                 calculateRegressionCoefficients(xcopy, meanxCopy, y, meany, r, d, p);
                 if (determinefoldchange) {
-                    determineFoldchange(originalGenotypes, y, r, d, p);
+                    determineFoldchange(originalGenotypes, y, r, d, p, wp);
                 }
                 r.zscores[d][p] = zScore;
                 r.correlations[d][p] = correlation;
@@ -590,7 +590,7 @@ class CalculationThread extends Thread {
         }
     }
 
-    private void calculateRegressionCoefficients(double[] x, double meanx, double[] y, double meany, Result r, int d, int p) {
+    private static void calculateRegressionCoefficients(double[] x, double meanx, double[] y, double meany, Result r, int d, int p) {
         double beta;
         double alpha;
         double sxx = 0;
@@ -616,7 +616,7 @@ class CalculationThread extends Thread {
         r.se[d][p] = se;
     }
 
-    private void determineFoldchange(double[] genotypes, double[] expression, Result r, int d, int p) {
+    private static void determineFoldchange(double[] genotypes, double[] expression, Result r, int d, int p, WorkPackage wp) {
         int numAA = 0;
         int numBB = 0;
 
@@ -656,7 +656,7 @@ class CalculationThread extends Thread {
             sumAA += Math.abs(min) + 1;
             sumBB += Math.abs(min) + 1;
         }
-        if (currentWP.getFlipSNPAlleles()[d]) {
+        if (wp.getFlipSNPAlleles()[d]) {
 
             r.fc[d][p] = sumAA / sumBB;
         } else {

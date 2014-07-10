@@ -16,9 +16,9 @@ public class GffElementIterator implements Iterator<GffElement> {
 
 	private final GffReaderInterface gffReader;
 	
-	boolean atNext = false;
-	boolean atEnd = false;
-	GffElement next;
+	private boolean atNext = false;
+	private boolean atEnd = false;
+	private GffElement next;
 	
 	public GffElementIterator(GffReaderInterface gffReader) {
 		this.gffReader = gffReader;
