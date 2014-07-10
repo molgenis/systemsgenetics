@@ -566,7 +566,14 @@ public class TriTyperExpressionData {
         probeVariance = new double[probes.length];
         probeOriginalVariance = new double[probes.length];
 
-        setVarianceAndMean();
+//        calcMean();
+//        
+//        for (int p = 0; p < matrix.length; p++) {
+//            for (int s = 0; s < matrix[p].length; s++) {
+//                matrix[p][s] -= probeMean[p];
+//            }
+//        }
+//        calcMeanAndVariance();
 
         System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
 
@@ -705,6 +712,7 @@ public class TriTyperExpressionData {
     public void rankAllExpressionData(boolean rankWithTies) {
 
         RankArray r = new RankArray();
+        setVarianceAndMean();
 
         for (int p = 0; p < probes.length; ++p) {
             double[] probeData = getProbeData(p);
