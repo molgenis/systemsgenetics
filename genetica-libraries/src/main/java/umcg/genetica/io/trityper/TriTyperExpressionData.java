@@ -663,8 +663,8 @@ public class TriTyperExpressionData {
             double[] probeData = getProbeData(f);
             probeOriginalMean[f] = Descriptives.mean(probeData);
             probeOriginalVariance[f] = Descriptives.variance(probeData, probeMean[f]);
-            probeMean[f] = Descriptives.mean(probeData);
-            probeVariance[f] = Descriptives.variance(probeData, probeMean[f]);
+            probeMean[f] = probeOriginalMean[f];
+            probeVariance[f] = probeOriginalVariance[f];
         }
     }
 
