@@ -64,6 +64,8 @@ public class Main {
         String ldfile = null;
         String dbsnp = null;
         String pw = null;
+        String snpselectionlist = null;
+        String snpprobeselectionlist = null;
         boolean createQQPlot = true;
 
         for (int i = 0; i < args.length; i++) {
@@ -120,6 +122,10 @@ public class Main {
                 replacetextwith = val;
             } else if (args[i].equals("--skipqqplot")) {
                 createQQPlot = false;
+            } else if (args[i].equals("--snpselectionlist")) {
+                snpselectionlist = val;
+            } else if (args[i].equals("--snpprobeselectionlist")) {
+                snpprobeselectionlist = val;
             }
 
 
@@ -213,10 +219,18 @@ public class Main {
             if (in == null || nrEQTLs == null || cutoff == null) {
                 System.out.println("Please specify --in --nrperm and --cutoff and --nreqtls [--skipqqplot]");
             } else {
-                try {
-                    FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true);
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if(snpselectionlist!=null){
+                    try {
+                        FDR.calculateFDR2(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true, snpselectionlist, snpprobeselectionlist);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         } else if (mode.equals("ld")) {
@@ -247,7 +261,7 @@ public class Main {
             }
         } else {
             System.out.print("Invalid option, valid options are:");
-            System.out.println("fdr, ld, filter, allelecheck, individual, cismeta, meta");
+            System.out.println("fdr, ld, filter, allelecheck, individual, cismeta, meta, determineSnpProbList");
         }
 
         System.exit(0);

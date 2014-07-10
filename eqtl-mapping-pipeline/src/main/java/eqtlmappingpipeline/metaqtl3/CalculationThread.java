@@ -378,6 +378,14 @@ class CalculationThread extends Thread {
                 }
             }
             meanY = sum / itr;
+            
+            if(meanY!=0){
+                for(int i = 0; i < y.length; ++i){
+                    y[i] = y[i]-meanY;
+                }
+            }
+            meanY = 0;
+
 
             varianceY = Descriptives.variance(y, meanY);
 
@@ -399,6 +407,18 @@ class CalculationThread extends Thread {
             y = new double[x.length];
             System.arraycopy(rawData[probeId], 0, y, 0, x.length);
         }
+        
+        if(meanY > 0.000000001d || meanY < -0.00000001d){
+            
+            double res = 0;
+            for(double y2 : y){
+                res += y2;
+            }
+            res /= y.length;
+            
+            throw new RuntimeException("Error in eQTL calculation, mean not 0, was specifief as: " + meanY + " and really is: " + res);
+        }
+
 
         if (varianceY == 0) {
             r.zscores[d][p] = Double.NaN;

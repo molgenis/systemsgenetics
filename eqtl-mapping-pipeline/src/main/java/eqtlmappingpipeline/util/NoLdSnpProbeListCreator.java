@@ -1,7 +1,6 @@
 package eqtlmappingpipeline.util;
 
 import com.google.common.collect.Lists;
-import eqtlmappingpipeline.ase.AseConfiguration;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -151,9 +150,14 @@ public class NoLdSnpProbeListCreator {
             windowsStart = windowsStart < 0 ? 0 : windowsStart;
 			int windowStop = probeStopPos + windowHalfSize;
 
-
-			ArrayList<GeneticVariant> probeVariants = Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)));
-
+            ArrayList<GeneticVariant> probeVariants = new ArrayList<GeneticVariant>();
+            
+            for (GeneticVariant probeVariant : Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)))) {
+                if(probeVariant.isBiallelic()){
+                    probeVariants.add(probeVariant);
+                }
+            }
+            
 			variants:
 			for (GeneticVariant variant : genotypeData.getVariantsByRange(chr, windowsStart, windowStop)) {
 
@@ -161,7 +165,10 @@ public class NoLdSnpProbeListCreator {
 				if (variant.getStartPos() >= (probeStartPos - probeMargin) && variant.getStartPos() <= (probeStopPos + probeMargin)) {
 					continue variants;
 				}
-
+                if (!variant.isBiallelic()) {
+					continue variants;
+				}
+                
 				for (GeneticVariant probeVariant : probeVariants) {
 
 					Ld ld = variant.calculateLd(probeVariant);
@@ -181,7 +188,7 @@ public class NoLdSnpProbeListCreator {
                     snpProbeToTestWriter.append(variantPrimaryId);
                 }
                 
-				snpProbeToTestWriter.append('\t');
+				snpProbeToTestWriter.append('-');
 				snpProbeToTestWriter.append(probeName);
 				snpProbeToTestWriter.append('\n');
 
@@ -191,8 +198,4 @@ public class NoLdSnpProbeListCreator {
 
         snpProbeToTestWriter.close();
 	}
-
-    private static void printHelp() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 }
