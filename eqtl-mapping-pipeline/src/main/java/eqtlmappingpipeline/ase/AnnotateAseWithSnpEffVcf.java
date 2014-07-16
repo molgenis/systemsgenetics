@@ -24,6 +24,8 @@ public class AnnotateAseWithSnpEffVcf {
 		System.out.println("Output: " + aseOutputPath);
 
 		ChrPosMap<SnpEffEffect[]> snpEffAnnotations = SnpEffAnnotationMap.loadSnpEffAnnotationMap(snpEffVcfFilePath);
+		
+		System.out.println("Loading SnpEff VCF completed");
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(aseOutputPath), AseConfiguration.ENCODING));
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(aseFilePath), "UTF-8"));
@@ -39,7 +41,13 @@ public class AnnotateAseWithSnpEffVcf {
 			String[] aseLineElements = StringUtils.split(line, '\t');
 
 			String chr = aseLineElements[5];
-			int pos = Integer.parseInt(aseLineElements[6]);
+			int pos;
+			try {
+				pos = Integer.parseInt(aseLineElements[6]);
+			} catch(NumberFormatException ex) {
+				System.err.println("Error " + aseLineElements[6] + " is not an int for line: " + line );
+				return;
+			}
 
 			SnpEffEffect[] snpEffAnnotation = snpEffAnnotations.get(chr, pos);
 
@@ -51,7 +59,7 @@ public class AnnotateAseWithSnpEffVcf {
 				StringBuffer effectFunctionalClassString = new StringBuffer("\t");
 
 				SnpEffEffect.FunctionalClass strongestFunctionalClass = SnpEffEffect.FunctionalClass.NONE;
-				
+
 				boolean notFirst = false;
 				for (SnpEffEffect snpEffEffect : snpEffAnnotation) {
 					if (notFirst) {
@@ -64,11 +72,11 @@ public class AnnotateAseWithSnpEffVcf {
 					effectTypeString.append(snpEffEffect.getEffectType());
 					effectImpactString.append(snpEffEffect.getEffectImpact());
 					effectFunctionalClassString.append(snpEffEffect.getFunctionalClass());
-					
-					if(strongestFunctionalClass.ordinal() < snpEffEffect.getFunctionalClass().ordinal()){
+
+					if (strongestFunctionalClass.ordinal() < snpEffEffect.getFunctionalClass().ordinal()) {
 						strongestFunctionalClass = snpEffEffect.getFunctionalClass();
 					}
-					
+
 				}
 
 				outputWriter.append(effectTypeString);

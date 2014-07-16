@@ -36,10 +36,10 @@ public class CompareAseToEqtl {
 	public static void main(String[] args) throws Exception {
 
 		//eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_non-geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\notInGeuvadis.txt", false);
-		//eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation\\eQTLsFDR0.05-ProbeLevel.txt", false);
-		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\eQTLsFDR0.05-ProbeLevel.txt", false);
+		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation\\eQTLsFDR0.05-ProbeLevel.txt", false);
+		//eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\eQTLsFDR0.05-ProbeLevel.txt", false);
 
-		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\geuvadis_maskAll4_r20_a10_p2_s5_rq0_gatkGenoGq30\\ase_bh_mappability1.txt"));
+		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\all_maskAll4_r20_a10_p2_s5_rq17_m1_gatkGenoGq30\\ase_bh.txt"));
 
 		HashMap<String, ArrayList<EQTL>> eQtls = new HashMap<String, ArrayList<EQTL>>();
 
@@ -97,9 +97,10 @@ public class CompareAseToEqtl {
 						double eQtlZ = elements[ASE_A1_COLUMN].equals(eQtl.getAlleleAssessed()) ? eQtl.getZscore() : eQtl.getZscore() * -1;
 
 						if (aseEstimate > 0.5 && eQtlZ > 0 || aseEstimate < 0.5 && eQtlZ < 0) {
+							//System.out.println("Same direction: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[ASE_A1_COLUMN] + "\t" + eQtl.getAlleleAssessed() + "\t" + aseEstimate + "\t" + eQtl.getZscore());
 							++sameDirection;
 						} else {
-							System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[ASE_A1_COLUMN] + "\t" + eQtl.getAlleleAssessed() + "\t" + aseEstimate + "\t" + eQtl.getZscore());
+							//System.out.println("Opposite: " + eQtl.getRsChr() + ":" + eQtl.getRsChrPos() + "\t" + elements[ASE_A1_COLUMN] + "\t" + eQtl.getAlleleAssessed() + "\t" + aseEstimate + "\t" + eQtl.getZscore());
 							++oppositeDirection;
 						}
 					}

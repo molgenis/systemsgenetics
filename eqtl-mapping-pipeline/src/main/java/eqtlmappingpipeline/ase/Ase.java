@@ -182,7 +182,7 @@ public class Ase {
 		if (referenceGenotypes == null) {
 			loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter(), true);
 
-			Iterator<AseVariant> aseIterator = aseResults.iterator();
+			Iterator<AseVariantAppendable> aseIterator = aseResults.iterator();
 			while (aseIterator.hasNext()) {
 				if (aseIterator.next().getSampleCount() < minimumNumberSamples) {
 					aseIterator.remove();
@@ -214,7 +214,7 @@ public class Ase {
 				}
 				//Clean up ASE that do not meet minimum number of samples	
 				if (aseResults.chrIterator(chr) != null) {
-					for (Iterator<AseVariant> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
+					for (Iterator<AseVariantAppendable> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
 						if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
 							aseChrIterator.remove();
 						}
@@ -261,8 +261,8 @@ public class Ase {
 			}
 
 
-			for (Iterator<AseVariant> aseIterator = aseResults.iterator(); aseIterator.hasNext();) {
-				AseVariant ase = aseIterator.next();
+			for (Iterator<AseVariantAppendable> aseIterator = aseResults.iterator(); aseIterator.hasNext();) {
+				AseVariantAppendable ase = aseIterator.next();
 				List<BedGraphEntry> aseMappabilities = mappabilities.searchPosition(ase.getChr(), ase.getPos());
 				if (aseMappabilities.isEmpty()) {
 					aseIterator.remove();
@@ -291,10 +291,10 @@ public class Ase {
 		}
 
 
-		AseVariant[] aseVariants = new AseVariant[aseResults.getCount()];
+		AseVariantAppendable[] aseVariants = new AseVariantAppendable[aseResults.getCount()];
 		{
 			int i = 0;
-			for (AseVariant aseVariant : aseResults) {
+			for (AseVariantAppendable aseVariant : aseResults) {
 
 				//This can be made multithreaded if needed
 				aseVariant.calculateStatistics();
@@ -412,7 +412,7 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static int printAseResults(File outputFile, AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final boolean encounteredBaseQuality) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
+	private static int printAseResults(File outputFile, AseVariantAppendable[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final boolean encounteredBaseQuality) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
 		return printAseResults(outputFile, aseVariants, gtfAnnotations, MultipleTestingCorrectionMethod.NONE, encounteredBaseQuality);
 	}
 
@@ -427,7 +427,7 @@ public class Ase {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private static int printAseResults(final File outputFile, final AseVariant[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final MultipleTestingCorrectionMethod multipleTestingCorrectionMethod, final boolean encounteredBaseQuality) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
+	private static int printAseResults(final File outputFile, final AseVariantAppendable[] aseVariants, final PerChrIntervalTree<GffElement> gtfAnnotations, final MultipleTestingCorrectionMethod multipleTestingCorrectionMethod, final boolean encounteredBaseQuality) throws UnsupportedEncodingException, FileNotFoundException, IOException, AseException {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
@@ -448,7 +448,7 @@ public class Ase {
 
 		HashSet<String> genesPrinted = new HashSet<String>();
 		aseVariants:
-		for (AseVariant aseVariant : aseVariants) {
+		for (AseVariantAppendable aseVariant : aseVariants) {
 
 			double ratioD = aseVariant.getMle().getRatioD();
 			if (ratioD > lastRatioD) {
