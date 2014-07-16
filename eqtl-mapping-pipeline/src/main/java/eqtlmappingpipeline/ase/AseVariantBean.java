@@ -24,6 +24,9 @@ public class AseVariantBean implements AseVariant{
 	private final double metaZscore;
 	private final double metaPvalue;
 	private final double countPearsonR;
+    private double effect;
+    private double LikelihoodRatioP;
+    private double LikelihoodRatioD;
 	private AseMle mle;
 
 	public AseVariantBean(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, IntArrayList a1Counts, IntArrayList a2Counts, DoubleArrayList pValues, ArrayList<String> sampleIds, double metaZscore, double metaPvalue, double countPearsonR) {
@@ -39,6 +42,41 @@ public class AseVariantBean implements AseVariant{
 		this.metaZscore = metaZscore;
 		this.metaPvalue = metaPvalue;
 		this.countPearsonR = countPearsonR;
+	}
+    
+    public AseVariantBean(String outputLine[]) {
+        this.effect = Double.parseDouble(outputLine[2]);
+        this.LikelihoodRatioP = Double.parseDouble(outputLine[0]);
+        this.LikelihoodRatioD = Double.parseDouble(outputLine[1]);
+		this.chr = outputLine[5];
+		this.pos = Integer.parseInt(outputLine[6]);
+		this.id = GeneticVariantId.createVariantId(outputLine[7]);
+		this.a1 = Allele.create(outputLine[9]);
+		this.a2 = Allele.create(outputLine[10]);
+
+        this.a1Counts = new IntArrayList();
+        for(String s : outputLine[13].split(",")){
+            a1Counts.add(Integer.parseInt(s));
+        }
+		
+		this.a2Counts = new IntArrayList();
+        for(String s : outputLine[14].split(",")){
+            a2Counts.add(Integer.parseInt(s));
+        }
+        //outputLine[15]
+		this.pValues = new DoubleArrayList();
+        for(String s : outputLine[15].split(",")){
+            pValues.add(Double.parseDouble(s));
+        }
+        //outputLine[16]
+		this.sampleIds = new ArrayList<String>();
+        for(String s : outputLine[15].split(",")){
+            sampleIds.add(s);
+        }
+
+		this.metaZscore = Double.parseDouble(outputLine[4]);
+		this.metaPvalue = Double.parseDouble(outputLine[3]);
+		this.countPearsonR  = Double.parseDouble(outputLine[11]);
 	}
 
 	@Override
@@ -120,6 +158,21 @@ public class AseVariantBean implements AseVariant{
 		return Double.compare(otherRatioD, thisRatioD);
 	}
 	
+    public DoubleArrayList getpValues() {
+        return pValues;
+    }
+
+    public double getEffect() {
+        return effect;
+    }
+
+    public double getLikelihoodRatioP() {
+        return LikelihoodRatioP;
+    }
+
+    public double getLikelihoodRatioD() {
+        return LikelihoodRatioD;
+    }
 	
 	
 }
