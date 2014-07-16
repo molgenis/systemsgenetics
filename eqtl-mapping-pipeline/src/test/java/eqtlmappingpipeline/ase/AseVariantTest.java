@@ -19,26 +19,26 @@ import org.testng.annotations.Test;
  */
 public class AseVariantTest {
 
-	private final AseVariant aseVariant1;
-	private final AseVariant aseVariant2;
-	private final AseVariant aseVariant3;
-	private final AseVariant aseVariant4;
+	private final AseVariantAppendable aseVariant1;
+	private final AseVariantAppendable aseVariant2;
+	private final AseVariantAppendable aseVariant3;
+	private final AseVariantAppendable aseVariant4;
 
 	public AseVariantTest() {
-		aseVariant1 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant1 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant1.addCounts(10, 20, "sample1");
 		aseVariant1.addCounts(20, 30, "sample2");
 		aseVariant1.addCounts(20, 21, "sample3");
 		aseVariant1.addCounts(30, 20, "sample4");
 
-		aseVariant2 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant2 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant2.addCounts(20, 10, "sample1");
 
-		aseVariant3 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant3 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant3.addCounts(124, 99, "sample1");
 		aseVariant3.addCounts(28, 179, "sample2");
 
-		aseVariant4 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant4 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
 		aseVariant4.addCounts(211, 27, "sample1");
 		aseVariant4.addCounts(196, 45, "sample2");
 		aseVariant4.addCounts(187, 54, "sample3");
@@ -46,7 +46,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getChr method, of class AseVariant.
+	 * Test of getChr method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetChr() {
@@ -54,7 +54,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getPos method, of class AseVariant.
+	 * Test of getPos method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetPos() {
@@ -62,7 +62,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getId method, of class AseVariant.
+	 * Test of getId method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetId() {
@@ -70,7 +70,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA1 method, of class AseVariant.
+	 * Test of getA1 method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA1() {
@@ -78,7 +78,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA2 method, of class AseVariant.
+	 * Test of getA2 method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA2() {
@@ -86,7 +86,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA1Counts method, of class AseVariant.
+	 * Test of getA1Counts method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA1Counts() {
@@ -95,7 +95,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA2Counts method, of class AseVariant.
+	 * Test of getA2Counts method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA2Counts() {
