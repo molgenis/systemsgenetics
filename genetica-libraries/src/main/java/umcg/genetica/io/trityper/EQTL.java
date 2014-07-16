@@ -821,7 +821,7 @@ public class EQTL implements Comparable<EQTL> {
     }
     
     public boolean sameQTL(EQTL o) {
-        if (zscore.doubleValue() == o.zscore.doubleValue() && probe.equals(o.probe) && rsName.equals(o.rsName) && FDR.equals(o.FDR)) {
+        if (zscore.doubleValue() == o.zscore.doubleValue() && probe.equals(o.probe) && rsName.equals(o.rsName) && FDR.equals(o.FDR) && beta.equals(o.beta)) {
             return true;
         } else {
             return false;
