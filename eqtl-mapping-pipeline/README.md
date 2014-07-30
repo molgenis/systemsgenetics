@@ -127,13 +127,44 @@ Use the GenomeStudio files of your expression arrays. **Note:** Please do not us
 
 
 ##Step 2 - Preparation of genotype data
-Our software is able to use both unimputed called genotypes, as well as imputed genotypes and their dosage values. However, currently our software can only interpret files that are in the [TriTyper](http://genenetwork.nl/wordpress/trityper/) format. We are working on a generic method of genotype input through [Genotype IO](https://github.com/harmjanwestra/systemsgenetics/tree/master/Genotype-IO). In the mean time, users of the eQTL mapping pipeline should convert their data to TriTyper using ImputationTool. This tool is also integrated in the eQTL mapping pipeline, and can be called using the following command (no separate download required):
+Our software is able to use both unimputed called genotypes, as well as imputed genotypes and their dosage values. The software, however, requires these files to be in [TriTyper](http://genenetwork.nl/wordpress/trityper/) format. We provide [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer) to harmonize and convert your genotype files. However, we first need to calculate MDS components to correct the expression data for population stratification.
 
-```
-java –jar eqtl-mapping-pipeline.jar --imputationtool
-```
+###Correction for population stratification.
 
-The documentation for the ImputationTool can be found at the [ImputationTool repository page](https://github.com/molgenis/systemsgenetics/tree/master/imputation-tool).
+You will need to correct the expression data for 4 MDS components during the gene expression normalization step. To obtain these MDS components, you can use a simple command using the PLINK tool to create a multidimensional scaling matrix. The command line will look like this:
+
+`plink --file mydata --cluster --mds-plot 4`
+
+This command takes a single parameter, the number of dimensions to be extracted, 4 in this case.
+
+This command creates the file plink.mds which contains one row per individual with the following fields:
+
+FID		Family ID;
+IID		Individual ID;
+SOL		Assigned solution code;
+C1		Position on first dimension;
+C2 		Position on second dimension;
+C3		Position on third dimension;
+C4		Position on fourth dimension;
+
+You can find more information on [PLINK website](http://pngu.mgh.harvard.edu/~purcell/plink/strat.shtml)
+
+###Convert data to the TriTyper fileformat.
+For the QTL mapping we need to data to  be in TriTyper format. Using [GenotypeHarmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype%20Harmonizer%20Download) one can harmonize and convert genotype formats. In this step we will directly harmonize, filter and convert the genotype data. The data is harmonized to all be matched to the GIANT release of 1000G. You can either run this step per CHR, or for all chromosomes at once.
+
+`java -jar ./GenotypeHarmonizer.jar -i {locationOfInputData} -I {InputType} -o{Outputlocation} -r {locationOf100G-GaintVcfs} --refType VCF_FOLDER --update-id --keep -cf 0.95 -hf 0.0001 -mf 0.05`
+
+Details on the flags: `-i` location of the input data, `-I` input type, `-o` output location, `-r` location of the reference data, `--refType` is the reference data, `-cf` is used for the callrate filter, `-hf` is used for the hardy weinberg equilibrium threshold,`-mf` is used for minor allele frequency threshold. See the Genotype Harmonization manual for further [details](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer#arguments-overview) on the input flags. Please make sure you use these exact parameters for the eQTL meta-analysis (-cf 0.95 -hf 0.0001 -mf 0.05).
+
+**Check and send the log of Genotype Harmonizer!**
+
+If you ran the GH per chromosome you now need to merge all TriTyper folders per CHR to one TriTyper folder containig data from all chromosomes. By using the following comman you merge the individual TriTyper folders.
+
+`java -jar ./eqtl-mapping-pipeline.jar --imputationtool --mode concat --in {folder1;folder2;folder3;ETC} --out {OutputFolder} `
+ 
+`--in` is a tab-separated list of input TriTyper Folders with information per chromosome, `--out` is the output location of the merged TriTyper data.
+
+You now have your genotype data ready to go!
 
 ###Check your data
 After converting your genotype data to TriTyper format, a number of files should have been created in your output directory. For a description of the different files, please refer to [TriTyper genotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#trityper-genotype-data)
