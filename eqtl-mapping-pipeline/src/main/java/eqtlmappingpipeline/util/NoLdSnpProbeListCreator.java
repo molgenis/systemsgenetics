@@ -7,11 +7,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
@@ -25,8 +27,14 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
+import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
+import org.molgenis.genotype.variantFilter.VariantFilter;
+import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
+import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
+import org.molgenis.genotype.variantFilter.VariantQcChecker;
 
 /**
  *
@@ -56,13 +64,19 @@ public class NoLdSnpProbeListCreator {
         Option ProbeMargin = OptionBuilder.withArgName("int").hasArg().withDescription("Additional probe margin (default 0).").withLongOpt("Probe_margin").create("pm");
         Option MaxDprime = OptionBuilder.withArgName("int").hasArg().withDescription("Cut-off point for max d'(default 0.2).").withLongOpt("max_dPrime").create("dp");
         Option MaxRsquare = OptionBuilder.withArgName("int").hasArg().withDescription("Cut-off point for max r2 (default 0.2).").withLongOpt("max_rSquare").create("r");
-        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare);
+        Option variantFilter = OptionBuilder.withArgName("int").hasArg().withDescription("List with variant ids to select.").withLongOpt("variant_filter").create("vf");
+        Option callRate = OptionBuilder.withArgName("int").hasArg().withDescription("Call-rate cut-off.").withLongOpt("min_callRate").create("vc");
+        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate);
         
 		File probeFile = null;
 		String genotypePath = null;
 		String genotypeType = null;
 		int windowHalfSize = 250000;
 		int probeMargin = 0;
+        float cRate = 0.0f;
+        float maf = 0.0f;
+        double HWE = 0.0d;
+        String variantFilterList = null;
 		double maxDprime = 0.2;
 		double maxR2 = 0.2;
 		File outputFile = null;
@@ -113,6 +127,14 @@ public class NoLdSnpProbeListCreator {
                 // initialise the member variable
                 probeMargin = Integer.parseInt(cmd.getOptionValue("Probe_margin"));
             }
+            if (cmd.hasOption("variant_filter")|| cmd.hasOption("vf")) {
+                // initialise the member variable
+                variantFilterList = cmd.getOptionValue("variant_filter");
+            }
+            if (cmd.hasOption("min_callRate")|| cmd.hasOption("vc")) {
+                // initialise the member variable
+                cRate = Float.parseFloat(cmd.getOptionValue("min_callRate"));
+            }
             if (cmd.hasOption("MaxDprime")|| cmd.hasOption("md")) {
                 // initialise the member variable
                 maxDprime = Double.parseDouble(cmd.getOptionValue("MaxDprime"));
@@ -124,8 +146,32 @@ public class NoLdSnpProbeListCreator {
         } catch (ParseException ex) {
             Logger.getLogger(NoLdSnpProbeListCreator.class.getName()).log(Level.SEVERE, null, ex);
         }
-       
-		RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createGenotypeData(genotypePath, 10000);
+         
+        
+        SampleFilter sf = null;
+        
+        
+        VariantCombinedFilter varFilter = new VariantCombinedFilter();
+        varFilter.add(new VariantFilterBiAllelic());
+        
+        if(cRate!=0.0f || maf!=0.0f || HWE!=0.0d){
+            VariantQcChecker qc = new VariantQcChecker(maf, cRate, HWE);
+            varFilter.add(qc);
+        }
+        if(variantFilterList!=null){
+            HashSet<String> snps = new HashSet<String>();
+
+            BufferedReader variantIdFilterReader = new BufferedReader(new FileReader(variantFilterList));
+            String line;
+            while ((line = variantIdFilterReader.readLine()) != null) {
+                snps.add(line);
+            }
+            VariantIdIncludeFilter snpIdFilter = new VariantIdIncludeFilter(snps);
+            varFilter.add(snpIdFilter);
+
+        }
+        
+		RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 10000, varFilter, sf);
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(probeFile), "UTF-8"));
 		final BufferedWriter snpProbeToTestWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "UTF-8"));
@@ -150,22 +196,13 @@ public class NoLdSnpProbeListCreator {
             windowsStart = windowsStart < 0 ? 0 : windowsStart;
 			int windowStop = probeStopPos + windowHalfSize;
 
-            ArrayList<GeneticVariant> probeVariants = new ArrayList<GeneticVariant>();
-            
-            for (GeneticVariant probeVariant : Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)))) {
-                if(probeVariant.isBiallelic()){
-                    probeVariants.add(probeVariant);
-                }
-            }
+            ArrayList<GeneticVariant> probeVariants = Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)));
             
 			variants:
 			for (GeneticVariant variant : genotypeData.getVariantsByRange(chr, windowsStart, windowStop)) {
 
 				//skip over probe variants
 				if (variant.getStartPos() >= (probeStartPos - probeMargin) && variant.getStartPos() <= (probeStopPos + probeMargin)) {
-					continue variants;
-				}
-                if (!variant.isBiallelic()) {
 					continue variants;
 				}
                 

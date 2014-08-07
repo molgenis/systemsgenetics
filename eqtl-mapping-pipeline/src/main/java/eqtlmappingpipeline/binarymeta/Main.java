@@ -10,7 +10,9 @@ import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.cis.CisAnalysis;
 import eqtlmappingpipeline.binarymeta.util.SNPAlleleCheck;
 import eqtlmappingpipeline.metaqtl3.FDR;
+import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
 import eqtlmappingpipeline.util.NoLdSnpProbeListCreator;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -55,6 +57,8 @@ public class Main {
 
         String annot = null;
         String in = null;
+        String inexp = null;
+        String gte = null;
 
         Integer nrPerm = 0;
         Integer nrEQTLs = null;
@@ -67,6 +71,9 @@ public class Main {
         String snpselectionlist = null;
         String snpprobeselectionlist = null;
         boolean createQQPlot = true;
+        
+        Integer stepSize = 5;
+        Integer max = 5;
 
         for (int i = 0; i < args.length; i++) {
             String val = null;
@@ -98,6 +105,10 @@ public class Main {
                 eqtlfile = val;
             } else if (args[i].equals("--in")) {
                 in = val;
+            } else if (args[i].equals("--inexp")) {
+                inexp = val;
+            } else if (args[i].equals("--gte")) {
+                gte = val;
             } else if (args[i].equals("--annot")) {
                 annot = val;
             } else if (args[i].equals("--nrperm")) {
@@ -126,6 +137,10 @@ public class Main {
                 snpselectionlist = val;
             } else if (args[i].equals("--snpprobeselectionlist")) {
                 snpprobeselectionlist = val;
+            } else if (args[i].equals("--stepsizepcaremoval")) {
+                stepSize = Integer.parseInt(val);
+            } else if (args[i].equals("--maxnrpcaremoved")) {
+                max = Integer.parseInt(val);
             }
 
 
@@ -244,6 +259,25 @@ public class Main {
                     e.printStackTrace();
                 } catch (Exception e) {
                     e.printStackTrace();
+                }
+            }
+
+        } else if (mode.equals("nongeneticPcaCorrection")) {
+            if (in == null || out == null || inexp == null || gte == null ) {
+                System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --ing and --nreqtls");
+            } else {
+                try {
+                    PCAOptimum p =  new PCAOptimum();
+//            public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
+                    
+                    p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
+                    File file = new File(inexp);
+
+                    p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nrEQTLs);
+                } catch (IOException ex) {
+                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (Exception ex) {
+                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
 
