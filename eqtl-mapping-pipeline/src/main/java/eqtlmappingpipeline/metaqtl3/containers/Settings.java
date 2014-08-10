@@ -86,7 +86,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
     private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     public boolean permuteCovariates;
-    public Random r;
+    public Random randomNumberGenerator;
     public long rSeed = System.currentTimeMillis();
 
     public Settings() {
@@ -288,6 +288,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         if (randomseed != null) {
             rSeed = randomseed;
+            randomNumberGenerator = new Random(rSeed);
+        } else {
+            randomNumberGenerator = new Random();
         }
 
         // multiple testing
