@@ -521,8 +521,8 @@ class CalculationThread extends Thread {
 //                                }
 //                                zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
 //                            }
-//                            r.zscores[d][p] = zScoreInteraction;
-//                            r.correlations[d][p] = betaInteractionR;
+//                            randomNumberGenerator.zscores[d][p] = zScoreInteraction;
+//                            randomNumberGenerator.correlations[d][p] = betaInteractionR;
 //
 //                            //                            int dfresiduals = rConnection.eval("m$df.residual").asInteger();
 ////                            double[] coeff = rConnection.eval("m$coefficients").asDoubles();  // intercept: 0, x: 1, z: 2, zx: 3
@@ -594,7 +594,7 @@ class CalculationThread extends Thread {
 
 //                meany = JSci.maths.ArrayMath.mean(y);
 //                double meanxCopy = JSci.maths.ArrayMath.mean(xcopy);
-//                calculateRegressionCoefficients(xcopy, meanxCopy, y, meany, r, d, p);
+//                calculateRegressionCoefficients(xcopy, meanxCopy, y, meany, randomNumberGenerator, d, p);
                 calculateRegressionCoefficients(xcopy, y, r, d, p);
                 if (determinefoldchange) {
                     determineFoldchange(originalGenotypes, y, r, d, p, wp);
@@ -818,19 +818,19 @@ class CalculationThread extends Thread {
 //    }
 //
 //    private void deflateResults(WorkPackage currentWP) {
-//        Result r = currentWP.results;
-////	double[][] datasetZscores = r.zscores;
-//        byte[][] inflatedZScores = new byte[r.zscores.length][0];
-//        if (r != null) {
+//        Result randomNumberGenerator = currentWP.results;
+////	double[][] datasetZscores = randomNumberGenerator.zscores;
+//        byte[][] inflatedZScores = new byte[randomNumberGenerator.zscores.length][0];
+//        if (randomNumberGenerator != null) {
 //            int[] numSamples = null;
 //            try {
-//                numSamples = r.numSamples;
+//                numSamples = randomNumberGenerator.numSamples;
 //            } catch (NullPointerException e) {
 //                System.out.println("ERROR: null result?");
 //            }
 //
-//            double[][] zscores = r.zscores;
-//            int wpId = r.wpid;
+//            double[][] zscores = randomNumberGenerator.zscores;
+//            int wpId = randomNumberGenerator.wpid;
 //
 //            int[] probes = currentWP.getProbes();
 //            SNP[] snps = currentWP.getSnps();
@@ -893,6 +893,6 @@ class CalculationThread extends Thread {
 //                }
 //            }
 //        }
-//        r.deflatedZScores = inflatedZScores;
+//        randomNumberGenerator.deflatedZScores = inflatedZScores;
 //    }
 }

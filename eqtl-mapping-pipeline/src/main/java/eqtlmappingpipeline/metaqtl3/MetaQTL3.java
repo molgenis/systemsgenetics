@@ -159,6 +159,7 @@ public class MetaQTL3 {
             
             if(rseed!=null){
                 m_settings.rSeed = rseed;
+                m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
             }
 
         } else if (m_settings == null && xmlSettingsFile != null) {
@@ -180,7 +181,7 @@ public class MetaQTL3 {
             m_settings.cisAnalysis = true;
         }
 
-        m_settings.r = new Random(m_settings.rSeed);
+//        m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
         m_settings.writeSettingsToDisk();
 
         int numDatasets = m_settings.datasetSettings.size();
@@ -775,9 +776,9 @@ public class MetaQTL3 {
 
                 for (int d = 0; d < m_gg.length; d++) {
 //                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
-                    m_gg[d].permuteSampleLables(m_settings.r);
+                    m_gg[d].permuteSampleLables(m_settings.randomNumberGenerator);
                     if(m_settings.permuteCovariates){
-                        m_gg[d].permuteCovariates(m_settings.r);
+                        m_gg[d].permuteCovariates(m_settings.randomNumberGenerator);
                     }
 
 //                    int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
