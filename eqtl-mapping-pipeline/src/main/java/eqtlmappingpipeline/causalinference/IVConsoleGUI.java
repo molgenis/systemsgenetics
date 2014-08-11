@@ -28,7 +28,8 @@ public class IVConsoleGUI {
         String snpProbeCombinationList = null;
 
         boolean mediation = false;
-
+        boolean parametric = false;
+        
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             String val = null;
@@ -41,6 +42,8 @@ public class IVConsoleGUI {
                 settingsfile = val;
             } else if (arg.equals("--mediation")) {
                 mediation = true;
+            } else if (arg.equals("--parametric")) {
+                parametric = true;
             } else if (arg.equals("--in")) {
                 in = val;
             } else if (arg.equals("--out")) {
@@ -70,10 +73,10 @@ public class IVConsoleGUI {
                 printUsage();
             } else {
                 if (mediation) {
-                    Mediation iv = new Mediation(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
+                    Mediation iv = new Mediation(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList, parametric);
                     iv.run();
                 } else {
-                    IVAnalysis iv = new IVAnalysis(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
+                    IVAnalysis iv = new IVAnalysis(settingsfile, in, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList, parametric);
                     iv.run();
                 }
             }

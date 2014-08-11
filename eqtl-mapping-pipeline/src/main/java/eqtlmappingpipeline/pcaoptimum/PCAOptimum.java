@@ -377,7 +377,7 @@ public class PCAOptimum extends MetaQTL3 {
         m_settings.outputReportsDir = outputdir;
         m_settings.createTEXTOutputFiles = true;
         m_settings.createBinaryOutputFiles = false;
-        m_settings.r = new Random(m_settings.rSeed);
+        m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
         m_settings.fdrType = FDR.FDRMethod.FULL;
         
         if (maxNrResults != null) {
