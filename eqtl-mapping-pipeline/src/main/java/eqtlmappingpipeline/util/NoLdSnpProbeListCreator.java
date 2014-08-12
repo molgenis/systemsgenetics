@@ -66,7 +66,8 @@ public class NoLdSnpProbeListCreator {
         Option MaxRsquare = OptionBuilder.withArgName("int").hasArg().withDescription("Cut-off point for max r2 (default 0.2).").withLongOpt("max_rSquare").create("r");
         Option variantFilter = OptionBuilder.withArgName("int").hasArg().withDescription("List with variant ids to select.").withLongOpt("variant_filter").create("vf");
         Option callRate = OptionBuilder.withArgName("int").hasArg().withDescription("Call-rate cut-off.").withLongOpt("min_callRate").create("vc");
-        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate);
+        Option mafFilter = OptionBuilder.withArgName("int").hasArg().withDescription("Minor allel cut-off filter.").withLongOpt("min_maf").create("mf");
+        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter);
         
 		File probeFile = null;
 		String genotypePath = null;
@@ -135,6 +136,10 @@ public class NoLdSnpProbeListCreator {
                 // initialise the member variable
                 cRate = Float.parseFloat(cmd.getOptionValue("min_callRate"));
             }
+            if (cmd.hasOption("min_maf")|| cmd.hasOption("mf")) {
+                // initialise the member variable
+                maf = Float.parseFloat(cmd.getOptionValue("min_maf"));
+            }
             if (cmd.hasOption("MaxDprime")|| cmd.hasOption("md")) {
                 // initialise the member variable
                 maxDprime = Double.parseDouble(cmd.getOptionValue("MaxDprime"));
@@ -146,10 +151,8 @@ public class NoLdSnpProbeListCreator {
         } catch (ParseException ex) {
             Logger.getLogger(NoLdSnpProbeListCreator.class.getName()).log(Level.SEVERE, null, ex);
         }
-         
         
         SampleFilter sf = null;
-        
         
         VariantCombinedFilter varFilter = new VariantCombinedFilter();
         varFilter.add(new VariantFilterBiAllelic());
