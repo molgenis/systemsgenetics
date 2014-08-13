@@ -51,8 +51,8 @@ public class ConditionalAnalysis extends MetaQTL3 {
         m_settings.provideBetasAndStandardErrors = true;
         m_settings.provideFoldChangeData = true;
         String origOutputDir = m_settings.outputReportsDir;
-        m_settings.outputReportsDir = origOutputDir + Gpio.getFileSeparator() +"SNP-Initial"+Gpio.getFileSeparator();
-        m_settings.plotOutputDirectory = origOutputDir + Gpio.getFileSeparator()+"SNP-Initial"+Gpio.getFileSeparator()+"plots"+Gpio.getFileSeparator();
+        m_settings.outputReportsDir = origOutputDir +"SNP-Initial"+Gpio.getFileSeparator();
+        m_settings.plotOutputDirectory = origOutputDir +"SNP-Initial"+Gpio.getFileSeparator()+"plots"+Gpio.getFileSeparator();
         Gpio.createDir(m_settings.plotOutputDirectory);
         Gpio.createDir(m_settings.outputReportsDir);
 
@@ -374,6 +374,8 @@ public class ConditionalAnalysis extends MetaQTL3 {
 
                 m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
             }
+            m_gg[i].getExpressionData().calcAndSubtractMean();
+            m_gg[i].getExpressionData().calcMeanAndVariance();
             numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
 
         }
