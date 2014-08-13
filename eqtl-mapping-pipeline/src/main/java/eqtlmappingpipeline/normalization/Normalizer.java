@@ -1,5 +1,6 @@
 package eqtlmappingpipeline.normalization;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -466,18 +467,31 @@ public class Normalizer {
         System.out.println("Will write output to: "+parentDir);
         String[] files = Gpio.getListOfFiles(parentDir);
         String startExpressionFileName = expressionFile;
+        File st = new File(startExpressionFileName);
 
         // strip the parent dir name
-        parentDir += "/";
-        String minimalFilename = startExpressionFileName.replaceAll(parentDir, "");
+        parentDir += Gpio.getFileSeparator();
+        String minimalFilename = st.getName();
         String[] expressionFileNameElems = minimalFilename.split("\\.");
         String eigenvectorFile = null;
         String principalComponentsFile = null;
-
+        
+        if(minimalFilename.contains("PCAsOverSamplesRemoved")){
+            StringBuilder newMinimal = new StringBuilder();
+            newMinimal.append(expressionFileNameElems[0]);
+            for(int i = 1; i<expressionFileNameElems.length;++i){
+                if(!expressionFileNameElems[i].contains("PCAsOverSamplesRemoved")){
+                    newMinimal.append(".").append(expressionFileNameElems[i]);
+                }
+            }
+            minimalFilename = newMinimal.toString();
+        }
+        
         for (String file : files) {
-            if (file.length() < minimalFilename.length() && file.contains(expressionFileNameElems[0])) {
-                minimalFilename = file;
-            } else if (file.toLowerCase().contains("pcaoversampleseigenvectors")) {
+//            if (file.length() < minimalFilename.length() && file.contains(expressionFileNameElems[0])) {
+//                minimalFilename = file;
+//            } else 
+            if (file.toLowerCase().contains("pcaoversampleseigenvectors.")) {
                 eigenvectorFile = parentDir + "" + file;
             } else if (file.toLowerCase().contains("pcaoversamplesprincipalcomponents")) {
                 principalComponentsFile = parentDir + "" + file;
@@ -501,7 +515,7 @@ public class Normalizer {
 
         System.out.println("Detected core file name to be: " + minimalFilename);
 
-        DoubleMatrixDataset<String, String> expressionDataset = new DoubleMatrixDataset<String, String>(startExpressionFileName);
+        DoubleMatrixDataset<String, String> expressionDataset = new DoubleMatrixDataset<String, String>(parentDir+minimalFilename);
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(principalComponentsFile);
         DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(eigenvectorFile);
 
@@ -510,16 +524,20 @@ public class Normalizer {
             nrPCAsOverSamplesToRemove = expressionDataset.colObjects.size() - remainder;
         }
 
+//        DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(expressionDataset.rowObjects.size(), expressionDataset.colObjects.size());
+//        datasetResidualExpressionBasedOnPCAOverSamples.rowObjects = expressionDataset.rowObjects;
+//        datasetResidualExpressionBasedOnPCAOverSamples.colObjects = expressionDataset.colObjects;
+//
+//        for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
+//            System.arraycopy(expressionDataset.getRawData()[p], 0, datasetResidualExpressionBasedOnPCAOverSamples.getRawData()[p], 0, expressionDataset.colObjects.size());
+//        }
 
-        DoubleMatrixDataset<String, String> datasetResidualExpressionBasedOnPCAOverSamples = new DoubleMatrixDataset<String, String>(expressionDataset.rowObjects.size(), expressionDataset.colObjects.size());
-        datasetResidualExpressionBasedOnPCAOverSamples.rowObjects = expressionDataset.rowObjects;
-        datasetResidualExpressionBasedOnPCAOverSamples.colObjects = expressionDataset.colObjects;
-
-        for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
-            System.arraycopy(expressionDataset.getRawData()[p], 0, datasetResidualExpressionBasedOnPCAOverSamples.getRawData()[p], 0, expressionDataset.colObjects.size());
+        if(minimalFilename.endsWith(".txt")){
+            minimalFilename = minimalFilename.substring(0, minimalFilename.length()-4);
+        } else if(minimalFilename.endsWith(".txt.gz")){
+            minimalFilename = minimalFilename.substring(0, minimalFilename.length()-7);
         }
-
-
+        
         for (int t = 0; t < nrPCAsOverSamplesToRemove; t++) {
             if (!pcasNotToRemove.contains(t + 1)) {
 
@@ -534,20 +552,16 @@ public class Normalizer {
             }
 
             int nrPCAs = t + 1;
-            if(minimalFilename.endsWith(".txt")){
-                minimalFilename = minimalFilename.substring(0, minimalFilename.length()-4);
-            } else if(minimalFilename.endsWith(".txt.gz")){
-                minimalFilename = minimalFilename.substring(0, minimalFilename.length()-7);
-            }
+            
             if (nrIntermediatePCAsOverSamplesToRemoveToOutput > 0 && nrPCAs % nrIntermediatePCAsOverSamplesToRemoveToOutput == 0) {
                 //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt");
-                expressionDataset.save(minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
+                expressionDataset.save(parentDir+minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
                 System.out.println("Removed\t" + nrPCAs + "\tPCs. File:\t" + minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
             }
 
         }
         //datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved.txt");
-        expressionDataset.save(minimalFilename + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
+        expressionDataset.save(parentDir+minimalFilename + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
 
         System.out.println("Done\n");
     }

@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.pcaoptimum;
 
+import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.normalization.Normalizer;
@@ -13,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -32,7 +34,7 @@ public class PCAOptimum extends MetaQTL3 {
     protected String inexpannot;
     protected String ingt;
     protected String gte;
-    protected Integer m_threads;
+    protected Integer m_threads = 1;
     protected int permutations = 10;
     protected boolean covariatesremoved = false;
     protected String cissnps;
@@ -269,9 +271,11 @@ public class PCAOptimum extends MetaQTL3 {
             System.out.println(ConsoleGUIElems.LINE);
             m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i));
             if (!m_settings.performParametricAnalysis) {
-
                 m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
             }
+            m_gg[i].getExpressionData().calcAndSubtractMean();
+            m_gg[i].getExpressionData().calcMeanAndVariance();
+            
             numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
             System.out.println(ConsoleGUIElems.LINE);
             System.out.println("");
@@ -341,6 +345,7 @@ public class PCAOptimum extends MetaQTL3 {
 
         s.name = "Dataset";
         s.expressionLocation = nextInExp;
+        System.out.println(nextInExp);
         s.expressionplatform = inexpplatform;
         s.probeannotation = inexpannot;
         s.genotypeLocation = ingt;
@@ -372,6 +377,9 @@ public class PCAOptimum extends MetaQTL3 {
         m_settings.outputReportsDir = outputdir;
         m_settings.createTEXTOutputFiles = true;
         m_settings.createBinaryOutputFiles = false;
+        m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
+        m_settings.fdrType = FDR.FDRMethod.FULL;
+        
         if (maxNrResults != null) {
             m_settings.maxNrMostSignificantEQTLs = maxNrResults;
 
@@ -443,7 +451,7 @@ public class PCAOptimum extends MetaQTL3 {
         return y;
     }
 
-    private void performeQTLMappingOverEigenvectorMatrixAndReNormalize(String origInExp, String out, String parentDir, int stepSize, int max, Integer maxNrResults) throws IOException, Exception {
+    public void performeQTLMappingOverEigenvectorMatrixAndReNormalize(String origInExp, String out, String parentDir, int stepSize, int max, Integer maxNrResults) throws IOException, Exception {
         // Eigenvector mapping
         TextFile tf = new TextFile(origInExp, TextFile.R);
         String[] header = tf.readLineElems(TextFile.tab);
@@ -457,27 +465,30 @@ public class PCAOptimum extends MetaQTL3 {
             probesToTest.add("Comp" + i);
         }
 
-
-        parentDir += "/";
+        parentDir += Gpio.getFileSeparator();
         String[] files = Gpio.getListOfFiles(parentDir);
         String pcaOverSampleEigenVectorsTransposedFile = null;
+        
+        boolean desiredMaxThresholdExict = false;
+        
         for (String file : files) {
             if (file.toLowerCase().contains("pcaoversampleseigenvectorstransposed")) {
                 pcaOverSampleEigenVectorsTransposedFile = parentDir + "" + file;
-                break;
+            }
+            if (file.toLowerCase().contains(max+"PCAsOverSamplesRemoved.txt.gz")){
+                desiredMaxThresholdExict = true;
             }
         }
 
         if (pcaOverSampleEigenVectorsTransposedFile == null) {
-            System.out.println("Error! Could not find " + pcaOverSampleEigenVectorsTransposedFile);
+            System.out.println("Error! Could not find pcaOverSampleEigenVectorsTransposedFile");
             System.exit(0);
         }
 
         // ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.PCAOverSamplesEigenvectorsTransposed
 
-
         String nextInExp = pcaOverSampleEigenVectorsTransposedFile;
-        performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", null, probesToTest, m_threads, maxNrResults);
+        performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
         cleanup();
 
         eQTLTextFile etf = new eQTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
@@ -487,33 +498,83 @@ public class PCAOptimum extends MetaQTL3 {
         HashSet<Integer> geneticEigenVectors = new HashSet<Integer>();
         for (EQTL e : eigenvectorEQTLs) {
             Double fdr = e.getFDR();
-            if (fdr == null) {
-                System.out.println("Error with eQTL file!: FDR == null: " + out + "CisTrans-EigenVectors/eQTLProbesFDR0.05.txt");
-                System.exit(0);
-            }
-            if (fdr > 0) {
-                break;
-            } else {
-                String probe = e.getProbe();
-                Integer compId = Integer.parseInt(probe.replace("Comp", ""));
-                // quick hack: component 1 captures population stratification information...
-                if (compId > 1) {
-                    geneticEigenVectors.add(compId);
+            if (fdr != null) {
+                if (fdr == 0) {
+                    String probe = e.getProbe();
+                    Integer compId = Integer.parseInt(probe.replace("Comp", ""));
+                    // quick hack: component 1 captures population stratification information...
+                    if (compId > 1) {
+                        geneticEigenVectors.add(compId);
+                    }
                 }
             }
         }
 
-        System.out.println("Repeating PCA analysis, without removal of genetically controlled PCs");
+//        System.out.println("Repeating PCA analysis, without removal of genetically controlled PCs");
         System.out.println("These PCs are under genetic control: " + Strings.concat(geneticEigenVectors.toArray(new Integer[0]), Strings.comma));
         System.out.println();
         if (geneticEigenVectors.size() > 0) {
             Normalizer n = new Normalizer();
             n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
-        } else {
-            System.out.println("No PCA vectors seem to be genetically associated.\n"
-                    + "To find the optimum number of PCs to use, rerun this command without --pcqtl, if you have not done so already.");
+        } else if(!desiredMaxThresholdExict){
+            Normalizer n = new Normalizer();
+            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
+        }else {
+            System.out.println("No PCA vectors seem to be genetically associated.");
             System.exit(0);
         }
 
+    }
+    
+    public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
+
+        if (!out.endsWith(Gpio.getFileSeparator())) {
+            out += Gpio.getFileSeparator();
+        }
+        if (!Gpio.exists(out)) {
+            Gpio.createDir(out);
+        }
+
+        permutations = perm;
+
+        m_settings = new Settings();
+        int nrProcs = Runtime.getRuntime().availableProcessors();
+        if (threads != null && threads > 0 && threads <= nrProcs) {
+            //
+            m_threads = threads;
+        } else {
+            if (threads != null && threads > nrProcs) {
+                System.out.println("The number of threads you set using the command line is not correct for your system. You set " + threads + " threads, while your machine has " + nrProcs + " processors");
+            }
+            threads = nrProcs;
+        }
+
+        m_threads = threads;
+
+        if (cissnps != null) {
+            cis = true;
+        } else {
+            cis = false;
+        }
+
+        if (transsnps != null) {
+            trans = true;
+        } else {
+            trans = false;
+        }
+
+        // set standard cis-settings
+        this.inexpannot = inexpannot;
+        this.inexpplatform = inexpplatform;
+        this.ingt = ingt;
+        this.gte = gte;
+        
+        if(snpfile!=null){
+            TextFile f = new TextFile(snpfile, TextFile.R);
+            m_settings.tsSNPsConfine = new HashSet<String>(f.readAsArrayList());
+        }
+        m_settings.createDotPlot = false;
+        m_settings.createQQPlot = false;
+        m_settings.fullFdrOutput = false;
     }
 }

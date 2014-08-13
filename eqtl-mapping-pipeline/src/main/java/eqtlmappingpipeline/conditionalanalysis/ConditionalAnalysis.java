@@ -6,6 +6,7 @@ package eqtlmappingpipeline.conditionalanalysis;
 
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,14 +51,15 @@ public class ConditionalAnalysis extends MetaQTL3 {
         m_settings.provideBetasAndStandardErrors = true;
         m_settings.provideFoldChangeData = true;
         String origOutputDir = m_settings.outputReportsDir;
-        m_settings.outputReportsDir = origOutputDir + "/SNP-Initial/";
-        m_settings.plotOutputDirectory = origOutputDir + "/SNP-Initial/plots/";
+        m_settings.outputReportsDir = origOutputDir +"SNP-Initial"+Gpio.getFileSeparator();
+        m_settings.plotOutputDirectory = origOutputDir +"SNP-Initial"+Gpio.getFileSeparator()+"plots"+Gpio.getFileSeparator();
         Gpio.createDir(m_settings.plotOutputDirectory);
         Gpio.createDir(m_settings.outputReportsDir);
 
         String[] gzfiles = Gpio.getListOfFiles(origOutputDir, "gz");
         for (String filename : gzfiles) {
-            String f = filename.replace(origOutputDir, "");
+            File file = new File(filename);
+            String f = file.getName();
             Gpio.moveFile(filename, m_settings.outputReportsDir + f);
         }
 
@@ -372,6 +374,8 @@ public class ConditionalAnalysis extends MetaQTL3 {
 
                 m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
             }
+            m_gg[i].getExpressionData().calcAndSubtractMean();
+            m_gg[i].getExpressionData().calcMeanAndVariance();
             numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
 
         }

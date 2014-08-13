@@ -54,7 +54,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean performEQTLAnalysisOnSNPProbeCombinationSubset;             // Confine to a certain set of probe/snp combinations?
     public Byte confineToSNPsThatMapToChromosome;                              // Confine SNP to be assessed to SNPs mapped on this chromosome
     public boolean expressionDataLoadOnlyProbesThatMapToChromosome = false;    // Only load expression data for probes with a known chromosome mapping
-    public HashSet<String> tsSNPsConfine;                                      // Confine analysis to the SNPs in this hash
+    public HashSet<String> tsSNPsConfine = null;                                      // Confine analysis to the SNPs in this hash
     public HashMap<String, HashSet<String>> tsSNPProbeCombinationsConfine;     // Confine analysis to the combinations of SNP and Probes in this hash
     // plots
     public double plotOutputPValueCutOff;                                      // Use this p-value as a cutoff for drawing plots
@@ -86,9 +86,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean snpProbeConfineBasedOnChrPos = false; //Snp in snp confine and snp probe confine list are defined as chr:pos instead of snp ID.
     private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     public boolean permuteCovariates;
-    public Random r;
     public long rSeed = System.currentTimeMillis();
-
+    public Random randomNumberGenerator = new Random(rSeed);
+    
     public Settings() {
     }
 
@@ -288,6 +288,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         if (randomseed != null) {
             rSeed = randomseed;
+            randomNumberGenerator = new Random(rSeed);
         }
 
         // multiple testing
@@ -361,8 +362,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         if (outdir != null) {
             outputReportsDir = outdir;
-            if (!outputReportsDir.endsWith("/")) {
-                outputReportsDir += "/";
+            if (!outputReportsDir.endsWith(Gpio.getFileSeparator())) {
+                outputReportsDir += Gpio.getFileSeparator();
             }
 
             // check if dir exists. if it does not, create it:
@@ -409,8 +410,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         if (outputplotdirectory != null) {
             plotOutputDirectory = outputplotdirectory;
-            if (!plotOutputDirectory.endsWith("/")) {
-                plotOutputDirectory += "/";
+            if (!plotOutputDirectory.endsWith(Gpio.getFileSeparator())) {
+                plotOutputDirectory += Gpio.getFileSeparator();
             }
         } else {
             plotOutputDirectory = outdir + "/plots/";

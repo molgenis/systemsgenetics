@@ -23,8 +23,8 @@ public class Mediation extends IVAnalysis {
 
     public Mediation(String xmlSettingsFile,
             String ingt, String inexp, String inexpplatform, String inexpannot,
-            String gte, String out, int perm, String snpProbeCombinationList) throws IOException, Exception {
-        super(xmlSettingsFile, ingt, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList);
+            String gte, String out, int perm, String snpProbeCombinationList, boolean parametric) throws IOException, Exception {
+        super(xmlSettingsFile, ingt, inexp, inexpplatform, inexpannot, gte, out, perm, snpProbeCombinationList, parametric);
     }
 
     @Override
@@ -40,7 +40,7 @@ public class Mediation extends IVAnalysis {
                     outfile = outDir + m_gg[d].getSettings().name + "_IVAnalysis-RealData.txt";
                 } else {
                     outfile = outDir + m_gg[d].getSettings().name + "_IVAnalysis-PermutationRound-" + perm + ".txt";
-                    m_gg[d].permuteSampleLables(m_settings.r);
+                    m_gg[d].permuteSampleLables(m_settings.randomNumberGenerator);
                 }
                 TextFile out = new TextFile(outfile, TextFile.W);
                 Iterator<Triple<String, String, String>> it = snpProbeCombos.iterator();
