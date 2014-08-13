@@ -37,7 +37,7 @@ public class Gpio {
                         if (doesntContainThis.isEmpty() || !fname.contains(doesntContainThis)) {
                             String ext = fileName.substring(mid + 1, fileName.length());
                             if (ext.toLowerCase().equals(extension)) {
-                                al.add(loc.getAbsolutePath() + "/" + fileName);
+                                al.add(loc.getAbsolutePath() + Gpio.getFileSeparator() + fileName);
                             }
                         }
                     }
@@ -58,8 +58,8 @@ public class Gpio {
     }
 
     public static void createDir(String dirName) throws IOException {
-        if (!dirName.endsWith("/")) {
-            dirName += "/";
+        if (!dirName.endsWith(Gpio.getFileSeparator())) {
+            dirName += Gpio.getFileSeparator();
         }
         if (!exists(dirName)) {
 

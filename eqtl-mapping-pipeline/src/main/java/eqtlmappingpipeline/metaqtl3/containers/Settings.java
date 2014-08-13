@@ -362,8 +362,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         if (outdir != null) {
             outputReportsDir = outdir;
-            if (!outputReportsDir.endsWith("/")) {
-                outputReportsDir += "/";
+            if (!outputReportsDir.endsWith(Gpio.getFileSeparator())) {
+                outputReportsDir += Gpio.getFileSeparator();
             }
 
             // check if dir exists. if it does not, create it:
@@ -410,8 +410,8 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
         if (outputplotdirectory != null) {
             plotOutputDirectory = outputplotdirectory;
-            if (!plotOutputDirectory.endsWith("/")) {
-                plotOutputDirectory += "/";
+            if (!plotOutputDirectory.endsWith(Gpio.getFileSeparator())) {
+                plotOutputDirectory += Gpio.getFileSeparator();
             }
         } else {
             plotOutputDirectory = outdir + "/plots/";
