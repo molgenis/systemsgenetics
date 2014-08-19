@@ -33,6 +33,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
+import org.molgenis.genotype.variantFilter.VariantFilterSeq;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import org.molgenis.genotype.variantFilter.VariantQcChecker;
 
@@ -67,7 +68,8 @@ public class NoLdSnpProbeListCreator {
         Option variantFilter = OptionBuilder.withArgName("String").hasArg().withDescription("List with variant ids to select.").withLongOpt("variant_filter").create("vf");
         Option callRate = OptionBuilder.withArgName("int").hasArg().withDescription("Call-rate cut-off.").withLongOpt("min_callRate").create("vc");
         Option mafFilter = OptionBuilder.withArgName("int").hasArg().withDescription("Minor allel cut-off filter.").withLongOpt("min_maf").create("mf");
-        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter);
+        Option chrFilter = OptionBuilder.withArgName("string").hasArg().withDescription("Filter input data on chromosome").withLongOpt("chrFilter").create("ch");        
+        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter).addOption(chrFilter);
         
 		File probeFile = null;
 		String genotypePath = null;
@@ -80,6 +82,7 @@ public class NoLdSnpProbeListCreator {
         String variantFilterList = null;
 		double maxDprime = 0.2;
 		double maxR2 = 0.2;
+        String chrF = null;
 		File outputFile = null;
         
         
@@ -148,6 +151,10 @@ public class NoLdSnpProbeListCreator {
                 // initialise the member variable
                 maxR2 = Double.parseDouble(cmd.getOptionValue("max_rSquare"));
             }
+            if(cmd.hasOption("chrFilter") || cmd.hasOption("ch")){
+                chrF = cmd.getOptionValue("chrFilter");
+            }
+            
         } catch (ParseException ex) {
             Logger.getLogger(NoLdSnpProbeListCreator.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -173,13 +180,20 @@ public class NoLdSnpProbeListCreator {
             varFilter.add(snpIdFilter);
 
         }
+        if (chrF != null) {
+            VariantFilterSeq seqFilter = new VariantFilterSeq(chrF);
+            varFilter.add(seqFilter);
+        }
         
 		RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 10000, varFilter, sf);
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(probeFile), "UTF-8"));
 		final BufferedWriter snpProbeToTestWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "UTF-8"));
 
-
+        int rSquareExclusions = 0;
+        int dPrimeExclusions = 0;
+        int possibleCombinations = 0;
+        int locatedInProbe = 0;
 		String line;
 		String[] elements;
 		while ((line = reader.readLine()) != null) {
@@ -192,20 +206,22 @@ public class NoLdSnpProbeListCreator {
 			String chr = elements[0].replace("chr", "");//TODO remove chr
 			int probeStartPos = Integer.parseInt(elements[1]);
 			int probeStopPos = Integer.parseInt(elements[2]);
+            int probeCenter = probeStartPos+(probeStopPos-probeStartPos/2);
 			String probeName = elements[3];
 
 
-			int windowsStart = probeStartPos - windowHalfSize;
+			int windowsStart = probeCenter - windowHalfSize;
             windowsStart = windowsStart < 0 ? 0 : windowsStart;
-			int windowStop = probeStopPos + windowHalfSize;
+			int windowStop = probeCenter + windowHalfSize;
 
             ArrayList<GeneticVariant> probeVariants = Lists.newArrayList(genotypeData.getVariantsByRange(chr, (probeStartPos - probeMargin), (probeStopPos + probeMargin)));
             
 			variants:
 			for (GeneticVariant variant : genotypeData.getVariantsByRange(chr, windowsStart, windowStop)) {
-
+                possibleCombinations++;
 				//skip over probe variants
 				if (variant.getStartPos() >= (probeStartPos - probeMargin) && variant.getStartPos() <= (probeStopPos + probeMargin)) {
+                    locatedInProbe++;
 					continue variants;
 				}
                 
@@ -213,10 +229,16 @@ public class NoLdSnpProbeListCreator {
 
 					Ld ld = variant.calculateLd(probeVariant);
 
-					if (ld.getDPrime() >= maxDprime || ld.getR2() >= maxR2) {
+					if (ld.getDPrime() >= maxDprime) {
 						//Exclude
+                        dPrimeExclusions++;
 						continue variants;
 					}
+                    if( ld.getR2() >= maxR2){
+                        //Exclude
+                        rSquareExclusions++;
+                        continue variants;
+                    }
 
 				}
 
@@ -235,7 +257,10 @@ public class NoLdSnpProbeListCreator {
 			}
 
 		}
-
         snpProbeToTestWriter.close();
+        System.out.println("Number of valid start combination: "+ possibleCombinations);
+        System.out.println("Excluded because located in probe: "+ locatedInProbe);
+        System.out.println("Excluded based on D': "+dPrimeExclusions);
+        System.out.println("Excluded based on r2: "+rSquareExclusions);
 	}
 }
