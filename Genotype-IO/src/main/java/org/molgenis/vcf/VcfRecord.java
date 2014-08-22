@@ -135,7 +135,7 @@ public class VcfRecord
 	public String[] getFormat() {
 		if(cachedSampleDataTypes == null) {
 			//Do new string to prevent the whole token array is saved
-			if(tokens.length < 8){
+			if(tokens.length > 8){
 				cachedSampleDataTypes = StringUtils.split(new String(tokens[VcfMeta.COL_FORMAT_IDX]), ':'); 
 			} else {
 				cachedSampleDataTypes = new String[0];
