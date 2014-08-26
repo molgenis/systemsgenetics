@@ -3,7 +3,6 @@ package org.molgenis.genotype.variant;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.ChromosomeComparator;
-import org.molgenis.genotype.util.GeneticVariantTreeSet;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculator;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -35,21 +34,6 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
             } else {
 
                 // same sequence and same start
-
-                if (GeneticVariantTreeSet.getDummyGeneticVariantClass().isInstance(this)) {
-
-                    if (!GeneticVariantTreeSet.getDummyGeneticVariantClass().isInstance(other)) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
-
-                }
-
-                if (GeneticVariantTreeSet.getDummyGeneticVariantClass().isInstance(other)) {
-                    return -1;
-
-                }
 
                 if (ReadOnlyGeneticVariantTriTyper.class.isInstance(this)) {
 

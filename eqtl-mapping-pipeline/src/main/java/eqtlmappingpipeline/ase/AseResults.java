@@ -9,95 +9,59 @@ import java.util.HashMap;
 import java.util.Iterator;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
+import umcg.genetica.collections.ChrPosMap;
 
 /**
  *
  * @author Patrick Deelen
  */
-public class AseResults implements Iterable<AseVariant> {
+public class AseResults implements Iterable<AseVariantAppendable> {
 
-	private final HashMap<String, TIntObjectHashMap<AseVariant>> results; //Empty chr hashmaps will crash the iterator
+	private final ChrPosMap<AseVariantAppendable> results; //Empty chr hashmaps will crash the iterator
+	private boolean encounteredBaseQuality = false;
 
 	public AseResults() {
-		results = new HashMap<String, TIntObjectHashMap<AseVariant>>();
+		results = new ChrPosMap<AseVariantAppendable>();
 	}
 
-	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count) {
+	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, String sampleId, double a1MeanBaseQuality, double a2MeanBaseQuality) {
+		
+		addToResults(chr, pos, id, a1, a2, a1Count, a2Count, sampleId, a1MeanBaseQuality, a2MeanBaseQuality);
+		encounteredBaseQuality = true;
+	}
+	
+	public synchronized void addResult(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, String sampleId) {
 
-		TIntObjectHashMap<AseVariant> chrResults = results.get(chr);
-		if (chrResults == null) {
-			chrResults = new TIntObjectHashMap<AseVariant>();
-			results.put(chr, chrResults);
-		}
+		addToResults(chr, pos, id, a1, a2, a1Count, a2Count, sampleId, Double.NaN, Double.NaN);
 
-		AseVariant aseVariant = chrResults.get(pos);
+	}
+	
+	private synchronized void addToResults(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, int a1Count, int a2Count, String sampleId, double a1MeanBaseQuality, double a2MeanBaseQuality) {
+
+		AseVariantAppendable aseVariant = results.get(chr, pos);
 		if (aseVariant == null) {
-			aseVariant = new AseVariant(chr, pos, id, a1, a2);
-			chrResults.put(pos, aseVariant);
+			aseVariant = new AseVariantAppendable(chr, pos, id, a1, a2);
+			results.put(chr, pos, aseVariant);
 		}
-		aseVariant.addCounts(a1Count, a2Count);
-
+		aseVariant.addCounts(a1Count, a2Count, sampleId, a1MeanBaseQuality, a2MeanBaseQuality);
+		
+	}
+	
+	public Iterator<AseVariantAppendable> chrIterator(String chr){
+		return results.chrIterator(chr);
 	}
 
 	@Override
-	public Iterator<AseVariant> iterator() {
-
-		return new AseResultIterator();
+	public Iterator<AseVariantAppendable> iterator() {
+		return results.iterator();
 	}
-
-	private class AseResultIterator implements Iterator<AseVariant> {
-
-		Iterator<TIntObjectHashMap<AseVariant>> chrResultsIterator;
-		Iterator<AseVariant> variantIterator;
-
-		public AseResultIterator() {
-			chrResultsIterator = results.values().iterator();
-
-			if (chrResultsIterator.hasNext()) {
-				variantIterator = chrResultsIterator.next().valueCollection().iterator();
-			}
-		}
-
-		@Override
-		public boolean hasNext() {
-			if (variantIterator == null) {
-				return chrResultsIterator.hasNext();
-			}
-			if (variantIterator.hasNext()) {
-				return true;
-			} else {
-				while(chrResultsIterator.hasNext()){
-					variantIterator = chrResultsIterator.next().valueCollection().iterator();
-					if(variantIterator.hasNext()){
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		@Override
-		public AseVariant next() {
-			if (!variantIterator.hasNext()) {
-				variantIterator = chrResultsIterator.next().valueCollection().iterator();
-			}
-			return variantIterator.next();
-
-		}
-
-		@Override
-		public void remove() {
-			variantIterator.remove();
-		}
+	
+	public boolean isEncounteredBaseQuality() {
+		return encounteredBaseQuality;
 	}
-
+	
 	public int getCount(){
-		int count = 0;
-
-		for(TIntObjectHashMap<AseVariant> chrResults : results.values()){
-			count += chrResults.size();
-		}
-		return count;
+		return results.size();
 	}
-
+	
 }

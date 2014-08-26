@@ -34,7 +34,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 	@BeforeClass
 	public void beforeClass() throws IOException, URISyntaxException
 	{
-		genotypeData = new VcfGenotypeData(getTestVcfGz(), getTestVcfGzTbi());
+		genotypeData = new VcfGenotypeData(getTestVcfGz(), getTestVcfGzTbi(), 0.8);
 	}
 
 	@Test

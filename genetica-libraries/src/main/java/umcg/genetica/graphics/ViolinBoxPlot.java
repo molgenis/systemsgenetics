@@ -9,6 +9,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Stroke;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -22,6 +23,7 @@ import javax.imageio.ImageIO;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.math.stats.WilcoxonMannWhitney;
+import umcg.genetica.util.Primitives;
 
 /**
  *
@@ -134,7 +136,7 @@ public class ViolinBoxPlot {
 //        cern.jet.random.engine.RandomEngine randomEngine = new cern.jet.random.engine.DRand();
         WilcoxonMannWhitney wmw = new WilcoxonMannWhitney();
 
-        double[][][] aucs = new double[vals.length][vals[0].length][vals[0].length];
+//        double[][][] aucs = new double[vals.length][vals[0].length][vals[0].length];
         double[][][] pvals = new double[vals.length][vals[0].length][vals[0].length];
 
         for (int dataset = 0; dataset < datasetNames.length; dataset++) {
@@ -142,8 +144,8 @@ public class ViolinBoxPlot {
             // test between categories
             for (int category1 = 0; category1 < valsForDs.length; category1++) {
                 double[] vals1 = valsForDs[category1];
-                double min1 = JSci.maths.ArrayMath.min(vals1);
-                double max1 = JSci.maths.ArrayMath.max(vals1);
+                double min1 = Primitives.min(vals1); 
+                double max1 = Primitives.max(vals1);
                 if (min1 < minValue) {
                     minValue = min1;
                 }
@@ -155,11 +157,11 @@ public class ViolinBoxPlot {
 
                     double[] vals2 = valsForDs[category2];
                     double pValueWilcoxon = wmw.returnWilcoxonMannWhitneyPValue(vals2, vals1);
-                    double auc = wmw.getAUC();
-                    double min2 = JSci.maths.ArrayMath.min(vals2);
-                    double max2 = JSci.maths.ArrayMath.max(vals2);
 
-                    aucs[dataset][category1][category2] = auc;
+                    double min2 = Primitives.min(vals2);
+                    double max2 = Primitives.max(vals2);
+
+//                    aucs[dataset][category1][category2] = auc;
                     pvals[dataset][category1][category2] = pValueWilcoxon;
 
                     if (max2 > maxValue) {
@@ -178,7 +180,7 @@ public class ViolinBoxPlot {
         for (int dataset = 0; dataset < vals.length; dataset++) {
 
             // sort categories on the basis of their WMW results
-            double[][] aucsfordataset = aucs[dataset];
+//            double[][] aucsfordataset = aucs[dataset];
             double[][] pvaluesfordataset = pvals[dataset];
 
             double minPvalueForDs = Double.MAX_VALUE;
@@ -223,7 +225,7 @@ public class ViolinBoxPlot {
             // now get the sorted results per category within this dataset
             ArrayList<Triple<Integer, Integer, Integer>> sortedPValuesForDataset = new ArrayList<Triple<Integer, Integer, Integer>>();
             for (Pair<Double, Triple<Integer, Integer, Integer>> pvalueTriplePair : sortedPValuesPerCategory) {
-                System.out.println(pvalueTriplePair.toString());
+//                System.out.println(pvalueTriplePair.toString());
                 if (pvalueTriplePair.getRight().getLeft().equals(datasetNumber)) {
                     // this result belongs to this dataset
                     sortedPValuesForDataset.add(pvalueTriplePair.getRight());
@@ -277,17 +279,19 @@ public class ViolinBoxPlot {
                 drawBoxPlot(g2d, xposBoxPlot, y, individualPlotWidth, height, vals1, minValue, maxValue, false);
 
                 // Draw bottom discrimator between candidate genes and other genes:
-                double minVal1 = JSci.maths.ArrayMath.min(vals1);
+                double minVal1 = Primitives.min(vals1);
 
                 int posY1 = y + height - (int) Math.round((double) height * (minVal1 - minValue) / (maxValue - minValue));
 
                 int linePos = xposViolin + (individualPlotWidth / 2);
                 g2d.setComposite(alphaComposite25);
+                Stroke stroke = g2d.getStroke();
                 g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 2.0f, new float[]{2.0f}, 0.0f));
                 g2d.setColor(new Color(223, 36, 20));
                 g2d.drawLine(linePos, posY1 + 5, linePos, height + 120);
 
                 g2d.setComposite(alphaComposite100);
+                g2d.setStroke(stroke);
                 g2d.setFont(fontBoldSmall);
                 g2d.setColor(new Color(223, 36, 20));
 
@@ -318,8 +322,8 @@ public class ViolinBoxPlot {
                 int xpos1 = plotStart - 5 + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * category1Index1 + (individualPlotWidth / 2);
                 int xpos2 = plotStart - 5 + (individualPlotMarginLeft + individualPlotWidth + individualPlotMarginRight) * category1Index2 + (individualPlotWidth / 2);
 
-                double maxVal1 = JSci.maths.ArrayMath.max(vals[datasetNumber][category1]);
-                double maxVal2 = JSci.maths.ArrayMath.max(vals[datasetNumber][category2]);
+                double maxVal1 = Primitives.max(vals[datasetNumber][category1]);
+                double maxVal2 = Primitives.max(vals[datasetNumber][category2]);
                 int posY1 = y + height - (int) Math.round((double) height * (maxVal1 - minValue) / (maxValue - minValue));
                 int posY2 = y + height - (int) Math.round((double) height * (maxVal2 - minValue) / (maxValue - minValue));
 
@@ -360,10 +364,10 @@ public class ViolinBoxPlot {
         g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
         g2d.setColor(new Color(100, 100, 100));
 
-        System.out.println("MAX: " + maxValue);
-        System.out.println("MIN: " + minValue);
+//        System.out.println("MAX: " + maxValue);
+//        System.out.println("MIN: " + minValue);
         if (maxValue <= 1 && minValue >= 0) {
-            System.out.println("New code...");
+//            System.out.println("New code...");
             double diff = maxValue - minValue;
             double unitY = determineUnit(diff);
 
@@ -375,7 +379,7 @@ public class ViolinBoxPlot {
             int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
             int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
 
-            System.out.println(posY1 + "\t" + posY2);
+//            System.out.println(posY1 + "\t" + posY2);
 
             g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
             g2d.setFont(fontBold);
@@ -389,12 +393,18 @@ public class ViolinBoxPlot {
         } else if (maxValue > 0 && minValue >= 0) {
             int startVal = (int) Math.ceil(minValue);
             int endVal = (int) Math.floor(maxValue);
+            
+            double unit = determineUnit(maxValue-minValue);
+            
             int posY1 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (startVal - minValue) / (maxValue - minValue));
             int posY2 = marginTop + innerHeight - (int) Math.round((double) innerHeight * (endVal - minValue) / (maxValue - minValue));
 
             g2d.drawLine(marginLeft - 10, posY1, marginLeft - 10, posY2);
             g2d.setFont(fontBold);
-            for (int v = startVal; v <= endVal; v++) {
+            
+            double remainder = startVal % unit;
+            startVal = (int) Math.ceil(startVal+remainder);
+            for (int v = startVal; v <= endVal; v+=unit) {
                 int posY = marginTop + innerHeight - (int) Math.round((double) innerHeight * (v - minValue) / (maxValue - minValue));
                 g2d.drawLine(marginLeft - 10, posY, marginLeft - 20, posY);
                 g2d.drawString(String.valueOf(v), marginLeft - 25 - (int) getWidth(String.valueOf(v), g2d.getFont()), posY + 3);
@@ -426,8 +436,8 @@ public class ViolinBoxPlot {
         int nrVals = vals.length;
 
         //Determine range of values:
-        double minVals = JSci.maths.ArrayMath.min(vals);
-        double maxVals = JSci.maths.ArrayMath.max(vals);
+        double minVals = Primitives.min(vals);
+        double maxVals = Primitives.max(vals);
 
         //Make frequency distribution:
         int nrBins = 1 + (int) Math.round(Math.sqrt(nrVals) / 4d);
@@ -475,7 +485,7 @@ public class ViolinBoxPlot {
             }
             posValSmoothed[pos - posYMin] = valSmoothed / sumWeights;
         }
-        double maxSmoothedVal = JSci.maths.ArrayMath.max(posValSmoothed);
+        double maxSmoothedVal = Primitives.max(posValSmoothed);
         for (int pos = posYMin; pos <= posYMax; pos++) {
             posValSmoothed[pos - posYMin] /= maxSmoothedVal;
         }
@@ -497,6 +507,7 @@ public class ViolinBoxPlot {
 
     public void drawBoxPlot(Graphics2D g2d, int x, int y, int width, int height, double[] vals, double minValue, double maxValue, boolean drawOutliers) {
 
+        
         double median = JSci.maths.ArrayMath.percentile(vals, 0.50d);
         double q1 = JSci.maths.ArrayMath.percentile(vals, 0.25d);
         double q3 = JSci.maths.ArrayMath.percentile(vals, 0.75d);
@@ -515,8 +526,8 @@ public class ViolinBoxPlot {
         //Draw whiskers:
         double whiskerTop = q3 + 1.5d * iqr;
         double whiskerBottom = q1 - 1.5d * iqr;
-        double max = JSci.maths.ArrayMath.max(vals);
-        double min = JSci.maths.ArrayMath.min(vals);
+        double max = Primitives.max(vals);
+        double min = Primitives.min(vals);
         if (min > whiskerBottom) {
             whiskerBottom = min;
         }

@@ -124,7 +124,7 @@ public class MetaAnalyze {
         if (m_settings.getRunonlypermutation() == -1) {
 
             if (m_settings.getNrPermutations() > 0) {
-                FDR.calculateFDR(m_settings.getOutput(), m_settings.getNrPermutations(), m_settings.getFinalEQTLBufferMaxLength(), m_settings.getFdrthreshold(), true, null, null);
+                FDR.calculateFDR(m_settings.getOutput(), m_settings.getNrPermutations(), m_settings.getFinalEQTLBufferMaxLength(), m_settings.getFdrthreshold(), true, null, null, FDR.FDRMethod.ALL, true);
                 EQTLDotPlot edp = new EQTLDotPlot();
                 edp.draw(m_settings.getOutput() + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", m_settings.getOutput() + "/DotPlot-FDR" + m_settings.getFdrthreshold() + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
                 edp = null;

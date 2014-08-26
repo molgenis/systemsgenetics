@@ -1,12 +1,8 @@
 package eqtlmappingpipeline.ase;
 
+import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
-import cern.jet.stat.Probability;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
-import org.apache.commons.math3.stat.inference.AlternativeHypothesis;
-import org.apache.commons.math3.stat.inference.BinomialTest;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
+import java.util.ArrayList;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 
@@ -14,150 +10,34 @@ import org.molgenis.genotype.variant.id.GeneticVariantId;
  *
  * @author Patrick Deelen
  */
-public class AseVariant implements Comparable<AseVariant>{
+public interface AseVariant extends Comparable<AseVariant> {
 
-	private final String chr;
-	private final int pos;
-	private final GeneticVariantId id;
-	private final Allele a1;
-	private final Allele a2;
-	private final IntArrayList a1Counts;
-	private final IntArrayList a2Counts;
-	private double metaZscore;
-	private double metaPvalue;
-	private double countPearsonR;
-	private static final BinomialTest btest = new BinomialTest();
-	private static final double LARGEST_ZSCORE = Probability.normalInverse(Double.MIN_NORMAL);
+	Allele getA1();
 
-	public AseVariant(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2) {
-		this.chr = chr;
-		this.pos = pos;
-		this.id = id;
-		this.a1 = a1;
-		this.a2 = a2;
-		this.a1Counts = new IntArrayList();
-		this.a2Counts = new IntArrayList();
-		this.metaZscore = Double.NaN;
-		this.metaPvalue = Double.NaN;
-		this.countPearsonR = Double.NaN;
-	}
+	IntArrayList getA1Counts();
 
-	public String getChr() {
-		return chr;
-	}
+	Allele getA2();
 
-	public int getPos() {
-		return pos;
-	}
+	IntArrayList getA2Counts();
 
-	public GeneticVariantId getId() {
-		return id;
-	}
+	String getChr();
 
-	public Allele getA1() {
-		return a1;
-	}
+	double getCountPearsonR();
 
-	public Allele getA2() {
-		return a2;
-	}
+	GeneticVariantId getId();
 
-	public IntArrayList getA1Counts() {
-		return a1Counts;
-	}
+	double getMetaPvalue();
 
-	public IntArrayList getA2Counts() {
-		return a2Counts;
-	}
+	double getMetaZscore();
 
-	public void calculateStatistics() {
+	AseMle getMle();
 
-		double zscoreSum = 0;
+	DoubleArrayList getPValues();
 
-		SimpleRegression regression = new SimpleRegression();
+	int getPos();
 
-		for (int i = 0 ; i < a1Counts.size() ; ++i){
+	int getSampleCount();
 
-			regression.addData(a1Counts.getQuick(i), a2Counts.getQuick(i));
-
-			final double pvalue = btest.binomialTest(a1Counts.getQuick(i) + a2Counts.getQuick(i), a1Counts.getQuick(i), 0.5, AlternativeHypothesis.TWO_SIDED);
-
-			// we used 2 sided test so divide by 2
-			//double zscore = normalDist.inverseCumulativeProbability(pvalue/2);
-			final double pvalueDiv2 = pvalue / 2;
-			final double zscore;
-			if (pvalueDiv2 < Double.MIN_NORMAL){
-				zscore = LARGEST_ZSCORE;	
-			} else {
-				zscore = Probability.normalInverse(pvalueDiv2);
-			}
-			// Min / plus might look counter intuative but i omit 1 - p/2 above so here I have to swap
-			if(a1Counts.getQuick(i) < a2Counts.getQuick(i)){
-				zscoreSum -= zscore;
-			} else {
-				zscoreSum += zscore;
-			}
-		}
-
-		countPearsonR = regression.getR();
-		metaZscore = zscoreSum / Math.sqrt(a1Counts.size());
-		metaPvalue = 2 * Probability.normal(-Math.abs(metaZscore));
-
-
-	}
-
-	public double getMetaZscore() {
-		if(Double.isNaN(metaZscore)){
-			calculateStatistics();
-		}
-		return metaZscore;
-	}
-
-	public double getMetaPvalue() {
-		if(Double.isNaN(metaZscore)){
-			calculateStatistics();
-		}
-		return metaPvalue;
-	}
-
-	public synchronized void addCounts(int a1Count, int a2Count) {
-
-		this.metaZscore = Double.NaN;//Reset meta Z-score when adding new data
-		this.metaPvalue = Double.NaN;
-		this.countPearsonR = Double.NaN;
-
-		a1Counts.add(a1Count);
-		a2Counts.add(a2Count);
-
-	}
-
-	@Override
-	public int compareTo(AseVariant o) {
-
-		double thisZ = Math.abs(this.getMetaZscore());
-		double otherZ = Math.abs(o.getMetaZscore());
-
-		if(thisZ < otherZ){
-			return 1;
-		} else if(thisZ == otherZ){
-			return 0;
-		} else{
-			return -1;
-		}
-
-	}
-
-	public int getSampleCount() {
-		return a1Counts.size();
-	}
-
-	public double getCountPearsonR() {
-		if(Double.isNaN(countPearsonR)){
-			calculateStatistics();
-		}
-		return countPearsonR;
-	}
-
-
+	ArrayList<String> getSampleIds();
 
 }

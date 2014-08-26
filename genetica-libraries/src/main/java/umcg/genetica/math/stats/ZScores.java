@@ -8,7 +8,7 @@ import JSci.maths.statistics.NormalDistribution;
 import cern.jet.random.tdouble.StudentT;
 //import cern.jet.random.tdouble.engine.DRand;
 //import cern.jet.random.tdouble.engine.DoubleRandomEngine;
-import cern.jet.stat.Probability;
+import cern.jet.stat.tdouble.Probability;
 
 /**
  *
@@ -28,18 +28,49 @@ public class ZScores {
      * @param sampleSizes sample sizes of these tests
      * @return
      */
+    public static double getWeightedZ(float[] zScores, int[] sampleSizes) {
+        if (zScores.length != sampleSizes.length) {
+            throw new IllegalArgumentException("Zscores and sample sizes should have same length!");
+        }
+        double weightedZ = 0;
+        double sampleSizeSum = 0;
+        int nrNans = 0;
+        for (int j = 0; j < zScores.length; j++) {
+            if (!Float.isNaN(zScores[j])) {
+                nrNans++;
+                weightedZ += Math.sqrt(sampleSizes[j]) * zScores[j];
+                sampleSizeSum += sampleSizes[j];
+            }
+        }
+        
+        weightedZ /= Math.sqrt(sampleSizeSum);
+        return weightedZ;
+    }
+    /**
+     *
+     * Calculates a weighted Z-score according to Whitlock's paper:
+     * http://www.ncbi.nlm.nih.gov/pubmed/16135132 Square root of the sample
+     * size is used as the weight for each test.
+     *
+     * @param zScores Z-scores from individual tests
+     * @param sampleSizes sample sizes of these tests
+     * @return
+     */
     public static double getWeightedZ(double[] zScores, int[] sampleSizes) {
         if (zScores.length != sampleSizes.length) {
             throw new IllegalArgumentException("Zscores and sample sizes should have same length!");
         }
         double weightedZ = 0;
         double sampleSizeSum = 0;
+        int nrNans = 0;
         for (int j = 0; j < zScores.length; j++) {
             if (!Double.isNaN(zScores[j])) {
+                nrNans++;
                 weightedZ += Math.sqrt(sampleSizes[j]) * zScores[j];
                 sampleSizeSum += sampleSizes[j];
             }
         }
+        
         weightedZ /= Math.sqrt(sampleSizeSum);
         return weightedZ;
     }
@@ -82,6 +113,7 @@ public class ZScores {
 
         if (normDist == null) {
             normDist = new NormalDistribution();
+            System.out.println("Creating new Normal Dist");
         }
         double p;
         if (z > 0) {

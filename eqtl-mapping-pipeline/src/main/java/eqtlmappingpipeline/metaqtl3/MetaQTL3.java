@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
@@ -39,17 +40,17 @@ import umcg.genetica.util.RunTimer;
  */
 public class MetaQTL3 {
 
-    protected MetaQTL3Settings m_settings;
+    protected Settings m_settings;
     protected TriTyperGeneticalGenomicsDataset[] m_gg = null;
     protected String[] m_snpList;
     protected String[] m_probeList;
 //    protected Integer[][] m_probeTranslationTable;
 //    protected Integer[][] m_snpTranslationTable;
-    
+
 //Defined -9 as null to not store it in an Integer
     protected IntMatrix2D m_probeTranslationTable;
     protected IntMatrix2D m_snpTranslationTable;
-    
+
     protected int numAvailableInds;
     protected WorkPackage[] m_workPackages;
     private boolean dataHasCovariates;
@@ -58,9 +59,9 @@ public class MetaQTL3 {
     public MetaQTL3() {
     }
 
-    public MetaQTL3(MetaQTL3Settings settings) throws IOException, Exception {
+    public MetaQTL3(Settings settings) throws IOException, Exception {
         m_settings = settings;
-        initialize(null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null);
+        initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null, false, false, null);
     }
 
     public void setOutputPlotThreshold(double d) {
@@ -69,10 +70,10 @@ public class MetaQTL3 {
 
     }
 
-    public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
+    public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith, String texttoreplace2, String texttoreplace2with,
             String ingt, String inexp, String inexpplatform, String inexpannot,
             String gte, String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads, Integer maxNrResults,
-            String regressouteqtls, String snpprobecombofile) throws IOException, Exception {
+            String regressouteqtls, String snpprobecombofile, boolean skipdotplot, boolean skipqqplot, Long rseed) throws IOException, Exception {
 
         if (m_settings == null && xmlSettingsFile == null && ingt != null) {
 
@@ -100,7 +101,7 @@ public class MetaQTL3 {
                 System.exit(0);
             }
 
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
             s.name = "Dataset";
@@ -152,12 +153,22 @@ public class MetaQTL3 {
             if (maxNrResults != null && maxNrResults > 0) {
                 m_settings.maxNrMostSignificantEQTLs = maxNrResults;
             }
+            
+            m_settings.createDotPlot =  !skipdotplot;
+            m_settings.createQQPlot =  !skipqqplot;
+            
+            if(rseed!=null){
+                m_settings.rSeed = rseed;
+                m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
+            }
 
         } else if (m_settings == null && xmlSettingsFile != null) {
             // parse settings
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             m_settings.settingsTextReplaceWith = texttoreplacewith;
             m_settings.settingsTextToReplace = texttoreplace;
+            m_settings.settingsTextReplace2With = texttoreplace2with;
+            m_settings.settingsTextToReplace2 = texttoreplace2;
             m_settings.load(xmlSettingsFile);
         } else if (m_settings == null) {
             System.out.println("ERROR: No input specified");
@@ -170,6 +181,7 @@ public class MetaQTL3 {
             m_settings.cisAnalysis = true;
         }
 
+//        m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
         m_settings.writeSettingsToDisk();
 
         int numDatasets = m_settings.datasetSettings.size();
@@ -263,6 +275,8 @@ public class MetaQTL3 {
             if (!m_settings.performParametricAnalysis) {
                 m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
             }
+            m_gg[i].getExpressionData().calcAndSubtractMean();
+            m_gg[i].getExpressionData().calcMeanAndVariance();
             numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
         }
 
@@ -290,12 +304,10 @@ public class MetaQTL3 {
 
         // create WorkPackage objects
         long maxNrOfTests = determineSNPProbeCombinations();
-        
-        if(m_settings.maxNrMostSignificantEQTLs>maxNrOfTests){
+
+        if (m_settings.maxNrMostSignificantEQTLs > maxNrOfTests) {
             m_settings.maxNrMostSignificantEQTLs = (int) maxNrOfTests;
         }
-         
-        
 
         if (m_workPackages == null || m_workPackages.length == 0) {
             System.err.println("Error: No work detected");
@@ -470,24 +482,23 @@ public class MetaQTL3 {
         m_snpList = availableSNPs.toArray(new String[0]);
 
         // create snp translation table..        
-        if ((m_gg.length * (long)m_snpList.length) < (Integer.MAX_VALUE - 2)) {
+        if ((m_gg.length * (long) m_snpList.length) < (Integer.MAX_VALUE - 2)) {
             m_snpTranslationTable = new DenseIntMatrix2D(m_gg.length, m_snpList.length);
         } else {
             m_snpTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_snpList.length);
         }
-        
-//        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
 
+//        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
         for (int p = 0; p < m_snpList.length; p++) {
             String snp = m_snpList[p];
             for (int d = 0; d < m_gg.length; d++) {
                 Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
-                if(tmp==-9){
+                if (tmp == -9) {
                     m_snpTranslationTable.setQuick(d, p, -9);
                 } else {
                     m_snpTranslationTable.setQuick(d, p, tmp);
                 }
-                
+
             }
         }
         excludedSNPs.close();
@@ -623,9 +634,9 @@ public class MetaQTL3 {
                             hasIdenticalMappingAcrossDatasets = false;
                         } else if (!chr.equals(chr2)) {
                             hasIdenticalMappingAcrossDatasets = false;
-                        } else if (chrPosStart!=(chrPosStart2)) {
+                        } else if (chrPosStart != (chrPosStart2)) {
                             hasIdenticalMappingAcrossDatasets = false;
-                        } else if (chrPosEnd!=(chrPosEnd2)) {
+                        } else if (chrPosEnd != (chrPosEnd2)) {
                             hasIdenticalMappingAcrossDatasets = false;
                         }
                         mappingOutput += "\t" + m_gg[d].getSettings().name + ": Chr " + chr2 + "; Pos " + chrPosStart2 + "-" + chrPosEnd2;
@@ -689,7 +700,7 @@ public class MetaQTL3 {
         m_probeList = finalProbeList.toArray(new String[finalProbeList.size()]);
 
         // create probe translation table..        
-        if ((m_gg.length * (long)m_probeList.length) < (Integer.MAX_VALUE - 2)) {
+        if ((m_gg.length * (long) m_probeList.length) < (Integer.MAX_VALUE - 2)) {
             m_probeTranslationTable = new DenseIntMatrix2D(m_gg.length, m_probeList.length);
         } else {
             m_probeTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_probeList.length);
@@ -699,12 +710,12 @@ public class MetaQTL3 {
             String probe = m_probeList[p];
             for (int d = 0; d < m_gg.length; d++) {
                 Integer tmp = m_gg[d].getExpressionData().getProbeToId().get(probe);
-                if(tmp==null){
+                if (tmp == null) {
                     m_probeTranslationTable.setQuick(d, p, -9);
                 } else {
                     m_probeTranslationTable.setQuick(d, p, tmp);
                 }
-                
+
             }
         }
 
@@ -734,7 +745,7 @@ public class MetaQTL3 {
         }
         Correlation.correlationToZScore(maxNrSamples);
         Descriptives.lookupSqrt(numAvailableInds);            // pre-calculate a square root lookup table
-        Descriptives.zScoreToPValue();
+        Descriptives.initializeZScoreToPValue();
 
         boolean permuting = false;
 
@@ -764,18 +775,21 @@ public class MetaQTL3 {
                 System.out.print("Permuting data, round: " + permutationRound + " of " + m_settings.nrPermutationsFDR + "\n" + ConsoleGUIElems.LINE);
 
                 for (int d = 0; d < m_gg.length; d++) {
-                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
-                    m_gg[d].permuteSampleLables();
-
-                    int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
-                    int identical = 0;
-                    for (int i = 0; i < indWGAPerm.length; i++) {
-                        if (indWGAOriginal[i] == indWGAPerm[i]) {
-                            identical++;
-                        }
+//                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
+                    m_gg[d].permuteSampleLables(m_settings.randomNumberGenerator);
+                    if(m_settings.permuteCovariates){
+                        m_gg[d].permuteCovariates(m_settings.randomNumberGenerator);
                     }
 
-//                    System.out.println("After permuting: " + identical + " unchanged, " + indWGAOriginal.length + " total");
+//                    int[] indWGAPerm = m_gg[d].getExpressionToGenotypeIdArray();
+////                    int identical = 0;
+////                    for (int i = 0; i < indWGAPerm.length; i++) {
+////                        if (indWGAOriginal[i] == indWGAPerm[i]) {
+////                            identical++;
+////                        }
+////                    }
+////
+//////                    System.out.println("After permuting: " + identical + " unchanged, " + indWGAOriginal.length + " total");
                 }
                 permuting = true;
             } else {
@@ -834,7 +848,7 @@ public class MetaQTL3 {
             System.out.println("");
             resultQueue.clear();
             packageQueue.clear();
-            
+
             resultQueue = null;
             packageQueue = null;
             permtime = null;
@@ -846,29 +860,30 @@ public class MetaQTL3 {
             }
 
             // check whether there were results..
-            String fileName;
-            if (permutationRound > 0) {
-                fileName = m_settings.outputReportsDir + "PermutedEQTLsPermutationRound" + permutationRound + ".txt.gz";
-            } else {
-                fileName = m_settings.outputReportsDir + "eQTLs.txt.gz";
-            }
-            TextFile tf = new TextFile(fileName, TextFile.R);
-            tf.readLine(); // skip header
-            int lnCounter = 0;
-            String line = tf.readLine();
-            while (line != null) {
-                lnCounter++;
-                if (lnCounter > 1) {
-                    break;
+            if (m_settings.createTEXTOutputFiles) {
+                String fileName;
+                if (permutationRound > 0) {
+                    fileName = m_settings.outputReportsDir + "PermutedEQTLsPermutationRound" + permutationRound + ".txt.gz";
+                } else {
+                    fileName = m_settings.outputReportsDir + "eQTLs.txt.gz";
                 }
-                line = tf.readLine();
+                TextFile tf = new TextFile(fileName, TextFile.R);
+                tf.readLine(); // skip header
+                int lnCounter = 0;
+                String line = tf.readLine();
+                while (line != null) {
+                    lnCounter++;
+                    if (lnCounter > 1) {
+                        break;
+                    }
+                    line = tf.readLine();
+                }
+                tf.close();
+                if (lnCounter == 0) {
+                    System.err.println("WARNING: QTL Mapping did not yield any results.");
+                    hasResults = false;
+                }
             }
-            tf.close();
-            if (lnCounter == 0) {
-                System.err.println("WARNING: QTL Mapping did not yield any results.");
-                hasResults = false;
-            }
-
         }
 
         for (int d = 0; d < snploaders.length; d++) {
@@ -880,7 +895,7 @@ public class MetaQTL3 {
         if (!m_settings.runOnlyPermutations && hasResults) {
             if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
                 System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
-                FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null);
+                FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType, m_settings.fullFdrOutput);
 
                 if (m_settings.createDotPlot) {
                     EQTLDotPlot edp = new EQTLDotPlot();
@@ -1009,14 +1024,14 @@ public class MetaQTL3 {
             } else {
                 ArrayList<Integer> probeToTest = null;
                 if (m_settings.tsSNPProbeCombinationsConfine != null) {
-					HashSet<String> probesSelected;
-					if(m_settings.snpProbeConfineBasedOnChrPos){
-						probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpchr + ":" + snppos);
-					} else {
-						probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
-					}
-                    
-                    if (probesSelected != null && probeNameToId!=null) {
+                    HashSet<String> probesSelected;
+                    if (m_settings.snpProbeConfineBasedOnChrPos) {
+                        probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpchr + ":" + snppos);
+                    } else {
+                        probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
+                    }
+
+                    if (probesSelected != null && probeNameToId != null) {
                         probeToTest = new ArrayList<Integer>();
                         for (String probe : probesSelected) {
                             Integer probeId = probeNameToId.get(probe);
@@ -1106,7 +1121,7 @@ public class MetaQTL3 {
 
         System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
         System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
-        return(maxNrTestsToPerform);
+        return (maxNrTestsToPerform);
     }
 
     protected void printSummary() {
@@ -1140,6 +1155,12 @@ public class MetaQTL3 {
             System.out.println("- cis analysis");
         } else if (!m_settings.cisAnalysis && m_settings.transAnalysis) {
             System.out.println("- trans analysis");
+        }
+        if(m_settings.metaAnalyseInteractionTerms){
+            System.out.println("- interaction analysis");
+            if(!m_settings.performParametricAnalysis){
+                System.out.println("- WARNING: running interaction model on non-parametric data!");
+            }
         }
         if (!m_settings.performParametricAnalysis) {
             System.out.println("- non-parametric (Spearman ranked) correlation");

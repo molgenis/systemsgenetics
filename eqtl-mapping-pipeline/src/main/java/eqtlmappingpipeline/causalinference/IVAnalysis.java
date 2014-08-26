@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.causalinference;
 
-import eqtlmappingpipeline.metaqtl3.MetaQTL3Settings;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,14 +29,14 @@ import umcg.genetica.math.stats.TwoStepLeastSquares;
 public class IVAnalysis {
 
     protected HashSet<Triple<String, String, String>> snpProbeCombos = new HashSet<Triple<String, String, String>>();
-    protected MetaQTL3Settings m_settings;
+    protected Settings m_settings;
     // snpProbeCombinationList (SNP cis trans)
     protected TriTyperGeneticalGenomicsDataset[] m_gg;
     protected final String outDir;
 
     public IVAnalysis(String xmlSettingsFile,
             String ingt, String inexp, String inexpplatform, String inexpannot,
-            String gte, String out, int perm, String snpProbeCombinationList) throws IOException, Exception {
+            String gte, String out, int perm, String snpProbeCombinationList, boolean parametric) throws IOException, Exception {
 
         if (xmlSettingsFile == null && (ingt == null || inexp == null)) {
             throw new IllegalArgumentException("Supply settingsfile for IV Analysis");
@@ -51,7 +51,7 @@ public class IVAnalysis {
             throw new IllegalArgumentException("SNP Probe combination file is empty!");
         }
 
-        initializeDatasets(xmlSettingsFile, ingt, inexp, inexpplatform, inexpannot, gte, out, perm);
+        initializeDatasets(xmlSettingsFile, ingt, inexp, inexpplatform, inexpannot, gte, out, perm, parametric);
 
         if (!out.endsWith("/")) {
             out += "/";
@@ -80,7 +80,7 @@ public class IVAnalysis {
 
     private void initializeDatasets(String xmlSettingsFile,
             String ingt, String inexp, String inexpplatform, String inexpannot,
-            String gte, String out, int perm) throws IOException, Exception {
+            String gte, String out, int perm, boolean parametric) throws IOException, Exception {
 
 
         if (m_settings == null && xmlSettingsFile == null && ingt != null) {
@@ -109,7 +109,7 @@ public class IVAnalysis {
                 System.exit(0);
             }
 
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
             s.name = "Dataset";
@@ -120,6 +120,11 @@ public class IVAnalysis {
             s.genotypeToExpressionCoupling = gte;
             s.cisAnalysis = true;
             s.transAnalysis = true;
+            
+            if(parametric){
+                System.out.println("Running parametric analysis.");
+                m_settings.performParametricAnalysis = true;
+            }
 
             m_settings.cisAnalysis = true;
             m_settings.transAnalysis = true;
@@ -151,7 +156,7 @@ public class IVAnalysis {
 
         } else if (m_settings == null && xmlSettingsFile != null) {
             // parse settings
-            m_settings = new MetaQTL3Settings();
+            m_settings = new Settings();
             m_settings.load(xmlSettingsFile);
         } else if (m_settings == null) {
             System.out.println("ERROR: No input specified");
@@ -204,7 +209,7 @@ public class IVAnalysis {
                     outfile = outDir + m_gg[d].getSettings().name + "_IVAnalysis-RealData.txt";
                 } else {
                     outfile = outDir + m_gg[d].getSettings().name + "_IVAnalysis-PermutationRound-" + perm + ".txt";
-                    m_gg[d].permuteSampleLables();
+                    m_gg[d].permuteSampleLables(m_settings.randomNumberGenerator);
                 }
                 TextFile out = new TextFile(outfile, TextFile.W);
                 Iterator<Triple<String, String, String>> it = snpProbeCombos.iterator();

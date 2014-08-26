@@ -110,7 +110,7 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                this.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, null);
+                this.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, null, false, false, null);
 
                 // now save all the expressiondata to a new file..
                 for (int d = 0; d < m_gg.length; d++) {

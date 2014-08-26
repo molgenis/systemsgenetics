@@ -65,7 +65,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
-	private final HashMap<String, Sequence> sequences;
+	private final LinkedHashMap<String, Sequence> sequences;
 	private final GeneticVariantRange snps;
 	private final TObjectIntHashMap<GeneticVariant> snpIndexces;
 	private final RandomAccessFile bedFileReader;
@@ -73,7 +73,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private final int sampleVariantProviderUniqueId;
 	private final int cacheSize;
 	private final List<Boolean> phasing;
-	private final int bytesPerVariant;
+	private final long bytesPerVariant;
 	/**
 	 * The original SNP count in the data regardless of number of read SNPs
 	 */
@@ -137,9 +137,9 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 
-		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f);
-		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
-		sequences = new HashMap<String, Sequence>();
+		snpIndexces = new TObjectIntHashMap<GeneticVariant>(10000, 0.75f, -1);
+		GeneticVariantRange.GeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
+		sequences = new LinkedHashMap<String, Sequence>();
 		originalSnpCount = readBimFile(bimFile, snpsFactory);
 		snps = snpsFactory.createRange();
 
@@ -216,6 +216,10 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 
 		int index = snpIndexces.get(variant);
+		
+		if(index == -1){
+			throw new GenotypeDataException("Error reading variant from bed file. ID: " + variant.getPrimaryVariantId() + " chr: " + variant.getSequenceName() + " pos: " + variant.getStartPos() + " alleles" + variant.getVariantAlleles().toString());
+		}
 
 		long startByte = (index * bytesPerVariant) + 3;
 
@@ -328,7 +332,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	}
 
-	private int readBimFile(File bimFile, GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws FileNotFoundException, IOException {
+	private int readBimFile(File bimFile, GeneticVariantRange.GeneticVariantRangeCreate snpsFactory) throws FileNotFoundException, IOException {
 
 		BufferedReader bimFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(bimFile), FILE_ENCODING));
 

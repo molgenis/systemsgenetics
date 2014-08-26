@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.regex.Pattern;
@@ -35,6 +36,7 @@ public class GenotypeInfo {
 	private static final Logger LOGGER;
 	private static final Options OPTIONS;
 	private static final Pattern CHR_POS_SPLITTER = Pattern.compile("\\s+|:");
+	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
 	static {
 		
@@ -167,10 +169,11 @@ public class GenotypeInfo {
 			final VariantFilterSeqPos varFilter;
 			if(variantPosFilterListFile != null) {
 				varFilter = new VariantFilterSeqPos();
+				int includeCountVar = 0;
 				try {
-						BufferedReader variantIdFilterReader = new BufferedReader(new FileReader(variantPosFilterListFile));
+						BufferedReader variantChrPosFilterReader = new BufferedReader(new FileReader(variantPosFilterListFile));
 						String line;
-						while ((line = variantIdFilterReader.readLine()) != null) {
+						while ((line = variantChrPosFilterReader.readLine()) != null) {
 							
 							String[] elements = CHR_POS_SPLITTER.split(line);
 							
@@ -178,9 +181,11 @@ public class GenotypeInfo {
 								LOGGER.error("Error parsing chr pos for line: " + line + " skipping line");
 								continue;
 							}
-							
+							++includeCountVar;
 							varFilter.addSeqPos(elements[0], Integer.parseInt(elements[1]));
 						}
+						
+						LOGGER.info("Included " + DEFAULT_NUMBER_FORMATTER.format(includeCountVar) + " variants from file with chr and pos");
 						
 					} catch (FileNotFoundException ex) {
 						LOGGER.fatal("Unable to find file with variants to filter on at: " + variantPosFilterListFile.getAbsolutePath());
@@ -249,6 +254,7 @@ public class GenotypeInfo {
 			
 			variantInfoWriter.append("ID\tCHR\tPOS\tAlleles\tMA\tMAF\tCALL\tHWE\tGenotype_Counts\n");
 			
+			int i = 0;
 			for(GeneticVariant variant : inputData){
 				variantInfoWriter.append(variant.getPrimaryVariantId());
 				variantInfoWriter.append('\t');
@@ -283,6 +289,12 @@ public class GenotypeInfo {
 				}
 				
 				variantInfoWriter.append('\n');
+				
+				++i;
+				if( (i % 100000) == 0 ){
+					System.out.println("Processed " + DEFAULT_NUMBER_FORMATTER.format(i) + " variants");
+				}
+				
 			}
 			
 			variantInfoWriter.close();

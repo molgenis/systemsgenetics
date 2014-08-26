@@ -20,10 +20,10 @@ import umcg.genetica.io.text.TextFile;
 class MetaQTL4TraitAnnotation {
 
     private final String[] platforms;
-    private final ArrayList<HashMap<String, MetaQTL4MetaTrait>> traitHashPerPlatform;
-    private final HashMap<String, Integer> platformToId;
-    private final TreeSet<MetaQTL4MetaTrait> metatraits;
-    private final HashMap<String, MetaQTL4MetaTrait> metaTraitNameToObj;
+    private final ArrayList<HashMap<String, MetaQTL4MetaTrait>> traitHashPerPlatform; // maps each probe on a specific platform to a specific meta-analysis object
+    private final HashMap<String, Integer> platformToId; // maps a platform to an id
+    private final MetaQTL4MetaTraitTreeSet metatraits; // lists all meta-analysis objects
+    private final HashMap<String, MetaQTL4MetaTrait> metaTraitNameToObj; // maps a meta-analsysis object name to a specific meta-analysis object
 
     public MetaQTL4TraitAnnotation(File probeAnnotationFile, Set<String> platformsToInclude) throws IOException {
         TextFile tf = new TextFile(probeAnnotationFile, TextFile.R);
@@ -45,7 +45,7 @@ class MetaQTL4TraitAnnotation {
             }
         }
 
-        metatraits = new TreeSet<MetaQTL4MetaTrait>();
+        metatraits = new MetaQTL4MetaTraitTreeSet();
         metaTraitNameToObj = new HashMap<String, MetaQTL4MetaTrait>();
         platformToId = new HashMap<String, Integer>();
         platforms = new String[nrPlatforms];
@@ -72,8 +72,8 @@ class MetaQTL4TraitAnnotation {
         int probeCounter = 0;
         for (String[] elems : tf.readLineElemsIterable(TextFile.tab)) {
 
-            String metaTraitName = elems[0];
-            String chr = elems[2].intern();
+            String metaTraitName = new String(elems[0].getBytes("UTF-8")).intern();
+            String chr = new String(elems[2].getBytes("UTF-8")).intern();
             String chrpos = elems[3];
             String[] chrposElems = chrpos.split("-");
             int chrstartpos = -1;
@@ -89,7 +89,7 @@ class MetaQTL4TraitAnnotation {
                 }
             }
 
-            String hugo = elems[4];
+            String hugo = new String(elems[4].getBytes("UTF-8")).intern();
             String[] platformIds = new String[nrPlatforms];
             // int metaTraitId, String metaTraitName, String chr, int chrStart, int chrEnd, String annotation, String[] platformIds
             MetaQTL4MetaTrait metaTraitObj = new MetaQTL4MetaTrait(probeCounter, metaTraitName, chr, chrstartpos, chrendpos, hugo, platformIds);
@@ -97,7 +97,7 @@ class MetaQTL4TraitAnnotation {
             for (int i = 5; i < elems.length; i++) {
                 platformNr = 0;
                 if (colsToInclude[i]) {
-                    platformIds[platformNr] = elems[i];
+                    platformIds[platformNr] = new String(elems[i].getBytes("UTF-8")).intern();
                     HashMap<String, MetaQTL4MetaTrait> probeToId = traitHashPerPlatform.get(platformNr);
                     probeToId.put(elems[i], metaTraitObj);
                     platformNr++;

@@ -46,7 +46,12 @@ public class AseConfiguration {
 	private final RandomAccessGenotypeDataReaderFormats refDataType;
 	private final int refDataCacheSize;
 	private final int maxTotalReads;
-	private final File gencodeGtf;
+	private final File gtf;
+	private final File sampleToRefSampleFile;
+	private final String chrFilter;
+	private final int chunkSize;
+	private final File mappabilityTrackFile;
+	private final double mappabilityMinimum;
 
 	static {
 
@@ -133,6 +138,12 @@ public class AseConfiguration {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Tab separated file with column 1 sample ID and column 2 sample ID in reference genotype data, no header. If only contains a mapping for a subset of samples the original identifier in the reference is used");
+		OptionBuilder.withLongOpt("sampleCoupling");
+		OPTIONS.addOption(OptionBuilder.create("sc"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Optional .gtf file for annotations of ASE effects. Must be grouped by chromosome");
 		OptionBuilder.withLongOpt("gtf");
 		OPTIONS.addOption(OptionBuilder.create("f"));
@@ -147,6 +158,31 @@ public class AseConfiguration {
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
 		OptionBuilder.withLongOpt("debug");
 		OPTIONS.addOption(OptionBuilder.create('d'));
+
+		OptionBuilder.withArgName("string");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Confine analysis to specified chromosome");
+		OptionBuilder.withLongOpt("chr");
+		OPTIONS.addOption(OptionBuilder.create("ch"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("In the case of reference genotype data anayslis can be faster when chucked");
+		OptionBuilder.withLongOpt("chunkSize");
+		OPTIONS.addOption(OptionBuilder.create("cs"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Mappability track in BedGraph format.");
+		OptionBuilder.withLongOpt("mappabilityTrack");
+		OPTIONS.addOption(OptionBuilder.create("mt"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Minimum mappability to include ASE in results in Mb.");
+		OptionBuilder.withLongOpt("mappabilityMinimum");
+		OPTIONS.addOption(OptionBuilder.create("mm"));
+
 
 	}
 
@@ -220,7 +256,7 @@ public class AseConfiguration {
 		if (commandLine.hasOption('p')) {
 			try {
 				minAlleleReadFraction = Double.parseDouble(commandLine.getOptionValue('p')) / 100;
-				if(minAlleleReadFraction < 0 || minAlleleReadFraction >= 0.5){
+				if (minAlleleReadFraction < 0 || minAlleleReadFraction >= 0.5) {
 					throw new ParseException("--minAllelePercentage must be in interval [0, 50)");
 				}
 			} catch (NumberFormatException e) {
@@ -306,9 +342,52 @@ public class AseConfiguration {
 
 		if (commandLine.hasOption('f')) {
 			String gencodeGtfPath = commandLine.getOptionValue('f');
-			gencodeGtf = new File(gencodeGtfPath);
+			gtf = new File(gencodeGtfPath);
 		} else {
-			gencodeGtf = null;
+			gtf = null;
+		}
+
+
+		if (commandLine.hasOption("sc")) {
+			sampleToRefSampleFile = new File(commandLine.getOptionValue("sc"));
+		} else {
+			sampleToRefSampleFile = null;
+		}
+
+		chrFilter = commandLine.hasOption("ch") ? commandLine.getOptionValue("ch") : null;
+
+		if (commandLine.hasOption("cs")) {
+			try {
+				chunkSize = Integer.parseInt(commandLine.getOptionValue("cs")) * 1000000;
+				if (chunkSize <= 0) {
+					throw new ParseException("--chunkSize must be larger than 0");
+				}
+			} catch (NumberFormatException e) {
+				throw new ParseException("Error parsing --chunkSize \"" + commandLine.getOptionValue("cs") + "\" is not an int");
+			}
+		} else {
+			chunkSize = Integer.MAX_VALUE;
+		}
+		
+		if(commandLine.hasOption("mt")){
+			if(!commandLine.hasOption("mm")){
+				throw new ParseException("--mappabilityTrack is set but --mappabilityMinimum is not");
+			}
+			
+			mappabilityTrackFile = new File(commandLine.getOptionValue("mt"));
+			
+			try {
+				mappabilityMinimum = Integer.parseInt(commandLine.getOptionValue("mm"));
+				if (mappabilityMinimum < 0 || mappabilityMinimum > 1) {
+					throw new ParseException("--mappabilityMinimum must be between 0 and 1");
+				}
+			} catch (NumberFormatException e) {
+				throw new ParseException("Error parsing --mappabilityMinimum \"" + commandLine.getOptionValue("mm") + "\" is not a double");
+			}
+			
+		} else {
+			mappabilityTrackFile = null;
+			mappabilityMinimum = 0;
 		}
 
 		debugMode = commandLine.hasOption('d');
@@ -357,6 +436,11 @@ public class AseConfiguration {
 		System.out.println(" - Number of threads to use: " + threads);
 		LOGGER.info("Number of threads to use: " + threads);
 
+		if (chrFilter != null) {
+			System.out.println(" - Confine analysis to chr: " + chrFilter);
+			LOGGER.info("Confine analysis to chr: " + chrFilter);
+		}
+
 		if (isRefSet()) {
 			System.out.print(" - Reference genotypes " + refDataType.getName() + ":");
 			LOGGER.info("Reference genotypes " + refDataType.getName() + ":");
@@ -367,12 +451,29 @@ public class AseConfiguration {
 			System.out.println();
 			System.out.println(" - Reference genotype cache size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(refDataCacheSize));
 			LOGGER.info("Reference genotype cache size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(refDataCacheSize));
+			if (isSampleToRefSampleFileSet()) {
+				System.out.println(" - Sample mapping to reference file: " + sampleToRefSampleFile.getAbsolutePath());
+				LOGGER.info("Sample mapping to reference file: " + sampleToRefSampleFile.getAbsolutePath());
+			}
 		}
 
 		if (isGtfSet()) {
-			System.out.print(" - GTF file: " + gencodeGtf.getAbsolutePath());
-			LOGGER.info("GTF file: " + gencodeGtf.getAbsolutePath());
+			System.out.println(" - GTF file: " + gtf.getAbsolutePath());
+			LOGGER.info("GTF file: " + gtf.getAbsolutePath());
 		}
+		
+		if(chunkSize != Integer.MAX_VALUE){
+			System.out.println(" - Chunk size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(chunkSize));
+			LOGGER.info("Chunk size: " + Ase.DEFAULT_NUMBER_FORMATTER.format(chunkSize));
+		}
+		
+		if(isMappabilityTrackSet()){
+			System.out.println(" - Mappability track: " + mappabilityTrackFile.getAbsolutePath());
+			LOGGER.info("Mappability track: " + mappabilityTrackFile.getAbsolutePath());
+			System.out.println(" - Mappability minimum: " + mappabilityMinimum);
+			LOGGER.info("Mappability mimimum: " + mappabilityMinimum);
+		}
+
 
 
 		System.out.println();
@@ -439,7 +540,7 @@ public class AseConfiguration {
 	}
 
 	public File getGtf() {
-		return gencodeGtf;
+		return gtf;
 	}
 
 	public int getMaxTotalReads() {
@@ -447,10 +548,39 @@ public class AseConfiguration {
 	}
 
 	public boolean isGtfSet() {
-		return gencodeGtf != null;
+		return gtf != null;
 	}
 
 	public double getMinAlleleReadFraction() {
 		return minAlleleReadFraction;
 	}
+
+	public File getSampleToRefSampleFile() {
+		return sampleToRefSampleFile;
+	}
+
+	public boolean isSampleToRefSampleFileSet() {
+		return sampleToRefSampleFile != null;
+	}
+
+	public String getChrFilter() {
+		return chrFilter;
+	}
+	
+	public boolean isMappabilityTrackSet(){
+		return mappabilityTrackFile != null;
+	}
+
+	public int getChunkSize() {
+		return chunkSize;
+	}
+
+	public File getMappabilityTrackFile() {
+		return mappabilityTrackFile;
+	}
+
+	public double getMappabilityMinimum() {
+		return mappabilityMinimum;
+	}
+	
 }

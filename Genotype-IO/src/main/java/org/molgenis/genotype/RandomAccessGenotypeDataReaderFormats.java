@@ -172,12 +172,12 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				} else {
 					vcfFile = new File(paths[0] + ".vcf.gz");
 				}
-				return new VcfGenotypeData(vcfFile, cacheSize);
+				return new VcfGenotypeData(vcfFile, cacheSize, minimumPosteriorProbabilityToCall);
 			case VCF_FOLDER:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return MultiPartGenotypeData.createFromVcfFolder(new File(paths[0]), cacheSize);
+				return MultiPartGenotypeData.createFromVcfFolder(new File(paths[0]), cacheSize, minimumPosteriorProbabilityToCall);
 			case SHAPEIT2:
 				return new HapsGenotypeData(new File(paths[0] + ".haps"), new File(
 						paths[0] + ".sample"), cacheSize, forcedSequence);
@@ -239,20 +239,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 */
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
-		switch (this) {
-			case TRITYPER:
-				return new TriTyperGenotypeData(new File(path), cacheSize, variantFilter, sampleFilter);
-			default:
-				RandomAccessGenotypeData genotypeData = createGenotypeData(path, cacheSize);
-				if (sampleFilter != null) {
-					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
-				}
-				if (variantFilter != null) {
-					genotypeData = new VariantFilterableGenotypeDataDecorator(genotypeData, variantFilter);
-				}
-				return genotypeData;
-		}
-
+		return createFilteredGenotypeData(path, cacheSize, variantFilter, sampleFilter, null, 0.34f);
+		
 	}
 	
 	/**

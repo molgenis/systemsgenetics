@@ -36,7 +36,7 @@ public class MetaQTL4ConsoleUI {
         } else {
             try {
                 MetaQTL4Settings mqtl4settings = new MetaQTL4Settings(settings, null, null);
-                MetaQTL4 q = new MetaQTL4(mqtl4settings);
+                SingleDatasetAnalysis q = new SingleDatasetAnalysis(mqtl4settings);
             } catch (Exception e) {
                 e.printStackTrace();
             }

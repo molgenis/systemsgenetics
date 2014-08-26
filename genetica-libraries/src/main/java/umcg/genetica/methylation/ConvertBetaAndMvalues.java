@@ -4,13 +4,17 @@
  */
 package umcg.genetica.methylation;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.jet.math.tdouble.DoubleFunctions;
+
 /**
  *
  * @author MarcJan
  */
-public class ConvertBetaToMvalue {
+public class ConvertBetaAndMvalues {
     
-    public static void transToMvalue(double[][] rawData){
+    public static void transformToMvalue(double[][] rawData){
         double minValue = Double.MAX_VALUE;
         double maxValue = Double.MIN_VALUE;
         
@@ -44,4 +48,38 @@ public class ConvertBetaToMvalue {
             }
         }
     }
+    
+    public static void transformMToBetavalue(DoubleMatrix2D rawData){
+        for (int p=0; p<rawData.rows(); p++) {
+            for (int s=0; s<rawData.columns(); s++) {
+                double tmpBeta = Math.pow(2, rawData.getQuick(p, s));
+                rawData.setQuick(p, s, tmpBeta/(tmpBeta+1));
+            }
+        }
+    }
+    
+    public static void transformMToBetavalue(double[][] rawData){
+        
+        int probeCount = rawData.length;
+        int sampleCount = rawData[probeCount-1].length;
+        
+        for (int p=0; p<probeCount; p++) {
+            for (int s=0; s<sampleCount; s++) {
+                double tmpBeta = Math.pow(2, rawData[p][s]);
+                rawData[p][s] = tmpBeta/(tmpBeta+1);
+            }
+        }
+    }
+
+    public static void rescaleBetavalue(DoubleMatrix2D matrix) {
+        double min = matrix.getMinLocation()[0];
+        double denominator  = matrix.getMaxLocation()[0] - min;
+
+        for (int s=0; s<matrix.columns(); s++) {
+            for (int p=0; p<matrix.rows(); p++) {
+                matrix.setQuick(p, s, ((matrix.getQuick(p, s)-min)/denominator));
+            }
+        }
+    }
+    
 }

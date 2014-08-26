@@ -45,11 +45,17 @@ import org.molgenis.vcf.meta.VcfMetaInfo;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 
 public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
+	private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(VcfGenotypeData.class);
 	private final File bzipVcfFile;
 	private final TabixIndex tabixIndex;
 	private final int sampleVariantProviderUniqueId;
@@ -58,20 +64,23 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private transient Map<String, Annotation> cachedSampleAnnotationsMap;
 	private transient GeneticVariant cachedGeneticVariant;
 	private transient VcfRecord cachedVcfRecord;
-
+	private static int totalRandomAccessRequest = 0;
+	private static int currentlyOpenFileHandlers = 0;
+	private static int closedFileHandlers = 0;
+	private final double minimumPosteriorProbabilityToCall;
+	
 	/**
-	 * VCF genotype reader with default cache of 100
+	 * VCF genotype reader
 	 *
 	 * @param bzipVcfFile
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
-	public VcfGenotypeData(File bzipVcfFile) throws FileNotFoundException, IOException {
-		this(bzipVcfFile, 100);
-	}
-
-	public VcfGenotypeData(File bzipVcfFile, int cacheSize) throws FileNotFoundException, IOException {
-		this(bzipVcfFile, new File(bzipVcfFile.getAbsolutePath() + ".tbi"), cacheSize);
+	//public VcfGenotypeData(File bzipVcfFile, double minimumPosteriorProbabilityToCall) throws FileNotFoundException, IOException {
+	//	this(bzipVcfFile, 100, minimumPosteriorProbabilityToCall);
+	//}
+	public VcfGenotypeData(File bzipVcfFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws FileNotFoundException, IOException {
+		this(bzipVcfFile, new File(bzipVcfFile.getAbsolutePath() + ".tbi"), cacheSize, minimumPosteriorProbabilityToCall);
 	}
 
 	/**
@@ -82,11 +91,11 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
-	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile) throws FileNotFoundException, IOException {
-		this(bzipVcfFile, tabixIndexFile, 100);
+	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile, double minimumPosteriorProbabilityToCall) throws FileNotFoundException, IOException {
+		this(bzipVcfFile, tabixIndexFile, 100, minimumPosteriorProbabilityToCall);
 	}
 
-	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile, int cacheSize) throws FileNotFoundException,
+	public VcfGenotypeData(File bzipVcfFile, File tabixIndexFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws FileNotFoundException,
 			IOException {
 
 		if (!bzipVcfFile.isFile()) {
@@ -104,8 +113,14 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		if (!tabixIndexFile.canRead()) {
 			throw new IOException("Cannot read tabix file for VCF at: " + tabixIndexFile.getAbsolutePath());
 		}
+
+		if (minimumPosteriorProbabilityToCall < 0 || minimumPosteriorProbabilityToCall > 1) {
+			throw new GenotypeDataException("Min posterior probability to call must be >0 and <=1 not:" + minimumPosteriorProbabilityToCall);
+		}
+
 		this.bzipVcfFile = bzipVcfFile;
 		this.tabixIndex = new TabixIndex(tabixIndexFile, bzipVcfFile, null);
+		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
 
 		VcfReader vcfReader = new VcfReader(new BlockCompressedInputStream(bzipVcfFile));
 		try {
@@ -172,13 +187,36 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			return Collections.emptyList();
 		}
 
-		// convert vcf sample alleles to Alleles
-		List<Alleles> alleles = new ArrayList<Alleles>(nrSamples);
-		for (VcfSample vcfSample : vcfRecord.getSamples()) {
-			List<String> vcfAlleles = vcfSample.getAlleles();
-			alleles.add(Alleles.createBasedOnString(vcfAlleles));
+		int idx = vcfRecord.getFormatIndex("GT");
+		if (idx != -1) {
+
+			// convert vcf sample alleles to Alleles
+			List<Alleles> alleles = new ArrayList<Alleles>(nrSamples);
+			for (VcfSample vcfSample : vcfRecord.getSamples()) {
+				List<Allele> vcfAlleles = vcfSample.getAlleles();
+				alleles.add(Alleles.createAlleles(vcfAlleles));
+			}
+			return alleles;
+
+		} else if (vcfRecord.getFormatIndex("GP") != -1) {
+
+			return ProbabilitiesConvertor.convertProbabilitiesToAlleles(getSampleProbilities(variant), variant.getVariantAlleles(), minimumPosteriorProbabilityToCall);
+
+		} else if (vcfRecord.getFormatIndex("DS") != -1) {
+
+			return CalledDosageConvertor.convertDosageToAlleles(getSampleDosage(variant), variant.getVariantAlleles());
+
+		} else {
+
+			ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>(nrSamples);
+			for (int i = 0; i < nrSamples; ++i) {
+				sampleAlleles.add(Alleles.BI_ALLELIC_MISSING);
+			}
+			return sampleAlleles;
 		}
-		return alleles;
+
+
+
 	}
 
 	@Override
@@ -235,11 +273,23 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			return Collections.emptyList();
 		}
 
-		List<Boolean> phasings = new ArrayList<Boolean>(nrSamples);
+		List<Boolean> phasing = new ArrayList<Boolean>(nrSamples);
 		for (VcfSample vcfSample : vcfRecord.getSamples()) {
-			phasings.addAll(vcfSample.getPhasings());
+
+			List<Boolean> genotypePhasings = vcfSample.getPhasings();
+
+			if (genotypePhasings == null || genotypePhasings.isEmpty()) {
+				phasing.add(Boolean.FALSE);
+			} else if (genotypePhasings.size() == 1) {
+				phasing.add(genotypePhasings.get(0));
+			} else if (genotypePhasings.contains(Boolean.FALSE)) {
+				phasing.add(Boolean.FALSE);
+			} else {
+				phasing.add(Boolean.TRUE);
+			}
+
 		}
-		return phasings;
+		return phasing;
 	}
 
 	@Override
@@ -277,19 +327,30 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			for (VcfSample vcfSample : vcfRecord.getSamples()) {
 				String dosage = vcfSample.getData(idx);
 				if (dosage == null) {
-					throw new GenotypeDataException("Missing DS format value for sample [" + vcfMeta.getSampleName(i) + "]");
+					//throw new GenotypeDataException("Missing DS format value for sample [" + vcfMeta.getSampleName(i) + "] at variant [" + variant.getPrimaryVariantId() + "]");
+					dosages[i++] = -1;
+				} else {
+					try {
+						//Math abs to prevent -0 due to rounding
+						dosages[i++] = Math.abs((Float.parseFloat(dosage) - 2) * -1);
+					} catch (NumberFormatException e) {
+						throw new GenotypeDataException("Error in sample dosage (DS) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + dosage);
+					}
 				}
 
-				try {
-					dosages[i++] = (Float.parseFloat(dosage) - 2) * -1;
-				} catch (NumberFormatException e) {
-					throw new GenotypeDataException("Error in sample dosage (DS) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + dosage);
-				}
+
 			}
-		} else {
+		} else if (vcfRecord.getFormatIndex("GP") != -1) {
+			dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(getSampleProbilities(variant), minimumPosteriorProbabilityToCall);
+		} else if (vcfRecord.getFormatIndex("GT") != -1) {
 			// calculate sample dosage from called alleles
 			dosages = CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
 					variant.getVariantAlleles(), variant.getRefAllele());
+		} else {
+			dosages = new float[nrSamples];
+			for (int i = 0; i < nrSamples; ++i) {
+				dosages[i] = -1;
+			}
 		}
 		return dosages;
 	}
@@ -323,27 +384,32 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 			for (VcfSample vcfSample : vcfRecord.getSamples()) {
 				String probabilitiesStr = vcfSample.getData(idx);
 				if (probabilitiesStr == null) {
-					throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(i) + "]");
-				}
-
-				String[] probabilities = StringUtils.split(probabilitiesStr, ',');
-				if (probabilities.length != 3) {
-					throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
-				}
-
-				for (int j = 0; j < 3; ++j) {
-					try {
-						probs[i][j] = Float.parseFloat(probabilities[j]);
-					} catch (NumberFormatException e) {
+					//throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(i) + "]");
+					probs[i] = new float[]{0,0,0};
+				} else {
+					String[] probabilities = StringUtils.split(probabilitiesStr, ',');
+					if (probabilities.length != 3) {
 						throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+					}
+
+					for (int j = 0; j < 3; ++j) {
+						try {
+							probs[i][j] = Float.parseFloat(probabilities[j]);
+						} catch (NumberFormatException e) {
+							throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+						}
 					}
 				}
 				++i;
 			}
 
-		} else {
+		} else if (vcfRecord.getFormatIndex("GT") != -1) {
+			probs = ProbabilitiesConvertor.convertCalledAllelesToProbability(getSampleVariants(variant), variant.getVariantAlleles());
+		} else if (vcfRecord.getFormatIndex("DS") != -1) {
 			// calculate sample probabilities from sample dosage
-			probs = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
+			probs = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(getSampleDosage(variant));
+		} else {
+			probs = new float[nrSamples][3];
 		}
 		return probs;
 	}
@@ -407,15 +473,40 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(final String seqName, final int rangeStart, final int rangeEnd) {
 
+        if(rangeStart < 0){
+            throw new GenotypeDataException("Illegal start pos for VCF variant query: " + rangeStart);
+        }
 
 		return new Iterable<GeneticVariant>() {
 			@Override
 			public Iterator<GeneticVariant> iterator() {
 
 				try {
+
+					++totalRandomAccessRequest;
+					++currentlyOpenFileHandlers;
+
 					return new Iterator<GeneticVariant>() {
 						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
-						private String line = it != null ? it.next() : null;
+						private String line = readFirst(it);
+
+						private String readFirst(TabixIterator it) {
+							if (it == null) {
+								return null;
+							} else {
+								try {
+									String firstLine = it.next();
+									if (firstLine == null) {
+										--currentlyOpenFileHandlers;
+										++closedFileHandlers;
+										it.close();
+									}
+									return firstLine;
+								} catch (IOException e) {
+									throw new GenotypeDataException(e);
+								}
+							}
+						}
 
 						@Override
 						public boolean hasNext() {
@@ -428,7 +519,9 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 							try {
 								line = it.next();
 								if (line == null) {
-									IOUtils.closeQuietly(it);
+									--currentlyOpenFileHandlers;
+									++closedFileHandlers;
+									it.close();
 								}
 							} catch (IOException e) {
 								throw new GenotypeDataException(e);
@@ -441,6 +534,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 							throw new UnsupportedOperationException();
 						}
 					};
+				} catch (FileNotFoundException e) {
+					if (e.getMessage().endsWith("(Too many open files)")) {
+						throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
+					} else {
+						throw new GenotypeDataException(e);
+					}
 				} catch (IOException e) {
 					throw new GenotypeDataException(e);
 				}
@@ -452,8 +551,13 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		if (!variant.equals(cachedGeneticVariant)) {
 			TabixIterator it;
 			String line;
+			BlockCompressedInputStream stream = null;
+			++totalRandomAccessRequest;
+			++currentlyOpenFileHandlers;
+
 			try {
-				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), new BlockCompressedInputStream(bzipVcfFile));
+				stream = new BlockCompressedInputStream(bzipVcfFile);
+				it = tabixIndex.queryTabixIndex(variant.getSequenceName(), variant.getStartPos() - 1, variant.getStartPos(), stream);
 				while ((line = it.next()) != null) {
 					VcfRecord vcfRecord = new VcfRecord(vcfMeta, StringUtils.split(line, '\t'));
 					if (variant.equals(toGeneticVariant(vcfRecord))) {
@@ -462,8 +566,19 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 						break;
 					}
 				}
+				stream.close();
+			} catch (FileNotFoundException e) {
+				if (e.getMessage().endsWith("(Too many open files)")) {
+					throw new GenotypeDataException("VCF reader trying to open more file connections than allowed by operating system. Currently open connections: " + currentlyOpenFileHandlers + " total opened: " + totalRandomAccessRequest + " total closed: " + closedFileHandlers, e);
+				} else {
+					throw new GenotypeDataException(e);
+				}
 			} catch (IOException e) {
 				throw new GenotypeDataException(e);
+			} finally {
+				--currentlyOpenFileHandlers;
+				++closedFileHandlers;
+				IOUtils.closeQuietly(stream);
 			}
 		}
 		return cachedVcfRecord;
@@ -479,24 +594,25 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		List<String> identifiers = vcfRecord.getIdentifiers();
 		int pos = vcfRecord.getPosition();
 		String sequenceName = vcfRecord.getChromosome();
-		String refAllele = vcfRecord.getReferenceAllele();
-		List<String> altAlleles = vcfRecord.getAlternateAlleles();
+		Allele refAllele = vcfRecord.getReferenceAllele();
+		List<Allele> altAlleles = vcfRecord.getAlternateAlleles();
 
 		Map<String, Object> annotationMap = new HashMap<String, Object>();
 		for (VcfInfo vcfInfo : vcfRecord.getInformation()) {
 			annotationMap.put(vcfInfo.getKey(), vcfInfo.getVal());
 		}
 
-		List<String> alleles;
+		Alleles alleles;
 		if (altAlleles == null || altAlleles.isEmpty()) {
-			alleles = Collections.singletonList(refAllele);
+			alleles = Alleles.createAlleles(refAllele);
 		} else {
-			alleles = new ArrayList<String>(altAlleles.size() + 1);
-			alleles.add(refAllele);
-			alleles.addAll(altAlleles);
+			ArrayList<Allele> allelesList = new ArrayList<Allele>(altAlleles.size() + 1);
+			allelesList.add(refAllele);
+			allelesList.addAll(altAlleles);
+			alleles = Alleles.createAlleles(allelesList);
 		}
 
-		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, vcfRecord);
+		GeneticVariantMeta geneticVariantMeta = new VcfGeneticVariantMeta(vcfMeta, Arrays.asList(vcfRecord.getFormat()));
 		GeneticVariant geneticVariant = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, identifiers, pos, sequenceName, annotationMap, variantProvider, alleles, refAllele);
 
 		cachedVcfRecord = vcfRecord;

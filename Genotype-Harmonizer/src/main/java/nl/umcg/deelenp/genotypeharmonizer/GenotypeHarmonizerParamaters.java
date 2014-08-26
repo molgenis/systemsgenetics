@@ -48,6 +48,7 @@ public class GenotypeHarmonizerParamaters {
 	private final File sampleFilterListFile;
 	private final File logFile;
 	private final File snpUpdateFile;
+	private final File snpLogFile;
 	private final double minHwePvalue;
 	private final float minCallRate;
 	private final float minMAF;
@@ -372,10 +373,12 @@ public class GenotypeHarmonizerParamaters {
 		if (outputType == GenotypedDataWriterFormats.TRITYPER) {
 			File outputFolder = new File(outputBasePath);
 			logFile = new File(outputFolder, "GenotypeHarmonizer.log");
-			snpUpdateFile = new File(outputFolder, "GenotypeHarmonizer.idUpdates");
+			snpUpdateFile = new File(outputFolder, "GenotypeHarmonizer_idUpdates.txt");
+			snpLogFile = new File(outputFolder, "GenotypeHarmonizer_snpLog.log");
 		} else {
 			logFile = new File(outputBasePath + ".log");
-			snpUpdateFile = new File(outputBasePath + ".idUpdates");
+			snpUpdateFile = new File(outputBasePath + "_idUpdates.txt");
+			snpLogFile = new File(outputBasePath + "_snpLog.log");
 		}
 
 		variantFilterListFile = commandLine.hasOption("vf") ? new File(commandLine.getOptionValue("vf")) : null;
@@ -599,5 +602,9 @@ public class GenotypeHarmonizerParamaters {
 
 	public RandomAccessGenotypeDataReaderFormats getInputType() {
 		return inputType;
+	}
+
+	public File getSnpLogFile() {
+		return snpLogFile;
 	}
 }

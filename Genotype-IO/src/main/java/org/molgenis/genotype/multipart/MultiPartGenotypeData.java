@@ -1,12 +1,13 @@
 package org.molgenis.genotype.multipart;
 
+import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -47,7 +48,11 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	public MultiPartGenotypeData(Collection<RandomAccessGenotypeData> genotypeDataCollection)
 			throws IncompatibleMultiPartGenotypeDataException
 	{
-		this(new HashSet<RandomAccessGenotypeData>(genotypeDataCollection));
+		this(new LinkedHashSet<RandomAccessGenotypeData>(genotypeDataCollection));
+	}
+	
+	public MultiPartGenotypeData(RandomAccessGenotypeData... genotypeDataCollection){
+		this(new LinkedHashSet<RandomAccessGenotypeData>(Arrays.asList(genotypeDataCollection)));
 	}
 
 	public MultiPartGenotypeData(Set<RandomAccessGenotypeData> genotypeDataCollection)
@@ -132,7 +137,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	 * @throws Exception
 	 *             If multiple files for one chr found
 	 */
-	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize) throws IOException,
+	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException
 	{
 
@@ -154,7 +159,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			if (matcher.matches())
 			{
 				//LOGGER.debug("Adding to multipart data: " + file.getAbsolutePath());
-				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize));
+				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize, minimumPosteriorProbabilityToCall));
 			} 
 		}
 		

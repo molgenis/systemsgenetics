@@ -560,16 +560,21 @@ public class TriTyperExpressionData {
 
         }
         
-        //This is requered for the correlation matrix.
-        calcMeanAndVariance();
-        for (int p = 0; p < matrix.length; p++) {
-            for (int s = 0; s < matrix[p].length; s++) {
-                matrix[p][s] -= probeMean[p];
-            }
-        }
+        //This is requered for the correlation matrix.        
+        probeMean = new double[probes.length];
+        probeOriginalMean = new double[probes.length];
+        probeVariance = new double[probes.length];
+        probeOriginalVariance = new double[probes.length];
 
-        calcMeanAndVariance();
-
+//        calcMean();
+//        
+//        for (int p = 0; p < matrix.length; p++) {
+//            for (int s = 0; s < matrix[p].length; s++) {
+//                matrix[p][s] -= probeMean[p];
+//            }
+//        }
+//        calcMeanAndVariance();
+        setVarianceAndMean();
         System.out.println("Loaded " + matrix.length + " probes for " + individuals.length + " individuals");
 
         return true;
@@ -651,20 +656,32 @@ public class TriTyperExpressionData {
         return individualNameToId.get(key);
     }
 
-    private void calcMeanAndVariance() {
-        //Precalculate means and variances. This will improve calculations substantially:
-        int probeCount = probes.length;
-        probeOriginalMean = new double[probeCount];
-        probeOriginalVariance = new double[probeCount];
-        probeMean = new double[probeCount];
-        probeVariance = new double[probeCount];
-
-        for (int f = 0; f < probeCount; ++f) {
-            double[] probeData = getProbeData(f);
-            probeOriginalMean[f] = Descriptives.mean(probeData);
-            probeOriginalVariance[f] = Descriptives.variance(probeData, probeMean[f]);
-            probeMean[f] = Descriptives.mean(probeData);
-            probeVariance[f] = Descriptives.variance(probeData, probeMean[f]);
+    public void calcMeanAndVariance() {
+        //Precalculate means and variances. If data is ranked afterwards this does not satisfy the mean and variance set here.
+        //This will improve calculations substantially:
+        
+        //Shouldnt we actualy store the old results of mean and variance in the Original ecuivelents?
+        for (int f = 0; f < probes.length; ++f) {
+            probeOriginalMean[f] = Descriptives.mean(getProbeData(f));
+            probeMean[f] = probeOriginalMean[f];
+            probeOriginalVariance[f] = Descriptives.variance(getProbeData(f), probeMean[f]);
+            probeVariance[f] = probeOriginalVariance[f];
+        }
+    }
+    
+    public void calcAndSubtractMean() {
+        for (int p = 0; p < probes.length; ++p) {
+            probeMean[p] = Descriptives.mean(getProbeData(p));
+            for (int s = 0; s < matrix[p].length; s++) {
+                matrix[p][s] -= probeMean[p];
+            }
+        }
+    }
+    
+    private void setVarianceAndMean() {
+        for (int p = 0; p < probes.length; ++p) {
+            probeMean[p] = Descriptives.mean(getProbeData(p));
+            probeVariance[p] = Descriptives.variance(getProbeData(p), probeMean[p]);
         }
     }
 
@@ -696,10 +713,11 @@ public class TriTyperExpressionData {
     public void rankAllExpressionData(boolean rankWithTies) {
 
         RankArray r = new RankArray();
+//        setVarianceAndMean();
 
         for (int p = 0; p < probes.length; ++p) {
             double[] probeData = getProbeData(p);
-
+            
             if (probeVariance[p] == 0) {
                 System.out.println("Excluding probe that has no variance in expression:\t" + probes[p] + "\t" + annotation[p]);
             } else {

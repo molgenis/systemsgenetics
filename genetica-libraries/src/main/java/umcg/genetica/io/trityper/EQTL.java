@@ -433,7 +433,7 @@ public class EQTL implements Comparable<EQTL> {
             return null;
         }
     }
-    
+
     @Override
     public int hashCode() {
         int hash = 1;
@@ -577,10 +577,6 @@ public class EQTL implements Comparable<EQTL> {
             }
         }
 
-
-
-
-
         String[] ds = e.getDatasets();
 //        Double[] corrs = e.getCorrelations();
 //        Double[] zscores = e.getDatasetZScores();
@@ -699,7 +695,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(tabStr);
             out.append(outcorrs.toString());
             out.append(tabStr);
-            
+
             if (metabeta == null) {
                 out.append(nullstr);
             } else {
@@ -714,7 +710,7 @@ public class EQTL implements Comparable<EQTL> {
             out.append(tabStr);
             if (fc == null) {
                 out.append(nullstr);
-                
+
             } else {
                 out.append(e.getFC());
             }
@@ -727,7 +723,6 @@ public class EQTL implements Comparable<EQTL> {
 
         }
 
-
         return out.toString();
     }
 
@@ -736,7 +731,11 @@ public class EQTL implements Comparable<EQTL> {
         if (useAbsoluteZScore) {
             if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {
                 if (zscoreAbs.doubleValue() == o.zscoreAbs.doubleValue()) {
-                    return 0;
+                    if (rsName.compareTo(o.rsName) == 0) {
+                        return probe.compareTo(o.probe);
+                    } else {
+                        return rsName.compareTo(o.rsName);
+                    }
                 } else if (zscoreAbs.doubleValue() < o.zscoreAbs.doubleValue()) {
                     return 1;
                 } else {
@@ -750,7 +749,58 @@ public class EQTL implements Comparable<EQTL> {
         } else {
             if (pvalue.doubleValue() == o.pvalue.doubleValue()) {
                 if (Math.abs(zscore.doubleValue()) == Math.abs(o.zscore.doubleValue())) {
-                    return 0;
+                    if (rsName.compareTo(o.rsName) == 0) {
+                        return probe.compareTo(o.probe);
+                    } else {
+                        return rsName.compareTo(o.rsName);
+                    }
+                } else if (Math.abs(zscore.doubleValue()) < Math.abs(o.zscore.doubleValue())) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else if (pvalue.doubleValue() > o.pvalue.doubleValue()) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+    }
+
+    public int compareToVerbose(EQTL o) {
+        if (useAbsoluteZScore) {
+            if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {
+
+                if (zscoreAbs.doubleValue() == o.zscoreAbs.doubleValue()) {
+                    if (rsName.compareTo(o.rsName) == 0) {
+                        return probe.compareTo(o.probe);
+                    } else {
+                        return rsName.compareTo(o.rsName);
+                    }
+                } else if (zscoreAbs.doubleValue() < o.zscoreAbs.doubleValue()) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else if (pvalueAbs.doubleValue() > o.pvalueAbs.doubleValue()) {
+                return 1;
+            } else {
+                return -1;
+            }
+        } else {
+            if (pvalue.doubleValue() == o.pvalue.doubleValue()) {
+                System.out.println("p value identical: " + pvalue + "\t" + o.pvalue);
+                if (Math.abs(zscore.doubleValue()) == Math.abs(o.zscore.doubleValue())) {
+                    System.out.println("Z value identical: " + zscore + "\t" + o.zscore);
+                    if (rsName.compareTo(o.rsName) == 0) {
+                        System.out.println("rs value identical: " + rsName + "\t" + o.rsName);
+
+                        System.out.println("probe: " + probe + "\t" + o.probe + "\t" + probe.compareTo(o.probe));
+                        return probe.compareTo(o.probe);
+                    } else {
+                        System.out.println("probe: " + rsName + "\t" + o.rsName + "\t" + rsName.compareTo(o.rsName));
+                        return rsName.compareTo(o.rsName);
+                    }
                 } else if (Math.abs(zscore.doubleValue()) < Math.abs(o.zscore.doubleValue())) {
                     return 1;
                 } else {
@@ -768,7 +818,11 @@ public class EQTL implements Comparable<EQTL> {
         if (useAbsoluteZScore) {
             if (pvalueAbs.doubleValue() == o.pvalueAbs.doubleValue()) {
                 if (zscoreAbs.doubleValue() == o.zscoreAbs.doubleValue()) {
-                    return true;
+                    if (probe.equals(o.probe)) {
+                        return rsName.equals(o.rsName);
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }
@@ -778,7 +832,11 @@ public class EQTL implements Comparable<EQTL> {
         } else {
             if (pvalue.doubleValue() == o.pvalue.doubleValue()) {
                 if (Math.abs(zscore.doubleValue()) == Math.abs(o.zscore.doubleValue())) {
-                    return true;
+                    if (probe.equals(o.probe)) {
+                        return rsName.equals(o.rsName);
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }
@@ -786,6 +844,10 @@ public class EQTL implements Comparable<EQTL> {
                 return false;
             }
         }
+    }
+
+    public boolean sameQTL(EQTL o) {
+        return (zscore.equals(o.zscore) && probe.equals(o.probe) && rsName.equals(o.rsName) && FDR.equals(o.FDR) && beta.equals(o.beta));
     }
 
 //    @Override
@@ -864,4 +926,15 @@ public class EQTL implements Comparable<EQTL> {
     public boolean getUseAbsoluteZScore() {
         return useAbsoluteZScore;
     }
+
+    public String getDiff(EQTL o) {
+
+        return "z: " + zscore + " - " + o.zscore + "\t"
+                + "probe: " + probe + " - " + o.probe + "\t"
+                + "rsName: " + rsName + " - " + o.rsName + "\t"
+                + "FDR: " + FDR + " - " + o.FDR + "\t"
+                + "Beta: " + beta + " - " + o.beta + "\t";
+
+    }
+
 }

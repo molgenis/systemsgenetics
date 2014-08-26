@@ -1,11 +1,13 @@
 package org.molgenis.vcf;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.genotype.Allele;
 import org.molgenis.vcf.meta.VcfMeta;
 
 public class VcfRecord
@@ -16,7 +18,7 @@ public class VcfRecord
 	private String[] tokens;
 
 	private transient List<String> cachedIdentifiers; 		
-	private transient List<String> cachedAlternateAlleles;
+	private transient List<Allele> cachedAlternateAlleles;
 	private transient String[] cachedSampleDataTypes;
 	
 	public VcfRecord(VcfMeta vcfMeta) {
@@ -31,13 +33,14 @@ public class VcfRecord
 	}
 	
 	public String getChromosome() {
-		return tokens[VcfMeta.COL_CHROM_IDX];
+		return tokens[VcfMeta.COL_CHROM_IDX].intern();
 	}
 	
 	public int getPosition() {
 		return Integer.valueOf(tokens[VcfMeta.COL_POS_IDX]);
 	}
 	
+	@SuppressWarnings("RedundantStringConstructorCall")
 	public List<String> getIdentifiers() {
 		if(cachedIdentifiers == null) {
 			String identifiersStr = tokens[VcfMeta.COL_ID_IDX];
@@ -45,26 +48,30 @@ public class VcfRecord
 			if (identifiersStr == null || identifiersStr.equals(MISSING_VALUE)) {
 				cachedIdentifiers = Collections.emptyList();
 			} else {
+				identifiersStr = new String(identifiersStr);
 				cachedIdentifiers = Arrays.asList(StringUtils.split(identifiersStr, ';'));
 			}
 		}
 		return cachedIdentifiers;
 	}
 	
-	public String getReferenceAllele() {
-		return tokens[VcfMeta.COL_REF_IDX];
+	public Allele getReferenceAllele() {
+		return Allele.create(tokens[VcfMeta.COL_REF_IDX]);
 	}
 	
 	/**
 	 * @return list of alternate alleles or empty list if alternate alleles string is set to the missing value
 	 */
-	public List<String> getAlternateAlleles() {
+	public List<Allele> getAlternateAlleles() {
 		if(cachedAlternateAlleles == null) {
 			String alternateBasesStr = tokens[VcfMeta.COL_ALT_IDX];
 			if(alternateBasesStr == null || alternateBasesStr.length() == 0 || alternateBasesStr.equals(MISSING_VALUE)) {
 				cachedAlternateAlleles = Collections.emptyList();
 			} else {
-				cachedAlternateAlleles = Arrays.asList(StringUtils.split(alternateBasesStr, ','));
+				cachedAlternateAlleles = new ArrayList<Allele>(1);
+				for(String altAllele : StringUtils.split(alternateBasesStr, ',')){
+					cachedAlternateAlleles.add(Allele.create(altAllele));
+				}
 			}
 		}
 		return cachedAlternateAlleles;
@@ -88,7 +95,8 @@ public class VcfRecord
 	}
 	
 	public Iterable<VcfInfo> getInformation() {
-		final String[] infoTokens = StringUtils.split(tokens[VcfMeta.COL_INFO_IDX], ';');
+		//Do new string to prevent the whole token array is saved
+		final String[] infoTokens = StringUtils.split(new String(tokens[VcfMeta.COL_INFO_IDX]), ';');
 		return new Iterable<VcfInfo>() {
 			
 			@Override
@@ -126,7 +134,8 @@ public class VcfRecord
 	
 	public String[] getFormat() {
 		if(cachedSampleDataTypes == null) {
-			cachedSampleDataTypes = StringUtils.split(tokens[VcfMeta.COL_FORMAT_IDX], ':'); 
+			//Do new string to prevent the whole token array is saved
+			cachedSampleDataTypes = StringUtils.split(new String(tokens[VcfMeta.COL_FORMAT_IDX]), ':'); 
 		}
 		return cachedSampleDataTypes;
 	}

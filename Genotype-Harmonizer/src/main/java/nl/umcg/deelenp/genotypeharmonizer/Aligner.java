@@ -1,5 +1,6 @@
 package nl.umcg.deelenp.genotypeharmonizer;
 
+import com.google.common.collect.Lists;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -40,7 +42,7 @@ public class Aligner {
 	 * @return
 	 * @throws LdCalculatorException
 	 */
-	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment) throws LdCalculatorException, IOException {
+	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException {
 		
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
@@ -55,7 +57,9 @@ public class Aligner {
 			snpUpdateWriter = new BufferedWriter(new FileWriter(snpUpdateFile));
 			snpUpdateWriter.append("chr\tpos\toriginalId\tnewId\n");
 		}
-
+		
+		SnpLogWriter snpLogWriter = new SnpLogWriter(snpLogFile);
+		
 		int iterationCounter = 0;
 		int nonGcNonAtSnpsEncountered = 0;
 		int nonGcNonAtSnpsSwapped = 0;
@@ -67,47 +71,49 @@ public class Aligner {
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
-				LOGGER.info("Iteration 1 - " + iterationCounter + " variants processed");
-				System.out.println("Iteration 1 - " + iterationCounter + " variants processed");
+				//LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+				System.out.println("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 			}
 
 			if (!studyVariant.isMapped()) {
-				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " Has no mapping");
+				snpLogWriter.addToLog(studyVariant, "Excluded", "No mapping");
 				studyVariant.exclude();
 				continue studyVariants;
 			}
 
 			if (!studyVariant.isSnp()) {
-				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " currently only SNPs are supported. Feel free to contact the autors.");
+				snpLogWriter.addToLog(studyVariant, "Excluded", "Not a SNP");
 				studyVariant.exclude();
 				continue studyVariants;
 			}
 
 			if (!studyVariant.isBiallelic()) {
-				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " only biallelic variants currently not supported.");
+				snpLogWriter.addToLog(studyVariant, "Excluded", "Not biallelic");
 				studyVariant.exclude();
 				continue studyVariants;
 			}
 
-			Iterable<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos());
+			Iterator<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos()).iterator();
 
 			GeneticVariant refVariant = null;
 
-			if (!potentialRefVariants.iterator().hasNext()) {
+			if (!potentialRefVariants.hasNext()) {
 
 				if (keep) {
-					LOGGER.warn("No ref variant found for: " + studyVariant.getPrimaryVariantId() + " variant will not be aligned but will be written to output because of --keep");
+					//LOGGER.warn("No ref variant found for: " + studyVariant.getPrimaryVariantId() + " variant will not be aligned but will be written to output because of --keep");
 				} else {
-					LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " no variants at this position " + studyVariant.getSequenceName() + ":" + studyVariant.getStartPos() + " in the reference data");
+					snpLogWriter.addToLog(studyVariant, "Excluded", "No variants at this position in reference");
 					studyVariant.exclude();
 				}
 
 				continue studyVariants;
 
 			} else {
-
+				
+				ArrayList<GeneticVariant> potentialRefVariantsList = Lists.newArrayList(potentialRefVariants);
+				
 				//Find ref based on ID
-				for (GeneticVariant potentialRefVariant : potentialRefVariants) {
+				for (GeneticVariant potentialRefVariant : potentialRefVariantsList) {
 
 					if (potentialRefVariant.getVariantId().isSameId(studyVariant.getVariantId())) {
 
@@ -118,8 +124,7 @@ public class Aligner {
 							refVariant = potentialRefVariant;
 
 						} else {
-
-							LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " Found variant with same ID but alleles are not comparable.");
+							snpLogWriter.addToLog(studyVariant, "Excluded", "Found variant with same ID but alleles are not comparable");
 							studyVariant.exclude();
 							continue studyVariants;
 						}
@@ -129,7 +134,7 @@ public class Aligner {
 				if (refVariant == null) {
 
 					//Find ref based on Alleles
-					for (GeneticVariant potentialRefVariant : potentialRefVariants) {
+					for (GeneticVariant potentialRefVariant : potentialRefVariantsList) {
 
 						//test if same alleles or complement
 						if (potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles())
@@ -138,7 +143,7 @@ public class Aligner {
 							if (refVariant == null) {
 								refVariant = potentialRefVariant;
 							} else {
-								LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " because position maps to multiple variants with same alleles. Neither of these variants have same ID as this variant. No way to know what the corresponding variant is.");
+								snpLogWriter.addToLog(studyVariant, "Excluded", "Position maps to multiple variants with same alleles. Neither of these variants have same ID as this variant. No way to know what the corresponding variant is");
 								studyVariant.exclude();
 								continue studyVariants;
 							}
@@ -148,9 +153,9 @@ public class Aligner {
 
 					if (refVariant == null) {
 						if (keep) {
-							LOGGER.warn("No ref variant found for: " + studyVariant.getPrimaryVariantId() + " variant will not be aligned but will be written to output because of --keep");
+							//LOGGER.warn("No ref variant found for: " + studyVariant.getPrimaryVariantId() + " variant will not be aligned but will be written to output because of --keep");
 						} else {
-							LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + ". There is no variant in the reference at this position with same ID or same alleles");
+							snpLogWriter.addToLog(studyVariant, "Excluded", "No variant in the reference at this position with same ID or same alleles");
 							studyVariant.exclude();
 						}
 						continue studyVariants;
@@ -163,16 +168,16 @@ public class Aligner {
 
 			//If we get here we have found a variant is our reference data on the same position with comparable alleles.
 
-			//We have to exclude maf of zero otherwise we can not do LD calculation
+			//We have to exclude maf of zero otherwise we cannot do LD calculation
 			if (!(studyVariant.getMinorAlleleFrequency() > 0)) {
-				LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " has a MAF of 0 in the study data");
+				snpLogWriter.addToLog(studyVariant, "Excluded", "MAF of 0 in study data");
 				studyVariant.exclude();
 				continue studyVariants;
 			}
 
 			//We have to exclude maf of zero otherwise we can not do LD calculation
 			if (!(refVariant.getMinorAlleleFrequency() > 0)) {
-				LOGGER.warn("Excluding variant: " + refVariant.getPrimaryVariantId() + " has a MAF of 0 in the reference data");
+				snpLogWriter.addToLog(studyVariant, "Excluded", "MAF of 0 in reference data");
 				studyVariant.exclude();
 				continue studyVariants;
 			}
@@ -204,9 +209,10 @@ public class Aligner {
 					//Alleles do not match we need to swap our study data.
 					studyVariant.swap();
 					//no need to check if there is a match now. We would not have gotten here if alleles where not comparable.
-					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on non ambiguous alleles. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
-					}
+					snpLogWriter.addToLog(studyVariant, "Swapped", "");
+//					if (LOGGER.isDebugEnabled()) {	
+//						LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on non ambiguous alleles. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
+//					}
 				}
 
 			}
@@ -225,8 +231,8 @@ public class Aligner {
 			snpUpdateWriter.close();
 		}
 
-		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
-		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + nonGcNonAtSnpsEncountered + " found and " + nonGcNonAtSnpsSwapped + " swapped");
+		LOGGER.info("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
+		System.out.println("Iteration 1 - Completed, non AT and non GC SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 		
 		if(studyVariantList.isEmpty()){
 			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
@@ -254,8 +260,8 @@ public class Aligner {
 				++iterationCounter;
 
 				if (iterationCounter % 10000 == 0) {
-					LOGGER.info("Iteration 2 - " + iterationCounter + " variants processed");
-					System.out.println("Iteration 2 - " + iterationCounter + " variants processed");
+					//LOGGER.info("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+					System.out.println("Iteration 2 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 				}
 
 				ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
@@ -271,7 +277,7 @@ public class Aligner {
 
 					//Use at least min number of snps before we can draw conclusion
 					if (hapCor.getTotalCor() < minSnpsToAlignOn) {
-						LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " Not enough non AT / GC in LD to check LD pattern.");
+						snpLogWriter.addToLog(studyVariant, "Excluded", "Not enough non AT / GC in LD to check LD pattern");
 						studyVariant.exclude();
 						continue;
 					}
@@ -279,10 +285,11 @@ public class Aligner {
 					if (hapCor.getPosCor() < hapCor.getNegCor()) {
 						//negative correlations between haplotypes more often observed. Excluding this variants
 						++removedSnpsBasedOnLdCheck;
-						LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " non AT / GC SNP with inconsistency in LD pattern \n"
-								+ "\tStudy: " + studyVariant.getVariantAlleles() + " maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ")\n"
-								+ "\tRef: " + refVariant.getVariantAlleles() + " maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")\n"
-								+ "\tTotal variants used: " + hapCor.getTotalCor() + " pos cor: " + hapCor.getPosCor());
+						snpLogWriter.addToLog(studyVariant, "Excluded", "Non AT / GC SNP with inconsistency in LD pattern");
+//						LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " non AT / GC SNP with inconsistency in LD pattern \n"
+//								+ "\tStudy: " + studyVariant.getVariantAlleles() + " maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ")\n"
+//								+ "\tRef: " + refVariant.getVariantAlleles() + " maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")\n"
+//								+ "\tTotal variants used: " + hapCor.getTotalCor() + " pos cor: " + hapCor.getPosCor());
 						studyVariant.exclude();
 						continue;
 					}
@@ -292,7 +299,7 @@ public class Aligner {
 
 			LOGGER.info("Iteration 2 - Completed, non AT and non GC SNPs are LD checked");
 			System.out.println("Iteration 2 - Completed, non AT and non GC SNPs are LD checked ");
-			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " non AT and non GC SNPs based on inconsistencies in LD pattern");
+			LOGGER.info("Excluded " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(removedSnpsBasedOnLdCheck) + " non AT and non GC SNPs based on inconsistencies in LD pattern");
 
 
 		} else {
@@ -313,8 +320,8 @@ public class Aligner {
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
-				LOGGER.info("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered + " GC or AT SNPs checked)");
-				System.out.println("Iteration 3 - " + iterationCounter + " variants processed (" + GcAtSnpsEncountered + " GC or AT SNPs checked)");
+				//LOGGER.info("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
+				System.out.println("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
 			}
 
 			ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);
@@ -336,17 +343,19 @@ public class Aligner {
 						&& studyVariant.getMinorAlleleFrequency() <= maxMafForMafAlignment
 						&& refVariant.getMinorAlleleFrequency() <= maxMafForMafAlignment) {
 					
-					LOGGER.warn("Using minor allele to determine strand of: " + studyVariant.getPrimaryVariantId() + " study MAF: " + studyVariant.getMinorAlleleFrequency() + "(" + studyVariant.getMinorAllele() + ")" + " reference MAF: " + refVariant.getMinorAlleleFrequency() + "(" + refVariant.getMinorAllele() + ")");
+					
+					//LOGGER.warn("Using minor allele to determine strand of: " + studyVariant.getPrimaryVariantId() + " study MAF: " + studyVariant.getMinorAlleleFrequency() + "(" + studyVariant.getMinorAllele() + ")" + " reference MAF: " + refVariant.getMinorAlleleFrequency() + "(" + refVariant.getMinorAllele() + ")");
 										
 					if(studyVariant.getMinorAllele() != refVariant.getMinorAllele()){
 						studyVariant.swap();
 						++swapBasedOnLdCount;
-						LOGGER.debug("Swapped " + studyVariant.getPrimaryVariantId() + " using the minor allele");
+						snpLogWriter.addToLog(studyVariant, "Swapped", "Based on minor allele, study MAF: " + studyVariant.getMinorAlleleFrequency() + "(" + studyVariant.getMinorAllele() + ")" + " reference MAF: " + refVariant.getMinorAlleleFrequency() + "(" + refVariant.getMinorAllele() + ")");
+						//LOGGER.debug("Swapped " + studyVariant.getPrimaryVariantId() + " using the minor allele");
 					}
 					
 				} else if (hapCor.getTotalCor() < minSnpsToAlignOn) {
 					
-					LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " Not enough non AT / GC in LD to assess strand based on LD. Pos cor " + hapCor.getPosCor() + " neg cor " + hapCor.getNegCor() + " MAF study: " + studyVariant.getMinorAlleleFrequency() + " MAF reference: " + refVariant.getMinorAlleleFrequency());
+					snpLogWriter.addToLog(studyVariant, "Excluded", "Not enough non AT / GC in LD to assess strand based on LD. Pos cor " + hapCor.getPosCor() + " neg cor " + hapCor.getNegCor() + " MAF study: " + studyVariant.getMinorAlleleFrequency() + " MAF reference: " + refVariant.getMinorAlleleFrequency());
 					studyVariant.exclude();
 					continue;
 				
@@ -355,6 +364,8 @@ public class Aligner {
 					studyVariant.swap();
 					++swapBasedOnLdCount;
 
+					snpLogWriter.addToLog(studyVariant, "Swapped", "Based on LD");
+					
 					if (LOGGER.isDebugEnabled()) {
 						LOGGER.debug("Swapped strand of AT or GC SNP: " + studyVariant.getPrimaryVariantId() + " based on LD. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
 					}
@@ -372,7 +383,7 @@ public class Aligner {
 						if (hapCorSwapped.getPosCor() < hapCorSwapped.getNegCor()) {
 							//LD pattern still not intact. Excluding variant
 							++removedSnpsBasedOnLdCheck;
-							LOGGER.warn("Excluding variant: " + studyVariant.getPrimaryVariantId() + " GC or AT SNP with inconsistency in LD pattern that is not solved by swapping");
+							snpLogWriter.addToLog(studyVariant, "Excluded", "GC or AT SNP with inconsistency in LD pattern that is not solved by swapping");
 							studyVariant.exclude();
 							continue;
 						}
@@ -400,12 +411,14 @@ public class Aligner {
 		}
 
 		if (ldCheck) {
-			LOGGER.info("Excluded " + removedSnpsBasedOnLdCheck + " AT or GC variants based on LD patterns");
-			System.out.println("Excluded " + removedSnpsBasedOnLdCheck + " AT or GC variants based on LD patterns");
+			LOGGER.info("Excluded " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(removedSnpsBasedOnLdCheck) + " AT or GC variants based on LD patterns");
+			System.out.println("Excluded " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(removedSnpsBasedOnLdCheck) + " AT or GC variants based on LD patterns");
 		}
-		LOGGER.info("Swapped " + swapBasedOnLdCount + " out " + GcAtSnpsEncountered + " AT or GC variants based on LD patterns");
+		LOGGER.info("Swapped " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(swapBasedOnLdCount) + " out of " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " AT or GC variants based on LD patterns");
 		System.out.println("Swapped " + swapBasedOnLdCount + " AT or GC variants based on LD patterns");
 
+		snpLogWriter.close();
+		
 		return aligendStudyData;
 
 	}

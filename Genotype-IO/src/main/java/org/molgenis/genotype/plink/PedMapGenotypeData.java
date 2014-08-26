@@ -145,7 +145,7 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	private void loadSnps(MapFileReader reader) {
 		int index = 0;
 		
-		GeneticVariantRange.ClassGeneticVariantRangeCreate rangeFactory = GeneticVariantRange.createRangeFactory();
+		GeneticVariantRange.GeneticVariantRangeCreate rangeFactory = GeneticVariantRange.createRangeFactory();
 		
 		for (MapEntry entry : reader) {
 			String id = entry.getSNP();

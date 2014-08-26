@@ -175,7 +175,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		} else {
 			dosageHandle = null;
 			dosageChannel = null;
-			geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
+			geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 		}
 
 		genotypeHandle = new RandomAccessFile(genotypeDataFile, "r");
@@ -183,7 +183,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		loadSamples();
 		samplePhasing = Collections.nCopies(includedSamples.size(), false);
 
-		GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
+		GeneticVariantRange.GeneticVariantRangeCreate snpsFactory = GeneticVariantRange.createRangeFactory();
 		loadSNPAnnotation(snpsFactory);
 		snps = snpsFactory.createRange();
 
@@ -311,7 +311,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		}
 	}
 
-	private void loadSNPAnnotation(GeneticVariantRange.ClassGeneticVariantRangeCreate snpsFactory) throws IOException {
+	private void loadSNPAnnotation(GeneticVariantRange.GeneticVariantRangeCreate snpsFactory) throws IOException {
 
 		unfilteredSnpCount = 0;
 
@@ -426,10 +426,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 
 		//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
-		int index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
+		long index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
 
 		int numIndividuals = samples.size();
-		long indexLong = (long) (index) * (numIndividuals * 2);
+		long indexLong = (index) * (numIndividuals * 2);
 
 		byte[] buffer = new byte[2 * numIndividuals];
 		try {
@@ -460,6 +460,15 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		// if there is a dosage file, read from there.. if not, conver genotypes.
 		// now transcode into dosage..
 
+		if(variant.getVariantAlleles().getAlleles().isEmpty()){
+			float[] dosageValuesFloat = new float[includedSamples.size()];
+			for (int i = 0; i < dosageValuesFloat.length; i++) {
+				dosageValuesFloat[i] = -1;
+			}
+			return dosageValuesFloat;
+		}
+		
+		
 		// TODO: optimize this step: no need to get ALL alleles.
 		float[] genotypes = CalledDosageConvertor.convertCalledAllelesToDosage(variant.getSampleVariants(), variant.getVariantAlleles(), variant.getRefAllele());
 		if (imputedDosageDataFile != null) {

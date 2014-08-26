@@ -69,7 +69,6 @@ public class MetaQTL4 {
         }
         traitAnnotation = new MetaQTL4TraitAnnotation(m_settings.getProbeAnnotationFile(), platforms);
 
-
         if (m_settings.getConfineProbeFile() != null) {
             if (!Gpio.existsAndReadable(m_settings.getConfineProbeFile())) {
                 throw new IOException("Failed to read file with probes to include: " + m_settings.getConfineProbeFile().getAbsolutePath());
@@ -159,32 +158,30 @@ public class MetaQTL4 {
             randomizationSeeds[permutation] = rand.nextLong();
         }
 
-        // create frequency distributions
-        int distributionSize = 1000000;
-        int[] realFrequencyDistribution = new int[distributionSize];
-        int[] realFrequencyDistributionProbeLevel = new int[distributionSize];
-        int[] permutedFrequencyDistribution = new int[distributionSize];
-        int[] permutedFrequencyDistributionProbeLevel = new int[distributionSize];
+        // create result thread
+        ExecutorService resultPool = Executors.newFixedThreadPool(1);
+        CompletionService resultPoolService = new ExecutorCompletionService(resultPool);
 
         // run threads
+        int bufferSize = 100;
         int nrThreads = m_settings.getNrThreads();
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
-        CompletionService<Pair<int[], int[]>> pool = new ExecutorCompletionService<Pair<int[], int[]>>(threadPool);
-        MetaQTL4CorrelationTask task = new MetaQTL4CorrelationTask(nrThreads, distributionSize, randomizationSeeds, availableTraits, availableTraitsHash, datasets, geneticVariantIndex, m_settings, traitAnnotation, traitIndex, traitsToInclude, variantsToInclude, 1);
+        CompletionService<Boolean> pool = new ExecutorCompletionService<Boolean>(threadPool);
+        int start = 0;
+        int stop = geneticVariantIndex.length;
+        MetaQTL4ExecutionTask task = new MetaQTL4ExecutionTask(nrThreads, randomizationSeeds, availableTraits, availableTraitsHash, datasets, geneticVariantIndex, m_settings, traitAnnotation, traitIndex, traitsToInclude, variantsToInclude, start, stop, bufferSize, resultPoolService);
+        
+//        MetaQTL4CorrelationTask task = new MetaQTL4CorrelationTask(nrThreads, distributionSize, randomizationSeeds, availableTraits, availableTraitsHash, datasets, geneticVariantIndex, m_settings, traitAnnotation, traitIndex, traitsToInclude, variantsToInclude, 1);
         pool.submit(task);
 
         int returned = 0;
         while (returned < nrThreads) {
             try {
-                Pair<int[], int[]> result = pool.take().get();
+                Boolean result = pool.take().get();
                 if (result != null) {
-                    int[] realDist = result.getLeft();
-                    int[] permDist = result.getRight();
-                    for (int i = 0; i < distributionSize; i++) {
-                        realFrequencyDistribution[i] += realDist[i];
-                        permutedFrequencyDistribution[i] += permDist[i];
+                    if(result){
+                    returned++;    
                     }
-                    returned++;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -195,8 +192,6 @@ public class MetaQTL4 {
         threadPool.shutdown();
 
         // perform FDR estimation
-
-
         // shutdown
     }
 
@@ -265,7 +260,6 @@ public class MetaQTL4 {
             }
             traitsToInclude = finalTraitList;
 
-
             if (genotypeTraitCombinations != null) {
                 // find out whether there are some snp-trait combo's that we cannot test now..
                 HashSet<Pair<String, MetaQTL4MetaTrait>> finalgenotypetraitpairs = new HashSet<Pair<String, MetaQTL4MetaTrait>>();
@@ -288,7 +282,7 @@ public class MetaQTL4 {
         }
     }
 
-    // create a map from metaProbeId to 
+    // create a map from metaProbeId to dataset probes
     private void createTraitIndex() {
         // link them together in an index
         HashSet<MetaQTL4MetaTrait> tmpAvailableTraits = new HashSet<MetaQTL4MetaTrait>();
@@ -398,7 +392,6 @@ public class MetaQTL4 {
                 uniquePositions = allPositions.keySet();
             }
             allPositions = null;
-
 
         } else { // if cistrans or trans.. include all the SNPs..
             // per chromosome.. (for huge datasets, this saves alot of Integer objects)

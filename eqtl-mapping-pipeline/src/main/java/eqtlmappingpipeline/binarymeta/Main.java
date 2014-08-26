@@ -10,7 +10,15 @@ import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.cis.CisAnalysis;
 import eqtlmappingpipeline.binarymeta.util.SNPAlleleCheck;
 import eqtlmappingpipeline.metaqtl3.FDR;
+import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
+import eqtlmappingpipeline.util.NoLdSnpProbeListCreator;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -49,6 +57,8 @@ public class Main {
 
         String annot = null;
         String in = null;
+        String inexp = null;
+        String gte = null;
 
         Integer nrPerm = 0;
         Integer nrEQTLs = null;
@@ -58,7 +68,12 @@ public class Main {
         String ldfile = null;
         String dbsnp = null;
         String pw = null;
+        String snpselectionlist = null;
+        String snpprobeselectionlist = null;
         boolean createQQPlot = true;
+        
+        Integer stepSize = 5;
+        Integer max = 5;
 
         for (int i = 0; i < args.length; i++) {
             String val = null;
@@ -90,6 +105,10 @@ public class Main {
                 eqtlfile = val;
             } else if (args[i].equals("--in")) {
                 in = val;
+            } else if (args[i].equals("--inexp")) {
+                inexp = val;
+            } else if (args[i].equals("--gte")) {
+                gte = val;
             } else if (args[i].equals("--annot")) {
                 annot = val;
             } else if (args[i].equals("--nrperm")) {
@@ -114,13 +133,21 @@ public class Main {
                 replacetextwith = val;
             } else if (args[i].equals("--skipqqplot")) {
                 createQQPlot = false;
+            } else if (args[i].equals("--snpselectionlist")) {
+                snpselectionlist = val;
+            } else if (args[i].equals("--snpprobeselectionlist")) {
+                snpprobeselectionlist = val;
+            } else if (args[i].equals("--stepsizepcaremoval")) {
+                stepSize = Integer.parseInt(val);
+            } else if (args[i].equals("--maxnrpcaremoved")) {
+                max = Integer.parseInt(val);
             }
 
 
         }
 
         if (mode == null) {
-            System.out.println("Specify metamode (meta, cismeta, summary, splitzscoretable, allelecheck, filter or fdr, crosshybparser)");
+            System.out.println("Specify metamode (meta, cismeta, summary, splitzscoretable, allelecheck, filter or fdr, crosshybparser, determineSnpProbList)");
         } else if (mode.equals("meta")) {
             if (settings == null) {
                 System.out.println("Specify settings");
@@ -207,10 +234,18 @@ public class Main {
             if (in == null || nrEQTLs == null || cutoff == null) {
                 System.out.println("Please specify --in --nrperm and --cutoff and --nreqtls [--skipqqplot]");
             } else {
-                try {
-                    FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null);
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if(snpselectionlist!=null){
+                    try {
+                        FDR.calculateFDR2(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true, snpselectionlist, snpprobeselectionlist);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         } else if (mode.equals("ld")) {
@@ -227,9 +262,40 @@ public class Main {
                 }
             }
 
+        } else if (mode.equals("nongeneticPcaCorrection")) {
+            if (in == null || out == null || inexp == null || gte == null ) {
+                System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --ing and --nreqtls");
+            } else {
+                try {
+                    PCAOptimum p =  new PCAOptimum();
+//            public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
+                    
+                    p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
+                    File file = new File(inexp);
+
+                    p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nrEQTLs);
+                } catch (IOException ex) {
+                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (Exception ex) {
+                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+        } else if (mode.equals("determineSnpProbList")) {
+            try {
+                NoLdSnpProbeListCreator.main(Arrays.copyOfRange(args, 2, args.length));
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             System.out.print("Invalid option, valid options are:");
-            System.out.println("fdr, ld, filter, allelecheck, individual, cismeta, meta");
+            System.out.println("fdr, ld, filter, allelecheck, individual, cismeta, meta, determineSnpProbList");
         }
 
         System.exit(0);

@@ -1,0 +1,71 @@
+<assembly>
+	<id>dist</id>
+	<!-- Generates a zip package containing the needed files -->
+	<formats>
+		<format>zip</format>
+		<format>tar.gz</format>
+	</formats>
+
+	<!-- Adds dependencies to zip package under lib directory -->
+	<dependencySets>
+		<dependencySet>
+			<!--
+			 Project artifact is not copied under library directory since
+			 it is added to the root directory of the zip package.
+			-->
+			<useProjectArtifact>false</useProjectArtifact>
+			<outputDirectory>lib</outputDirectory>
+			<unpack>false</unpack>
+		</dependencySet>
+	</dependencySets>
+
+	<files>
+		<file>
+			<source>README.md</source>
+			<outputDirectory>/</outputDirectory>
+		</file>
+		<file>
+			<source>LICENSE</source>
+			<outputDirectory>/</outputDirectory>
+		</file>
+		<file>
+			<source>${project.build.directory}/eqtl-mapping-pipeline-${project.version}.jar</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>eqtl-mapping-pipeline.jar</destName>
+		</file>
+		<file>
+			<source>src/main/resources/cisSnps.txt.gz</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>cisSnps.txt.gz</destName>
+		</file>
+		<file>
+			<source>src/main/resources/transSnps.txt.gz</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>transSnps.txt.gz</destName>
+		</file>		
+	</files>
+
+	<fileSets>
+		<!--
+		 Adds startup scripts to the root directory of zip package. The startup
+		 scripts are located to src/main/scripts directory as stated by Maven
+		 conventions.
+		-->
+		<fileSet>
+			<directory>${project.build.scriptSourceDirectory}</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>settings.xml</include>
+			</includes>		
+		</fileSet>
+		<fileSet>
+			<directory>src/main/resources/GeuvadisTestData</directory>
+			<outputDirectory>/GeuvadisTestData</outputDirectory>
+			<includes>
+				<include>*</include>
+			</includes>		
+		</fileSet>
+		<!-- adds jar package to the root directory of zip package -->
+	</fileSets>
+
+</assembly>

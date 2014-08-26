@@ -63,6 +63,10 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 		
 		for(GeneticVariant variant : genotypeData){
 			
+			if(!variant.isSnp()){
+				continue;
+			}
+			
 			snpFileWriter.append(variant.getPrimaryVariantId());
 			snpFileWriter.append('\n');
 			
@@ -118,6 +122,10 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 		byte[] dosageBuffer = new byte[sampleCount];
 
 		for(GeneticVariant variant : genotypeData){
+			
+			if(!variant.isSnp()){
+				continue;
+			}
 
 			float[] dosageValues = variant.getSampleDosages();
 			int i = 0;

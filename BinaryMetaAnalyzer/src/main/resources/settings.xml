@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<settings>
+    <defaults>
+        <permutations>10</permutations>
+        <snpannotation>/path/</snpannotation>
+        <absolutezscore>false</absolutezscore>
+        <finalnreqtls>500000</finalnreqtls>
+        <fdrthreshold>0.05</fdrthreshold>
+        <cisprobedistance>250000</cisprobedistance>
+        <transprobedistance>5000000</transprobedistance>
+        <includeprobeswithoutmapping>true</includeprobeswithoutmapping>
+        <includesnpswithoutmapping>true</includesnpswithoutmapping>
+        <makezscoreplot>true</makezscoreplot>
+        <makezscoretable>false</makezscoretable>
+        <probetranslationfile>/path/</probetranslationfile>
+        <output></output>
+        <minimalnumberofdatasetsthatcontainprobe>0</minimalnumberofdatasetsthatcontainprobe>
+        <minimalnumberofdatasetsthatcontainsnp>0</minimalnumberofdatasetsthatcontainsnp>
+        <snpprobeselectsamplesizethreshold>-1</snpprobeselectsamplesizethreshold>
+        <runonlypermutation>-1</runonlypermutation>
+        <threads>0</threads>
+        <cis>true</cis>
+        <trans>true</trans>
+        <probeselection></probeselection>
+        <snpselection></snpselection>
+        <snpprobeselection></snpprobeselection>
+    </defaults>
+    <datasets>
+        <dataset>
+            <name></name>
+            <prefix></prefix>
+            <location></location>
+            <expressionplatform></expressionplatform>
+        </dataset>
+    </datasets>
+</settings>

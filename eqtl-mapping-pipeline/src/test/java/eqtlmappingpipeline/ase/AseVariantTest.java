@@ -5,6 +5,9 @@
 package eqtlmappingpipeline.ase;
 
 import cern.colt.list.tint.IntArrayList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import static org.testng.Assert.*;
@@ -16,34 +19,34 @@ import org.testng.annotations.Test;
  */
 public class AseVariantTest {
 
-	private final AseVariant aseVariant1;
-	private final AseVariant aseVariant2;
-	private final AseVariant aseVariant3;
-	private final AseVariant aseVariant4;
+	private final AseVariantAppendable aseVariant1;
+	private final AseVariantAppendable aseVariant2;
+	private final AseVariantAppendable aseVariant3;
+	private final AseVariantAppendable aseVariant4;
 
 	public AseVariantTest() {
-		aseVariant1 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
-		aseVariant1.addCounts(10, 20);
-		aseVariant1.addCounts(20, 30);
-		aseVariant1.addCounts(20, 21);
-		aseVariant1.addCounts(30, 20);
+		aseVariant1 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant1.addCounts(10, 20, "sample1");
+		aseVariant1.addCounts(20, 30, "sample2");
+		aseVariant1.addCounts(20, 21, "sample3");
+		aseVariant1.addCounts(30, 20, "sample4");
 
-		aseVariant2 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
-		aseVariant2.addCounts(20, 10);
+		aseVariant2 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant2.addCounts(20, 10, "sample1");
 
-		aseVariant3 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
-		aseVariant3.addCounts(124, 99);
-		aseVariant3.addCounts(28, 179);
+		aseVariant3 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant3.addCounts(124, 99, "sample1");
+		aseVariant3.addCounts(28, 179, "sample2");
 
-		aseVariant4 = new AseVariant("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
-		aseVariant4.addCounts(211, 27);
-		aseVariant4.addCounts(196, 45);
-		aseVariant4.addCounts(187, 54);
-
+		aseVariant4 = new AseVariantAppendable("1", 1, GeneticVariantId.createVariantId("rs1"), Allele.A, Allele.C);
+		aseVariant4.addCounts(211, 27, "sample1");
+		aseVariant4.addCounts(196, 45, "sample2");
+		aseVariant4.addCounts(187, 54, "sample3");
+		
 	}
 
 	/**
-	 * Test of getChr method, of class AseVariant.
+	 * Test of getChr method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetChr() {
@@ -51,7 +54,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getPos method, of class AseVariant.
+	 * Test of getPos method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetPos() {
@@ -59,7 +62,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getId method, of class AseVariant.
+	 * Test of getId method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetId() {
@@ -67,7 +70,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA1 method, of class AseVariant.
+	 * Test of getA1 method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA1() {
@@ -75,7 +78,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA2 method, of class AseVariant.
+	 * Test of getA2 method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA2() {
@@ -83,7 +86,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA1Counts method, of class AseVariant.
+	 * Test of getA1Counts method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA1Counts() {
@@ -92,7 +95,7 @@ public class AseVariantTest {
 	}
 
 	/**
-	 * Test of getA2Counts method, of class AseVariant.
+	 * Test of getA2Counts method, of class AseVariantAppendable.
 	 */
 	@Test
 	public void testGetA2Counts() {
@@ -105,7 +108,7 @@ public class AseVariantTest {
 		assertEquals(aseVariant1.getMetaZscore(), 0.8255035, 0.0001);
 		assertEquals(aseVariant2.getMetaZscore(), -1.651007, 0.0001);
 		assertEquals(aseVariant3.getMetaZscore(), 6.639489, 0.00001);
-
+		
 	}
 
 	@Test
@@ -120,6 +123,13 @@ public class AseVariantTest {
 
 		assertEquals(aseVariant4.getCountPearsonR(), -0.9989061, 0.00001);
 
+	}
+	
+	@Test
+	public void testGetSampleIds(){
+		List<String> samples = Arrays.asList(new String[]{"sample1", "sample2", "sample3", "sample4"});
+		assertEquals(aseVariant1.getSampleIds(), samples);
+		
 	}
 
 }
