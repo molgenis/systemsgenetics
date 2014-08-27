@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>run</actionName>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-Xmx10g -Xms10g -classpath %classpath nl.umcg.deelenp.genotypeharmonizer.GenotypeHarmonizer -i D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapSplitFlip\hapmap3_r3_b36_fwd.consensus.qc.poly.founders.set1.qc -r D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapSplitFlip\hapmap3_r3_b36_fwd.consensus.qc.poly.founders.set2.qc.flip -o D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapLdTest\test --debug -v 100 -ch 17</exec.args>
+                <exec.executable>java</exec.executable>
+            </properties>
+        </action>
+        <action>
+            <actionName>debug</actionName>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx10g -Xms10g -classpath %classpath nl.umcg.deelenp.genotypeharmonizer.GenotypeHarmonizer -i D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapSplitFlip\hapmap3_r3_b36_fwd.consensus.qc.poly.founders.set1.qc -r D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapSplitFlip\hapmap3_r3_b36_fwd.consensus.qc.poly.founders.set2.qc.flip -o D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapLdTest\test --debug -v 100 -ch 17</exec.args>
+                <exec.executable>java</exec.executable>
+                <jpda.listen>true</jpda.listen>
+            </properties>
+        </action>
+        <action>
+            <actionName>profile</actionName>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>${profiler.args} -Xmx10g -Xms10g -classpath %classpath nl.umcg.deelenp.genotypeharmonizer.GenotypeHarmonizer -i D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapSplitFlip\hapmap3_r3_b36_fwd.consensus.qc.poly.founders.set1.qc -r D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapSplitFlip\hapmap3_r3_b36_fwd.consensus.qc.poly.founders.set2.qc.flip -o D:\UMCG\Genetica\Projects\GenotypeAligner\hapmapLdTest\test --debug -v 100 -ch 17</exec.args>
+                <exec.executable>${profiler.java}</exec.executable>
+            </properties>
+        </action>
+    </actions>

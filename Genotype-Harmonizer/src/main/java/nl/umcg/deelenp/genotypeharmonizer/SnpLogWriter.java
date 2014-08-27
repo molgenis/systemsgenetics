@@ -13,6 +13,24 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class SnpLogWriter implements Closeable{
 
+	public static enum Actions{
+		
+		EXCLUDED("Excluded"),
+		SWAPPED("Swapped"),
+		MAINTAINED("Maintained");
+		
+		private String actionString;
+		
+		private Actions(String actionString) {
+			this.actionString = actionString;
+		}
+		
+		public String getActionString() {
+			return actionString;
+		}
+			
+	}
+	
 	private final BufferedWriter snpLogWriter;
 
 	public SnpLogWriter(File snpLogFile) throws IOException {
@@ -20,7 +38,7 @@ public class SnpLogWriter implements Closeable{
 		 snpLogWriter.append("chr\tpos\tid\talleles\taction\tmessage\n");
 	}
 	
-	public void addToLog(GeneticVariant variant,String action, String message) throws IOException{
+	public void addToLog(GeneticVariant variant, Actions action, String message) throws IOException{
 		snpLogWriter.append(variant.getSequenceName());
 		snpLogWriter.append('\t');
 		snpLogWriter.append(String.valueOf(variant.getStartPos()));
@@ -29,7 +47,7 @@ public class SnpLogWriter implements Closeable{
 		snpLogWriter.append('\t');
 		snpLogWriter.append(variant.getVariantAlleles().toString());
 		snpLogWriter.append('\t');
-		snpLogWriter.append(action);
+		snpLogWriter.append(action.getActionString());
 		snpLogWriter.append('\t');
 		snpLogWriter.append(message);
 		snpLogWriter.append('\n');

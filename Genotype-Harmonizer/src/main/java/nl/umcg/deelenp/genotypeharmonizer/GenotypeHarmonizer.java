@@ -60,7 +60,7 @@ class GenotypeHarmonizer {
     /**
      * The lowest allowed minimum for the number of SNPs needed to align on
      */
-    protected static final int MIN_MIN_VARIANTS_TO_ALIGN_ON = 3;
+    protected static final int MIN_MIN_VARIANTS_TO_ALIGN_ON = 1;
     private static final Pattern CHR_POS_SPLITTER = Pattern.compile("\\s+|:");
 	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
