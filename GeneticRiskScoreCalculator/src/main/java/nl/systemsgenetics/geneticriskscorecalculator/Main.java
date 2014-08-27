@@ -21,7 +21,7 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.util.trityper.reader.TextFile;
+import umcg.genetica.io.text.TextFile;
 
 /**
  * Hello world!
@@ -48,7 +48,7 @@ public class Main {
 	private static final Logger LOGGER = Logger.getLogger(Main.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
-        private static final Pattern TAB_PATTERN = Pattern.compile("\t");
+        private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
         
 	public static void main(String[] args) {
 
@@ -181,30 +181,82 @@ public class Main {
                 
                 
                 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
 		GwasCatalogLoader gwasCatalogLoader = new GwasCatalogLoader(); 
 		List<GeneticRiskScoreCalculator> geneticRiskScoreCalculators = gwasCatalogLoader.getGeneticRiskScoreCalculators();
 		
-		List<String> phenotypes = new ArrayList<String>();
-		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
-			phenotypes.add(calculator.getPhenotype());
-		}
-		
-		RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
-		
-		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
-			TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes);
-			for(String sample : inputGenotypes.getSampleNames()){
-				riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));
-			}
-		}
-		try {
-			riskScoreMatrix.save(outputFile);
-		} catch (IOException ex) {
-			System.err.println("Could not save output file to: " + outputFile.getAbsolutePath());
-			LOGGER.fatal("Could not save output file to: " + outputFile.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		}
+//		List<String> phenotypes = new ArrayList<String>();
+//		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
+//			phenotypes.add(calculator.getPhenotype());
+//		}
+//		
+//		RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
+//		
+//		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
+//			TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes);
+//			for(String sample : inputGenotypes.getSampleNames()){
+//				riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));
+//			}
+//		}
+//		try {
+//			riskScoreMatrix.save(outputFile);
+//		} catch (IOException ex) {
+//			System.err.println("Could not save output file to: " + outputFile.getAbsolutePath());
+//			LOGGER.fatal("Could not save output file to: " + outputFile.getAbsolutePath(), ex);
+//			System.exit(1);
+//			return;
+//		}
 		
 		System.out.println("Risk score calculation complete");
 		LOGGER.info("Risk score calculation complete");
