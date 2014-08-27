@@ -74,10 +74,10 @@ public class Utils {
 
 		if (file.exists()) {
 			if (file.isDirectory()) {
-				throw new GenotypeDataException("Can not overwrite dir with " + fileName + " file:" + file.getAbsolutePath());
+				throw new GenotypeDataException("Cannot overwrite dir with " + fileName + " file:" + file.getAbsolutePath());
 			}
 			if (file.isFile()) {
-				LOGGER.warn("Overriding " + fileName + " file" + file.getAbsolutePath());
+				LOGGER.warn("Overriding " + fileName + " file " + file.getAbsolutePath());
                                 
 				if (!file.delete()) {
 					throw new GenotypeDataException("Failed to overwrite " + fileName + " file: " + file.getAbsolutePath());
