@@ -6,12 +6,17 @@ import static org.testng.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.DummySampleVariantsProvider;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
+import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
+import org.molgenis.genotype.modifiable.ModifiableGenotypeDataInMemory;
+import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
@@ -145,6 +150,65 @@ public class LdCalculatorTest extends ResourceTest
 			testData.close();
 		}
 	}
+	
+	@Test
+	public void calculateLd4() throws LdCalculatorException, Exception {
+		//This test is validated using plink 1.07
+		
+		BedBimFamGenotypeData genotypeData = new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9(), 0);
+		
+		GeneticVariant var1 = genotypeData.getSnpVariantByPos("22", 14432618);
+		GeneticVariant var2 = genotypeData.getSnpVariantByPos("22", 14433624);
+		
+		Ld ld = var1.calculateLd(var2);
+		
+		
+		assertEquals(ld.getR2(), 0.294, 0.001);
+		assertEquals(ld.getDPrime(), 1, 0.001);
+		
+		HashMap<String, Double> hapsExpected = new HashMap<String, Double>(4);
+		hapsExpected.put("AA", 0.056);
+		hapsExpected.put("GA", 0.111);
+		hapsExpected.put("AG", 0.000);
+		hapsExpected.put("GG", 0.833);
+		
+		HashMap<String, Double> haps = ld.getHaplotypesFreq();
+		
+		for(Map.Entry<String, Double> hap : haps.entrySet()){
+			assertEquals(hap.getValue(), hapsExpected.get(hap.getKey()), 0.001);
+		}
+		
+	}
+			
+	@Test
+	public void calculateLd5() throws LdCalculatorException, Exception {
+		//This test is validated using plink 1.07
+		
+		ModifiableGenotypeDataInMemory genotypeData = new ModifiableGenotypeDataInMemory(new BedBimFamGenotypeData(getTestBed9(), getTestBim9(), getTestFam9(), 0));
+		
+		ModifiableGeneticVariant var1 = genotypeData.getModifiableSnpVariantByPos("22", 14432618);
+		GeneticVariant var2 = genotypeData.getSnpVariantByPos("22", 14433624);
+		
+		Ld ld = var1.calculateLd(var2);
+		
+		
+		assertEquals(ld.getR2(), 0.294, 0.001);
+		assertEquals(ld.getDPrime(), 1, 0.001);
+		
+		HashMap<String, Double> hapsExpected = new HashMap<String, Double>(4);
+		hapsExpected.put("AA", 0.056);
+		hapsExpected.put("GA", 0.111);
+		hapsExpected.put("AG", 0.000);
+		hapsExpected.put("GG", 0.833);
+		
+		HashMap<String, Double> haps = ld.getHaplotypesFreq();
+		
+		for(Map.Entry<String, Double> hap : haps.entrySet()){
+			assertEquals(hap.getValue(), hapsExpected.get(hap.getKey()), 0.001);
+		}
+		
+	}
+			
 
 	public void assertEqualsDoubleCollection(Collection<Double> observed, Collection<Double> expected, double delta)
 			throws AssertionError
