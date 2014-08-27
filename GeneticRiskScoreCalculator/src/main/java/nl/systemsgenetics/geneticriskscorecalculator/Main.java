@@ -10,14 +10,18 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
+import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.io.text.TextFile;
 
 /**
  * Hello world!
@@ -28,7 +32,7 @@ public class Main {
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final String HEADER =
 			"  /---------------------------------------\\\n"
-			+ "  |  Allele Specific Expression Mapper    |\n"
+			+ "  |     Genetic Risk Score Calculator     |\n"
 			+ "  |                                       |\n"
 			+ "  |             Patrick Deelen            |\n"
 			+ "  |        patrickdeelen@gmail.com        |\n"
@@ -44,7 +48,8 @@ public class Main {
 	private static final Logger LOGGER = Logger.getLogger(Main.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
-
+        private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
+        
 	public static void main(String[] args) {
 
 		System.out.println(HEADER);
@@ -88,7 +93,8 @@ public class Main {
 				System.exit(1);
 			}
 		}
-		final File logFile = new File(outputFile.getAbsolutePath() + ".log");
+
+                final File logFile = new File(outputFile.getAbsolutePath() + ".log");
 		startLogging(logFile, true);
 		
 		final RandomAccessGenotypeData inputGenotypes;
@@ -113,30 +119,144 @@ public class Main {
 			return;
 		}
 
+                GeneticVariant snpVariantByPos = inputGenotypes.getSnpVariantByPos("1", 161012760);
+                
+                System.out.println("MINORALLELE  " + snpVariantByPos.getMinorAllele() + "  ALLALLELES  " + snpVariantByPos.getVariantAlleles()+ "  MAF  " +
+                        snpVariantByPos.getMinorAlleleFrequency() );
+                
+   		String fileLine;
+		String[] fileLineData;
+                TextFile riskSnpsFile;
+		try {
+                    riskSnpsFile = new TextFile(configuration.getRisksnpsFile().toString(), false);
+                    while( (fileLine = riskSnpsFile.readLine())!=null ){
+                        fileLineData = TAB_PATTERN.split(fileLine);
+                        System.out.println(fileLineData[1] + "  " + fileLineData[2] +  "  " + fileLineData[3]); 
+                        System.out.println("RiskAllele" + fileLineData[4]); 
+                        
+                    }
+                    riskSnpsFile.close();                
+                } catch (IOException ex) {
+			System.err.println("Unable to load risk snps file.");
+			LOGGER.fatal("Unable to load risk snps file.", ex);
+			System.exit(1);
+			return;
+		} 
+
+                for (String mySample : inputGenotypes.getSampleNames()) {
+                    System.out.println("Samplename: " + mySample);
+                }
+                System.out.println("Total amount of samples: " + inputGenotypes.getSampleNames().length);
+
+                for (String mySequence : inputGenotypes.getSeqNames()) {
+                    System.out.println("Sequencename: " + mySequence);   // chromosomes
+                }
+                
+                String onesample = inputGenotypes.getSampleNames()[0];
+                System.out.println("First sample: " + onesample);
+                
+                
+                List<Alleles> alleles = snpVariantByPos.getSampleVariants();                
+                float[] dosages = snpVariantByPos.getSampleDosages();
+                List<String> myids = snpVariantByPos.getAllIds();
+                
+                for (Alleles allele : alleles) {
+                   System.out.println(allele.toString() );  // only alleles
+                   System.out.println(allele.getAllelesAsString().get(0) ) ;
+                   
+                   
+                }
+                
+                for (float mydosage : dosages) {
+                    System.out.println(mydosage); // only dosages
+                }
+        
+                for (String myid : myids) {
+                    System.out.println(myid);// one rs id  
+                }
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
 		GwasCatalogLoader gwasCatalogLoader = new GwasCatalogLoader(); 
 		List<GeneticRiskScoreCalculator> geneticRiskScoreCalculators = gwasCatalogLoader.getGeneticRiskScoreCalculators();
 		
-		List<String> phenotypes = new ArrayList<String>();
-		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
-			phenotypes.add(calculator.getPhenotype());
-		}
-		
-		RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
-		
-		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
-			TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes);
-			for(String sample : inputGenotypes.getSampleNames()){
-				riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));
-			}
-		}
-		try {
-			riskScoreMatrix.save(outputFile);
-		} catch (IOException ex) {
-			System.err.println("Could not save output file to: " + outputFile.getAbsolutePath());
-			LOGGER.fatal("Could not save output file to: " + outputFile.getAbsolutePath(), ex);
-			System.exit(1);
-			return;
-		}
+//		List<String> phenotypes = new ArrayList<String>();
+//		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
+//			phenotypes.add(calculator.getPhenotype());
+//		}
+//		
+//		RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
+//		
+//		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
+//			TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes);
+//			for(String sample : inputGenotypes.getSampleNames()){
+//				riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));
+//			}
+//		}
+//		try {
+//			riskScoreMatrix.save(outputFile);
+//		} catch (IOException ex) {
+//			System.err.println("Could not save output file to: " + outputFile.getAbsolutePath());
+//			LOGGER.fatal("Could not save output file to: " + outputFile.getAbsolutePath(), ex);
+//			System.exit(1);
+//			return;
+//		}
 		
 		System.out.println("Risk score calculation complete");
 		LOGGER.info("Risk score calculation complete");
