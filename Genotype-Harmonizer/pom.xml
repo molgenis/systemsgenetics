@@ -2,7 +2,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>Genotype-Harmonizer</artifactId>
-	<version>1.4.4</version>
+	<version>1.4.5</version>
 	<name>Genotype Harmonizer</name>
 	<packaging>jar</packaging>
 	<parent>
@@ -30,6 +30,11 @@
 			<groupId>net.sf.jsci</groupId>
 			<artifactId>jsci</artifactId>
 			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.testng</groupId>

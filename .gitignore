@@ -15,8 +15,5 @@ git.properties
 molgenis-compute-core/test-output
 data/
 test-output/
-nbactions.xml
+nbactions*.xml
 *~
-
-eqtl-mapping-pipeline/nbactions-testAse.xml
-eqtl-mapping-pipeline/nbactions-testAse.xml
