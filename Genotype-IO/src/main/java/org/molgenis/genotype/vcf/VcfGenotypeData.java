@@ -487,11 +487,19 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 					++currentlyOpenFileHandlers;
 
 					return new Iterator<GeneticVariant>() {
-						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, new BlockCompressedInputStream(bzipVcfFile));
+						private final BlockCompressedInputStream stream = new BlockCompressedInputStream(bzipVcfFile);
+						private final TabixIterator it = tabixIndex.queryTabixIndex(seqName, rangeStart, rangeEnd, stream);
 						private String line = readFirst(it);
 
 						private String readFirst(TabixIterator it) {
 							if (it == null) {
+								try{
+									stream.close();
+								} catch (IOException e) {
+									throw new GenotypeDataException(e);
+								}
+								--currentlyOpenFileHandlers;
+								++closedFileHandlers;
 								return null;
 							} else {
 								try {
