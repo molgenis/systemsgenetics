@@ -517,15 +517,14 @@ public class Aligner {
 				double[] refHapFreqArray = createDoubleArrayFromCollection(refHapFreq.values());
 
 				//Correlate study haplotypes to ref haplotypes.
-				//Note: igonore case of no variance in both that would be correlation of 1 since not added value here
-				double correlation;
+				//Note: igonore case of no variance in both that would be correlation of 1 since no added value here
 
 				double studyHapVar = JSci.maths.ArrayMath.variance(studyHapFreqArray);
 				double refHapVar = JSci.maths.ArrayMath.variance(refHapFreqArray);
 
 				double denom = Math.sqrt(studyHapVar * refHapVar);
 				if (denom != 0) {
-					correlation = covariance(studyHapFreqArray, refHapFreqArray) / denom;
+					double correlation = covariance(studyHapFreqArray, refHapFreqArray) / denom;
 
 					if (correlation < 0) {
 						++negCor;
