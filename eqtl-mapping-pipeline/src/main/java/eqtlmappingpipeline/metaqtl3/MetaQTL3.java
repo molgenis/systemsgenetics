@@ -205,9 +205,11 @@ public class MetaQTL3 {
             dataHasCovariates = true;
         }
 
-        List<String> pathwayNames = new ArrayList<String>();
-        List<List<String>> ensgsInPathways = new ArrayList<List<String>>();
+        List<String> pathwayNames;
+        List<List<String>> ensgsInPathways;
         if (m_settings.pathwayDefinition != null) {
+            pathwayNames = new ArrayList<String>();
+            ensgsInPathways = new ArrayList<List<String>>();
             if (Gpio.exists(m_settings.pathwayDefinition)) {
                 TextFile tf = new TextFile(m_settings.pathwayDefinition, TextFile.R);
                 String line;
@@ -967,8 +969,8 @@ public class MetaQTL3 {
 
         HashMap<String, Integer> probeNameToId = null;
         if (m_settings.tsSNPProbeCombinationsConfine != null) {
-            m_settings.transAnalysis = false;
             m_settings.cisAnalysis = true;
+            m_settings.transAnalysis = false;
             for (int i = 0; i < m_gg.length; i++) {
                 m_gg[i].getSettings().cisAnalysis = true;
                 m_gg[i].getSettings().transAnalysis = false;

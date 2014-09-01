@@ -132,7 +132,13 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
 			Alleles variantAlleles = variant.getVariantAlleles();
 			
             if (variantAlleles.getAlleleCount() > 2 || !variantAlleles.isSnp()) {
-                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP");
+                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a biallelic SNP.");
+                ++excludedVariantsCounter;
+                continue;
+            }
+            
+            if (variantAlleles.getAlleleCount() == 0) {
+                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", this SNP has no alles.");
                 ++excludedVariantsCounter;
                 continue;
             }
