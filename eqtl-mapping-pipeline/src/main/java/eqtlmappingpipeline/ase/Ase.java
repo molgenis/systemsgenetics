@@ -115,266 +115,272 @@ public class Ase {
 
 		LOGGER.debug("Java version: " + System.getProperty("java.version"));
 
-		final AseResults aseResults = new AseResults();
-		final Set<String> detectedSampleSet = Collections.synchronizedSet(new HashSet<String>());
-		final RandomAccessGenotypeData referenceGenotypes;
-		final Map<String, String> refToStudySampleId;
-		final int minimumNumberSamples = configuration.getMinSamples();
+		try {
 
-		if (configuration.isRefSet()) {
-			try {
-				referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), configuration.getRefDataCacheSize());
-				System.out.println("Loading reference data complete");
-				LOGGER.info("Loading reference data complete");
-			} catch (IOException ex) {
-				System.err.println("Unable to load reference genotypes file.");
-				LOGGER.fatal("Unable to load reference genotypes file.", ex);
-				System.exit(1);
-				return;
-			} catch (IncompatibleMultiPartGenotypeDataException ex) {
-				System.err.println("Unable to load reference genotypes file.");
-				LOGGER.fatal("Unable to load reference genotypes file.", ex);
-				System.exit(1);
-				return;
-			} catch (GenotypeDataException ex) {
-				System.err.println("Unable to load reference genotypes file.");
-				LOGGER.fatal("Unable to load reference genotypes file.", ex);
-				System.exit(1);
-				return;
+			final AseResults aseResults = new AseResults();
+			final Set<String> detectedSampleSet = Collections.synchronizedSet(new HashSet<String>());
+			final RandomAccessGenotypeData referenceGenotypes;
+			final Map<String, String> refToStudySampleId;
+			final int minimumNumberSamples = configuration.getMinSamples();
+
+			if (configuration.isRefSet()) {
+				try {
+					referenceGenotypes = configuration.getRefDataType().createGenotypeData(configuration.getRefBasePaths(), configuration.getRefDataCacheSize());
+					System.out.println("Loading reference data complete");
+					LOGGER.info("Loading reference data complete");
+				} catch (IOException ex) {
+					System.err.println("Unable to load reference genotypes file.");
+					LOGGER.fatal("Unable to load reference genotypes file.", ex);
+					System.exit(1);
+					return;
+				} catch (IncompatibleMultiPartGenotypeDataException ex) {
+					System.err.println("Unable to load reference genotypes file.");
+					LOGGER.fatal("Unable to load reference genotypes file.", ex);
+					System.exit(1);
+					return;
+				} catch (GenotypeDataException ex) {
+					System.err.println("Unable to load reference genotypes file.");
+					LOGGER.fatal("Unable to load reference genotypes file.", ex);
+					System.exit(1);
+					return;
+				}
+
+				if (configuration.isSampleToRefSampleFileSet()) {
+					try {
+						refToStudySampleId = readSampleMapping(configuration.getSampleToRefSampleFile());
+						System.out.println("Found " + refToStudySampleId.size() + " sample mappings");
+						LOGGER.info("Found " + refToStudySampleId.size() + " sample mappings");
+					} catch (FileNotFoundException ex) {
+						System.err.println("Cannot find samples mapping file at: " + configuration.getSampleToRefSampleFile().getAbsolutePath());
+						LOGGER.fatal("Cannot find samples mapping file at: " + configuration.getSampleToRefSampleFile().getAbsolutePath(), ex);
+						System.exit(1);
+						return;
+					} catch (Exception ex) {
+						System.err.println("Error reading sample mapping file: " + ex.getMessage());
+						LOGGER.fatal("Error reading sample mapping file", ex);
+						System.exit(1);
+						return;
+					}
+				} else {
+					refToStudySampleId = null;
+				}
+
+			} else {
+				referenceGenotypes = null;
+				refToStudySampleId = null;
 			}
 
-			if (configuration.isSampleToRefSampleFileSet()) {
+			if (configuration.isGtfSet()) {
+				if (!configuration.getGtf().canRead()) {
+					System.err.println("Cannot read GENCODE gft file.");
+					LOGGER.fatal("Cannot read GENCODE gft file");
+					System.exit(1);
+				}
+			}
+
+			final List<File> inputFiles = configuration.getInputFiles();
+
+			System.out.println("Loading sample allele counts");
+			if (referenceGenotypes == null) {
+				loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter(), true);
+
+				Iterator<AseVariantAppendable> aseIterator = aseResults.iterator();
+				while (aseIterator.hasNext()) {
+					if (aseIterator.next().getSampleCount() < minimumNumberSamples) {
+						aseIterator.remove();
+					}
+				}
+
+			} else {
+
+				//We have reference genotypes. This means a lot of random access to this single genotype data which slowed down the analyis a lot. 
+				//Chucking the analysis will be used so that we can efficiently cache the reference genotypes.
+
+				final int chunkSize = configuration.getChunkSize();
+
+				for (String chr : referenceGenotypes.getSeqNames()) {
+
+					if (configuration.getChrFilter() != null && !configuration.getChrFilter().equals(chr)) {
+						continue;
+					}
+
+					for (int startChunk = 0; referenceGenotypes.getVariantsByRange(chr, startChunk, Integer.MAX_VALUE).iterator().hasNext(); startChunk += chunkSize) {
+						if (chunkSize == Integer.MAX_VALUE) {
+							System.out.println("Chr: " + chr);
+						} else {
+							System.out.println("Chr: " + chr + " chunk: " + DEFAULT_NUMBER_FORMATTER.format(startChunk) + "-" + DEFAULT_NUMBER_FORMATTER.format(startChunk + chunkSize));
+						}
+
+						loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize - 1), false);
+						//System.out.println("Current number of ASE targets: " + aseResults.getCount());
+					}
+					//Clean up ASE that do not meet minimum number of samples	
+					if (aseResults.chrIterator(chr) != null) {
+						for (Iterator<AseVariantAppendable> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
+							if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
+								aseChrIterator.remove();
+							}
+						}
+					}
+					//System.out.println("Current number of ASE targets after checking sample count: " + aseResults.getCount());
+
+				}
+
+
+			}
+
+			final boolean encounteredBaseQuality = aseResults.isEncounteredBaseQuality();
+
+			LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
+			System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
+
+			if (configuration.isMappabilityTrackSet()) {
+
+				int removeNoMappabilityInfo = 0;
+				int removeLowMappability = 0;
+
+				double minimumMappability = configuration.getMappabilityMinimum();
+
+				PerChrIntervalTree<BedGraphEntry> mappabilities;
 				try {
-					refToStudySampleId = readSampleMapping(configuration.getSampleToRefSampleFile());
-					System.out.println("Found " + refToStudySampleId.size() + " sample mappings");
-					LOGGER.info("Found " + refToStudySampleId.size() + " sample mappings");
+					BedGraphFile bedGraphFile = new BedGraphFile(configuration.getMappabilityTrackFile());
+					mappabilities = bedGraphFile.createIntervalTree();
 				} catch (FileNotFoundException ex) {
-					System.err.println("Cannot find samples mapping file at: " + configuration.getSampleToRefSampleFile().getAbsolutePath());
-					LOGGER.fatal("Cannot find samples mapping file at: " + configuration.getSampleToRefSampleFile().getAbsolutePath(), ex);
+					System.err.println("Could not find mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+					LOGGER.fatal("Could not find mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+					System.exit(1);
+					return;
+				} catch (IOException ex) {
+					System.err.println("Could not read mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
+					LOGGER.fatal("Could not read mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
 					System.exit(1);
 					return;
 				} catch (Exception ex) {
-					System.err.println("Error reading sample mapping file: " + ex.getMessage());
-					LOGGER.fatal("Error reading sample mapping file", ex);
+					System.err.println("Error reading mappability file " + ex.getMessage());
+					LOGGER.fatal("Error reading mappability file " + ex.getMessage());
+					System.exit(1);
+					return;
+				}
+
+
+				for (Iterator<AseVariantAppendable> aseIterator = aseResults.iterator(); aseIterator.hasNext();) {
+					AseVariantAppendable ase = aseIterator.next();
+					List<BedGraphEntry> aseMappabilities = mappabilities.searchPosition(ase.getChr(), ase.getPos());
+					if (aseMappabilities.isEmpty()) {
+						aseIterator.remove();
+						++removeNoMappabilityInfo;
+						continue;
+					} else if (aseMappabilities.size() > 1) {
+						System.err.println("Error reading mappability file " + ase.getChr() + ":" + ase.getPos() + " contains multiple mappability scores");
+						LOGGER.fatal("Error reading mappability file " + ase.getChr() + ":" + ase.getPos() + " contains multiple mappability scores");
+						System.exit(1);
+						return;
+					} else if (aseMappabilities.get(0).getValue() < minimumMappability) {
+						++removeLowMappability;
+						aseIterator.remove();
+					}
+
+				}
+
+				System.out.println("ASE removed due to low mappability: " + DEFAULT_NUMBER_FORMATTER.format(removeLowMappability));
+				LOGGER.info("ASE removed due to low mappability: " + DEFAULT_NUMBER_FORMATTER.format(removeLowMappability));
+
+				if (removeNoMappabilityInfo != 0) {
+					System.out.println("ASE removed due to no mappability info present: " + DEFAULT_NUMBER_FORMATTER.format(removeNoMappabilityInfo));
+					LOGGER.info("ASE removed due to no mappability info present: " + DEFAULT_NUMBER_FORMATTER.format(removeNoMappabilityInfo));
+				}
+
+			}
+
+
+			AseVariantAppendable[] aseVariants = new AseVariantAppendable[aseResults.getCount()];
+			{
+				int i = 0;
+				for (AseVariantAppendable aseVariant : aseResults) {
+
+					//This can be made multithreaded if needed
+					aseVariant.calculateStatistics();
+
+					aseVariants[i] = aseVariant;
+					++i;
+
+				}
+			}
+
+			//int numberOfTests = aseVariants.length;
+			//double bonferroniCutoff = 0.05 / numberOfTests;
+			//System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+			//LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
+
+
+			Arrays.sort(aseVariants);
+
+			final PerChrIntervalTree<GffElement> gtfAnnotations;
+			if (configuration.isGtfSet()) {
+				try {
+					System.out.println("Started loading GTF file.");
+					gtfAnnotations = new GtfReader(configuration.getGtf()).createIntervalTree();
+					System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(gtfAnnotations.size()) + " annotations from GTF file.");
+					LOGGER.info("Loaded " + DEFAULT_NUMBER_FORMATTER.format(gtfAnnotations.size()) + " annotations from GTF file.");
+				} catch (FileNotFoundException ex) {
+					System.err.println("Cannot read GENCODE gft file.");
+					LOGGER.fatal("Cannot read GENCODE gft file", ex);
+					System.exit(1);
+					return;
+				} catch (Exception ex) {
+					System.err.println("Cannot read GENCODE gft file. Error: " + ex.getMessage());
+					LOGGER.fatal("Cannot read GENCODE gft file", ex);
 					System.exit(1);
 					return;
 				}
 			} else {
-				refToStudySampleId = null;
+				gtfAnnotations = null;
 			}
 
-		} else {
-			referenceGenotypes = null;
-			refToStudySampleId = null;
-		}
 
-		if (configuration.isGtfSet()) {
-			if (!configuration.getGtf().canRead()) {
-				System.err.println("Cannot read GENCODE gft file.");
-				LOGGER.fatal("Cannot read GENCODE gft file");
-				System.exit(1);
-			}
-		}
+			for (MultipleTestingCorrectionMethod correctionMethod : EnumSet.of(MultipleTestingCorrectionMethod.NONE, MultipleTestingCorrectionMethod.BONFERRONI, MultipleTestingCorrectionMethod.HOLM, MultipleTestingCorrectionMethod.BH)) {
 
-		final List<File> inputFiles = configuration.getInputFiles();
+				File outputFileBonferroni = new File(configuration.getOutputFolder(), correctionMethod == MultipleTestingCorrectionMethod.NONE ? "ase.txt" : "ase_" + correctionMethod.toString().toLowerCase() + ".txt");
+				try {
 
-		System.out.println("Loading sample allele counts");
-		if (referenceGenotypes == null) {
-			loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, null, refToStudySampleId, configuration.getChrFilter(), true);
+					int writtenResults = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, correctionMethod, encounteredBaseQuality);
 
-			Iterator<AseVariantAppendable> aseIterator = aseResults.iterator();
-			while (aseIterator.hasNext()) {
-				if (aseIterator.next().getSampleCount() < minimumNumberSamples) {
-					aseIterator.remove();
-				}
-			}
-
-		} else {
-
-			//We have reference genotypes. This means a lot of random access to this single genotype data which slowed down the analyis a lot. 
-			//Chucking the analysis will be used so that we can efficiently cache the reference genotypes.
-
-			final int chunkSize = configuration.getChunkSize();
-
-			for (String chr : referenceGenotypes.getSeqNames()) {
-
-				if (configuration.getChrFilter() != null && !configuration.getChrFilter().equals(chr)) {
-					continue;
-				}
-
-				for (int startChunk = 0; referenceGenotypes.getVariantsByRange(chr, startChunk, Integer.MAX_VALUE).iterator().hasNext(); startChunk += chunkSize) {
-					if (chunkSize == Integer.MAX_VALUE) {
-						System.out.println("Chr: " + chr);
+					if (correctionMethod == MultipleTestingCorrectionMethod.NONE) {
+						System.out.println("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
+						LOGGER.info("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
 					} else {
-						System.out.println("Chr: " + chr + " chunk: " + DEFAULT_NUMBER_FORMATTER.format(startChunk) + "-" + DEFAULT_NUMBER_FORMATTER.format(startChunk + chunkSize));
+						System.out.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
+						LOGGER.info("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
 					}
 
-					loadAseData(inputFiles, aseResults, detectedSampleSet, configuration, referenceGenotypes, refToStudySampleId, chr, startChunk, (startChunk + chunkSize - 1), false);
-					//System.out.println("Current number of ASE targets: " + aseResults.getCount());
-				}
-				//Clean up ASE that do not meet minimum number of samples	
-				if (aseResults.chrIterator(chr) != null) {
-					for (Iterator<AseVariantAppendable> aseChrIterator = aseResults.chrIterator(chr); aseChrIterator.hasNext();) {
-						if (aseChrIterator.next().getSampleCount() < minimumNumberSamples) {
-							aseChrIterator.remove();
-						}
-					}
-				}
-				//System.out.println("Current number of ASE targets after checking sample count: " + aseResults.getCount());
 
-			}
-
-
-		}
-
-		final boolean encounteredBaseQuality = aseResults.isEncounteredBaseQuality();
-
-		LOGGER.info("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
-		System.out.println("Loading files complete. Detected " + DEFAULT_NUMBER_FORMATTER.format(detectedSampleSet.size()) + " samples.");
-
-		if (configuration.isMappabilityTrackSet()) {
-			
-			int removeNoMappabilityInfo = 0;
-			int removeLowMappability = 0;
-			
-			double minimumMappability = configuration.getMappabilityMinimum();
-
-			PerChrIntervalTree<BedGraphEntry> mappabilities;
-			try {
-				BedGraphFile bedGraphFile = new BedGraphFile(configuration.getMappabilityTrackFile());
-				mappabilities = bedGraphFile.createIntervalTree();
-			} catch (FileNotFoundException ex) {
-				System.err.println("Could not find mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
-				LOGGER.fatal("Could not find mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
-				System.exit(1);
-				return;
-			} catch (IOException ex) {
-				System.err.println("Could not read mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
-				LOGGER.fatal("Could not read mappability file at: " + configuration.getMappabilityTrackFile().getAbsolutePath());
-				System.exit(1);
-				return;
-			} catch (Exception ex) {
-				System.err.println("Error reading mappability file " + ex.getMessage());
-				LOGGER.fatal("Error reading mappability file " + ex.getMessage());
-				System.exit(1);
-				return;
-			}
-
-
-			for (Iterator<AseVariantAppendable> aseIterator = aseResults.iterator(); aseIterator.hasNext();) {
-				AseVariantAppendable ase = aseIterator.next();
-				List<BedGraphEntry> aseMappabilities = mappabilities.searchPosition(ase.getChr(), ase.getPos());
-				if (aseMappabilities.isEmpty()) {
-					aseIterator.remove();
-					++removeNoMappabilityInfo;
-					continue;
-				} else if (aseMappabilities.size() > 1) {
-					System.err.println("Error reading mappability file " + ase.getChr() + ":" + ase.getPos() + " contains multiple mappability scores");
-					LOGGER.fatal("Error reading mappability file " + ase.getChr() + ":" + ase.getPos() + " contains multiple mappability scores");
+				} catch (UnsupportedEncodingException ex) {
+					throw new RuntimeException(ex);
+				} catch (FileNotFoundException ex) {
+					System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
+					LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
 					System.exit(1);
 					return;
-				} else if(aseMappabilities.get(0).getValue() < minimumMappability){
-					++removeLowMappability;
-					aseIterator.remove();
+				} catch (IOException ex) {
+					System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
+					LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
+					System.exit(1);
+					return;
+				} catch (AseException ex) {
+					System.err.println("Error creating output file: " + ex.getMessage());
+					LOGGER.fatal("Error creating output file.", ex);
+					System.exit(1);
+					return;
 				}
-
 			}
 
-			System.out.println("ASE removed due to low mappability: " + DEFAULT_NUMBER_FORMATTER.format(removeLowMappability));
-			LOGGER.info("ASE removed due to low mappability: " + DEFAULT_NUMBER_FORMATTER.format(removeLowMappability));
-			
-			if(removeNoMappabilityInfo != 0){
-				System.out.println("ASE removed due to no mappability info present: " + DEFAULT_NUMBER_FORMATTER.format(removeNoMappabilityInfo));
-				LOGGER.info("ASE removed due to no mappability info present: " + DEFAULT_NUMBER_FORMATTER.format(removeNoMappabilityInfo));
-			}
-
+			System.out.println("Program completed");
+			LOGGER.info("Program completed");
+		} catch (OutOfMemoryError ex) {
+			System.err.println("Error: out of memory, use -Xmx##g -Xms##g to reserve more memory, see manual for more information.");
+			LOGGER.fatal("Out of memory, use -Xmx##g -Xms##g to reserve more memory, see manual for more information.", ex);
+			System.exit(1);
 		}
-
-
-		AseVariantAppendable[] aseVariants = new AseVariantAppendable[aseResults.getCount()];
-		{
-			int i = 0;
-			for (AseVariantAppendable aseVariant : aseResults) {
-
-				//This can be made multithreaded if needed
-				aseVariant.calculateStatistics();
-
-				aseVariants[i] = aseVariant;
-				++i;
-
-			}
-		}
-
-		//int numberOfTests = aseVariants.length;
-		//double bonferroniCutoff = 0.05 / numberOfTests;
-		//System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
-		//LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
-
-
-		Arrays.sort(aseVariants);
-
-		final PerChrIntervalTree<GffElement> gtfAnnotations;
-		if (configuration.isGtfSet()) {
-			try {
-				System.out.println("Started loading GTF file.");
-				gtfAnnotations = new GtfReader(configuration.getGtf()).createIntervalTree();
-				System.out.println("Loaded " + DEFAULT_NUMBER_FORMATTER.format(gtfAnnotations.size()) + " annotations from GTF file.");
-				LOGGER.info("Loaded " + DEFAULT_NUMBER_FORMATTER.format(gtfAnnotations.size()) + " annotations from GTF file.");
-			} catch (FileNotFoundException ex) {
-				System.err.println("Cannot read GENCODE gft file.");
-				LOGGER.fatal("Cannot read GENCODE gft file", ex);
-				System.exit(1);
-				return;
-			} catch (Exception ex) {
-				System.err.println("Cannot read GENCODE gft file. Error: " + ex.getMessage());
-				LOGGER.fatal("Cannot read GENCODE gft file", ex);
-				System.exit(1);
-				return;
-			}
-		} else {
-			gtfAnnotations = null;
-		}
-
-
-		for (MultipleTestingCorrectionMethod correctionMethod : EnumSet.of(MultipleTestingCorrectionMethod.NONE, MultipleTestingCorrectionMethod.BONFERRONI, MultipleTestingCorrectionMethod.HOLM, MultipleTestingCorrectionMethod.BH)) {
-
-			File outputFileBonferroni = new File(configuration.getOutputFolder(), correctionMethod == MultipleTestingCorrectionMethod.NONE ? "ase.txt" : "ase_" + correctionMethod.toString().toLowerCase() + ".txt");
-			try {
-
-				int writtenResults = printAseResults(outputFileBonferroni, aseVariants, gtfAnnotations, correctionMethod, encounteredBaseQuality);
-
-				if (correctionMethod == MultipleTestingCorrectionMethod.NONE) {
-					System.out.println("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
-					LOGGER.info("Completed writing all " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " ASE variants");
-				} else {
-					System.out.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
-					LOGGER.info("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
-				}
-
-
-			} catch (UnsupportedEncodingException ex) {
-				throw new RuntimeException(ex);
-			} catch (FileNotFoundException ex) {
-				System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
-				LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
-				System.exit(1);
-				return;
-			} catch (IOException ex) {
-				System.err.println("Unable to create output file at " + outputFileBonferroni.getAbsolutePath());
-				LOGGER.fatal("Unable to create output file at " + outputFileBonferroni.getAbsolutePath(), ex);
-				System.exit(1);
-				return;
-			} catch (AseException ex) {
-				System.err.println("Error creating output file: " + ex.getMessage());
-				LOGGER.fatal("Error creating output file.", ex);
-				System.exit(1);
-				return;
-			}
-		}
-
-		System.out.println("Program completed");
-		LOGGER.info("Program completed");
-
 
 	}
 
@@ -649,8 +655,15 @@ public class Ase {
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
 
-			System.err.println("Fatal error: " + e.getMessage());
-			LOGGER.fatal("Fatal error: ", e);
+			if(e instanceof OutOfMemoryError){
+				System.err.println("Error: out of memory, use -Xmx##g -Xms##g to reserve more memory, see manual for more information.");
+				LOGGER.fatal("Out of memory, use -Xmx##g -Xms##g to reserve more memory, see manual for more information.", e);
+			} else {
+				System.err.println("Fatal error: " + e.getMessage());
+				LOGGER.fatal("Fatal error: ", e);
+			}
+			
+			
 			System.exit(1);
 		}
 	}
