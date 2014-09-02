@@ -61,6 +61,9 @@ public class VcfMeta
 	}
 	
 	public Iterable<String> getSampleNames() {
+		if(colNames.length <= COL_FORMAT_IDX ){
+			return Collections.emptyList();
+		}
 		return Arrays.asList(colNames).subList(COL_FORMAT_IDX + 1, colNames.length);
 	}
 	
