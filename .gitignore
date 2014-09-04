@@ -17,3 +17,5 @@ data/
 test-output/
 nbactions*.xml
 *~
+
+nb-configuration.xml
