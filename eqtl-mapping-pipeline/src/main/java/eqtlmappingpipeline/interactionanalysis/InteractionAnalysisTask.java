@@ -48,7 +48,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
     @Override
     public InteractionAnalysisResults call() throws Exception {
 
-        ArrayList<String> eQTLsTested = new ArrayList<String>();
+        ArrayList<Pair<String, String>> eQTLsTested = new ArrayList<Pair<String, String>>();
 
         int nrTotalCovariates = covariateData.nrRows;
 //        if (cellcounts != null) {
@@ -87,7 +87,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
             Pair<String, String> eqtl = eQTLsForSNP.get(e);
             String eQTLProbeName = eqtl.getRight();
 
-            eQTLsTested.add(eqtl.toString());
+            eQTLsTested.add(eqtl);
 
             Integer eQTLProbeId = expressionDataPCCorrected.getProbeToId().get(eQTLProbeName);
 
@@ -264,7 +264,9 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         }
 
         // get genotypes, include missing ones
-        InteractionAnalysisResults result = new InteractionAnalysisResults(qcString,
+        InteractionAnalysisResults result = new InteractionAnalysisResults(
+                
+                qcString,
                 eQTLsTested,
                 interactionZScoreMatrix,
                 SNPZResultMatrix,
