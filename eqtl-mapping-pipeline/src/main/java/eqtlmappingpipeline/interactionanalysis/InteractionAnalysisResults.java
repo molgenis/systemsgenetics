@@ -13,32 +13,64 @@ import java.util.ArrayList;
 public class InteractionAnalysisResults {
     private final String qcString;
 
-    
-    private final String cellcountInterActionOutput;
     private final ArrayList<String> eQTLsTested;
-    private final double[][] interactionVector;
+    private final double[][] interactionZScoreMatrix;
+    private final double[][] SNPZResultMatrix;
+    private final double[][] covariateZResultMatrix;
+    private final double[][] maineffectZResultMatrix;
+    private final int[][] nMatrix;
+    
+    /*
+    //            rowNames.add("CellTypeSNPZScore");
+//            rowNames.add("CellTypeZScore");
+//            rowNames.add("CellTypeInteractionZScore");
+//            rowNames.add("MainEffectZScore");
+    */
 
-    InteractionAnalysisResults(String qcString, String cellcountInterActionOutput, ArrayList<String> eQTLsTested, double[][] interactionVector) {
+    InteractionAnalysisResults(String qcString, 
+            ArrayList<String> eQTLsTested, 
+            double[][] interactionZScoreMatrix,
+            double[][] SNPZResultMatrix,
+            double[][] covariateZResultMatrix,
+            double[][] maineffectZResultMatrix,
+            int[][] nMatrix) {
         this.qcString = qcString;
-        this.cellcountInterActionOutput = cellcountInterActionOutput;
         this.eQTLsTested = eQTLsTested;
-        this.interactionVector = interactionVector;
+        this.interactionZScoreMatrix = interactionZScoreMatrix;
+        this.SNPZResultMatrix = SNPZResultMatrix;
+        this.covariateZResultMatrix = covariateZResultMatrix;
+        this.maineffectZResultMatrix = maineffectZResultMatrix;
+        this.nMatrix = nMatrix;
     }
     
     public String getQcString() {
         return qcString;
     }
 
-    public String getCellcountInterActionOutput() {
-        return cellcountInterActionOutput;
-    }
-
     public ArrayList<String> geteQTLsTested() {
         return eQTLsTested;
     }
 
-    public double[][] getInteractionVector() {
-        return interactionVector;
+    public double[][] getInteractionZScoreMatrix() {
+        return interactionZScoreMatrix;
     }
+
+    public double[][] getSNPZResultMatrix() {
+        return SNPZResultMatrix;
+    }
+
+    public double[][] getCovariateZResultMatrix() {
+        return covariateZResultMatrix;
+    }
+
+    public double[][] getMaineffectZResultMatrix() {
+        return maineffectZResultMatrix;
+    }
+
+    public int[][] getnMatrix() {
+        return nMatrix;
+    }
+
+    
     
 }
