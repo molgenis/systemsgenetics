@@ -33,9 +33,11 @@ public class InteractionAnalysisConsoleGUI {
         String covariates = null;
         String inexp = null;
         RUNMODE step = null;
+        boolean binaryoutput = false;
 
-        boolean testAllCovariatesInCovariateData = false;
+        boolean matchCovariateNamesToExpressionProbeNames = false;
         Integer nrThreads = null;
+        String covariateList = null;
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -57,6 +59,10 @@ public class InteractionAnalysisConsoleGUI {
                 }
             } else if (arg.equals("--inexpraw")) {
                 inexpraw = val;
+            } else if (arg.equals("--covariatelist")){
+                covariateList = val;
+            } else if (arg.equals("--binary")) {
+                binaryoutput = true;
             } else if (arg.equals("--covariates")) {
                 covariates = val;
             } else if (arg.equals("--inexp")) {
@@ -75,8 +81,8 @@ public class InteractionAnalysisConsoleGUI {
                 gte = val;
             } else if (arg.equals("--snpprobe")) {
                 snpprobecombofile = val;
-            } else if (arg.equals("--testAllCovariates")) {
-                testAllCovariatesInCovariateData = true;
+            } else if (arg.equals("--testMatchingCovariates")) {
+                matchCovariateNamesToExpressionProbeNames = true;
             } else if (arg.equals("--threads")) {
                 try {
                     nrThreads = Integer.parseInt(val);
@@ -165,11 +171,19 @@ public class InteractionAnalysisConsoleGUI {
 //                    System.err.println("Warning: yo please supply --cellcounts");
                         //kill = true;
                     }
+
                     if (kill) {
                         System.err.println("");
                         printUsage();
                     } else {
-                        qmt.runCelltypeSpecificEQTLMapping(inexp, covariates, in, gte, snpprobecombofile, nrThreads, out, testAllCovariatesInCovariateData);
+                        qmt.runInteractionAnalysis(inexp, 
+                                covariates, 
+                                in, 
+                                gte, 
+                                snpprobecombofile, 
+                                nrThreads, 
+                                out, 
+                                covariateList);
 //                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                     }
 
@@ -198,7 +212,7 @@ public class InteractionAnalysisConsoleGUI {
 
         System.out.println("");
 
-        System.out.print("Step 2: Mapping eQTLs\n" + ConsoleGUIElems.LINE);
+        System.out.print("Step 2: Mapping eQTLs with interaction model\n" + ConsoleGUIElems.LINE);
         System.out.println("--step mapeqtls\t\t\t\tTell the program to map eQTLs.\n"
                 + "--inexp\tdir\t\tLocation of the dependent dataset\n"
                 + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
@@ -206,9 +220,8 @@ public class InteractionAnalysisConsoleGUI {
                 + "--in\t\t\tdir\t\tLocation of the genotype data\n"
                 + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
-                + "--cellcounts\t\tString\t\tLocation of the cell count (or cell count proxy) file (optional)\n"
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
-                + "--testAllCovariates\t\tThis tests all covariates in covariate dataset (default only tests covariates matching to probes in --snpprobe)\n");
+                + "--covariatelist\t\tList of covariates to test\n");
 
         System.out.println("");
 
