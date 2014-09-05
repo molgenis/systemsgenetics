@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.interactionanalysis;
 
 import java.util.ArrayList;
+import umcg.genetica.containers.Pair;
 
 /**
  *
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 public class InteractionAnalysisResults {
     private final String qcString;
 
-    private final ArrayList<String> eQTLsTested;
+    private final ArrayList<Pair<String, String>> eQTLsTested;
     private final double[][] interactionZScoreMatrix;
     private final double[][] SNPZResultMatrix;
     private final double[][] covariateZResultMatrix;
@@ -28,7 +29,7 @@ public class InteractionAnalysisResults {
     */
 
     InteractionAnalysisResults(String qcString, 
-            ArrayList<String> eQTLsTested, 
+            ArrayList<Pair<String, String>> eQTLsTested, 
             double[][] interactionZScoreMatrix,
             double[][] SNPZResultMatrix,
             double[][] covariateZResultMatrix,
@@ -47,7 +48,7 @@ public class InteractionAnalysisResults {
         return qcString;
     }
 
-    public ArrayList<String> geteQTLsTested() {
+    public ArrayList<Pair<String, String>> geteQTLsTested() {
         return eQTLsTested;
     }
 
@@ -70,7 +71,5 @@ public class InteractionAnalysisResults {
     public int[][] getnMatrix() {
         return nMatrix;
     }
-
-    
-    
+  
 }

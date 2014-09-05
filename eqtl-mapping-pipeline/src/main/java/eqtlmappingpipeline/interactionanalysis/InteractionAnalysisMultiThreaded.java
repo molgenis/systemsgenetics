@@ -519,7 +519,7 @@ public class InteractionAnalysisMultiThreaded {
         Correlation.correlationToZScore(covariateData.nrCols);
 
 //        DoubleMatrixDataset<String, String> datasetOut = new DoubleMatrixDataset<String, String>(rowNames.size(), snpProbeCombinationsToTest.size());
-        System.out.println("Output matrix will be "  + snpProbeCombinationsToTest.size() + "(x5) x " + rowNames.size()) ;
+        System.out.println("Output matrix will be " + snpProbeCombinationsToTest.size() + "(x5) x " + rowNames.size());
 //        datasetOut.rowObjects = rowNames;
 
 //        ArrayList<String> colNames = new ArrayList<String>();
@@ -546,10 +546,8 @@ public class InteractionAnalysisMultiThreaded {
         nrInOutput = 0;
 
         TextFile outputFile = new TextFile(out + "InteractionResults.txt", TextFile.W);
-        String outputheader = "eQTL\tParameter";
-        for (String covariate : covariateData.rowObjects) {
-            outputheader += "\t" + covariate;
-        }
+        String outputheader = "SNP\tProbe\tCovariate\tZ-SNP\tZ-Cov\tZ-Interaction\tZ-Main\tN";
+
         outputFile.writeln(outputheader);
         ProgressBar pb = new ProgressBar(snpProbeCombinationsToTest.size(), "Now testing available eQTL effects for cell type specificity.");
         int maxbuffer = (nrThreads * 8);
@@ -586,7 +584,7 @@ public class InteractionAnalysisMultiThreaded {
                     try {
                         InteractionAnalysisResults result = pool.take().get();
                         if (result != null) {
-                            processResult(result, outputFile, snpFile, pb);
+                            processResult(result, outputFile, snpFile, covariateData, pb);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -609,7 +607,7 @@ public class InteractionAnalysisMultiThreaded {
                 try {
                     InteractionAnalysisResults result = pool.take().get();
                     if (result != null) {
-                        processResult(result, outputFile, snpFile, pb);
+                        processResult(result, outputFile, snpFile, covariateData, pb);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -638,56 +636,43 @@ public class InteractionAnalysisMultiThreaded {
         System.out.println("Done.");
     }
 
-    private void processResult(InteractionAnalysisResults result, TextFile outputFile, TextFile snpFile, ProgressBar pb) throws IOException {
+    private void processResult(InteractionAnalysisResults result, TextFile outputFile, TextFile snpFile, DoubleMatrixDataset<String, String> covariateData, ProgressBar pb) throws IOException {
         double[][] interactionZScoreMatrix = result.getInteractionZScoreMatrix();
         double[][] SNPZResultMatrix = result.getSNPZResultMatrix();
         double[][] covariateZResultMatrix = result.getCovariateZResultMatrix();
         double[][] maineffectZResultMatrix = result.getMaineffectZResultMatrix();
         int[][] nMatrix = result.getnMatrix();
-        ArrayList<String> eqtls = result.geteQTLsTested();
-        for (int e = 0; e < eqtls.size(); e++) {
-            for (int param = 0; param < 5; param++) {
-                String outputForeQTL = eqtls.get(e);
-                switch (param) {
-                    case 0:
-                        outputForeQTL += "\tZ-SNP";
-                        for (int c = 0; c < SNPZResultMatrix[e].length; c++) {
-                            outputForeQTL += "\t" + SNPZResultMatrix[e][c];
-                        }
-                        break;
-                    case 1:
-                        outputForeQTL += "\tZ-Cov";
-                        for (int c = 0; c < covariateZResultMatrix[e].length; c++) {
-                            outputForeQTL += "\t" + covariateZResultMatrix[e][c];
-                        }
-                        break;
-                    case 2:
-                        outputForeQTL += "\tZ-Interaction";
-                        for (int c = 0; c < interactionZScoreMatrix[e].length; c++) {
-                            outputForeQTL += "\t" + interactionZScoreMatrix[e][c];
-                        }
-                        break;
-                    case 3:
-                        outputForeQTL += "\tZ-Main";
-                        for (int c = 0; c < maineffectZResultMatrix[e].length; c++) {
-                            outputForeQTL += "\t" + maineffectZResultMatrix[e][c];
-                        }
-                        break;
-                    case 4:
-                        outputForeQTL += "\tN";
-                        for (int c = 0; c < nMatrix[e].length; c++) {
-                            outputForeQTL += "\t" + nMatrix[e][c];
-                        }
-                        break;
-                }
+        ArrayList<Pair<String, String>> eqtls = result.geteQTLsTested();
 
+        for (int e = 0; e < eqtls.size(); e++) {
+            Pair<String, String> eqtl = eqtls.get(e);
+            for (int c = 0; c < SNPZResultMatrix[e].length; c++) {
+                String outputForeQTL = eqtl.getLeft() + "\t" + eqtl.getRight() + "\t" + covariateData.rowObjects.get(c);
+
+                for (int param = 0; param < 5; param++) {
+                    switch (param) {
+                        case 0:
+                            outputForeQTL += "\t" + SNPZResultMatrix[e][c];
+                            break;
+                        case 1:
+                            outputForeQTL += "\t" + covariateZResultMatrix[e][c];
+                            break;
+                        case 2:
+                            outputForeQTL += "\t" + interactionZScoreMatrix[e][c];
+                            break;
+                        case 3:
+                            outputForeQTL += "\t" + maineffectZResultMatrix[e][c];
+                            break;
+                        case 4:
+                            outputForeQTL += "\t" + nMatrix[e][c];
+                            break;
+                    }
+                }
                 outputFile.writeln(outputForeQTL);
             }
-
             nrInOutput++;
             pb.iterate();
         }
-
         snpFile.writeln(result.getQcString());
     }
 
