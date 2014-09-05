@@ -388,7 +388,7 @@ public class InteractionAnalysisMultiThreaded {
 
     public void runInteractionAnalysis(String inExpPCCorrected, String covariateFile, String ingt,
             String gte, String snpprobecombinationfile, Integer nrThreads, String out,
-            String covariateList, boolean binaryOutput) throws IOException, Exception {
+            String covariateList) throws IOException, Exception {
         String probeannot = null;
 
         double mafthreshold = 0.05;
@@ -519,7 +519,7 @@ public class InteractionAnalysisMultiThreaded {
         Correlation.correlationToZScore(covariateData.nrCols);
 
 //        DoubleMatrixDataset<String, String> datasetOut = new DoubleMatrixDataset<String, String>(rowNames.size(), snpProbeCombinationsToTest.size());
-        System.out.println("Output matrix will be " + rowNames.size() + " x " + snpProbeCombinationsToTest.size());
+        System.out.println("Output matrix will be "  + snpProbeCombinationsToTest.size() + "(x5) x " + rowNames.size()) ;
 //        datasetOut.rowObjects = rowNames;
 
 //        ArrayList<String> colNames = new ArrayList<String>();

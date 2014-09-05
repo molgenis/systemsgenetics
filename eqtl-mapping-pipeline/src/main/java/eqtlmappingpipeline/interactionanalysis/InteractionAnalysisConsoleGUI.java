@@ -176,7 +176,14 @@ public class InteractionAnalysisConsoleGUI {
                         System.err.println("");
                         printUsage();
                     } else {
-                        qmt.runInteractionAnalysis(inexp, covariates, in, gte, snpprobecombofile, nrThreads, out, covariateList, binaryoutput);
+                        qmt.runInteractionAnalysis(inexp, 
+                                covariates, 
+                                in, 
+                                gte, 
+                                snpprobecombofile, 
+                                nrThreads, 
+                                out, 
+                                covariateList);
 //                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                     }
 
@@ -205,7 +212,7 @@ public class InteractionAnalysisConsoleGUI {
 
         System.out.println("");
 
-        System.out.print("Step 2: Mapping eQTLs\n" + ConsoleGUIElems.LINE);
+        System.out.print("Step 2: Mapping eQTLs with interaction model\n" + ConsoleGUIElems.LINE);
         System.out.println("--step mapeqtls\t\t\t\tTell the program to map eQTLs.\n"
                 + "--inexp\tdir\t\tLocation of the dependent dataset\n"
                 + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
@@ -213,9 +220,8 @@ public class InteractionAnalysisConsoleGUI {
                 + "--in\t\t\tdir\t\tLocation of the genotype data\n"
                 + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
-                + "--cellcounts\t\tString\t\tLocation of the cell count (or cell count proxy) file (optional)\n"
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
-                + "--testMatchingCovariates\t\tThis tests only covariates in covariate dataset that have a matching name in the \n");
+                + "--covariatelist\t\tList of covariates to test\n");
 
         System.out.println("");
 
