@@ -252,8 +252,8 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                 }
                 pValueCellType *= 2;
 
-                interactionZScoreMatrix[e][covariate] = zScoreSNP;
-                SNPZResultMatrix[e][covariate] = zScoreInteraction;
+                interactionZScoreMatrix[e][covariate] = zScoreInteraction;
+                SNPZResultMatrix[e][covariate] = zScoreSNP;
                 covariateZResultMatrix[e][covariate] = zScoreCovariate;
                 maineffectZResultMatrix[e][covariate] = mainZ;
                 nMatrix[e][covariate] = nrCalled;
