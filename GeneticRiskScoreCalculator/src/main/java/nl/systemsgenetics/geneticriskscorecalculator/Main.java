@@ -29,13 +29,17 @@ import umcg.genetica.io.text.TextFile;
  */
 public class Main {
 
-	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
-	private static final String HEADER =
+	//private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
+	private static final String VERSION = "0.0.1";
+        
+        private static final String HEADER =
 			"  /---------------------------------------\\\n"
 			+ "  |     Genetic Risk Score Calculator     |\n"
 			+ "  |                                       |\n"
+			+ "  |              Rudi Alberts             |\n"
+			+ "  |                                       |\n"
 			+ "  |             Patrick Deelen            |\n"
-			+ "  |        patrickdeelen@gmail.com        |\n"
+			+ "  |                                       |\n"
 			+ "  |                                       |\n"
 			+ "  | Dasha Zhernakova, Marijke v/d Sijde,  |\n"
 			+ "  |   Marc Jan Bonder, Harm-Jan Westra,   |\n"
@@ -121,6 +125,8 @@ public class Main {
 
                 GeneticVariant snpVariantByPos = inputGenotypes.getSnpVariantByPos("1", 161012760);
                 
+                
+                
                 System.out.println("MINORALLELE  " + snpVariantByPos.getMinorAllele() + "  ALLALLELES  " + snpVariantByPos.getVariantAlleles()+ "  MAF  " +
                         snpVariantByPos.getMinorAlleleFrequency() );
                 
@@ -143,11 +149,11 @@ public class Main {
 			return;
 		} 
 
+                
                 for (String mySample : inputGenotypes.getSampleNames()) {
                     System.out.println("Samplename: " + mySample);
                 }
-                System.out.println("Total amount of samples: " + inputGenotypes.getSampleNames().length);
-
+                
                 for (String mySequence : inputGenotypes.getSeqNames()) {
                     System.out.println("Sequencename: " + mySequence);   // chromosomes
                 }
@@ -163,9 +169,10 @@ public class Main {
                 for (Alleles allele : alleles) {
                    System.out.println(allele.toString() );  // only alleles
                    System.out.println(allele.getAllelesAsString().get(0) ) ;
-                   
-                   
+                   System.out.println(allele.isAtOrGcSnp()); 
+                
                 }
+                
                 
                 for (float mydosage : dosages) {
                     System.out.println(mydosage); // only dosages
@@ -175,61 +182,14 @@ public class Main {
                     System.out.println(myid);// one rs id  
                 }
                 
+                System.out.println("Total amount of samples: " + inputGenotypes.getSampleNames().length);
+                System.out.println("Total amount of alleles: " + alleles.size() );
                 
                 
                 
                 
                 
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
+
                 
                 
                 
