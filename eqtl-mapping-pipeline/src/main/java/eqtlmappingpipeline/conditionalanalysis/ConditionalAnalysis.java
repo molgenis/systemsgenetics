@@ -47,6 +47,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
 
         initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null);
         double fdrthreshold = m_settings.fdrCutOff;
+        
         m_settings.provideBetasAndStandardErrors = true;
         m_settings.provideFoldChangeData = true;
         String origOutputDir = m_settings.outputReportsDir;
@@ -73,7 +74,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
 
         // take the significant eQTL Probes
         String fdrSignificantFile = "eQTLsFDR" + fdrthreshold + "-ProbeLevel.txt";
-        String fdrAllFile = "eQTLsFDR-ProbeLevel.txt";
+        String fdrAllFile = "eQTLsFDR-ProbeLevel.txt.gz";
 
         FDR.FDRMethod fdrType = m_settings.fdrType;
         if (fdrType.equals(FDR.FDRMethod.GENELEVEL)) {
