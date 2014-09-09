@@ -138,7 +138,7 @@ public class EQTLMappingPipelineConsole {
                 + "       conditional\tPerform conditional eQTL analysis given a set of SNPs\n"
                 + "       causalinference\t\tPerform instrumental variable analysis\n"
                 + "       celltypespecific\tCell type specific eQTL mapping\n"
-                + "       interaction\tCell type specific eQTL mapping\n"
+                + "       interaction\teQTL mapping using interaction model\n"
                 + "       util\tSmall utilities\n"
                 + "       ase\t\tAllele Specific Expression mapping\n"
                 + "       pileupToVcf\tConvert a pileup file to vcf for usage in ASE mapping");
