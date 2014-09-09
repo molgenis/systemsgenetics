@@ -55,6 +55,7 @@ public class MetaQTL3 {
     protected WorkPackage[] m_workPackages;
     private boolean dataHasCovariates;
     private Pair<List<String>, List<List<String>>> pathwayDefinitions;
+    private int initialMaxNrMostSignificantEQTLs;
 
     public MetaQTL3() {
     }
@@ -102,6 +103,7 @@ public class MetaQTL3 {
             }
 
             m_settings = new Settings();
+            
             TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
             s.name = "Dataset";
@@ -150,10 +152,11 @@ public class MetaQTL3 {
             m_settings.outputReportsDir = out;
             m_settings.createTEXTOutputFiles = textout;
             m_settings.createBinaryOutputFiles = binout;
-            if (maxNrResults != null && maxNrResults > 0) {
+            if (maxNrResults != null && maxNrResults > 0) {   
                 m_settings.maxNrMostSignificantEQTLs = maxNrResults;
+                
             }
-            
+
             m_settings.createDotPlot =  !skipdotplot;
             m_settings.createQQPlot =  !skipqqplot;
             
@@ -174,6 +177,7 @@ public class MetaQTL3 {
             System.out.println("ERROR: No input specified");
             System.exit(0);
         }
+        initialMaxNrMostSignificantEQTLs = m_settings.maxNrMostSignificantEQTLs;
 
         // initialize dataset
         if (!m_settings.cisAnalysis && !m_settings.transAnalysis) {
@@ -305,11 +309,11 @@ public class MetaQTL3 {
         createProbeList();
 
         // create WorkPackage objects
-        long maxNrOfTests = determineSNPProbeCombinations();
-
-        if (m_settings.maxNrMostSignificantEQTLs > maxNrOfTests) {
-            m_settings.maxNrMostSignificantEQTLs = (int) maxNrOfTests;
-        }
+        determineSNPProbeCombinations();
+//
+//        if (m_settings.maxNrMostSignificantEQTLs != maxNrOfTests) {
+//            m_settings.maxNrMostSignificantEQTLs = (int) maxNrOfTests;
+//        }
 
         if (m_workPackages == null || m_workPackages.length == 0) {
             System.err.println("Error: No work detected");
@@ -1123,6 +1127,11 @@ public class MetaQTL3 {
 
         System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
         System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
+        
+        if (m_settings.maxNrMostSignificantEQTLs != maxNrTestsToPerform) {
+            m_settings.maxNrMostSignificantEQTLs = (int) maxNrTestsToPerform;
+        }
+
         return (maxNrTestsToPerform);
     }
 

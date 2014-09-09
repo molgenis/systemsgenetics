@@ -430,6 +430,7 @@ public class InteractionAnalysisMultiThreaded {
         settings.quantilenormalize = false;
         settings.name = "Dataset";
         settings.probeannotation = probeannot;
+        
 
         TriTyperGeneticalGenomicsDataset ds = new TriTyperGeneticalGenomicsDataset(settings);
         TriTyperGenotypeData genotypeData = ds.getGenotypeData();
