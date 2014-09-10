@@ -22,7 +22,7 @@ public class MetaQTL3ConsoleGUI {
         String in = null;
         String out = null;
         boolean cis = false;
-        boolean trans = false;
+        boolean trans = false;  
         int perm = 1;
         String outtype = "text";
         String inexp = null;
@@ -36,6 +36,7 @@ public class MetaQTL3ConsoleGUI {
         String eqtleffectstoregressout = null;
 
         Double outputPlotThresold = null;
+        Double maf = null;
         Integer nrEQTLsToOutput = null;
 
         String snpprobecombofile = null;
@@ -112,6 +113,13 @@ public class MetaQTL3ConsoleGUI {
                     System.out.println("Please supply an integer for --perm");
                 }
             } else if (arg.equals(
+                    "--maf")) {
+                try {
+                    maf = Double.parseDouble(val);
+                } catch (NumberFormatException e) {
+                    System.out.println("Please supply an integer for --perm");
+                }
+            } else if (arg.equals(
                     "--threads")) {
                 try {
                     threads = Integer.parseInt(val);
@@ -152,7 +160,7 @@ public class MetaQTL3ConsoleGUI {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed);
+                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed, maf);
                 
                 if(outputPlotThresold!=null){
                     m.setOutputPlotThreshold(outputPlotThresold);

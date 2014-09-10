@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -255,15 +253,28 @@ public class TextFile implements Iterable<String> {
 	}
 
 	public ArrayList<String> readAsArrayList() throws IOException {
-		String[] dataArr = readAsArray();
 		ArrayList<String> data = new ArrayList<String>();
-		data.addAll(Arrays.asList(dataArr));
+        
+        String ln = readLine();
+		while (ln != null) {
+			if (ln.trim().length() > 0) {
+				data.add(ln);
+			}
+			ln = in.readLine();
+		}
 		return data;
 	}
 
 	public ArrayList<String> readAsArrayList(int col, Pattern p) throws IOException {
 		ArrayList<String> data = new ArrayList<String>();
-		Collections.addAll(data, readAsArray(col, p));
+        
+		String[] elems = readLineElems(p);
+		while (elems != null) {
+			if (elems.length > col) {
+				data.add(elems[col]);
+			}
+			elems = readLineElems(p);
+		}
 		return data;
 	}
 

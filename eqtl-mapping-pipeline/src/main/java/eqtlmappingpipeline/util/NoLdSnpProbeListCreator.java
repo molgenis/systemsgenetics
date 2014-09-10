@@ -31,7 +31,6 @@ import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
-import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
 import org.molgenis.genotype.variantFilter.VariantFilterSeq;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
@@ -60,7 +59,7 @@ public class NoLdSnpProbeListCreator {
         Option FileOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location and name of the output file.").withLongOpt("OutputFile").create("o");
         Option RefferenceTypeIn = OptionBuilder.withArgName("type").hasArg().withDescription("Type of refference data.").withLongOpt("RefferenceType").create("rt");
         Option RefferenceIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data").withLongOpt("RefferenceLocation").create("ri");
-        Option BedIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the input data").withLongOpt("input").create("i");
+        Option InFile = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the input data").withLongOpt("input").create("i");
         Option WindowSize = OptionBuilder.withArgName("int").hasArg().withDescription("Half window size (default 250000).").withLongOpt("Window_Size").create("ws");
         Option ProbeMargin = OptionBuilder.withArgName("int").hasArg().withDescription("Additional probe margin (default 0).").withLongOpt("Probe_margin").create("pm");
         Option MaxDprime = OptionBuilder.withArgName("int").hasArg().withDescription("Cut-off point for max d'(default 0.2).").withLongOpt("max_dPrime").create("dp");
@@ -69,13 +68,13 @@ public class NoLdSnpProbeListCreator {
         Option callRate = OptionBuilder.withArgName("int").hasArg().withDescription("Call-rate cut-off.").withLongOpt("min_callRate").create("vc");
         Option mafFilter = OptionBuilder.withArgName("int").hasArg().withDescription("Minor allel cut-off filter.").withLongOpt("min_maf").create("mf");
         Option chrFilter = OptionBuilder.withArgName("string").hasArg().withDescription("Filter input data on chromosome").withLongOpt("chrFilter").create("ch");
-        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(BedIn).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter).addOption(chrFilter);
+        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(InFile).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter).addOption(chrFilter);
 
         File probeFile = null;
         String genotypePath = null;
         String genotypeType = null;
         int windowHalfSize = 250000;
-        int probeMargin = 0;
+        int probeMargin = 1;
         float cRate = 0.0f;
         float maf = 0.0f;
         double HWE = 0.0d;
@@ -184,30 +183,45 @@ public class NoLdSnpProbeListCreator {
             VariantFilterSeq seqFilter = new VariantFilterSeq(chrF);
             varFilter.add(seqFilter);
         }
-
         RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 10000, varFilter, sf);
-
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(probeFile), "UTF-8"));
         final BufferedWriter snpProbeToTestWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "UTF-8"));
-
+        
         int rSquareExclusions = 0;
         int dPrimeExclusions = 0;
         int possibleCombinations = 0;
         int locatedInProbe = 0;
         String line;
         String[] elements;
+        
         while ((line = reader.readLine()) != null) {
             elements = StringUtils.splitPreserveAllTokens(line, '\t');
 
-            if (elements.length < 4) {
-                throw new Exception();
+            if ((probeFile.getName().endsWith(".bed") && elements.length < 4)||(probeFile.getName().endsWith(".txt") && elements.length < 6)) {
+                throw new Exception("Incorrect file format.");
             }
-
-            String chr = elements[0].replace("chr", "");
-            int probeStartPos = Integer.parseInt(elements[1]);
-            int probeStopPos = Integer.parseInt(elements[2]);
+            
+            String chr;
+            int probeStartPos;
+            int probeStopPos;
+            String probeName;
+            
+            if(probeFile.getName().endsWith(".bed")){
+                chr = elements[0].replace("chr", "");
+                probeStartPos = Integer.parseInt(elements[1]);
+                probeStopPos = Integer.parseInt(elements[2]);
+                probeName = elements[3];
+                
+            } else if(probeFile.getName().endsWith(".txt")){
+                chr = elements[3];
+                probeStartPos = Integer.parseInt(elements[4]);
+                probeStopPos = Integer.parseInt(elements[5]);
+                probeName = elements[2];
+            } else {
+                throw new Exception("Incorrect file format.");
+            }
+            
             int probeCenter = probeStartPos + (int) (Math.floor((probeStopPos - probeStartPos) / 2.0d));
-            String probeName = elements[3];
 
             int windowsStart = probeCenter - windowHalfSize;
             windowsStart = windowsStart < 0 ? 0 : windowsStart;
