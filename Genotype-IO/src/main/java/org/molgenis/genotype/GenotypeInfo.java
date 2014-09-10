@@ -252,7 +252,7 @@ public class GenotypeInfo {
 			
 			BufferedWriter variantInfoWriter = new BufferedWriter(new FileWriter(variantInfoFile));
 			
-			variantInfoWriter.append("ID\tCHR\tPOS\tAlleles\tMA\tMAF\tCALL\tHWE\tGenotype_Counts\n");
+			variantInfoWriter.append("ID\tCHR\tPOS\tAlleles\tMA\tMAF\tCALL\tHWE\tMACH_R2\tGenotype_Counts\n");
 			
 			int i = 0;
 			for(GeneticVariant variant : inputData){
@@ -278,6 +278,8 @@ public class GenotypeInfo {
 				variantInfoWriter.append(String.valueOf(variant.getCallRate()));
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(String.valueOf(variant.getHwePvalue()));
+				variantInfoWriter.append('\t');
+				variantInfoWriter.append(String.valueOf(variant.getMachR2()));
 				variantInfoWriter.append('\t');
 				
 				ArrayList<GenotypeCountCalculator.GenotypeCount> genotypeCounts = GenotypeCountCalculator.countGenotypes(variant);
