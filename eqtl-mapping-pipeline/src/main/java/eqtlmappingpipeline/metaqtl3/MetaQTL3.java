@@ -103,7 +103,7 @@ public class MetaQTL3 {
             }
 
             m_settings = new Settings();
-            
+
             TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
 
             s.name = "Dataset";
@@ -152,15 +152,15 @@ public class MetaQTL3 {
             m_settings.outputReportsDir = out;
             m_settings.createTEXTOutputFiles = textout;
             m_settings.createBinaryOutputFiles = binout;
-            if (maxNrResults != null && maxNrResults > 0) {   
+            if (maxNrResults != null && maxNrResults > 0) {
                 m_settings.maxNrMostSignificantEQTLs = maxNrResults;
-                
+
             }
 
-            m_settings.createDotPlot =  !skipdotplot;
-            m_settings.createQQPlot =  !skipqqplot;
-            
-            if(rseed!=null){
+            m_settings.createDotPlot = !skipdotplot;
+            m_settings.createQQPlot = !skipqqplot;
+
+            if (rseed != null) {
                 m_settings.rSeed = rseed;
                 m_settings.randomNumberGenerator = new Random(m_settings.rSeed);
             }
@@ -783,7 +783,7 @@ public class MetaQTL3 {
                 for (int d = 0; d < m_gg.length; d++) {
 //                    int[] indWGAOriginal = m_gg[d].getExpressionToGenotypeIdArray();
                     m_gg[d].permuteSampleLables(m_settings.randomNumberGenerator);
-                    if(m_settings.permuteCovariates){
+                    if (m_settings.permuteCovariates) {
                         m_gg[d].permuteCovariates(m_settings.randomNumberGenerator);
                     }
 
@@ -922,7 +922,7 @@ public class MetaQTL3 {
     }
 
     protected long determineSNPProbeCombinations() throws IOException {
-
+        m_settings.maxNrMostSignificantEQTLs = initialMaxNrMostSignificantEQTLs;
         String loc = m_settings.outputReportsDir + "excludedSNPsBySNPProbeCombinationFilter.txt.gz";
         TextFile excludedSNPs = new TextFile(loc, TextFile.W);
         long maxNrTestsToPerform = 0;
@@ -1127,8 +1127,8 @@ public class MetaQTL3 {
 
         System.out.println("The maximum number of SNPs to test: " + m_workPackages.length);
         System.out.println("The maximum number of SNP-Probe combinations: " + maxNrTestsToPerform);
-        
-        if (m_settings.maxNrMostSignificantEQTLs != maxNrTestsToPerform) {
+
+        if (m_settings.maxNrMostSignificantEQTLs > maxNrTestsToPerform) {
             m_settings.maxNrMostSignificantEQTLs = (int) maxNrTestsToPerform;
         }
 
@@ -1167,9 +1167,9 @@ public class MetaQTL3 {
         } else if (!m_settings.cisAnalysis && m_settings.transAnalysis) {
             System.out.println("- trans analysis");
         }
-        if(m_settings.metaAnalyseInteractionTerms){
+        if (m_settings.metaAnalyseInteractionTerms) {
             System.out.println("- interaction analysis");
-            if(!m_settings.performParametricAnalysis){
+            if (!m_settings.performParametricAnalysis) {
                 System.out.println("- WARNING: running interaction model on non-parametric data!");
             }
         }
