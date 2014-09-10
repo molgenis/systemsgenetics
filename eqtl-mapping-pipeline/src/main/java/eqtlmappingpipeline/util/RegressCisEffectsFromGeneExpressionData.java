@@ -36,6 +36,7 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
         boolean textout = false;
         boolean binout = false;
         String eqtleffectstoregressout = null;
+        Double maf = 0.05;
 
         Integer nrEQTLsToOutput = null;
 
@@ -84,6 +85,13 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
                 } catch (NumberFormatException e) {
                     System.out.println("Please supply an integer for --perm");
                 }
+            } else if (arg.equals(
+                    "--maf")) {
+                try {
+                    maf = Double.parseDouble(val);
+                } catch (NumberFormatException e) {
+                    System.out.println("Please supply an integer for --perm");
+                }
             } else if (arg.equals("--threads")) {
                 try {
                     threads = Integer.parseInt(val);
@@ -110,7 +118,7 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                this.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, null, false, false, null);
+                this.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, null, false, false, null, maf);
 
                 // now save all the expressiondata to a new file..
                 for (int d = 0; d < m_gg.length; d++) {

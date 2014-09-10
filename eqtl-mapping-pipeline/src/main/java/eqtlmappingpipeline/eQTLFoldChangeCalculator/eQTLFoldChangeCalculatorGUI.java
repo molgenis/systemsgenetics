@@ -32,6 +32,7 @@ public class eQTLFoldChangeCalculatorGUI {
         boolean textout = false;
         boolean binout = false;
         String eqtlfile = null;
+        Double maf = null;
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -71,6 +72,13 @@ public class eQTLFoldChangeCalculatorGUI {
                 snpfile = val;
             } else if (arg.equals("--eqtls")) {
                 eqtlfile = val;
+            } else if (arg.equals(
+                    "--maf")) {
+                try {
+                    maf = Double.parseDouble(val);
+                } catch (NumberFormatException e) {
+                    System.out.println("Please supply an integer for --perm");
+                }
             } else if (arg.equals("--perm")) {
                 try {
                     perm = Integer.parseInt(val);
@@ -96,7 +104,7 @@ public class eQTLFoldChangeCalculatorGUI {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null);
+                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, maf);
                 m.calculateFoldChanges(eqtlfile);
             }
         } catch (Exception e) {
