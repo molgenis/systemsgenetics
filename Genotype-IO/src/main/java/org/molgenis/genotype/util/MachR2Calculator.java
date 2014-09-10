@@ -16,7 +16,10 @@ public class MachR2Calculator {
 	 * @param dosages
 	 * @return 
 	 */
-	public static double calculateMachR2(float[] dosages){
+	public static double calculateMachR2(float[][] probs){
+		
+		//Here we perform the conversion to dosages manually to make sure all probs are used regardless of the calling threshold
+		float[] dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(probs, 0);
 		
 		int nonMissingCount = 0;
 		double dosageSum = 0;
