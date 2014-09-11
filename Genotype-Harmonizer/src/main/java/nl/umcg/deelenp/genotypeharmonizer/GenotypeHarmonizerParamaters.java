@@ -52,6 +52,7 @@ public class GenotypeHarmonizerParamaters {
 	private final double minHwePvalue;
 	private final float minCallRate;
 	private final float minMAF;
+	private final double minMachR2;
 	/**
 	 * The default minimum number of SNPs that must have LD above minimum LD
 	 * before doing alignment based on LD
@@ -219,6 +220,13 @@ public class GenotypeHarmonizerParamaters {
 				.withDescription("The minimum minor allele frequency to include variant from input data")
 				.withLongOpt("mafFilter")
 				.create("mf");
+		OPTIONS.addOption(option);
+		
+		option = OptionBuilder.withArgName("double")
+				.hasArg()
+				.withDescription("The minimum MACH R2 measure to include SNPs")
+				.withLongOpt("machR2Filter")
+				.create("mrf");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("double")
@@ -397,6 +405,12 @@ public class GenotypeHarmonizerParamaters {
 		} catch (NumberFormatException e) {
 			throw new ParseException(new StringBuilder().append("Error parsing --mafFilter \"").append(commandLine.getOptionValue("mf")).append("\" is not a double").toString());
 		}
+		
+		try {
+			minMachR2 = commandLine.hasOption("mrf") ? Double.parseDouble(commandLine.getOptionValue("mrf")) : 0.0d;
+		} catch (NumberFormatException e) {
+			throw new ParseException(new StringBuilder().append("Error parsing --machR2Filter \"").append(commandLine.getOptionValue("mrf")).append("\" is not a double").toString());
+		}
 
 		try {
 			minCallRate = commandLine.hasOption("cf") ? Float.parseFloat(commandLine.getOptionValue("cf")) : 0.0F;
@@ -489,6 +503,11 @@ public class GenotypeHarmonizerParamaters {
 		if (minCallRate > 0) {
 			LOGGER.info("Filter input data on minimum variant call-rate: " + minCallRate);
 			System.out.println(" - Filter input data on minimum variant call-rate: " + minCallRate);
+		}
+		
+		if (minMachR2 > 0) {
+			LOGGER.info("Filter input data on minimum MACH R2 measure: " + minMachR2);
+			System.out.println(" - Filter input data on minimum MACH R2 measure: " + minMachR2);
 		}
 
 		if (seqFilterIn != null) {
@@ -606,5 +625,9 @@ public class GenotypeHarmonizerParamaters {
 
 	public File getSnpLogFile() {
 		return snpLogFile;
+	}
+
+	public double getMinMachR2() {
+		return minMachR2;
 	}
 }

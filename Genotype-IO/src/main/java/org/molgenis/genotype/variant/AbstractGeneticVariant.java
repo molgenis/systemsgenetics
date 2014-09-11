@@ -279,6 +279,6 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
 	
 	@Override
 	public double getMachR2() {
-		return MachR2Calculator.calculateMachR2(this.getSampleDosages());
+		return MachR2Calculator.calculateMachR2(this.getSampleGenotypeProbilities());
 	}
 }
