@@ -504,6 +504,11 @@ public class GenotypeHarmonizerParamaters {
 			LOGGER.info("Filter input data on minimum variant call-rate: " + minCallRate);
 			System.out.println(" - Filter input data on minimum variant call-rate: " + minCallRate);
 		}
+		
+		if (minMachR2 > 0) {
+			LOGGER.info("Filter input data on minimum MACH R2 measure: " + minMachR2);
+			System.out.println(" - Filter input data on minimum MACH R2 measure: " + minMachR2);
+		}
 
 		if (seqFilterIn != null) {
 			LOGGER.info("Filter input data on variant on: " + seqFilterIn);
