@@ -31,6 +31,7 @@ public class NormalizationConsoleGUI {
         boolean forceReplacementOfMissingValues = false;
         boolean forceReplacementOfMissingValues2 = false;
         boolean treatZerosAsNulls = false;
+		boolean forceNormalDistribution = false;
 
         int maxPcaToRemove = 100;
         int stepSizePcaRemoval = 5;
@@ -93,10 +94,16 @@ public class NormalizationConsoleGUI {
                 forceReplacementOfMissingValues2 = true;
             }
             if (arg.equals("--forceMissingValues")) {
+				fullNorm = false;
                 forceMissingValues = true;
             }
             if (arg.equals("--treatZerosAsNulls")) {
+				fullNorm = false;
                 treatZerosAsNulls = true;
+            }
+            if (arg.equals("--forceNormalDist")) {
+                forceNormalDistribution = true;
+				fullNorm = false;
             }
         }
 
@@ -112,11 +119,15 @@ public class NormalizationConsoleGUI {
             System.exit(-1);
         }
         if (runLogTransform && runMTransform) {
-            throw new IllegalArgumentException("Error: cant perform both log and M-value transformation.");
+            throw new IllegalArgumentException("Error: can't perform both log and M-value transformation.");
         }
+		
+		if(runPCAdjustment && forceNormalDistribution){
+			throw new IllegalArgumentException("Error: can't perform both PC removal and force normal distribution.");
+		}
         
         if((forceMissingValues && (forceReplacementOfMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues && (forceMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues2 && (forceReplacementOfMissingValues || forceMissingValues))){
-            throw new IllegalArgumentException("Error: cant perform two forces on missing values.");
+            throw new IllegalArgumentException("Error: can't perform two forces on missing values.");
         }
 
         if(forceMissingValues && !treatZerosAsNulls){
@@ -134,12 +145,12 @@ public class NormalizationConsoleGUI {
                 p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
                         runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, 
-                        forceReplacementOfMissingValues2, treatZerosAsNulls);
+                        forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
             } else {
                 // run full normalization
                 p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         true, true, false, true, true, true, false, false, false,
-                        false);
+                        false, false);
             }
 
             System.out.println("Done.");
@@ -162,6 +173,7 @@ public class NormalizationConsoleGUI {
                 + "--adjustcovariates\t\t\tRun covariate adjustment\n"
                 + "--centerscale\t\t\t\tCenter the mean to 0, linearly scale using standard deviation\n"
                 + "--adjustPCA\t\t\t\tRun PCA adjustment \n"
+				+ "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
                 + "\n"
                 + "Covariate adjustment parameters:\n"
                 + "--cov\t\t\tstring\t\tCovariates to remove\n"

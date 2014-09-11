@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -30,7 +33,7 @@ public class Normalizer {
     //nrPCAsOverSamplesToRemove = 100
     public void normalize(String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates, String outdir,
             boolean runQQNorm, boolean runLog2Transform, boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates, boolean forceMissingValues, boolean forceReplacementOfMissingValues, 
-            boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls) throws IOException {
+            boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls, boolean forceNormalDistribution) throws IOException {
         
         System.out.println("Running normalization.");
         if (outdir != null) {
@@ -90,8 +93,37 @@ public class Normalizer {
             Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
             correctDataForPCs(dataset, outputFileNamePrefix, nrPCAsOverSamplesToRemove, nrIntermediatePCAsOverSamplesToRemoveToOutput, PCAResults.getLeft(), PCAResults.getRight());
         }
+		
+		if(forceNormalDistribution){
+			outputFileNamePrefix = forceNormalDistribution(dataset, outputFileNamePrefix);
+		}
     }
 
+	public String forceNormalDistribution(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException{
+		double[][] rawData = dataset.getRawData();
+		
+		NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
+		
+		for (int p = 0; p < dataset.rowObjects.size(); p++) {
+             
+			double[] rankedValues  = ranking.rank(rawData[p]);
+            
+            for (int s = 0; s < dataset.colObjects.size(); s++) {
+				//Convert the rank to a proportion, with range <0, 1>
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length); 
+				 //Convert the pValue to a Z-Score:
+                rawData[p][s] = cern.jet.stat.Probability.normalInverse(pValue);
+            }
+        }
+		
+		DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
+        fileNamePrefix += ".ForcedNormal";
+        datasetNormalized.save(fileNamePrefix + ".txt.gz");
+        return fileNamePrefix;
+		
+		
+	}
+	
     public String quantileNormalize(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, boolean forceMissingValues, boolean forceReplacementOfMissingValues, boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls) throws IOException {
         double[][] rawData = dataset.getRawData();
         
