@@ -174,6 +174,15 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	public double getHwePvalue();
 	
 	/**
+	 * Calculate the MACH r2 measure
+	 * 
+	 * For formula see: doi:10.1038/nrg2796 S3
+	 * 
+	 * @return 
+	 */
+	public double getMachR2();
+	
+	/**
 	 * [sample][AA,AB,BB]
 	 * 
 	 * @return 

@@ -27,6 +27,7 @@ import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
+import org.molgenis.genotype.variantFilter.VariantFilterMachR2;
 import org.molgenis.genotype.variantFilter.VariantFilterSeq;
 import org.molgenis.genotype.variantFilter.VariantFilterSeqPos;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
@@ -172,7 +173,7 @@ class GenotypeHarmonizer {
 
         VariantCombinedFilter varFilter = null;
 
-        if ((paramaters.getMinCallRate() != 0.0F) || (paramaters.getMinMAF() != 0.0F) || (paramaters.getMinHwePvalue() != 0.0D) || (paramaters.getVariantFilterListFile() != null) || (paramaters.getSeqFilterIn() != null) || (paramaters.getVariantPosFilterListFile() != null)) {
+        if ((paramaters.getMinCallRate() != 0.0F) || (paramaters.getMinMAF() != 0.0F) || (paramaters.getMinHwePvalue() != 0.0D) || (paramaters.getVariantFilterListFile() != null) || (paramaters.getSeqFilterIn() != null) || (paramaters.getVariantPosFilterListFile() != null) || paramaters.getMinMachR2() != 0.0d) {
             varFilter = new VariantCombinedFilter();
             if (paramaters.getVariantFilterListFile() != null) {
                 try {
@@ -232,6 +233,9 @@ class GenotypeHarmonizer {
                 VariantFilterSeq seqFilter = new VariantFilterSeq(paramaters.getSeqFilterIn());
                 varFilter.add(seqFilter);
             }
+			if(paramaters.getMinMachR2() != 0.0d){
+				varFilter.add(new VariantFilterMachR2(paramaters.getMinMachR2()));
+			}
         }
 
         SampleIdIncludeFilter sampleFilter = null;
