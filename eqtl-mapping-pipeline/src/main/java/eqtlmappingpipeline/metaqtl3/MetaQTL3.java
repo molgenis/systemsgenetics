@@ -131,7 +131,7 @@ public class MetaQTL3 {
             m_settings.cisAnalysis = cis;
             m_settings.transAnalysis = trans;
             m_settings.nrPermutationsFDR = perm;
-            if(maf!=null || maf!=0.0d ){
+            if(maf!=null && maf>0.0d ){
                 m_settings.snpQCMAFThreshold = maf;
             }
             
