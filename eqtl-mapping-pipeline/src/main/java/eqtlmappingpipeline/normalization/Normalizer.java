@@ -87,12 +87,14 @@ public class Normalizer {
         if (adjustCovariates && covariatesToRemove != null) {
             outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, orthogonalizecovariates, 1E-10);
         }
-
+        
         if (runPCA) {
             ConcurrentCorrelation c = new ConcurrentCorrelation(2);
             double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
             Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
-            correctDataForPCs(dataset, outputFileNamePrefix, nrPCAsOverSamplesToRemove, nrIntermediatePCAsOverSamplesToRemoveToOutput, PCAResults.getLeft(), PCAResults.getRight());
+            if(nrPCAsOverSamplesToRemove != 0 || nrIntermediatePCAsOverSamplesToRemoveToOutput != 0){
+                correctDataForPCs(dataset, outputFileNamePrefix, nrPCAsOverSamplesToRemove, nrIntermediatePCAsOverSamplesToRemoveToOutput, PCAResults.getLeft(), PCAResults.getRight());
+            }
         }
 		
 		if(forceNormalDistribution){
