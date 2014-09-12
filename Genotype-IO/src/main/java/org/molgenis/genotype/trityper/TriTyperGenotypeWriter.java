@@ -64,6 +64,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 		for(GeneticVariant variant : genotypeData){
 			
 			if(!variant.isSnp()){
+                LOGGER.warn("Skipping variant: " + variant.getPrimaryVariantId() + ", it is not a SNP");
 				continue;
 			}
 			
