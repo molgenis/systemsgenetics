@@ -326,7 +326,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             fdrtype = fdrtype.replaceAll("level", "");
         } catch (Exception e) {
         }
-        if (numPermutations != null) {
+        if (fdrtype != null) {
             if (fdrtype.equals("gene")) {
                 fdrType = FDRMethod.GENELEVEL;
                 createDotPlot = false;
