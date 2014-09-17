@@ -10,6 +10,7 @@ import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import eqtlmappingpipeline.metaqtl3.graphics.QQPlot;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.map.hash.TDoubleIntHashMap;
+import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -669,12 +670,12 @@ public class FDR {
             System.out.println("Determining the FDR using all data");
         }
         
-        HashSet<String> selectionOfSnps = null;
+        THashSet<String> selectionOfSnps = null;
         if (snpselectionlist != null) {
             System.out.println("Reading: "+ snpselectionlist);
             TextFile t = new TextFile(snpselectionlist, TextFile.R);
             
-            selectionOfSnps = new HashSet<String>();
+            selectionOfSnps = new THashSet<String>(100000000, 1.5f);
             for(String s : t){
                 selectionOfSnps.add(s);
             }
@@ -682,12 +683,12 @@ public class FDR {
             t.close();
         }
 
-        HashSet<String> selectionOfSnpProbes = null;
+        THashSet<String> selectionOfSnpProbes = null;
         if (snpprobeselectionlist != null) {
             System.out.println("Reading: "+ snpprobeselectionlist);
             TextFile t = new TextFile(snpprobeselectionlist, TextFile.R);
             
-            selectionOfSnpProbes = new HashSet<String>();
+            selectionOfSnpProbes = new THashSet<String>(100000000, 1.5f);
             for(String s : t){
                 selectionOfSnpProbes.add(s);
             }
