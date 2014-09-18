@@ -234,17 +234,19 @@ public class Main {
             if (in == null || nrEQTLs == null || cutoff == null) {
                 System.out.println("Please specify --in --nrperm and --cutoff and --nreqtls [--skipqqplot]");
             } else {
-                if(snpselectionlist!=null){
+                if(snpselectionlist!=null || snpprobeselectionlist!=null){
                     try {
-                        FDR.calculateFDR2(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true, snpselectionlist, snpprobeselectionlist);
+                        FDR.calculateFDRAdvance(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true, snpselectionlist, snpprobeselectionlist);
                     } catch (IOException e) {
                         e.printStackTrace();
+                        System.exit(1);
                     }
                 } else {
                     try {
                         FDR.calculateFDR(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true);
                     } catch (IOException e) {
                         e.printStackTrace();
+                        System.exit(1);
                     }
                 }
             }

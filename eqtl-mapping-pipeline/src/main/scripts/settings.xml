@@ -20,6 +20,8 @@
 		<multipletesting>
 			<type>fdr</type>
 			<threshold>0.05</threshold>
+            <fdrtype>probe-level</fdrtype>
+            <largeFdrFileOut>false</largeFdrFileOut>
 			<permutations>100</permutations>
 		</multipletesting>
 		

@@ -320,13 +320,13 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         }
 
         try {
-            fdrtype = config.getString("defaults.multipletesting.fdrtype", "full");
+            fdrtype = config.getString("defaults.multipletesting.fdrtype", "all");
             fdrtype = fdrtype.toLowerCase();
             fdrtype = fdrtype.replaceAll("-", "");
             fdrtype = fdrtype.replaceAll("level", "");
         } catch (Exception e) {
         }
-        if (numPermutations != null) {
+        if (fdrtype != null) {
             if (fdrtype.equals("gene")) {
                 fdrType = FDRMethod.GENELEVEL;
                 createDotPlot = false;
