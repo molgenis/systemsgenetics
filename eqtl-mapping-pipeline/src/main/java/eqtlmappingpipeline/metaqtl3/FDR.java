@@ -643,7 +643,7 @@ public class FDR {
             if (fdrType.equals(FDRMethod.FULL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.FULL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
             }
-            
+
         } else {
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
@@ -669,40 +669,44 @@ public class FDR {
         } else if (m == FDRMethod.FULL) {
             System.out.println("Determining the FDR using all data");
         }
-        
+
         THashSet<String> selectionOfSnps = null;
         if (snpselectionlist != null) {
-            System.out.println("Reading: "+ snpselectionlist);
+            System.out.println("Reading: " + snpselectionlist);
             TextFile t = new TextFile(snpselectionlist, TextFile.R);
-            
-            selectionOfSnps = new THashSet<String>(100000000, 1.5f);
-            for(String s : t){
+
+            selectionOfSnps = new THashSet<String>(100000000, 2f);
+            for (String s : t) {
                 selectionOfSnps.add(s);
             }
-            
+
             t.close();
+            System.out.println("Size selection list:"+selectionOfSnps.size());
         }
 
         THashSet<String> selectionOfSnpProbes = null;
         if (snpprobeselectionlist != null) {
-            System.out.println("Reading: "+ snpprobeselectionlist);
+            System.out.println("Reading: " + snpprobeselectionlist);
             TextFile t = new TextFile(snpprobeselectionlist, TextFile.R);
-            
-            selectionOfSnpProbes = new THashSet<String>(100000000, 1.5f);
-            for(String s : t){
+
+            selectionOfSnpProbes = new THashSet<String>(100000000, 2f);
+            for (String s : t) {
                 selectionOfSnpProbes.add(s);
             }
             t.close();
+            System.out.println("Size selection list:"+selectionOfSnpProbes.size());
         }
 
-        TDoubleIntHashMap permutedPvalues = new TDoubleIntHashMap(10000, 0.5f);
+        TDoubleIntHashMap permutedPvalues = new TDoubleIntHashMap(1000000, 2f);
 
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
+        
+        
         System.out.println("Reading permuted files");
 
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
             String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
-            System.out.print(fileString);
+            System.out.println(fileString);
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
 
@@ -766,54 +770,52 @@ public class FDR {
                         }
 
                         // take top effect per gene / probe
-                        if (selectionOfSnpProbes != null || selectionOfSnps != null) {
-                            if(selectionOfSnps != null && selectionOfSnps.contains(data[snpcol]) && selectionOfSnpProbes != null && selectionOfSnpProbes.contains(data[snpcol]+"-"+data[probecol])){
-                                if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                                    if (m != FDRMethod.FULL) {
-                                        visitedEffects.add(fdrId);
-                                    }
-
-                                    double permutedP = Double.parseDouble(data[0]);
-                                    if (permutedPvalues.containsKey(permutedP)) {
-                                        permutedPvalues.increment(permutedP);
-                                    } else {
-                                        permutedPvalues.put(permutedP, 1);
-                                    }
-
-                                    itr++;
+                        if (selectionOfSnpProbes != null && selectionOfSnps != null && selectionOfSnps.contains(data[snpcol]) && selectionOfSnpProbes.contains(data[snpcol] + "-" + data[probecol])) {
+                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                if (m != FDRMethod.FULL) {
+                                    visitedEffects.add(fdrId);
                                 }
-                            } else if(selectionOfSnps != null && selectionOfSnps.contains(data[snpcol]) && selectionOfSnpProbes == null){
-                                if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                                    if (m != FDRMethod.FULL) {
-                                        visitedEffects.add(fdrId);
-                                    }
 
-                                    double permutedP = Double.parseDouble(data[0]);
-                                    if (permutedPvalues.containsKey(permutedP)) {
-                                        permutedPvalues.increment(permutedP);
-                                    } else {
-                                        permutedPvalues.put(permutedP, 1);
-                                    }
-
-                                    itr++;
+                                double permutedP = Double.parseDouble(data[0]);
+                                if (permutedPvalues.containsKey(permutedP)) {
+                                    permutedPvalues.increment(permutedP);
+                                } else {
+                                    permutedPvalues.put(permutedP, 1);
                                 }
-                            } else if(selectionOfSnpProbes != null && selectionOfSnpProbes.contains(data[snpcol]+"-"+data[probecol]) && selectionOfSnps != null){
-                                if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                                    if (m != FDRMethod.FULL) {
-                                        visitedEffects.add(fdrId);
-                                    }
 
-                                    double permutedP = Double.parseDouble(data[0]);
-                                    if (permutedPvalues.containsKey(permutedP)) {
-                                        permutedPvalues.increment(permutedP);
-                                    } else {
-                                        permutedPvalues.put(permutedP, 1);
-                                    }
-
-                                    itr++;
-                                }
+                                itr++;
                             }
-                        } else {
+                        } else if (selectionOfSnps != null && selectionOfSnps.contains(data[snpcol])) {
+                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                if (m != FDRMethod.FULL) {
+                                    visitedEffects.add(fdrId);
+                                }
+
+                                double permutedP = Double.parseDouble(data[0]);
+                                if (permutedPvalues.containsKey(permutedP)) {
+                                    permutedPvalues.increment(permutedP);
+                                } else {
+                                    permutedPvalues.put(permutedP, 1);
+                                }
+
+                                itr++;
+                            }
+                        } else if (selectionOfSnpProbes != null && selectionOfSnpProbes.contains(data[snpcol] + "-" + data[probecol])) {
+                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                if (m != FDRMethod.FULL) {
+                                    visitedEffects.add(fdrId);
+                                }
+
+                                double permutedP = Double.parseDouble(data[0]);
+                                if (permutedPvalues.containsKey(permutedP)) {
+                                    permutedPvalues.increment(permutedP);
+                                } else {
+                                    permutedPvalues.put(permutedP, 1);
+                                }
+
+                                itr++;
+                            }
+                        } else if(selectionOfSnpProbes == null && selectionOfSnps == null) {
                             if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
                                 if (m != FDRMethod.FULL) {
                                     visitedEffects.add(fdrId);
@@ -834,7 +836,7 @@ public class FDR {
 
                 }
             }
-            System.out.println("\tUsed from permutation "+permutationRound+" : "+itr + " rows.");
+            System.out.println("\tUsed from permutation " + (permutationRound+1) + " : " + itr + " rows.");
             gz.close();
 
         }
@@ -933,20 +935,20 @@ public class FDR {
 
                 String fdrId = null;
                 String[] data = Strings.tab.split(str);
-                
-                if(selectionOfSnps !=null && !selectionOfSnps.contains(data[eQTLTextFile.SNP])){
+
+                if (selectionOfSnps != null && !selectionOfSnps.contains(data[eQTLTextFile.SNP])) {
                     continue;
                 }
-                if(selectionOfSnpProbes != null && !selectionOfSnpProbes.contains(data[eQTLTextFile.SNP]+"-"+data[eQTLTextFile.PROBE])){
+                if (selectionOfSnpProbes != null && !selectionOfSnpProbes.contains(data[eQTLTextFile.SNP] + "-" + data[eQTLTextFile.PROBE])) {
                     continue;
                 }
-                
+
                 if (m == FDRMethod.GENELEVEL) {
                     fdrId = data[eQTLTextFile.HUGO];
                 } else if (m == FDRMethod.PROBELEVEL) {
                     fdrId = data[4];
                 }
-                
+
                 double eQtlPvalue = Double.parseDouble(data[0]);
 
                 if (itr > 0 && lastEqtlPvalue > eQtlPvalue) {
@@ -1084,8 +1086,8 @@ public class FDR {
         outputWriterEProbes.close();
         outputWriterESNPs.close();
         outputWriterSignificant.close();
-        
-        if(!foundHigherFDRThanDesiredCutOff){
+
+        if (!foundHigherFDRThanDesiredCutOff) {
             System.out.println("Warning: Not enough results stored. Need more results for desired FDR threshold.");
         }
         //System.out.println("");

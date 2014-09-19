@@ -71,6 +71,8 @@ public class Main {
         String snpselectionlist = null;
         String snpprobeselectionlist = null;
         boolean createQQPlot = true;
+        boolean createLargeFdrFile = true;
+        FDR.FDRMethod FdrMethod = FDR.FDRMethod.ALL;
         
         Integer stepSize = 5;
         Integer max = 5;
@@ -133,6 +135,14 @@ public class Main {
                 replacetextwith = val;
             } else if (args[i].equals("--skipqqplot")) {
                 createQQPlot = false;
+            } else if (args[i].equals("--skipLargeFDRFile")) {
+                createLargeFdrFile =false;
+            } else if (args[i].equals("--FdrMethod")) {
+                if(val.toLowerCase().equals("probe")){
+                    FdrMethod = FDR.FDRMethod.PROBELEVEL;
+                } else if(val.toLowerCase().equals("gene")){
+                    FdrMethod = FDR.FDRMethod.GENELEVEL;
+                }
             } else if (args[i].equals("--snpselectionlist")) {
                 snpselectionlist = val;
             } else if (args[i].equals("--snpprobeselectionlist")) {
@@ -236,7 +246,7 @@ public class Main {
             } else {
                 if(snpselectionlist!=null || snpprobeselectionlist!=null){
                     try {
-                        FDR.calculateFDRAdvance(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FDR.FDRMethod.ALL, true, snpselectionlist, snpprobeselectionlist);
+                        FDR.calculateFDRAdvance(in, nrPerm, nrEQTLs, cutoff, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, snpprobeselectionlist);
                     } catch (IOException e) {
                         e.printStackTrace();
                         System.exit(1);
