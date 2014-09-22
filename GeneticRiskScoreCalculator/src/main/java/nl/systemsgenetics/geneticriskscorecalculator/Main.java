@@ -234,20 +234,10 @@ public class Main {
                 for (Alleles allele : alleles) {
                     if (index2 < 20) {
                         System.out.print(allele.toString() + " ");  // only alleles
-                        //System.out.println(allele.getAllelesAsString().get(0));
-                        //System.out.println(allele.getAllelesAsString().get(1));
-                        //System.out.print(allele.isAtOrGcSnp() + " ");
-                        //System.out.println("-------------------------------------");
                     }
-
                     if (snpVariantByPos.getVariantAlleles().isAtOrGcSnp()==false && ( riskallele.get(index).equals(allele.getAllelesAsString().get(0)) || riskallele.get(index).equals(allele.getAllelesAsString().get(1))) ) {
                         score.set(index2, score.get(index2) + 1);
-
                     }
-
-
-                    
-                    
                     index2++;
                 }
                 System.out.println();
@@ -264,6 +254,69 @@ public class Main {
             System.out.println(inputGenotypes.getSampleNames()[index] + " " + score.get(index));
 
         }
+
+
+        GwasCatalogLoader gwasCatalogLoader = new GwasCatalogLoader();
+        List<GeneticRiskScoreCalculator> geneticRiskScoreCalculators = gwasCatalogLoader.getGeneticRiskScoreCalculators(configuration.getRisksnpsFile().toString());
+
+		List<String> phenotypes = new ArrayList<String>();
+		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
+			phenotypes.add(calculator.getPhenotype());
+		}
+		
+		RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
+		
+		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
+			TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes);
+			for(String sample : inputGenotypes.getSampleNames()){
+				riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));
+			}
+		}
+		try {
+			riskScoreMatrix.save(outputFile);
+		} catch (IOException ex) {
+			System.err.println("Could not save output file to: " + outputFile.getAbsolutePath());
+			LOGGER.fatal("Could not save output file to: " + outputFile.getAbsolutePath(), ex);
+			System.exit(1);
+			return;
+		}
+        System.out.println("Risk score calculation complete");
+        LOGGER.info("Risk score calculation complete");
+
+    }
+// get sample dosages
+    // 0,1,2   ....    1.5   1.4   1.33434   
+    // imputation not sure .... in between aa ab bb
+    
+    
+    private static void startLogging(File logFile, boolean debugMode) {
+
+        try {
+            FileAppender logAppender = new FileAppender(new SimpleLayout(), logFile.getCanonicalPath(), false);
+            Logger.getRootLogger().removeAllAppenders();
+            Logger.getRootLogger().addAppender(logAppender);
+            if (debugMode) {
+                LOGGER.setLevel(Level.DEBUG);
+            } else {
+                LOGGER.setLevel(Level.INFO);
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to create logger: " + e.getMessage());
+            System.exit(1);
+        }
+
+        LOGGER.info(
+                "\n" + HEADER);
+        LOGGER.info("Version: " + VERSION);
+        LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+        LOGGER.info("Log level: " + LOGGER.getLevel());
+
+        System.out.println("Started logging");
+        System.out.println();
+    }
+
+}
+
 
 //        index = 0;
 //        for (float mydosage : dosages) {
@@ -303,63 +356,3 @@ public class Main {
 //        }
         //System.out.println("Total amount of samples: " + inputGenotypes.getSampleNames().length);
         //System.out.println("Total amount of alleles: " + alleles.size());
-        GwasCatalogLoader gwasCatalogLoader = new GwasCatalogLoader();
-        List<GeneticRiskScoreCalculator> geneticRiskScoreCalculators = gwasCatalogLoader.getGeneticRiskScoreCalculators();
-
-//		List<String> phenotypes = new ArrayList<String>();
-//		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
-//			phenotypes.add(calculator.getPhenotype());
-//		}
-//		
-//		RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
-//		
-//		for(GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators){
-//			TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes);
-//			for(String sample : inputGenotypes.getSampleNames()){
-//				riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));
-//			}
-//		}
-//		try {
-//			riskScoreMatrix.save(outputFile);
-//		} catch (IOException ex) {
-//			System.err.println("Could not save output file to: " + outputFile.getAbsolutePath());
-//			LOGGER.fatal("Could not save output file to: " + outputFile.getAbsolutePath(), ex);
-//			System.exit(1);
-//			return;
-//		}
-        System.out.println("Risk score calculation complete");
-        LOGGER.info("Risk score calculation complete");
-
-    }
-// get sample dosages
-    // 0,1,2   ....    1.5   1.4   1.33434   
-    // imputation not sure .... in between aa ab bb
-    
-    
-    private static void startLogging(File logFile, boolean debugMode) {
-
-        try {
-            FileAppender logAppender = new FileAppender(new SimpleLayout(), logFile.getCanonicalPath(), false);
-            Logger.getRootLogger().removeAllAppenders();
-            Logger.getRootLogger().addAppender(logAppender);
-            if (debugMode) {
-                LOGGER.setLevel(Level.DEBUG);
-            } else {
-                LOGGER.setLevel(Level.INFO);
-            }
-        } catch (IOException e) {
-            System.err.println("Failed to create logger: " + e.getMessage());
-            System.exit(1);
-        }
-
-        LOGGER.info(
-                "\n" + HEADER);
-        LOGGER.info("Version: " + VERSION);
-        LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
-        LOGGER.info("Log level: " + LOGGER.getLevel());
-
-        System.out.println("Started logging");
-        System.out.println();
-    }
-
-}
