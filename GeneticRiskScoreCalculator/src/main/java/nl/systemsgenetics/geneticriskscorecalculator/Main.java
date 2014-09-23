@@ -170,10 +170,10 @@ public class Main {
             System.exit(1);
             return;
         }
-        //catch (NumberFormatException ex) {
-//             System.err.println("Check your number format.");           
-//            
-//        }
+        catch (NumberFormatException ex) {
+             System.err.println("Check your number format.");           
+            
+        }
 
         for (index = 0; index < 5; index++) {
             System.out.println("Risk snps:");
