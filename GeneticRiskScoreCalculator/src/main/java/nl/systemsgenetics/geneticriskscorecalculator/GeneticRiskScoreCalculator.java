@@ -14,5 +14,6 @@ public interface GeneticRiskScoreCalculator {
 	TObjectDoubleHashMap<String> calculateRiskScores(RandomAccessGenotypeData genotypeData, PhenotypeData phenotypeData);
 	
 	String getPhenotype();
+        
 	
 }
