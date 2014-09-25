@@ -400,19 +400,19 @@ public class UtilConsoleGUI {
      
         System.out.println("--getsnpsinregion\t\tGet SNPs in a certain region: chr positionA positionB: Y:12000-13000 would get all SNPs on chr Y between 12000 and 13000 bp\n"
                 + "--getsnpsinproberegion\t\tGet SNPs in a certain set of probes (specify with --probes)\n"
-                + "--fdr\t\tCalculated FDR.\n"
-                + "--getmaf\t\t\tgets maf for snp\n"
-                + "--merge\t\t\t\tmerges two datasets\n"
+                + "--fdr\t\t\t\tCalculated FDR.\n"
+                + "--getmaf\t\t\tGets maf for snp\n"
+                + "--merge\t\t\t\tMerges two datasets\n"
                 + "--snpstats\t\t\tGets HWE, MAF, and CR for all SNPs\n"
                 + "--findproxy\t\t\tSearches for a proxy given a list of SNPs\n"
                 + "--dotplot\t\t\tCreates dotplot from eQTL result file\n"
                 + "--regress\t\t\tRemoves eQTL effects from gene expression data.\n"
                 + "--regressknown\t\t\tRemoves known cis-eQTL effects from gene expression data.\n"
                 + "--sortfile\t\t\tSort eQTL files.\n"
-                + "--meta\t\t\tFixed effect meta analysis.\n"
-                + "--nonGeneticPCaCorrection\t\t\tCorrect expression data for non-genetic components.\n"
-                + "--getSNPProbeCombinatios\t\t\tCreate list of valid SNP-Probe combinations to test.\n"
-                + "--convertbinarymatrix\t\t\tConverts binary matrix to text\n");
+                + "--meta\t\t\t\tFixed effect meta analysis.\n"
+                + "--nonGeneticPCaCorrection\tCorrect expression data for non-genetic components.\n"
+                + "--getSNPProbeCombinatios\tCreate list of valid SNP-Probe combinations to test.\n"
+                + "--convertbinarymatrix\t\tConverts binary matrix to text\n");
         System.out.println("");
 
 //        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);
