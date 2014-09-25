@@ -60,6 +60,11 @@ public class EQTLMappingPipelineConsole {
                 eqtlmappingpipeline.binarymeta.Main.main(args);
                 System.exit(0);
             }
+            
+            if(arg.equals("--utilmode")){
+                UtilConsoleGUI g = new UtilConsoleGUI(args);
+                System.exit(0);
+            }
 
             if (arg.equals("--mode")) {
                 mode = val;

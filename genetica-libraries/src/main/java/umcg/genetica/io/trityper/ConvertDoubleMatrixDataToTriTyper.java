@@ -26,9 +26,9 @@ public class ConvertDoubleMatrixDataToTriTyper {
     
     public static void main(String[] args) throws IOException {
         
-        String mappingFile = "D:\\UMCG\\Data\\LLD_VOC\\AnnotationCompounds.txt";
-        String dataMatrix = "D:\\UMCG\\Data\\LLD_VOC\\VOCDataCombined_s2.txt";
-        String outputFolder = "D:\\UMCG\\Data\\LLD_VOC\\TT\\";
+        String mappingFile = args[0];
+        String dataMatrix = args[1];
+        String outputFolder = args[2];
         
         HashSet<String> hashCpGSites = new HashSet<String>();
         try {
