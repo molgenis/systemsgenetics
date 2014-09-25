@@ -5,7 +5,6 @@
 package eqtlmappingpipeline.util;
 
 import eqtlmappingpipeline.binarymeta.Main;
-import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
@@ -20,7 +19,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.Gpio;
-import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
@@ -32,7 +30,7 @@ public class UtilConsoleGUI {
 
     public static enum MODE {
 
-        GETSNPSFROMREGION, GETPROBESFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
+        GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
         SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN
     };
     MODE run;
@@ -124,6 +122,10 @@ public class UtilConsoleGUI {
                 run = MODE.META;
             } else if (arg.equals("--regressknown")) {
                 run = MODE.REGRESSKNOWN;
+            } else if (arg.equals("--getSNPProbeCombinatios")) {
+                run = MODE.GETSNPPROBECOMBINATIONS;
+            } else if (arg.equals("--nonGeneticPCaCorrection")) {
+                run = MODE.NONGENETICPCACORRECTION;
             } else if (arg.equals("--settings")) {
                 settingsfile = val;
             } else if (arg.equals("--replacetext")) {
@@ -183,6 +185,8 @@ public class UtilConsoleGUI {
                 stepSize = Integer.parseInt(val);
             } else if (args[i].equals("--maxnrpcaremoved")) {
                 max = Integer.parseInt(val);
+            } else if (args[i].equals("--QTLS")) {
+                fileQtlsToRegressOut = val;
             }
 
         }
@@ -393,28 +397,34 @@ public class UtilConsoleGUI {
 
         System.out.println("");
         System.out.print("Available Utilities:\n" + ConsoleGUIElems.LINE);
-
+     
         System.out.println("--getsnpsinregion\t\tGet SNPs in a certain region: chr positionA positionB: Y:12000-13000 would get all SNPs on chr Y between 12000 and 13000 bp\n"
                 + "--getsnpsinproberegion\t\tGet SNPs in a certain set of probes (specify with --probes)\n"
+                + "--fdr\t\tCalculated FDR.\n"
                 + "--getmaf\t\t\tgets maf for snp\n"
                 + "--merge\t\t\t\tmerges two datasets\n"
                 + "--snpstats\t\t\tGets HWE, MAF, and CR for all SNPs\n"
                 + "--findproxy\t\t\tSearches for a proxy given a list of SNPs\n"
                 + "--dotplot\t\t\tCreates dotplot from eQTL result file\n"
                 + "--regress\t\t\tRemoves eQTL effects from gene expression data.\n"
+                + "--regressknown\t\t\tRemoves known cis-eQTL effects from gene expression data.\n"
+                + "--sortfile\t\t\tSort eQTL files.\n"
+                + "--meta\t\t\tFixed effect meta analysis.\n"
+                + "--nonGeneticPCaCorrection\t\t\tCorrect expression data for non-genetic components.\n"
+                + "--getSNPProbeCombinatios\t\t\tCreate list of valid SNP-Probe combinations to test.\n"
                 + "--convertbinarymatrix\t\t\tConverts binary matrix to text\n");
         System.out.println("");
 
-        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);
-        System.out.println("--in\t\t\tdir\t\tLocation of the genotype data\n"
-                + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
-                + "--inexp\t\t\tstring\t\tLocation of expression data\n"
-                + "--inexpplatform\t\tstring\t\tGene expression platform\n"
-                + "--inexpannot\t\tstring\t\tLocation of annotation file for gene expression data\n"
-                + "--gte\t\t\tstring\t\tLocation of genotype to expression coupling file\n"
-                + "--snps\t\t\tstring\t\tLocation of snp file\n"
-                + "--probes\t\tstring\t\tLocation of probe file\n");
-
-        System.out.println("");
+//        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);
+//        System.out.println("--in\t\t\tdir\t\tLocation of the genotype data\n"
+//                + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
+//                + "--inexp\t\t\tstring\t\tLocation of expression data\n"
+//                + "--inexpplatform\t\tstring\t\tGene expression platform\n"
+//                + "--inexpannot\t\tstring\t\tLocation of annotation file for gene expression data\n"
+//                + "--gte\t\t\tstring\t\tLocation of genotype to expression coupling file\n"
+//                + "--snps\t\t\tstring\t\tLocation of snp file\n"
+//                + "--probes\t\tstring\t\tLocation of probe file\n");
+//
+//        System.out.println("");
     }
 }
