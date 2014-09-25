@@ -4,11 +4,23 @@
  */
 package eqtlmappingpipeline.util;
 
+import eqtlmappingpipeline.binarymeta.Main;
+import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
+import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
 import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import umcg.genetica.console.ConsoleGUIElems;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
@@ -20,7 +32,8 @@ public class UtilConsoleGUI {
 
     public static enum MODE {
 
-        GETSNPSFROMREGION, GETPROBESFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META, SORTFILE, CONVERTBINARYMATRIX
+        GETSNPSFROMREGION, GETPROBESFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
+        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN
     };
     MODE run;
 
@@ -44,7 +57,13 @@ public class UtilConsoleGUI {
         Integer threads = null;
         String probefile = null;
         String region = "";
-
+        
+        String annot = null;
+        String snpselectionlist = null;
+        Integer stepSize = 5;
+        Integer max = 5;
+        String fileQtlsToRegressOut = null;
+        
         Double threshold = null;
         Integer nreqtls = null;
 
@@ -57,12 +76,11 @@ public class UtilConsoleGUI {
         Integer minnrdatasets = null;
         Integer minnrsamples = null;
 
+        String snpprobeselectionlist = null;
         boolean createQQPlot = true;
-        boolean fullFdrOutput = true;
-        
-        boolean geneLevelFDR = false;
-        boolean probeLevelFDR = false;
-        boolean fullFDR = false;
+        boolean createLargeFdrFile = true;
+
+        FDRMethod FdrMethod = FDRMethod.ALL;
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -72,27 +90,7 @@ public class UtilConsoleGUI {
                 val = args[i + 1];
             }
 
-            if (arg.equals("--settings")) {
-                settingsfile = val;
-            } else if (arg.equals("--replacetext")) {
-                settingstexttoreplace = val;
-            } else if (arg.equals("--replacetextwith")) {
-                settingstexttoreplacewith = val;
-            } else if (arg.equals("--in")) {
-                in = val;
-            } else if (arg.equals("--in2")) {
-                in2 = val;
-            } else if (arg.equals("--out")) {
-                out = val;
-            } else if (arg.equals("--inexp")) {
-                inexp = val;
-            } else if (arg.equals("--inexpplatform")) {
-                inexpplatform = val;
-            } else if (arg.equals("--inexpannot")) {
-                inexpannot = val;
-            } else if (arg.equals("--gte")) {
-                gte = val;
-            } else if (arg.equals("--convertbinarymatrix")) {
+            if (arg.equals("--convertbinarymatrix")) {
                 region = val;
                 run = MODE.CONVERTBINARYMATRIX;
             } else if (arg.equals("--getsnpsinregion")) {
@@ -124,6 +122,37 @@ public class UtilConsoleGUI {
                 run = MODE.GETSNPSTATS;
             } else if (arg.equals("--meta")) {
                 run = MODE.META;
+            } else if (arg.equals("--regressknown")) {
+                run = MODE.REGRESSKNOWN;
+            } else if (arg.equals("--settings")) {
+                settingsfile = val;
+            } else if (arg.equals("--replacetext")) {
+                settingstexttoreplace = val;
+            } else if (arg.equals("--replacetextwith")) {
+                settingstexttoreplacewith = val;
+            } else if (arg.equals("--in")) {
+                in = val;
+            } else if (arg.equals("--in2")) {
+                in2 = val;
+            } else if (arg.equals("--out")) {
+                out = val;
+            } else if (arg.equals("--inexp")) {
+                inexp = val;
+            } else if (arg.equals("--inexpplatform")) {
+                inexpplatform = val;
+            } else if (arg.equals("--inexpannot")) {
+                inexpannot = val;
+            } else if (arg.equals("--gte")) {
+                gte = val;
+            } else if (args[i].equals("--annot")) {
+                annot = val;
+            } else if (args[i].equals("--FdrMethod")) {
+                val = val.toLowerCase();
+                if(val.equals("probe")){
+                    FdrMethod = FDRMethod.PROBELEVEL;
+                } else if(val.equals("gene")){
+                    FdrMethod = FDRMethod.GENELEVEL;
+                }
             } else if (arg.equals("--snps")) {
                 snpfile = val;
             } else if (arg.equals("--probes")) {
@@ -144,16 +173,18 @@ public class UtilConsoleGUI {
                 dist = Integer.parseInt(val);
             } else if (arg.equals("--skipqqplot")) {
                 createQQPlot = false;
-            } else if (arg.equals("--skipFullFdr")) {
-                fullFdrOutput = false;
-            } else if (arg.equals("--fdrProbeLevel")) {
-                fullFdrOutput = false;
-            } else if (arg.equals("--fdrGeneLevel")) {
-                fullFdrOutput = false;
-            } else if (arg.equals("--fdrFull")) {
-                fullFdrOutput = false;
+            } else if (arg.equals("--skipLargeFDRFile")) {
+                createLargeFdrFile = false;
+            } else if (args[i].equals("--snpselectionlist")) {
+                snpselectionlist = val;
+            } else if (args[i].equals("--snpprobeselectionlist")) {
+                snpprobeselectionlist = val;
+            } else if (args[i].equals("--stepsizepcaremoval")) {
+                stepSize = Integer.parseInt(val);
+            } else if (args[i].equals("--maxnrpcaremoved")) {
+                max = Integer.parseInt(val);
             }
-            
+
         }
         if (run == null) {
             System.err.println("Please specify an util.");
@@ -268,17 +299,19 @@ public class UtilConsoleGUI {
                             System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
                             printUsage();
                         } else {
-                            if(!probeLevelFDR && !geneLevelFDR && !fullFDR){
-                                FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL, fullFdrOutput);
-                            } else {
-                                if(probeLevelFDR){
-                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.PROBELEVEL, fullFdrOutput);
+                            if (snpselectionlist != null || snpprobeselectionlist != null) {
+                                try {
+                                    FDR.calculateFDRAdvance(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, snpprobeselectionlist);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    System.exit(1);
                                 }
-                                if(geneLevelFDR){
-                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.GENELEVEL, fullFdrOutput);
-                                } 
-                                if(fullFDR){
-                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.FULL, fullFdrOutput);
+                            } else {
+                                try {
+                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL, createLargeFdrFile);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    System.exit(1);
                                 }
                             }
                         }
@@ -302,16 +335,56 @@ public class UtilConsoleGUI {
                             d.plot(in);
                         }
                         break;
+                    case GETSNPPROBECOMBINATIONS:
 
+                        try {
+                            NoLdSnpProbeListCreator.main(Arrays.copyOfRange(args, 2, args.length));
+                        } catch (UnsupportedEncodingException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (FileNotFoundException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (Exception ex) {
+                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+
+                        break;
+                    case NONGENETICPCACORRECTION:
+
+
+                        if (in == null || out == null || inexp == null || gte == null) {
+                            System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --ing and --nreqtls");
+                        } else {
+                            try {
+                                PCAOptimum p = new PCAOptimum();
+//            public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
+
+                                p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
+                                File file = new File(inexp);
+
+                                p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
+                            } catch (IOException ex) {
+                                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            } catch (Exception ex) {
+                                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+
+                        }
+                        break;
+                    case REGRESSKNOWN:
+                        if (!Gpio.exists(fileQtlsToRegressOut)) {
+                            System.err.println("ERROR: you have specified an eQTL file to regress out, but the file was not found " + fileQtlsToRegressOut);
+                            System.exit(0);
+                        }
+                        RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
+                        break;
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(-1);
             }
         }
-
-
     }
 
     private void printUsage() {
