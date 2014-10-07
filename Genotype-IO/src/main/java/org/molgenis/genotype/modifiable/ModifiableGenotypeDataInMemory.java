@@ -186,7 +186,6 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 	public synchronized void swapGeneticVariant(ModifiableGeneticVariant geneticVariant)
 	{
 		GeneticVariant originalGeneticVariant = geneticVariant.getOriginalVariant();
-
 		Alleles variantAlleles = getUpdatedAlleles(geneticVariant);
 		if (variantAlleles == null)
 		{
@@ -210,11 +209,12 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 		if (swappingSampleVariantsProvider == null)
 		{
 			swappingSampleVariantsProvider = new SwappingSampleVariantsProvider(sampleVariantProvider);
-			if (sampleVariantProvider.cacheSize() > 0)
-			{
-				swappingSampleVariantsProvider = new CachedSampleVariantProvider(swappingSampleVariantsProvider,
-						sampleVariantProvider.cacheSize());
-			}
+			//Enabling this will cause bug.
+//			if (sampleVariantProvider.cacheSize() > 0)
+//			{
+//				swappingSampleVariantsProvider = new CachedSampleVariantProvider(swappingSampleVariantsProvider,
+//						sampleVariantProvider.cacheSize());
+//			}
 			swappingSampleVariantProviders.put(sampleVariantProvider, swappingSampleVariantsProvider);
 		}
 

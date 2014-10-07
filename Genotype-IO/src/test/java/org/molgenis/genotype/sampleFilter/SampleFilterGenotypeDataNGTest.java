@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.sampleFilter;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -13,10 +14,16 @@ import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
+import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
+import org.molgenis.genotype.modifiable.ModifiableGenotypeDataInMemory;
+import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GenotypeRecord;
+import org.molgenis.genotype.variantFilter.VariantFilterSeq;
+import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -262,5 +269,126 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 		}
 		
 	}
+	
+	@Test
+	public void testGenFileFilter() throws Exception{
+		
+		RandomAccessGenotypeData genotypeData = new GenGenotypeData(getTest2Gen(), getTest2Sample());
+		RandomAccessGenotypeData genotypeDataFiltered2 = new SampleFilterableGenotypeDataDecorator(genotypeData, new SampleIdIncludeFilter("1042", "1043", "1045"));
+		
+		String[] samples = genotypeDataFiltered2.getSampleNames();
+		assertEquals(samples.length, 3);
+		assertEquals(samples[2], "1045");
+		
+		GeneticVariant testVar = genotypeDataFiltered2.getSnpVariantByPos("1", 1);
+		List<Alleles> alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		Iterator<Alleles> allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+		
+		
+	}
+	
+	@Test
+	public void testGenFileFilterModifiable() throws Exception{
+		
+		RandomAccessGenotypeData genotypeData = new GenGenotypeData(getTest2Gen(), getTest2Sample());
+		RandomAccessGenotypeData genotypeDataFiltered2 = new SampleFilterableGenotypeDataDecorator(genotypeData, new SampleIdIncludeFilter("1042", "1043", "1045"));
+		ModifiableGenotypeData genotypeDataFiltered2Mod = new ModifiableGenotypeDataInMemory(genotypeDataFiltered2);
+		
+		
+		String[] samples = genotypeDataFiltered2Mod.getSampleNames();
+		assertEquals(samples.length, 3);
+		assertEquals(samples[2], "1045");
+		
+		ModifiableGeneticVariant testVar = genotypeDataFiltered2Mod.getModifiableSnpVariantByPos("1", 1);
+		List<Alleles> alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		Iterator<Alleles> allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+		
+		testVar.swap();
+		alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('T', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('T', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+		
+		
+	}
+	
+	@Test
+	public void testGenFileFilter2() throws Exception{
+		
+		RandomAccessGenotypeData genotypeData = new GenGenotypeData(getTest2Gen(), getTest2Sample());
+		
+		
+		RandomAccessGenotypeData genotypeDataFiltered2 = new SampleFilterableGenotypeDataDecorator(genotypeData, new SampleIdIncludeFilter("1042", "1043", "1045"));
+		RandomAccessGenotypeData genotypeDataFiltered3 = new VariantFilterableGenotypeDataDecorator(genotypeDataFiltered2, new VariantFilterSeq("1"));
+		
+		
+		String[] samples = genotypeDataFiltered3.getSampleNames();
+		assertEquals(samples.length, 3);
+		assertEquals(samples[2], "1045");
+		
+		GeneticVariant testVar = genotypeDataFiltered3.getSnpVariantByPos("1", 1);
+		List<Alleles> alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		Iterator<Alleles> allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+	
+	}
+	
+	@Test
+	public void testGenFileFilter2Modifiable() throws Exception{
+		
+		RandomAccessGenotypeData genotypeData = new GenGenotypeData(getTest2Gen(), getTest2Sample(), 100);
+		RandomAccessGenotypeData genotypeDataFiltered2 = new SampleFilterableGenotypeDataDecorator(genotypeData, new SampleIdIncludeFilter("1042", "1043", "1045"));
+		RandomAccessGenotypeData genotypeDataFiltered3 = new VariantFilterableGenotypeDataDecorator(genotypeDataFiltered2, new VariantFilterSeq("1"));
+		ModifiableGenotypeData genotypeDataFiltered3Mod = new ModifiableGenotypeDataInMemory(genotypeDataFiltered3);
+		
+		
+		String[] samples = genotypeDataFiltered3Mod.getSampleNames();
+		assertEquals(samples.length, 3);
+		assertEquals(samples[2], "1045");
+		
+		ModifiableGeneticVariant testVar = genotypeDataFiltered3Mod.getModifiableSnpVariantByPos("1", 1);
+		List<Alleles> alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		Iterator<Alleles> allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+		
+		testVar.swap();
+		alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('T', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('T', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+		
+		
+	}
+	
 	
 }
