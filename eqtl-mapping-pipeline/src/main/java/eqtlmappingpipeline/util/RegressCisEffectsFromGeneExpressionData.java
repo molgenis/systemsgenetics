@@ -4,10 +4,17 @@
  */
 package eqtlmappingpipeline.util;
 
+import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.configuration.ConfigurationException;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
+import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
@@ -138,6 +145,59 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
+        }
+    }
+    
+    public RegressCisEffectsFromGeneExpressionData(String settingsFile, String eQTLFile) {
+        m_settings = new Settings();
+        
+        try {
+            m_settings.load(settingsFile);
+        } catch (IOException ex) {
+            Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ConfigurationException ex) {
+            Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        int numDatasets = m_settings.datasetSettings.size();
+        m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];
+        numAvailableInds = 0;
+        int nrOfDatasetsWithGeneExpressionData = 0;
+        
+        for (int i = 0; i < numDatasets; i++) {
+            System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
+            m_settings.datasetSettings.get(i).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
+            System.out.println(ConsoleGUIElems.LINE);
+            try {
+                m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i), null);
+            } catch (IOException ex) {
+                Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            if (m_gg[i].isExpressionDataLoadedCorrectly()) {
+                nrOfDatasetsWithGeneExpressionData++;
+            }
+
+        }
+
+        if (nrOfDatasetsWithGeneExpressionData == 0 || nrOfDatasetsWithGeneExpressionData != m_gg.length) {
+            System.out.println("Error: Something is wrong with the supplied expression data sets,\n please check if all your datasets contain any gene expression data for the settings you have specified");
+            System.exit(0);
+        }
+
+        for (int i = 0; i < numDatasets; i++) {
+            m_gg[i].getExpressionData().calcAndSubtractMean();
+            m_gg[i].getExpressionData().calcMeanAndVariance();
+            numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
+        }
+
+        EQTLRegression eqr = new EQTLRegression();
+        try {
+            eqr.regressOutEQTLEffects(eQTLFile, true, m_gg);
+        } catch (IOException ex) {
+            Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
