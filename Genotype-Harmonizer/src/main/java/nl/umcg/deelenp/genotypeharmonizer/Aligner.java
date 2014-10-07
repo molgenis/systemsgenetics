@@ -70,14 +70,24 @@ public class Aligner {
 		studyVariants:
 		for (ModifiableGeneticVariant studyVariant : aligendStudyData.getModifiableGeneticVariants()) {
 
+			if(studyVariant.getSampleVariants().size() != 155){
+				throw new GenotypeAlignmentException("Point 1");
+			}
+			
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
 				//LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 				System.out.println("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 			}
-
+		
 			if (!studyVariant.isMapped()) {
+				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "No mapping");
+				studyVariant.exclude();
+				continue studyVariants;
+			}
+			
+			if(studyVariant.getStartPos() == 0){
 				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "No mapping");
 				studyVariant.exclude();
 				continue studyVariants;
@@ -186,7 +196,7 @@ public class Aligner {
 
 
 
-			if (updateId && !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId())) {
+			if (updateId && refVariant.getPrimaryVariantId() != null && (studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
 				snpUpdateWriter.append(studyVariant.getSequenceName());
 				snpUpdateWriter.append('\t');
 				snpUpdateWriter.append(String.valueOf(studyVariant.getStartPos()));
@@ -434,6 +444,15 @@ public class Aligner {
 
 		snpLogWriter.close();
 
+		for (ModifiableGeneticVariant studyVariant : aligendStudyData.getModifiableGeneticVariants()) {
+
+			if(studyVariant.getSampleVariants().size() != 155){
+				System.out.println(studyVariant.getPrimaryVariantId());
+				System.out.println(studyVariant.getSampleVariantsProvider().getClass());
+				throw new GenotypeAlignmentException("Point 2");
+			} 
+		}
+		
 		return aligendStudyData;
 
 	}
