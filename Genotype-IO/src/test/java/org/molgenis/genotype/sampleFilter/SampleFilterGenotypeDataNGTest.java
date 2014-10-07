@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.sampleFilter;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sample;
+import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -260,6 +262,29 @@ public class SampleFilterGenotypeDataNGTest extends ResourceTest {
 		for(int i = 0 ; i < d1.length ; ++i){
 			assertEquals(d1[i], d2[i]);
 		}
+		
+	}
+	
+	@Test
+	public void testGenFileFilter() throws Exception{
+		
+		RandomAccessGenotypeData genotypeData = new GenGenotypeData(getTest2Gen(), getTest2Sample());
+		RandomAccessGenotypeData genotypeDataFiltered2 = new SampleFilterableGenotypeDataDecorator(genotypeData, new SampleIdIncludeFilter("1042", "1043", "1045"));
+		
+		String[] samples = genotypeDataFiltered2.getSampleNames();
+		assertEquals(samples.length, 3);
+		assertEquals(samples[2], "1045");
+		
+		GeneticVariant testVar = genotypeDataFiltered2.getSnpVariantByPos("1", 1);
+		List<Alleles> alleles = testVar.getSampleVariants();
+		
+		assertEquals(alleles.size(), 3);
+		Iterator<Alleles> allelesIt = alleles.iterator();
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'A'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('A', 'T'));
+		assertEquals(allelesIt.next(), Alleles.createBasedOnChars('0', '0'));
+		
+		
 		
 	}
 	
