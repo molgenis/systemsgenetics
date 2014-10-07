@@ -44,7 +44,7 @@ public class Aligner {
 	 * @return
 	 * @throws LdCalculatorException
 	 */
-	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException {
+	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException, GenotypeAlignmentException {
 
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
@@ -232,13 +232,16 @@ public class Aligner {
 		if (updateId) {
 			snpUpdateWriter.close();
 		}
+		
+		if(iterationCounter == 0){
+			throw new GenotypeAlignmentException("No variants where found in the input genotype data. Please check your variant filter options");
+		}
 
 		LOGGER.info("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 		System.out.println("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 
 		if (studyVariantList.isEmpty()) {
-			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
-			LOGGER.warn("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+			throw new GenotypeAlignmentException("Zero of the input variants found in reference set. Are both datasets the same genome build? Perhapse you need use --forceChr.");
 		}
 
 		int removedSnpsBasedOnLdCheck = 0;
