@@ -1,0 +1,28 @@
+INFO - 
+  /---------------------------------------\
+  |          Genotype Harmonizer          |
+  |                                       |
+  |             Patrick Deelen            |
+  |        patrickdeelen@gmail.com        |
+  |                                       |
+  | Harm-Jan Westra, Joeri van der Velde, |
+  |    Marc Jan Bonder, Erwin Winder,     |
+  |           Dennis Hendriksen           |
+  |      Lude Franke, Morris Swertz       |
+  |                                       |
+  |     Genomics Coordication Center      |
+  |  University Medical Center Groningen  |
+  \---------------------------------------/
+INFO - Version: 1.4.8
+INFO - Current date and time: 2014-10-07 14:15:49
+INFO - Log level: INFO
+INFO - Input base path: hapmap3CeuChr20B37Mb6RandomStrand 
+INFO - Input data type: Shapeit2 output
+INFO - Output base path: hapmap3CeuChr20B37Mb6RandomStrand
+INFO - Output data type: Oxford GEN / SAMPLE files
+INFO - Reference base path not set, not performing harmonization.
+INFO - Minimum posterior probability for input data: 0.4
+INFO - LD checker off
+INFO - Force input sequence name: not forcing
+INFO - Debug mode: off
+FATAL - Study input can not be the same as output

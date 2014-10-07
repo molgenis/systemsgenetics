@@ -140,7 +140,7 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
 
     @Override
     public boolean isMapped() {
-        return !(this.getSequenceName().equals("0") && this.getStartPos() == 0);
+        return !(this.getSequenceName().equals("0") || this.getStartPos() < 0);
     }
 
     @Override
