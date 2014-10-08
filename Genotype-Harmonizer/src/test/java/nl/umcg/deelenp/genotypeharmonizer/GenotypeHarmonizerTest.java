@@ -22,6 +22,7 @@ import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
+import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeTest;
@@ -434,4 +435,64 @@ public class GenotypeHarmonizerTest {
 
 	}
 	
+	
+	/**
+	 * Test Gen to TriTyper in combination with sample filter
+	 */
+	@Test
+	public void testMain7() throws Exception {
+		System.out.println("main");
+
+		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+		System.out.println(studyDataBasePath);
+		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
+		
+		String sampleFilterFilePath = testFilesFolder + fileSep + "sampleFilterTestList.txt"; 
+
+		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test7a", "-O", "GEN");
+		
+		GenotypeHarmonizer.main("--debug", "--inputType", "GEN", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test7a", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test7b", "-ref", refData, "--keep", "-O", "TRITYPER", "-sf", sampleFilterFilePath);
+
+		System.out.println("Alignement complete now going to check using the real forward data");
+
+		RandomAccessGenotypeData aligenedHapmap3Data = new TriTyperGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test7b");
+
+		//Complicated to test matchFormatToPath
+		RandomAccessGenotypeData forwardHapmap3Data = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6").createGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+
+
+
+		BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
+
+		HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
+		String snp;
+
+		while ((snp = keepFileReader.readLine()) != null) {
+			snpsKeptByKeepOption.add(snp);
+		}
+
+		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
+		int variantCounter = 0;
+		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+
+			++variantCounter;
+
+			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+
+			//Do not test these SNPs it is not on forward strand in hapmap3
+			if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+				continue;
+			}
+
+		}
+
+		assertEquals(variantCounter, 4078);
+
+		//Check if number of samples is correct
+		assertEquals(aligenedHapmap3Data.getSamples().size(), 155);
+		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 155);
+
+
+	}
+
 }

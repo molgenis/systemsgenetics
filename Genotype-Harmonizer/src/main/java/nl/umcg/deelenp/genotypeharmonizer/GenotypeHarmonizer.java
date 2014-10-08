@@ -163,6 +163,13 @@ class GenotypeHarmonizer {
             System.exit(1);
             return;
         }
+		
+		if(paramaters.getMinCallRate() > 1){
+			LOGGER.fatal("The specified call rate is > 1. This will result in exclusion of all variants.");
+            System.err.println("The specified call rate is > 1. This will result in exclusion of all variants.");
+            System.exit(1);
+            return;
+		}
 
         if (paramaters.getForceSeqName() != null && paramaters.getInputType() != RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && paramaters.getInputType() != RandomAccessGenotypeDataReaderFormats.GEN) {
             System.err.println("Error cannot force sequence name of: " + paramaters.getInputType().getName());
@@ -288,6 +295,18 @@ class GenotypeHarmonizer {
             System.exit(1);
             return;
         }
+		
+		if(inputData.getSamples().isEmpty()){
+			if(sampleFilter != null){
+				System.err.println("Error reading input data: No samples left after sample filter");
+				LOGGER.fatal("Error reading input data: No samples left after sample filter");
+			} else {
+				System.err.println("Error reading input data: No samples are loaded");
+				LOGGER.fatal("Error reading input data: No samples are loaded");
+			}
+            System.exit(1);
+            return;
+		}
 
         System.out.println(
                 "Input data loaded");
@@ -335,18 +354,23 @@ class GenotypeHarmonizer {
                 System.out.println("Beginning alignment");
                 aligedInputData = aligner.alignToRef(inputData, refData, paramaters.getMinLdToIncludeAlign(), paramaters.getMinSnpsToAlignOn(), paramaters.getFlankSnpsToConsider(), paramaters.isLdCheck(), paramaters.isUpdateId(), paramaters.isKeep(), paramaters.getSnpUpdateFile(), paramaters.getMaxMafForMafAlignment(), paramaters.getSnpLogFile());
             } catch (LdCalculatorException e) {
-                System.err.println("Error in LD calculation" + e.getMessage());
-                LOGGER.fatal("Error in LD calculation" + e.getMessage(), e);
+                System.err.println("Error in LD calculation: " + e.getMessage());
+                LOGGER.fatal("Error in LD calculation: " + e.getMessage(), e);
                 System.exit(1);
                 return;
             } catch (GenotypeDataException e) {
-                System.err.println("Error in alignment" + e.getMessage());
-                LOGGER.fatal("Error in alignment" + e.getMessage(), e);
+                System.err.println("Error in alignment: " + e.getMessage());
+                LOGGER.fatal("Error in alignment: " + e.getMessage(), e);
                 System.exit(1);
                 return;
-            } catch (IOException e) {
-                System.err.println("Error in alignment" + e.getMessage());
-                LOGGER.fatal("Error in alignment" + e.getMessage(), e);
+            } catch (GenotypeAlignmentException e) {
+                System.err.println("Error in alignment: " + e.getMessage());
+                LOGGER.fatal("Error in alignment: " + e.getMessage(), e);
+                System.exit(1);
+                return;
+            }catch (IOException e) {
+                System.err.println("Error in alignment: " + e.getMessage());
+                LOGGER.fatal("Error in alignment: " + e.getMessage(), e);
                 System.exit(1);
                 return;
             }
