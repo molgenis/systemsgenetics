@@ -69,10 +69,6 @@ public class Aligner {
 		//In this loop we filter the variants present in the reference and swap the AG, AC, TC, TG SNPs.
 		studyVariants:
 		for (ModifiableGeneticVariant studyVariant : aligendStudyData.getModifiableGeneticVariants()) {
-
-			if(studyVariant.getSampleVariants().size() != 155){
-				throw new GenotypeAlignmentException("Point 1");
-			}
 			
 			++iterationCounter;
 
@@ -444,15 +440,6 @@ public class Aligner {
 
 		snpLogWriter.close();
 
-		for (ModifiableGeneticVariant studyVariant : aligendStudyData.getModifiableGeneticVariants()) {
-
-			if(studyVariant.getSampleVariants().size() != 155){
-				System.out.println(studyVariant.getPrimaryVariantId());
-				System.out.println(studyVariant.getSampleVariantsProvider().getClass());
-				throw new GenotypeAlignmentException("Point 2");
-			} 
-		}
-		
 		return aligendStudyData;
 
 	}
