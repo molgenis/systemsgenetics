@@ -31,7 +31,7 @@ public class UtilConsoleGUI {
     public static enum MODE {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
-        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN
+        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT
     };
     MODE run;
 
@@ -126,6 +126,8 @@ public class UtilConsoleGUI {
                 run = MODE.GETSNPPROBECOMBINATIONS;
             } else if (arg.equals("--nonGeneticPCaCorrection")) {
                 run = MODE.NONGENETICPCACORRECTION;
+            } else if (arg.equals("--formatAsTT")) {
+                run = MODE.CREATTTFROMDOUBLEMAT;
             } else if (arg.equals("--settings")) {
                 settingsfile = val;
             } else if (arg.equals("--replacetext")) {
@@ -383,6 +385,10 @@ public class UtilConsoleGUI {
                         }
                         RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
                         break;
+                    case CREATTTFROMDOUBLEMAT:
+                        String[] argsNew = {inexpannot,in,out};
+                        umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
+                        break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -412,6 +418,7 @@ public class UtilConsoleGUI {
                 + "--meta\t\t\t\tFixed effect meta analysis.\n"
                 + "--nonGeneticPCaCorrection\tCorrect expression data for non-genetic components.\n"
                 + "--getSNPProbeCombinatios\tCreate list of valid SNP-Probe combinations to test.\n"
+                + "--formatAsTT\t\t\tConverte a doublematrix dataset to a TriTyper genotype file.\n"
                 + "--convertbinarymatrix\t\tConverts binary matrix to text\n");
         System.out.println("");
 
