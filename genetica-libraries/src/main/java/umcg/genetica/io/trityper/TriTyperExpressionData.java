@@ -23,7 +23,8 @@ import umcg.genetica.util.RankArray;
  * @author harmjan // rows: individuals cols: probes
  */
 public class TriTyperExpressionData {
-
+    
+    //Potentialy we can use TObjectIntMaps
     private int[] chrStart;
     private int[] chrStop;
     private byte[] chr;
