@@ -155,6 +155,8 @@ public class UtilConsoleGUI {
                     FdrMethod = FDRMethod.PROBELEVEL;
                 } else if(val.equals("gene")){
                     FdrMethod = FDRMethod.GENELEVEL;
+                } else if(val.equals("snp")){
+                    FdrMethod = FDRMethod.SNPLEVEL;
                 }
             } else if (arg.equals("--snps")) {
                 snpfile = val;

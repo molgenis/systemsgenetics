@@ -86,6 +86,9 @@ public class FDR {
         // new permutationfile format requires different column layout...
         if (nrColsInPermutedFiles > 7) {
             System.out.println("Large permutation files detected.");
+            if (fdrType.equals(FDRMethod.SNPLEVEL) || fdrType.equals(FDRMethod.ALL)) {
+                runFDR(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles);
+            }
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDR(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles);
             }
@@ -96,6 +99,9 @@ public class FDR {
                 runFDR(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.FULL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles);
             }
         } else {
+            if (fdrType.equals(FDRMethod.SNPLEVEL) || fdrType.equals(FDRMethod.ALL)) {
+                runFDR(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles);
+            }
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDR(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles);
             }
@@ -117,10 +123,11 @@ public class FDR {
             System.out.println("Performing gene level FDR");
         } else if (m == FDRMethod.PROBELEVEL) {
             System.out.println("Performing probe level FDR");
-        } else if (m == FDRMethod.FULL) {
+        }  else if (m == FDRMethod.SNPLEVEL) {
+            System.out.println("Performing SNP level FDR");
+        }else if (m == FDRMethod.FULL) {
             System.out.println("Determining the FDR using all data");
         }
-
 
         TDoubleIntHashMap permutedPvalues = new TDoubleIntHashMap(10000, 0.5f);
 
@@ -180,6 +187,8 @@ public class FDR {
                         if (f == FileFormat.REDUCED) {
                             if (m == FDRMethod.PROBELEVEL) {
                                 fdrId = data[probecol];
+                            } else if (m == FDRMethod.SNPLEVEL) {
+                                fdrId = data[snpcol];
                             } else if (m == FDRMethod.GENELEVEL && data.length > 3) {
                                 fdrId = data[genecol];
                             }
@@ -187,6 +196,8 @@ public class FDR {
                         } else {
                             if (m == FDRMethod.GENELEVEL) {
                                 fdrId = data[eQTLTextFile.HUGO];
+                            } else if (m == FDRMethod.SNPLEVEL) {
+                                fdrId = data[eQTLTextFile.SNP];
                             } else if (m == FDRMethod.PROBELEVEL) {
                                 fdrId = data[4];
                             }
@@ -315,6 +326,8 @@ public class FDR {
 
                 if (m == FDRMethod.GENELEVEL) {
                     fdrId = data[eQTLTextFile.HUGO];
+                } else if (m == FDRMethod.SNPLEVEL) {
+                    fdrId = data[eQTLTextFile.SNP];
                 } else if (m == FDRMethod.PROBELEVEL) {
                     fdrId = data[4];
                 }
@@ -639,6 +652,9 @@ public class FDR {
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
             }
+            if (fdrType.equals(FDRMethod.SNPLEVEL) || fdrType.equals(FDRMethod.ALL)) {
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+            }
             if (fdrType.equals(FDRMethod.GENELEVEL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.GENELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
             }
@@ -649,6 +665,9 @@ public class FDR {
         } else {
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
                 runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+            }
+            if (fdrType.equals(FDRMethod.SNPLEVEL) || fdrType.equals(FDRMethod.ALL) && nrColsInPermutedFiles >= 4) {
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.GENELEVEL) || fdrType.equals(FDRMethod.ALL) && nrColsInPermutedFiles >= 4) {
                 runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.GENELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
@@ -666,6 +685,8 @@ public class FDR {
         System.out.println("");
         if (m == FDRMethod.GENELEVEL) {
             System.out.println("Performing gene level FDR");
+        } else if (m == FDRMethod.SNPLEVEL) {
+            System.out.println("Performing SNP level FDR");
         } else if (m == FDRMethod.PROBELEVEL) {
             System.out.println("Performing probe level FDR");
         } else if (m == FDRMethod.FULL) {
@@ -761,11 +782,15 @@ public class FDR {
                                 fdrId = data[probecol];
                             } else if (m == FDRMethod.GENELEVEL && data.length > 3) {
                                 fdrId = data[genecol];
+                            } else if (m == FDRMethod.SNPLEVEL) {
+                                fdrId = data[snpcol];
                             }
 
                         } else {
                             if (m == FDRMethod.GENELEVEL) {
                                 fdrId = data[eQTLTextFile.HUGO];
+                            } else if (m == FDRMethod.SNPLEVEL) {
+                                fdrId = data[eQTLTextFile.SNP];
                             } else if (m == FDRMethod.PROBELEVEL) {
                                 fdrId = data[4];
                             }
@@ -864,6 +889,8 @@ public class FDR {
         String fileSuffix = "";
         if (m == FDRMethod.GENELEVEL) {
             fileSuffix = "-GeneLevel";
+        } else if (m == FDRMethod.SNPLEVEL) {
+            fileSuffix = "-SNPLevel";
         } else if (m == FDRMethod.PROBELEVEL) {
             fileSuffix = "-ProbeLevel";
         }
@@ -890,7 +917,6 @@ public class FDR {
             System.out.println("Could not find file: " + fileString);
             System.exit(0);
         }
-
 
         TextFile realEQTLs = new TextFile(fileString, TextFile.R);
 
@@ -949,6 +975,8 @@ public class FDR {
                     fdrId = data[eQTLTextFile.HUGO];
                 } else if (m == FDRMethod.PROBELEVEL) {
                     fdrId = data[4];
+                } else if (m == FDRMethod.SNPLEVEL) {
+                    fdrId = data[eQTLTextFile.SNP];
                 }
 
                 double eQtlPvalue = Double.parseDouble(data[0]);
