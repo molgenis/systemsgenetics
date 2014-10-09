@@ -30,7 +30,7 @@ public class FDR {
 //    public static String outputDir = null;
     public enum FDRMethod {
 
-        PROBELEVEL, GENELEVEL, FULL, ALL
+        PROBELEVEL, SNPLEVEL, GENELEVEL, FULL, ALL
     };
 
     public enum FileFormat {
@@ -240,6 +240,8 @@ public class FDR {
             fileSuffix = "-GeneLevel";
         } else if (m == FDRMethod.PROBELEVEL) {
             fileSuffix = "-ProbeLevel";
+        } else if (m == FDRMethod.SNPLEVEL) {
+            fileSuffix = "-SNPLevel";
         }
 
         String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt";
