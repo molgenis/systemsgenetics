@@ -152,7 +152,7 @@ public class QTL implements Comparable<QTL> {
         if (sid == -1 && pid == -1) {
             return null;
         }
-
+        
         String sepStr = ";";
         String nullstr = "-";
         char tabStr = '\t';
@@ -182,6 +182,7 @@ public class QTL implements Comparable<QTL> {
                 break;
             }
         }
+        
 
         String probe = nullstr;
         String probeChr = nullstr;
@@ -195,6 +196,10 @@ public class QTL implements Comparable<QTL> {
                 probeChrPos = String.valueOf((gg[d].getExpressionData().getChrStart()[probeId] + gg[d].getExpressionData().getChrStop()[probeId]) / 2);
                 break;
             }
+        }
+        if(rsName.equals("snp_1_3719057")||rsName.equals("snp_1_1635619")){
+            System.out.println(rsName+"\t"+sid);
+            System.out.println("\t"+pid+"\t"+probe);
         }
 
         out.append(rsName);
