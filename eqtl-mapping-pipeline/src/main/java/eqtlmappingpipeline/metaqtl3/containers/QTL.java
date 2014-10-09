@@ -197,10 +197,6 @@ public class QTL implements Comparable<QTL> {
                 break;
             }
         }
-        if(rsName.equals("snp_1_3719057")||rsName.equals("snp_1_1635619")){
-            System.out.println(rsName+"\t"+sid);
-            System.out.println("\t"+pid+"\t"+probe);
-        }
 
         out.append(rsName);
         out.append(tabStr);
