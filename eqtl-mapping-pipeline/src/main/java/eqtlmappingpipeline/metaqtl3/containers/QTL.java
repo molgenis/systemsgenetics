@@ -93,8 +93,8 @@ public class QTL implements Comparable<QTL> {
     public boolean equals(QTL o) {
         if (pvalue == o.pvalue) {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
-                if (sid == o.sid) {
-                    if (pid == o.pid) {
+                if (pid == o.pid) {
+                    if (sid == o.sid) {
                         return true;
                     } else {
                         return false;
