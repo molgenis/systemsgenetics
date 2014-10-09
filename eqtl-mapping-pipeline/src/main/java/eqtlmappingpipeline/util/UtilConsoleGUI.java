@@ -9,7 +9,6 @@ import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

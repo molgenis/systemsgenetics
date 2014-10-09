@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.textmeta;
 
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
+import eqtlmappingpipeline.util.EQTLFileSorter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;

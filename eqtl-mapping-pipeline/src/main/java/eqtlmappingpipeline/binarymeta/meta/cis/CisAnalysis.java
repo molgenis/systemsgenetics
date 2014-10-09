@@ -10,7 +10,7 @@ import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.MetaSettings;
 import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
+import eqtlmappingpipeline.util.EQTLFileSorter;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;

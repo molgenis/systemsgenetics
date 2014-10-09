@@ -7,8 +7,6 @@ package umcg.genetica.io.trityper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import umcg.genetica.io.text.TextFile;
 import static umcg.genetica.io.text.TextFile.tab;
@@ -63,7 +61,7 @@ public class eQTLTextFile extends TextFile {
      * FDR
      * */
     private static String sepStr = ";";
-    private static String tabStr = "\t";
+    //private static String tabStr = "\t";
     private static String nullStr = "-";
     private static Pattern separator = Pattern.compile(sepStr);
     public static String header = "PValue\t"
@@ -91,20 +89,26 @@ public class eQTLTextFile extends TextFile {
     public eQTLTextFile(String loc, boolean W) throws IOException {
         super(loc, W);
         if (W) {
-            write(header + "\n");
+            write(header + '\n');
         }
     }
 
     public eQTLTextFile(String loc, boolean W, boolean gz) throws IOException {
         super(loc, W);
         if (W) {
-            write(header + "\n");
+            write(header + '\n');
         }
     }
 
     public void write(EQTL[] eqtllist) throws IOException {
         for (EQTL e : eqtllist) {
-            write(e.toString() + "\n");
+            write(e.toString() + '\n');
+        }
+    }
+    
+    public void write(ArrayList<EQTL> eqtllist) throws IOException {
+        for (EQTL e : eqtllist) {
+            write(e.toString() + '\n');
         }
     }
 
@@ -113,6 +117,18 @@ public class eQTLTextFile extends TextFile {
         return readExpectedSize(1000);
 
     }
+    
+    public ArrayList<EQTL> readList() throws IOException {
+
+        ArrayList<EQTL> alEQTLS = new ArrayList<EQTL>();
+
+        for (Iterator<EQTL> it = getEQtlIterator(); it.hasNext();) {
+            alEQTLS.add(it.next());
+        }
+
+        return alEQTLS;
+    }
+
 
     public EQTL[] readExpectedSize(int expSize) throws IOException {
 
