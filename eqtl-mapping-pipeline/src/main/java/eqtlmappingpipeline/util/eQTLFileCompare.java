@@ -46,6 +46,7 @@ public class eQTLFileCompare {
         String out = null;
         String file1 = null;
         String file2 = null;
+        double fdrCut = -1;
         boolean matchOnGeneName = false;
         boolean matchSnpOnPos = false;
         boolean splitGeneNames = false;
@@ -64,6 +65,8 @@ public class eQTLFileCompare {
                 file1 = val;
             } else if (arg.equals("--file2")) {
                 file2 = val;
+            } else if (arg.equals("--fdrCuttoff")) {
+                fdrCut = Double.parseDouble(val);
             } else if (arg.equals("--genebased")) {
                 matchOnGeneName = true;
                 System.out.println("Performing gene based analysis");
@@ -78,7 +81,7 @@ public class eQTLFileCompare {
 
         if (out != null && file1 != null && file2 != null) {
             try {
-                compareOverlapAndZScoreDirectionTwoEQTLFiles(file1, file2, out, matchOnGeneName, matchSnpOnPos, splitGeneNames);
+                compareOverlapAndZScoreDirectionTwoEQTLFiles(file1, file2, out, fdrCut, matchOnGeneName, matchSnpOnPos, splitGeneNames);
             } catch (IOException ex) {
                 Logger.getLogger(eQTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
             } catch (Exception ex) {
@@ -99,18 +102,19 @@ public class eQTLFileCompare {
         System.out.println("--out\t\tstring\t\tOutput file name\n"
                 + "--file1\t\tstring\t\tLocation of file 1\n"
                 + "--file2\t\tstring\t\tLocation of file 2\n"
+                + "--fdrCuttoff\t\tdouble\t\talterntive FDR cutoff\n"
                 + "--genebased\t\t\tPerform comparison on the basis of gene names (optional, defaults to probe based comparison)\n"
                 + "--matchSnpOnPos\t\tUse chr and and chr pos to match SNPs and ignore identifiers\n"
                 + "--splitGeneNames\t\tSplit gene names on ; when doing --genebased. Count as 2 effects (beta)");
     }
 
     public final void compareOverlapAndZScoreDirectionTwoEQTLFiles(String file1, String file2, String outputFile, boolean matchOnGeneName) throws IOException, Exception {
-        compareOverlapAndZScoreDirectionTwoEQTLFiles(file1, file2, outputFile, matchOnGeneName, false, false);
+        compareOverlapAndZScoreDirectionTwoEQTLFiles(file1, file2, outputFile, -1.0d, matchOnGeneName, false, false);
     }
 
-    public final void compareOverlapAndZScoreDirectionTwoEQTLFiles(String file1, String file2, String outputFile, boolean matchOnGeneName, boolean matchSnpOnPos, boolean splitGeneNames) throws IOException, Exception {
+    public final void compareOverlapAndZScoreDirectionTwoEQTLFiles(String file1, String file2, String outputFile, double fdrCut, boolean matchOnGeneName, boolean matchSnpOnPos, boolean splitGeneNames) throws IOException, Exception {
 
-        double filterOnFDR = -1; //Do we want to use another FDR measure? When set to -1 this is not used at all.
+        double filterOnFDR = fdrCut; //Do we want to use another FDR measure? When set to -1 this is not used at all.
 
         HashMap<String, String> hashConvertProbeNames = new HashMap<String, String>(); //When comparing two eQTL files, run on different platforms, we can convert the probe names from one platform to the other, accommodating this comparison, example: hashConvertProbeNames.put(probeNameInFile1, equivalentProbeNameInFile2);
         HashSet<String> hashExcludeEQTLs = new HashSet<String>();   //We can exclude some eQTLs from the analysis. If requested, put the entire eQTL string in this HashMap for each eQTL. Does not work in combination with mathcing based on chr and pos
