@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.textmeta;
 
-import eqtlmappingpipeline.util.EQTLFileSorter;
+import eqtlmappingpipeline.util.eQTLFileSorter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -238,7 +238,7 @@ public class FixedEffectMetaAnalysis {
         outfile.close();
         
         System.out.println("Done. Now sorting results");
-        EQTLFileSorter sorter = new EQTLFileSorter();
+        eQTLFileSorter sorter = new eQTLFileSorter();
         sorter.run(output + "eQTLs.txt", output + "eQTLs_sorted.txt");
         if(Gpio.exists(output + "eQTLs_sorted.txt")){
             Gpio.moveFile(output + "eQTLs_sorted.txt", output + "eQTLs.txt");

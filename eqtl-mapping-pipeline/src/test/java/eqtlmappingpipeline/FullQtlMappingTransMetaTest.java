@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline;
 
+import eqtlmappingpipeline.util.eQTLFileSorter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
@@ -46,10 +47,10 @@ public class FullQtlMappingTransMetaTest {
                 System.out.println("Removing tmp dir and files");
                 for (File file : tmpOutputFolder.listFiles()) {
                     System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    file.delete();
+                    file.deleteOnExit();
                 }
                 System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-                tmpOutputFolder.delete();
+                tmpOutputFolder.deleteOnExit();
             }
         });
 
@@ -65,14 +66,19 @@ public class FullQtlMappingTransMetaTest {
 
         Main.main("--mode", "metaqtl", "--settings", settingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
 
+        eQTLFileSorter r = new eQTLFileSorter();
+        r.run(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel.txt", tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel_S.txt");
+        
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
-        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
+        
+        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel_S.txt", eQTLTextFile.R);
 
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
         
         while(eExpIterator.hasNext() && eActualIterator.hasNext()){
             assertTrue(eActualIterator.next().sameQTL(eExpIterator.next()), "eQTL not identical");
+            
         }
         
         assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found");

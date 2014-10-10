@@ -84,7 +84,8 @@ public class eQTLTextFile extends TextFile {
             + "IncludedDatasetsCorrelationCoefficient\t"
             + "Meta-Beta (SE)\t"
             + "Beta (SE)\t"
-            + "FoldChange";
+            + "FoldChange\t"
+            + "FDR";
 
     public eQTLTextFile(String loc, boolean W) throws IOException {
         super(loc, W);
@@ -161,7 +162,7 @@ public class eQTLTextFile extends TextFile {
              */
             elems = readLineElemsReturnReference(tab); // skip headerline
 
-            if (elems[elems.length - 1].equals("FDR")) {
+            if (elems.length > 21) {
                 fdrpresent = true;
             } else {
                 fdrpresent = false;
@@ -316,9 +317,9 @@ public class eQTLTextFile extends TextFile {
                 }
             }
 
-            if (fdrpresent && !elems[elems.length - 1].equals(nullStr)) {
+            if (fdrpresent && !elems[21].equals(nullStr)) {
                 try {
-                    e.setFDR(Double.parseDouble(elems[elems.length - 1]));
+                    e.setFDR(Double.parseDouble(elems[21]));
                 } catch (java.lang.NumberFormatException ex) {
                     //do nothing
                 }

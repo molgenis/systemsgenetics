@@ -15,7 +15,7 @@ import umcg.genetica.io.trityper.eQTLTextFile;
  *
  * @author harmjan
  */
-public class EQTLFileSorter {
+public class eQTLFileSorter {
 
     public void run(String efile, String outfile) throws IOException {
         System.out.println("Loading: " + efile);
