@@ -7,7 +7,6 @@ package eqtlmappingpipeline.metaqtl3.containers;
 import cern.colt.matrix.tint.IntMatrix2D;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
 import java.util.Locale;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
@@ -65,7 +64,19 @@ public class QTL implements Comparable<QTL> {
     public int compareTo(QTL o) {
         if (pvalue == o.pvalue) {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
-                return 0;
+                if (sid == o.sid) {
+                    if (pid == o.pid) {
+                        return 0;
+                    } else if (pid < o.pid) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
+                } else if (sid < o.sid) {
+                    return 1;
+                } else {
+                    return -1;
+                }
             } else if (Math.abs(zscore) < Math.abs(o.zscore)) {
                 return 1;
             } else {
@@ -82,7 +93,15 @@ public class QTL implements Comparable<QTL> {
     public boolean equals(QTL o) {
         if (pvalue == o.pvalue) {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
-                return true;
+                if (sid == o.sid) {
+                    if (pid == o.pid) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
             } else {
                 return false;
             }
@@ -126,7 +145,6 @@ public class QTL implements Comparable<QTL> {
     public double[] getCorrelations() {
         return correlations;
     }
-
     private final static DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
     private final static DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
 
@@ -134,7 +152,7 @@ public class QTL implements Comparable<QTL> {
         if (sid == -1 && pid == -1) {
             return null;
         }
-
+        
         String sepStr = ";";
         String nullstr = "-";
         char tabStr = '\t';
@@ -164,6 +182,7 @@ public class QTL implements Comparable<QTL> {
                 break;
             }
         }
+        
 
         String probe = nullstr;
         String probeChr = nullstr;

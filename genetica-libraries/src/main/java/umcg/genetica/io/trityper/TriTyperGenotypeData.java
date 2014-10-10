@@ -25,8 +25,8 @@ public class TriTyperGenotypeData {
     private Boolean[] isCase;
     private Boolean[] isIncluded;
     private String[] individuals;
+    //Potentialy we can use TObjectIntMaps
     private THashMap<String, Integer> individualToId;
-    //private THashMap<String, Integer> snpToSNPId;
     private TObjectIntHashMap<String> snpToSNPId;
     private String genotypeFileName;
     private String dosageFileName;

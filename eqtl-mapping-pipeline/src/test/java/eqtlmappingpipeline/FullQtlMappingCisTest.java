@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline;
 
+import eqtlmappingpipeline.util.eQTLFileSorter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
@@ -45,10 +46,10 @@ public class FullQtlMappingCisTest {
                 System.out.println("Removing tmp dir and files");
                 for (File file : tmpOutputFolder.listFiles()) {
                     System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    file.delete();
+//                    file.deleteOnExit();
                 }
                 System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-                tmpOutputFolder.delete();
+                tmpOutputFolder.deleteOnExit();
             }
         });
 
@@ -69,8 +70,11 @@ public class FullQtlMappingCisTest {
         Main.main("--mode", "metaqtl", "--in", inputDir, "--out", tmpOutputFolder.getAbsolutePath(), "--cis", "--perm", "10", "--inexp", inputExprs, "--inexpannot", inputExprsAnnot, "--inexpplatform", "Ensembl_v.71", "--gte", inputGte, "--skipqqplot", "--skipdotplot", "--rseed", "0");
 
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt", eQTLTextFile.R);
-        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt", eQTLTextFile.R);
         
+        eQTLFileSorter r = new eQTLFileSorter();
+        r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt");
+        
+        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt", eQTLTextFile.R);
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
         

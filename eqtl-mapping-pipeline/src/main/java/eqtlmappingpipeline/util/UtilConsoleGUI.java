@@ -9,7 +9,6 @@ import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class UtilConsoleGUI {
     public static enum MODE {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
-        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN
+        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT
     };
     MODE run;
 
@@ -126,6 +125,8 @@ public class UtilConsoleGUI {
                 run = MODE.GETSNPPROBECOMBINATIONS;
             } else if (arg.equals("--nonGeneticPCaCorrection")) {
                 run = MODE.NONGENETICPCACORRECTION;
+            } else if (arg.equals("--formatAsTT")) {
+                run = MODE.CREATTTFROMDOUBLEMAT;
             } else if (arg.equals("--settings")) {
                 settingsfile = val;
             } else if (arg.equals("--replacetext")) {
@@ -154,6 +155,8 @@ public class UtilConsoleGUI {
                     FdrMethod = FDRMethod.PROBELEVEL;
                 } else if(val.equals("gene")){
                     FdrMethod = FDRMethod.GENELEVEL;
+                } else if(val.equals("snp")){
+                    FdrMethod = FDRMethod.SNPLEVEL;
                 }
             } else if (arg.equals("--snps")) {
                 snpfile = val;
@@ -261,7 +264,7 @@ public class UtilConsoleGUI {
                         if (in == null) {
                             System.out.println("USAGE: --in eQTLFile --out eQTLFile");
                         } else {
-                            EQTLFileSorter f = new EQTLFileSorter();
+                            eQTLFileSorter f = new eQTLFileSorter();
                             f.run(in, out);
                         }
                         break;
@@ -383,6 +386,10 @@ public class UtilConsoleGUI {
                         }
                         RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
                         break;
+                    case CREATTTFROMDOUBLEMAT:
+                        String[] argsNew = {inexpannot,in,out};
+                        umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
+                        break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -412,6 +419,7 @@ public class UtilConsoleGUI {
                 + "--meta\t\t\t\tFixed effect meta analysis.\n"
                 + "--nonGeneticPCaCorrection\tCorrect expression data for non-genetic components.\n"
                 + "--getSNPProbeCombinatios\tCreate list of valid SNP-Probe combinations to test.\n"
+                + "--formatAsTT\t\t\tConverte a doublematrix dataset to a TriTyper genotype file.\n"
                 + "--convertbinarymatrix\t\tConverts binary matrix to text\n");
         System.out.println("");
 

@@ -31,7 +31,6 @@ public class EQTL implements Comparable<EQTL> {
     private String probeHUGO;
     private Double[] correlations;
     private Double FDR;
-    private int pid;
     private String metabeta;
     private String beta;
     private String fc;
@@ -40,80 +39,6 @@ public class EQTL implements Comparable<EQTL> {
     public EQTL() {
     }
 
-//    public EQTL(Double pval, Result r, int p, boolean cisOnly, Integer[][] probeTranslation, TriTyperGeneticalGenomicsDataset[] gg, int midpointprobedist) {
-//        Double[][] tmpcorrelations = r.correlations;
-//        Integer[] numSamples = r.numSamples;
-//        Double[][] zscores = r.zscores;
-//        Double[] finalZscores = r.finalZScore;
-//
-//        int[] probes = r.workpackage.getProbes();
-//        //SNP[] snps = r.workpackage.getSnps();
-//        int numDatasets = zscores.length;
-//
-//        this.pvalue = pval;
-//        this.zscore = finalZscores[p];
-//
-//        pid = p;
-//
-//        if (cisOnly && probes != null) {
-//            pid = probes[p];
-//        }
-//
-//        correlations    = new Double[numDatasets];
-////        datasets        = new String[numDatasets];
-//        datasetZScores  = new Double[numDatasets];
-//        datasetsSamples = new Integer[numDatasets];
-////        probeMeans      = new Double[numDatasets];
-////        probeVariance   = new Double[numDatasets];
-////        for(int d=0; d<numDatasets; d++){
-////            if (r.workpackage.getSnps()[d] != null) {
-//////                this.rsName     = r.workpackage.getSnps()[d].getName();
-//////                this.rsChr      = r.workpackage.getSnps()[d].getChr();
-//////                this.rsChrPos   = r.workpackage.getSnps()[d].getChrPos();
-//////                byte[] tmpalleles = snps[d].getAlleles();
-//////                String allele0 = BaseAnnot.toString(tmpalleles[0]);
-//////                String allele1 = BaseAnnot.toString(tmpalleles[1]);
-//////                alleleAssessed = BaseAnnot.toString(snps[d].getMinorAllele());
-//////                alleles = allele0 + "/" + allele1;
-////                break;
-////            }
-////        }
-////
-////        for(int d=0; d<numDatasets; d++){
-////            Integer probeId = new Integer (probeTranslation[d][pid].intValue());
-////            if (probeId != null && snps[d] != null) {
-////                this.probe      = gg[d].getExpressionData().getProbes()[probeId];
-////                this.probeChr   = gg[d].getExpressionData().getChr()[probeId];
-////                this.probeChrPos= (int) Math.floor((double) (gg[d].getExpressionData().getChrStart()[probeId] + gg[d].getExpressionData().getChrStop()[probeId]) / 2);
-////                this.probeHUGO  = gg[d].getExpressionData().getAnnotation()[probeId];
-////                if (Math.abs(this.probeChrPos - this.rsChrPos) < midpointprobedist) {
-////                    eQTLType = "cis";
-////                } else {
-////                    eQTLType = "trans";
-////                }
-////                break;
-////            }
-////        }
-////
-////
-////        for(int d=0; d<numDatasets; d++){
-////            correlations[d]     = tmpcorrelations[d][p];
-////            if(correlations[d] != null){
-//////                datasets[d]         = gg[d].getSettings().name;
-////                datasetZScores[d]   = zscores[d][p];
-////                datasetsSamples[d]  = numSamples[d];
-////            }
-////        }
-//
-//
-////        for(int d=0; d<numDatasets; d++){
-////            Integer probeId = probeTranslation[d][pid];
-////            if (probeId != null && correlations[d] != null) {
-////                probeMeans[d]       = gg[d].getExpressionData().getOriginalProbeMean()[probeId];
-////                probeVariance[d]    = gg[d].getExpressionData().getOriginalProbeVariance()[probeId];
-////            }
-////        }
-//    }
     /**
      * @return the pvalue
      */
@@ -847,7 +772,7 @@ public class EQTL implements Comparable<EQTL> {
     }
 
     public boolean sameQTL(EQTL o) {
-        return (zscore.equals(o.zscore) && probe.equals(o.probe) && rsName.equals(o.rsName) && FDR.equals(o.FDR) && beta.equals(o.beta));
+        return (zscore.equals(o.zscore) && probe.equals(o.probe) && rsName.equals(o.rsName)&& beta.equals(o.beta)&& FDR.equals(o.FDR));
     }
 
 //    @Override

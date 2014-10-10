@@ -20,6 +20,7 @@ import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.eQTLFileCompare;
+import eqtlmappingpipeline.util.eQTLmeQTLCompare;
 import java.util.Arrays;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.pileup.PileupToVcf;
@@ -85,6 +86,8 @@ public class EQTLMappingPipelineConsole {
                 NormalizationConsoleGUI p = new NormalizationConsoleGUI(args);
             } else if (mode.equals("compare")) {
                 eQTLFileCompare r = new eQTLFileCompare(args);
+            } else if (mode.equals("compareM")) {
+                eQTLmeQTLCompare r = new eQTLmeQTLCompare(args);
             } else if (mode.equals("chryplot")) {
                 ChrYExpressionPlotConsoleGUI r = new ChrYExpressionPlotConsoleGUI(args);
             } else if (mode.equals("pcaoptimum")) {
