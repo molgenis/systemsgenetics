@@ -264,7 +264,7 @@ public class UtilConsoleGUI {
                         if (in == null) {
                             System.out.println("USAGE: --in eQTLFile --out eQTLFile");
                         } else {
-                            eQTLFileSorter f = new eQTLFileSorter();
+                            eQTLFileSorter2 f = new eQTLFileSorter2();
                             f.run(in, out);
                         }
                         break;
