@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline;
 
-import eqtlmappingpipeline.util.eQTLFileSorter2;
+import eqtlmappingpipeline.util.eQTLFileSorter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
