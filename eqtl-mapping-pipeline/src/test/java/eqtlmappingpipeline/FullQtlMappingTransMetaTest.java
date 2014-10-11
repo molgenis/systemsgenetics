@@ -4,7 +4,6 @@
  */
 package eqtlmappingpipeline;
 
-import eqtlmappingpipeline.util.eQTLFileSorter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
@@ -16,6 +15,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
+import eqtlmappingpipeline.util.eQTLFileSorter;
 
 /**
  *
@@ -66,7 +66,7 @@ public class FullQtlMappingTransMetaTest {
 
         Main.main("--mode", "metaqtl", "--settings", settingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
 
-       eQTLFileSorter2r r = neeQTLFileSorter2er();
+        eQTLFileSorter r = new eQTLFileSorter();
         r.run(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel.txt", tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel_S.txt");
         
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);

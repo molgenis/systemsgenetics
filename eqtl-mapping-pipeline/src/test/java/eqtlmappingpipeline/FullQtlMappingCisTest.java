@@ -71,7 +71,7 @@ public class FullQtlMappingCisTest {
 
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt", eQTLTextFile.R);
         
-       eQTLFileSorter2r r = neeQTLFileSorter2er();
+        eQTLFileSorter r = new eQTLFileSorter();
         r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt");
         
         eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt", eQTLTextFile.R);
