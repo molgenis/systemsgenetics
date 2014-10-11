@@ -67,11 +67,11 @@ public class FullQtlMappingTransMetaTest {
         Main.main("--mode", "metaqtl", "--settings", settingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
 
         eQTLFileSorter r = new eQTLFileSorter();
-        r.run(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel.txt", tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel_S.txt");
+        r.run(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel.txt", tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt");
         
-        eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLProbesFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
+        eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
         
-        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLProbesFDR0.05-ProbeLevel_S.txt", eQTLTextFile.R);
+        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt", eQTLTextFile.R);
 
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
