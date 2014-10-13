@@ -115,7 +115,9 @@ public class eQTLmeQTLCompare {
                 + "--eQTLfile\t\tstring\t\tLocation of eQTL outputfile\n"
                 + "--meQTLfile\t\tstring\t\tLocation of meQTL outputfile\n"
                 + "--eQTMfile\t\tstring\t\tLocation of eQTM outputfile\n"
-                + "--fdrCuttoff\t\tdouble\t\talterntive FDR cutoff\n"
+                + "--fdrCuttoff\t\tdouble\t\ttalterntive FDR cutoff\n"
+                + "--eqtmdirection\t\t\t\t\tTake eQTM direction into acount\n"
+                + "--topeffect\t\t\t\t\t\tOnly use the top eQTM as annotation\n"
                 + "--splitGeneNames\t\tSplit gene names on ;");
     }
 
@@ -133,17 +135,17 @@ public class eQTLmeQTLCompare {
         HashMap<String, ArrayList<EQTL>> eQtmInfo = new HashMap<String, ArrayList<EQTL>>();
 
         for (Iterator<EQTL> eQtlIt = eQTLsTextFile.getEQtlIterator(); eQtlIt.hasNext();) {
-            EQTL eQtl = eQtlIt.next();
-            String eQtlKey = eQtl.getRsName();
+            EQTL eQtm = eQtlIt.next();
+            String eQtlKey = eQtm.getRsName();
 
             ArrayList<EQTL> posEqtls = eQtmInfo.get(eQtlKey);
 
             if (posEqtls == null) {
                 posEqtls = new ArrayList<EQTL>(1);
-                posEqtls.add(eQtl);
+                posEqtls.add(eQtm);
                 eQtmInfo.put(eQtlKey, posEqtls);
             } else if (!topeffect) {
-                eQtmInfo.put(eQtlKey, posEqtls);
+                eQtmInfo.get(eQtlKey).add(eQtm);
             }
         }
 
