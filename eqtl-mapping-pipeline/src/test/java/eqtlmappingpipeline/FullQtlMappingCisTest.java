@@ -46,7 +46,7 @@ public class FullQtlMappingCisTest {
                 System.out.println("Removing tmp dir and files");
                 for (File file : tmpOutputFolder.listFiles()) {
                     System.out.println(" - Deleting: " + file.getAbsolutePath());
-//                    file.deleteOnExit();
+                    file.deleteOnExit();
                 }
                 System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
                 tmpOutputFolder.deleteOnExit();
