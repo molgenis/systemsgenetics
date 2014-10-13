@@ -157,7 +157,6 @@ public class eQTLmeQTLCompare {
         THashSet<String> hashUniqueProbes = new THashSet<String>();
         THashSet<String> hashUniqueGenes = new THashSet<String>();
 
-        TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
         TextFile in = new TextFile(eQTL, TextFile.R);
         in.readLine();
         String[] data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
@@ -248,10 +247,11 @@ public class eQTLmeQTLCompare {
         in = new TextFile(meQTL, TextFile.R);
         in.readLine();
 
-        int lineno = 1;
         int skippedDueToMapping = 0;
         data = null;
         TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
+        TextFile log = new TextFile(outputFile + "-eQTL-meQTL-ComparisonLog.txt", TextFile.W);
+        TextFile log2 = new TextFile(outputFile + "-eQTM-missingnessLog.txt", TextFile.W);
         
         THashSet<String> identifiersUsed = new THashSet<String>();
         
@@ -260,6 +260,7 @@ public class eQTLmeQTLCompare {
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
                 if (!eQtmInfo.containsKey(data[4])) {
                     skippedDueToMapping++;
+                    log2.write("meQTL probe not present In eQTM file:\t" + data[4] + ", effect statistics: \t" + data[0] + "\t" + data[2] + "\t" + data[3] + "\t" + data[16] + "\n");
                     continue;
                 }
 
@@ -533,10 +534,10 @@ public class eQTLmeQTLCompare {
                     }
                 }
             }
-            lineno++;
         }
         identicalOut.close();
         in.close();
+        log2.close();
         
         log.write("\n/// Writing missing QTLs observed in original file but not in the new file ////\n\n");
         for(Entry<String, String[]> QTL : hashEQTLs.entrySet()){
@@ -555,10 +556,8 @@ public class eQTLmeQTLCompare {
             }
         }
         
-        
         log.close();
         
-
         double[] valsX = new double[vecX.size()];
         double[] valsY = new double[vecX.size()];
         for (int v = 0; v < valsX.length; v++) {

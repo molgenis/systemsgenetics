@@ -127,7 +127,6 @@ public class eQTLFileCompare {
         THashSet<String> hashUniqueProbes = new THashSet<String>();
         THashSet<String> hashUniqueGenes = new THashSet<String>();
 
-        TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
         TextFile in = new TextFile(file1, TextFile.R);
         in.readLine();
         String[] data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
@@ -225,9 +224,9 @@ public class eQTLFileCompare {
         in = new TextFile(file2, TextFile.R);
         in.readLine();
 
-        int lineno = 1;
         data = null;
         TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
+        TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
         while ((data = in.readLineElemsReturnReference(SPLIT_ON_TAB)) != null) {
 
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
@@ -490,7 +489,6 @@ public class eQTLFileCompare {
                     }
                 }
             }
-            lineno++;
         }
         
         identicalOut.close();
