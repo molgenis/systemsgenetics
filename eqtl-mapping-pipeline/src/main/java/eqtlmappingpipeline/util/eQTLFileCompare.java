@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -217,6 +218,8 @@ public class eQTLFileCompare {
 
         //Vector holding all opposite allelic effects:
         LinkedHashSet<String> vecOppositeEQTLs = new LinkedHashSet<String>();
+        //Vector holding identifiers observed.
+        THashSet<String> identifiersUsed = new THashSet<String>();
 
         //Now process file 2:
         in = new TextFile(file2, TextFile.R);
@@ -275,6 +278,7 @@ public class eQTLFileCompare {
 
                         if (data.length > 16 && data[16].length() > 1) {
                             if (splitGeneNames) {
+                                //NB Plotting and processing of all QTLs here is not okay!
                                 for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
                                     if (!hashExcludeEQTLs.contains(data[1] + "\t" + gene)) {
                                         identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene;
@@ -304,8 +308,7 @@ public class eQTLFileCompare {
                     if (eQTL == null) {
 
                         //The eQTL, present in file 2 is not present in file 1:
-                        double pValue = Double.parseDouble(data[0]);
-                        //if (pValue < 1E-4) {
+                        //if (Double.parseDouble(data[0] < 1E-4) {
                         if (hashTestedSNPsThatPassedQC == null || hashTestedSNPsThatPassedQC.contains(data[1])) {
                             log.write("eQTL Present In New file But Not In Original File:\t" + identifier + "\t" + data[0] + "\t" + data[2] + "\t" + data[3] + "\t" + data[16] + "\n");
                         }
@@ -316,6 +319,7 @@ public class eQTLFileCompare {
                         zs.draw(null, zScore2, 0, 1);
 
                     } else {
+                        identifiersUsed.add(identifier);
                         String[] eQtlData = eQTL;
                         boolean identicalProbe = true;
                         String probe = data[4];
@@ -488,9 +492,28 @@ public class eQTLFileCompare {
             }
             lineno++;
         }
+        
         identicalOut.close();
-        log.close();
         in.close();
+        
+        log.write("\n/// Writing missing QTLs observed in original file but not in the new file ////\n\n");
+        for(Map.Entry<String, String[]> QTL : hashEQTLs.entrySet()){
+            if(!identifiersUsed.contains(QTL.getKey())){
+                //The eQTL, present in file 1 is not present in file 2:
+                //if (Double.parseDouble(data[0] < 1E-4) {
+                if (hashTestedSNPsThatPassedQC == null || hashTestedSNPsThatPassedQC.contains(data[1])) {
+                    log.write("eQTL Present In Original file But Not In New File:\t" + QTL.getKey() + "\t" + QTL.getValue()[0] + "\t" + QTL.getValue()[2] + "\t" + QTL.getValue()[3] + "\t" + QTL.getValue()[16] + "\n");
+                }
+//                }
+                double zScore = Double.parseDouble(QTL.getValue()[10]);
+//                int posX = 500 + (int) 0;
+//                int posY = 500 - (int) Math.round(zScore * 10);
+                zs.draw(zScore, null, 0, 1);
+            }
+        }
+        
+        
+        log.close();
 
         double[] valsX = new double[vecX.size()];
         double[] valsY = new double[vecX.size()];

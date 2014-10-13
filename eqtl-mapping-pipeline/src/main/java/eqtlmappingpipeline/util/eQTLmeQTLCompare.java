@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -111,14 +112,14 @@ public class eQTLmeQTLCompare {
 
         System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);
 
-        System.out.println("--out\t\tstring\t\tOutput file name\n"
+        System.out.println("--out\t\t\tstring\t\tOutput file name\n"
                 + "--eQTLfile\t\tstring\t\tLocation of eQTL outputfile\n"
                 + "--meQTLfile\t\tstring\t\tLocation of meQTL outputfile\n"
                 + "--eQTMfile\t\tstring\t\tLocation of eQTM outputfile\n"
-                + "--fdrCuttoff\t\tdouble\t\ttalterntive FDR cutoff\n"
-                + "--eqtmdirection\t\t\t\t\tTake eQTM direction into acount\n"
-                + "--topeffect\t\t\t\t\t\tOnly use the top eQTM as annotation\n"
-                + "--splitGeneNames\t\tSplit gene names on ;");
+                + "--fdrCuttoff\t\tdouble\t\tAlterntive FDR cutoff\n"
+                + "--eqtmdirection\t\t\t\tTake eQTM direction into acount\n"
+                + "--topeffect\t\t\t\tOnly use the top eQTM as annotation\n"
+                + "--splitGeneNames\t\t\tSplit gene names on ;");
     }
 
     public final void compareOverlapAndZScoreDirectionTwoEQTLFiles(String eQTL, String meQTL, String eQTMFile, String outputFile, boolean matchOnGeneName, double fdrCutt, boolean matchSnpOnPos, boolean splitGeneNames, boolean flipUsingEQTM, boolean topeffect) throws IOException, Exception {
@@ -221,7 +222,7 @@ public class eQTLmeQTLCompare {
 
         ZScorePlot zs = new ZScorePlot();
         String zsOutFileName = outputFile + "-ZScoreComparison.pdf";
-        zs.init(2, new String[]{"Dataset1", "Dataset2"}, true, zsOutFileName);
+        zs.init(2, new String[]{"eQTLs", "meQTLs"}, true, zsOutFileName);
 
         //Variables holding variousStatistics:
         int nreQTLsIdenticalDirection = 0;
@@ -229,11 +230,11 @@ public class eQTLmeQTLCompare {
         HashMap<String, Integer> hashEQTLNrTimesAssessed = new HashMap<String, Integer>();
         ArrayList<String> vecEQTLNrTimesAssessed = new ArrayList<String>();
 
-        HashMap<String, String[]> hashEQTLs2 = new HashMap<String, String[]>();
-        HashSet<String> hashUniqueProbes2 = new HashSet<String>();
-        HashSet<String> hashUniqueGenes2 = new HashSet<String>();
-        HashSet<String> hashUniqueProbesOverlap = new HashSet<String>();
-        HashSet<String> hashUniqueGenesOverlap = new HashSet<String>();
+        THashSet<String> hashEQTLs2 = new THashSet<String>();
+        THashSet<String> hashUniqueProbes2 = new THashSet<String>();
+        THashSet<String> hashUniqueGenes2 = new THashSet<String>();
+        THashSet<String> hashUniqueProbesOverlap = new THashSet<String>();
+        THashSet<String> hashUniqueGenesOverlap = new THashSet<String>();
 
         int counterFile2 = 0;
         int overlap = 0;
@@ -251,6 +252,9 @@ public class eQTLmeQTLCompare {
         int skippedDueToMapping = 0;
         data = null;
         TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
+        
+        THashSet<String> identifiersUsed = new THashSet<String>();
+        
         while ((data = in.readLineElemsReturnReference(SPLIT_ON_TAB)) != null) {
 
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
@@ -285,8 +289,8 @@ public class eQTLmeQTLCompare {
 
                                             hashUniqueProbes2.add(data[4]);
                                             hashUniqueGenes2.add(gene);
-                                            if (!hashEQTLs2.containsKey((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene)) {
-                                                hashEQTLs2.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
+                                            if (!hashEQTLs2.contains((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene)) {
+                                                hashEQTLs2.add((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene);
                                                 counterFile2++;
                                             }
 
@@ -295,8 +299,8 @@ public class eQTLmeQTLCompare {
 
                                         hashUniqueProbes2.add(data[4]);
                                         hashUniqueGenes2.add(data[16]);
-                                        if (!hashEQTLs2.containsKey((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16])) {
-                                            hashEQTLs2.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16], data);
+                                        if (!hashEQTLs2.contains((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16])) {
+                                            hashEQTLs2.add((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]);
                                             counterFile2++;
                                         }
                                     }
@@ -317,6 +321,7 @@ public class eQTLmeQTLCompare {
 
                         if (data.length > 16 && data[16].length() > 1) {
                             if (splitGeneNames) {
+                                //NB Plotting and processing of all QTLs here is not okay!
                                 for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
                                     if (!hashExcludeEQTLs.contains(data[1] + "\t" + gene)) {
                                         identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene;
@@ -346,18 +351,18 @@ public class eQTLmeQTLCompare {
                     if (QTL == null) {
 
                         //The eQTL, present in file 2 is not present in file 1:
-                        double pValue = Double.parseDouble(data[0]);
-                        //if (pValue < 1E-4) {
+                        //if (Double.parseDouble(data[0]); < 1E-4) {
                         if (hashTestedSNPsThatPassedQC == null || hashTestedSNPsThatPassedQC.contains(data[1])) {
                             log.write("eQTL Present In New file But Not In Original File:\t" + identifier + "\t" + data[0] + "\t" + data[2] + "\t" + data[3] + "\t" + data[16] + "\n");
                         }
                         //}
                         double zScore2 = Double.parseDouble(data[10]);
-                        int posX = 500 + (int) 0;
-                        int posY = 500 - (int) Math.round(zScore2 * 10);
+//                        int posX = 500 + (int) 0;
+//                        int posY = 500 - (int) Math.round(zScore2 * 10);
                         zs.draw(null, zScore2, 0, 1);
 
                     } else {
+                        identifiersUsed.add(identifier);
                         String[] eQtlData = QTL;
                         boolean identicalProbe = true;
                         String probe = data[4];
@@ -531,8 +536,28 @@ public class eQTLmeQTLCompare {
             lineno++;
         }
         identicalOut.close();
-        log.close();
         in.close();
+        
+        log.write("\n/// Writing missing QTLs observed in original file but not in the new file ////\n\n");
+        for(Entry<String, String[]> QTL : hashEQTLs.entrySet()){
+            if(!identifiersUsed.contains(QTL.getKey())){
+                //The eQTL, present in file 1 is not present in file 2:
+                
+                //if (Double.parseDouble(QTL.getValue()[0]) < 1E-4) {
+                if (hashTestedSNPsThatPassedQC == null || hashTestedSNPsThatPassedQC.contains(data[1])) {
+                    log.write("eQTL Present In Original file But Not In New File:\t" + QTL.getKey() + "\t" + QTL.getValue()[0] + "\t" + QTL.getValue()[2] + "\t" + QTL.getValue()[3] + "\t" + QTL.getValue()[16] + "\n");
+                }
+                //}
+                double zScore = Double.parseDouble(QTL.getValue()[10]);
+//                int posX = 500 + (int) 0;
+//                int posY = 500 - (int) Math.round(zScore * 10);
+                zs.draw(zScore, null, 0, 1);
+            }
+        }
+        
+        
+        log.close();
+        
 
         double[] valsX = new double[vecX.size()];
         double[] valsY = new double[vecX.size()];
@@ -544,10 +569,6 @@ public class eQTLmeQTLCompare {
             double correlation = JSci.maths.ArrayMath.correlation(valsX, valsY);
             double r2 = correlation * correlation;
 
-            /*
-             * randomEngine = new cern.jet.random.engine.DRand();
-             tDistColt = new cern.jet.random.StudentT(olsY.length - 4, randomEngine);
-             */
             cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
             cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(valsX.length - 2, randomEngine);
             double pValuePearson = 1;
