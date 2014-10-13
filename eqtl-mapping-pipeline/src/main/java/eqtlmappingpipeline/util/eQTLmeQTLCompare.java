@@ -137,16 +137,16 @@ public class eQTLmeQTLCompare {
 
         for (Iterator<EQTL> eQtlIt = eQTLsTextFile.getEQtlIterator(); eQtlIt.hasNext();) {
             EQTL eQtm = eQtlIt.next();
-            String eQtlKey = eQtm.getRsName();
+            String eQtmKey = eQtm.getRsName();
 
-            ArrayList<EQTL> posEqtls = eQtmInfo.get(eQtlKey);
+            ArrayList<EQTL> posEqtls = eQtmInfo.get(eQtmKey);
 
             if (posEqtls == null) {
                 posEqtls = new ArrayList<EQTL>(1);
                 posEqtls.add(eQtm);
-                eQtmInfo.put(eQtlKey, posEqtls);
+                eQtmInfo.put(eQtmKey, posEqtls);
             } else if (!topeffect) {
-                eQtmInfo.get(eQtlKey).add(eQtm);
+                eQtmInfo.get(eQtmKey).add(eQtm);
             }
         }
 
