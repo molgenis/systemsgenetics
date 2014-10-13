@@ -538,13 +538,13 @@ public class EQTL implements Comparable<EQTL> {
                         out.append(ds[d]);
                     }
 
-                    if (correlations == null || correlations[d] == null) {
+                    if (correlations == null || correlations[d] == null || correlations[d].isNaN()) {
                         outcorrs.append(nullstr);
                     } else {
                         outcorrs.append(correlations[d]);
                     }
 
-                    if (datasetZScores == null || datasetZScores[d] == null) {
+                    if (datasetZScores == null || datasetZScores[d] == null || datasetZScores[d].isNaN()) {
                         outzscores.append(nullstr);
                     } else {
                         outzscores.append(datasetZScores[d]);
@@ -556,13 +556,13 @@ public class EQTL implements Comparable<EQTL> {
                         outsamples.append(datasetsSamples[d]);
                     }
 
-                    if (probeMeans == null || probeMeans[d] == null) {
+                    if (probeMeans == null || probeMeans[d] == null || probeMeans[d].isNaN()) {
                         outmeans.append(nullstr);
                     } else {
                         outmeans.append(probemeans[d]);
                     }
 
-                    if (probeVariance == null || probeVariance[d] == null) {
+                    if (probeVariance == null || probeVariance[d] == null || probeVariance[d].isNaN()) {
                         outvars.append(nullstr);
                     } else {
                         outvars.append(probeVariance[d]);
@@ -575,13 +575,13 @@ public class EQTL implements Comparable<EQTL> {
                         out.append(sepStr).append(ds[d]);
                     }
 
-                    if (correlations == null || correlations[d] == null) {
+                    if (correlations == null || correlations[d] == null || correlations[d].isNaN()) {
                         outcorrs.append(sepStr).append(nullstr);
                     } else {
                         outcorrs.append(sepStr).append(correlations[d]);
                     }
 
-                    if (datasetZScores == null || datasetZScores[d] == null) {
+                    if (datasetZScores == null || datasetZScores[d] == null || datasetZScores[d].isNaN()) {
                         outzscores.append(sepStr).append(nullstr);
                     } else {
                         outzscores.append(sepStr).append(datasetZScores[d]);
@@ -593,13 +593,13 @@ public class EQTL implements Comparable<EQTL> {
                         outsamples.append(sepStr).append(datasetsSamples[d]);
                     }
 
-                    if (probeMeans == null || probeMeans[d] == null) {
+                    if (probeMeans == null || probeMeans[d] == null || probeMeans[d].isNaN()) {
                         outmeans.append(sepStr).append(nullstr);
                     } else {
                         outmeans.append(sepStr).append(probemeans[d]);
                     }
 
-                    if (probeVariance == null || probeVariance[d] == null) {
+                    if (probeVariance == null || probeVariance[d] == null || probeVariance[d].isNaN()) {
                         outvars.append(sepStr).append(nullstr);
                     } else {
                         outvars.append(sepStr).append(probeVariance[d]);
