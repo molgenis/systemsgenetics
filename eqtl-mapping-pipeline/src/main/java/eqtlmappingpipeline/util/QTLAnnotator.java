@@ -24,8 +24,8 @@ class QTLAnnotator {
 
     public static void main(String[] args) throws IOException {
         addAnnotationToQTLOutput("D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects\\eQTLsFDR0.05-ProbeLevel.txt",
-                "D:\\UMCG\\GWAS_Catalog\\GWAS-Catalog-02092014.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-SNPLevel.txt", 
-                "1;1;1;10;1;11;1;4",
+                "D:\\UMCG\\GWAS_Catalog\\GWAS-Catalog-02092014.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-SNPLevel.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Normal\\RP3_2Mb_extendedCis_eQTMs\\eQTLSNPsFDR0.05-SNPLevel.txt", 
+                "1;1;1;10;1;11;1;4;1;4",
                 "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects\\eQTLsFDR0.05-ProbeLevel-ExtendedInfo.txt");
     }
 
