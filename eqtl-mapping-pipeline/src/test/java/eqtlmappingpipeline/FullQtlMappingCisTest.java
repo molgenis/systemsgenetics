@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline;
 
-import eqtlmappingpipeline.util.eQTLFileSorter;
+import eqtlmappingpipeline.util.QTLFileSorter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
@@ -71,7 +71,7 @@ public class FullQtlMappingCisTest {
 
         eQTLTextFile eExp = new eQTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt", eQTLTextFile.R);
         
-        eQTLFileSorter r = new eQTLFileSorter();
+        QTLFileSorter r = new QTLFileSorter();
         r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt");
         
         eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt", eQTLTextFile.R);

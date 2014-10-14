@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.pcaoptimum;
 
-import eqtlmappingpipeline.util.eQTLFileCompare;
+import eqtlmappingpipeline.util.QTLFileCompare;
 import java.io.IOException;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.eQTLTextFile;
@@ -24,7 +24,7 @@ public class PCAOptimumInventorize {
         int[] nrTransSharedPerRound = new int[21];
         int[] nrTransOppositePerRound = new int[21];
 
-        eQTLFileCompare e = new eQTLFileCompare();
+        QTLFileCompare e = new QTLFileCompare();
         int round = 1;
         
         if(cis){
@@ -83,7 +83,7 @@ public class PCAOptimumInventorize {
         int[] nrTransEQTLsPerRound = new int[21];
         int[] nrTransSharedPerRound = new int[21];
         int[] nrTransOppositePerRound = new int[21];
-        eQTLFileCompare e = new eQTLFileCompare();
+        QTLFileCompare e = new QTLFileCompare();
         int round = 1;
 
         String pcqtlsuffix = "-GeneticVectorsNotRemoved";

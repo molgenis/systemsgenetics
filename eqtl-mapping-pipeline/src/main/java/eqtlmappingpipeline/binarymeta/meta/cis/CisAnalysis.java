@@ -10,7 +10,7 @@ import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.MetaSettings;
 import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
-import eqtlmappingpipeline.util.eQTLFileSorter;
+import eqtlmappingpipeline.util.QTLFileSorter;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
@@ -111,7 +111,7 @@ public class CisAnalysis extends MetaAnalyze {
 
         for (int abs = 0; abs < 1; abs++) {
             for (int perm = 0; perm < m_settings.getNrPermutations() + 1; perm++) {
-                eQTLFileSorter sorter = new eQTLFileSorter();
+                QTLFileSorter sorter = new QTLFileSorter();
                 String suffix = "eQTLs.txt.gz";
 
 

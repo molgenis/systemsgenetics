@@ -264,7 +264,7 @@ public class UtilConsoleGUI {
                         if (in == null) {
                             System.out.println("USAGE: --in eQTLFile --out eQTLFile");
                         } else {
-                            eQTLFileSorter f = new eQTLFileSorter();
+                            QTLFileSorter f = new QTLFileSorter();
                             f.run(in, out);
                         }
                         break;
@@ -338,7 +338,7 @@ public class UtilConsoleGUI {
                         if (in == null) {
                             System.out.println("Usage: --dotplot --in /path/to/file.txt");
                         } else {
-                            eQTLDotPlotter d = new eQTLDotPlotter();
+                            QTLDotPlotter d = new QTLDotPlotter();
                             d.plot(in);
                         }
                         break;
