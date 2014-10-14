@@ -4,6 +4,7 @@
  */
 package umcg.genetica.io.probemapping;
 
+import java.awt.TextField;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,6 +22,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
+import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
@@ -583,7 +585,7 @@ public class reading {
         HashMap<String, String> probeInfo = new HashMap<String, String>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
+            TextFile in = new TextFile(annotationFile, TextFile.R);
             String str = "";
 
             while ((str = in.readLine()) != null) {
