@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +27,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  *
  * @author harmjan
  */
-public class EQTLmeQTLCompare {
+public class QTLmeQTLCompare {
 
     private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
     private static Pattern SEMI_COLON_PATTERN = Pattern.compile(";");
@@ -43,10 +42,10 @@ public class EQTLmeQTLCompare {
         return nrOpposite;
     }
 
-    public EQTLmeQTLCompare() {
+    public QTLmeQTLCompare() {
     }
 
-    public EQTLmeQTLCompare(String[] args) {
+    public QTLmeQTLCompare(String[] args) {
 
         String out = null;
         String eQTLfile = null;
@@ -97,9 +96,9 @@ public class EQTLmeQTLCompare {
             try {
                 compareOverlapAndZScoreDirectionTwoEQTLFiles(eQTLfile, meQTLfile, eQTMfile, out, matchOnGeneName, fdrCut, matchSnpOnPos, splitGeneNames, flipUsingEQTM, topeffect);
             } catch (IOException ex) {
-                Logger.getLogger(EQTLmeQTLCompare.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(QTLmeQTLCompare.class.getName()).log(Level.SEVERE, null, ex);
             } catch (Exception ex) {
-                Logger.getLogger(EQTLmeQTLCompare.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(QTLmeQTLCompare.class.getName()).log(Level.SEVERE, null, ex);
             }
 
         } else {
