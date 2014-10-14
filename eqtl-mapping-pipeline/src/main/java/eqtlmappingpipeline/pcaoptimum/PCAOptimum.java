@@ -21,7 +21,7 @@ import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.text.Strings;
 
 /**
@@ -491,7 +491,7 @@ public class PCAOptimum extends MetaQTL3 {
         performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
         cleanup();
 
-        eQTLTextFile etf = new eQTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+        QTLTextFile etf = new QTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt", QTLTextFile.R);
         EQTL[] eigenvectorEQTLs = etf.read();
         etf.close();
 

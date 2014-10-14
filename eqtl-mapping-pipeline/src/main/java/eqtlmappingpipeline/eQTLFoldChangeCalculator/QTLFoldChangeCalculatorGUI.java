@@ -10,9 +10,9 @@ import umcg.genetica.console.ConsoleGUIElems;
  *
  * @author harmjan
  */
-public class eQTLFoldChangeCalculatorGUI {
+public class QTLFoldChangeCalculatorGUI {
 
-    public eQTLFoldChangeCalculatorGUI(String[] args) {
+    public QTLFoldChangeCalculatorGUI(String[] args) {
 
         String settingsfile = null;
         String settingstexttoreplace = null;
@@ -100,7 +100,7 @@ public class eQTLFoldChangeCalculatorGUI {
                 System.out.println("ERROR: Please supply settings file (--settings settings.xml) or --in and --out");
                 printUsage();
             } else {
-                eQTLFoldChangeCalculator m = new eQTLFoldChangeCalculator();
+                QTLFoldChangeCalculator m = new QTLFoldChangeCalculator();
                 if (!binout && !textout) {
                     textout = true;
                 }

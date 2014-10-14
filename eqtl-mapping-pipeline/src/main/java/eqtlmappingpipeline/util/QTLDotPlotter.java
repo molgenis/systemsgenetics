@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  *
  * @author harmjan
  */
-public class eQTLDotPlotter {
+public class QTLDotPlotter {
 
     public void plot(String file) {
         System.out.println("Reading from: " + file);
@@ -23,9 +23,9 @@ public class eQTLDotPlotter {
             EQTLDotPlot edp = new EQTLDotPlot();
             edp.draw(file, file + "EQTLDotPlot.pdf", EQTLDotPlot.Output.PDF);
         } catch (IOException ex) {
-            Logger.getLogger(eQTLDotPlotter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(QTLDotPlotter.class.getName()).log(Level.SEVERE, null, ex);
         } catch (DocumentException ex) {
-            Logger.getLogger(eQTLDotPlotter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(QTLDotPlotter.class.getName()).log(Level.SEVERE, null, ex);
         }
 
 

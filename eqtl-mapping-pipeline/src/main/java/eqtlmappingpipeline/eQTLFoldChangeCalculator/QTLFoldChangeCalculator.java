@@ -14,7 +14,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  *
  * @author harmjan
  */
-public class eQTLFoldChangeCalculator extends MetaQTL3 {
+public class QTLFoldChangeCalculator extends MetaQTL3 {
 
     public void run() {
     }

@@ -24,7 +24,7 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
  *
  * @author harmjan
  */
-public class eQTLFileCompare {
+public class QTLFileCompare {
 
     private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
     private static Pattern SEMI_COLON_PATTERN = Pattern.compile(";");
@@ -39,10 +39,10 @@ public class eQTLFileCompare {
         return nrOpposite;
     }
 
-    public eQTLFileCompare() {
+    public QTLFileCompare() {
     }
 
-    public eQTLFileCompare(String[] args) {
+    public QTLFileCompare(String[] args) {
 
         String out = null;
         String file1 = null;
@@ -84,9 +84,9 @@ public class eQTLFileCompare {
             try {
                 compareOverlapAndZScoreDirectionTwoEQTLFiles(file1, file2, out, fdrCut, matchOnGeneName, matchSnpOnPos, splitGeneNames);
             } catch (IOException ex) {
-                Logger.getLogger(eQTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(QTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
             } catch (Exception ex) {
-                Logger.getLogger(eQTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(QTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
             }
 
         } else {
