@@ -4,7 +4,6 @@
  */
 package eqtlmappingpipeline.util;
 
-import com.sun.org.apache.xml.internal.security.keys.storage.implementations.KeyStoreResolver;
 import eqtlmappingpipeline.binarymeta.Main;
 import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
@@ -403,7 +402,7 @@ public class UtilConsoleGUI {
                         break;
                         
                     case ADDANNOTATIONTOQTLFILE:
-                        QTLAnnotator.addAnnotationToQTLOutput(in, sources, keyValuePairs);
+                        QTLAnnotator.addAnnotationToQTLOutput(in, sources, keyValuePairs, out);
                         break;
                 }
             } catch (Exception e) {
