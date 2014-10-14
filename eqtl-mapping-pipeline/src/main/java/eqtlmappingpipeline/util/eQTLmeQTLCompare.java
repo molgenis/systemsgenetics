@@ -21,7 +21,7 @@ import org.apache.commons.collections.primitives.ArrayDoubleList;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 
 /**
@@ -132,7 +132,7 @@ public class EQTLmeQTLCompare {
         HashSet<String> hashTestedSNPsThatPassedQC = null; //We can confine the analysis to only those eQTLs for which the SNP has been successfully passed QC, otherwise sometimes unfair comparisons are made. If requested, put the SNP name in this HashMap
 
         //Load the eQTM File
-        eQTLTextFile eQTLsTextFile = new eQTLTextFile(eQTMFile, eQTLTextFile.R);
+        QTLTextFile eQTLsTextFile = new QTLTextFile(eQTMFile, QTLTextFile.R);
 
         HashMap<String, ArrayList<EQTL>> eQtmInfo = new HashMap<String, ArrayList<EQTL>>();
 

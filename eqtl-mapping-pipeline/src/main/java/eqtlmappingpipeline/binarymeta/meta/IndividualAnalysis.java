@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.zip.DataFormatException;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 
 /**
  *
@@ -77,7 +77,7 @@ public class IndividualAnalysis extends MetaAnalyze {
 	EQTL[][] eqtls = new EQTL[setnames.length][0];
 	double[] setsizes = new double[setnames.length];
 	for (int i = 0; i < setnames.length - 1; i++) {
-	    eQTLTextFile etf = new eQTLTextFile(origOuputDir + "/" + setnames[i] + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", eQTLTextFile.R);
+	    QTLTextFile etf = new QTLTextFile(origOuputDir + "/" + setnames[i] + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", QTLTextFile.R);
 	    eqtls[i] = etf.read();
 	    HashSet<String> uniqueprobes = new HashSet<String>();
 	    for (EQTL u : eqtls[i]) {
@@ -87,7 +87,7 @@ public class IndividualAnalysis extends MetaAnalyze {
 	    etf.close();
 	}
 
-	eQTLTextFile etf = new eQTLTextFile(origOuputDir + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", eQTLTextFile.R);
+	QTLTextFile etf = new QTLTextFile(origOuputDir + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", QTLTextFile.R);
 	eqtls[setnames.length - 1] = etf.read();
 	HashSet<String> uniqueprobes = new HashSet<String>();
 	for (EQTL u : eqtls[setnames.length - 1]) {

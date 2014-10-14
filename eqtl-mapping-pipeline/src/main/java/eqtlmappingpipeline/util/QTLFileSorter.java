@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 
 
 /**
@@ -21,7 +21,7 @@ public class QTLFileSorter {
 
     public void run(String efile, String outfile) throws IOException {
         System.out.println("Loading: " + efile);
-        eQTLTextFile e = new eQTLTextFile(efile, eQTLTextFile.R);
+        QTLTextFile e = new QTLTextFile(efile, QTLTextFile.R);
 
         ArrayList<EQTL> eQtls = e.readList();
 
@@ -37,7 +37,7 @@ public class QTLFileSorter {
             outfile = efile + "_sorted.txt.gz";
         }
         
-        eQTLTextFile out = new eQTLTextFile(outfile, eQTLTextFile.W);
+        QTLTextFile out = new QTLTextFile(outfile, QTLTextFile.W);
         out.write(eQtls);
         out.close();
 

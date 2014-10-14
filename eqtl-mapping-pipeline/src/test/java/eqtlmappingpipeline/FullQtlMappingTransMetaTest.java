@@ -14,7 +14,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import eqtlmappingpipeline.util.QTLFileSorter;
 
 /**
@@ -69,9 +69,9 @@ public class FullQtlMappingTransMetaTest {
         QTLFileSorter r = new QTLFileSorter();
         r.run(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel.txt", tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt");
         
-        eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
+        QTLTextFile eExp = new QTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", QTLTextFile.R);
         
-        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt", eQTLTextFile.R);
+        QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt", QTLTextFile.R);
 
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
