@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.collections.primitives.ArrayDoubleList;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
@@ -138,6 +139,21 @@ public class eQTLmeQTLCompare {
         for (Iterator<EQTL> eQtlIt = eQTLsTextFile.getEQtlIterator(); eQtlIt.hasNext();) {
             EQTL eQtm = eQtlIt.next();
             String eQtmKey = eQtm.getRsName();
+            
+            if(!eQtm.getAlleleAssessed().equals("C")){
+                eQtm.setAlleleAssessed("C");
+                eQtm.setZscore(eQtm.getZscore()*-1);
+                
+                Double[] zscores = eQtm.getDatasetZScores();
+                Double[] correlation = eQtm.getCorrelations();
+                for(int i=0; i<eQtm.getDatasets().length; ++i){
+                    zscores[i] *=-1;
+                    correlation[i] *=-1;
+                }
+                eQtm.setDatasetZScores(zscores);
+                eQtm.setCorrelations(correlation);
+                
+            }
 
             ArrayList<EQTL> posEqtls = eQtmInfo.get(eQtmKey);
 
@@ -227,7 +243,6 @@ public class eQTLmeQTLCompare {
         int nreQTLsIdenticalDirection = 0;
         int nreQTLsOppositeDirection = 0;
         HashMap<String, Integer> hashEQTLNrTimesAssessed = new HashMap<String, Integer>();
-        ArrayList<String> vecEQTLNrTimesAssessed = new ArrayList<String>();
 
         THashSet<String> hashEQTLs2 = new THashSet<String>();
         THashSet<String> hashUniqueProbes2 = new THashSet<String>();
@@ -237,11 +252,11 @@ public class eQTLmeQTLCompare {
 
         int counterFile2 = 0;
         int overlap = 0;
-        ArrayList<Double> vecX = new ArrayList<Double>();
-        ArrayList<Double> vecY = new ArrayList<Double>();
+        ArrayDoubleList vecX = new ArrayDoubleList();
+        ArrayDoubleList vecY = new ArrayDoubleList();
 
         //Vector holding all opposite allelic effects:
-        LinkedHashSet<String> vecOppositeEQTLs = new LinkedHashSet<String>();
+//        LinkedHashSet<String> vecOppositeEQTLs = new LinkedHashSet<String>();
 
         //Now process file 2:
         in = new TextFile(meQTL, TextFile.R);
@@ -250,6 +265,7 @@ public class eQTLmeQTLCompare {
         int skippedDueToMapping = 0;
         data = null;
         TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
+        TextFile disconcordantOut = new TextFile(outputFile + "-OppositeEQTLs.txt", TextFile.W);
         TextFile log = new TextFile(outputFile + "-eQTL-meQTL-ComparisonLog.txt", TextFile.W);
         TextFile log2 = new TextFile(outputFile + "-eQTM-missingnessLog.txt", TextFile.W);
         
@@ -376,7 +392,6 @@ public class eQTLmeQTLCompare {
                         hashUniqueGenesOverlap.add(data[16]);
                         if (!hashEQTLNrTimesAssessed.containsKey(identifier)) {
                             hashEQTLNrTimesAssessed.put(identifier, 1);
-                            vecEQTLNrTimesAssessed.add(identifier);
                         } else {
                             hashEQTLNrTimesAssessed.put(identifier, 1 + hashEQTLNrTimesAssessed.get(identifier));
                         }
@@ -499,19 +514,11 @@ public class eQTLmeQTLCompare {
                             if (!sameDirection) {
                                 nreQTLsOppositeDirection++;
 
-                                String oppositeEQTL;
-
                                 if (matchOnGeneName) {
-                                    oppositeEQTL = data[1] + "\t" + data[16];
+                                    disconcordantOut.append(data[1] + '\t' + data[16] + '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2);
 
                                 } else {
-                                    oppositeEQTL = data[1] + "\t" + data[4];
-                                }
-
-                                oppositeEQTL += '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2;
-
-                                if (!vecOppositeEQTLs.contains(oppositeEQTL)) {
-                                    vecOppositeEQTLs.add(oppositeEQTL);
+                                    disconcordantOut.append(data[1] + '\t' + data[4] + '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2);
                                 }
 
                                 //                            int posX = 500 + (int) Math.round(zScore * 10);
@@ -521,7 +528,7 @@ public class eQTLmeQTLCompare {
 
                             } else {
                                 // write to output
-                                identicalOut.writeln(identifier);
+                                identicalOut.writeln(identifier + '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2);
                                 nreQTLsIdenticalDirection++;
                                 if (alleles.length() > 2 && !alleles.equals("A/T") && !alleles.equals("T/A") && !alleles.equals("C/G") && !alleles.equals("G/C")) {
                                     //                                int posX = 500 + (int) Math.round(zScore * 10);
@@ -530,12 +537,14 @@ public class eQTLmeQTLCompare {
                                     vecY.add(zScore2);
                                 }
                             }
+                            
                         }
                     }
                 }
             }
         }
         identicalOut.close();
+        disconcordantOut.close();
         in.close();
         log2.close();
         
@@ -557,13 +566,11 @@ public class eQTLmeQTLCompare {
         }
         
         log.close();
+        zs.write(zsOutFileName);
         
-        double[] valsX = new double[vecX.size()];
-        double[] valsY = new double[vecX.size()];
-        for (int v = 0; v < valsX.length; v++) {
-            valsX[v] = ((Double) vecX.get(v)).doubleValue();
-            valsY[v] = ((Double) vecY.get(v)).doubleValue();
-        }
+        double[] valsX = vecX.toArray();
+        double[] valsY = vecY.toArray();
+
         if (valsX.length > 2) {
             double correlation = JSci.maths.ArrayMath.correlation(valsX, valsY);
             double r2 = correlation * correlation;
@@ -580,17 +587,6 @@ public class eQTLmeQTLCompare {
             pValuePearson *= 2;
             System.out.println("\nCorrelation between the Z-Scores of the overlapping set of eQTLs:\t" + correlation + "\tP-Value:\t" + pValuePearson);
         }
-
-        TextFile out = new TextFile(outputFile + "-OppositeEQTLs.txt", TextFile.W);
-        for (String oppositeEQTL : vecOppositeEQTLs) {
-            out.write(oppositeEQTL);
-            out.append('\n');
-        }
-        out.close();
-
-        in.close();
-
-        zs.write(zsOutFileName);
 
         TextFile outSummary = new TextFile(outputFile + "-Summary.txt", TextFile.W);
 
