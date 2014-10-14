@@ -597,9 +597,11 @@ public class reading {
                     HashMap<String, String> tmpHash = new HashMap<String, String>();
                     for (String tmp : strParts2) {
                         tmp = tmp.replaceAll("\"", "");
+//                        System.out.println(tmp);
                         String[] tmpPart = SPLIT_ON_SPACE.split(tmp);
-
-                        tmpHash.put(tmpPart[0], tmpPart[1]);
+                        if(tmpPart.length==2){
+                            tmpHash.put(tmpPart[0], tmpPart[1]);
+                        }
                     }
 
                     String tmp = tmpHash.get("gene_id");
