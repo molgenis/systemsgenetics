@@ -315,7 +315,7 @@ public class UtilConsoleGUI {
                                 }
                             } else {
                                 try {
-                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL, createLargeFdrFile);
+                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                     System.exit(1);
