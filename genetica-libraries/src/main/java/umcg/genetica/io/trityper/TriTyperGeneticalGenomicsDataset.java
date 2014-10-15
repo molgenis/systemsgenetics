@@ -4,6 +4,7 @@
  */
 package umcg.genetica.io.trityper;
 
+import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
 
     private TriTyperGenotypeData genotypeData;
     private TriTyperExpressionData expressionData;
-    private HashMap<String, String> genotypeToExpressionCouplings;
+    private THashMap<String, String> genotypeToExpressionCouplings;
     private TriTyperGeneticalGenomicsDatasetSettings settings;
     private short[] expressionToGenotypeIdArray;
     private short totalGGSamples;
@@ -63,7 +64,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
             String genotypeIndividual = entry.getKey();
             Integer genotypeIndividualId = genotypeData.getIndividualId(genotypeIndividual);
 
-            if (genotypeIndividualId != null && isIncluded[genotypeIndividualId] != null && isIncluded[genotypeIndividualId]) {
+            if (genotypeIndividualId != -9 && isIncluded[genotypeIndividualId] != null && isIncluded[genotypeIndividualId]) {
                 includedExpressionIndividuals.add(entry.getValue());
             }
         }
@@ -166,7 +167,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
     /**
      * @return the genotypeToExpressionCouplings
      */
-    public HashMap<String, String> getGenotypeToExpressionCouplings() {
+    public THashMap<String, String> getGenotypeToExpressionCouplings() {
         return genotypeToExpressionCouplings;
     }
 
@@ -174,7 +175,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
      * @param genotypeToExpressionCouplings the genotypeToExpressionCouplings to
      * set
      */
-    public void setGenotypeToExpressionCouplings(HashMap<String, String> genotypeToExpressionCouplings) {
+    public void setGenotypeToExpressionCouplings(THashMap<String, String> genotypeToExpressionCouplings) {
         this.genotypeToExpressionCouplings = genotypeToExpressionCouplings;
     }
 
@@ -197,7 +198,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
     }
 
     private void loadCouplings() throws IOException {
-        genotypeToExpressionCouplings = new HashMap<String, String>();
+        genotypeToExpressionCouplings = new THashMap<String, String>();
         String genotypeToExpressionCoupling = settings.genotypeToExpressionCoupling;
         if (genotypeToExpressionCoupling != null && genotypeToExpressionCoupling.trim().length() > 0) {
             if (!Gpio.exists(genotypeToExpressionCoupling)) {
@@ -322,7 +323,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         String[] individuals = genotypeData.getIndividuals();
 
         Boolean[] isReallyIncluded = new Boolean[individuals.length];
-        HashMap<String, String> realGenotypeToExpressionCouplings = new HashMap<String, String>();
+        THashMap<String, String> realGenotypeToExpressionCouplings = new THashMap<String, String>();
         totalGGSamples = 0;
         for (int i = 0; i < isReallyIncluded.length; i++) {
             String genotypeInd = individuals[i];
@@ -332,7 +333,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
                 String coupledExpressionSample = genotypeToExpressionCouplings.get(genotypeInd);
                 if (coupledExpressionSample != null) {
                     Integer expressionSampleId = expressionData.getIndividualId(coupledExpressionSample);
-                    if (expressionSampleId == null) {
+                    if (expressionSampleId == -9) {
                         isReallyIncluded[i] = false;
                     } else {
                         isReallyIncluded[i] = true;
@@ -354,7 +355,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
         for (Entry<String, String> entry : entries) {
             Integer expressionIndId = expressionData.getIndividualId(entry.getValue());
             Integer genotypeIndId = genotypeData.getIndividualId(entry.getKey());
-            if (expressionIndId != null && genotypeIndId != null) {
+            if (expressionIndId != -9 && genotypeIndId != -9) {
                 if (visitedNumbers.contains(expressionIndId)) {
                     System.out.println("ERROR: your dataset contains duplicate samples!");
                 } else {

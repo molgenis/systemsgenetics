@@ -379,7 +379,7 @@ public class UtilConsoleGUI {
 
                                 p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
                                 File file = new File(inexp);
-
+                                
                                 p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
                             } catch (IOException ex) {
                                 Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);

@@ -281,17 +281,15 @@ public class PCAOptimum extends MetaQTL3 {
             System.out.println("");
         }
 
-
         // sort datasets on size to increase efficiency of random reads..
         // for some reason, it is faster to load the largest dataset first.
         Arrays.sort(m_gg, Collections.reverseOrder());
 
         System.out.println("Accumulating available data...");
         System.out.print(ConsoleGUIElems.LINE);
-
         createSNPList();
         createProbeList();
-
+        
         // create WorkPackage objects
         determineSNPProbeCombinations();
 
@@ -310,7 +308,6 @@ public class PCAOptimum extends MetaQTL3 {
                 m_settings.nrThreads = numProcs;
             }
         }
-
         if (m_workPackages.length < m_settings.nrThreads) {
             m_settings.nrThreads = m_workPackages.length;
         }
@@ -337,7 +334,6 @@ public class PCAOptimum extends MetaQTL3 {
         if (!Gpio.exists(outputdir)) {
             Gpio.createDir(outputdir);
         }
-
         // set output dir
         // set standard cis-settings
         m_settings = new Settings();
@@ -384,8 +380,8 @@ public class PCAOptimum extends MetaQTL3 {
             m_settings.maxNrMostSignificantEQTLs = maxNrResults;
 
         }
+        
         init();
-
         // set standard trans settings
         super.mapEQTLs();
         cleanup();
@@ -527,7 +523,6 @@ public class PCAOptimum extends MetaQTL3 {
     }
     
     public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
-
         if (!out.endsWith(Gpio.getFileSeparator())) {
             out += Gpio.getFileSeparator();
         }
