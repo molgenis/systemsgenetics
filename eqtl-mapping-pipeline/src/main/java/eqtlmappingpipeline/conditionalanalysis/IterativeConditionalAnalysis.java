@@ -6,6 +6,7 @@ package eqtlmappingpipeline.conditionalanalysis;
 
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
+import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -181,9 +182,9 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
         return pairs;
     }
 
-    private HashSet<String> collectEQTLProbes(String origOutputDir, int currentIteration, double fdr) throws IOException {
+    private THashSet<String> collectEQTLProbes(String origOutputDir, int currentIteration, double fdr) throws IOException {
 
-        HashSet<String> output = new HashSet<String>();
+        THashSet<String> output = new THashSet<String>();
         String iterationFile = origOutputDir + "/Iteration" + (currentIteration-1) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt";
         TextFile tf = new TextFile(iterationFile, TextFile.R);
         tf.readLineElems(TextFile.tab);

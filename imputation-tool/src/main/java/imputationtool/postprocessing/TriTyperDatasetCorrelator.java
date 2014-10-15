@@ -128,7 +128,7 @@ public class TriTyperDatasetCorrelator {
             String indName1 = ggDataset1.getIndividuals()[i];
             if (ggDataset1.getIsIncluded()[i]) {
                 Integer indId2 = ggDataset2.getIndividualId(indName1);
-                if (indId2 != null) {
+                if (indId2 != -9) {
                     if (ggDataset2.getIsIncluded()[indId2]) {
 
 
@@ -197,7 +197,7 @@ public class TriTyperDatasetCorrelator {
 
         for (int snp1 = 0; snp1 < snps.length; snp1++) {
             Integer snp2 = ggDataset2.getSnpToSNPId().get(snps[snp1]);
-            if (snp2 != null) {
+            if (snp2 != -9) {
                 boolean takeComplement = false;
                 String excludeReason = "";
                 boolean exclude = false;
@@ -582,7 +582,7 @@ public class TriTyperDatasetCorrelator {
 
         for (int i = 0; i < snps1.length; i++) {
             Integer snp2Id = ggDataset2.getSnpToSNPId().get(snps1[i]);
-            if (snp2Id != null) {
+            if (snp2Id != -9) {
                 snps.add(snps1[i]);
             }
         }
@@ -621,7 +621,7 @@ public class TriTyperDatasetCorrelator {
 
             for (int i = 0; i < snps1.length; i++) {
                 Integer snp2Id = ggDataset2.getSnpToSNPId().get(snps1[i]);
-                if (snp2Id == null) {
+                if (snp2Id == -9) {
                     counter++;
                 }
             }
@@ -630,7 +630,7 @@ public class TriTyperDatasetCorrelator {
             counter = 0;
             for (int i = 0; i < snps2.length; i++) {
                 Integer snp1Id = ggDataset1.getSnpToSNPId().get(snps2[i]);
-                if (snp1Id == null) {
+                if (snp1Id == -9) {
                     counter++;
                 }
 

@@ -227,7 +227,7 @@ public class EQTLPlotter {
             TriTyperGeneticalGenomicsDataset currentDataset = m_gg[d];
             SNP currentSNP = snps[d];
             Integer probe = currentDataset.getExpressionData().getProbeToId().get(probeName);
-            if (currentSNP != null && probe != null) {
+            if (currentSNP != null && probe != -9) {
 
                 //Define x-axis data:
 

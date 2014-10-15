@@ -613,7 +613,7 @@ public class MetaQTL3 {
             String mappingOutput = "";
             for (int d = 0; d < m_gg.length; d++) {
                 Integer probeId = m_gg[d].getExpressionData().getProbeToId().get(probe);
-                if (probeId != null) {
+                if (probeId != -9) {
                     presence++;
                     if (chr == null) {
                         chr = m_gg[d].getExpressionData().getChr()[probeId];
@@ -718,7 +718,7 @@ public class MetaQTL3 {
             String probe = m_probeList[p];
             for (int d = 0; d < m_gg.length; d++) {
                 Integer tmp = m_gg[d].getExpressionData().getProbeToId().get(probe);
-                if (tmp == null) {
+                if (tmp == -9) {
                     m_probeTranslationTable.setQuick(d, p, -9);
                 } else {
                     m_probeTranslationTable.setQuick(d, p, tmp);

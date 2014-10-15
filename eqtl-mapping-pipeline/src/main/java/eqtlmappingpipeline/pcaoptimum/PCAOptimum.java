@@ -8,6 +8,7 @@ import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.normalization.Normalizer;
+import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -326,7 +327,7 @@ public class PCAOptimum extends MetaQTL3 {
         this.m_workPackages = null;
     }
 
-    protected void performeQTLMapping(boolean cis, boolean trans, String inFile, String out, HashSet<String> snpsToTest, HashSet<String> probesToTest, int threads, Integer maxNrResults) throws IOException, Exception {
+    protected void performeQTLMapping(boolean cis, boolean trans, String inFile, String out, HashSet<String> snpsToTest, THashSet<String> probesToTest, int threads, Integer maxNrResults) throws IOException, Exception {
 //
         String nextInExp = inFile;
 
@@ -456,7 +457,7 @@ public class PCAOptimum extends MetaQTL3 {
 
         int nrToRemove = max + 1;
 
-        HashSet<String> probesToTest = new HashSet<String>();
+        THashSet<String> probesToTest = new THashSet<String>();
         for (int i = 1; i < nrToRemove; i++) {
             probesToTest.add("Comp" + i);
         }

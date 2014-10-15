@@ -40,7 +40,7 @@ public class TriTyperExpressionData {
     private THashSet<String> includeIndividuals;
     private boolean confineToProbesThatMapToAnyChromosome;
     private Integer confineToProbesMappingOnChromosome;
-    private HashSet<String> probesConfine;
+    private THashSet<String> probesConfine;
     private double[] probeOriginalMean;
     private double[] probeOriginalVariance;
     private double[] probeMean;
@@ -138,7 +138,7 @@ public class TriTyperExpressionData {
         this.confineToProbesMappingOnChromosome = chr;
     }
 
-    public void confineToProbes(HashSet<String> probes) {
+    public void confineToProbes(THashSet<String> probes) {
         this.probesConfine = probes;
     }
 
@@ -461,7 +461,7 @@ public class TriTyperExpressionData {
         this.probes = new String[probeNr];
         this.matrix = new double[probeNr][numIndsIncluded];
 
-        probeNameToId = new TObjectIntHashMap<String>();
+        probeNameToId = new TObjectIntHashMap<String>(probeNr, 1f, -9);
 
         for (int i = 0; i < probeNr; i++) {
             probes[i] = tmpProbe.get(i);
@@ -543,7 +543,7 @@ public class TriTyperExpressionData {
 
             matrix = new double[nrPathwaysToUse][0];
             probes = new String[nrPathwaysToUse];
-            probeNameToId = new TObjectIntHashMap<String>();
+            probeNameToId = new TObjectIntHashMap<String>(nrPathwaysToUse, 1f, -9);
             probeMean = new double[nrPathwaysToUse];
             probeVariance = new double[nrPathwaysToUse];
             probeOriginalMean = new double[nrPathwaysToUse];

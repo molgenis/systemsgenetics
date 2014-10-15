@@ -475,7 +475,7 @@ public class InteractionAnalysisMultiThreaded {
 
             Integer probeIdInPCCorrectedData = pcCorrectedExpressionData.getProbeToId().get(probe);
 
-            if (snpId != -9 && probeIdInPCCorrectedData != null) {
+            if (snpId != -9 && probeIdInPCCorrectedData != -9) {
                 if (snpsPassingQC.contains(snp)) {
                     snpProbeCombinationsToTest.add(p);
                 } else if (!snpsVisited.contains(snp)) {
