@@ -57,8 +57,8 @@ public class NoLdSnpProbeListCreator {
         Options options = new Options();
 
         Option FileOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location and name of the output file.").withLongOpt("OutputFile").create("o");
-        Option RefferenceTypeIn = OptionBuilder.withArgName("type").hasArg().withDescription("Type of refference data.").withLongOpt("RefferenceType").create("rt");
-        Option RefferenceIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data").withLongOpt("RefferenceLocation").create("ri");
+        Option ReferenceTypeIn = OptionBuilder.withArgName("type").hasArg().withDescription("Type of reference data.").withLongOpt("ReferenceType").create("rt");
+        Option ReferenceIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data").withLongOpt("ReferenceLocation").create("ri");
         Option InFile = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the input data").withLongOpt("input").create("i");
         Option WindowSize = OptionBuilder.withArgName("int").hasArg().withDescription("Half window size (default 250000).").withLongOpt("Window_Size").create("ws");
         Option ProbeMargin = OptionBuilder.withArgName("int").hasArg().withDescription("Additional probe margin (default 0).").withLongOpt("Probe_margin").create("pm");
@@ -68,7 +68,7 @@ public class NoLdSnpProbeListCreator {
         Option callRate = OptionBuilder.withArgName("int").hasArg().withDescription("Call-rate cut-off.").withLongOpt("min_callRate").create("vc");
         Option mafFilter = OptionBuilder.withArgName("int").hasArg().withDescription("Minor allel cut-off filter.").withLongOpt("min_maf").create("mf");
         Option chrFilter = OptionBuilder.withArgName("string").hasArg().withDescription("Filter input data on chromosome").withLongOpt("chrFilter").create("ch");
-        options.addOption(FileOut).addOption(RefferenceTypeIn).addOption(RefferenceIn).addOption(WindowSize).addOption(InFile).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter).addOption(chrFilter);
+        options.addOption(FileOut).addOption(ReferenceTypeIn).addOption(ReferenceIn).addOption(WindowSize).addOption(InFile).addOption(ProbeMargin).addOption(MaxDprime).addOption(MaxRsquare).addOption(variantFilter).addOption(callRate).addOption(mafFilter).addOption(chrFilter);
 
         File probeFile = null;
         String genotypePath = null;
@@ -84,6 +84,7 @@ public class NoLdSnpProbeListCreator {
         String chrF = null;
         File outputFile = null;
 
+        String logOutput = "";
 
         CommandLine cmd;
         try {
@@ -93,22 +94,25 @@ public class NoLdSnpProbeListCreator {
             if (cmd.hasOption("OutputFile") || cmd.hasOption("o")) {
                 // initialise the member variable
                 outputFile = new File(cmd.getOptionValue("OutputFile"));
+                logOutput+="OutputFile:\t"+outputFile+"\n";
             } else {
                 System.out.println("Missing necesarray information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
-            if (cmd.hasOption("RefferenceLocation") || cmd.hasOption("ri")) {
+            if (cmd.hasOption("ReferenceLocation") || cmd.hasOption("ri")) {
                 // initialise the member variable
-                genotypePath = cmd.getOptionValue("RefferenceLocation");
+                genotypePath = cmd.getOptionValue("ReferenceLocation");
+                logOutput+="ReferenceLocation:\t"+genotypePath+"\n";
             } else {
                 System.out.println("Missing necesarray information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
-            if (cmd.hasOption("RefferenceType") || cmd.hasOption("rt")) {
+            if (cmd.hasOption("ReferenceType") || cmd.hasOption("rt")) {
                 // initialise the member variable
-                genotypeType = cmd.getOptionValue("RefferenceType");
+                genotypeType = cmd.getOptionValue("ReferenceType");
+                logOutput+="ReferenceType:\t"+genotypeType+"\n";
             } else {
                 System.out.println("Missing necesarray information");
                 formatter.printHelp("ant", options);
@@ -117,6 +121,7 @@ public class NoLdSnpProbeListCreator {
             if (cmd.hasOption("input") || cmd.hasOption("i")) {
                 // initialise the member variable
                 probeFile = new File(cmd.getOptionValue("input"));
+                logOutput+="Input probemapping:\t"+probeFile+"\n";
             } else {
                 System.out.println("Missing necesarray information");
                 formatter.printHelp("ant", options);
@@ -125,39 +130,47 @@ public class NoLdSnpProbeListCreator {
             if (cmd.hasOption("Window_Size") || cmd.hasOption("ws")) {
                 // initialise the member variable
                 windowHalfSize = Integer.parseInt(cmd.getOptionValue("Window_Size"));
+                logOutput+="Window Size:\t"+windowHalfSize+"\n";
             }
             if (cmd.hasOption("Probe_margin") || cmd.hasOption("pm")) {
                 // initialise the member variable
                 probeMargin = Integer.parseInt(cmd.getOptionValue("Probe_margin"));
+                logOutput+="Probe margin:\t"+probeMargin+"\n";
             }
             if (cmd.hasOption("variant_filter") || cmd.hasOption("vf")) {
                 // initialise the member variable
                 variantFilterList = cmd.getOptionValue("variant_filter");
+                logOutput+="Variant filter:\t"+variantFilterList+"\n";
             }
             if (cmd.hasOption("min_callRate") || cmd.hasOption("vc")) {
                 // initialise the member variable
                 cRate = Float.parseFloat(cmd.getOptionValue("min_callRate"));
+                logOutput+="Min callRate:\t"+cRate+"\n";
             }
             if (cmd.hasOption("min_maf") || cmd.hasOption("mf")) {
                 // initialise the member variable
                 maf = Float.parseFloat(cmd.getOptionValue("min_maf"));
+                logOutput+="Min maf:\t"+maf+"\n";
             }
             if (cmd.hasOption("MaxDprime") || cmd.hasOption("md")) {
                 // initialise the member variable
                 maxDprime = Double.parseDouble(cmd.getOptionValue("MaxDprime"));
+                logOutput+="Max D':\t"+maxDprime+"\n";
             }
             if (cmd.hasOption("max_rSquare") || cmd.hasOption("mr")) {
                 // initialise the member variable
                 maxR2 = Double.parseDouble(cmd.getOptionValue("max_rSquare"));
+                logOutput+="Max rSquare:\t"+maxR2+"\n";
             }
             if (cmd.hasOption("chrFilter") || cmd.hasOption("ch")) {
                 chrF = cmd.getOptionValue("chrFilter");
+                logOutput+="Chr filter:\t"+chrF+"\n";
             }
-
         } catch (ParseException ex) {
             Logger.getLogger(NoLdSnpProbeListCreator.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
+        System.out.println(logOutput);
         SampleFilter sf = null;
 
         VariantCombinedFilter varFilter = new VariantCombinedFilter();
@@ -275,7 +288,7 @@ public class NoLdSnpProbeListCreator {
         }
 
         snpProbeToTestWriter.close();
-        System.out.println("Number of valid start combination: " + possibleCombinations);
+        System.out.println("Number of valid combination: " + possibleCombinations);
         System.out.println("Excluded because located in probe: " + locatedInProbe);
         System.out.println("Excluded based on D': " + dPrimeExclusions);
         System.out.println("Excluded based on r2: " + rSquareExclusions);
