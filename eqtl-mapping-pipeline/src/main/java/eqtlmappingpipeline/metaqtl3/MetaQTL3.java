@@ -55,7 +55,6 @@ public class MetaQTL3 {
     protected WorkPackage[] m_workPackages;
     private boolean dataHasCovariates;
     private Pair<List<String>, List<List<String>>> pathwayDefinitions;
-    private int initialMaxNrMostSignificantEQTLs;
 
     public MetaQTL3() {
     }
@@ -181,7 +180,6 @@ public class MetaQTL3 {
             System.out.println("ERROR: No input specified");
             System.exit(0);
         }
-        initialMaxNrMostSignificantEQTLs = m_settings.maxNrMostSignificantEQTLs;
 
         // initialize dataset
         if (!m_settings.cisAnalysis && !m_settings.transAnalysis) {
@@ -926,7 +924,6 @@ public class MetaQTL3 {
     }
 
     protected long determineSNPProbeCombinations() throws IOException {
-        m_settings.maxNrMostSignificantEQTLs = initialMaxNrMostSignificantEQTLs;
         String loc = m_settings.outputReportsDir + "excludedSNPsBySNPProbeCombinationFilter.txt.gz";
         TextFile excludedSNPs = new TextFile(loc, TextFile.W);
         long maxNrTestsToPerform = 0;
