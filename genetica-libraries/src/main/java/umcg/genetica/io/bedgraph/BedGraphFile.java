@@ -6,14 +6,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
-import umcg.genetica.io.gtf.GffElement;
 
 /**
  *
