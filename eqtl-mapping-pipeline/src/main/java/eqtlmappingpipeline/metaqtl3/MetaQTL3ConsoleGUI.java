@@ -192,6 +192,7 @@ public class MetaQTL3ConsoleGUI {
                 + "--cis\t\t\t\t\tPerform cis-eQTL analysis\n"
                 + "--trans\t\t\t\t\tPerform trans-eQTL analysis\n"
                 + "--perm\t\t\tint\t\tNumber of permutations to perform\n"
+                + "--maf\t\t\tint\tMinimal minor allel frequency to take SNP in the analysis\n"
                 + "--text\t\t\t\t\tOutput results in text format\n"
                 + "--binary\t\t\t\tOutput results in binary format\n"
                 + "--inexp\t\t\tstring\t\tLocation of expression data\n"
