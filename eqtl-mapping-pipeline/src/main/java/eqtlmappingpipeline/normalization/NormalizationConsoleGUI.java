@@ -16,6 +16,7 @@ public class NormalizationConsoleGUI {
     public NormalizationConsoleGUI(String[] args) {
 
         String in = null;
+        String sampleIncludeList = null;
         String out = null;
         String cov = null;
 
@@ -105,6 +106,10 @@ public class NormalizationConsoleGUI {
                 forceNormalDistribution = true;
 				fullNorm = false;
             }
+            if (arg.equals("--sampleInclude")) {
+                sampleIncludeList = val;
+				fullNorm = false;
+            }
         }
 
         if (in == null) {
@@ -142,13 +147,13 @@ public class NormalizationConsoleGUI {
             Normalizer p = new Normalizer();
 
             if (!fullNorm) {
-                p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
+                p.normalize(in, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
                         runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, 
                         forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
             } else {
                 // run full normalization
-                p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
+                p.normalize(in, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         true, true, false, true, true, true, false, false, false,
                         false, false);
             }
@@ -174,6 +179,7 @@ public class NormalizationConsoleGUI {
                 + "--centerscale\t\t\t\tCenter the mean to 0, linearly scale using standard deviation\n"
                 + "--adjustPCA\t\t\t\tRun PCA adjustment \n"
 				+ "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
+                + "--sampleInclude\t\t\t\tList of high quality sample, other samples will be removed. \n"
                 + "\n"
                 + "Covariate adjustment parameters:\n"
                 + "--cov\t\t\tstring\t\tCovariates to remove\n"
