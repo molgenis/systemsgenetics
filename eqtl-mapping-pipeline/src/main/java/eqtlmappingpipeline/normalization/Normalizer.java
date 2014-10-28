@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
@@ -32,7 +33,7 @@ public class Normalizer {
 
     //nrIntermediatePCAsOverSamplesToRemoveToOutput = 5
     //nrPCAsOverSamplesToRemove = 100
-    public void normalize(String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates, String outdir,
+    public void normalize(String expressionFile, String sampleIncludeList, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates, String outdir,
             boolean runQQNorm, boolean runLog2Transform, boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates, boolean forceMissingValues, boolean forceReplacementOfMissingValues, 
             boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls, boolean forceNormalDistribution) throws IOException {
         
@@ -49,9 +50,7 @@ public class Normalizer {
             }
 
         }
-
-        DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
-
+        
         String parentDir = Gpio.getParentDir(expressionFile);
         String expressionFileName = Gpio.getFileName(expressionFile);
         if (parentDir == null) {
@@ -65,6 +64,52 @@ public class Normalizer {
         }
 
         String outputFileNamePrefix = outdir + expressionFileName;
+        
+        
+        Set<String> s = null;
+        if(sampleIncludeList != null){
+            TextFile t =  new TextFile(sampleIncludeList, TextFile.R);
+            s = new HashSet<String>(t.readAsArrayList());
+        }
+        DoubleMatrixDataset<String, String> dataset = null;
+        
+        if(s != null){
+            dataset = new DoubleMatrixDataset<String, String>(expressionFile, null, s);
+            
+            HashSet<String> tmpNames = new HashSet<String>();
+            tmpNames.addAll(dataset.colObjects);
+            tmpNames.addAll(s);
+            HashSet<String> missingNames = new HashSet<String>();
+            HashSet<String> extraNames = new HashSet<String>();
+            for(String colName : tmpNames){
+                if(!s.contains(colName)){
+                    extraNames.add(colName);
+                }
+                if(!dataset.colObjects.contains(s)) {
+                    missingNames.add(colName);
+                }
+            }
+            if(!missingNames.isEmpty() && !extraNames.isEmpty()){
+                System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
+                System.out.println(missingNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                System.err.println("\nMatrix contains unwanted columns, please check filtering list.");
+                System.out.println(extraNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+            } else if(!missingNames.isEmpty()){
+                System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
+                System.out.println(missingNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                System.exit(-'1');
+            } else if(!extraNames.isEmpty()){
+                System.err.println("\nMatrix contains unwanted columns, please check filtering list.");
+                System.out.println(extraNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                System.exit(-'1');
+            }
+            
+            outputFileNamePrefix = outputFileNamePrefix + ".SampleSelection";
+            dataset.save(outputFileNamePrefix + ".txt.gz");
+        } else {
+            dataset = new DoubleMatrixDataset<String, String>(expressionFile);
+        }
+        
 
         // check for probes with zero variance, if there > 3 samples in the dataset
         if (dataset.nrCols > 3) {
