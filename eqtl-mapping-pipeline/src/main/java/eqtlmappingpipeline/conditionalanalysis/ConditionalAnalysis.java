@@ -23,7 +23,7 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.io.trityper.util.DetermineLD;
 import umcg.genetica.text.Strings;
@@ -88,7 +88,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
             fdrAllFile = "eQTLsFDR.txt.gz";
         }
 
-        eQTLTextFile etf = new eQTLTextFile(origOutputDir + "/SNP-Initial/" + fdrSignificantFile, eQTLTextFile.R);
+        QTLTextFile etf = new QTLTextFile(origOutputDir + "/SNP-Initial/" + fdrSignificantFile, QTLTextFile.R);
         EQTL[] eQTLsSNPsUnconditional = etf.read();
         etf.close();
 
@@ -124,7 +124,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
             mapEQTLs();
         }
 
-        etf = new eQTLTextFile(origOutputDir + "/Probe-Initial/" + fdrAllFile, eQTLTextFile.R);
+        etf = new QTLTextFile(origOutputDir + "/Probe-Initial/" + fdrAllFile, QTLTextFile.R);
         EQTL[] eQTLsProbesUnconditional = etf.read();
         etf.close();
 
@@ -594,13 +594,13 @@ public class ConditionalAnalysis extends MetaQTL3 {
             e.probe = elems[4];
             e.probechr = elems[5];
             e.probechrpos = elems[6];
-            e.alleleAssessed = elems[eQTLTextFile.ASESSEDALLELE];
-            e.alleles = elems[eQTLTextFile.ASESSEDALLELE - 1];
-            e.samplesize = elems[eQTLTextFile.DATASETSIZE];
-            e.metab = elems[eQTLTextFile.METAB];
-            e.metaz = elems[eQTLTextFile.METAZ];
-            e.b = elems[eQTLTextFile.DATASETB];
-            e.hugo = elems[eQTLTextFile.HUGO];
+            e.alleleAssessed = elems[QTLTextFile.ASESSEDALLELE];
+            e.alleles = elems[QTLTextFile.ASESSEDALLELE - 1];
+            e.samplesize = elems[QTLTextFile.DATASETSIZE];
+            e.metab = elems[QTLTextFile.METAB];
+            e.metaz = elems[QTLTextFile.METAZ];
+            e.b = elems[QTLTextFile.DATASETB];
+            e.hugo = elems[QTLTextFile.HUGO];
             e.FDR = elems[elems.length - 1];
             output.add(e);
 
@@ -653,9 +653,9 @@ public class ConditionalAnalysis extends MetaQTL3 {
                     e.setFC(elems[20]);
                 }
             }
-            e.setZscore(Double.parseDouble(elems[eQTLTextFile.METAZ]));
-            e.setMetaBeta(elems[eQTLTextFile.METAB]);
-            e.setBeta(elems[eQTLTextFile.DATASETB]);
+            e.setZscore(Double.parseDouble(elems[QTLTextFile.METAZ]));
+            e.setMetaBeta(elems[QTLTextFile.METAB]);
+            e.setBeta(elems[QTLTextFile.DATASETB]);
 
             output.put(new Pair<String, String>(elems[1], elems[4]), e);
             elems = efile.readLineElems(TextFile.tab);

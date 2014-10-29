@@ -44,7 +44,7 @@ public class Aligner {
 	 * @return
 	 * @throws LdCalculatorException
 	 */
-	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException {
+	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException, GenotypeAlignmentException {
 
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
@@ -69,15 +69,21 @@ public class Aligner {
 		//In this loop we filter the variants present in the reference and swap the AG, AC, TC, TG SNPs.
 		studyVariants:
 		for (ModifiableGeneticVariant studyVariant : aligendStudyData.getModifiableGeneticVariants()) {
-
+			
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
 				//LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 				System.out.println("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
 			}
-
+		
 			if (!studyVariant.isMapped()) {
+				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "No mapping");
+				studyVariant.exclude();
+				continue studyVariants;
+			}
+			
+			if(studyVariant.getStartPos() == 0){
 				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "No mapping");
 				studyVariant.exclude();
 				continue studyVariants;
@@ -186,7 +192,7 @@ public class Aligner {
 
 
 
-			if (updateId && !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId())) {
+			if (updateId && refVariant.getPrimaryVariantId() != null && (studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
 				snpUpdateWriter.append(studyVariant.getSequenceName());
 				snpUpdateWriter.append('\t');
 				snpUpdateWriter.append(String.valueOf(studyVariant.getStartPos()));
@@ -232,13 +238,16 @@ public class Aligner {
 		if (updateId) {
 			snpUpdateWriter.close();
 		}
+		
+		if(iterationCounter == 0){
+			throw new GenotypeAlignmentException("No variants where found in the input genotype data. Please check your variant filter options");
+		}
 
 		LOGGER.info("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 		System.out.println("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 
 		if (studyVariantList.isEmpty()) {
-			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
-			LOGGER.warn("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+			throw new GenotypeAlignmentException("Zero of the input variants found in reference set. Are both datasets the same genome build? Perhapse you need use --forceChr.");
 		}
 
 		int removedSnpsBasedOnLdCheck = 0;

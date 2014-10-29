@@ -7,8 +7,6 @@ package umcg.genetica.io.trityper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import umcg.genetica.io.text.TextFile;
 import static umcg.genetica.io.text.TextFile.tab;
@@ -18,7 +16,7 @@ import umcg.genetica.io.trityper.util.ChrAnnotation;
  *
  * @author harmjan
  */
-public class eQTLTextFile extends TextFile {
+public class QTLTextFile extends TextFile {
 
     public static int PVAL = 0;
     public static int SNP = 1;
@@ -63,7 +61,7 @@ public class eQTLTextFile extends TextFile {
      * FDR
      * */
     private static String sepStr = ";";
-    private static String tabStr = "\t";
+    //private static String tabStr = "\t";
     private static String nullStr = "-";
     private static Pattern separator = Pattern.compile(sepStr);
     public static String header = "PValue\t"
@@ -86,25 +84,32 @@ public class eQTLTextFile extends TextFile {
             + "IncludedDatasetsCorrelationCoefficient\t"
             + "Meta-Beta (SE)\t"
             + "Beta (SE)\t"
-            + "FoldChange";
+            + "FoldChange\t"
+            + "FDR";
 
-    public eQTLTextFile(String loc, boolean W) throws IOException {
+    public QTLTextFile(String loc, boolean W) throws IOException {
         super(loc, W);
         if (W) {
-            write(header + "\n");
+            write(header + '\n');
         }
     }
 
-    public eQTLTextFile(String loc, boolean W, boolean gz) throws IOException {
+    public QTLTextFile(String loc, boolean W, boolean gz) throws IOException {
         super(loc, W);
         if (W) {
-            write(header + "\n");
+            write(header + '\n');
         }
     }
 
     public void write(EQTL[] eqtllist) throws IOException {
         for (EQTL e : eqtllist) {
-            write(e.toString() + "\n");
+            write(e.toString() + '\n');
+        }
+    }
+    
+    public void write(ArrayList<EQTL> eqtllist) throws IOException {
+        for (EQTL e : eqtllist) {
+            write(e.toString() + '\n');
         }
     }
 
@@ -113,6 +118,18 @@ public class eQTLTextFile extends TextFile {
         return readExpectedSize(1000);
 
     }
+    
+    public ArrayList<EQTL> readList() throws IOException {
+
+        ArrayList<EQTL> alEQTLS = new ArrayList<EQTL>();
+
+        for (Iterator<EQTL> it = getEQtlIterator(); it.hasNext();) {
+            alEQTLS.add(it.next());
+        }
+
+        return alEQTLS;
+    }
+
 
     public EQTL[] readExpectedSize(int expSize) throws IOException {
 
@@ -145,7 +162,7 @@ public class eQTLTextFile extends TextFile {
              */
             elems = readLineElemsReturnReference(tab); // skip headerline
 
-            if (elems[elems.length - 1].equals("FDR")) {
+            if (elems.length > 21) {
                 fdrpresent = true;
             } else {
                 fdrpresent = false;
@@ -300,9 +317,9 @@ public class eQTLTextFile extends TextFile {
                 }
             }
 
-            if (fdrpresent && !elems[elems.length - 1].equals(nullStr)) {
+            if (fdrpresent && !elems[21].equals(nullStr)) {
                 try {
-                    e.setFDR(Double.parseDouble(elems[elems.length - 1]));
+                    e.setFDR(Double.parseDouble(elems[21]));
                 } catch (java.lang.NumberFormatException ex) {
                     //do nothing
                 }

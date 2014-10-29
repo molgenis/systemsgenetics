@@ -9,7 +9,6 @@ import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -31,28 +30,30 @@ public class UtilConsoleGUI {
     public static enum MODE {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
-        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN
+        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
+        ADDANNOTATIONTOQTLFILE
     };
     MODE run;
 
     public UtilConsoleGUI(String[] args) {
 
+//        String settingstexttoreplace = null;
+//        String settingstexttoreplacewith = null;
+//        boolean cis = false;
+//        boolean trans = false;
+//        String outtype = "text";
+//        String inexpplatform = null;
+//        Integer threads = null;
+        
         String settingsfile = null;
-        String settingstexttoreplace = null;
-        String settingstexttoreplacewith = null;
         String in = null;
         String in2 = null;
         String out = null;
-        boolean cis = false;
-        boolean trans = false;
         int perm = 1;
-        String outtype = "text";
         String inexp = null;
-        String inexpplatform = null;
         String inexpannot = null;
         String gte = null;
         String snpfile = null;
-        Integer threads = null;
         String probefile = null;
         String region = "";
         
@@ -77,6 +78,9 @@ public class UtilConsoleGUI {
         String snpprobeselectionlist = null;
         boolean createQQPlot = true;
         boolean createLargeFdrFile = true;
+        
+        String sources = null;
+        String keyValuePairs = null;
 
         FDRMethod FdrMethod = FDRMethod.ALL;
 
@@ -126,22 +130,22 @@ public class UtilConsoleGUI {
                 run = MODE.GETSNPPROBECOMBINATIONS;
             } else if (arg.equals("--nonGeneticPCaCorrection")) {
                 run = MODE.NONGENETICPCACORRECTION;
+            } else if (arg.equals("--formatAsTT")) {
+                run = MODE.CREATTTFROMDOUBLEMAT;
             } else if (arg.equals("--settings")) {
                 settingsfile = val;
-            } else if (arg.equals("--replacetext")) {
-                settingstexttoreplace = val;
-            } else if (arg.equals("--replacetextwith")) {
-                settingstexttoreplacewith = val;
             } else if (arg.equals("--in")) {
                 in = val;
+            } else if (arg.equals("--sources")) {
+                sources = val;
+            } else if (arg.equals("--keyValuePairs")) {
+                keyValuePairs = val;
             } else if (arg.equals("--in2")) {
                 in2 = val;
             } else if (arg.equals("--out")) {
                 out = val;
             } else if (arg.equals("--inexp")) {
                 inexp = val;
-            } else if (arg.equals("--inexpplatform")) {
-                inexpplatform = val;
             } else if (arg.equals("--inexpannot")) {
                 inexpannot = val;
             } else if (arg.equals("--gte")) {
@@ -154,6 +158,8 @@ public class UtilConsoleGUI {
                     FdrMethod = FDRMethod.PROBELEVEL;
                 } else if(val.equals("gene")){
                     FdrMethod = FDRMethod.GENELEVEL;
+                } else if(val.equals("snp")){
+                    FdrMethod = FDRMethod.SNPLEVEL;
                 }
             } else if (arg.equals("--snps")) {
                 snpfile = val;
@@ -188,6 +194,13 @@ public class UtilConsoleGUI {
             } else if (args[i].equals("--QTLS")) {
                 fileQtlsToRegressOut = val;
             }
+//            else if (arg.equals("--replacetext")) {
+//                settingstexttoreplace = val;
+//            } else if (arg.equals("--replacetextwith")) {
+//                settingstexttoreplacewith = val;
+//            }  else if (arg.equals("--inexpplatform")) {
+//                inexpplatform = val;
+//            }
 
         }
         if (run == null) {
@@ -261,7 +274,7 @@ public class UtilConsoleGUI {
                         if (in == null) {
                             System.out.println("USAGE: --in eQTLFile --out eQTLFile");
                         } else {
-                            EQTLFileSorter f = new EQTLFileSorter();
+                            QTLFileSorter f = new QTLFileSorter();
                             f.run(in, out);
                         }
                         break;
@@ -312,7 +325,7 @@ public class UtilConsoleGUI {
                                 }
                             } else {
                                 try {
-                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FDRMethod.ALL, createLargeFdrFile);
+                                    FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                     System.exit(1);
@@ -335,7 +348,7 @@ public class UtilConsoleGUI {
                         if (in == null) {
                             System.out.println("Usage: --dotplot --in /path/to/file.txt");
                         } else {
-                            eQTLDotPlotter d = new eQTLDotPlotter();
+                            QTLDotPlotter d = new QTLDotPlotter();
                             d.plot(in);
                         }
                         break;
@@ -383,6 +396,14 @@ public class UtilConsoleGUI {
                         }
                         RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
                         break;
+                    case CREATTTFROMDOUBLEMAT:
+                        String[] argsNew = {inexpannot,in,out};
+                        umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
+                        break;
+                        
+                    case ADDANNOTATIONTOQTLFILE:
+                        QTLAnnotator.addAnnotationToQTLOutput(in, sources, keyValuePairs, out);
+                        break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -412,6 +433,7 @@ public class UtilConsoleGUI {
                 + "--meta\t\t\t\tFixed effect meta analysis.\n"
                 + "--nonGeneticPCaCorrection\tCorrect expression data for non-genetic components.\n"
                 + "--getSNPProbeCombinatios\tCreate list of valid SNP-Probe combinations to test.\n"
+                + "--formatAsTT\t\t\tConverte a doublematrix dataset to a TriTyper genotype file.\n"
                 + "--convertbinarymatrix\t\tConverts binary matrix to text\n");
         System.out.println("");
 

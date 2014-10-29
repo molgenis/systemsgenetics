@@ -4,10 +4,10 @@
  */
 package eqtlmappingpipeline.pcaoptimum;
 
-import eqtlmappingpipeline.util.eQTLFileCompare;
+import eqtlmappingpipeline.util.QTLFileCompare;
 import java.io.IOException;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 
 /**
  *
@@ -24,17 +24,17 @@ public class PCAOptimumInventorize {
         int[] nrTransSharedPerRound = new int[21];
         int[] nrTransOppositePerRound = new int[21];
 
-        eQTLFileCompare e = new eQTLFileCompare();
+        QTLFileCompare e = new QTLFileCompare();
         int round = 1;
         
         if(cis){
-            eQTLTextFile etf = new eQTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrCISEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
         }
         if(trans){
-            eQTLTextFile etf = new eQTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrTransEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
@@ -49,7 +49,7 @@ public class PCAOptimumInventorize {
                 nrCisSharedPerRound[round] = e.getNrShared();
                 nrCisOppositePerRound[round] = e.getNrOpposite();
 
-                eQTLTextFile etf2 = new eQTLTextFile(in + "Cis-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Cis-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
                 nrCISEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }  
@@ -62,7 +62,7 @@ public class PCAOptimumInventorize {
                 nrTransSharedPerRound[round] = e.getNrShared();
                 nrTransOppositePerRound[round] = e.getNrOpposite();
 
-                eQTLTextFile etf2 = new eQTLTextFile(in + "Trans-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Trans-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
                 nrTransEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }
@@ -83,18 +83,18 @@ public class PCAOptimumInventorize {
         int[] nrTransEQTLsPerRound = new int[21];
         int[] nrTransSharedPerRound = new int[21];
         int[] nrTransOppositePerRound = new int[21];
-        eQTLFileCompare e = new eQTLFileCompare();
+        QTLFileCompare e = new QTLFileCompare();
         int round = 1;
 
         String pcqtlsuffix = "-GeneticVectorsNotRemoved";
         if(cis){
-            eQTLTextFile etf = new eQTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrCISEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
         }
         if(trans){
-            eQTLTextFile etf = new eQTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrTransEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
@@ -108,7 +108,7 @@ public class PCAOptimumInventorize {
                 nrCisSharedPerRound[round] = e.getNrShared();
                 nrCisOppositePerRound[round] = e.getNrOpposite();
 
-                eQTLTextFile etf2 = new eQTLTextFile(in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt", QTLTextFile.R);
                 nrCISEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }
@@ -120,7 +120,7 @@ public class PCAOptimumInventorize {
                 nrTransSharedPerRound[round] = e.getNrShared();
                 nrTransOppositePerRound[round] = e.getNrOpposite();
 
-                eQTLTextFile etf2 = new eQTLTextFile(in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt", eQTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt", QTLTextFile.R);
                 nrTransEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }

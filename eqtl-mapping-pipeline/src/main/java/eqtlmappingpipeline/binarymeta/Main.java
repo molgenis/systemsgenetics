@@ -9,6 +9,7 @@ import eqtlmappingpipeline.binarymeta.meta.IndividualAnalysis;
 import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.cis.CisAnalysis;
 import eqtlmappingpipeline.binarymeta.util.SNPAlleleCheck;
+import eqtlmappingpipeline.util.LDCalculator;
 import java.io.IOException;
 
 /**
@@ -161,8 +162,8 @@ public class Main {
                 System.out.println("Please specify --in and --eqtlfile and --outdir");
             } else {
                 try {
-                    LDCalc ld = new LDCalc();
-                    ld.LDCalc(eqtlfile, in, out);
+                    LDCalculator ld = new LDCalculator();
+                    ld.calculatePairwiseLD(eqtlfile, in, out);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (Exception e) {

@@ -11,7 +11,7 @@ import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
  *
  * @author harmjan
  */
-public class eQTLResultContainer {
+public class QTLResultContainer {
 
     private QTL[] tmpEQTLBuffer;
     private QTL[] finalEQTLs;
@@ -24,7 +24,7 @@ public class eQTLResultContainer {
     private int nrSet;
     private int nrInFinalBuffer = 0;
 
-    public eQTLResultContainer(int size, int finalsize, int datasets) {
+    public QTLResultContainer(int size, int finalsize, int datasets) {
         tmpEQTLBuffer = new QTL[size];
         m_maxResults = finalsize;
         m_result_counter = 0;

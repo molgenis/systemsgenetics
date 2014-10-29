@@ -12,7 +12,7 @@ import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 
 /**
  *
@@ -29,7 +29,7 @@ public class NewMain {
 	public static void main(String[] args) throws Exception {
 
 
-		eQTLTextFile eQTLsTextFile = new eQTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_non-geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\notInGeuvadis.txt", false);
+		QTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_non-geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\notInGeuvadis.txt", false);
 		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\all_maskAll_r20_a10_p0_s5_rq0_gatkGeno\\ase_bh.txt"));
 
 		BedBimFamGenotypeData genotypes = new BedBimFamGenotypeData("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_genotypes\\plink\\batch9", 10000);

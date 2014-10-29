@@ -10,7 +10,7 @@ import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
 import eqtlmappingpipeline.binarymeta.meta.MetaSettings;
 import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
+import eqtlmappingpipeline.util.QTLFileSorter;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
@@ -24,7 +24,7 @@ import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.bin.BinaryResultDataset;
 import umcg.genetica.io.trityper.bin.BinaryResultProbe;
 import umcg.genetica.io.trityper.bin.BinaryResultSNP;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.text.Strings;
@@ -111,7 +111,7 @@ public class CisAnalysis extends MetaAnalyze {
 
         for (int abs = 0; abs < 1; abs++) {
             for (int perm = 0; perm < m_settings.getNrPermutations() + 1; perm++) {
-                EQTLFileSorter sorter = new EQTLFileSorter();
+                QTLFileSorter sorter = new QTLFileSorter();
                 String suffix = "eQTLs.txt.gz";
 
 
@@ -341,8 +341,8 @@ public class CisAnalysis extends MetaAnalyze {
         System.out.println("Writing file: " + m_settings.getOutput() + outFileName);
         TextFile eQTLOutput = new TextFile(m_settings.getOutput() + outFileName, TextFile.W);
         TextFile eQTLOutputAbs = new TextFile(m_settings.getOutput() + outFileName + "-Absolute.txt.gz", TextFile.W);
-        eQTLOutput.writeln(eQTLTextFile.header);
-        eQTLOutputAbs.writeln(eQTLTextFile.header);
+        eQTLOutput.writeln(QTLTextFile.header);
+        eQTLOutputAbs.writeln(QTLTextFile.header);
 
 
         pb = new ProgressBar(effectcounter, "Now performing meta-analysis...");

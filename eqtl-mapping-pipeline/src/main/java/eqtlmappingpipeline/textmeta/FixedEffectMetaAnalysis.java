@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.textmeta;
 
-import eqtlmappingpipeline.util.eqtlfilesorter.EQTLFileSorter;
+import eqtlmappingpipeline.util.QTLFileSorter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 
 /**
  *
@@ -97,11 +97,11 @@ public class FixedEffectMetaAnalysis {
                         uniqueSNPProbeCombos.add(p);
                     }
 
-                    String[] datasetname = new String[]{elems[eQTLTextFile.DATASETNAMES]};
-                    Double zscore = Double.parseDouble(elems[eQTLTextFile.METAZ]);
-                    Integer[] sampleSize = new Integer[]{Integer.parseInt(elems[eQTLTextFile.DATASETSIZE])};
-                    String alleleAssessed = elems[eQTLTextFile.ASESSEDALLELE];
-                    String alleles = elems[eQTLTextFile.ASESSEDALLELE - 1];
+                    String[] datasetname = new String[]{elems[QTLTextFile.DATASETNAMES]};
+                    Double zscore = Double.parseDouble(elems[QTLTextFile.METAZ]);
+                    Integer[] sampleSize = new Integer[]{Integer.parseInt(elems[QTLTextFile.DATASETSIZE])};
+                    String alleleAssessed = elems[QTLTextFile.ASESSEDALLELE];
+                    String alleles = elems[QTLTextFile.ASESSEDALLELE - 1];
 
                     e.setAlleles(alleles);
                     e.setAlleleAssessed(alleleAssessed);
@@ -127,7 +127,7 @@ public class FixedEffectMetaAnalysis {
         // iterate through all eQTLs
         // and just assume that snp-probe combinations are unique for each dataset.
         TextFile outfile = new TextFile(output + "eQTLs.txt", TextFile.W);
-        outfile.writeln(eQTLTextFile.header);
+        outfile.writeln(QTLTextFile.header);
         int eqctr = 0;
 
         int nrprocs = Runtime.getRuntime().availableProcessors();
@@ -238,7 +238,7 @@ public class FixedEffectMetaAnalysis {
         outfile.close();
         
         System.out.println("Done. Now sorting results");
-        EQTLFileSorter sorter = new EQTLFileSorter();
+        QTLFileSorter sorter = new QTLFileSorter();
         sorter.run(output + "eQTLs.txt", output + "eQTLs_sorted.txt");
         if(Gpio.exists(output + "eQTLs_sorted.txt")){
             Gpio.moveFile(output + "eQTLs_sorted.txt", output + "eQTLs.txt");

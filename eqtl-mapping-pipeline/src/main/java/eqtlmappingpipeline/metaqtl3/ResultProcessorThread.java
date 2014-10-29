@@ -17,7 +17,7 @@ import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 
 /**
@@ -286,6 +286,7 @@ public class ResultProcessorThread extends Thread {
             if (m_createTEXTFiles) {
                 if (!sorted) {
                     if (locationToStoreResult != 0) {
+                        
                         Arrays.sort(finalEQTLs, 0, locationToStoreResult);
 //                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
 //                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
@@ -479,7 +480,7 @@ public class ResultProcessorThread extends Thread {
             }
             gz.close();
         } else {
-            eQTLTextFile et = new eQTLTextFile((m_outputdir + "eQTLs.txt.gz"), eQTLTextFile.W);
+            QTLTextFile et = new QTLTextFile((m_outputdir + "eQTLs.txt.gz"), QTLTextFile.W);
             for (int i = 0; i < nrOfEntriesToWrite; i++) {
                 et.writeln(finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
             }

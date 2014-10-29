@@ -10,7 +10,7 @@ import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
-import eqtlmappingpipeline.eQTLFoldChangeCalculator.eQTLFoldChangeCalculatorGUI;
+import eqtlmappingpipeline.eQTLFoldChangeCalculator.QTLFoldChangeCalculatorGUI;
 import eqtlmappingpipeline.causalinference.IVConsoleGUI;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3ConsoleGUI;
 import eqtlmappingpipeline.metaqtl4.MetaQTL4ConsoleUI;
@@ -19,7 +19,8 @@ import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
-import eqtlmappingpipeline.util.eQTLFileCompare;
+import eqtlmappingpipeline.util.QTLFileCompare;
+import eqtlmappingpipeline.util.QTLmeQTLCompare;
 import java.util.Arrays;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.pileup.PileupToVcf;
@@ -84,13 +85,15 @@ public class EQTLMappingPipelineConsole {
             } else if (mode.equals("normalize")) {
                 NormalizationConsoleGUI p = new NormalizationConsoleGUI(args);
             } else if (mode.equals("compare")) {
-                eQTLFileCompare r = new eQTLFileCompare(args);
+                QTLFileCompare r = new QTLFileCompare(args);
+            } else if (mode.equals("compareM")) {
+                QTLmeQTLCompare r = new QTLmeQTLCompare(args);
             } else if (mode.equals("chryplot")) {
                 ChrYExpressionPlotConsoleGUI r = new ChrYExpressionPlotConsoleGUI(args);
             } else if (mode.equals("pcaoptimum")) {
                 PCAOptimumConsoleGUI g = new PCAOptimumConsoleGUI(args);
             } else if (mode.equals("foldchange")) {
-                eQTLFoldChangeCalculatorGUI g = new eQTLFoldChangeCalculatorGUI(args);
+                QTLFoldChangeCalculatorGUI g = new QTLFoldChangeCalculatorGUI(args);
             } else if (mode.equals("util")) {
                 UtilConsoleGUI g = new UtilConsoleGUI(args);
             } else if (mode.equals("qcpca")) {
