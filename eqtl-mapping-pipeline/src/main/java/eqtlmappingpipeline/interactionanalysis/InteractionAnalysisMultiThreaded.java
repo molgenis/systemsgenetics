@@ -17,6 +17,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -363,7 +364,8 @@ public class InteractionAnalysisMultiThreaded {
                 double[] yArr = toPrimitiveArr(y.toArray(new Double[0]));
 
                 double r = Correlation.correlate(xArr, yArr);
-
+                SpearmansCorrelation corr = new SpearmansCorrelation();
+                double spearman = corr.correlation(xArr, yArr);
                 for (int q = 0; q < xArr.length; q++) {
                     System.out.println(q + "\t" + xArr[q] + "\t" + yArr[q]);
                 }
@@ -373,7 +375,8 @@ public class InteractionAnalysisMultiThreaded {
 //                plot.draw(xArr, yArr, "Cell type specific PC Scores", "Cell counts", "Comparison between cell counts and predicted cell counts", outdirectory + "Scatterplot.png");
                 TextFile tfout = new TextFile(outdirectory + "ComparisonToCellCount.txt", TextFile.W);
                 System.out.println("Correlation between actual cell counts and PC1 scores: " + r + "\tr2: " + (r * r) + "\tn: " + xArr.length);
-                tfout.writeln("Correlation between actual cell counts and PC1 scores: " + r + "\tr2: " + (r * r) + "\tn: " + xArr.length);
+                tfout.writeln("Pearson\tSpearman\tn");
+                tfout.writeln(r + "\t" + spearman + "\t" + xArr.length);
                 tfout.close();
             }
         }
@@ -430,7 +433,6 @@ public class InteractionAnalysisMultiThreaded {
         settings.quantilenormalize = false;
         settings.name = "Dataset";
         settings.probeannotation = probeannot;
-        
 
         TriTyperGeneticalGenomicsDataset ds = new TriTyperGeneticalGenomicsDataset(settings);
         TriTyperGenotypeData genotypeData = ds.getGenotypeData();
