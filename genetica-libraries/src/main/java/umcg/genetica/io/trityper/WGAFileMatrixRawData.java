@@ -34,6 +34,11 @@ public class WGAFileMatrixRawData {
         }
 
         long fileSize = (long) 3 * nrSNPs * (long) nrInds;
+		
+		if(fileSize != file.length()){
+			throw new RuntimeException("Raw datafile incorrect size. Expected: " + fileSize + " found: " + file.length());
+		}
+		
         if (!readOnly) {
             if (file.length() != fileSize) {
                 //Generate file with the size, such that this is appropriate:
