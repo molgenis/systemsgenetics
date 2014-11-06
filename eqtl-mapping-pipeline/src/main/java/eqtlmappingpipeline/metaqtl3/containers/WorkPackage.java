@@ -14,7 +14,7 @@ public class WorkPackage implements Comparable<WorkPackage> {
 
     private SNP[] snps;         // 1 snp / dataset
     private int[] probes; // multi probes / dataset or null, for all probes
-    private Boolean[] passesQC;
+//    private Boolean[] passesQC;
     private Boolean[] flipSNPAlleles;
     private boolean poison;
     private short datasetsPassingQC;

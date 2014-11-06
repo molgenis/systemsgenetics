@@ -200,7 +200,7 @@ public class TriTyperExpressionData {
 
             while (anelems != null) {
                 if (anelems.length >= 6 && (!filterplatform || (filterplatform && anelems[0].equals(m_platform)))) {
-                    String probe = new String(anelems[1].getBytes("UTF-8")).intern();
+                    String probe = new String(anelems[1]).intern();
                     Byte bchr = ChrAnnotation.parseChr(anelems[3]);
 
                     Integer ichrStart = -1;

@@ -157,7 +157,6 @@ public class MetaQTL3 {
             m_settings.createBinaryOutputFiles = binout;
             if (maxNrResults != null && maxNrResults > 0) {
                 m_settings.maxNrMostSignificantEQTLs = maxNrResults;
-
             }
 
             m_settings.createDotPlot = !skipdotplot;
@@ -723,7 +722,6 @@ public class MetaQTL3 {
                 } else {
                     m_probeTranslationTable.setQuick(d, p, tmp);
                 }
-
             }
         }
 
