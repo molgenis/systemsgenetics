@@ -309,11 +309,11 @@ public class GenotypeInfo {
 					Alleles sampleAllele = sampleAlleles.get(j);
 					
 					if (sampleAllele.getAlleleCount() == 0 || sampleAllele.contains(Allele.ZERO)) {
-						System.out.println(inputData.getSampleNames()[j]);
-						System.out.println(variant.getPrimaryVariantId());
-						System.out.println(sampleAllele);
-						System.out.println(probs[j][0] + " " + probs[j][1] + " " + probs[j][2]);
-						System.out.println("------");
+//						System.out.println(inputData.getSampleNames()[j]);
+//						System.out.println(variant.getPrimaryVariantId());
+//						System.out.println(sampleAllele);
+//						System.out.println(probs[j][0] + " " + probs[j][1] + " " + probs[j][2]);
+//						System.out.println("------");
 						continue sampleAllelesLoop;
 					}
 					sampleCallCounts[j]++;
