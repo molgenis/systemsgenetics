@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -39,7 +40,7 @@ public class GenotypeInfo {
 	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
 	static {
-		
+
 		LOGGER = Logger.getLogger(GenotypeInfo.class);
 
 		OPTIONS = new Options();
@@ -89,21 +90,21 @@ public class GenotypeInfo {
 				.withLongOpt("variantPosFilterList")
 				.create("pf");
 		OPTIONS.addOption(option);
-		
+
 		option = OptionBuilder.withArgName("string")
 				.hasArg()
 				.withDescription("Shapeit2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid in combination with --inputType SHAPEIT2")
 				.withLongOpt("forceChr")
 				.create("f");
 		OPTIONS.addOption(option);
-		
+
 		option = OptionBuilder.withArgName("double")
 				.hasArg()
 				.withDescription("The minimum posterior probability to call genotypes in the input data " + 0.8)
 				.withLongOpt("inputProb")
 				.create("ip");
 		OPTIONS.addOption(option);
-	
+
 	}
 
 	/**
@@ -111,7 +112,7 @@ public class GenotypeInfo {
 	 */
 	public static void main(String[] args) throws IOException {
 		try {
-			
+
 			CommandLineParser parser = new PosixParser();
 			final CommandLine commandLine = parser.parse(OPTIONS, args, true);
 
@@ -134,26 +135,26 @@ public class GenotypeInfo {
 			} catch (IllegalArgumentException e) {
 				throw new ParseException("Error parsing --inputType \"" + commandLine.getOptionValue('I') + "\" is not a valid input data format");
 			}
-			
+
 			final String outputBasePath = commandLine.getOptionValue('o');
 			final File sampleFilterListFile = commandLine.hasOption("sf") ? new File(commandLine.getOptionValue("sf")) : null;
 			final File variantPosFilterListFile = commandLine.hasOption("pf") ? new File(commandLine.getOptionValue("pf")) : null;
-			
+
 			final double minimumPosteriorProbability;
 			try {
 				minimumPosteriorProbability = commandLine.hasOption("ip") ? Double.parseDouble(commandLine.getOptionValue("ip")) : 0.8;
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --inputProb \"" + commandLine.getOptionValue("ip") + "\" is not an double");
 			}
-			
+
 			StringBuilder inputPaths = new StringBuilder();
 			for (String path : inputBasePaths) {
 				inputPaths.append(path);
 				inputPaths.append(' ');
 			}
-			
+
 			String forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
-			
+
 			LOGGER.info("Input base path: " + inputPaths);
 			LOGGER.info("Input data type: " + inputType.getName());
 			LOGGER.info("Output base path: " + outputBasePath);
@@ -167,37 +168,37 @@ public class GenotypeInfo {
 			LOGGER.info("Minimum posterior probability for input data: " + minimumPosteriorProbability);
 
 			final VariantFilterSeqPos varFilter;
-			if(variantPosFilterListFile != null) {
+			if (variantPosFilterListFile != null) {
 				varFilter = new VariantFilterSeqPos();
 				int includeCountVar = 0;
 				try {
-						BufferedReader variantChrPosFilterReader = new BufferedReader(new FileReader(variantPosFilterListFile));
-						String line;
-						while ((line = variantChrPosFilterReader.readLine()) != null) {
-							
-							String[] elements = CHR_POS_SPLITTER.split(line);
-							
-							if(elements.length != 2){
-								LOGGER.error("Error parsing chr pos for line: " + line + " skipping line");
-								continue;
-							}
-							++includeCountVar;
-							varFilter.addSeqPos(elements[0], Integer.parseInt(elements[1]));
+					BufferedReader variantChrPosFilterReader = new BufferedReader(new FileReader(variantPosFilterListFile));
+					String line;
+					while ((line = variantChrPosFilterReader.readLine()) != null) {
+
+						String[] elements = CHR_POS_SPLITTER.split(line);
+
+						if (elements.length != 2) {
+							LOGGER.error("Error parsing chr pos for line: " + line + " skipping line");
+							continue;
 						}
-						
-						LOGGER.info("Included " + DEFAULT_NUMBER_FORMATTER.format(includeCountVar) + " variants from file with chr and pos");
-						
-					} catch (FileNotFoundException ex) {
-						LOGGER.fatal("Unable to find file with variants to filter on at: " + variantPosFilterListFile.getAbsolutePath());
-						System.exit(1);
-					} catch (IOException e) {
-						LOGGER.fatal("Error reading file with variants to filter on at: " + variantPosFilterListFile, e);
-						System.exit(1);
+						++includeCountVar;
+						varFilter.addSeqPos(elements[0], Integer.parseInt(elements[1]));
 					}
-			} else {					
+
+					LOGGER.info("Included " + DEFAULT_NUMBER_FORMATTER.format(includeCountVar) + " variants from file with chr and pos");
+
+				} catch (FileNotFoundException ex) {
+					LOGGER.fatal("Unable to find file with variants to filter on at: " + variantPosFilterListFile.getAbsolutePath());
+					System.exit(1);
+				} catch (IOException e) {
+					LOGGER.fatal("Error reading file with variants to filter on at: " + variantPosFilterListFile, e);
+					System.exit(1);
+				}
+			} else {
 				varFilter = null;
 			}
-			
+
 			final SampleIdIncludeFilter sampleFilter;
 
 			if (sampleFilterListFile != null) {
@@ -219,11 +220,11 @@ public class GenotypeInfo {
 			} else {
 				sampleFilter = null;
 			}
-		
+
 			final RandomAccessGenotypeData inputData;
 
 			try {
-				inputData = inputType.createFilteredGenotypeData(inputBasePaths, 0, varFilter,sampleFilter, forceSeqName, minimumPosteriorProbability);
+				inputData = inputType.createFilteredGenotypeData(inputBasePaths, 0, varFilter, sampleFilter, forceSeqName, minimumPosteriorProbability);
 			} catch (TabixFileNotFoundException e) {
 				LOGGER.fatal("Tabix file not found for input data at: " + e.getPath() + "\n"
 						+ "Please see README on how to create a tabix file");
@@ -244,18 +245,23 @@ public class GenotypeInfo {
 			}
 
 			LOGGER.info("Data loaded");
-			
+
+			final int[] sampleHetCounts = new int[inputData.getSamples().size()];
+			final int[] sampleCallCounts = new int[inputData.getSamples().size()];
+
+			double sumVariantCallRate = 0;
+
 			File variantInfoFile = new File(outputBasePath + ".vars");
-			if(variantInfoFile.getParentFile() != null){
+			if (variantInfoFile.getParentFile() != null) {
 				variantInfoFile.getParentFile().mkdirs();
 			}
-			
+
 			BufferedWriter variantInfoWriter = new BufferedWriter(new FileWriter(variantInfoFile));
-			
+
 			variantInfoWriter.append("ID\tCHR\tPOS\tAlleles\tMA\tMAF\tCALL\tHWE\tMACH_R2\tGenotype_Counts\n");
-			
-			int i = 0;
-			for(GeneticVariant variant : inputData){
+
+			int variantCount = 0;
+			for (GeneticVariant variant : inputData) {
 				variantInfoWriter.append(variant.getPrimaryVariantId());
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(variant.getSequenceName());
@@ -263,8 +269,8 @@ public class GenotypeInfo {
 				variantInfoWriter.append(String.valueOf(variant.getStartPos()));
 				variantInfoWriter.append('\t');
 				boolean notFirst = false;
-				for(Allele a : variant.getVariantAlleles()){
-					if(notFirst){
+				for (Allele a : variant.getVariantAlleles()) {
+					if (notFirst) {
 						variantInfoWriter.append('/');
 					}
 					variantInfoWriter.append(a.getAlleleAsString());
@@ -275,36 +281,105 @@ public class GenotypeInfo {
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(String.valueOf(variant.getMinorAlleleFrequency()));
 				variantInfoWriter.append('\t');
-				variantInfoWriter.append(String.valueOf(variant.getCallRate()));
+				double callrate = variant.getCallRate();
+				sumVariantCallRate += callrate;
+				variantInfoWriter.append(String.valueOf(callrate));
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(String.valueOf(variant.getHwePvalue()));
 				variantInfoWriter.append('\t');
 				variantInfoWriter.append(String.valueOf(variant.getMachR2()));
 				variantInfoWriter.append('\t');
-				
+
 				ArrayList<GenotypeCountCalculator.GenotypeCount> genotypeCounts = GenotypeCountCalculator.countGenotypes(variant);
-				for(GenotypeCountCalculator.GenotypeCount genotypeCount : genotypeCounts){
+				for (GenotypeCountCalculator.GenotypeCount genotypeCount : genotypeCounts) {
 					variantInfoWriter.append(genotypeCount.getGenotype().toString());
 					variantInfoWriter.append(": ");
 					variantInfoWriter.append(String.valueOf(genotypeCount.getCount()));
 					variantInfoWriter.append(", ");
 				}
-				
+
 				variantInfoWriter.append('\n');
+
+				List<Alleles> sampleAlleles = variant.getSampleVariants();
+				float[][] probs = variant.getSampleGenotypeProbilities();
 				
-				++i;
-				if( (i % 100000) == 0 ){
-					System.out.println("Processed " + DEFAULT_NUMBER_FORMATTER.format(i) + " variants");
+				sampleAllelesLoop:
+				for (int j = 0 ; j < sampleAlleles.size() ; ++j) {
+					
+					Alleles sampleAllele = sampleAlleles.get(j);
+					
+					if (sampleAllele.getAlleleCount() == 0 || sampleAllele.contains(Allele.ZERO)) {
+//						System.out.println(inputData.getSampleNames()[j]);
+//						System.out.println(variant.getPrimaryVariantId());
+//						System.out.println(sampleAllele);
+//						System.out.println(probs[j][0] + " " + probs[j][1] + " " + probs[j][2]);
+//						System.out.println("------");
+						continue sampleAllelesLoop;
+					}
+					sampleCallCounts[j]++;
+
+					if (sampleAllele.getAlleleCount() > 1) {
+						Allele a1 = sampleAllele.getAlleles().get(0);
+						for (Allele a2 : sampleAllele.getAlleles()) {
+							if (a1 != a2) {
+								sampleHetCounts[j]++;
+							}
+						}
+					}
+
 				}
-				
+				++variantCount;
+				if ((variantCount % 100000) == 0) {
+					System.out.println("Processed " + DEFAULT_NUMBER_FORMATTER.format(variantCount) + " variants");
+				}
+
 			}
-			
+
 			variantInfoWriter.close();
+
+
+			File sampleInfoFile = new File(outputBasePath + ".samples");
+			if (sampleInfoFile.getParentFile() != null) {
+				sampleInfoFile.getParentFile().mkdirs();
+			}
+
+			double sumSampleCallRate = 0;
+			
+			BufferedWriter sampleInfoWriter = new BufferedWriter(new FileWriter(sampleInfoFile));
+
+			sampleInfoWriter.append("ID\tCallRate\tHetRate\n");
+			int j = 0;
+			sampleAlleles:
+			for (String sample : inputData.getSampleNames()) {
+				sampleInfoWriter.append(sample);
+				sampleInfoWriter.append('\t');
+				
+				double sampleCallRate = sampleCallCounts[j] / (double) variantCount;
+				sumSampleCallRate += sampleCallRate;
+				sampleInfoWriter.append(String.valueOf(sampleCallRate));
+				sampleInfoWriter.append('\t');
+				
+				double sampleHetRate = sampleHetCounts[j] / (double) variantCount;
+				sampleInfoWriter.append(String.valueOf(sampleHetRate));
+				sampleInfoWriter.append('\n');
+				++j;
+			}
+
+			sampleInfoWriter.close();
+
+			double averageVariantCallRate = sumVariantCallRate / variantCount;
+			double averageSampleCallRate = sumSampleCallRate / inputData.getSamples().size();
+			
+			System.out.println("Samples: " + inputData.getSampleNames().length);
+			System.out.println("Variants: " + variantCount);
+			
+			System.out.println("Average variant call rate: " + averageVariantCallRate);
+			System.out.println("Average sample call rate: " + averageSampleCallRate);
 			
 			LOGGER.info("Done writing genotype info");
-			
-			
-			
+
+
+
 		} catch (ParseException ex) {
 			LOGGER.fatal("Invalid command line arguments: ");
 			LOGGER.fatal(ex.getMessage());
@@ -312,6 +387,6 @@ public class GenotypeInfo {
 			HelpFormatter formatter = new HelpFormatter();
 			formatter.printHelp(" ", OPTIONS);
 		}
-		
+
 	}
 }
