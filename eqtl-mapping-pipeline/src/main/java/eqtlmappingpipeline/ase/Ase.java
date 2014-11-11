@@ -97,8 +97,7 @@ public class Ase {
 		try {
 			configuration = new AseConfiguration(args);
 		} catch (ParseException ex) {
-			System.err.println("Invalid command line arguments: ");
-			System.err.println(ex.getMessage());
+			System.err.println("Invalid command line arguments: " + ex.getMessage());
 			System.err.println();
 			AseConfiguration.printHelp();
 			System.exit(1);
