@@ -16,6 +16,8 @@ public class NormalizationConsoleGUI {
     public NormalizationConsoleGUI(String[] args) {
 
         String in = null;
+        String sampleIncludeList = null;
+        String probeIncludeList = null;
         String out = null;
         String cov = null;
 
@@ -105,6 +107,14 @@ public class NormalizationConsoleGUI {
                 forceNormalDistribution = true;
 				fullNorm = false;
             }
+            if (arg.equals("--sampleInclude")) {
+                sampleIncludeList = val;
+				fullNorm = false;
+            }
+            if (arg.equals("--probeInclude")) {
+                probeIncludeList = val;
+				fullNorm = false;
+            }
         }
 
         if (in == null) {
@@ -142,13 +152,13 @@ public class NormalizationConsoleGUI {
             Normalizer p = new Normalizer();
 
             if (!fullNorm) {
-                p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
+                p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
                         runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, 
                         forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
             } else {
                 // run full normalization
-                p.normalize(in, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
+                p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         true, true, false, true, true, true, false, false, false,
                         false, false);
             }
@@ -174,6 +184,7 @@ public class NormalizationConsoleGUI {
                 + "--centerscale\t\t\t\tCenter the mean to 0, linearly scale using standard deviation\n"
                 + "--adjustPCA\t\t\t\tRun PCA adjustment \n"
 				+ "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
+                + "--sampleInclude\t\t\t\tList of high quality sample, other samples will be removed. \n"
                 + "\n"
                 + "Covariate adjustment parameters:\n"
                 + "--cov\t\t\tstring\t\tCovariates to remove\n"
@@ -182,6 +193,10 @@ public class NormalizationConsoleGUI {
                 + "PCA parameters\n"
                 + "--maxnrpcaremoved\tinteger\t\tMaximum number of PCs to remove\n"
                 + "--stepsizepcaremoval\tinteger\t\tStep size for PC removal\n"
+                +"\n"
+                +"Selection\n"
+                +"--probeInclude\tFile\tList of probes to keep in the file\n"
+                +"--sampleInclude\tFile\tList of samples to keep in the file\n"
                 +"\n"
                 +"Additional QN missing value parameters (Only one of the force option's is allowed at once.)\n"
                 +"--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen, without --treatZerosAsNulls, only QN will be performed.\n"

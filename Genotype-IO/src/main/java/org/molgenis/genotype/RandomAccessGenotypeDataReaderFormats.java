@@ -26,7 +26,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	SHAPEIT2("Shapeit2 output", ".haps, and .samples with phased haplotypes as outputted by Shapeit2", EnumSet.of(HAPS, SAMPLE)),
 	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files", EnumSet.of(BED, BIM, FAM)),
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat", EnumSet.of(TRITYPER_GENOTYPE, TRITYPER_IND, TRITYPER_MAPPINGS, TRITYPER_MAPPINGS, TRITYPER_PHENO, TRITYPER_SNPS)),
-	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample", EnumSet.of(GenotypeFileType.GEN, SAMPLE));
+	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample", EnumSet.of(GenotypeFileType.GEN, SAMPLE)),
+	GEN_FOLDER("Oxford GEN folder", "Folder with oxford .gen and .sample files", EnumSet.of(GenotypeFileType.GEN_FOLDER));
 	private final String name;
 	private final String description;
 	private final EnumSet<GenotypeFileType> requiredFiles;
@@ -221,6 +222,11 @@ public enum RandomAccessGenotypeDataReaderFormats {
 					throw new GenotypeDataException("Expected 2 files for oxford gen data but found: " + paths.length);
 				}
 
+			case GEN_FOLDER:
+				if (forcedSequence != null) {
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
+				return MultiPartGenotypeData.createFromGenFolder(new File(paths[0]), cacheSize, minimumPosteriorProbabilityToCall);
 
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");

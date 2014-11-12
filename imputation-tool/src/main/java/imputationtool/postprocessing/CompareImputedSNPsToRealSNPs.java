@@ -114,7 +114,7 @@ public class CompareImputedSNPsToRealSNPs {
             String name1 = ind1[i];
             Integer id2 = ggDataset2.getIndividualId(name1);
 
-            if (id2 != null) {
+            if (id2 != -9) {
                 ids1[i] = id2;
             } else {
                 ids1[i] = -1;
@@ -143,7 +143,7 @@ public class CompareImputedSNPsToRealSNPs {
             Integer snp1Id = ggDataset1.getSnpToSNPId().get(snp);
             Integer snp2Id = ggDataset2.getSnpToSNPId().get(snp);
 
-            if (snp1Id != null && snp2Id != null) {
+            if (snp1Id != -9 && snp2Id != -9) {
                 SNP snp1 = ggDataset1.getSNPObject(snp1Id);
                 SNP snp2 = ggDataset2.getSNPObject(snp2Id);
 

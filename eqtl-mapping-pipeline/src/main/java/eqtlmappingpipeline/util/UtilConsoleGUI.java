@@ -81,6 +81,8 @@ public class UtilConsoleGUI {
         
         String sources = null;
         String keyValuePairs = null;
+        String annotationIds = null;
+        String geneAnnotationFile = null;
 
         FDRMethod FdrMethod = FDRMethod.ALL;
 
@@ -128,7 +130,7 @@ public class UtilConsoleGUI {
                 run = MODE.REGRESSKNOWN;
             } else if (arg.equals("--getSNPProbeCombinatios")) {
                 run = MODE.GETSNPPROBECOMBINATIONS;
-            } else if (arg.equals("--nonGeneticPCaCorrection")) {
+            } else if (arg.equals("--nonGeneticPcaCorrection")) {
                 run = MODE.NONGENETICPCACORRECTION;
             } else if (arg.equals("--formatAsTT")) {
                 run = MODE.CREATTTFROMDOUBLEMAT;
@@ -140,6 +142,10 @@ public class UtilConsoleGUI {
                 sources = val;
             } else if (arg.equals("--keyValuePairs")) {
                 keyValuePairs = val;
+            } else if (arg.equals("--idsToAnnotate")) {
+                annotationIds = val;
+            } else if (arg.equals("--geneAnnotation")) {
+                geneAnnotationFile = val;
             } else if (arg.equals("--in2")) {
                 in2 = val;
             } else if (arg.equals("--out")) {
@@ -371,7 +377,7 @@ public class UtilConsoleGUI {
 
 
                         if (in == null || out == null || inexp == null || gte == null) {
-                            System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --ing and --nreqtls");
+                            System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte and --nreqtls");
                         } else {
                             try {
                                 PCAOptimum p = new PCAOptimum();
@@ -379,7 +385,7 @@ public class UtilConsoleGUI {
 
                                 p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
                                 File file = new File(inexp);
-
+                                
                                 p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
                             } catch (IOException ex) {
                                 Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -402,7 +408,7 @@ public class UtilConsoleGUI {
                         break;
                         
                     case ADDANNOTATIONTOQTLFILE:
-                        QTLAnnotator.addAnnotationToQTLOutput(in, sources, keyValuePairs, out);
+                        QTLAnnotator.addAnnotationToQTLOutput(in, sources, keyValuePairs, annotationIds, geneAnnotationFile, out);
                         break;
                 }
             } catch (Exception e) {
@@ -431,7 +437,7 @@ public class UtilConsoleGUI {
                 + "--regressknown\t\t\tRemoves known cis-eQTL effects from gene expression data.\n"
                 + "--sortfile\t\t\tSort eQTL files.\n"
                 + "--meta\t\t\t\tFixed effect meta analysis.\n"
-                + "--nonGeneticPCaCorrection\tCorrect expression data for non-genetic components.\n"
+                + "--nonGeneticPcaCorrection\tCorrect expression data for non-genetic components.\n"
                 + "--getSNPProbeCombinatios\tCreate list of valid SNP-Probe combinations to test.\n"
                 + "--formatAsTT\t\t\tConverte a doublematrix dataset to a TriTyper genotype file.\n"
                 + "--convertbinarymatrix\t\tConverts binary matrix to text\n");

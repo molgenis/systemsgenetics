@@ -142,7 +142,7 @@ public class QTL implements Comparable<QTL> {
         return datasetsSamples;
     }
 
-    MetaQTL4MetaTrait getMetaTrait() {
+    public MetaQTL4MetaTrait getMetaTrait() {
         return trait;
     }
 

@@ -6,6 +6,7 @@ package eqtlmappingpipeline.interactionanalysis;
 
 import umcg.genetica.graphics.ScatterPlot;
 import eqtlmappingpipeline.normalization.Normalizer;
+import gnu.trove.map.hash.THashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -438,7 +439,7 @@ public class InteractionAnalysisMultiThreaded {
         TriTyperGenotypeData genotypeData = ds.getGenotypeData();
         TriTyperExpressionData pcCorrectedExpressionData = ds.getExpressionData();
 
-        HashMap<String, String> gteHash = ds.getGenotypeToExpressionCouplings();
+        THashMap<String, String> gteHash = ds.getGenotypeToExpressionCouplings();
         HashSet<String> expressionIndividualsInPCCorrectedData = new HashSet<String>();
         for (String genotypeSample : genotypeData.getIndividuals()) {
             if (gteHash.containsKey(genotypeSample)) {
@@ -476,7 +477,7 @@ public class InteractionAnalysisMultiThreaded {
 
             Integer probeIdInPCCorrectedData = pcCorrectedExpressionData.getProbeToId().get(probe);
 
-            if (snpId != -9 && probeIdInPCCorrectedData != null) {
+            if (snpId != -9 && probeIdInPCCorrectedData != -9) {
                 if (snpsPassingQC.contains(snp)) {
                     snpProbeCombinationsToTest.add(p);
                 } else if (!snpsVisited.contains(snp)) {

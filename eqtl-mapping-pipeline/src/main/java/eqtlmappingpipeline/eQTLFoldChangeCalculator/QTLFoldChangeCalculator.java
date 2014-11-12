@@ -24,8 +24,8 @@ public class QTLFoldChangeCalculator extends MetaQTL3 {
 
 	for (int d = 0; d < m_gg.length; d++) {
 	    TextFile tf = new TextFile(eqtlfile, TextFile.R);
+	    tf.readLineElemsReturnReference(TextFile.tab);
 	    String[] elems = tf.readLineElemsReturnReference(TextFile.tab);
-	    elems = tf.readLineElemsReturnReference(TextFile.tab);
 
 	    SNPLoader loader = m_gg[d].getGenotypeData().createSNPLoader();
 	    int[] indWGA = m_gg[d].getExpressionToGenotypeIdArray();
@@ -37,7 +37,7 @@ public class QTLFoldChangeCalculator extends MetaQTL3 {
 		Integer snpId = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
 		Integer probeId = m_gg[d].getExpressionData().getProbeToId().get(probe);
 
-		if (snpId != -9 && probeId != null) {
+		if (snpId != -9 && probeId != -9) {
 		    SNP snpObject = m_gg[d].getGenotypeData().getSNPObject(snpId);
 		    loader.loadGenotypes(snpObject);
 		    double[] expression = m_gg[d].getExpressionData().getMatrix()[probeId];

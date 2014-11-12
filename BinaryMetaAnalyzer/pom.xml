@@ -7,9 +7,7 @@
         <version>1.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>BinaryMetaAnalyzer</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
-    
-    
+    <version>1.0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
@@ -19,7 +17,6 @@
         </dependency>
     </dependencies>
     <name>BinaryMetaAnalyzer</name>
-    
     <build>
         <plugins>
             <plugin>
@@ -45,8 +42,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            
         </plugins>
     </build>
 </project>

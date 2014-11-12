@@ -6,6 +6,7 @@ package eqtlmappingpipeline.metaqtl3.containers;
 
 import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
+import gnu.trove.set.hash.THashSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -533,7 +534,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (confineProbe != null && confineProbe.trim().length() > 0 && Gpio.exists(confineProbe)) {
             strConfineProbe = confineProbe;
             TextFile in = new TextFile(confineProbe, TextFile.R);
-            tsProbesConfine = new HashSet<String>();
+            tsProbesConfine = new THashSet<String>();
             String[] data = in.readAsArray();
             for (String d : data) {
                 d = d.trim();
