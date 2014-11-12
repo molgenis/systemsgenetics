@@ -207,7 +207,9 @@ public class NoLdSnpProbeListCreator {
         String line;
         String[] elements;
         
+        int lineNr = 0;
         while ((line = reader.readLine()) != null) {
+            lineNr++;
             elements = StringUtils.splitPreserveAllTokens(line, '\t');
 
             if ((probeFile.getName().endsWith(".bed") && elements.length < 4)||(probeFile.getName().endsWith(".txt") && elements.length < 6)) {
@@ -226,6 +228,11 @@ public class NoLdSnpProbeListCreator {
                 probeName = elements[3];
                 
             } else if(probeFile.getName().endsWith(".txt")){
+                if(lineNr==1){
+                    line = reader.readLine();
+                    elements = StringUtils.splitPreserveAllTokens(line, '\t');
+                }
+                
                 chr = elements[3];
                 probeStartPos = Integer.parseInt(elements[4]);
                 probeStopPos = Integer.parseInt(elements[5]);

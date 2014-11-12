@@ -263,8 +263,8 @@ public class Main {
             }
 
         } else if (mode.equals("nongeneticPcaCorrection")) {
-            if (in == null || out == null || inexp == null || gte == null ) {
-                System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --ing and --nreqtls");
+            if (in == null || out == null || inexp == null || gte == null) {
+                System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte and --nreqtls");
             } else {
                 try {
                     PCAOptimum p =  new PCAOptimum();
