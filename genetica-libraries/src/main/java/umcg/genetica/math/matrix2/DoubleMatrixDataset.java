@@ -28,7 +28,7 @@ import umcg.genetica.io.text.TextFile;
 
 /**
  *
- * @author MarcJan, Juha, Harm-Jan
+ * @author MarcJan, Juha, Harm-Jan, Patrick
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
