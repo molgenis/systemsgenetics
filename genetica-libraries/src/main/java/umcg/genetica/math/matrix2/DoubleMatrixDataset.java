@@ -29,6 +29,8 @@ import umcg.genetica.io.text.TextFile;
 /**
  *
  * @author MarcJan, Juha, Harm-Jan, Patrick
+ * @param <R>
+ * @param <C>
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
@@ -320,9 +322,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     private static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
         //First load the raw binary data:
         File fileBinary = new File(fileName + ".dat");
-        BufferedInputStream in = null;
-        int nrRows = -1;
-        int nrCols = -1;
+        BufferedInputStream in;
+        int nrRows;
+        int nrCols;
         in = new BufferedInputStream(new FileInputStream(fileBinary));
         byte[] bytes = new byte[4];
         in.read(bytes, 0, 4);
@@ -342,7 +344,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         LinkedHashMap<String, Integer> colMap = loadIdentifiers(fileName + ".cols.txt");
 
         byte[] buffer = new byte[nrCols * 8];
-        long bits = 0;
+        long bits;
         for (int row = 0; row < nrRows; row++) {
             in.read(buffer, 0, nrCols * 8);
             int bufferLoc = 0;
@@ -528,7 +530,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     /**
      * Order columns
      *
-     * @param dataset DoubleMatrixDataset Expression matrix
      */
     public void OrderOnColumnnames() {
         LinkedHashMap<C, Integer> newColHash = new LinkedHashMap<C, Integer>((int) Math.ceil(this.matrix.columns() / 0.75));
@@ -546,7 +547,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
     /**
      * Order rows
      *
-     * @param dataset DoubleMatrixDataset Expression matrix
      */
     public void OrderOnRownames() {
         LinkedHashMap<R, Integer> newRowHash = new LinkedHashMap<R, Integer>((int) Math.ceil(this.matrix.rows() / 0.75));
@@ -636,7 +636,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
      * @param rowName
      * @param columnName
      * @param value
-     * @return
      */
     public void setElement(R rowName, C columnName, double value) {
 
