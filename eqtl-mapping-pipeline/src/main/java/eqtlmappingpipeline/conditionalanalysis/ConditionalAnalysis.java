@@ -7,6 +7,7 @@ package eqtlmappingpipeline.conditionalanalysis;
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
+import gnu.trove.set.hash.THashSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -100,7 +101,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
         Gpio.createDir(m_settings.outputReportsDir);
         Gpio.createDir(m_settings.plotOutputDirectory);
         m_settings.tsSNPsConfine = null;
-        m_settings.tsProbesConfine = new HashSet<String>();
+        m_settings.tsProbesConfine = new THashSet<String>();
 
         HashMap<String, HashSet<String>> esnpProbePairs = new HashMap<String, HashSet<String>>();
         HashMap<String, HashSet<String>> gsnpProbePairs = new HashMap<String, HashSet<String>>();

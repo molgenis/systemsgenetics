@@ -35,9 +35,9 @@ class CalculationThread extends Thread {
     private int m_numProbes;
     private int m_numDatasets;
     private final int[][] m_expressionToGenotypeIds;
-    private final double[][] probeVariance;
-    private final double[][] probeMean;
-    private final String[][] probeName;
+//    private final double[][] probeVariance;
+//    private final double[][] probeMean;
+//    private final String[][] probeName;
     private final LinkedBlockingQueue<WorkPackage> m_workpackage_queue;
     private final LinkedBlockingQueue<WorkPackage> m_result_queue;
     int testsPerformed = 0;
@@ -81,14 +81,15 @@ class CalculationThread extends Thread {
         m_numProbes = m_probeTranslation.columns();
         m_numDatasets = m_probeTranslation.rows();
         m_expressionToGenotypeIds = expressionToGenotypeIds;
-        probeVariance = new double[m_numDatasets][0];
-        probeMean = new double[m_numDatasets][0];
-        probeName = new String[m_numDatasets][0];
-        for (int d = 0; d < m_numDatasets; d++) {
-            probeVariance[d] = expressiondata[d].getProbeVariance();
-            probeMean[d] = expressiondata[d].getProbeMean();
-            probeName[d] = expressiondata[d].getProbes();
-        }
+        
+//        probeVariance = new double[m_numDatasets][0];
+//        probeMean = new double[m_numDatasets][0];
+//        probeName = new String[m_numDatasets][0];
+//        for (int d = 0; d < m_numDatasets; d++) {
+//            probeVariance[d] = expressiondata[d].getProbeVariance();
+//            probeMean[d] = expressiondata[d].getProbeMean();
+//            probeName[d] = expressiondata[d].getProbes();
+//        }
 
         m_covariates = covariates;
 

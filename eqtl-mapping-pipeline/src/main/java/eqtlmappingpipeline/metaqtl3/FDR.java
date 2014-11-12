@@ -698,7 +698,7 @@ public class FDR {
             System.out.println("Reading: " + snpselectionlist);
             TextFile t = new TextFile(snpselectionlist, TextFile.R);
 
-            selectionOfSnps = new THashSet<String>(100000000, 2f);
+            selectionOfSnps = new THashSet<String>(100000000, 4f);
             for (String s : t) {
                 selectionOfSnps.add(s);
             }
@@ -712,7 +712,7 @@ public class FDR {
             System.out.println("Reading: " + snpprobeselectionlist);
             TextFile t = new TextFile(snpprobeselectionlist, TextFile.R);
 
-            selectionOfSnpProbes = new THashSet<String>(100000000, 2f);
+            selectionOfSnpProbes = new THashSet<String>(100000000, 4f);
             for (String s : t) {
                 selectionOfSnpProbes.add(s);
             }

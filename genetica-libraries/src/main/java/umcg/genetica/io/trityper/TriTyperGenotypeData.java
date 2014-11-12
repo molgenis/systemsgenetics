@@ -4,7 +4,6 @@
  */
 package umcg.genetica.io.trityper;
 
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -25,8 +24,7 @@ public class TriTyperGenotypeData {
     private Boolean[] isCase;
     private Boolean[] isIncluded;
     private String[] individuals;
-    //Potentialy we can use TObjectIntMaps
-    private THashMap<String, Integer> individualToId;
+    private TObjectIntHashMap<String> individualToId;
     private TObjectIntHashMap<String> snpToSNPId;
     private String genotypeFileName;
     private String dosageFileName;
@@ -50,7 +48,7 @@ public class TriTyperGenotypeData {
         String[] lineElems = t.readLineElemsReturnReference(TextFile.tab);
         ArrayList<String> alInd = new ArrayList<String>();
         int i = 0;
-        individualToId = new THashMap<String, Integer>();
+        individualToId = new TObjectIntHashMap<String>(lineElems.length, 1f, -9);
         while (lineElems != null) {
             String individual = new String(lineElems[0].getBytes("UTF-8"));
             individualToId.put(individual, i);
@@ -80,7 +78,6 @@ public class TriTyperGenotypeData {
             getIsIncluded()[i] = null;
             individuals[i] = alInd.get(i);
         }
-        alInd = null;
 
         t = new TextFile(loc + "PhenotypeInformation.txt", TextFile.R);
 
@@ -94,7 +91,7 @@ public class TriTyperGenotypeData {
         while (lineElems != null) {
             String ind = lineElems[0];
             Integer indId = individualToId.get(ind);
-            if (indId != null) {
+            if (indId != -9) {
                 if (lineElems[1].equals("control")) {
                     isCase[indId] = false;
                     numControls++;
@@ -158,7 +155,7 @@ public class TriTyperGenotypeData {
 		t.close();
         
         //value if absent now will be -9
-        snpToSNPId = new TObjectIntHashMap<String>(tmpSNP.size(), 0.85f, -9);
+        snpToSNPId = new TObjectIntHashMap<String>(tmpSNP.size(), 1f, -9);
         int snpId = 0;
         for(String s : tmpSNP){
             snpToSNPId.put(s, snpId);
@@ -276,14 +273,14 @@ public class TriTyperGenotypeData {
     /**
      * @return the individualToId
      */
-    public THashMap<String, Integer> getIndividualToId() {
+    public TObjectIntHashMap<String> getIndividualToId() {
         return individualToId;
     }
 
     /**
      * @param individualToId the individualToId to set
      */
-    public void setIndividualToId(THashMap<String, Integer> individualToId) {
+    public void setIndividualToId(TObjectIntHashMap<String> individualToId) {
         this.individualToId = individualToId;
     }
 

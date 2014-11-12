@@ -16,7 +16,7 @@ import umcg.genetica.io.text.TextFile;
  *
  * @author harmjan
  */
-class MetaQTL4TraitAnnotation {
+public class MetaQTL4TraitAnnotation {
 
     private final String[] platforms;
     private final ArrayList<HashMap<String, MetaQTL4MetaTrait>> traitHashPerPlatform;
