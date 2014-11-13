@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
+import org.apache.commons.math3.linear.SingularMatrixException;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.graphics.ScatterPlot;
 import umcg.genetica.io.Gpio;
@@ -240,48 +241,55 @@ public class InteractionPlotter {
 
                     regressionFullWithInteraction.newSampleData(olsY, olsXFullWithInteraction);
 
-                    double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
-                    double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
-                    double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+					try{
+						double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
+						double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
 
-                    double betaInteraction = regressionParameters[3];
-                    double seInteraction = regressionStandardErrors[3];
-                    double tInteraction = betaInteraction / seInteraction;
-                    double pValueInteraction = 1;
-                    double zScoreInteraction = 0;
+						double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
 
-                    if (fDist == null) {
-                        fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
-                        randomEngine = new cern.jet.random.tdouble.engine.DRand();
-                        tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
-                    }
 
-                    if (tInteraction < 0) {
-                        pValueInteraction = tDistColt.cdf(tInteraction);
-                        if (pValueInteraction < 2.0E-323) {
-                            pValueInteraction = 2.0E-323;
-                        }
-                        zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-                    } else {
-                        pValueInteraction = tDistColt.cdf(-tInteraction);
-                        if (pValueInteraction < 2.0E-323) {
-                            pValueInteraction = 2.0E-323;
-                        }
+						double betaInteraction = regressionParameters[3];
+						double seInteraction = regressionStandardErrors[3];
+						double tInteraction = betaInteraction / seInteraction;
+						double pValueInteraction = 1;
+						double zScoreInteraction = 0;
 
-                        zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-                    }
-                    pValueInteraction *= 2;
-                    String pvalFormatted = "";
-                    if (pValueInteraction >= 0.001) {
-                        pvalFormatted = decFormat.format(pValueInteraction);
-                    } else {
-                        pvalFormatted = decFormatSmall.format(pValueInteraction);
-                    }
-                    ScatterPlot scatterPlot = new ScatterPlot(500, 500, dataCov, dataExp, dataGen, genotypeDescriptions, colorarray, ScatterPlot.OUTPUTFORMAT.PDF,
-                            "Interaction between SNP " + snp + ", probe " + probe + " and covariate " + covariateData.rowObjects.get(q),
-                            "Z: " + decFormat.format(zScoreInteraction) + " Pvalue: " + pvalFormatted + " n: " + nrCalled,
-                            outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".pdf", false);
+						if (fDist == null) {
+							fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
+							randomEngine = new cern.jet.random.tdouble.engine.DRand();
+							tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
+						}
 
+						if (tInteraction < 0) {
+							pValueInteraction = tDistColt.cdf(tInteraction);
+							if (pValueInteraction < 2.0E-323) {
+								pValueInteraction = 2.0E-323;
+							}
+							zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+						} else {
+							pValueInteraction = tDistColt.cdf(-tInteraction);
+							if (pValueInteraction < 2.0E-323) {
+								pValueInteraction = 2.0E-323;
+							}
+
+							zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+						}
+						pValueInteraction *= 2;
+						String pvalFormatted = "";
+						if (pValueInteraction >= 0.001) {
+							pvalFormatted = decFormat.format(pValueInteraction);
+						} else {
+							pvalFormatted = decFormatSmall.format(pValueInteraction);
+						}
+						ScatterPlot scatterPlot = new ScatterPlot(500, 500, dataCov, dataExp, dataGen, genotypeDescriptions, colorarray, ScatterPlot.OUTPUTFORMAT.PDF,
+								"Interaction between SNP " + snp + ", probe " + probe + " and covariate " + covariateData.rowObjects.get(q),
+								"Z: " + decFormat.format(zScoreInteraction) + " Pvalue: " + pvalFormatted + " n: " + nrCalled,
+								outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".pdf", false);
+
+					} catch(SingularMatrixException ex ){
+						ex.printStackTrace();
+						System.out.println("\tMatrix is singular, skipping\n");
+					}
                 }
 
                 snpObj.clearGenotypes();
