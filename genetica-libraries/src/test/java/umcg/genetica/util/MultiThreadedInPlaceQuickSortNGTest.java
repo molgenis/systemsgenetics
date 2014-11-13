@@ -36,9 +36,8 @@ public class MultiThreadedInPlaceQuickSortNGTest {
         // Assert equality.
         assertEquals(sortedValues, values);
     }
-    
-    @Test
-    public void testlargeQuickSort() {
+
+    public void performanceTestingQuickSorters() {
         // Generate an array of one million random integers.
         Random random = new Random(System.currentTimeMillis());
         Integer[] values = new Integer[10000000];
