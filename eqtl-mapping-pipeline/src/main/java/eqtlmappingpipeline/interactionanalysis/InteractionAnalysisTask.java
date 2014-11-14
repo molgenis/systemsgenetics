@@ -223,6 +223,12 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                                 rConnection.voidEval("modelsummary <- summary(m)");
 
                                 rConnection.voidEval("m2 <- sqrt(diag(vcovHC(m, type = 'HC0')))"); // robust covariance model
+
+                                if (tDistColt == null) {
+                                    randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                                    tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
+                                }
+
                                 betaInteraction = rConnection.eval("modelsummary$coefficients[4,1]").asDouble();
                                 seInteraction = rConnection.eval("as.numeric(m2[4])").asDouble();
                                 betaSNP = rConnection.eval("modelsummary$coefficients[2,1]").asDouble();
