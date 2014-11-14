@@ -89,7 +89,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         double[][] mainSE = null;
         double[][] covariateBeta = null;
         double[][] covariateSE = null;
-        
+
         if (provideFullStats) {
             interactionBeta = new double[eQTLsForSNP.size()][nrTotalCovariates];
             interactionSE = new double[eQTLsForSNP.size()][nrTotalCovariates];
@@ -109,7 +109,6 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         String qcString = null;
         Integer nrGenotypesCalled = null;
 
-        
         org.apache.commons.math3.distribution.FDistribution fDist = null;
         cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
         cern.jet.random.tdouble.StudentT tDistColt = null;
@@ -269,7 +268,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
 //                    regression.newSampleData(olsY, olsX);
                     regressionFullWithInteraction.newSampleData(olsY, olsXFullWithInteraction);
-                    
+
                     // not sure if this is needed right now, but I will keep it in for later use.
 //                    double rss1 = regression.calculateResidualSumOfSquares();
 //                    double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
@@ -277,9 +276,9 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 //                    // Changed this to apache maths 3, was apache maths 1.0
 //                    if (fDist == null) {
 //                        fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
-//                        randomEngine = new cern.jet.random.tdouble.engine.DRand();
-//                        tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
-//                    }
+//                  randomEngine = new cern.jet.random.tdouble.engine.DRand();
+//                    tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
+//                }
 //
 //                    double anovaFTestP = -1;
 //                    try {
@@ -289,6 +288,10 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 //                        }
 //                    } catch (Exception err) {
 //                    }
+                    if (tDistColt == null) {
+                        randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                        tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
+                    }
 
                     // regressionParameters[0]; // this is the intersect!
                     double corr = JSci.maths.ArrayMath.correlation(genotypesCalled, olsY);
