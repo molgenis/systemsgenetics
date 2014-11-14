@@ -579,12 +579,12 @@ public class InteractionAnalysisMultiThreaded {
         String outputheader = "SNP\tProbe\tCovariate\tZ-SNP\tZ-Cov\tZ-Interaction\tZ-Main\tN";
         if (fullStats) {
             outputheader
-                    += "\tinteractionBeta"
-                    + "\tinteractionSE"
-                    + "\tmainBeta"
-                    + "\tmainSE"
+                    += "\tsnpBeta"
+                    + "\tsnpSE"
                     + "\tcovariateBeta"
-                    + "\tcovariateSE";
+                    + "\tcovariateSE"
+                    + "\tinteractionBeta"
+                    + "\tinteractionSE";
 
         }
 
@@ -698,8 +698,8 @@ public class InteractionAnalysisMultiThreaded {
         double[][] covariateSE = result.getCovariateSE();
         double[][] interactionBeta = result.getInteractionBeta();
         double[][] interactionSE = result.getInteractionSE();
-        double[][] mainBeta = result.getMainBeta();
-        double[][] mainSE = result.getMainSE();
+        double[][] mainBeta = result.getSNPBeta();
+        double[][] mainSE = result.getSNPSE();
 
         for (int e = 0; e < eqtls.size(); e++) {
             Pair<String, String> eqtl = eqtls.get(e);
@@ -724,11 +724,6 @@ public class InteractionAnalysisMultiThreaded {
                 builder.append(nMatrix[e][c]);
 
                 if (fullStats) {
-                    builder.append("\t");
-                    builder.append(interactionBeta[e][c]);
-                    builder.append("\t");
-                    builder.append(interactionSE[e][c]);
-                    builder.append("\t");
                     builder.append(mainBeta[e][c]);
                     builder.append("\t");
                     builder.append(mainSE[e][c]);
@@ -736,6 +731,11 @@ public class InteractionAnalysisMultiThreaded {
                     builder.append(covariateBeta[e][c]);
                     builder.append("\t");
                     builder.append(covariateSE[e][c]);
+                    builder.append("\t");
+                    builder.append(interactionBeta[e][c]);
+                    builder.append("\t");
+                    builder.append(interactionSE[e][c]);
+                    builder.append("\t");
                 }
 
                 outputFile.writeln(builder.toString());

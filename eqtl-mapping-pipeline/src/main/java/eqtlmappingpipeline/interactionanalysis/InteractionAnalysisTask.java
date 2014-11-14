@@ -57,7 +57,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
             // this code is very suboptimal and is here for validation purposes only
             try {
                 rConnection = new RConnection();
-                rConnection.voidEval("install.packages('sandwich')");
+//                rConnection.voidEval("install.packages('sandwich')");
                 rConnection.voidEval("library(sandwich)");
             } catch (RserveException ex) {
                 System.err.println(ex.getMessage());

@@ -24,8 +24,8 @@ public class InteractionAnalysisResults {
 
     private final double[][] interactionBeta;
     private final double[][] interactionSE;
-    private final double[][] mainBeta;
-    private final double[][] mainSE;
+    private final double[][] snpBeta;
+    private final double[][] snpSE;
     private final double[][] covariateBeta;
     private final double[][] covariateSE;
 
@@ -47,8 +47,8 @@ public class InteractionAnalysisResults {
         this.nMatrix = nMatrix;
         interactionBeta = null;
         interactionSE = null;
-        mainBeta = null;
-        mainSE = null;
+        snpBeta = null;
+        snpSE = null;
         covariateBeta = null;
         covariateSE = null;
     }
@@ -76,8 +76,8 @@ public class InteractionAnalysisResults {
 
         this.interactionBeta = interactionBeta;
         this.interactionSE = interactionSE;
-        this.mainBeta = mainBeta;
-        this.mainSE = mainSE;
+        this.snpBeta = mainBeta;
+        this.snpSE = mainSE;
         this.covariateBeta = covariateBeta;
         this.covariateSE = covariateSE;
     }
@@ -118,12 +118,12 @@ public class InteractionAnalysisResults {
         return interactionSE;
     }
 
-    public double[][] getMainBeta() {
-        return mainBeta;
+    public double[][] getSNPBeta() {
+        return snpBeta;
     }
 
-    public double[][] getMainSE() {
-        return mainSE;
+    public double[][] getSNPSE() {
+        return snpSE;
     }
 
     public double[][] getCovariateBeta() {
