@@ -35,6 +35,9 @@ public class InteractionAnalysisConsoleGUI {
         RUNMODE step = null;
         boolean binaryoutput = false;
 
+        boolean robust = false;
+        boolean fullStats = false;
+
         boolean matchCovariateNamesToExpressionProbeNames = false;
         Integer nrThreads = null;
         String covariateList = null;
@@ -59,10 +62,15 @@ public class InteractionAnalysisConsoleGUI {
                 }
             } else if (arg.equals("--inexpraw")) {
                 inexpraw = val;
-            } else if (arg.equals("--covariatelist")){
+            } else if (arg.equals("--covariatelist")) {
                 covariateList = val;
             } else if (arg.equals("--binary")) {
                 binaryoutput = true;
+            } else if (arg.equals("--robust")) {
+                System.out.println("WARNING: using R connection!! Make sure Rserve and sandwich are installed");
+                robust = true;
+            } else if (arg.equals("--fullstats")) {
+                fullStats = true;
             } else if (arg.equals("--covariates")) {
                 covariates = val;
             } else if (arg.equals("--inexp")) {
@@ -176,14 +184,14 @@ public class InteractionAnalysisConsoleGUI {
                         System.err.println("");
                         printUsage();
                     } else {
-                        qmt.runInteractionAnalysis(inexp, 
-                                covariates, 
-                                in, 
-                                gte, 
-                                snpprobecombofile, 
-                                nrThreads, 
-                                out, 
-                                covariateList);
+                        qmt.runInteractionAnalysis(inexp,
+                                covariates,
+                                in,
+                                gte,
+                                snpprobecombofile,
+                                nrThreads,
+                                out,
+                                covariateList, robust, fullStats);
 //                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                     }
 
