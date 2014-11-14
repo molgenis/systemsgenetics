@@ -460,6 +460,30 @@ public class InteractionAnalysisMultiThreaded {
         }
         DoubleMatrixDataset<String, String> covariateData = new DoubleMatrixDataset<String, String>(covariateFile, covariateHash, expressionIndividualsInPCCorrectedData);
 
+        // check whether the samples are on the columns...
+        int ctr = 0;
+        for (String s : covariateData.colObjects) {
+            if (expressionIndividualsInPCCorrectedData.contains(s)) {
+                ctr++;
+            }
+        }
+        if (ctr == 0) {
+            // try to load the data again, but transpose it
+            covariateData = new DoubleMatrixDataset<String, String>(covariateFile, expressionIndividualsInPCCorrectedData, covariateHash);
+            covariateData.transposeDataset();
+            ctr = 0;
+            for (String s : covariateData.colObjects) {
+                if (expressionIndividualsInPCCorrectedData.contains(s)) {
+                    ctr++;
+                }
+            }
+            if (ctr == 0) {
+                System.err.println("Error: covariate sample identifiers don't match up with those in expression data");
+                System.exit(-1);
+            }
+        }
+        System.out.println(ctr + " gene expression samples have covariates.");
+
         // since the number of samples has changed, we might need to reperform q-norm and log2 transform...
         // it may be a good idea to remove these last steps from the normalization step..
         // investigate which SNPs to run..
@@ -468,6 +492,7 @@ public class InteractionAnalysisMultiThreaded {
         HashSet<String> snpsVisited = new HashSet<String>();
         SNPLoader loader = genotypeData.createSNPLoader();
 
+        System.out.println("Parsing SNP probe combos");
         TextFile tfOut = new TextFile(out + "eQTLsNotPassingQC.txt", TextFile.W);
         for (Pair<String, String> p : snpprobeCombos) {
             String snp = p.getLeft();
@@ -543,11 +568,13 @@ public class InteractionAnalysisMultiThreaded {
             nrThreads = Runtime.getRuntime().availableProcessors();
         }
 
+        System.out.println("Running with: " + nrThreads + " threads");
+
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
         CompletionService<InteractionAnalysisResults> pool = new ExecutorCompletionService<InteractionAnalysisResults>(threadPool);
 
         nrInOutput = 0;
-
+        System.out.println("Output will be written to: " + out + "InteractionResults.txt");
         TextFile outputFile = new TextFile(out + "InteractionResults.txt", TextFile.W);
         String outputheader = "SNP\tProbe\tCovariate\tZ-SNP\tZ-Cov\tZ-Interaction\tZ-Main\tN";
         if (fullStats) {
@@ -695,7 +722,7 @@ public class InteractionAnalysisMultiThreaded {
                 builder.append(maineffectZResultMatrix[e][c]);
                 builder.append("\t");
                 builder.append(nMatrix[e][c]);
-                
+
                 if (fullStats) {
                     builder.append("\t");
                     builder.append(interactionBeta[e][c]);
