@@ -293,7 +293,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                         tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
                     }
 
-                    // regressionParameters[0]; // this is the intersect!
+                    // double intersect = regressionParameters[0]; 
                     double corr = JSci.maths.ArrayMath.correlation(genotypesCalled, olsY);
                     mainZ = Correlation.convertCorrelationToZScore(genotypesCalled.length, corr);
                     // Get the regression parameters and R-square value and print it.
