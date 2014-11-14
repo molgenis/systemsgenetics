@@ -736,8 +736,6 @@ public class InteractionAnalysisMultiThreaded {
                     builder.append(covariateBeta[e][c]);
                     builder.append("\t");
                     builder.append(covariateSE[e][c]);
-                    builder.append("\t");
-                    builder.append(covariateSE[e][c]);
                 }
 
                 outputFile.writeln(builder.toString());
