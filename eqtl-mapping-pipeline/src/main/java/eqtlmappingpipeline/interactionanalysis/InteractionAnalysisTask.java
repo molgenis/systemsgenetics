@@ -109,12 +109,12 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         String qcString = null;
         Integer nrGenotypesCalled = null;
 
+        
         org.apache.commons.math3.distribution.FDistribution fDist = null;
-
         cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
         cern.jet.random.tdouble.StudentT tDistColt = null;
 
-        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+//        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         OLSMultipleLinearRegression regressionFullWithInteraction = new OLSMultipleLinearRegression();
 
         int startWithCovariate = 0;
@@ -137,9 +137,9 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                 double[] covariateValues;
 //              
 
-                double[] tmpVarCelCount = null;
+                double[] tmpVarCelCount = new double[valsY.length];
 //                    if (covariateIdInRawData != null) {
-                tmpVarCelCount = new double[valsY.length];
+
                 for (int i = 0; i < tmpVarCelCount.length; i++) {
                     String sampleName = expInds[i];
                     Integer individualIdInCovariateData = covariateData.hashCols.get(sampleName);
@@ -168,6 +168,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                 // THIS WILL GIVE ERRONEOUS VALUES WHEN THERE ARE MISSING 
                 // VALUES IN VALSY THE NEXT TIME THIS SNP IS TESTED!!
                 // this value is required for subsequent meta-analysis.. fix for altering sample sizes (take smallest size / omit missing values)
+                // in stead use the value for N that is now in the standard output.
                 double[] genotypesCalled = new double[nrCalled];
                 if (qcString == null) {
                     qcString = eQTLSNPObj.getName() + "\t" + ChrAnnotation.parseByte(eQTLSNPObj.getChr()) + "\t" + eQTLSNPObj.getChrPos() + "\t" + BaseAnnot.toString(eQTLSNPObj.getAlleles()[0]) + "/" + BaseAnnot.toString(eQTLSNPObj.getAlleles()[1]) + "\t" + BaseAnnot.toString(eQTLSNPObj.getMinorAllele()) + "\t" + eQTLSNPObj.getMAF() + "\t" + eQTLSNPObj.getCR() + "\t" + eQTLSNPObj.getHWEP() + "\t" + genotypesCalled.length;
@@ -266,26 +267,28 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                         }
                     }
 
-                    regression.newSampleData(olsY, olsX);
+//                    regression.newSampleData(olsY, olsX);
                     regressionFullWithInteraction.newSampleData(olsY, olsXFullWithInteraction);
-                    double rss1 = regression.calculateResidualSumOfSquares();
-                    double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
-                    double anovaF = ((rss1 - rss2) / (3 - 2)) / (rss2 / (olsY.length - 3));
-                    // Changed this to apache maths 3, was apache maths 1.0
-                    if (fDist == null) {
-                        fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
-                        randomEngine = new cern.jet.random.tdouble.engine.DRand();
-                        tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
-                    }
-
-                    double anovaFTestP = -1;
-                    try {
-                        anovaFTestP = 1 - fDist.cumulativeProbability(anovaF);
-                        if (anovaFTestP < 1E-16) {
-                            anovaFTestP = 1E-16;
-                        }
-                    } catch (Exception err) {
-                    }
+                    
+                    // not sure if this is needed right now, but I will keep it in for later use.
+//                    double rss1 = regression.calculateResidualSumOfSquares();
+//                    double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
+//                    double anovaF = ((rss1 - rss2) / (3 - 2)) / (rss2 / (olsY.length - 3));
+//                    // Changed this to apache maths 3, was apache maths 1.0
+//                    if (fDist == null) {
+//                        fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
+//                        randomEngine = new cern.jet.random.tdouble.engine.DRand();
+//                        tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
+//                    }
+//
+//                    double anovaFTestP = -1;
+//                    try {
+//                        anovaFTestP = 1 - fDist.cumulativeProbability(anovaF);
+//                        if (anovaFTestP < 1E-16) {
+//                            anovaFTestP = 1E-16;
+//                        }
+//                    } catch (Exception err) {
+//                    }
 
                     // regressionParameters[0]; // this is the intersect!
                     double corr = JSci.maths.ArrayMath.correlation(genotypesCalled, olsY);

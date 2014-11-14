@@ -223,13 +223,15 @@ public class InteractionAnalysisConsoleGUI {
         System.out.print("Step 2: Mapping eQTLs with interaction model\n" + ConsoleGUIElems.LINE);
         System.out.println("--step mapeqtls\t\t\t\tTell the program to map eQTLs.\n"
                 + "--inexp\tdir\t\tLocation of the dependent dataset\n"
-                + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
+                + "--covariates\t\tdir\t\tLocation of covariate file (may contain one or more covariates)\n"
                 + "--gte\t\t\tString\t\tLocation of the genotype to expression coupling file\n"
                 + "--in\t\t\tdir\t\tLocation of the genotype data\n"
                 + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
-                + "--covariatelist\t\tList of covariates to test\n");
+                + "--covariatelist\t\tList of covariates to test\n"
+                + "--robust\t\tUse robust estimates of standard errors (Requires Rserve and sandwich packages, and R)\n"
+                + "--fullstats\t\tOutput extra columns of statistics (SEs and Betas)");
 
         System.out.println("");
 
