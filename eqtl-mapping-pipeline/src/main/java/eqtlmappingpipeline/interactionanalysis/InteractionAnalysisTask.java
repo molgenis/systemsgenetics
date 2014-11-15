@@ -35,7 +35,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
     private DoubleMatrixDataset<String, String> covariateData;
     private TriTyperExpressionData expressionData;
     private ArrayList<Pair<String, String>> eQTLsForSNP;
-    private RConnection rConnection; // this requires the Rserve package in R..
+
     private final boolean sandwich;
     private final boolean provideFullStats;
 
@@ -53,17 +53,6 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         this.expressionData = expressionData;
         this.covariateData = covariateData;
 
-        if (robustSE) {
-            // this code is very suboptimal and is here for validation purposes only
-            try {
-                rConnection = new RConnection();
-//                rConnection.voidEval("install.packages('sandwich')");
-                rConnection.voidEval("library(sandwich)");
-            } catch (RserveException ex) {
-                System.err.println(ex.getMessage());
-                rConnection = null;
-            }
-        }
         this.sandwich = robustSE;
         this.provideFullStats = provideFullStats;
 
@@ -191,6 +180,17 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                 double seCovariate = 0;
 
                 if (sandwich) {
+                    RConnection rConnection = null;
+                    // this code is very suboptimal and is here for validation purposes only anyway
+                    try {
+                        rConnection = new RConnection();
+//                rConnection.voidEval("install.packages('sandwich')");
+                        rConnection.voidEval("library(sandwich)");
+                    } catch (RserveException ex) {
+                        System.err.println(ex.getMessage());
+                        rConnection = null;
+                    }
+
                     if (rConnection == null) {
                         System.err.println("Error: using R connection but none found");
                     }
@@ -235,6 +235,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                                 seSNP = rConnection.eval("modelsummary$coefficients[2,2]").asDouble();
                                 betaCovariate = rConnection.eval("modelsummary$coefficients[3,1]").asDouble();
                                 seCovariate = rConnection.eval("modelsummary$coefficients[3,2]").asDouble();
+                                rConnection.close();
                             } else {
                                 System.err.println("ERROR: R is not connected.");
                             }

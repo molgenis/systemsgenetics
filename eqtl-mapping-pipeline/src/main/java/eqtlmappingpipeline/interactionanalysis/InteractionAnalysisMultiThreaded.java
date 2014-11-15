@@ -724,6 +724,7 @@ public class InteractionAnalysisMultiThreaded {
                 builder.append(nMatrix[e][c]);
 
                 if (fullStats) {
+                    builder.append("\t");
                     builder.append(mainBeta[e][c]);
                     builder.append("\t");
                     builder.append(mainSE[e][c]);
