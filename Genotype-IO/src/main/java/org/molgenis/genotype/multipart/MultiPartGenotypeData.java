@@ -1,6 +1,5 @@
 package org.molgenis.genotype.multipart;
 
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -319,7 +318,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		}
 		else
 		{
-			return null;
+			return Collections.emptyList();
 		}
 	}
 
