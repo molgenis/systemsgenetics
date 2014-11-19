@@ -3,15 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.umcg.westrah.binarymetaanalyzer;
+package nl.umcg.bondermj.microbialmetanalysis;
 
+import nl.umcg.westrah.binarymetaanalyzer.*;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -21,15 +21,16 @@ import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
+import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.text.Strings;
 
 /**
  *
- * @author Harm-Jan
+ * @author Marc Jan & Harm-Jan
  */
-public class BinaryMetaAnalysis {
+public class BinaryMicrobePcaAnalysis {
 
     public static void main(String[] args) {
 
@@ -50,11 +51,11 @@ public class BinaryMetaAnalysis {
             System.exit(-1);
         }
 
-        BinaryMetaAnalysis meta = new BinaryMetaAnalysis(settingsFile, textToReplace, replaceTextWith);
+        BinaryMicrobePcaAnalysis meta = new BinaryMicrobePcaAnalysis(settingsFile, textToReplace, replaceTextWith);
         System.exit(0);
 
     }
-    
+
     private MetaQTL4TraitAnnotation probeAnnotation;
     private BinaryMetaAnalysisDataset[] datasets = new BinaryMetaAnalysisDataset[0];
     private int[][] snpIndex;
@@ -67,13 +68,12 @@ public class BinaryMetaAnalysis {
     private QTL[] finalEQTLs;
     private boolean bufferHasOverFlown;
     private double maxSavedPvalue = -Double.MAX_VALUE;
-    private boolean sorted;
     private int locationToStoreResult;
 
     TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = new TObjectIntHashMap<MetaQTL4MetaTrait>();
     MetaQTL4MetaTrait[] traitList = null;
 
-    public BinaryMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
+    public BinaryMicrobePcaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
         // initialize settings
         settings = new BinaryMetaAnalysisSettings();
         settings.parse(settingsFile, textToReplace, replaceTextWith);
@@ -86,16 +86,15 @@ public class BinaryMetaAnalysis {
             tmpbuffersize = 250000;
         }
 
-        finalEQTLs = new QTL[(maxResults + tmpbuffersize)];
         try {
-            run();
+            run((maxResults + tmpbuffersize));
         } catch (IOException ex) {
-            Logger.getLogger(BinaryMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(BinaryMicrobePcaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
 
-    public void run() throws IOException {
+    public void run(int bufferSize) throws IOException {
 
         String outdir = settings.getOutput();
         outdir = Gpio.formatAsDirectory(outdir);
@@ -106,6 +105,10 @@ public class BinaryMetaAnalysis {
         loadProbeAnnotation();
 
         for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
+            finalEQTLs = new QTL[bufferSize];
+            locationToStoreResult = 0;
+            bufferHasOverFlown = false;
+            maxSavedPvalue = -Double.MAX_VALUE;
             // create dataset objects
             System.out.println("Running permutation " + permutation);
             datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
@@ -138,9 +141,13 @@ public class BinaryMetaAnalysis {
 
             System.out.println("Starting meta-analysis");
             ProgressBar pb = new ProgressBar(snpList.length);
+
+            snpLoop:
             for (int snp = 0; snp < snpList.length; snp++) {
+
                 boolean printed = false;
                 int[] sampleSizes = new int[datasets.length];
+                int totalSampleSize = 0;
                 Boolean[] flipZScores = new Boolean[datasets.length];
                 String alleles = null;
                 String alleleAssessed = null;
@@ -149,8 +156,12 @@ public class BinaryMetaAnalysis {
                 for (int d = 0; d < datasets.length; d++) {
 
                     int datasetSNPId = snpIndex[snp][d];
+                    if (datasetSNPId == -9 && settings.isConfineSNPs()) {
+                        continue snpLoop;
+                    }
                     if (datasetSNPId != -9) {
                         sampleSizes[d] = datasets[d].getSampleSize(datasetSNPId);
+                        totalSampleSize += sampleSizes[d];
 
                         if (alleles == null) {
                             flipZScores[d] = false;
@@ -163,154 +174,95 @@ public class BinaryMetaAnalysis {
                         }
                     }
                 }
+                Correlation.correlationToZScore(totalSampleSize + 10);
 
-                // get ZScores for this SNP, no matter what.
-                // get list of probes to test
-                if (settings.isCis() && !settings.isTrans()) {
-                    // do cis stuff
+                Set<MetaQTL4MetaTrait> cisProbes = null;
+                if (!settings.isCis()) {
+                    // do not test the cis probes
+                    cisProbes = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getTransdistance());
+                }
 
-                    // get all the possible traits near the SNP
-                    Set<MetaQTL4MetaTrait> cisProbesForSNP = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getCisdistance());
-                    MetaQTL4MetaTrait[] cisProbeArray = cisProbesForSNP.toArray(new MetaQTL4MetaTrait[0]);
-                    HashMap<MetaQTL4MetaTrait, Integer> cisProbeMap = new HashMap<MetaQTL4MetaTrait, Integer>();
-                    int ctr = 0;
-                    for (MetaQTL4MetaTrait cisProbe : cisProbesForSNP) {
-                        cisProbeMap.put(cisProbe, ctr);
-                        ctr++;
+                // iterate over the probe index
+                float[][] finalZScores = new float[probeIndex.length][datasets.length];
+
+                for (int d = 0; d < datasets.length; d++) {
+                    if (datasets[d].getIsCisDataset()) {
+                        System.err.println("ERROR: cannot run trans analysis on a cis dataset: " + settings.getDatasetlocations().get(d));
+                        System.exit(-1);
                     }
 
-                    float[][] finalZScores = new float[cisProbeMap.size()][datasets.length];
-
-                    // get list of probes to test for each dataset
-                    for (int d = 0; d < datasets.length; d++) {
-                        if (flipZScores[d] == null) {
-                            // the allele could not be flipped. set the Z to NaN
-                            for (float[] zScore : finalZScores) {
-                                zScore[d] = Float.NaN;
-                            }
-                        } else {
-                            //initialize z-score
-                            for (int p = 0; p < cisProbeMap.size(); p++) {
-                                finalZScores[p][d] = Float.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
-                            }
-                            // load the z-scores for the dataset
-                            int datasetSNPId = snpIndex[snp][d];
-
-                            if (datasetSNPId != -9) { // -9 means: snp not available
-                                float[] datasetZScores = datasets[d].getZScores(datasetSNPId);
-                                if (datasets[d].getIsCisDataset()) {
-// this requires us to retrieve the z-scores differently
-                                    // we need to figure out which probes match up, but their orders might be different
-                                    // and the number of probes tested in each dataset might differ as well
-
-                                    // get the probes tested against the SNP
-                                    MetaQTL4MetaTrait[] datasetCisProbes = datasets[d].getCisProbes(datasetSNPId);
-
-                                    for (int i = 0; i < datasetCisProbes.length; i++) {
-                                        MetaQTL4MetaTrait p = datasetCisProbes[i];
-                                        if (p != null) {
-                                            Integer index = cisProbeMap.get(p);
-                                            if (index != null) {
-                                                float datasetZ = datasetZScores[i];
-                                                finalZScores[index][d] = datasetZ;
-                                                if (flipZScores[d]) {
-                                                    finalZScores[index][d] *= -1;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                } else { // this is not a cis dataset
-                                    // use the full probe index    
-                                    for (int probe = 0; probe < cisProbeArray.length; probe++) {
-                                        MetaQTL4MetaTrait cisProbe = cisProbeArray[probe];
-                                        Integer metaProbeIndex = traitMap.get(cisProbe);
-                                        Integer datasetProbeId = probeIndex[metaProbeIndex][d];
-                                        if (datasetProbeId != null) {
-                                            finalZScores[probe][d] = datasetZScores[datasetProbeId];
-                                            if (flipZScores[d]) {
-                                                finalZScores[probe][d] *= -1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                    if (flipZScores[d] == null) {
+                        for (float[] zScore : finalZScores) {
+                            zScore[d] = Float.NaN;
                         }
-                    }
-
-                    // meta-analyze!
-                    for (int probe = 0; probe < finalZScores.length; probe++) {
-                        MetaQTL4MetaTrait t = cisProbeArray[probe];
-
-                        double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
-                        double p = Descriptives.convertZscoreToPvalue(metaZ);
-
-                        if (!Double.isNaN(p)) {
-                            // create output object
-                            QTL q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
-                            addEQTL(q);
-                        } else {
-//                            if (!printed) {
-//                                printed = true;
-//                                System.out.println("SNP creates NaN pval: " + snpList[snp] + "\n");//z " + Strings.concat(zScores, Strings.semicolon) + "\tn " + Strings.concat(sampleSizes, Strings.semicolon));
-//                            }
-                        }
-                    }
-                } else {
-                    Set<MetaQTL4MetaTrait> cisProbes = null;
-                    if (!settings.isCis()) {
-                        // do not test the cis probes
-                        cisProbes = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getTransdistance());
-                    }
-
-                    // iterate over the probe index
-                    float[][] finalZScores = new float[probeIndex.length][datasets.length];
-
-                    for (int d = 0; d < datasets.length; d++) {
-                        if (datasets[d].getIsCisDataset()) {
-                            System.err.println("ERROR: cannot run trans analysis on a cis dataset: " + settings.getDatasetlocations().get(d));
-                            System.exit(-1);
-                        }
-
-                        if (flipZScores[d] == null) {
-                            for (float[] zScore : finalZScores) {
-                                zScore[d] = Float.NaN;
-                            }
-                        } else {
-                            int datasetSNPId = snpIndex[snp][d];
-                            float[] datasetZScores = datasets[d].getZScores(datasetSNPId);
+                    } else {
+                        int datasetSNPId = snpIndex[snp][d];
+                        float[] datasetZScores = datasets[d].getZScores(datasetSNPId);
 
 // probeIndex[t.getMetaTraitId()][d] = p;
-                            for (int p = 0; p < traitList.length; p++) {
-                                MetaQTL4MetaTrait t = traitList[p];
-                                if (cisProbes != null && cisProbes.contains(t)) {
-                                    finalZScores[p][d] = Float.NaN;
-                                } else {
-                                    Integer datasetProbeId = probeIndex[p][d];
-                                    if (datasetProbeId != null) {
-                                        finalZScores[p][d] = datasetZScores[datasetProbeId];
-                                        if (flipZScores[d]) {
-                                            finalZScores[p][d] *= -1;
-                                        }
-                                    } else {
-                                        finalZScores[p][d] = Float.NaN;
+                        for (int p = 0; p < traitList.length; p++) {
+                            MetaQTL4MetaTrait t = traitList[p];
+                            if (cisProbes != null && cisProbes.contains(t)) {
+                                finalZScores[p][d] = Float.NaN;
+                            } else {
+                                Integer datasetProbeId = probeIndex[p][d];
+                                if (datasetProbeId != null) {
+                                    finalZScores[p][d] = datasetZScores[datasetProbeId];
+                                    if (flipZScores[d]) {
+                                        finalZScores[p][d] *= -1;
                                     }
+                                } else {
+                                    finalZScores[p][d] = Float.NaN;
                                 }
                             }
                         }
                     }
-
-                    // meta-analyze!
+                }
+                // meta-analyze!
+                if (permutation > 0) {
+                    double summedRsquare = 0;
                     for (int probe = 0; probe < traitList.length; probe++) {
-                        MetaQTL4MetaTrait t = traitList[probe];
                         double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
-                        double metaAnalysisP = Descriptives.convertZscoreToPvalue(metaAnalysisZ);
+                        double tScore = ZScores.zScoreToCorrelation(metaAnalysisZ, totalSampleSize);
+                        summedRsquare += tScore*tScore;
+                    }
+                    double newMetaZ = Correlation.convertCorrelationToZScore(totalSampleSize, Math.sqrt(summedRsquare));
+                    double newMetaAnalysisP = Descriptives.convertZscoreToPvalue(newMetaZ);
 
-                        // create output object
-                        if (!Double.isNaN(metaAnalysisP)) {
-                            QTL q = new QTL(metaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), metaAnalysisZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
-                            addEQTL(q);
+                    // create output object
+                    if (!Double.isNaN(newMetaAnalysisP)) {
+                        MetaQTL4MetaTrait t = new MetaQTL4MetaTrait(21, "Microbe_Components", "-", -1, -1, "", traitList[0].getPlatformIds());
+                        QTL q = new QTL(newMetaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), newMetaZ, BaseAnnot.toByteArray(alleles), new float[finalZScores[0].length], sampleSizes); // sort buffer if needed.
+                        addEQTL(q);
+                    } else {
+                        System.out.println("Error in procedure.");
+                    }
+                } else {
+                    double summedRsquare = 0;
+                    float[] summedPerDataSet = new float[finalZScores[0].length];
+                    for (int probe = 0; probe < traitList.length; probe++) {
+                        double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
+                        for (int i = 0; i < finalZScores[probe].length; i++) {
+                            double tScore = ZScores.zScoreToCorrelation(finalZScores[probe][i], sampleSizes[i]);
+                            summedPerDataSet[i] += tScore*tScore;
                         }
+                        double tScore = ZScores.zScoreToCorrelation(metaAnalysisZ, totalSampleSize);
+                        summedRsquare += tScore*tScore;
+                    }
+
+                    for (int i = 0; i < summedPerDataSet.length; i++) {
+                        summedPerDataSet[i] = (float) Correlation.convertCorrelationToZScore(sampleSizes[i], Math.sqrt(summedPerDataSet[i]));
+                    }
+                    double newMetaZ = Correlation.convertCorrelationToZScore(totalSampleSize, Math.sqrt(summedRsquare));
+                    double newMetaAnalysisP = Descriptives.convertZscoreToPvalue(newMetaZ);
+
+                    // create output object
+                    if (!Double.isNaN(newMetaAnalysisP)) {
+                        MetaQTL4MetaTrait t = new MetaQTL4MetaTrait(21, "Microbe_Components", "-", -1, -1, "", traitList[0].getPlatformIds());
+                        QTL q = new QTL(newMetaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), newMetaZ, BaseAnnot.toByteArray(alleles), summedPerDataSet, sampleSizes); // sort buffer if needed.
+                        addEQTL(q);
+                    }  else {
+                        System.out.println("Error in procedure.");
                     }
                 }
                 pb.iterate();
@@ -451,15 +403,11 @@ public class BinaryMetaAnalysis {
         if (bufferHasOverFlown) {
             if (pval <= maxSavedPvalue) {
 
-                sorted = false;
-
                 finalEQTLs[locationToStoreResult] = q;
                 locationToStoreResult++;
 
                 if (locationToStoreResult == finalEQTLs.length) {
-
                     Arrays.sort(finalEQTLs);
-                    sorted = true;
                     locationToStoreResult = settings.getFinalEQTLBufferMaxLength();
                     maxSavedPvalue = finalEQTLs[(settings.getFinalEQTLBufferMaxLength() - 1)].getPvalue();
                 }
@@ -515,10 +463,10 @@ public class BinaryMetaAnalysis {
                 + "Meta-Beta (SE)\t"
                 + "Beta (SE)\t"
                 + "FoldChange";
-        
+
         output.writeln(header);
 // PValue	SNPName	SNPChr	SNPChrPos	ProbeName	ProbeChr	ProbeCenterChrPos	CisTrans	SNPType	AlleleAssessed	OverallZScore	DatasetsWhereSNPProbePairIsAvailableAndPassesQC	DatasetsZScores	DatasetsNrSamples	IncludedDatasetsMeanProbeExpression	IncludedDatasetsProbeExpressionVariance	HGNCName	IncludedDatasetsCorrelationCoefficient	Meta-Beta (SE)	Beta (SE)	FoldChange	FDR
-        
+
         DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
         DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
         for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {

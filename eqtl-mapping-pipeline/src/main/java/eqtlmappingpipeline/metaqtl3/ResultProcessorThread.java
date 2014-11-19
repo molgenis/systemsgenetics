@@ -20,7 +20,7 @@ import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 
 /**
@@ -478,50 +478,50 @@ public class ResultProcessorThread extends Thread {
 					Arrays.sort(finalEQTLs);
 //                    SmoothSort.sort(finalEQTLs);
 //                    inplaceArrayQuickSort.sort(finalEQTLs);
-					sorted = true;
-					locationToStoreResult = m_maxResults;
-					maxSavedPvalue = finalEQTLs[(m_maxResults - 1)].getPvalue();
-				}
-			}
+                    sorted = true;
+                    locationToStoreResult = m_maxResults;
+                    maxSavedPvalue = finalEQTLs[(m_maxResults - 1)].getPvalue();
+                }
+            }
 
-		} else {
-			if (pval > maxSavedPvalue) {
-				maxSavedPvalue = pval;
-			}
+        } else {
+            if (pval > maxSavedPvalue) {
+                maxSavedPvalue = pval;
+            }
 
-			finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
-			locationToStoreResult++;
+            finalEQTLs[locationToStoreResult] = new QTL(pval, pid, sid, assessedAllele, zscore, alleles, zscores, numSamples, correlations, fc, beta, betase, finalbeta, finalbetase);
+            locationToStoreResult++;
 
-			if (locationToStoreResult == m_maxResults) {
-				bufferHasOverFlown = true;
-			}
-		}
-	}
+            if (locationToStoreResult == m_maxResults) {
+                bufferHasOverFlown = true;
+            }
+        }
+    }
 
-	private void writeTextResults() throws IOException {
+    private void writeTextResults() throws IOException {
 
-		int nrOfEntriesToWrite = m_maxResults;
-		if (locationToStoreResult < m_maxResults) {
-			nrOfEntriesToWrite = locationToStoreResult;
-		}
+        int nrOfEntriesToWrite = m_maxResults;
+        if (locationToStoreResult < m_maxResults) {
+            nrOfEntriesToWrite = locationToStoreResult;
+        }
 
-		System.out.println("Writing " + nrOfEntriesToWrite + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
+        System.out.println("Writing " + nrOfEntriesToWrite + " results out of " + nrTestsPerformed + " tests performed. " + nrSNPsTested + " SNPs finally tested.");
 
-
-
-		if (m_permuting) {
-			TextFile gz = new TextFile((m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz"), TextFile.W);
-			gz.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
-			for (int i = 0; i < nrOfEntriesToWrite; i++) {
-				gz.writeln(finalEQTLs[i].getPermutationDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
-			}
-			gz.close();
-		} else {
-			eQTLTextFile et = new eQTLTextFile((m_outputdir + "eQTLs.txt.gz"), eQTLTextFile.W);
-			for (int i = 0; i < nrOfEntriesToWrite; i++) {
-				et.writeln(finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
-			}
-			et.close();
-		}
-	}
+        
+        
+        if (m_permuting) {
+            TextFile gz = new TextFile((m_outputdir + "PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz"), TextFile.W);
+            gz.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
+            for (int i = 0; i < nrOfEntriesToWrite; i++) {
+                gz.writeln(finalEQTLs[i].getPermutationDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
+            }
+            gz.close();
+        } else {
+            QTLTextFile et = new QTLTextFile((m_outputdir + "eQTLs.txt.gz"), QTLTextFile.W);
+            for (int i = 0; i < nrOfEntriesToWrite; i++) {
+                et.writeln(finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
+            }
+            et.close();
+        }
+    }
 }

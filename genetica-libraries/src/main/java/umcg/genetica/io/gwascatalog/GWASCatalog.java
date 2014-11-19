@@ -466,6 +466,18 @@ public class GWASCatalog {
 
         return m;
     }
+    
+    public HashSet<GWASTrait> getFullTraitsForCertainSnps(String key) {
+        HashSet<GWASTrait> m = new HashSet<GWASTrait>();
+        key = key.toLowerCase();
+        for (GWASSNP s : snps) {
+            if (s.getName().equalsIgnoreCase(key)) {
+                m.addAll(s.getAssociatedTraits());
+            }
+        }
+
+        return m;
+    }
 }
 
 

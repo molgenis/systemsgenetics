@@ -16,7 +16,7 @@ import umcg.genetica.io.trityper.util.ChrAnnotation;
  *
  * @author harmjan
  */
-public class eQTLTextFile extends TextFile {
+public class QTLTextFile extends TextFile {
 
     public static int PVAL = 0;
     public static int SNP = 1;
@@ -87,14 +87,14 @@ public class eQTLTextFile extends TextFile {
             + "FoldChange\t"
             + "FDR";
 
-    public eQTLTextFile(String loc, boolean W) throws IOException {
+    public QTLTextFile(String loc, boolean W) throws IOException {
         super(loc, W);
         if (W) {
             write(header + '\n');
         }
     }
 
-    public eQTLTextFile(String loc, boolean W, boolean gz) throws IOException {
+    public QTLTextFile(String loc, boolean W, boolean gz) throws IOException {
         super(loc, W);
         if (W) {
             write(header + '\n');

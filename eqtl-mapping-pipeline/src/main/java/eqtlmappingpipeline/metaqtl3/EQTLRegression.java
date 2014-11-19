@@ -16,7 +16,7 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.math.PCA;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Regression;
@@ -57,7 +57,7 @@ public class EQTLRegression {
 
         this.gg = gg;
         System.out.println("\n\n\nRemoving eQTL effects from the following eQTL file: '" + regressOutEQTLEffectFileName);
-        eQTLTextFile in = new eQTLTextFile(regressOutEQTLEffectFileName, eQTLTextFile.R);
+        QTLTextFile in = new QTLTextFile(regressOutEQTLEffectFileName, QTLTextFile.R);
         eqtlsToRegressOut = in.read();
         in.close();
         System.out.println("Number of eQTLs to regress out found in file:\t" + eqtlsToRegressOut.length);

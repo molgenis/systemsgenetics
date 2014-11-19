@@ -5,7 +5,7 @@
 
 package umcg.genetica.io.trityper;
 
-import java.util.HashSet;
+import gnu.trove.set.hash.THashSet;
 
 /**
  *
@@ -18,7 +18,7 @@ public class TriTyperGeneticalGenomicsDatasetSettings {
     public String genotypeToExpressionCoupling;
     public boolean logtransform;
     public boolean quantilenormalize;
-    public HashSet<String> tsProbesConfine = null;
+    public THashSet<String> tsProbesConfine = null;
     public boolean confineProbesToProbesMappingToAnyChromosome = false;
     public Integer confineProbesToProbesThatMapToChromosome = null;
     public String expressionplatform;

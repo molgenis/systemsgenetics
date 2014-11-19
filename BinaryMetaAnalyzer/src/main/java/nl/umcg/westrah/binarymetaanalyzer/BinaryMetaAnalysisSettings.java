@@ -36,6 +36,8 @@ public class BinaryMetaAnalysisSettings {
     private ArrayList<Integer> selectedProbes;
     private String output;
     private boolean makezscoretable = false;
+    private boolean confineSNPs = false;
+    
     private int probeDatasetPresenceThreshold = 0;
     private int snpDatasetPresenceThreshold = 0;
     private int probeAndSNPPresenceFilterSampleThreshold = 0;
@@ -63,6 +65,7 @@ public class BinaryMetaAnalysisSettings {
             includeSNPsWithoutProperMapping = config.getBoolean("defaults.includesnpswithoutmapping", true);
             makezscoreplot = config.getBoolean("defaults.makezscoreplot", true);
             makezscoretable = config.getBoolean("defaults.makezscoretable", false);
+            confineSNPs = config.getBoolean("defaults.confineSNPsToSNPsPresentInAllDatasets", false);
             probetranslationfile = config.getString("defaults.probetranslationfile");
             output = config.getString("defaults.output");
 
@@ -129,6 +132,14 @@ public class BinaryMetaAnalysisSettings {
         } catch (ConfigurationException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean isConfineSNPs() {
+        return confineSNPs;
+    }
+
+    public void setConfineSNPs(boolean confineSNPs) {
+        this.confineSNPs = confineSNPs;
     }
 
     /**
@@ -457,7 +468,7 @@ public class BinaryMetaAnalysisSettings {
         this.nrThresds = nrThresds;
     }
 
-    ArrayList<String> getDatasetPrefix() {
+    public ArrayList<String> getDatasetPrefix() {
         return datasetPrefix;
     }
 

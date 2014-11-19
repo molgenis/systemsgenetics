@@ -84,6 +84,9 @@ Our software is written in Java, which makes the software both fast and portable
 
 
 #Step by step eQTL analysis
+
+**This is not the anayslis plan for the eQTL meta analysis. Those instructions can be found here: https://github.com/molgenis/systemsgenetics/wiki/eQTL-mapping-analysis-cookbook**
+
 This is a step by step guide which will guide you through the QTL mapping process using our software. Please note that this step by step guide illustrates only a part of the capabilities of our software. However, this guide does explain the different command line switches. [Additional analyses and advanced settings](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#additional-analyses-and-advanced-settings). Our general method consists of six steps described below:
 
 * [Step 1 - Preparation phenotype data](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-1---preparation-phenotype-data)
@@ -358,6 +361,9 @@ If you want to remove a sample after for example the mix-up step, remove the sam
 Always rerun the Sample Mix-up Mapper after removing or changing sample IDs and check whether the results become better. 
 
 ##Step 5 - The optimum number of PCs to remove
+
+**This is not the anayslis plan for the eQTL meta analysis. Those instructions can be found here: https://github.com/molgenis/systemsgenetics/wiki/eQTL-mapping-analysis-cookbook**
+
 Prior to eQTL mapping, we would like to determine whether removing PCs increases power to detect *cis*- and *trans*-QTLs. For each PC removing step (during normalization), this method runs both *cis*- and *trans*-eQTLs mapping(to refresh your memory: [Step 3 - Phenotype data normalization](https://github.com/molgenis/systemsgenetics/tree/master/eqtl-mapping-pipeline#step-3---phenotype-data-normalization)). 
 
 1. To be able to determine the optimum number of PCs to remove, and to reduce calculation time, we ordinarily run the *cis*-analysis on a selection of about 300.000 SNPs (Illumina HumanHap 300K content) and the *trans*-analysis on a selection of about 5.000 SNPs (content of the GWAS database: Genome.gov/GWAS/). However, other selections of SNPs can be used as well as detailed below. At the end of the analyses, the program will produce a list with the number of significant *cis*- and *trans*-QTLs, for each increment of PC removal. Based on this list, a table will be created showing the optimum number of PCs to remove. **This analysis is optional**.
@@ -398,6 +404,9 @@ Furthermore, the program will produce a number of scatterplots in the `outdir` (
 Apart from QTL mapping results, the `--pcqtl` procedure will also produce new phenotype files in the same directory as your initial `traitfile`. These files have the suffix **-GeneticVectorsNotRemoved.txt.gz**. The format of these files is identical to the format of the input `traitfile` and can subsequently be used for QTL mapping.
 
 ##Step 6 - Perform the final QTL analysis
+
+**This is not the anayslis plan for the eQTL meta analysis. Those instructions can be found here: https://github.com/molgenis/systemsgenetics/wiki/eQTL-mapping-analysis-cookbook**
+
 In a single command, the final QTL mapping can be performed. Standard settings for both *cis*- and *trans*-QTL mapping are: HWEP > 0.0001, MAF > 0.05, and Call Rate > 0.95. For *cis*-QTL mapping, the maximum distance between the SNP and the middle of the probe is 250.000bp. For *trans*-QTL mapping, the minimum distance between the SNP and the middle of the probe equals 5.000.000bp. To control for multiple testing, we perform 10 permutations, thereby shuffling sample labels, to calculate the false discovery rate (FDR) at 0.05 for both the *cis*- and *trans*-analysis.
 
 ###Preparations

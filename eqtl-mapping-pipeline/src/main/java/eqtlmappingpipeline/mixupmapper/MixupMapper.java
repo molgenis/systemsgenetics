@@ -140,7 +140,7 @@ public class MixupMapper extends MetaQTL3 {
                     String g = gtelems[0];
 
                     Integer gId = genotypeData.getIndividualId(g);
-                    if (gId != null && genotypeData.getIsIncluded()[gId]) {
+                    if (gId != -9 && genotypeData.getIsIncluded()[gId]) {
                         String t = gtelems[1];
 
                         if (tInds.contains(t)) {
@@ -170,7 +170,7 @@ public class MixupMapper extends MetaQTL3 {
         } else {
             for (String ind : genotypeSamples) {
                 Integer gId = genotypeData.getIndividualId(ind);
-                if (gId != null && genotypeData.getIsIncluded()[gId]) {
+                if (gId != -9 && genotypeData.getIsIncluded()[gId]) {
                     if (traitData.hashCols.get(ind) != null) {
                         if (genotypeToTrait.get(ind) == null) {
                             genotypeToTrait.put(ind, ind);

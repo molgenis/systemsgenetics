@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.text.Strings;
 
 /**
@@ -195,9 +195,9 @@ public class FDR {
 
                         } else {
                             if (m == FDRMethod.GENELEVEL) {
-                                fdrId = data[eQTLTextFile.HUGO];
+                                fdrId = data[QTLTextFile.HUGO];
                             } else if (m == FDRMethod.SNPLEVEL) {
-                                fdrId = data[eQTLTextFile.SNP];
+                                fdrId = data[QTLTextFile.SNP];
                             } else if (m == FDRMethod.PROBELEVEL) {
                                 fdrId = data[4];
                             }
@@ -325,9 +325,9 @@ public class FDR {
                 String[] data = Strings.tab.split(str);
 
                 if (m == FDRMethod.GENELEVEL) {
-                    fdrId = data[eQTLTextFile.HUGO];
+                    fdrId = data[QTLTextFile.HUGO];
                 } else if (m == FDRMethod.SNPLEVEL) {
-                    fdrId = data[eQTLTextFile.SNP];
+                    fdrId = data[QTLTextFile.SNP];
                 } else if (m == FDRMethod.PROBELEVEL) {
                     fdrId = data[4];
                 }
@@ -395,14 +395,14 @@ public class FDR {
                     currentPvalueEqtlProbes.clear();
                     currentPvalueEqtlSnps.clear();
                     currentPvalueEqtls.add(str);
-                    currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
-                    currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
+                    currentPvalueEqtlProbes.add(data[QTLTextFile.PROBE]);
+                    currentPvalueEqtlSnps.add(data[QTLTextFile.SNP]);
 
                 } else {
                     //add to current pvalue list
                     currentPvalueEqtls.add(str);
-                    currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
-                    currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
+                    currentPvalueEqtlProbes.add(data[QTLTextFile.PROBE]);
+                    currentPvalueEqtlSnps.add(data[QTLTextFile.SNP]);
                 }
 
                 lastEqtlPvalue = eQtlPvalue;
@@ -564,8 +564,8 @@ public class FDR {
 
                         } else {
                             if (m == FDRMethod.GENELEVEL) {
-                                fdrId = data[eQTLTextFile.HUGO];
-                                filteronColumn = eQTLTextFile.HUGO;
+                                fdrId = data[QTLTextFile.HUGO];
+                                filteronColumn = QTLTextFile.HUGO;
                             } else if (m == FDRMethod.PROBELEVEL) {
                                 fdrId = data[4];
                                 filteronColumn = 4;
@@ -698,7 +698,7 @@ public class FDR {
             System.out.println("Reading: " + snpselectionlist);
             TextFile t = new TextFile(snpselectionlist, TextFile.R);
 
-            selectionOfSnps = new THashSet<String>(100000000, 2f);
+            selectionOfSnps = new THashSet<String>(100000000, 4f);
             for (String s : t) {
                 selectionOfSnps.add(s);
             }
@@ -712,7 +712,7 @@ public class FDR {
             System.out.println("Reading: " + snpprobeselectionlist);
             TextFile t = new TextFile(snpprobeselectionlist, TextFile.R);
 
-            selectionOfSnpProbes = new THashSet<String>(100000000, 2f);
+            selectionOfSnpProbes = new THashSet<String>(100000000, 4f);
             for (String s : t) {
                 selectionOfSnpProbes.add(s);
             }
@@ -788,9 +788,9 @@ public class FDR {
 
                         } else {
                             if (m == FDRMethod.GENELEVEL) {
-                                fdrId = data[eQTLTextFile.HUGO];
+                                fdrId = data[QTLTextFile.HUGO];
                             } else if (m == FDRMethod.SNPLEVEL) {
-                                fdrId = data[eQTLTextFile.SNP];
+                                fdrId = data[QTLTextFile.SNP];
                             } else if (m == FDRMethod.PROBELEVEL) {
                                 fdrId = data[4];
                             }
@@ -964,19 +964,19 @@ public class FDR {
                 String fdrId = null;
                 String[] data = Strings.tab.split(str);
 
-                if (selectionOfSnps != null && !selectionOfSnps.contains(data[eQTLTextFile.SNP])) {
+                if (selectionOfSnps != null && !selectionOfSnps.contains(data[QTLTextFile.SNP])) {
                     continue;
                 }
-                if (selectionOfSnpProbes != null && !selectionOfSnpProbes.contains(data[eQTLTextFile.SNP] + "-" + data[eQTLTextFile.PROBE])) {
+                if (selectionOfSnpProbes != null && !selectionOfSnpProbes.contains(data[QTLTextFile.SNP] + "-" + data[QTLTextFile.PROBE])) {
                     continue;
                 }
 
                 if (m == FDRMethod.GENELEVEL) {
-                    fdrId = data[eQTLTextFile.HUGO];
+                    fdrId = data[QTLTextFile.HUGO];
                 } else if (m == FDRMethod.PROBELEVEL) {
                     fdrId = data[4];
                 } else if (m == FDRMethod.SNPLEVEL) {
-                    fdrId = data[eQTLTextFile.SNP];
+                    fdrId = data[QTLTextFile.SNP];
                 }
 
                 double eQtlPvalue = Double.parseDouble(data[0]);
@@ -1043,14 +1043,14 @@ public class FDR {
                     currentPvalueEqtlProbes.clear();
                     currentPvalueEqtlSnps.clear();
                     currentPvalueEqtls.add(str);
-                    currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
-                    currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
+                    currentPvalueEqtlProbes.add(data[QTLTextFile.PROBE]);
+                    currentPvalueEqtlSnps.add(data[QTLTextFile.SNP]);
 
                 } else {
                     //add to current pvalue list
                     currentPvalueEqtls.add(str);
-                    currentPvalueEqtlProbes.add(data[eQTLTextFile.PROBE]);
-                    currentPvalueEqtlSnps.add(data[eQTLTextFile.SNP]);
+                    currentPvalueEqtlProbes.add(data[QTLTextFile.PROBE]);
+                    currentPvalueEqtlSnps.add(data[QTLTextFile.SNP]);
                 }
 
                 lastEqtlPvalue = eQtlPvalue;

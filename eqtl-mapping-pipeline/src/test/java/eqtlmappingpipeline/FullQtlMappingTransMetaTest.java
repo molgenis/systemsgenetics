@@ -14,8 +14,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
-import eqtlmappingpipeline.util.eQTLFileSorter;
+import umcg.genetica.io.trityper.QTLTextFile;
+import eqtlmappingpipeline.util.QTLFileSorter;
 
 /**
  *
@@ -47,10 +47,10 @@ public class FullQtlMappingTransMetaTest {
                 System.out.println("Removing tmp dir and files");
                 for (File file : tmpOutputFolder.listFiles()) {
                     System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    file.deleteOnExit();
+                    file.delete();
                 }
                 System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-                tmpOutputFolder.deleteOnExit();
+                tmpOutputFolder.delete();
             }
         });
 
@@ -66,12 +66,12 @@ public class FullQtlMappingTransMetaTest {
 
         Main.main("--mode", "metaqtl", "--settings", settingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
 
-        eQTLFileSorter r = new eQTLFileSorter();
+        QTLFileSorter r = new QTLFileSorter();
         r.run(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel.txt", tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt");
         
-        eQTLTextFile eExp = new eQTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", eQTLTextFile.R);
+        QTLTextFile eExp = new QTLTextFile(testFilesFolder+fileSep+"TestOutput"+fileSep+"Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", QTLTextFile.R);
         
-        eQTLTextFile eActual = new eQTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt", eQTLTextFile.R);
+        QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath()+fileSep+"eQTLsFDR0.05-ProbeLevel_S.txt", QTLTextFile.R);
 
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
