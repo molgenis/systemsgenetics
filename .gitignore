@@ -19,3 +19,5 @@ nbactions*.xml
 *~
 
 nb-configuration.xml
+
+eqtl-mapping-pipeline/nb-configuration.xml
