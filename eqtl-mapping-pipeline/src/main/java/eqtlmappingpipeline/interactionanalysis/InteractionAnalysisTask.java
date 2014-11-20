@@ -28,8 +28,6 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
     private SNP eQTLSNPObj;
     private double[][] pcCorrectedExpressionData;
-//    private double[] cellcounts;
-//    private String[] covariatesToUse;
     private int[] wgaId;
     private String[] expInds;
     private DoubleMatrixDataset<String, String> covariateData;
@@ -46,16 +44,12 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         this.eQTLSNPObj = snpObj;
         this.eQTLsForSNP = eQTLsForSNP;
         this.pcCorrectedExpressionData = pcCorrectedData;
-//        this.cellcounts = cellcounts;
-//        this.covariatesToUse = probesToUseAsCovariateArr;
         this.wgaId = wgaId;
         this.expInds = expInds;
         this.expressionData = expressionData;
         this.covariateData = covariateData;
-
         this.sandwich = robustSE;
         this.provideFullStats = provideFullStats;
-
     }
 
     @Override
@@ -64,9 +58,6 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         ArrayList<Pair<String, String>> eQTLsTested = new ArrayList<Pair<String, String>>();
 
         int nrTotalCovariates = covariateData.nrRows;
-//        if (cellcounts != null) {
-//            nrRows += 4;
-//        }
 
         double[][] interactionZScoreMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
         double[][] SNPZResultMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
@@ -102,13 +93,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
         cern.jet.random.tdouble.StudentT tDistColt = null;
 
-//        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         OLSMultipleLinearRegression regressionFullWithInteraction = new OLSMultipleLinearRegression();
-
-        int startWithCovariate = 0;
-//        if(cellcounts != null){
-//            startWithCovariate = -1;
-//        }
 
         for (int e = 0; e < eQTLsForSNP.size(); e++) {
             Pair<String, String> eqtl = eQTLsForSNP.get(e);
@@ -118,15 +103,11 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
             Integer eQTLProbeId = expressionData.getProbeToId().get(eQTLProbeName);
 
-            double[] valsX = eQTLSNPObj.selectGenotypes(wgaId, true, true);
+            double[] valsX = eQTLSNPObj.selectGenotypes(wgaId, true, true); // this is sorted on expression ID
             double[] valsY = pcCorrectedExpressionData[eQTLProbeId]; //Expression level
 
-            for (int covariate = startWithCovariate; covariate < nrTotalCovariates; covariate++) {
-                double[] covariateValues;
-//              
-
+            for (int covariate = 0; covariate < nrTotalCovariates; covariate++) {
                 double[] tmpVarCelCount = new double[valsY.length];
-//                    if (covariateIdInRawData != null) {
 
                 for (int i = 0; i < tmpVarCelCount.length; i++) {
                     String sampleName = expInds[i];
@@ -138,17 +119,11 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                         tmpVarCelCount[i] = Double.NaN;
                     }
                 }
-//                    } else {
-//                        System.err.println("Covariate: " + covariateName + " not present in RAW data!");
-//                    }
-                covariateValues = tmpVarCelCount;
-//                }
 
-//                if (valsCellCount != null) {
                 //Check whether all the expression samples have a genotype and a cell count...
                 int nrCalled = 0;
                 for (int i = 0; i < wgaId.length; i++) {
-                    if (wgaId[i] != -1 && !Double.isNaN(covariateValues[i]) && valsX[i] != -1) {
+                    if (wgaId[i] != -1 && !Double.isNaN(tmpVarCelCount[i]) && valsX[i] != -1) {
                         nrCalled++;
                     }
                 }
@@ -198,23 +173,27 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                         try {
                             if (rConnection.isConnected()) {
                                 double[] olsY = new double[nrCalled]; //Ordinary least squares: Our gene expression
-
-                                double[] olsX = new double[nrCalled];                          //No interaction term, linear model: y ~ a * SNP + b * CellCount + c
+                                double[] olsX = new double[nrCalled];
+                                double[] covariateValues = new double[nrCalled];
+//No interaction term, linear model: y ~ a * SNP + b * CellCount + c
 //                                double[][] olsXFullWithInteraction = new double[nrCalled][3];       //With interaction term, linear model: y ~ a * SNP + b * CellCount + c + d * SNP * CellCount
                                 int itr = 0;
                                 for (int s = 0; s < valsX.length; s++) {
                                     double genotype = valsX[s];
-                                    if (genotype != -1 && !Double.isNaN(covariateValues[s])) {
+                                    if (genotype != -1 && !Double.isNaN(tmpVarCelCount[s])) {
                                         if (signInteractionEffectDirection == -1) {
                                             genotype = 2 - genotype;
                                         }
-
+                                        covariateValues[itr] = tmpVarCelCount[s];
                                         olsY[itr] = valsY[s];
                                         olsX[itr] = genotype;
                                         itr++;
                                     }
                                 }
 
+                                double corr = JSci.maths.ArrayMath.correlation(olsX, olsY);
+                                mainZ = Correlation.convertCorrelationToZScore(olsX.length, corr);
+                                
                                 rConnection.assign("y", olsY);
                                 rConnection.assign("x", olsX);
                                 rConnection.assign("z", covariateValues);
@@ -258,7 +237,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     int itr = 0;
                     for (int s = 0; s < valsX.length; s++) {
                         double genotype = valsX[s];
-                        if (genotype != -1 && !Double.isNaN(covariateValues[s])) {
+                        if (genotype != -1 && !Double.isNaN(tmpVarCelCount[s])) {
                             if (signInteractionEffectDirection == -1) {
                                 genotype = 2 - genotype;
                             }
@@ -266,8 +245,8 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                             olsY[itr] = valsY[s];
                             olsX[itr][0] = genotype;
                             olsXFullWithInteraction[itr][0] = genotype;
-                            olsX[itr][1] = covariateValues[s];
-                            olsXFullWithInteraction[itr][1] = covariateValues[s];
+                            olsX[itr][1] = tmpVarCelCount[s];
+                            olsXFullWithInteraction[itr][1] = tmpVarCelCount[s];
                             olsXFullWithInteraction[itr][2] = olsXFullWithInteraction[itr][0] * olsXFullWithInteraction[itr][1];
                             itr++;
                         }
