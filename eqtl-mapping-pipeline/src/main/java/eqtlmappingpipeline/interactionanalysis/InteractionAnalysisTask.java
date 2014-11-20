@@ -27,12 +27,12 @@ import umcg.genetica.math.stats.Correlation;
 public class InteractionAnalysisTask implements Callable<InteractionAnalysisResults> {
 
     private SNP eQTLSNPObj;
-    private double[][] pcCorrectedExpressionData;
-    private int[] wgaId;
-    private String[] expInds;
-    private DoubleMatrixDataset<String, String> covariateData;
-    private TriTyperExpressionData expressionData;
-    private ArrayList<Pair<String, String>> eQTLsForSNP;
+    private final double[][] pcCorrectedExpressionData;
+    private final int[] wgaId;
+    private final String[] expInds;
+    private final DoubleMatrixDataset<String, String> covariateData;
+    private final TriTyperExpressionData expressionData;
+    private final ArrayList<Pair<String, String>> eQTLsForSNP;
 
     private final boolean sandwich;
     private final boolean provideFullStats;
