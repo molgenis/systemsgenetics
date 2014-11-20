@@ -35,6 +35,9 @@ public class InteractionAnalysisConsoleGUI {
         RUNMODE step = null;
         boolean binaryoutput = false;
 
+        boolean robust = false;
+        boolean fullStats = false;
+
         boolean matchCovariateNamesToExpressionProbeNames = false;
         Integer nrThreads = null;
         String covariateList = null;
@@ -59,10 +62,15 @@ public class InteractionAnalysisConsoleGUI {
                 }
             } else if (arg.equals("--inexpraw")) {
                 inexpraw = val;
-            } else if (arg.equals("--covariatelist")){
+            } else if (arg.equals("--covariatelist")) {
                 covariateList = val;
             } else if (arg.equals("--binary")) {
                 binaryoutput = true;
+            } else if (arg.equals("--robust")) {
+                System.out.println("WARNING: using R connection!! Make sure Rserve and sandwich are installed");
+                robust = true;
+            } else if (arg.equals("--fullstats")) {
+                fullStats = true;
             } else if (arg.equals("--covariates")) {
                 covariates = val;
             } else if (arg.equals("--inexp")) {
@@ -176,14 +184,14 @@ public class InteractionAnalysisConsoleGUI {
                         System.err.println("");
                         printUsage();
                     } else {
-                        qmt.runInteractionAnalysis(inexp, 
-                                covariates, 
-                                in, 
-                                gte, 
-                                snpprobecombofile, 
-                                nrThreads, 
-                                out, 
-                                covariateList);
+                        qmt.runInteractionAnalysis(inexp,
+                                covariates,
+                                in,
+                                gte,
+                                snpprobecombofile,
+                                nrThreads,
+                                out,
+                                covariateList, robust, fullStats);
 //                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                     }
 
@@ -215,13 +223,15 @@ public class InteractionAnalysisConsoleGUI {
         System.out.print("Step 2: Mapping eQTLs with interaction model\n" + ConsoleGUIElems.LINE);
         System.out.println("--step mapeqtls\t\t\t\tTell the program to map eQTLs.\n"
                 + "--inexp\tdir\t\tLocation of the dependent dataset\n"
-                + "--covariates\t\tdir\t\tLocation of covariate file (the raw gene expression data or the matrix containing the covariates to analyze)\n"
+                + "--covariates\t\tdir\t\tLocation of covariate file (may contain one or more covariates)\n"
                 + "--gte\t\t\tString\t\tLocation of the genotype to expression coupling file\n"
                 + "--in\t\t\tdir\t\tLocation of the genotype data\n"
                 + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
                 + "--snpprobe\t\tString\t\tLocation of the SNP-Probe combination file\n"
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
-                + "--covariatelist\t\tList of covariates to test\n");
+                + "--covariatelist\t\tList of covariates to test\n"
+                + "--robust\t\tUse robust estimates of standard errors (Requires Rserve and sandwich packages, and R)\n"
+                + "--fullstats\t\tOutput extra columns of statistics (SEs and Betas)");
 
         System.out.println("");
 
