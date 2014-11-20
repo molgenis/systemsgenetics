@@ -327,7 +327,6 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
         eQTLSNPObj.clearGenotypes();
         eQTLSNPObj = null;
-        // get genotypes, include missing ones
 
         if (provideFullStats) {
 

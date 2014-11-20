@@ -18,6 +18,10 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+import org.rosuda.REngine.REXP;
+import org.rosuda.REngine.RFactor;
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -400,6 +404,27 @@ public class InteractionAnalysisMultiThreaded {
 
         if (snpprobecombinationfile == null || !Gpio.exists(snpprobecombinationfile)) {
             throw new IllegalArgumentException("ERROR: please provide snpprobe combination file");
+        }
+
+        if (robustSE) {
+            System.out.println("Running tests for robust standard errors. Now testing R connection");
+            try {
+                RConnection rConnection = new RConnection();
+//                rConnection.voidEval("install.packages('sandwich')");
+                System.out.println("R server found: "+rConnection.getServerVersion());
+//                REXP result = rConnection.eval("library(sandwich,logical.return=TRUE)");
+//                boolean sandwichpresent = result.asBool();
+//                if(!sandwichpresent){
+//                    System.err.println("Library sandwich not installed, which is required for robust SE estimation.");
+//                }
+                
+                
+                rConnection.close();
+            } catch (RserveException ex) {
+                System.err.println(ex.getMessage());
+                System.err.println("Could not connect to RServe");
+                System.exit(-1);
+            }
         }
 
         out = Gpio.formatAsDirectory(out);
