@@ -357,7 +357,7 @@ public class EQTLRegression {
                         boolean atLeastOnePCANotRegressedOut = false;
                         for (int pca = 0; pca < nrSNPs; pca++) {
                             regressOutPCA[pca] = true;
-                            if (PCA.getEigenValueVar(eigenValues, pca) < 0.01) {
+                            if (PCA.getEigenValueVar(eigenValues, pca) < 1e-10) {
                                 regressOutPCA[pca] = false;
                                 atLeastOnePCANotRegressedOut = true;
                             }
