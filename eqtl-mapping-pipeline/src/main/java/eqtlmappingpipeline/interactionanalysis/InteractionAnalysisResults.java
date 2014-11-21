@@ -28,8 +28,7 @@ public class InteractionAnalysisResults {
     private final double[][] snpSE;
     private final double[][] covariateBeta;
     private final double[][] covariateSE;
-
-    
+    private final double[][] rsquared;
 
     InteractionAnalysisResults(String qcString,
             ArrayList<Pair<String, String>> eQTLsTested,
@@ -37,7 +36,8 @@ public class InteractionAnalysisResults {
             double[][] SNPZResultMatrix,
             double[][] covariateZResultMatrix,
             double[][] maineffectZResultMatrix,
-            int[][] nMatrix) {
+            int[][] nMatrix,
+            double[][] rsquaredMatrix) {
         this.qcString = qcString;
         this.eQTLsTested = eQTLsTested;
         this.interactionZScoreMatrix = interactionZScoreMatrix;
@@ -45,12 +45,14 @@ public class InteractionAnalysisResults {
         this.covariateZResultMatrix = covariateZResultMatrix;
         this.maineffectZResultMatrix = maineffectZResultMatrix;
         this.nMatrix = nMatrix;
+        this.rsquared = rsquaredMatrix;
         interactionBeta = null;
         interactionSE = null;
         snpBeta = null;
         snpSE = null;
         covariateBeta = null;
         covariateSE = null;
+
     }
 
     InteractionAnalysisResults(String qcString,
@@ -65,7 +67,8 @@ public class InteractionAnalysisResults {
             double[][] mainSE,
             double[][] covariateBeta,
             double[][] covariateSE,
-            int[][] nMatrix) {
+            int[][] nMatrix,
+            double[][] rsquaredMatrix) {
         this.qcString = qcString;
         this.eQTLsTested = eQTLsTested;
         this.interactionZScoreMatrix = interactionZScoreMatrix;
@@ -80,6 +83,7 @@ public class InteractionAnalysisResults {
         this.snpSE = mainSE;
         this.covariateBeta = covariateBeta;
         this.covariateSE = covariateSE;
+        this.rsquared = rsquaredMatrix;
     }
 
     public String getQcString() {
@@ -109,7 +113,7 @@ public class InteractionAnalysisResults {
     public int[][] getnMatrix() {
         return nMatrix;
     }
-    
+
     public double[][] getInteractionBeta() {
         return interactionBeta;
     }
@@ -124,6 +128,10 @@ public class InteractionAnalysisResults {
 
     public double[][] getSNPSE() {
         return snpSE;
+    }
+
+    public double[][] getRsquared() {
+        return rsquared;
     }
 
     public double[][] getCovariateBeta() {
