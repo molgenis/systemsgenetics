@@ -9,7 +9,6 @@ import eqtlmappingpipeline.normalization.Normalizer;
 import gnu.trove.map.hash.THashMap;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +17,11 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+import org.rosuda.REngine.REXP;
+import org.rosuda.REngine.RFactor;
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -364,7 +368,8 @@ public class InteractionAnalysisMultiThreaded {
                 double[] yArr = toPrimitiveArr(y.toArray(new Double[0]));
 
                 double r = Correlation.correlate(xArr, yArr);
-
+                SpearmansCorrelation corr = new SpearmansCorrelation();
+                double spearman = corr.correlation(xArr, yArr);
                 for (int q = 0; q < xArr.length; q++) {
                     System.out.println(q + "\t" + xArr[q] + "\t" + yArr[q]);
                 }
@@ -374,7 +379,8 @@ public class InteractionAnalysisMultiThreaded {
 //                plot.draw(xArr, yArr, "Cell type specific PC Scores", "Cell counts", "Comparison between cell counts and predicted cell counts", outdirectory + "Scatterplot.png");
                 TextFile tfout = new TextFile(outdirectory + "ComparisonToCellCount.txt", TextFile.W);
                 System.out.println("Correlation between actual cell counts and PC1 scores: " + r + "\tr2: " + (r * r) + "\tn: " + xArr.length);
-                tfout.writeln("Correlation between actual cell counts and PC1 scores: " + r + "\tr2: " + (r * r) + "\tn: " + xArr.length);
+                tfout.writeln("Pearson\tSpearman\tn");
+                tfout.writeln(r + "\t" + spearman + "\t" + xArr.length);
                 tfout.close();
             }
         }
@@ -389,7 +395,7 @@ public class InteractionAnalysisMultiThreaded {
 
     public void runInteractionAnalysis(String inExpPCCorrected, String covariateFile, String ingt,
             String gte, String snpprobecombinationfile, Integer nrThreads, String out,
-            String covariateList) throws IOException, Exception {
+            String covariateList, boolean robustSE, boolean fullStats) throws IOException, Exception {
         String probeannot = null;
 
         double mafthreshold = 0.05;
@@ -398,6 +404,27 @@ public class InteractionAnalysisMultiThreaded {
 
         if (snpprobecombinationfile == null || !Gpio.exists(snpprobecombinationfile)) {
             throw new IllegalArgumentException("ERROR: please provide snpprobe combination file");
+        }
+
+        if (robustSE) {
+            System.out.println("Running tests for robust standard errors. Now testing R connection");
+            try {
+                RConnection rConnection = new RConnection();
+//                rConnection.voidEval("install.packages('sandwich')");
+                System.out.println("R server found: "+rConnection.getServerVersion());
+//                REXP result = rConnection.eval("library(sandwich,logical.return=TRUE)");
+//                boolean sandwichpresent = result.asBool();
+//                if(!sandwichpresent){
+//                    System.err.println("Library sandwich not installed, which is required for robust SE estimation.");
+//                }
+                
+                
+                rConnection.close();
+            } catch (RserveException ex) {
+                System.err.println(ex.getMessage());
+                System.err.println("Could not connect to RServe");
+                System.exit(-1);
+            }
         }
 
         out = Gpio.formatAsDirectory(out);
@@ -431,7 +458,6 @@ public class InteractionAnalysisMultiThreaded {
         settings.quantilenormalize = false;
         settings.name = "Dataset";
         settings.probeannotation = probeannot;
-        
 
         TriTyperGeneticalGenomicsDataset ds = new TriTyperGeneticalGenomicsDataset(settings);
         TriTyperGenotypeData genotypeData = ds.getGenotypeData();
@@ -459,6 +485,30 @@ public class InteractionAnalysisMultiThreaded {
         }
         DoubleMatrixDataset<String, String> covariateData = new DoubleMatrixDataset<String, String>(covariateFile, covariateHash, expressionIndividualsInPCCorrectedData);
 
+        // check whether the samples are on the columns...
+        int ctr = 0;
+        for (String s : covariateData.colObjects) {
+            if (expressionIndividualsInPCCorrectedData.contains(s)) {
+                ctr++;
+            }
+        }
+        if (ctr == 0) {
+            // try to load the data again, but transpose it
+            covariateData = new DoubleMatrixDataset<String, String>(covariateFile, expressionIndividualsInPCCorrectedData, covariateHash);
+            covariateData.transposeDataset();
+            ctr = 0;
+            for (String s : covariateData.colObjects) {
+                if (expressionIndividualsInPCCorrectedData.contains(s)) {
+                    ctr++;
+                }
+            }
+            if (ctr == 0) {
+                System.err.println("Error: covariate sample identifiers don't match up with those in expression data");
+                System.exit(-1);
+            }
+        }
+        System.out.println(ctr + " gene expression samples have covariates.");
+
         // since the number of samples has changed, we might need to reperform q-norm and log2 transform...
         // it may be a good idea to remove these last steps from the normalization step..
         // investigate which SNPs to run..
@@ -467,6 +517,7 @@ public class InteractionAnalysisMultiThreaded {
         HashSet<String> snpsVisited = new HashSet<String>();
         SNPLoader loader = genotypeData.createSNPLoader();
 
+        System.out.println("Parsing SNP probe combos");
         TextFile tfOut = new TextFile(out + "eQTLsNotPassingQC.txt", TextFile.W);
         for (Pair<String, String> p : snpprobeCombos) {
             String snp = p.getLeft();
@@ -542,13 +593,25 @@ public class InteractionAnalysisMultiThreaded {
             nrThreads = Runtime.getRuntime().availableProcessors();
         }
 
+        System.out.println("Running with: " + nrThreads + " threads");
+
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
         CompletionService<InteractionAnalysisResults> pool = new ExecutorCompletionService<InteractionAnalysisResults>(threadPool);
 
         nrInOutput = 0;
-
+        System.out.println("Output will be written to: " + out + "InteractionResults.txt");
         TextFile outputFile = new TextFile(out + "InteractionResults.txt", TextFile.W);
         String outputheader = "SNP\tProbe\tCovariate\tZ-SNP\tZ-Cov\tZ-Interaction\tZ-Main\tN";
+        if (fullStats) {
+            outputheader
+                    += "\tsnpBeta"
+                    + "\tsnpSE"
+                    + "\tcovariateBeta"
+                    + "\tcovariateSE"
+                    + "\tinteractionBeta"
+                    + "\tinteractionSE";
+
+        }
 
         outputFile.writeln(outputheader);
         ProgressBar pb = new ProgressBar(snpProbeCombinationsToTest.size(), "Now testing available eQTL effects for cell type specificity.");
@@ -572,7 +635,17 @@ public class InteractionAnalysisMultiThreaded {
                 }
 
                 // push the actual work to thread..
-                InteractionAnalysisTask t = new InteractionAnalysisTask(snpObj, eQTLsForSNP, expressiondata, wgaId, expInds, covariateData, pcCorrectedExpressionData);
+                InteractionAnalysisTask t = new InteractionAnalysisTask(
+                        snpObj,
+                        eQTLsForSNP,
+                        expressiondata,
+                        wgaId,
+                        expInds,
+                        covariateData,
+                        pcCorrectedExpressionData,
+                        robustSE,
+                        fullStats
+                );
                 pool.submit(t);
                 nrSubmitted++;
             }
@@ -586,7 +659,7 @@ public class InteractionAnalysisMultiThreaded {
                     try {
                         InteractionAnalysisResults result = pool.take().get();
                         if (result != null) {
-                            processResult(result, outputFile, snpFile, covariateData, pb);
+                            processResult(result, outputFile, snpFile, covariateData, pb, fullStats);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -609,7 +682,7 @@ public class InteractionAnalysisMultiThreaded {
                 try {
                     InteractionAnalysisResults result = pool.take().get();
                     if (result != null) {
-                        processResult(result, outputFile, snpFile, covariateData, pb);
+                        processResult(result, outputFile, snpFile, covariateData, pb, fullStats);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -638,7 +711,7 @@ public class InteractionAnalysisMultiThreaded {
         System.out.println("Done.");
     }
 
-    private void processResult(InteractionAnalysisResults result, TextFile outputFile, TextFile snpFile, DoubleMatrixDataset<String, String> covariateData, ProgressBar pb) throws IOException {
+    private void processResult(InteractionAnalysisResults result, TextFile outputFile, TextFile snpFile, DoubleMatrixDataset<String, String> covariateData, ProgressBar pb, boolean fullStats) throws IOException {
         double[][] interactionZScoreMatrix = result.getInteractionZScoreMatrix();
         double[][] SNPZResultMatrix = result.getSNPZResultMatrix();
         double[][] covariateZResultMatrix = result.getCovariateZResultMatrix();
@@ -646,31 +719,52 @@ public class InteractionAnalysisMultiThreaded {
         int[][] nMatrix = result.getnMatrix();
         ArrayList<Pair<String, String>> eqtls = result.geteQTLsTested();
 
+        double[][] covariateBeta = result.getCovariateBeta();
+        double[][] covariateSE = result.getCovariateSE();
+        double[][] interactionBeta = result.getInteractionBeta();
+        double[][] interactionSE = result.getInteractionSE();
+        double[][] mainBeta = result.getSNPBeta();
+        double[][] mainSE = result.getSNPSE();
+
         for (int e = 0; e < eqtls.size(); e++) {
             Pair<String, String> eqtl = eqtls.get(e);
             for (int c = 0; c < SNPZResultMatrix[e].length; c++) {
-                String outputForeQTL = eqtl.getLeft() + "\t" + eqtl.getRight() + "\t" + covariateData.rowObjects.get(c);
 
-                for (int param = 0; param < 5; param++) {
-                    switch (param) {
-                        case 0:
-                            outputForeQTL += "\t" + SNPZResultMatrix[e][c];
-                            break;
-                        case 1:
-                            outputForeQTL += "\t" + covariateZResultMatrix[e][c];
-                            break;
-                        case 2:
-                            outputForeQTL += "\t" + interactionZScoreMatrix[e][c];
-                            break;
-                        case 3:
-                            outputForeQTL += "\t" + maineffectZResultMatrix[e][c];
-                            break;
-                        case 4:
-                            outputForeQTL += "\t" + nMatrix[e][c];
-                            break;
-                    }
+                StringBuilder builder = new StringBuilder();
+                builder.append(eqtl.getLeft());
+                builder.append("\t");
+                builder.append(eqtl.getRight());
+                builder.append("\t");
+                builder.append(covariateData.rowObjects.get(c));
+
+                builder.append("\t");
+                builder.append(SNPZResultMatrix[e][c]);
+                builder.append("\t");
+                builder.append(covariateZResultMatrix[e][c]);
+                builder.append("\t");
+                builder.append(interactionZScoreMatrix[e][c]);
+                builder.append("\t");
+                builder.append(maineffectZResultMatrix[e][c]);
+                builder.append("\t");
+                builder.append(nMatrix[e][c]);
+
+                if (fullStats) {
+                    builder.append("\t");
+                    builder.append(mainBeta[e][c]);
+                    builder.append("\t");
+                    builder.append(mainSE[e][c]);
+                    builder.append("\t");
+                    builder.append(covariateBeta[e][c]);
+                    builder.append("\t");
+                    builder.append(covariateSE[e][c]);
+                    builder.append("\t");
+                    builder.append(interactionBeta[e][c]);
+                    builder.append("\t");
+                    builder.append(interactionSE[e][c]);
+                    builder.append("\t");
                 }
-                outputFile.writeln(outputForeQTL);
+
+                outputFile.writeln(builder.toString());
             }
             nrInOutput++;
             pb.iterate();

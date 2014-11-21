@@ -12,6 +12,7 @@ import umcg.genetica.containers.Pair;
  * @author harmjan
  */
 public class InteractionAnalysisResults {
+
     private final String qcString;
 
     private final ArrayList<Pair<String, String>> eQTLsTested;
@@ -20,16 +21,18 @@ public class InteractionAnalysisResults {
     private final double[][] covariateZResultMatrix;
     private final double[][] maineffectZResultMatrix;
     private final int[][] nMatrix;
-    
-    /*
-    //            rowNames.add("CellTypeSNPZScore");
-//            rowNames.add("CellTypeZScore");
-//            rowNames.add("CellTypeInteractionZScore");
-//            rowNames.add("MainEffectZScore");
-    */
 
-    InteractionAnalysisResults(String qcString, 
-            ArrayList<Pair<String, String>> eQTLsTested, 
+    private final double[][] interactionBeta;
+    private final double[][] interactionSE;
+    private final double[][] snpBeta;
+    private final double[][] snpSE;
+    private final double[][] covariateBeta;
+    private final double[][] covariateSE;
+
+    
+
+    InteractionAnalysisResults(String qcString,
+            ArrayList<Pair<String, String>> eQTLsTested,
             double[][] interactionZScoreMatrix,
             double[][] SNPZResultMatrix,
             double[][] covariateZResultMatrix,
@@ -42,8 +45,43 @@ public class InteractionAnalysisResults {
         this.covariateZResultMatrix = covariateZResultMatrix;
         this.maineffectZResultMatrix = maineffectZResultMatrix;
         this.nMatrix = nMatrix;
+        interactionBeta = null;
+        interactionSE = null;
+        snpBeta = null;
+        snpSE = null;
+        covariateBeta = null;
+        covariateSE = null;
     }
-    
+
+    InteractionAnalysisResults(String qcString,
+            ArrayList<Pair<String, String>> eQTLsTested,
+            double[][] interactionZScoreMatrix,
+            double[][] SNPZResultMatrix,
+            double[][] covariateZResultMatrix,
+            double[][] maineffectZResultMatrix,
+            double[][] interactionBeta,
+            double[][] interactionSE,
+            double[][] mainBeta,
+            double[][] mainSE,
+            double[][] covariateBeta,
+            double[][] covariateSE,
+            int[][] nMatrix) {
+        this.qcString = qcString;
+        this.eQTLsTested = eQTLsTested;
+        this.interactionZScoreMatrix = interactionZScoreMatrix;
+        this.SNPZResultMatrix = SNPZResultMatrix;
+        this.covariateZResultMatrix = covariateZResultMatrix;
+        this.maineffectZResultMatrix = maineffectZResultMatrix;
+        this.nMatrix = nMatrix;
+
+        this.interactionBeta = interactionBeta;
+        this.interactionSE = interactionSE;
+        this.snpBeta = mainBeta;
+        this.snpSE = mainSE;
+        this.covariateBeta = covariateBeta;
+        this.covariateSE = covariateSE;
+    }
+
     public String getQcString() {
         return qcString;
     }
@@ -71,5 +109,29 @@ public class InteractionAnalysisResults {
     public int[][] getnMatrix() {
         return nMatrix;
     }
-  
+    
+    public double[][] getInteractionBeta() {
+        return interactionBeta;
+    }
+
+    public double[][] getInteractionSE() {
+        return interactionSE;
+    }
+
+    public double[][] getSNPBeta() {
+        return snpBeta;
+    }
+
+    public double[][] getSNPSE() {
+        return snpSE;
+    }
+
+    public double[][] getCovariateBeta() {
+        return covariateBeta;
+    }
+
+    public double[][] getCovariateSE() {
+        return covariateSE;
+    }
+
 }

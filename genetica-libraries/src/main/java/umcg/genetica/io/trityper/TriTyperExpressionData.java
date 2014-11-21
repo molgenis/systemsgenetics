@@ -410,7 +410,7 @@ public class TriTyperExpressionData {
                     }
                 } else if (printreason) {
 					probesExcluded++;
-                    System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
+                    //System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
                 }
             }
 
