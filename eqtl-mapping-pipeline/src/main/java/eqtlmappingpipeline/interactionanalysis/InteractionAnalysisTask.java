@@ -60,17 +60,21 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         int nrTotalCovariates = covariateData.nrRows;
 
         double[][] interactionZScoreMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
+
         double[][] SNPZResultMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
         double[][] covariateZResultMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
         double[][] maineffectZResultMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
         double[][] interactionBeta = null;
+
         double[][] interactionSE = null;
         double[][] mainBeta = null;
         double[][] mainSE = null;
         double[][] covariateBeta = null;
         double[][] covariateSE = null;
-
+        int[][] nMatrix = new int[eQTLsForSNP.size()][nrTotalCovariates];
+        double[][] rsquaredMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
         if (provideFullStats) {
+
             interactionBeta = new double[eQTLsForSNP.size()][nrTotalCovariates];
             interactionSE = new double[eQTLsForSNP.size()][nrTotalCovariates];
             mainBeta = new double[eQTLsForSNP.size()][nrTotalCovariates];
@@ -78,9 +82,9 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
             covariateBeta = new double[eQTLsForSNP.size()][nrTotalCovariates];
             covariateSE = new double[eQTLsForSNP.size()][nrTotalCovariates];
         }
-        int[][] nMatrix = new int[eQTLsForSNP.size()][nrTotalCovariates];
 
-        //We are using a coding system that uses the minor allele. If allele2 is not the minor allele, change the sign of the results we will output.
+        //We are using a coding system that uses the minor allele. 
+        //If allele2 is not the minor allele, change the sign of the results we will output.
         double signInteractionEffectDirection = 1;
         if (eQTLSNPObj.getAlleles()[1] == eQTLSNPObj.getMinorAllele()) {
             signInteractionEffectDirection = -1;
@@ -154,6 +158,8 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                 double betaCovariate = 0;
                 double seCovariate = 0;
 
+                double rsquared = 0;
+
                 if (sandwich) {
                     RConnection rConnection = null;
                     // this code is very suboptimal and is here for validation purposes only anyway
@@ -193,7 +199,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
                                 double corr = JSci.maths.ArrayMath.correlation(olsX, olsY);
                                 mainZ = Correlation.convertCorrelationToZScore(olsX.length, corr);
-                                
+
                                 rConnection.assign("y", olsY);
                                 rConnection.assign("x", olsX);
                                 rConnection.assign("z", covariateValues);
@@ -214,6 +220,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                                 seSNP = rConnection.eval("modelsummary$coefficients[2,2]").asDouble();
                                 betaCovariate = rConnection.eval("modelsummary$coefficients[3,1]").asDouble();
                                 seCovariate = rConnection.eval("modelsummary$coefficients[3,2]").asDouble();
+                                rsquared = rConnection.eval("modelsummary$r.squared").asDouble();
                                 rConnection.close();
                             } else {
                                 System.err.println("ERROR: R is not connected.");
@@ -296,24 +303,30 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     betaCovariate = regressionParameters[2];
                     seCovariate = regressionStandardErrors[2];
 
+                    rsquared = regressionFullWithInteraction.calculateRSquared();
                 }
 
-                double pValueInteraction = convertBetaToP(betaInteraction, seInteraction, tDistColt);
-                zScoreInteraction = convertPToZ(pValueInteraction);
+                Pair<Double, Double> pair = convertBetaToP(betaInteraction, seInteraction, tDistColt);
+                double pValueInteraction = pair.getLeft();
+                zScoreInteraction = pair.getRight();
 
-                double pValueSNP = convertBetaToP(betaSNP, seSNP, tDistColt);
-                zScoreSNP = convertPToZ(pValueSNP);
+                pair = convertBetaToP(betaSNP, seSNP, tDistColt);
+                double pValueSNP = pair.getLeft();
+                zScoreSNP = pair.getRight();
 
                 // Get the regression parameters and R-square value and print it.
-                double pValueCovariate = convertBetaToP(betaCovariate, seCovariate, tDistColt);
-                zScoreCovariate = convertPToZ(pValueCovariate);
+                pair = convertBetaToP(betaCovariate, seCovariate, tDistColt);
+                double pValueCovariate = pair.getLeft();
+                zScoreCovariate = pair.getRight();
 
                 interactionZScoreMatrix[e][covariate] = zScoreInteraction;
                 SNPZResultMatrix[e][covariate] = zScoreSNP;
                 covariateZResultMatrix[e][covariate] = zScoreCovariate;
                 maineffectZResultMatrix[e][covariate] = mainZ;
                 nMatrix[e][covariate] = nrCalled;
+                rsquaredMatrix[e][covariate] = rsquared;
 
+                // flip the covariate effect according to the main effect
                 if (provideFullStats) {
                     interactionBeta[e][covariate] = betaInteraction;
                     interactionSE[e][covariate] = seInteraction;
@@ -321,6 +334,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     mainSE[e][covariate] = seSNP;
                     covariateBeta[e][covariate] = betaCovariate;
                     covariateSE[e][covariate] = seCovariate;
+
                 }
             }
         }
@@ -343,7 +357,8 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     mainSE,
                     covariateBeta,
                     covariateSE,
-                    nMatrix);
+                    nMatrix,
+                    rsquaredMatrix);
         } else {
             return new InteractionAnalysisResults(
                     qcString,
@@ -352,28 +367,28 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     SNPZResultMatrix,
                     covariateZResultMatrix,
                     maineffectZResultMatrix,
-                    nMatrix);
+                    nMatrix,
+                    rsquaredMatrix);
 
         }
 
     }
 
-    private double convertBetaToP(double beta, double se, StudentT tDistColt) {
+    private Pair<Double, Double> convertBetaToP(double beta, double se, StudentT tDistColt) {
         double t = beta / se;
         double p = 1;
+        double z = 0;
         if (t < 0) {
             p = tDistColt.cdf(t);
-
+            z = cern.jet.stat.Probability.normalInverse(p);
         } else {
             p = tDistColt.cdf(-t);
         }
         if (p < 2.0E-323) {
             p = 2.0E-323;
+            z = -cern.jet.stat.Probability.normalInverse(p);
         }
-        return p;
+        return new Pair<Double, Double>(p, z);
     }
 
-    private double convertPToZ(double p) {
-        return cern.jet.stat.tdouble.Probability.normalInverse(p);
-    }
 }
