@@ -83,6 +83,7 @@ public class BinaryMetaAnalysisSettings {
             if (probeselection != null && probeselection.trim().length() == 0) {
                 probeselection = null;
             }
+            
             snpselection = config.getString("defaults.snpselection");
 
             if (snpselection != null && snpselection.trim().length() == 0) {

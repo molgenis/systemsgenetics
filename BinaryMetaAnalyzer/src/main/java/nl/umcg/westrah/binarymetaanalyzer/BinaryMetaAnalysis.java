@@ -435,7 +435,7 @@ public class BinaryMetaAnalysis {
     private void createProbeIndex() throws IOException {
         
         HashSet<String> confineToTheseProbes = null;
-        if (settings.getSNPSelection() != null) {
+        if (settings.getProbeselection()!= null) {
             System.out.println("Selecting Probes from file: " + settings.getProbeselection());
             confineToTheseProbes = new HashSet<String>();
             TextFile tf = new TextFile(settings.getProbeselection(), TextFile.R);
