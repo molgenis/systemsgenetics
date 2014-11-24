@@ -432,15 +432,29 @@ public class BinaryMetaAnalysis {
     }
 
     // index the probes 
-    private void createProbeIndex() {
+    private void createProbeIndex() throws IOException {
+        
+        HashSet<String> confineToTheseProbes = null;
+        if (settings.getSNPSelection() != null) {
+            System.out.println("Selecting Probes from file: " + settings.getProbeselection());
+            confineToTheseProbes = new HashSet<String>();
+            TextFile tf = new TextFile(settings.getProbeselection(), TextFile.R);
+            confineToTheseProbes.addAll(tf.readAsArrayList());
+            tf.close();
+
+            System.out.println(confineToTheseProbes.size() + " Probes loaded.");
+        }
+        
         probeIndex = new Integer[traitList.length][datasets.length];
         for (int d = 0; d < datasets.length; d++) {
             String[] probes = datasets[d].getProbeList();
             int platformId = probeAnnotation.getPlatformId(settings.getDatasetannotations().get(d));
             for (int p = 0; p < probes.length; p++) {
-                MetaQTL4MetaTrait t = probeAnnotation.getTraitForPlatformId(platformId, probes[p]);
-                int index = traitMap.get(t);
-                probeIndex[index][d] = p;
+                if (confineToTheseProbes == null || confineToTheseProbes.contains(probes[p])) {
+                    MetaQTL4MetaTrait t = probeAnnotation.getTraitForPlatformId(platformId, probes[p]);
+                    int index = traitMap.get(t);
+                    probeIndex[index][d] = p;
+                }
             }
         }
     }
