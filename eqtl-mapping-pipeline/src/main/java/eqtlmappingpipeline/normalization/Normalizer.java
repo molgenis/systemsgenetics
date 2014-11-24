@@ -98,11 +98,11 @@ public class Normalizer {
                 }
                 if(!missingNames.isEmpty()){
                     System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
-                    System.err.println(missingNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                    System.err.println(missingNames.toString()+"\n");
                     breakAfterCheck = true;
                 } else if(!extraNames.isEmpty()){
                     System.err.println("\nMatrix contains unwanted columns, please check filtering list.");
-                    System.err.println(extraNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                    System.err.println(extraNames.toString()+"\n");
                     breakAfterCheck = true;
                 }
             }
@@ -132,9 +132,9 @@ public class Normalizer {
                 }
             }
             
-            if(breakAfterCheck){
-                System.exit(-1);
-            }
+//            if(breakAfterCheck){
+//                System.exit(-1);
+//            }
             
             outputFileNamePrefix = outputFileNamePrefix + ".SampleSelection";
             dataset.save(outputFileNamePrefix + ".txt.gz");
