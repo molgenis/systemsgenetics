@@ -601,7 +601,7 @@ public class InteractionAnalysisMultiThreaded {
         nrInOutput = 0;
         System.out.println("Output will be written to: " + out + "InteractionResults.txt");
         TextFile outputFile = new TextFile(out + "InteractionResults.txt", TextFile.W);
-        String outputheader = "SNP\tProbe\tCovariate\tZ-SNP\tZ-Cov\tZ-Interaction\tZ-Main\tN";
+        String outputheader = "SNP\tProbe\tCovariate\tZ-SNP\tZ-Cov\tZ-Interaction\tZ-Main\tZ-Interaction-Flipped\tN\tRSquared";
         if (fullStats) {
             outputheader
                     += "\tsnpBeta"
@@ -609,8 +609,8 @@ public class InteractionAnalysisMultiThreaded {
                     + "\tcovariateBeta"
                     + "\tcovariateSE"
                     + "\tinteractionBeta"
-                    + "\tinteractionSE";
-
+                    + "\tinteractionSE"
+                    + "\tinteractionBeta-Flipped";
         }
 
         outputFile.writeln(outputheader);
@@ -725,6 +725,7 @@ public class InteractionAnalysisMultiThreaded {
         double[][] interactionSE = result.getInteractionSE();
         double[][] mainBeta = result.getSNPBeta();
         double[][] mainSE = result.getSNPSE();
+        double[][] rsquared = result.getRsquared();
 
         for (int e = 0; e < eqtls.size(); e++) {
             Pair<String, String> eqtl = eqtls.get(e);
@@ -742,11 +743,24 @@ public class InteractionAnalysisMultiThreaded {
                 builder.append("\t");
                 builder.append(covariateZResultMatrix[e][c]);
                 builder.append("\t");
-                builder.append(interactionZScoreMatrix[e][c]);
+                double interactionZ = interactionZScoreMatrix[e][c];
+                builder.append(interactionZ);
                 builder.append("\t");
-                builder.append(maineffectZResultMatrix[e][c]);
+                double mainZ = maineffectZResultMatrix[e][c];
+                builder.append(mainZ);
+                
+                if(mainZ < 0){
+                    interactionZ*=-1;
+                }
+                builder.append("\t");
+                builder.append(interactionZ);
                 builder.append("\t");
                 builder.append(nMatrix[e][c]);
+                
+                builder.append("\t");
+                builder.append(nMatrix[e][c]);
+                builder.append("\t");
+                builder.append(rsquared[e][c]);
 
                 if (fullStats) {
                     builder.append("\t");
@@ -758,10 +772,17 @@ public class InteractionAnalysisMultiThreaded {
                     builder.append("\t");
                     builder.append(covariateSE[e][c]);
                     builder.append("\t");
-                    builder.append(interactionBeta[e][c]);
+                    double interactionB = interactionBeta[e][c];
+                    builder.append(interactionB);
                     builder.append("\t");
                     builder.append(interactionSE[e][c]);
+                    
+                    if(mainZ<0){
+                        interactionB*=-1;
+                    }
                     builder.append("\t");
+                    builder.append(interactionB);
+                    
                 }
 
                 outputFile.writeln(builder.toString());
