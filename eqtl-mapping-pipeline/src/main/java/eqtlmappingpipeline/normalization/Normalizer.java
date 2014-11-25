@@ -134,9 +134,9 @@ public class Normalizer {
                 }
             }
             
-//            if(breakAfterCheck){
-//                System.exit(-1);
-//            }
+            if(breakAfterCheck){
+                System.exit(-1);
+            }
             
             dataset.save(outputFileNamePrefix + ".txt.gz");
         } else {
