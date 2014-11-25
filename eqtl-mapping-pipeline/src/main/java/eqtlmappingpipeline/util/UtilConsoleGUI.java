@@ -31,7 +31,7 @@ public class UtilConsoleGUI {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
         SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
-        ADDANNOTATIONTOQTLFILE
+        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS
     };
     MODE run;
 
@@ -44,7 +44,6 @@ public class UtilConsoleGUI {
 //        String outtype = "text";
 //        String inexpplatform = null;
 //        Integer threads = null;
-        
         String settingsfile = null;
         String in = null;
         String in2 = null;
@@ -56,13 +55,13 @@ public class UtilConsoleGUI {
         String snpfile = null;
         String probefile = null;
         String region = "";
-        
+
         String annot = null;
         String snpselectionlist = null;
         Integer stepSize = 5;
         Integer max = 5;
         String fileQtlsToRegressOut = null;
-        
+
         Double threshold = null;
         Integer nreqtls = null;
 
@@ -78,7 +77,7 @@ public class UtilConsoleGUI {
         String snpprobeselectionlist = null;
         boolean createQQPlot = true;
         boolean createLargeFdrFile = true;
-        
+
         String sources = null;
         String keyValuePairs = null;
         String annotationIds = null;
@@ -160,11 +159,11 @@ public class UtilConsoleGUI {
                 annot = val;
             } else if (args[i].equals("--FdrMethod")) {
                 val = val.toLowerCase();
-                if(val.equals("probe")){
+                if (val.equals("probe")) {
                     FdrMethod = FDRMethod.PROBELEVEL;
-                } else if(val.equals("gene")){
+                } else if (val.equals("gene")) {
                     FdrMethod = FDRMethod.GENELEVEL;
-                } else if(val.equals("snp")){
+                } else if (val.equals("snp")) {
                     FdrMethod = FDRMethod.SNPLEVEL;
                 }
             } else if (arg.equals("--snps")) {
@@ -232,11 +231,11 @@ public class UtilConsoleGUI {
                         }
                         break;
 
-
                     case REGRESS:
 
                         RegressCisEffectsFromGeneExpressionData r = new RegressCisEffectsFromGeneExpressionData(args);
                         break;
+
                     case PROXYSEARCH:
 
                         if (in == null || snpfile == null || out == null || r2 == null) {
@@ -245,6 +244,7 @@ public class UtilConsoleGUI {
                             LDCalculator.proxyLookUpInReferenceDataset(in, snpfile, maf, hwep, cr, r2, out, dist);
                         }
                         break;
+
                     case MERGE:
 
                         if (in == null || region == null) {
@@ -254,6 +254,7 @@ public class UtilConsoleGUI {
                             m.merge(in, in2, out, snpfile);
                         }
                         break;
+
                     case GETMAF:
 
                         if (in == null || region == null) {
@@ -263,6 +264,7 @@ public class UtilConsoleGUI {
                             dq.getSNPMAF(in, region);
                         }
                         break;
+
                     case GETSNPSTATS:
 
                         if (in == null || region == null) {
@@ -276,6 +278,7 @@ public class UtilConsoleGUI {
                             }
                         }
                         break;
+
                     case SORTFILE:
                         if (in == null) {
                             System.out.println("USAGE: --in eQTLFile --out eQTLFile");
@@ -284,6 +287,7 @@ public class UtilConsoleGUI {
                             f.run(in, out);
                         }
                         break;
+
                     case GETSNPSFROMREGION:
                         if (in == null || region == null) {
                             System.out.println("To use --getsnpsfromregion, please use --in to point to the genotype data and supply a region to query.");
@@ -317,6 +321,7 @@ public class UtilConsoleGUI {
                         }
 
                         break;
+
                     case FDR:
                         if (in == null || threshold == null || nreqtls == null) {
                             System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
@@ -340,6 +345,7 @@ public class UtilConsoleGUI {
                         }
 
                         break;
+
                     case META:
                         if (in == null || out == null) {
                             System.out.println("To use --meta, please use --in, and --out");
@@ -350,6 +356,7 @@ public class UtilConsoleGUI {
                         }
 
                         break;
+
                     case DOTPLOT:
                         if (in == null) {
                             System.out.println("Usage: --dotplot --in /path/to/file.txt");
@@ -358,6 +365,7 @@ public class UtilConsoleGUI {
                             d.plot(in);
                         }
                         break;
+
                     case GETSNPPROBECOMBINATIONS:
 
                         try {
@@ -373,8 +381,8 @@ public class UtilConsoleGUI {
                         }
 
                         break;
-                    case NONGENETICPCACORRECTION:
 
+                    case NONGENETICPCACORRECTION:
 
                         if (in == null || out == null || inexp == null || gte == null) {
                             System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte and --nreqtls");
@@ -385,7 +393,7 @@ public class UtilConsoleGUI {
 
                                 p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
                                 File file = new File(inexp);
-                                
+
                                 p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
                             } catch (IOException ex) {
                                 Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -395,6 +403,7 @@ public class UtilConsoleGUI {
 
                         }
                         break;
+
                     case REGRESSKNOWN:
                         if (!Gpio.exists(fileQtlsToRegressOut)) {
                             System.err.println("ERROR: you have specified an eQTL file to regress out, but the file was not found " + fileQtlsToRegressOut);
@@ -402,13 +411,18 @@ public class UtilConsoleGUI {
                         }
                         RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
                         break;
+
                     case CREATTTFROMDOUBLEMAT:
-                        String[] argsNew = {inexpannot,in,out};
+                        String[] argsNew = {inexpannot, in, out};
                         umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
                         break;
-                        
+
                     case ADDANNOTATIONTOQTLFILE:
                         QTLAnnotator.addAnnotationToQTLOutput(in, sources, keyValuePairs, annotationIds, geneAnnotationFile, out);
+                        break;
+
+                    case LOOKUPEFFECTS:
+                        QTLLookup.lookUpEffects(in, in2, out);
                         break;
                 }
             } catch (Exception e) {
@@ -424,7 +438,7 @@ public class UtilConsoleGUI {
 
         System.out.println("");
         System.out.print("Available Utilities:\n" + ConsoleGUIElems.LINE);
-     
+
         System.out.println("--getsnpsinregion\t\tGet SNPs in a certain region: chr positionA positionB: Y:12000-13000 would get all SNPs on chr Y between 12000 and 13000 bp\n"
                 + "--getsnpsinproberegion\t\tGet SNPs in a certain set of probes (specify with --probes)\n"
                 + "--fdr\t\t\t\tCalculated FDR.\n"
