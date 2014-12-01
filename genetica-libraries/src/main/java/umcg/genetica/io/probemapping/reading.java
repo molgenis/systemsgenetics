@@ -402,7 +402,7 @@ public class reading {
         HashMap<String, HashMap<String, String>> probeInfo = new HashMap<String, HashMap<String, String>>((int) Math.ceil(sizeMap / 0.75));
         int entryId = 0;
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
+            TextFile in = new TextFile(annotationFile, TextFile.R);
             String str = "";
 
             str = in.readLine();
