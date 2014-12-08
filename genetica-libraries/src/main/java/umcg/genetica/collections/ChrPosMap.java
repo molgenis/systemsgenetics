@@ -18,11 +18,12 @@ public class ChrPosMap<E> implements Iterable<E>{
 		data = new HashMap<String, TIntObjectMap<E>>();
 	}
 	
+	@SuppressWarnings("RedundantStringConstructorCall")
 	public void put(String chr, int pos, E element){
 		TIntObjectMap<E> chrElements = data.get(chr);
 		if(chrElements == null){
 			chrElements = new TIntObjectHashMap<E>();
-			data.put(chr, chrElements);
+			data.put(new String(chr), chrElements);
 		}
 		chrElements.put(pos, element);
 	}
