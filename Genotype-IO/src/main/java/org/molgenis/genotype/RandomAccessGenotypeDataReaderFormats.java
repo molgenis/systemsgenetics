@@ -297,4 +297,22 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 	}
 	
+	public static RandomAccessGenotypeDataReaderFormats valueOfSmart(String value){
+		
+		value = value.toUpperCase();
+		if(value.equals("VCFFOLDER")){
+			return VCF_FOLDER;
+		} else if (value.equals("PLINKBED")){
+			return PLINK_BED;
+		} else if (value.equals("GENFOLDER")){
+			return GEN_FOLDER;
+		} else if (value.equals("BPLINK")){
+			return PLINK_BED;
+		} else if (value.equals("B_PLINK")){
+			return PLINK_BED;
+		}
+		return RandomAccessGenotypeDataReaderFormats.valueOf(value);
+		
+	}
+	
 }
