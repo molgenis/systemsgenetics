@@ -128,7 +128,7 @@ public class UtilConsoleGUI {
                 run = MODE.META;
             } else if (arg.equals("--regressknown")) {
                 run = MODE.REGRESSKNOWN;
-            } else if (arg.equals("--getSNPProbeCombinatios")) {
+            } else if (arg.equals("--getSNPProbeCombinations")) {
                 run = MODE.GETSNPPROBECOMBINATIONS;
             } else if (arg.equals("--nonGeneticPcaCorrection")) {
                 run = MODE.NONGENETICPCACORRECTION;
