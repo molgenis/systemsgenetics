@@ -10,9 +10,12 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.util.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import umcg.genetica.io.Gpio;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.methylation.ConvertBetaAndMvalues;
 
@@ -29,6 +32,10 @@ public class ConvertDoubleMatrixDataToTriTyper {
         String mappingFile = args[0];
         String dataMatrix = args[1];
         String outputFolder = args[2];
+
+        if(!(new File(outputFolder).exists())){
+            Gpio.createDir(outputFolder);
+        }
         
         HashSet<String> hashCpGSites = new HashSet<String>();
         try {
