@@ -614,7 +614,7 @@ public class FDR {
     }
 
     public static void calculateFDRAdvance(String eQTLTextFileLoc, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, boolean createQQPlot, String outputDir, String permutationDir, FDRMethod fdrType, boolean createLargeFdrFiles, String snpselectionlist, String probeselectionlist, String snpprobeselectionlist) throws IOException {
-
+        System.out.println("Using advance FDR calculation.\n");
         if (eQTLTextFileLoc == null || eQTLTextFileLoc.length() == 0) {
             throw new IllegalArgumentException("File containing real effects is not specified.");
         }
@@ -711,8 +711,8 @@ public class FDR {
         }
         
         THashSet<String> selectionOfProbes = null;
-        if (snpselectionlist != null) {
-            System.out.println("Reading: " + snpselectionlist);
+        if (probeselectionlist != null) {
+            System.out.println("Reading: " + probeselectionlist);
             TextFile t = new TextFile(probeselectionlist, TextFile.R);
 
             selectionOfProbes = new THashSet<String>(100000000, 4f);
@@ -739,7 +739,7 @@ public class FDR {
             selectionCriteria++;
         }
         
-        if(selectionCriteria < 2){
+        if(selectionCriteria > 1){
             System.out.println("Error, only one selection criteria at the same time allowed.");
             System.exit(0);
         }
