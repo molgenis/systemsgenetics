@@ -333,7 +333,7 @@ public class UtilConsoleGUI {
                         } else {
                             if (snpselectionlist != null || snpprobeselectionlist != null || probeselectionlist != null) {
                                 try {
-                                    FDR.calculateFDRAdvance(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, probeselectionlist, snpprobeselectionlist);
+                                    FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, probeselectionlist, snpprobeselectionlist);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                     System.exit(1);
