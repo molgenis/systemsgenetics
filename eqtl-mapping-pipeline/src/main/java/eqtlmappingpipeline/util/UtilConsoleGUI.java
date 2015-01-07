@@ -48,7 +48,7 @@ public class UtilConsoleGUI {
         String in = null;
         String in2 = null;
         String out = null;
-        int perm = 1;
+        int perm = 0;
         String inexp = null;
         String inexpannot = null;
         String gte = null;
@@ -326,8 +326,9 @@ public class UtilConsoleGUI {
                         break;
 
                     case FDR:
-                        if (in == null || threshold == null || nreqtls == null) {
+                        if (in == null || threshold == null || nreqtls == null || perm == 0) {
                             System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
+                            System.out.println("Optional: --snpselectionlist, --probeselectionlist, --snpprobeselectionlist");
                             printUsage();
                         } else {
                             if (snpselectionlist != null || snpprobeselectionlist != null || probeselectionlist != null) {
@@ -408,16 +409,25 @@ public class UtilConsoleGUI {
                         break;
 
                     case REGRESSKNOWN:
+                        if(settingsfile == null || fileQtlsToRegressOut == null){
+                            System.out.println("Please specify --settings, --EQTLS");
+                            break;
+                        }
+                        
                         if (!Gpio.exists(fileQtlsToRegressOut)) {
                             System.err.println("ERROR: you have specified an eQTL file to regress out, but the file was not found " + fileQtlsToRegressOut);
-                            System.exit(0);
+                            break;
                         }
                         RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
                         break;
 
                     case CREATTTFROMDOUBLEMAT:
-                        String[] argsNew = {inexpannot, in, out};
-                        umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
+                        if(inexpannot== null || in == null || out == null){
+                            System.out.println("Please specify --inexpannot, --in, --out");
+                        } else {
+                            String[] argsNew = {inexpannot, in, out};
+                            umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
+                        }
                         break;
 
                     case ADDANNOTATIONTOQTLFILE:
@@ -425,7 +435,11 @@ public class UtilConsoleGUI {
                         break;
 
                     case LOOKUPEFFECTS:
-                        QTLLookup.lookUpEffects(in, in2, out);
+                        if(in2== null || in == null || out == null){
+                            System.out.println("Please specify --in, --in2, --out");
+                        } else {
+                            QTLLookup.lookUpEffects(in, in2, out);
+                        }
                         break;
                 }
             } catch (Exception e) {
