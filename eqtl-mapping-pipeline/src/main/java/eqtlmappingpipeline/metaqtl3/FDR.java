@@ -613,7 +613,7 @@ public class FDR {
         qq.draw(fileName, fdrcutoff, nrPermutationsFDR, maxNrMostSignificantEQTLs, permutedPValues.toArray(), pValueRealData, significant, nrSignificantEQTLs);
     }
 
-    public static void calculateFDRAdvance(String eQTLTextFileLoc, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, boolean createQQPlot, String outputDir, String permutationDir, FDRMethod fdrType, boolean createLargeFdrFiles, String snpselectionlist, String snpprobeselectionlist) throws IOException {
+    public static void calculateFDRAdvance(String eQTLTextFileLoc, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, boolean createQQPlot, String outputDir, String permutationDir, FDRMethod fdrType, boolean createLargeFdrFiles, String snpselectionlist, String probeselectionlist, String snpprobeselectionlist) throws IOException {
 
         if (eQTLTextFileLoc == null || eQTLTextFileLoc.length() == 0) {
             throw new IllegalArgumentException("File containing real effects is not specified.");
@@ -650,36 +650,36 @@ public class FDR {
         if (nrColsInPermutedFiles > 7) {
             System.out.println("Large permutation files detected.");
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.SNPLEVEL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.GENELEVEL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.GENELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.GENELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.FULL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.FULL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.LARGE, FDRMethod.FULL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
 
         } else {
             if (fdrType.equals(FDRMethod.PROBELEVEL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.PROBELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.SNPLEVEL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.SNPLEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.GENELEVEL) || fdrType.equals(FDRMethod.ALL) && nrColsInPermutedFiles >= 4) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.GENELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.GENELEVEL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
             if (fdrType.equals(FDRMethod.FULL) || fdrType.equals(FDRMethod.ALL)) {
-                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.FULL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, snpprobeselectionlist);
+                runFDRAdvance(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, FileFormat.REDUCED, FDRMethod.FULL, outputDir, permutationDir, createQQPlot, createLargeFdrFiles, snpselectionlist, probeselectionlist, snpprobeselectionlist);
             }
         }
     }
 
     private static void runFDRAdvance(String baseDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs,
-            double fdrcutoff, FileFormat f, FDRMethod m, String outputDir, String permutationDir, boolean createQQPlot, boolean createLargeFdrFiles, String snpselectionlist, String snpprobeselectionlist) throws IOException {
+            double fdrcutoff, FileFormat f, FDRMethod m, String outputDir, String permutationDir, boolean createQQPlot, boolean createLargeFdrFiles, String snpselectionlist, String probeselectionlist, String snpprobeselectionlist) throws IOException {
         //Load permuted data:
         // load values for each permutation round:
         System.out.println("");
@@ -692,6 +692,8 @@ public class FDR {
         } else if (m == FDRMethod.FULL) {
             System.out.println("Determining the FDR using all data");
         }
+        
+        int selectionCriteria = 0;
 
         THashSet<String> selectionOfSnps = null;
         if (snpselectionlist != null) {
@@ -705,6 +707,22 @@ public class FDR {
 
             t.close();
             System.out.println("Size selection list:"+selectionOfSnps.size());
+            selectionCriteria++;
+        }
+        
+        THashSet<String> selectionOfProbes = null;
+        if (snpselectionlist != null) {
+            System.out.println("Reading: " + snpselectionlist);
+            TextFile t = new TextFile(probeselectionlist, TextFile.R);
+
+            selectionOfProbes = new THashSet<String>(100000000, 4f);
+            for (String s : t) {
+                selectionOfProbes.add(s);
+            }
+
+            t.close();
+            System.out.println("Size selection list:"+selectionOfProbes.size());
+            selectionCriteria++;
         }
 
         THashSet<String> selectionOfSnpProbes = null;
@@ -718,8 +736,14 @@ public class FDR {
             }
             t.close();
             System.out.println("Size selection list:"+selectionOfSnpProbes.size());
+            selectionCriteria++;
         }
-
+        
+        if(selectionCriteria < 2){
+            System.out.println("Error, only one selection criteria at the same time allowed.");
+            System.exit(0);
+        }
+        
         TDoubleIntHashMap permutedPvalues = new TDoubleIntHashMap(1000000, 2f);
 
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
@@ -797,52 +821,7 @@ public class FDR {
                         }
 
                         // take top effect per gene / probe
-                        if (selectionOfSnpProbes != null && selectionOfSnps != null && selectionOfSnps.contains(data[snpcol]) && selectionOfSnpProbes.contains(data[snpcol] + "-" + data[probecol])) {
-                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                                if (m != FDRMethod.FULL) {
-                                    visitedEffects.add(fdrId);
-                                }
-
-                                double permutedP = Double.parseDouble(data[0]);
-                                if (permutedPvalues.containsKey(permutedP)) {
-                                    permutedPvalues.increment(permutedP);
-                                } else {
-                                    permutedPvalues.put(permutedP, 1);
-                                }
-
-                                itr++;
-                            }
-                        } else if (selectionOfSnps != null && selectionOfSnps.contains(data[snpcol])) {
-                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                                if (m != FDRMethod.FULL) {
-                                    visitedEffects.add(fdrId);
-                                }
-
-                                double permutedP = Double.parseDouble(data[0]);
-                                if (permutedPvalues.containsKey(permutedP)) {
-                                    permutedPvalues.increment(permutedP);
-                                } else {
-                                    permutedPvalues.put(permutedP, 1);
-                                }
-
-                                itr++;
-                            }
-                        } else if (selectionOfSnpProbes != null && selectionOfSnpProbes.contains(data[snpcol] + "-" + data[probecol])) {
-                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-                                if (m != FDRMethod.FULL) {
-                                    visitedEffects.add(fdrId);
-                                }
-
-                                double permutedP = Double.parseDouble(data[0]);
-                                if (permutedPvalues.containsKey(permutedP)) {
-                                    permutedPvalues.increment(permutedP);
-                                } else {
-                                    permutedPvalues.put(permutedP, 1);
-                                }
-
-                                itr++;
-                            }
-                        } else if(selectionOfSnpProbes == null && selectionOfSnps == null) {
+                        if (selectionOfSnpProbes != null && selectionOfSnpProbes.contains(data[snpcol] + "-" + data[probecol])) {
                             if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
                                 if (m != FDRMethod.FULL) {
                                     visitedEffects.add(fdrId);
@@ -858,6 +837,55 @@ public class FDR {
                                 itr++;
                             }
                         }
+                        if (selectionOfSnps != null && selectionOfSnps.contains(data[snpcol])) {
+                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                if (m != FDRMethod.FULL) {
+                                    visitedEffects.add(fdrId);
+                                }
+
+                                double permutedP = Double.parseDouble(data[0]);
+                                if (permutedPvalues.containsKey(permutedP)) {
+                                    permutedPvalues.increment(permutedP);
+                                } else {
+                                    permutedPvalues.put(permutedP, 1);
+                                }
+
+                                itr++;
+                            }
+                        }
+                        if (selectionOfProbes != null && selectionOfProbes.contains(data[probecol])) {
+                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                if (m != FDRMethod.FULL) {
+                                    visitedEffects.add(fdrId);
+                                }
+
+                                double permutedP = Double.parseDouble(data[0]);
+                                if (permutedPvalues.containsKey(permutedP)) {
+                                    permutedPvalues.increment(permutedP);
+                                } else {
+                                    permutedPvalues.put(permutedP, 1);
+                                }
+
+                                itr++;
+                            }
+                        }
+                        if(selectionOfProbes != null && selectionOfSnps != null && selectionOfSnpProbes != null){
+                            if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
+                                if (m != FDRMethod.FULL) {
+                                    visitedEffects.add(fdrId);
+                                }
+
+                                double permutedP = Double.parseDouble(data[0]);
+                                if (permutedPvalues.containsKey(permutedP)) {
+                                    permutedPvalues.increment(permutedP);
+                                } else {
+                                    permutedPvalues.put(permutedP, 1);
+                                }
+
+                                itr++;
+                            }
+                        }
+                        
                         data = gz.readLineElemsReturnReference(TextFile.tab);
                     }
 
@@ -967,10 +995,13 @@ public class FDR {
                 if (selectionOfSnps != null && !selectionOfSnps.contains(data[QTLTextFile.SNP])) {
                     continue;
                 }
+                if (selectionOfProbes != null && !selectionOfProbes.contains(data[QTLTextFile.PROBE])) {
+                    continue;
+                }
                 if (selectionOfSnpProbes != null && !selectionOfSnpProbes.contains(data[QTLTextFile.SNP] + "-" + data[QTLTextFile.PROBE])) {
                     continue;
                 }
-
+                
                 if (m == FDRMethod.GENELEVEL) {
                     fdrId = data[QTLTextFile.HUGO];
                 } else if (m == FDRMethod.PROBELEVEL) {

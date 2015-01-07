@@ -58,6 +58,7 @@ public class UtilConsoleGUI {
 
         String annot = null;
         String snpselectionlist = null;
+        String probeselectionlist = null;
         Integer stepSize = 5;
         Integer max = 5;
         String fileQtlsToRegressOut = null;
@@ -190,6 +191,8 @@ public class UtilConsoleGUI {
                 createLargeFdrFile = false;
             } else if (args[i].equals("--snpselectionlist")) {
                 snpselectionlist = val;
+            } else if (args[i].equals("--probeselectionlist")) {
+                probeselectionlist = val;
             } else if (args[i].equals("--snpprobeselectionlist")) {
                 snpprobeselectionlist = val;
             } else if (args[i].equals("--stepsizepcaremoval")) {
@@ -327,9 +330,9 @@ public class UtilConsoleGUI {
                             System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
                             printUsage();
                         } else {
-                            if (snpselectionlist != null || snpprobeselectionlist != null) {
+                            if (snpselectionlist != null || snpprobeselectionlist != null || probeselectionlist != null) {
                                 try {
-                                    FDR.calculateFDRAdvance(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, snpprobeselectionlist);
+                                    FDR.calculateFDRAdvance(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, probeselectionlist, snpprobeselectionlist);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                     System.exit(1);
