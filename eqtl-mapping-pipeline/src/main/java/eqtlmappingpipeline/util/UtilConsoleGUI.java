@@ -55,7 +55,7 @@ public class UtilConsoleGUI {
         String snpfile = null;
         String probefile = null;
         String region = "";
-        String ranked = null;
+        String ranked = "";
 
         String annot = null;
         String snpselectionlist = null;
@@ -202,6 +202,8 @@ public class UtilConsoleGUI {
                 max = Integer.parseInt(val);
             } else if (args[i].equals("--QTLS")) {
                 fileQtlsToRegressOut = val;
+            } else if (args[i].equals("--preRankExpressionFiles")){
+                ranked = "ranked";
             }
 //            else if (arg.equals("--replacetext")) {
 //                settingstexttoreplace = val;
