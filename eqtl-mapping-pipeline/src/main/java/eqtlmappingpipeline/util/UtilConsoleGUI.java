@@ -55,6 +55,7 @@ public class UtilConsoleGUI {
         String snpfile = null;
         String probefile = null;
         String region = "";
+        String ranked = null;
 
         String annot = null;
         String snpselectionlist = null;
@@ -425,7 +426,7 @@ public class UtilConsoleGUI {
                         if(inexpannot== null || in == null || out == null){
                             System.out.println("Please specify --inexpannot, --in, --out");
                         } else {
-                            String[] argsNew = {inexpannot, in, out};
+                            String[] argsNew = {inexpannot, in, out, ranked};
                             umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
                         }
                         break;
