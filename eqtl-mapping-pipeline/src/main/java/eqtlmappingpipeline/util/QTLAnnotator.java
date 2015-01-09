@@ -30,11 +30,11 @@ class QTLAnnotator {
 //                "1;1;1;10;1;11;1;4;1;4;0;1", "snp;probe;probe;probe;probe;probe", "D:\\UMCG\\ProbeMapping\\Info\\V70\\gencode.v15.annotation.gtf.gz",
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects\\eQTLsFDR0.05-ProbeLevel-ExtendedInfoTesting.txt");
         
-        addAnnotationToQTLOutput(
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLs_head.txt",
-                "D:\\UMCG\\GWAS_Catalog\\GWAS-Catalog-02092014.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_1MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-Closest-SNPLevel.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_2MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-ClosestStrongest-SNPLevel.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Great_GeneAssociations_20141127-public-2.0.2-aaQ50i-hg19-all-region_Ensembl.txt",
-                "1;1;1;10;1;11;1;4;1;4;0;1", "snp;probe;probe;probe;probe;probe", "D:\\UMCG\\ProbeMapping\\Info\\V70\\gencode.v15.annotation.gtf.gz",
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLs_head-ExtendedInfoTesting.txt");
+//        addAnnotationToQTLOutput(
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLs_head.txt",
+//                "D:\\UMCG\\GWAS_Catalog\\GWAS-Catalog-02092014.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_1MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-Closest-SNPLevel.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_2MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-ClosestStrongest-SNPLevel.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Great_GeneAssociations_20141127-public-2.0.2-aaQ50i-hg19-all-region_Ensembl.txt",
+//                "1;1;1;10;1;11;1;4;1;4;0;1", "snp;probe;probe;probe;probe;probe", "D:\\UMCG\\ProbeMapping\\Info\\V70\\gencode.v15.annotation.gtf.gz",
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLs_head-ExtendedInfoTesting.txt");
 
 //        addAnnotationToQTLOutput(
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Primary\\eQTLProbesFDR0.05-ProbeLevel_ldDrivenEffectsRemoved.txt",
@@ -42,11 +42,11 @@ class QTLAnnotator {
 //                "1;1;1;10;1;11;1;4;1;4;1;4", "snp;probe;probe;probe;probe;probe", "D:\\UMCG\\ProbeMapping\\Info\\V70\\gencode.v15.annotation.gtf.gz",
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Primary\\eQTLProbesFDR0.05-ProbeLevel_ldDrivenEffectsRemoved-ExtendedInfo.txt");
 
-//        addAnnotationToQTLOutput(
-//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-SNPLevel.txt",
-//                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt", 
-//                "1;10", "probe", null,
-//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo.txt");
+        addAnnotationToQTLOutput(
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs_2014\\eQTLSNPsFDR0.05-SNPLevel.txt",
+                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
+                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20;0;1-2-3-4", "snp;probe;snp;snp", null,
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs_2014\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo.txt");
         
     }
 
@@ -194,7 +194,7 @@ class QTLAnnotator {
 //                System.out.println(annotationSource);
 //                System.out.println(masterId);
                 int keyInt = 0;
-                extraHeaders += "\tAnnotionSource:" + masterId;
+                
                 try {
                     keyInt = Integer.parseInt(keyValueList[(masterId * 2)]);
                 } catch (NumberFormatException ex) {
@@ -202,47 +202,66 @@ class QTLAnnotator {
                     System.exit(-1);
                 }
 
-                int valueInt = 0;
+                int[] valueInt = {0};
                 try {
-                    valueInt = Integer.parseInt(keyValueList[((masterId * 2) + 1)]);
+                    if(keyValueList[((masterId * 2) + 1)].contains("-")){
+                        String[] tmpValues = keyValueList[((masterId * 2) + 1)].split("-");
+                        valueInt = new int[tmpValues.length];
+                        for(int i=0; i<valueInt.length; ++i){
+                            valueInt[i] = Integer.parseInt(tmpValues[i]);
+                        }
+                    } 
+                    else {
+                        valueInt[0] = Integer.parseInt(keyValueList[((masterId * 2) + 1)]);
+                    }
+                    
                 } catch (NumberFormatException ex) {
                     System.out.println("Error parsing key: " + keyValueList[masterId * 2] + " for annotationsource:" + annotationSource);
                     System.exit(-1);
                 }
-                TextFile t = new TextFile(annotationSource, TextFile.R);
+                
 //                System.out.println(keyInt +"\t"+ valueInt);
-                HashMap<String, String> annotationFromSource = (HashMap<String, String>) t.readAsHashMap(keyInt, valueInt);
+                for(int valInt : valueInt){
+                    extraHeaders += "\tAnnotionSource:" + masterId+"_Col:"+valInt;
+                    TextFile t = new TextFile(annotationSource, TextFile.R);
+                    HashMap<String, String> annotationFromSource = (HashMap<String, String>) t.readAsHashMap(keyInt, valInt);
 
-                int id = 0;
-                for (EQTL eQtl : qtls) {
+                    int id = 0;
+                    for (EQTL eQtl : qtls) {
 
-                    String newInfo;
-                    if (annotationIdList[masterId].equalsIgnoreCase("probe")) {
-                        newInfo = annotationFromSource.get(eQtl.getProbe());
-                    } else {
-                        newInfo = annotationFromSource.get(eQtl.getRsName());
-                    }
-
-                    if (newInfo != null) {
-
-//                        System.out.println(newInfo);
-                        if (!addTo) {
-                            extraAnnotation.add(newInfo);
+                        String newInfo;
+                        if (annotationIdList[masterId].equalsIgnoreCase("probe")) {
+                            newInfo = annotationFromSource.get(eQtl.getProbe());
                         } else {
-                            extraAnnotation.set(id, extraAnnotation.get(id) + "\t" + newInfo);
+                            newInfo = annotationFromSource.get(eQtl.getRsName());
                         }
 
-                    } else {
-//                        System.out.println("-");
-                        if (!addTo) {
-                            extraAnnotation.add("-");
+                        if (newInfo != null) {
+    //                        System.out.println(newInfo);
+                            if (!addTo) {
+                                extraAnnotation.add(newInfo);
+                            } else {
+                                extraAnnotation.set(id, extraAnnotation.get(id) + "\t" + newInfo);
+                            }
+
                         } else {
-                            extraAnnotation.set(id, extraAnnotation.get(id) + "\t-");
+                            System.out.println("here");
+                            System.exit(0);
+    //                        System.out.println("-");
+                            if (!addTo) {
+                                extraAnnotation.add("-");
+                            } else {
+                                
+                                extraAnnotation.set(id, extraAnnotation.get(id) + "\t-");
+                            }
+
                         }
-
+                        id++;
                     }
-                    id++;
-
+                    if (!extraAnnotation.isEmpty()) {
+                        addTo = true;
+                    }
+                    t.close();
                 }
             }
             masterId++;
