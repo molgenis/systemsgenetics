@@ -55,6 +55,7 @@ public class UtilConsoleGUI {
         String snpfile = null;
         String probefile = null;
         String region = "";
+        String ranked = "";
 
         String annot = null;
         String snpselectionlist = null;
@@ -201,6 +202,8 @@ public class UtilConsoleGUI {
                 max = Integer.parseInt(val);
             } else if (args[i].equals("--QTLS")) {
                 fileQtlsToRegressOut = val;
+            } else if (args[i].equals("--preRankExpressionFiles")){
+                ranked = "ranked";
             }
 //            else if (arg.equals("--replacetext")) {
 //                settingstexttoreplace = val;
@@ -425,7 +428,7 @@ public class UtilConsoleGUI {
                         if(inexpannot== null || in == null || out == null){
                             System.out.println("Please specify --inexpannot, --in, --out");
                         } else {
-                            String[] argsNew = {inexpannot, in, out};
+                            String[] argsNew = {inexpannot, in, out, ranked};
                             umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
                         }
                         break;
