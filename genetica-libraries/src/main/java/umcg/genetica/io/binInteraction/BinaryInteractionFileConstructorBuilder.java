@@ -1,6 +1,8 @@
 package umcg.genetica.io.binInteraction;
 
+import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
 import java.io.File;
+import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
 
 
 public class BinaryInteractionFileConstructorBuilder {
@@ -9,15 +11,15 @@ public class BinaryInteractionFileConstructorBuilder {
 	private BinaryInteractionCohort[] cohorts;
 	private BinaryInteractionGene[] genes;
 	private BinaryInteractionVariant[] variants;
+	private int[][] covariatesTested = null;
 	private String[] covariats;
-	private String[] chrDictionary;
-	private String[] alleleDictionary;
 	private long timeStamp;
 	private boolean allCovariants;
 	private boolean metaAnalysis;
 	private boolean normalQtlStored;
+	private boolean flippedZscoreStored;
 	private String fileDescription;
-	private int interactions;
+	private long interactions;
 	private int startQtlBlock;
 	private int startInteractionBlock;
 
@@ -49,21 +51,16 @@ public class BinaryInteractionFileConstructorBuilder {
 		return this;
 	}
 
+	public BinaryInteractionFileConstructorBuilder setCovariatesTested(int[][] covariatesTested) {
+		this.covariatesTested = covariatesTested;
+		return this;
+	}
+
 	public BinaryInteractionFileConstructorBuilder setCovariats(String[] covariats) {
 		this.covariats = covariats;
 		return this;
 	}
-
-	public BinaryInteractionFileConstructorBuilder setChrDictionary(String[] chrDictionary) {
-		this.chrDictionary = chrDictionary;
-		return this;
-	}
-
-	public BinaryInteractionFileConstructorBuilder setAlleleDictionary(String[] alleleDictionary) {
-		this.alleleDictionary = alleleDictionary;
-		return this;
-	}
-
+	
 	public BinaryInteractionFileConstructorBuilder setTimeStamp(long timeStamp) {
 		this.timeStamp = timeStamp;
 		return this;
@@ -83,13 +80,18 @@ public class BinaryInteractionFileConstructorBuilder {
 		this.normalQtlStored = normalQtlStored;
 		return this;
 	}
+	
+	public BinaryInteractionFileConstructorBuilder setFlippedZscoreStored(boolean flippedZscoreStored) {
+		this.flippedZscoreStored = flippedZscoreStored;
+		return this;
+	}
 
 	public BinaryInteractionFileConstructorBuilder setFileDescription(String fileDescription) {
 		this.fileDescription = fileDescription;
 		return this;
 	}
 
-	public BinaryInteractionFileConstructorBuilder setInteractions(int interactions) {
+	public BinaryInteractionFileConstructorBuilder setInteractions(long interactions) {
 		this.interactions = interactions;
 		return this;
 	}
@@ -105,7 +107,7 @@ public class BinaryInteractionFileConstructorBuilder {
 	}
 
 	public BinaryInteractionFile createBinaryInteractionFile() {
-		return new BinaryInteractionFile(interactionFile, readOnly, cohorts, genes, variants, covariats, chrDictionary, alleleDictionary, timeStamp, allCovariants, metaAnalysis, normalQtlStored, fileDescription, interactions, startQtlBlock, startInteractionBlock);
+		return new BinaryInteractionFile(interactionFile, readOnly, cohorts, genes, variants, covariats, covariatesTested, timeStamp, allCovariants, metaAnalysis, normalQtlStored, flippedZscoreStored, fileDescription, interactions, startQtlBlock, startInteractionBlock);
 	}
 
 }
