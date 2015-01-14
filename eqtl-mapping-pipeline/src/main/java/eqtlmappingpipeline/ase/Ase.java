@@ -235,6 +235,8 @@ public class Ase {
 
 			if (configuration.isMappabilityTrackSet()) {
 
+				System.out.println("Start loading mappability track");
+				
 				int removeNoMappabilityInfo = 0;
 				int removeLowMappability = 0;
 
@@ -296,16 +298,15 @@ public class Ase {
 			{
 				int i = 0;
 				for (AseVariantAppendable aseVariant : aseResults) {
-
-					//This can be made multithreaded if needed
-					aseVariant.calculateStatistics();
-
 					aseVariants[i] = aseVariant;
 					++i;
-
 				}
 			}
+			
+			AseCalculator.startAseCalculators(aseVariants, configuration.getThreads());
 
+			System.out.println("Completed ASE calculations");
+			
 			//int numberOfTests = aseVariants.length;
 			//double bonferroniCutoff = 0.05 / numberOfTests;
 			//System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
@@ -436,7 +437,7 @@ public class Ase {
 
 		final BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), AseConfiguration.ENCODING));
 
-		outputWriter.append("LikelihoodRatioP\tLikelihoodRatioD\teffect\tMeta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
+		outputWriter.append("LikelihoodRatioP\tLikelihoodRatioD\tLikelihoodRatioP\tLikelihoodRatioTheta\tMeta_P\tMeta_Z\tChr\tPos\tSnpId\tSample_Count\tRef_Allele\tAlt_Allele\tCount_Pearson_R\tGenes\tRef_Counts\tAlt_Counts\tBinom_P\tSampleIds");
 
 //		if (encounteredBaseQuality) {
 //			outputWriter.append("\tRef_MeanBaseQuality\tAlt_MeanBaseQuality\tRef_MeanBaseQualities\tAlt_MeanBaseQualities");
@@ -499,6 +500,8 @@ public class Ase {
 			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioD()));
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMle().getMaxLikelihoodP()));
+			outputWriter.append('\t');
+			outputWriter.append(String.valueOf(aseVariant.getMle().getMaxLogLikelihoodTheta()));
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMetaPvalue()));
 			outputWriter.append('\t');
@@ -649,7 +652,7 @@ public class Ase {
 		return Collections.unmodifiableMap(sampleMap);
 	}
 
-	private static class ThreadErrorHandler implements UncaughtExceptionHandler {
+	protected static class ThreadErrorHandler implements UncaughtExceptionHandler {
 
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
@@ -704,6 +707,7 @@ public class Ase {
 			}
 
 			if (showFileProgress) {
+				
 				int currentCount = fileCounter.get();
 
 				if (currentCount > nextReport) {
@@ -716,4 +720,7 @@ public class Ase {
 		} while (running);
 
 	}
+	
+	
+	
 }

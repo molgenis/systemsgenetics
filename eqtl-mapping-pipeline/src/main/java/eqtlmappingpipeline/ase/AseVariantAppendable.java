@@ -30,7 +30,7 @@ public class AseVariantAppendable implements AseVariant{
 	private double metaZscore;
 	private double metaPvalue;
 	private double countPearsonR;
-	private AseMle mle;
+	private AseMleBeta mle;
 	private static final BinomialTest btest = new BinomialTest();
 	private static final double LARGEST_ZSCORE = Probability.normalInverse(Double.MIN_NORMAL);
 
@@ -95,6 +95,7 @@ public class AseVariantAppendable implements AseVariant{
 //		return a2MeanBaseQualities;
 //	}
 	
+	@Override
 	public void calculateStatistics() {
 
 		double zscoreSum = 0;
@@ -127,7 +128,7 @@ public class AseVariantAppendable implements AseVariant{
 		countPearsonR = regression.getR();
 		metaZscore = zscoreSum / Math.sqrt(a1Counts.size());
 		metaPvalue = 2 * Probability.normal(-Math.abs(metaZscore));
-		mle = new AseMle(a1Counts, a2Counts);
+		mle = new AseMleBeta(a1Counts, a2Counts);
 
 	}
 	@Override
@@ -204,11 +205,26 @@ public class AseVariantAppendable implements AseVariant{
 	}
 
 	@Override
-	public AseMle getMle() {
+	public AseMleBeta getMle() {
 		if(mle == null){
 			calculateStatistics();
 		}
 		return mle;
+	}
+
+	@Override
+	public double getLikelihoodRatioP() {
+		return getMle().getRatioP();
+	}
+
+	@Override
+	public double getLikelihoodRatioD() {
+		return getMle().getRatioD();
+	}
+
+	@Override
+	public double getEffect() {
+		return getMle().getMaxLikelihoodP();
 	}
 	
 }

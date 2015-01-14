@@ -10,6 +10,7 @@ Without this configuration present, some functionality in the IDE may be limited
         <configurations>
             <configuration id="testAse" profiles=""/>
             <configuration id="testQtl" profiles=""/>
+            <configuration id="AseRerun" profiles=""/>
         </configurations>
     </config-data>
 </project-shared-configuration>
