@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import org.molgenis.genotype.Allele;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneStatic;
 import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
@@ -42,10 +43,10 @@ public class BinaryInteractionFile {
 	private final boolean flippedZscoreStored;
 	private final String fileDescription;
 	private final long interactions;
-	private final int startQtlBlock;
-	private final int startInteractionBlock;
+	private final long startQtlBlock;
+	private final long startInteractionBlock;
 
-	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariats, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, int startQtlBlock, int startInteractionBlock) {
+	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariats, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) {
 		this.interactionFile = interactionFile;
 		this.readOnly = readOnly;
 		this.cohorts = cohorts;
@@ -62,11 +63,6 @@ public class BinaryInteractionFile {
 		this.interactions = interactions;
 		this.startQtlBlock = startQtlBlock;
 		this.startInteractionBlock = startInteractionBlock;
-	}
-
-	public static BinaryInteractionFile createNew() {
-		//todo
-		throw new UnsupportedOperationException();
 	}
 
 	public static BinaryInteractionFile load(File interactionFile) throws FileNotFoundException, IOException, BinaryInteractionFileException {
@@ -153,8 +149,12 @@ public class BinaryInteractionFile {
 				sizeNormalQtlSection = 0;
 				startNormalQtlSection = -1;
 			}
+			
+			builder.setStartQtlBlock(startNormalQtlSection);
 
 			final long startInteractionSection = startData + sizeNormalQtlSection;
+			
+			builder.setStartInteractionBlock(startInteractionSection);
 			
 			final long sizeInteractionBlock = calculateInteractionResultBlock(chortsCount, flippedZscoreStored);
 			
@@ -230,7 +230,6 @@ public class BinaryInteractionFile {
 	private static BinaryInteractionVariant[] readVariants(DataInputStream inputStream, int variantCount, String[] chrDictionary, Allele[] alleleDictionary) throws EOFException, IOException, BinaryInteractionFileException {
 
 		BinaryInteractionVariant[] variants = new BinaryInteractionVariant[variantCount];
-		long interactionSumVariants = 0;
 
 		for (int i = 0; i < variantCount; ++i) {
 
@@ -340,7 +339,7 @@ public class BinaryInteractionFile {
 		}
 
 		if (totalSnpGeneCombinationsLong > Integer.MAX_VALUE) {
-			throw new BinaryInteractionFileException("Cannot handle a variant-gene combinations bigger than 2^31-1");
+			throw new BinaryInteractionFileException("Cannot handle variant-gene combinations bigger than 2^31-1");
 		}
 
 		return (int) totalSnpGeneCombinationsLong;
@@ -377,6 +376,13 @@ public class BinaryInteractionFile {
 	public String getFileDescription() {
 		return fileDescription;
 	}
-	
-	
+
+	public boolean areAllCovariatsTestedForAllVariantGenes() {
+		return allCovariants;
+	}
+
+	public long getTotalNumberInteractions() {
+		return interactions;
+	}
+		
 }

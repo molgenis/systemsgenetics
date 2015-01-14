@@ -20,8 +20,8 @@ public class BinaryInteractionFileConstructorBuilder {
 	private boolean flippedZscoreStored;
 	private String fileDescription;
 	private long interactions;
-	private int startQtlBlock;
-	private int startInteractionBlock;
+	private long startQtlBlock;
+	private long startInteractionBlock;
 
 	public BinaryInteractionFileConstructorBuilder() {
 	}
@@ -96,12 +96,12 @@ public class BinaryInteractionFileConstructorBuilder {
 		return this;
 	}
 
-	public BinaryInteractionFileConstructorBuilder setStartQtlBlock(int startQtlBlock) {
+	public BinaryInteractionFileConstructorBuilder setStartQtlBlock(long startQtlBlock) {
 		this.startQtlBlock = startQtlBlock;
 		return this;
 	}
 
-	public BinaryInteractionFileConstructorBuilder setStartInteractionBlock(int startInteractionBlock) {
+	public BinaryInteractionFileConstructorBuilder setStartInteractionBlock(long startInteractionBlock) {
 		this.startInteractionBlock = startInteractionBlock;
 		return this;
 	}
