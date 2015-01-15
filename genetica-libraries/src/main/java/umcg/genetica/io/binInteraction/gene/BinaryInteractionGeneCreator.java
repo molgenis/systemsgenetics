@@ -28,5 +28,14 @@ public class BinaryInteractionGeneCreator extends BinaryInteractionGeneAbstract 
 	public void addVariant(int variantPointer){
 		variantPointers.add(variantPointer);
 	}
+	
+	public void sortGenePointers(){
+		variantPointers.sort();
+	}
+
+	@Override
+	public int getIndexOfVariantPointer(int variantIndex) {
+		return variantPointers.binarySearch(variantIndex);
+	}
 
 }

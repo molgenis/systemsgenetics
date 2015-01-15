@@ -1,5 +1,7 @@
 package umcg.genetica.io.binInteraction.gene;
 
+import java.util.Arrays;
+
 /**
  *
  * @author Patrick Deelen
@@ -22,5 +24,11 @@ public class BinaryInteractionGeneStatic extends BinaryInteractionGeneAbstract {
 	public int getVariantCount() {
 		return variants.length;
 	}
+
+	@Override
+	public int getIndexOfVariantPointer(int variantIndex) {
+		return Arrays.binarySearch(variants, variantIndex);
+	}
+	
 
 }

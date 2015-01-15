@@ -1,5 +1,6 @@
 package umcg.genetica.io.binInteraction.variant;
 
+import java.util.Arrays;
 import org.molgenis.genotype.Allele;
 
 /**
@@ -24,5 +25,11 @@ public class BinaryInteractionVariantStatic extends BinaryInteractionVariantAbst
 	public int[] getGenePointers() {
 		return genePointers;
 	}
+
+	@Override
+	public int getIndexOfGenePointer(int geneIndex) {
+		return Arrays.binarySearch(genePointers, geneIndex);
+	}
+	
 
 }

@@ -21,5 +21,7 @@ public interface BinaryInteractionVariant {
 	int getPos();
 
 	Allele getRefAllele();
+	
+	int getIndexOfGenePointer(int geneIndex);
 
 }

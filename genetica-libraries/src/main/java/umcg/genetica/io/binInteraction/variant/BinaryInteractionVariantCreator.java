@@ -1,6 +1,7 @@
 package umcg.genetica.io.binInteraction.variant;
 
 import gnu.trove.list.array.TIntArrayList;
+import java.util.Arrays;
 import org.molgenis.genotype.Allele;
 
 /**
@@ -26,7 +27,17 @@ public class BinaryInteractionVariantCreator extends BinaryInteractionVariantAbs
 		return genePointers.toArray();
 	}
 
-	public void addGene(int genePointer, int geneInteractionCount) {
+	public void addGene(int genePointer) {
 		genePointers.add(genePointer);
 	}
+	
+	public void sortGenePointers(){
+		genePointers.sort();
+	}
+
+	@Override
+	public int getIndexOfGenePointer(int geneIndex) {
+		return genePointers.binarySearch(geneIndex);
+	}
+	
 }

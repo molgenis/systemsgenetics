@@ -18,4 +18,6 @@ public interface BinaryInteractionGene {
 	
 	int getVariantCount();
 	
+	int getIndexOfVariantPointer(int variantIndex);
+	
 }
