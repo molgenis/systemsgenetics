@@ -24,8 +24,8 @@ import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
  */
 public class BinaryInteractionFile {
 
-	private static final byte MAGIC_1 = 81;
-	private static final byte MAGIC_2 = 73;
+	protected static final byte MAGIC_1 = 81;
+	protected static final byte MAGIC_2 = 73;
 	private static final byte MAJOR_VERSION = 1;
 	private static final byte MINOR_VERSION = 0;
 	private static final SimpleDateFormat DEFAULT_DATE_FORMAT = new java.text.SimpleDateFormat("dd-MM-yyyy HH:mm:ss");

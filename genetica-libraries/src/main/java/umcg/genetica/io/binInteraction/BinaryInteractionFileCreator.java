@@ -1,8 +1,16 @@
 package umcg.genetica.io.binInteraction;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import org.molgenis.genotype.Allele;
+import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
 import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariantCreator;
 
@@ -34,8 +42,10 @@ public class BinaryInteractionFileCreator {
 	private int[] variantCummulativeGeneCounts;
 	private int variantGenesWithCovariatesAdded = 0;
 	private boolean sortedIndices = false;
+	private final File file;
 
-	public BinaryInteractionFileCreator(BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException {
+	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException {
+		this.file = file;
 		this.variants = variants;
 		this.genes = genes;
 		this.cohorts = cohorts;
@@ -160,6 +170,8 @@ public class BinaryInteractionFileCreator {
 			}
 
 			variantGeneCovariateArray[i] = covariteIndex;
+			
+			++interactions;
 
 		}
 		
@@ -176,6 +188,63 @@ public class BinaryInteractionFileCreator {
 		++variantGenesWithCovariatesAdded;
 
 	}
+	
+	public BinaryInteractionFile create() throws FileNotFoundException, IOException, BinaryInteractionFileException{
+		
+		if(!sortedIndices){
+			sortIndices();
+		}
+		
+		if(allCovariants){
+			interactions = (long) countVariantGeneCombinations * (long) covariats.length;
+		}
+		
+		if(!allCovariants && variantGenesWithCovariatesAdded != countVariantGeneCombinations){
+			throw new BinaryInteractionFileException("Trying to create binary file without setting covariates for all variant-gene combinations");
+		}
+		
+		//LinkedHashMap<String, IN alleles = createAlleleDictionary(variants);
+		//String[] chrs = createChrDictionary(variants, genes);
+		
+		DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
+		
+		dataOutputStream.writeByte(BinaryInteractionFile.MAGIC_1);
+		dataOutputStream.writeByte(BinaryInteractionFile.MAGIC_2);
+		
+		dataOutputStream.writeByte(1);
+		dataOutputStream.writeByte(0);
+		
+		dataOutputStream.writeLong(System.currentTimeMillis() / 1000L);
+		
+		dataOutputStream.writeBoolean(allCovariants);
+		dataOutputStream.writeBoolean(metaAnalysis);
+		dataOutputStream.writeBoolean(normalQtlStored);
+		dataOutputStream.writeBoolean(flippedZscoreStored);
+		
+		dataOutputStream.writeByte(0);
+		dataOutputStream.writeByte(0);
+		dataOutputStream.writeByte(0);
+		dataOutputStream.writeByte(0);
+		
+		writeString(dataOutputStream, description);
+		
+		dataOutputStream.writeInt(cohorts.length);
+		//dataOutputStream.writeInt(chrDictionary.size());
+		//dataOutputStream.writeInt(alleles.size());
+		dataOutputStream.writeInt(genes.length);
+		dataOutputStream.writeInt(variants.length);
+		dataOutputStream.writeInt(covariats.length);
+		dataOutputStream.writeLong(interactions);
+		
+		for(BinaryInteractionCohort cohort : cohorts){
+			writeString(dataOutputStream, cohort.getName());
+			dataOutputStream.writeInt(cohort.getSampleCount());
+		}
+		
+		return null;
+		
+		
+	}
 
 	private void sortIndices() {
 		for (BinaryInteractionGeneCreator gene : genes) {
@@ -189,5 +258,43 @@ public class BinaryInteractionFileCreator {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	
+	private static void writeString(DataOutputStream dataOutputStream, String string) throws IOException{
+		
+		char[] chars = string.toCharArray();
+		
+		dataOutputStream.writeInt(chars.length);
+		for(char c : chars){
+			dataOutputStream.writeChar(c);
+		}
+		
+	}
+
+//	private static LinkedHashSet<Allele> createAlleleDictionary(BinaryInteractionVariantCreator[] variants) {
+//		
+//		HashSet<Allele> alleles = new HashSet<Allele>();
+//		
+//		for(BinaryInteractionVariantCreator variant : variants){
+//			alleles.add(variant.getRefAllele());
+//			alleles.add(variant.getAltAllele());
+//		}
+//		
+//	}
+	
+	private static HashSet<String> createChrDictionary(BinaryInteractionVariantCreator[] variants, BinaryInteractionGene[] genes) {
+		
+		HashSet<String> chrs = new HashSet<String>();
+		
+		for(BinaryInteractionVariantCreator variant : variants){
+			chrs.add(variant.getChr());
+		}
+		
+		for(BinaryInteractionGene gene : genes){
+			chrs.add(gene.getChr());
+		}
+		
+		return chrs;
+		
 	}
 }
