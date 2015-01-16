@@ -48,6 +48,19 @@ public class BinaryInteractionFileCreator {
 	private final File file;
 	private boolean created = false;
 
+	/**
+	 * 
+	 * @param file
+	 * @param variants
+	 * @param genes
+	 * @param cohorts
+	 * @param covariats
+	 * @param allCovariants
+	 * @param metaAnalysis
+	 * @param normalQtlStored
+	 * @param flippedZscoreStored
+	 * @throws BinaryInteractionFileException 
+	 */
 	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException {
 		this.file = file;
 		this.variants = variants;

@@ -11,6 +11,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -320,11 +322,11 @@ public class BinaryInteractionFile {
 
 	}
 
-	private static long calculateSizeNormalQtlBlock(int cohorts) {
+	protected static long calculateSizeNormalQtlBlock(int cohorts) {
 		return (cohorts * 12) + 8;
 	}
 
-	private static long calculateInteractionResultBlock(int cohorts, boolean flippedZscoreStored) {
+	protected static long calculateInteractionResultBlock(int cohorts, boolean flippedZscoreStored) {
 		if (flippedZscoreStored) {
 			return (cohorts * 44) + 32;
 		} else {
@@ -358,7 +360,7 @@ public class BinaryInteractionFile {
 	}
 	
 	public String getCreationDataTimeString(){
-		return DEFAULT_DATE_FORMAT.format(new Date(timeStamp));
+		return DEFAULT_DATE_FORMAT.format(new Date(timeStamp*1000));
 	}
 
 	public boolean isMetaAnalysis() {
@@ -384,5 +386,23 @@ public class BinaryInteractionFile {
 	public long getTotalNumberInteractions() {
 		return interactions;
 	}
+
+	public List<BinaryInteractionCohort> getCohorts() {
+		return Collections.unmodifiableList(Arrays.asList(cohorts));
+	}
+
+	public List<BinaryInteractionGene> getGenes() {
+		return Collections.unmodifiableList(Arrays.asList(genes));
+	}
+
+	public List<BinaryInteractionVariant> getVariants() {
+		return Collections.unmodifiableList(Arrays.asList(variants));
+	}
+
+	public List<String> getCovariats() {
+		return Collections.unmodifiableList(Arrays.asList(covariats));
+	}
+	
+	
 		
 }
