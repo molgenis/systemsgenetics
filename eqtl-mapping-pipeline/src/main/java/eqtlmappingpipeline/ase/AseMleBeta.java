@@ -78,9 +78,6 @@ public class AseMleBeta {
 			logBinominalCoefficients[i] = lnbico(totalReads, a1Count);
 		}
 
-		double logLikelihoodNull = Double.NEGATIVE_INFINITY;
-		double logLikelihoodNullTheta = Double.NaN;
-
 		for (int i = 0; i < probabilities.length; ++i) {
 
 			for (int theta = 1; theta <= maxThetaToTest; ++theta) {
@@ -98,15 +95,17 @@ public class AseMleBeta {
 					provisionalMaxLogLikelihoodTheta = theta;
 				}
 
-				if (probabilities[i] == 0.5) {
-					if (sumLogLikelihood > logLikelihoodNull) {
-						logLikelihoodNull = sumLogLikelihood;
-						logLikelihoodNullTheta = theta;
-					}
-				}
-
 			}
 
+		}
+
+		double logLikelihoodNullTheta = provisionalMaxLogLikelihoodTheta;
+		double logLikelihoodNull = 0;
+
+		for (int s = 0; s < a1Counts.size(); ++s) {
+			double alfa = logLikelihoodNullTheta * 0.5;
+			double beta = logLikelihoodNullTheta * 0.5;
+			logLikelihoodNull += logBinominalCoefficients[s] + betaln(a2Counts.getQuick(s) + alfa, a1Counts.getQuick(s) + beta) - betaln(alfa, beta);
 		}
 
 		if (Double.isInfinite(logLikelihoodNull)) {
@@ -115,11 +114,11 @@ public class AseMleBeta {
 
 		//Make sure to use null model in case of tie
 		if (logLikelihoodNull >= provisionalMaxLogLikelihood) {
-			
-			if(provisionalMaxLogLikelihoodTheta == maxThetaToTest){
+
+			if (provisionalMaxLogLikelihoodTheta == maxThetaToTest) {
 				LOGGER.warn("Warning, possibly did not reach optimum for theta in beta binominal model");
 			}
-			
+
 			maxLogLikelihood = logLikelihoodNull;
 			maxLogLikelihoodP = 0.5;
 			maxLogLikelihoodTheta = logLikelihoodNullTheta;
@@ -130,8 +129,8 @@ public class AseMleBeta {
 			maxLogLikelihood = provisionalMaxLogLikelihood;
 			maxLogLikelihoodP = provisionalMaxLogLikelihoodP;
 			maxLogLikelihoodTheta = provisionalMaxLogLikelihoodTheta;
-			
-			if(maxLogLikelihoodTheta == maxThetaToTest){
+
+			if (maxLogLikelihoodTheta == maxThetaToTest) {
 				LOGGER.warn("Warning, possibly did not reach optimum for theta in beta binominal model");
 			}
 
