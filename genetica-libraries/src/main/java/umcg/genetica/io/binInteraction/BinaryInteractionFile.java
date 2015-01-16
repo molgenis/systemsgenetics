@@ -47,6 +47,8 @@ public class BinaryInteractionFile {
 	private final long interactions;
 	private final long startQtlBlock;
 	private final long startInteractionBlock;
+	private final long sizeQtlBlock;
+	private final long sizeInteractionBlock;
 
 	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariats, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) {
 		this.interactionFile = interactionFile;
@@ -65,6 +67,10 @@ public class BinaryInteractionFile {
 		this.interactions = interactions;
 		this.startQtlBlock = startQtlBlock;
 		this.startInteractionBlock = startInteractionBlock;
+		
+		this.sizeQtlBlock = calculateSizeNormalQtlBlock(cohorts.length, metaAnalysis);
+		this.sizeInteractionBlock = calculateSizeInteractionResultBlock(cohorts.length, flippedZscoreStored, metaAnalysis);
+		
 	}
 
 	public static BinaryInteractionFile load(File interactionFile) throws FileNotFoundException, IOException, BinaryInteractionFileException {
@@ -145,7 +151,7 @@ public class BinaryInteractionFile {
 
 			if (normalQtlStored) {
 				startNormalQtlSection = startData;
-				final long sizeQtlBlock = calculateSizeNormalQtlBlock(chortsCount);
+				final long sizeQtlBlock = calculateSizeNormalQtlBlock(chortsCount, metaAnalysis);
 				sizeNormalQtlSection = sizeQtlBlock * totalVariantGeneCombinations;
 			} else {
 				sizeNormalQtlSection = 0;
@@ -158,7 +164,7 @@ public class BinaryInteractionFile {
 			
 			builder.setStartInteractionBlock(startInteractionSection);
 			
-			final long sizeInteractionBlock = calculateInteractionResultBlock(chortsCount, flippedZscoreStored);
+			final long sizeInteractionBlock = calculateSizeInteractionResultBlock(chortsCount, flippedZscoreStored, metaAnalysis);
 			
 			if(startData + sizeNormalQtlSection + sizeInteractionBlock != interactionFile.length()){
 				throw new BinaryInteractionFileException("Incorrect file size. Expected: " + (startData + sizeNormalQtlSection + sizeInteractionBlock) + " found: " + interactionFile.length() + " diff: " + (startData + sizeNormalQtlSection + sizeInteractionBlock - interactionFile.length()));
@@ -322,16 +328,26 @@ public class BinaryInteractionFile {
 
 	}
 
-	protected static long calculateSizeNormalQtlBlock(int cohorts) {
-		return (cohorts * 12) + 8;
+	protected static long calculateSizeNormalQtlBlock(int cohorts, boolean metaAnalysis) {
+		long size = (cohorts * 12);
+		if(metaAnalysis){
+			size += 8;
+		}
+		return size;
 	}
 
-	protected static long calculateInteractionResultBlock(int cohorts, boolean flippedZscoreStored) {
+	protected static long calculateSizeInteractionResultBlock(int cohorts, boolean flippedZscoreStored, boolean metaAnalysis) {
+		long size = cohorts * 36;
 		if (flippedZscoreStored) {
-			return (cohorts * 44) + 32;
-		} else {
-			return (cohorts * 36) + 24;
+			size += (cohorts * 8);
+			if(metaAnalysis){
+				size += 8;
+			}
 		}
+		if(metaAnalysis){
+			size += 24;
+		}
+		return size;
 	}
 
 	private static int getTotalVariantGeneCombinations(BinaryInteractionVariant[] variants) throws BinaryInteractionFileException {
@@ -402,7 +418,5 @@ public class BinaryInteractionFile {
 	public List<String> getCovariats() {
 		return Collections.unmodifiableList(Arrays.asList(covariats));
 	}
-	
-	
-		
+			
 }

@@ -11,7 +11,7 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.molgenis.genotype.Allele;
-import static umcg.genetica.io.binInteraction.BinaryInteractionFile.calculateInteractionResultBlock;
+import static umcg.genetica.io.binInteraction.BinaryInteractionFile.calculateSizeInteractionResultBlock;
 import static umcg.genetica.io.binInteraction.BinaryInteractionFile.calculateSizeNormalQtlBlock;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
@@ -49,7 +49,7 @@ public class BinaryInteractionFileCreator {
 	private boolean created = false;
 
 	/**
-	 * 
+	 *
 	 * @param file
 	 * @param variants
 	 * @param genes
@@ -59,7 +59,7 @@ public class BinaryInteractionFileCreator {
 	 * @param metaAnalysis
 	 * @param normalQtlStored
 	 * @param flippedZscoreStored
-	 * @throws BinaryInteractionFileException 
+	 * @throws BinaryInteractionFileException
 	 */
 	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException {
 		this.file = file;
@@ -326,7 +326,7 @@ public class BinaryInteractionFileCreator {
 
 		if (normalQtlStored) {
 			startNormalQtlSection = startData;
-			final long sizeQtlBlock = calculateSizeNormalQtlBlock(cohorts.length);
+			final long sizeQtlBlock = calculateSizeNormalQtlBlock(cohorts.length, metaAnalysis);
 			sizeNormalQtlSection = sizeQtlBlock * countVariantGeneCombinations;
 		} else {
 			sizeNormalQtlSection = 0;
@@ -335,7 +335,7 @@ public class BinaryInteractionFileCreator {
 
 
 		final long startInteractionSection = startData + sizeNormalQtlSection;
-		final long sizeInteractionBlock = calculateInteractionResultBlock(cohorts.length, flippedZscoreStored);
+		final long sizeInteractionBlock = calculateSizeInteractionResultBlock(cohorts.length, flippedZscoreStored, metaAnalysis);
 
 		RandomAccessFile fileRandomAccess = new RandomAccessFile(file, "rw"); //rw stands for open in read/write mode.
 		fileRandomAccess.setLength(startData + sizeNormalQtlSection + sizeInteractionBlock);
