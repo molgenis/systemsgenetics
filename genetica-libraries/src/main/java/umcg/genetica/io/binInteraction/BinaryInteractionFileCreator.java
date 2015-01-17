@@ -351,10 +351,11 @@ public class BinaryInteractionFileCreator {
 		constructorBuilder.setMetaAnalysis(metaAnalysis);
 		constructorBuilder.setNormalQtlStored(normalQtlStored);
 		constructorBuilder.setReadOnly(false);
-		constructorBuilder.setStartInteractionBlock(startInteractionSection);//TODO
-		constructorBuilder.setStartQtlBlock(startNormalQtlSection);//TODO
+		constructorBuilder.setStartInteractionBlock(startInteractionSection);
+		constructorBuilder.setStartQtlBlock(startNormalQtlSection);
 		constructorBuilder.setTimeStamp(timeStamp);
 		constructorBuilder.setVariants(variants);
+		constructorBuilder.setInteractions(interactions);
 
 		return constructorBuilder.createBinaryInteractionFile();
 

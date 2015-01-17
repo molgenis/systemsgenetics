@@ -106,6 +106,8 @@ public class BinaryInteractionFile implements Closeable {
 		}
 
 		if (cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]] != interactions) {
+			System.out.println(cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]]);
+			System.out.println(interactions);
 			throw new BinaryInteractionFileException("Something went wrong");
 		}
 
