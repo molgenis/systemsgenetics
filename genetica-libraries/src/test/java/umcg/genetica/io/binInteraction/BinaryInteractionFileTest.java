@@ -44,6 +44,10 @@ public class BinaryInteractionFileTest {
 		creator.setDescription("Test file 1");
 		BinaryInteractionFile createdInteractions = creator.create();
 		
+		assertFalse(createdInteractions.isReadOnly());
+		
+		createdInteractions.makeReadOnly();
+		
 		BinaryInteractionFile loadedInteractions = BinaryInteractionFile.load(file);
 		
 		assertEquals(loadedInteractions.getFileDescription(), "Test file 1");
@@ -63,7 +67,7 @@ public class BinaryInteractionFileTest {
 		assertTrue(createdInteractions.isNormalQtlStored());
 		assertTrue(loadedInteractions.isNormalQtlStored());
 		
-		assertFalse(createdInteractions.isReadOnly());
+		assertTrue(createdInteractions.isReadOnly());
 		assertTrue(loadedInteractions.isReadOnly());
 		
 		assertEquals(loadedInteractions.getCohorts().get(0).getName(), "cohort1");

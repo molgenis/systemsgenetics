@@ -2,6 +2,8 @@ package umcg.genetica.io.binInteraction;
 
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
 
 
@@ -106,7 +108,7 @@ public class BinaryInteractionFileConstructorBuilder {
 		return this;
 	}
 
-	public BinaryInteractionFile createBinaryInteractionFile() {
+	public BinaryInteractionFile createBinaryInteractionFile() throws BinaryInteractionFileException, FileNotFoundException, IOException {
 		return new BinaryInteractionFile(interactionFile, readOnly, cohorts, genes, variants, covariats, covariatesTested, timeStamp, allCovariants, metaAnalysis, normalQtlStored, flippedZscoreStored, fileDescription, interactions, startQtlBlock, startInteractionBlock);
 	}
 

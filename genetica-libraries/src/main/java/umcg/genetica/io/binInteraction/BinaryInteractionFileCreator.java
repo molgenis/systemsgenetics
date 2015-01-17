@@ -35,8 +35,6 @@ public class BinaryInteractionFileCreator {
 	private String description = "";
 	private int[][] covariatesTested;
 	private long interactions = 0;
-	private long startQtlBlock;
-	private long startInteractionBlock;
 	private boolean startedAddingCovariates = false;
 	private int countVariantGeneCombinations = 0;
 	private final TObjectIntHashMap<String> variantMap;
@@ -244,9 +242,7 @@ public class BinaryInteractionFileCreator {
 		dataOutputStream.writeByte(1);
 		dataOutputStream.writeByte(0);
 
-		long timeStamp = System.currentTimeMillis() / 1000L;
-		dataOutputStream.writeLong(timeStamp);
-
+		dataOutputStream.writeBoolean(false);
 		dataOutputStream.writeBoolean(allCovariants);
 		dataOutputStream.writeBoolean(metaAnalysis);
 		dataOutputStream.writeBoolean(normalQtlStored);
@@ -256,6 +252,9 @@ public class BinaryInteractionFileCreator {
 		dataOutputStream.writeByte(0);
 		dataOutputStream.writeByte(0);
 		dataOutputStream.writeByte(0);
+		
+		long timeStamp = System.currentTimeMillis() / 1000L;
+		dataOutputStream.writeLong(timeStamp);
 
 		writeString(dataOutputStream, description);
 
