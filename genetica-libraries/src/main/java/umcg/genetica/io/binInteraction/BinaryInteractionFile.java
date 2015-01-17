@@ -574,7 +574,7 @@ public class BinaryInteractionFile implements Closeable {
 			}
 		}
 
-		return startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneCovariateIndex] * sizeInteractionBlock);
+		return startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] + variantGeneCovariateIndex * sizeInteractionBlock);
 		
 	}
 }
