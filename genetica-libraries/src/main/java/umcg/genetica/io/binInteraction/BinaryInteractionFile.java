@@ -13,6 +13,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +31,7 @@ import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
  */
 public class BinaryInteractionFile implements Closeable {
 
+	//Static variables
 	protected static final byte MAGIC_1 = 81;
 	protected static final byte MAGIC_2 = 73;
 	private static final long POINTER_TO_CLOSED_BOOLEAN = 4;
@@ -36,6 +39,8 @@ public class BinaryInteractionFile implements Closeable {
 	private static final byte MINOR_VERSION = 0;
 	private static final int NO_ENTRY_INT_MAP = -1;
 	private static final SimpleDateFormat DEFAULT_DATE_FORMAT = new java.text.SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+	private static final int BUFFER_SIZE = 8192;
+	//Instance variables
 	private final File interactionFile;
 	private boolean readOnly;
 	private final BinaryInteractionCohort[] cohorts;
@@ -67,6 +72,13 @@ public class BinaryInteractionFile implements Closeable {
 	private final TObjectIntHashMap<String> genesMap;
 	private final TObjectIntHashMap<String> covariatesMap;
 	private RandomAccessFile randomAccess;
+	private FileChannel channel;
+	private final ByteBuffer qtlBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+	private final ByteBuffer interactionBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+	private boolean qtlBufferWriting = false;
+	private boolean interactionBufferWriting = false;
+	private long qtlBufferStart = Long.MIN_VALUE;
+	private long interactionBufferStart = Long.MIN_VALUE;
 
 	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariats, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) throws BinaryInteractionFileException, FileNotFoundException, IOException {
 		this.interactionFile = interactionFile;
@@ -131,6 +143,14 @@ public class BinaryInteractionFile implements Closeable {
 			if (covariatesMap.put(covariats[i], i) != NO_ENTRY_INT_MAP) {
 				throw new BinaryInteractionFileException("Cannot store the same covariate twice (" + covariats[i] + ")");
 			}
+		}
+
+		if (this.sizeQtlBlock >= BUFFER_SIZE) {
+			throw new BinaryInteractionFileException("QTL block size larger than buffer");
+		}
+
+		if (this.sizeInteractionBlock >= BUFFER_SIZE) {
+			throw new BinaryInteractionFileException("Interaction block size larger than buffer");
 		}
 
 		this.open();
@@ -486,8 +506,20 @@ public class BinaryInteractionFile implements Closeable {
 		return Collections.unmodifiableList(Arrays.asList(covariats));
 	}
 
-	public void makeReadOnly() {
+	public void finalizeWriting() throws IOException, BinaryInteractionFileException {
 		if (!readOnly) {
+
+			if (qtlBufferWriting) {
+				writeQtlBuffer();
+			}
+
+			if (interactionBufferWriting) {
+				writeInteractionBuffer();
+			}
+
+			randomAccess.seek(POINTER_TO_CLOSED_BOOLEAN);
+			randomAccess.writeBoolean(true);
+
 			this.close();
 			readOnly = true;
 			try {
@@ -499,14 +531,9 @@ public class BinaryInteractionFile implements Closeable {
 	}
 
 	@Override
-	public void close() {
-		try {
-			randomAccess.seek(POINTER_TO_CLOSED_BOOLEAN);
-			randomAccess.writeBoolean(true);
-			randomAccess.close();
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
+	public void close() throws IOException {
+		channel.close();
+		randomAccess.close();
 	}
 
 	private void open() throws FileNotFoundException, IOException {
@@ -515,9 +542,10 @@ public class BinaryInteractionFile implements Closeable {
 			randomAccess.seek(POINTER_TO_CLOSED_BOOLEAN);
 			randomAccess.writeBoolean(false);
 		}
+		channel = randomAccess.getChannel();
 	}
 
-	public long getQtlPointer(String variantName, String geneName) throws BinaryInteractionFileException {
+	private long getQtlPointer(String variantName, String geneName) throws BinaryInteractionFileException {
 
 		int variantIndex = variantMap.get(variantName);
 		int geneIndex = genesMap.get(geneName);
@@ -565,18 +593,300 @@ public class BinaryInteractionFile implements Closeable {
 		}
 
 		int variantGeneIndex = cummulativeGeneCountUpToVariant[variantIndex] + geneIndexInVariant;
-		
+
 		int variantGeneCovariateIndex;
-		if(allCovariants){
+		if (allCovariants) {
 			variantGeneCovariateIndex = covariateIndex;
 		} else {
 			variantGeneCovariateIndex = Arrays.binarySearch(covariatesTested[variantGeneIndex], covariateIndex);
-			if(variantGeneCovariateIndex < 0 ){
+			if (variantGeneCovariateIndex < 0) {
 				throw new BinaryInteractionFileException("Cannot find covariate " + covariateName + " for: " + variantName + "-" + geneName);
 			}
 		}
 
 		return startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] + variantGeneCovariateIndex * sizeInteractionBlock);
+
+	}
+
+	public BinaryInteractionQtlZscores readQtlResults(String variantName, String geneName) throws BinaryInteractionFileException, IOException {
+
+		//Check will be done in get pointer
+		long qtlPointer = getQtlPointer(variantName, geneName);
+
+		setQtlBuffer(qtlPointer, false);
+
+		double[] zscore = new double[cohorts.length];
+		for (int i = 0; i < cohorts.length; i++) {
+			zscore[i] = qtlBuffer.getDouble();
+		}
+
+		int[] sampleCounts = new int[cohorts.length];
+		for (int i = 0; i < cohorts.length; i++) {
+			sampleCounts[i] = qtlBuffer.getInt();
+		}
+
+		if (metaAnalysis) {
+			double metaZscore = qtlBuffer.getDouble();
+			return new BinaryInteractionQtlZscores(zscore, sampleCounts, metaZscore);
+		} else {
+			return new BinaryInteractionQtlZscores(zscore, sampleCounts);
+		}
+
+	}
+
+	public void setQtlResults(String variantName, String geneName, BinaryInteractionQtlZscores zscores) throws BinaryInteractionFileException, IOException {
+
+		if (zscores.getZscore().length != cohorts.length) {
+			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getZscore().length + " Z-scores");
+		}
+
+		if (zscores.getSampleCounts().length != cohorts.length) {
+			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getSampleCounts().length + " samples counts");
+		}
+
+		//Check will be done in get pointer
+		long qtlPointer = getQtlPointer(variantName, geneName);
+
+		setQtlBuffer(qtlPointer, true);
+
+		for (int i = 0; i < cohorts.length; i++) {
+			qtlBuffer.putDouble(zscores.getZscore()[i]);
+		}
+
+		for (int i = 0; i < cohorts.length; i++) {
+			qtlBuffer.putInt(zscores.getSampleCounts()[i]);
+		}
+
+		if (metaAnalysis) {
+			qtlBuffer.putDouble(zscores.getMetaZscore());
+		}
+
+	}
+
+	/**
+	 * Set the QTL buffer at the position to start reading from qtlPointer.
+	 *
+	 * @param qtlPointer
+	 * @param writing
+	 * @throws BinaryInteractionFileException
+	 * @throws IOException
+	 */
+	private void setQtlBuffer(long qtlPointer, boolean writing) throws BinaryInteractionFileException, IOException {
+
+		if (writing) {
+
+			if (qtlBufferWriting && qtlPointer == qtlBufferStart + qtlBuffer.position() && qtlBuffer.remaining() >= sizeQtlBlock) {
+				//Current write buffer;
+				//return;
+			} else {
+				if (qtlBufferWriting) {
+					writeQtlBuffer();
+				}
+				qtlBuffer.clear();
+				qtlBufferWriting = true;
+				qtlBufferStart = qtlPointer;
+				//return;
+			}
+
+		} else { //reading 
+
+			if (qtlBufferWriting) {
+				writeQtlBuffer();
+			}
+
+			if (qtlPointer >= qtlBufferStart && (qtlPointer + sizeQtlBlock) <= qtlBufferStart + qtlBuffer.limit()) {
+				int positionInBuffer = (int) (qtlPointer - qtlBufferStart);
+				qtlBuffer.position(positionInBuffer);
+				//return;
+			} else {
+				channel.position(qtlPointer);
+				qtlBuffer.clear();
+				channel.read(qtlBuffer);
+				qtlBuffer.flip();
+				//return;
+			}
+
+		}
+
+	}
+
+	private void writeQtlBuffer() throws BinaryInteractionFileException, IOException {
+		if (readOnly) {
+			throw new BinaryInteractionFileException("Interaction file is in read only mode");
+		}
+		if (!qtlBufferWriting) {
+			throw new BinaryInteractionFileException("Interaction file has no QTLs to write");
+		}
+
+		channel.position(qtlBufferStart);
+		qtlBuffer.flip();
+		channel.write(qtlBuffer);
+		qtlBufferWriting = false;
+
+	}
+
+	public BinaryInteractionZscores readInteractionResults(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException, IOException {
+
+		//Check will be done in get pointer
+		long interactionPointer = getInteractionPointer(variantName, geneName, covariateName);
+
+		setInteactionBuffer(interactionPointer, false);
+
+
+		final int[] samplesInteractionCohort = readIntArrayFromInteractionBuffer(cohorts.length);
+		final double[] zscoreSnpCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
+		final double[] zscoreCovariateCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
+		final double[] zscoreInteractionCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
+		final double[] rSquaredCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
+		final double[] zscoreInteractionFlippedCohort;
+		if (flippedZscoreStored) {
+			zscoreInteractionFlippedCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
+		} else {
+			zscoreInteractionFlippedCohort = new double[cohorts.length];
+			Arrays.fill(zscoreInteractionFlippedCohort, Double.NaN);
+		}
+		if (metaAnalysis) {
+			final double zscoreSnpMeta = interactionBuffer.getDouble();
+			final double zscoreCovariateMeta = interactionBuffer.getDouble();
+			final double zscoreInteractionMeta = interactionBuffer.getDouble();
+			if (flippedZscoreStored) {
+				final double zscoreInteractionFlippedMeta = interactionBuffer.getDouble();
+				return new BinaryInteractionZscores(samplesInteractionCohort, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreInteractionFlippedCohort, zscoreSnpMeta, zscoreCovariateMeta, zscoreInteractionMeta, zscoreInteractionFlippedMeta);
+			} else {
+				return new BinaryInteractionZscores(samplesInteractionCohort, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreSnpMeta, zscoreCovariateMeta, zscoreInteractionMeta);
+			}
+		} else {
+			return new BinaryInteractionZscores(samplesInteractionCohort, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreInteractionFlippedCohort);
+		}
+	}
+
+	public void setInteractionResults(String variantName, String geneName, String covariateName, BinaryInteractionZscores zscores) throws BinaryInteractionFileException, IOException {
+
+		if (zscores.getSamplesInteractionCohort().length != cohorts.length) {
+			throw new BinaryInteractionFileException("Error setting interaction " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getSamplesInteractionCohort().length + " cohorts");
+		}
+
+		//Check will be done in get pointer
+		long interactionPointer = getInteractionPointer(variantName, geneName, covariateName);
+
+		setInteactionBuffer(interactionPointer, true);
+
+		writeIntArrayToInteractionBuffer(zscores.getSamplesInteractionCohort());
+		writeDoubleArrayToInteractionBuffer(zscores.getZscoreSnpCohort());
+		writeDoubleArrayToInteractionBuffer(zscores.getZscoreCovariateCohort());
+		writeDoubleArrayToInteractionBuffer(zscores.getZscoreInteractionCohort());
+		writeDoubleArrayToInteractionBuffer(zscores.getrSquaredCohort());
+		if(flippedZscoreStored){
+			writeDoubleArrayToInteractionBuffer(zscores.getZscoreInteractionFlippedCohort());
+		}
 		
+		if(metaAnalysis){
+			interactionBuffer.putDouble(zscores.getZscoreSnpMeta());
+			interactionBuffer.putDouble(zscores.getZscoreCovariateMeta());
+			interactionBuffer.putDouble(zscores.getZscoreInteractionMeta());
+			if(flippedZscoreStored){
+				interactionBuffer.putDouble(zscores.getZscoreInteractionFlippedMeta());
+			}
+		}
+
+	}
+
+	/**
+	 * Set the interaction buffer at the position to start reading or writing
+	 * from interactionPointer.
+	 *
+	 * @param interactionPointer
+	 * @param writing
+	 * @throws BinaryInteractionFileException
+	 * @throws IOException
+	 */
+	private void setInteactionBuffer(long interactionPointer, boolean writing) throws BinaryInteractionFileException, IOException {
+
+		if (writing) {
+
+			if (interactionBufferWriting && interactionPointer == interactionBufferStart + interactionBuffer.position() && interactionBuffer.remaining() >= sizeInteractionBlock) {
+				//Current write buffer;
+				//return;
+			} else {
+				if (interactionBufferWriting) {
+					writeInteractionBuffer();
+				}
+				interactionBuffer.clear();
+				interactionBufferWriting = true;
+				interactionBufferStart = interactionPointer;
+				//return;
+			}
+
+		} else { //reading 
+
+			if (interactionBufferWriting) {
+				writeInteractionBuffer();
+			}
+
+			if (interactionPointer >= interactionBufferStart && (interactionPointer + sizeInteractionBlock) <= interactionBufferStart + interactionBuffer.limit()) {
+				int positionInBuffer = (int) (interactionPointer - interactionBufferStart);
+				interactionBuffer.position(positionInBuffer);
+				//return;
+			} else {
+				channel.position(interactionPointer);
+				interactionBuffer.clear();
+				channel.read(interactionBuffer);
+				interactionBuffer.flip();
+				//return;
+			}
+
+		}
+
+
+
+	}
+
+	private void writeInteractionBuffer() throws BinaryInteractionFileException, IOException {
+		if (readOnly) {
+			throw new BinaryInteractionFileException("Interaction file is in read only mode");
+		}
+		if (!interactionBufferWriting) {
+			throw new BinaryInteractionFileException("Interaction file has no interactions to write");
+		}
+
+		channel.position(interactionBufferStart);
+		interactionBuffer.flip();
+		channel.write(interactionBuffer);
+		interactionBufferWriting = false;
+
+	}
+
+	private double[] readDoubleArrayFromInteractionBuffer(int length) {
+		if (length == 0) {
+			return BinaryInteractionZscores.emptyDoubleArray;
+		}
+		double[] array = new double[length];
+		for (int i = 0; i < length; ++i) {
+			array[i] = interactionBuffer.getDouble();
+		}
+		return array;
+	}
+
+	private int[] readIntArrayFromInteractionBuffer(int length) {
+		if (length == 0) {
+			return BinaryInteractionZscores.emptyIntArray;
+		}
+		int[] array = new int[length];
+		for (int i = 0; i < length; ++i) {
+			array[i] = interactionBuffer.getInt();
+		}
+		return array;
+	}
+	
+	private void writeDoubleArrayToInteractionBuffer(double[] array){
+		for (int i = 0; i < array.length; ++i) {
+			interactionBuffer.putDouble(array[i]);
+		}
+	}
+	
+	private void writeIntArrayToInteractionBuffer(int[] array){
+		for (int i = 0; i < array.length; ++i) {
+			interactionBuffer.putInt(array[i]);
+		}
 	}
 }
