@@ -41,7 +41,6 @@ public class BinaryInteractionFileCreator {
 	private final TObjectIntHashMap<String> genesMap;
 	private final TObjectIntHashMap<String> covariatesMap;
 	private int[] variantCummulativeGeneCounts;
-	private int variantGenesWithCovariatesAdded = 0;
 	private boolean sortedIndices = false;
 	private final File file;
 	private boolean created = false;
@@ -220,6 +219,10 @@ public class BinaryInteractionFileCreator {
 		System.out.println("variantCummulativeGeneCounts[variantIndex] " + variantCummulativeGeneCounts[variantIndex]);
 		
 		int indexInCovariatesTested = variantCummulativeGeneCounts[variantIndex] + variantGenePointerIndex;
+		
+		if(covariatesTested[indexInCovariatesTested] != null){
+			throw new BinaryInteractionFileException("Already added interactions for: " + variantName + "-" + geneName);
+		}
 
 		if (indexInCovariatesTested >= covariatesTested.length) {
 			throw new BinaryInteractionFileException("Something has gone wrong :(");
@@ -227,8 +230,6 @@ public class BinaryInteractionFileCreator {
 
 		System.out.println("index: " + indexInCovariatesTested);
 		covariatesTested[indexInCovariatesTested] = variantGeneCovariateArray;
-
-		++variantGenesWithCovariatesAdded;
 
 	}
 
@@ -246,10 +247,6 @@ public class BinaryInteractionFileCreator {
 
 		if (allCovariants) {
 			interactions = (long) countVariantGeneCombinations * (long) covariats.length;
-		}
-
-		if (!allCovariants && variantGenesWithCovariatesAdded != countVariantGeneCombinations) {
-			throw new BinaryInteractionFileException("Trying to create binary file without setting covariates for all variant-gene combinations");
 		}
 
 		HashSet<Allele> alleles = createAlleleDictionary(variants);
@@ -333,10 +330,14 @@ public class BinaryInteractionFileCreator {
 
 		if (!allCovariants) {
 			for (int i = 0; i < covariatesTested.length; ++i) {
-				System.out.println(covariatesTested[i].length);
-				dataOutputStream.writeInt(covariatesTested[i].length);
-				writeIntArray(dataOutputStream, covariatesTested[i]);
+				if(covariatesTested[i] == null){
+					dataOutputStream.writeInt(0);
+				} else {
+					dataOutputStream.writeInt(covariatesTested[i].length);
+					writeIntArray(dataOutputStream, covariatesTested[i]);
+				}
 			}
+			
 		}
 
 		long startData = dataOutputStream.size();
@@ -354,10 +355,15 @@ public class BinaryInteractionFileCreator {
 			startNormalQtlSection = -1;
 		}
 
+		System.out.println("sizeNormalQtlSection" + sizeNormalQtlSection);
+		System.out.println("startNormalQtlSection " + startNormalQtlSection);
 
 		final long startInteractionSection = startData + sizeNormalQtlSection;
-		final long sizeInteractionBlock = calculateSizeInteractionResultBlock(cohorts.length, flippedZscoreStored, metaAnalysis);
+		final long sizeInteractionBlock = calculateSizeInteractionResultBlock(cohorts.length, flippedZscoreStored, metaAnalysis) * interactions;
 
+		System.out.println("startInteractionSection" + startInteractionSection);
+		System.out.println("sizeInteractionBlock " + sizeInteractionBlock);
+		
 		RandomAccessFile fileRandomAccess = new RandomAccessFile(file, "rw"); //rw stands for open in read/write mode.
 		fileRandomAccess.setLength(startData + sizeNormalQtlSection + sizeInteractionBlock);
 

@@ -119,7 +119,7 @@ public class BinaryInteractionFile implements Closeable {
 		}
 
 		System.out.println("cummulativeGeneCountUpToVariant[variants.length]: " + cummulativeGeneCountUpToVariant[variants.length]);
-		
+
 		if (cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]] != interactions) {
 			System.out.println(cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]]);
 			System.out.println(interactions);
@@ -231,7 +231,7 @@ public class BinaryInteractionFile implements Closeable {
 			final int totalVariantGeneCombinations = getTotalVariantGeneCombinations(variants);
 
 			if (!allCovariants) {
-				readCovariantsData(inputStream, totalVariantGeneCombinations, totalInteractions);
+				builder.setCovariatesTested(readCovariantsData(inputStream, totalVariantGeneCombinations, totalInteractions));
 			}
 
 			final long startData = inputStreamCounted.getCount();
@@ -254,10 +254,10 @@ public class BinaryInteractionFile implements Closeable {
 
 			builder.setStartInteractionBlock(startInteractionSection);
 
-			final long sizeInteractionBlock = calculateSizeInteractionResultBlock(chortsCount, flippedZscoreStored, metaAnalysis);
+			final long sizeInteractionSection = calculateSizeInteractionResultBlock(chortsCount, flippedZscoreStored, metaAnalysis) * totalInteractions;
 
-			if (startData + sizeNormalQtlSection + sizeInteractionBlock != interactionFile.length()) {
-				throw new BinaryInteractionFileException("Incorrect file size. Expected: " + (startData + sizeNormalQtlSection + sizeInteractionBlock) + " found: " + interactionFile.length() + " diff: " + (startData + sizeNormalQtlSection + sizeInteractionBlock - interactionFile.length()));
+			if (startData + sizeNormalQtlSection + sizeInteractionSection != interactionFile.length()) {
+				throw new BinaryInteractionFileException("Incorrect file size. Expected: " + (startData + sizeNormalQtlSection + sizeInteractionSection) + " found: " + interactionFile.length() + " diff: " + (startData + sizeNormalQtlSection + sizeInteractionSection - interactionFile.length()));
 			}
 
 			inputStream.close();
@@ -377,6 +377,7 @@ public class BinaryInteractionFile implements Closeable {
 		for (int i = 0; i < totalSnpGeneCombinations; ++i) {
 			int covariatsCount = inputStream.readInt();
 			testedCovariats[i] = readIntArray(inputStream, covariatsCount);
+			System.out.println("testedCovariats[i]" + Arrays.toString(testedCovariats[i]));
 			interactionSumCovariats += testedCovariats[i].length;
 		}
 
@@ -607,12 +608,16 @@ public class BinaryInteractionFile implements Closeable {
 			}
 		}
 
-		return startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] + variantGeneCovariateIndex * sizeInteractionBlock);
+		return startInteractionBlock + ((cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] + variantGeneCovariateIndex) * sizeInteractionBlock);
 
 	}
 
 	public BinaryInteractionQtlZscores readQtlResults(String variantName, String geneName) throws BinaryInteractionFileException, IOException {
 
+		if(!normalQtlStored){
+			throw new BinaryInteractionFileException("This file does not store normal QTL restuls");
+		}
+		
 		//Check will be done in get pointer
 		long qtlPointer = getQtlPointer(variantName, geneName);
 
@@ -638,6 +643,10 @@ public class BinaryInteractionFile implements Closeable {
 	}
 
 	public void setQtlResults(String variantName, String geneName, BinaryInteractionQtlZscores zscores) throws BinaryInteractionFileException, IOException {
+		
+		if(!normalQtlStored){
+			throw new BinaryInteractionFileException("This file does not store normal QTL restuls");
+		}
 
 		if (zscores.getZscore().length != cohorts.length) {
 			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getZscore().length + " Z-scores");
@@ -775,6 +784,8 @@ public class BinaryInteractionFile implements Closeable {
 		//Check will be done in get pointer
 		long interactionPointer = getInteractionPointer(variantName, geneName, covariateName);
 
+		System.out.println("writing pointer interaction: " + interactionPointer);
+		
 		setInteactionBuffer(interactionPointer, true);
 
 		writeIntArrayToInteractionBuffer(zscores.getSamplesInteractionCohort());
@@ -782,15 +793,15 @@ public class BinaryInteractionFile implements Closeable {
 		writeDoubleArrayToInteractionBuffer(zscores.getZscoreCovariateCohort());
 		writeDoubleArrayToInteractionBuffer(zscores.getZscoreInteractionCohort());
 		writeDoubleArrayToInteractionBuffer(zscores.getrSquaredCohort());
-		if(flippedZscoreStored){
+		if (flippedZscoreStored) {
 			writeDoubleArrayToInteractionBuffer(zscores.getZscoreInteractionFlippedCohort());
 		}
-		
-		if(metaAnalysis){
+
+		if (metaAnalysis) {
 			interactionBuffer.putDouble(zscores.getZscoreSnpMeta());
 			interactionBuffer.putDouble(zscores.getZscoreCovariateMeta());
 			interactionBuffer.putDouble(zscores.getZscoreInteractionMeta());
-			if(flippedZscoreStored){
+			if (flippedZscoreStored) {
 				interactionBuffer.putDouble(zscores.getZscoreInteractionFlippedMeta());
 			}
 		}
@@ -811,12 +822,14 @@ public class BinaryInteractionFile implements Closeable {
 		if (writing) {
 
 			if (interactionBufferWriting && interactionPointer == interactionBufferStart + interactionBuffer.position() && interactionBuffer.remaining() >= sizeInteractionBlock) {
+				System.out.println("Use current writer");
 				//Current write buffer;
 				//return;
 			} else {
 				if (interactionBufferWriting) {
 					writeInteractionBuffer();
 				}
+				System.out.println("Create new write buffer");
 				interactionBuffer.clear();
 				interactionBufferWriting = true;
 				interactionBufferStart = interactionPointer;
@@ -829,7 +842,7 @@ public class BinaryInteractionFile implements Closeable {
 				System.out.println("Set write buffer to read");
 				writeInteractionBuffer();
 			}
-			
+
 			if (interactionPointer >= interactionBufferStart && (interactionPointer + sizeInteractionBlock) <= interactionBufferStart + interactionBuffer.limit()) {
 				int positionInBuffer = (int) (interactionPointer - interactionBufferStart);
 				interactionBuffer.position(positionInBuffer);
@@ -872,6 +885,11 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		double[] array = new double[length];
 		for (int i = 0; i < length; ++i) {
+//			interactionBuffer.mark();
+//			for (int j = 0; j < 8; ++j) {
+//				System.out.println(i + " - " + interactionBuffer.get());
+//			}
+//			interactionBuffer.reset();
 			array[i] = interactionBuffer.getDouble();
 		}
 		return array;
@@ -887,14 +905,14 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		return array;
 	}
-	
-	private void writeDoubleArrayToInteractionBuffer(double[] array){
+
+	private void writeDoubleArrayToInteractionBuffer(double[] array) {
 		for (int i = 0; i < array.length; ++i) {
 			interactionBuffer.putDouble(array[i]);
 		}
 	}
-	
-	private void writeIntArrayToInteractionBuffer(int[] array){
+
+	private void writeIntArrayToInteractionBuffer(int[] array) {
 		for (int i = 0; i < array.length; ++i) {
 			interactionBuffer.putInt(array[i]);
 		}
