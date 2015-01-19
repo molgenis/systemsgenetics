@@ -113,10 +113,13 @@ public class BinaryInteractionFile implements Closeable {
 				int variantGeneCount = variants[v].getGeneCount();
 				for (int g = 0; g < variantGeneCount; ++g) {
 					cummalitiveInteractionCountUptoVariantGene[i] = cummalitiveInteractionCountUptoVariantGene[i - 1] + (allCovariants ? covariats.length : this.covariatesTested[i - 1].length);
+					++i;
 				}
 			}
 		}
 
+		System.out.println("cummulativeGeneCountUpToVariant[variants.length]: " + cummulativeGeneCountUpToVariant[variants.length]);
+		
 		if (cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]] != interactions) {
 			System.out.println(cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]]);
 			System.out.println(interactions);
@@ -697,12 +700,15 @@ public class BinaryInteractionFile implements Closeable {
 			if (qtlPointer >= qtlBufferStart && (qtlPointer + sizeQtlBlock) <= qtlBufferStart + qtlBuffer.limit()) {
 				int positionInBuffer = (int) (qtlPointer - qtlBufferStart);
 				qtlBuffer.position(positionInBuffer);
+				System.out.println("reuse qtl");
 				//return;
 			} else {
+				System.out.println("load qtl");
 				channel.position(qtlPointer);
 				qtlBuffer.clear();
 				channel.read(qtlBuffer);
 				qtlBuffer.flip();
+				qtlBufferStart = qtlPointer;
 				//return;
 			}
 
@@ -820,18 +826,22 @@ public class BinaryInteractionFile implements Closeable {
 		} else { //reading 
 
 			if (interactionBufferWriting) {
+				System.out.println("Set write buffer to read");
 				writeInteractionBuffer();
 			}
-
+			
 			if (interactionPointer >= interactionBufferStart && (interactionPointer + sizeInteractionBlock) <= interactionBufferStart + interactionBuffer.limit()) {
 				int positionInBuffer = (int) (interactionPointer - interactionBufferStart);
 				interactionBuffer.position(positionInBuffer);
+				System.out.println("Using current read buffer");
 				//return;
 			} else {
 				channel.position(interactionPointer);
 				interactionBuffer.clear();
 				channel.read(interactionBuffer);
 				interactionBuffer.flip();
+				interactionBufferStart = interactionPointer;
+				System.out.println("Loaded new read buffer");
 				//return;
 			}
 

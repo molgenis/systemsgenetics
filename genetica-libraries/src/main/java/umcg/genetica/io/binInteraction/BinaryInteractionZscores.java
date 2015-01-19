@@ -146,6 +146,8 @@ public class BinaryInteractionZscores {
 		return zscoreInteractionFlippedMeta;
 	}
 	
-	
+	public int getCohortCount(){
+		return zscoreInteractionCohort.length;
+	}
 	
 }

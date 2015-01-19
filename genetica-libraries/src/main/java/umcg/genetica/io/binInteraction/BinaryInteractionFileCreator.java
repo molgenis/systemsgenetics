@@ -75,18 +75,27 @@ public class BinaryInteractionFileCreator {
 		covariatesMap = new TObjectIntHashMap<String>(covariats.length, 0.75f, -1);
 
 		for (int i = 0; i < variants.length; ++i) {
+			if(variants[i] == null){
+				throw new BinaryInteractionFileException("Variant not set at index: " + i);
+			}
 			if (variantMap.put(variants[i].getName(), i) != NO_ENTRY_INT_MAP) {
 				throw new BinaryInteractionFileException("Cannot store the same variant twice (" + variants[i].getName() + ")");
 			}
 		}
 
 		for (int i = 0; i < genes.length; ++i) {
+			if(genes[i] == null){
+				throw new BinaryInteractionFileException("Gene not set at index: " + i);
+			}
 			if (genesMap.put(genes[i].getName(), i) != NO_ENTRY_INT_MAP) {
 				throw new BinaryInteractionFileException("Cannot store the same gene twice (" + genes[i].getName() + ")");
 			}
 		}
 
 		for (int i = 0; i < covariats.length; ++i) {
+			if(covariats[i] == null){
+				throw new BinaryInteractionFileException("Covariate not set at index: " + i);
+			}
 			if (covariatesMap.put(covariats[i], i) != NO_ENTRY_INT_MAP) {
 				throw new BinaryInteractionFileException("Cannot store the same covariate twice (" + covariats[i] + ")");
 			}
@@ -94,6 +103,9 @@ public class BinaryInteractionFileCreator {
 
 		HashSet<String> tmp = new HashSet<String>(cohorts.length);
 		for (int i = 0; i < cohorts.length; ++i) {
+			if(cohorts[i] == null){
+				throw new BinaryInteractionFileException("Cohort not set at index: " + i);
+			}
 			if (!tmp.add(cohorts[i].getName())) {
 				throw new BinaryInteractionFileException("Cannot store the same cohort twice (" + cohorts[i] + ")");
 			}
@@ -156,11 +168,12 @@ public class BinaryInteractionFileCreator {
 		if (!startedAddingCovariates) {
 			startedAddingCovariates = true;
 			covariatesTested = new int[countVariantGeneCombinations][];
-			variantCummulativeGeneCounts = new int[variants.length];
-			variantCummulativeGeneCounts[0] = variants[0].getGeneCount();
-			for (int i = 1; i < variants.length; ++i) {
-				variantCummulativeGeneCounts[i] = variantCummulativeGeneCounts[i - 1] + variants[i].getGeneCount();
+			variantCummulativeGeneCounts = new int[variants.length + 1];
+			for (int i = 0; i < variants.length; ++i) {
+				System.out.println(variantCummulativeGeneCounts[i] + variants[i].getGeneCount());
+				variantCummulativeGeneCounts[i + 1] = variantCummulativeGeneCounts[i] + variants[i].getGeneCount();
 			}
+			System.out.println(covariatesTested.length);
 		}
 
 		int variantIndex = variantMap.get(variantName);
@@ -177,6 +190,11 @@ public class BinaryInteractionFileCreator {
 		BinaryInteractionVariantCreator variant = variants[variantIndex];
 
 		int variantGenePointerIndex = variant.getIndexOfGenePointer(geneIndex);
+		
+		System.out.println(geneName);
+		System.out.println(variantName);
+		System.out.println("variantGenePointerIndex " + variantGenePointerIndex);
+		System.out.println("variant index: " + variantIndex);
 
 		if (variantGenePointerIndex < 0) {
 			throw new BinaryInteractionFileException("Cannot add a interaction variant-gene combination does not exist: " + variantName + "-" + geneName);
@@ -199,12 +217,15 @@ public class BinaryInteractionFileCreator {
 
 		Arrays.sort(variantGeneCovariateArray);
 
-		int indexInCovariatesTested = variantCummulativeGeneCounts[variantIndex - 1] + variantGenePointerIndex;
+		System.out.println("variantCummulativeGeneCounts[variantIndex] " + variantCummulativeGeneCounts[variantIndex]);
+		
+		int indexInCovariatesTested = variantCummulativeGeneCounts[variantIndex] + variantGenePointerIndex;
 
 		if (indexInCovariatesTested >= covariatesTested.length) {
 			throw new BinaryInteractionFileException("Something has gone wrong :(");
 		}
 
+		System.out.println("index: " + indexInCovariatesTested);
 		covariatesTested[indexInCovariatesTested] = variantGeneCovariateArray;
 
 		++variantGenesWithCovariatesAdded;
@@ -312,6 +333,7 @@ public class BinaryInteractionFileCreator {
 
 		if (!allCovariants) {
 			for (int i = 0; i < covariatesTested.length; ++i) {
+				System.out.println(covariatesTested[i].length);
 				dataOutputStream.writeInt(covariatesTested[i].length);
 				writeIntArray(dataOutputStream, covariatesTested[i]);
 			}
