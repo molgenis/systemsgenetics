@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import org.apache.mahout.math.Arrays;
-import org.junit.BeforeClass;
 import org.molgenis.genotype.Allele;
 import org.testng.annotations.Test;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
