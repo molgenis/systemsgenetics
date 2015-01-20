@@ -45,9 +45,9 @@ public class BinaryInteractionFileTest {
 			@Override
 			public void run() {
 				for (File file : tmpOutputFolder.listFiles()) {
-						//file.delete();
+						file.delete();
 				}
-				//tmpOutputFolder.delete();
+				tmpOutputFolder.delete();
 			}
 		});
 
