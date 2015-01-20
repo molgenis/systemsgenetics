@@ -192,9 +192,14 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
 			// convert vcf sample alleles to Alleles
 			List<Alleles> alleles = new ArrayList<Alleles>(nrSamples);
-			for (VcfSample vcfSample : vcfRecord.getSamples()) {
-				List<Allele> vcfAlleles = vcfSample.getAlleles();
-				alleles.add(Alleles.createAlleles(vcfAlleles));
+			
+			try { 
+				for (VcfSample vcfSample : vcfRecord.getSamples()) {
+					List<Allele> vcfAlleles = vcfSample.getAlleles();
+					alleles.add(Alleles.createAlleles(vcfAlleles));
+				}
+			} catch (NumberFormatException ex){
+				throw new GenotypeDataException("Error parsing variant: " + variant.getPrimaryVariantId() + " at " + variant.getSequenceName() + ":" + variant.getStartPos(), ex);
 			}
 			return alleles;
 

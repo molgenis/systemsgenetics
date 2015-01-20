@@ -1,5 +1,6 @@
 package org.molgenis.vcf;
 
+import com.google.common.base.CharMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import org.molgenis.genotype.Allele;
@@ -91,7 +92,12 @@ public class VcfSample
 					} else {
 						String alleleIndexStr = j == nrGenotypeChars - 1 ? genotype.substring(start) : genotype.substring(start, j);
 						if (!alleleIndexStr.equals(".")) {
-							int alleleIndex = Integer.parseInt(alleleIndexStr);
+							int alleleIndex;
+							try {
+								alleleIndex = Integer.parseInt(alleleIndexStr);
+							} catch (NumberFormatException ex){
+								alleleIndex = Integer.parseInt(CharMatcher.JAVA_ISO_CONTROL.removeFrom(alleleIndexStr));
+							}
 							if(alleleIndex == 0)
 								cachedAlleles.add(referenceAllele);
 							else

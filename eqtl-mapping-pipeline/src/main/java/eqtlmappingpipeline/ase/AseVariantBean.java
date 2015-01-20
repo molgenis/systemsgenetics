@@ -27,7 +27,8 @@ public class AseVariantBean implements AseVariant{
     private double effect;
     private double LikelihoodRatioP;
     private double LikelihoodRatioD;
-	private AseMle mle;
+	private AseMleBeta mle;
+	private final String genes;
 
 	public AseVariantBean(String chr, int pos, GeneticVariantId id, Allele a1, Allele a2, IntArrayList a1Counts, IntArrayList a2Counts, DoubleArrayList pValues, ArrayList<String> sampleIds, double metaZscore, double metaPvalue, double countPearsonR) {
 		this.chr = chr;
@@ -42,6 +43,7 @@ public class AseVariantBean implements AseVariant{
 		this.metaZscore = metaZscore;
 		this.metaPvalue = metaPvalue;
 		this.countPearsonR = countPearsonR;
+		genes = "";
 	}
     
     public AseVariantBean(String outputLine[]) {
@@ -53,6 +55,8 @@ public class AseVariantBean implements AseVariant{
 		this.id = GeneticVariantId.createVariantId(outputLine[7]);
 		this.a1 = Allele.create(outputLine[9]);
 		this.a2 = Allele.create(outputLine[10]);
+		
+		this.genes = outputLine[12];
 
         this.a1Counts = new IntArrayList();
         for(String s : outputLine[13].split(",")){
@@ -140,7 +144,7 @@ public class AseVariantBean implements AseVariant{
 	}
 
 	@Override
-	public AseMle getMle() {
+	public AseMleBeta getMle() {
 		return mle;
 	}
 
@@ -162,17 +166,29 @@ public class AseVariantBean implements AseVariant{
         return pValues;
     }
 
+	@Override
     public double getEffect() {
         return effect;
     }
 
+	@Override
     public double getLikelihoodRatioP() {
         return LikelihoodRatioP;
     }
 
+	@Override
     public double getLikelihoodRatioD() {
         return LikelihoodRatioD;
     }
+
+	@Override
+	public void calculateStatistics() {
+		//empty by design
+	}
+
+	public String getGenes() {
+		return genes;
+	}
 	
 	
 }

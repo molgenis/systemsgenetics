@@ -28,6 +28,11 @@ public class CompareAseToEqtl {
 	private static final int ASE_POS_COLUMN = 6;
 	private static final int ASE_GENES_COLUMN = 12;
 	private static final int ASE_A1_COLUMN = 9;
+//	private static final int ASE_ESTIMATE_COLUMN = 5;
+//	private static final int ASE_CHR_COLUMN = 8;
+//	private static final int ASE_POS_COLUMN = 9;
+//	private static final int ASE_GENES_COLUMN = 14;
+//	private static final int ASE_A1_COLUMN = 11;
 
 	/**
 	 * @param args the command line arguments
@@ -35,11 +40,13 @@ public class CompareAseToEqtl {
 	@SuppressWarnings("ManualArrayToCollectionCopy")
 	public static void main(String[] args) throws Exception {
 
-		//eQTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_non-geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\notInGeuvadis.txt", false);
-		//eQTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation_fix\\eQTLsFDR0.05-ProbeLevel.txt", false);
-		QTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta_fix\\eQTLsFDR0.05-ProbeLevel.txt", false);
+		//QTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_non-geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta\\notInGeuvadis.txt", false);
+		QTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_all_maf0.05_call0.5_pcs100_normalizedPCA_meta_specialPermutation_fix\\eQTLsFDR0.05-ProbeLevel.txt", false);
+		//QTLTextFile eQTLsTextFile = new QTLTextFile("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\batch9_eQTLmapping\\result_geuvadis_maf0.05_call0.5_pcs100_normalizedPCA_meta_fix\\eQTLsFDR0.05-ProbeLevel.txt", false);
 
-		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\geuvadis_maskAll4_r20_a10_p2_s5_rq17_m1_gatkGenoGq30\\ase_bh.txt"));
+		BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\all_maskAll4_r20_a10_p2_s5_rq17_m1_gatkGenoGq30\\ase_bh_30000.txt"));
+		//BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\all_maskAll4_r20_a10_p2_s5_rq17_m1_gatkGenoGq30\\ase_bh.txt"));
+		//BufferedReader aseReader = new BufferedReader(new FileReader("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Ase\\all_maskAll4_r20_a10_p2_s5_rq17_m1_gatkGenoGq30\\rerun2\\ase_bh_rerun_sig.txt"));
 
 		HashMap<String, ArrayList<EQTL>> eQtls = new HashMap<String, ArrayList<EQTL>>();
 

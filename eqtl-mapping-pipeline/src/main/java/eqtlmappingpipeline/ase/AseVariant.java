@@ -30,7 +30,7 @@ public interface AseVariant extends Comparable<AseVariant> {
 
 	double getMetaZscore();
 
-	AseMle getMle();
+	AseMleBeta getMle();
 
 	DoubleArrayList getPValues();
 
@@ -40,4 +40,14 @@ public interface AseVariant extends Comparable<AseVariant> {
 
 	ArrayList<String> getSampleIds();
 
+	/**
+	 * Can do noting if not applicable
+	 */
+	void calculateStatistics();
+
+	public double getLikelihoodRatioP();
+
+	public double getLikelihoodRatioD();
+
+	public double getEffect();
 }
