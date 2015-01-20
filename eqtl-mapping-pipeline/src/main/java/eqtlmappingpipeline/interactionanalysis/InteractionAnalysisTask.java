@@ -380,13 +380,17 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         double z = 0;
         if (t < 0) {
             p = tDistColt.cdf(t);
+            if (p < 2.0E-323) {
+                p = 2.0E-323;
+
+            }
             z = cern.jet.stat.Probability.normalInverse(p);
         } else {
             p = tDistColt.cdf(-t);
-			z = -cern.jet.stat.Probability.normalInverse(p);
-        }
-        if (p < 2.0E-323) {
-            p = 2.0E-323;
+            if (p < 2.0E-323) {
+                p = 2.0E-323;
+
+            }
             z = -cern.jet.stat.Probability.normalInverse(p);
         }
         return new Pair<Double, Double>(p, z);
