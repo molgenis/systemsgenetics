@@ -118,11 +118,7 @@ public class BinaryInteractionFile implements Closeable {
 			}
 		}
 
-		System.out.println("cummulativeGeneCountUpToVariant[variants.length]: " + cummulativeGeneCountUpToVariant[variants.length]);
-
 		if (cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]] != interactions) {
-			System.out.println(cummalitiveInteractionCountUptoVariantGene[cummulativeGeneCountUpToVariant[variants.length]]);
-			System.out.println(interactions);
 			throw new BinaryInteractionFileException("Something went wrong");
 		}
 
@@ -377,7 +373,6 @@ public class BinaryInteractionFile implements Closeable {
 		for (int i = 0; i < totalSnpGeneCombinations; ++i) {
 			int covariatsCount = inputStream.readInt();
 			testedCovariats[i] = readIntArray(inputStream, covariatsCount);
-			System.out.println("testedCovariats[i]" + Arrays.toString(testedCovariats[i]));
 			interactionSumCovariats += testedCovariats[i].length;
 		}
 
@@ -709,10 +704,8 @@ public class BinaryInteractionFile implements Closeable {
 			if (qtlPointer >= qtlBufferStart && (qtlPointer + sizeQtlBlock) <= qtlBufferStart + qtlBuffer.limit()) {
 				int positionInBuffer = (int) (qtlPointer - qtlBufferStart);
 				qtlBuffer.position(positionInBuffer);
-				System.out.println("reuse qtl");
 				//return;
 			} else {
-				System.out.println("load qtl");
 				channel.position(qtlPointer);
 				qtlBuffer.clear();
 				channel.read(qtlBuffer);
@@ -783,8 +776,6 @@ public class BinaryInteractionFile implements Closeable {
 
 		//Check will be done in get pointer
 		long interactionPointer = getInteractionPointer(variantName, geneName, covariateName);
-
-		System.out.println("writing pointer interaction: " + interactionPointer);
 		
 		setInteactionBuffer(interactionPointer, true);
 
@@ -822,14 +813,12 @@ public class BinaryInteractionFile implements Closeable {
 		if (writing) {
 
 			if (interactionBufferWriting && interactionPointer == interactionBufferStart + interactionBuffer.position() && interactionBuffer.remaining() >= sizeInteractionBlock) {
-				System.out.println("Use current writer");
 				//Current write buffer;
 				//return;
 			} else {
 				if (interactionBufferWriting) {
 					writeInteractionBuffer();
 				}
-				System.out.println("Create new write buffer");
 				interactionBuffer.clear();
 				interactionBufferWriting = true;
 				interactionBufferStart = interactionPointer;
@@ -839,14 +828,12 @@ public class BinaryInteractionFile implements Closeable {
 		} else { //reading 
 
 			if (interactionBufferWriting) {
-				System.out.println("Set write buffer to read");
 				writeInteractionBuffer();
 			}
 
 			if (interactionPointer >= interactionBufferStart && (interactionPointer + sizeInteractionBlock) <= interactionBufferStart + interactionBuffer.limit()) {
 				int positionInBuffer = (int) (interactionPointer - interactionBufferStart);
 				interactionBuffer.position(positionInBuffer);
-				System.out.println("Using current read buffer");
 				//return;
 			} else {
 				channel.position(interactionPointer);
@@ -854,7 +841,6 @@ public class BinaryInteractionFile implements Closeable {
 				channel.read(interactionBuffer);
 				interactionBuffer.flip();
 				interactionBufferStart = interactionPointer;
-				System.out.println("Loaded new read buffer");
 				//return;
 			}
 

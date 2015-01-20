@@ -49,6 +49,20 @@ public class BinaryInteractionZscores {
 		this.zscoreInteractionFlippedMeta = Double.NaN;
 		checkArrays();
 	}
+	
+	public BinaryInteractionZscores(int[] samplesInteractionCohort, double[] zscoreSnpCohort, double[] zscoreCovariateCohort, double[] zscoreInteractionCohort, double[] rSquaredCohort) throws BinaryInteractionFileException {
+		this.samplesInteractionCohort = samplesInteractionCohort;
+		this.zscoreSnpCohort = zscoreSnpCohort;
+		this.zscoreCovariateCohort = zscoreCovariateCohort;
+		this.zscoreInteractionCohort = zscoreInteractionCohort;
+		this.rSquaredCohort = rSquaredCohort;
+		this.zscoreInteractionFlippedCohort = new double[samplesInteractionCohort.length];
+		this.zscoreSnpMeta = Double.NaN;
+		this.zscoreCovariateMeta = Double.NaN;
+		this.zscoreInteractionMeta = Double.NaN;
+		this.zscoreInteractionFlippedMeta = Double.NaN;
+		checkArrays();
+	}
 
 	public BinaryInteractionZscores(int[] samplesInteractionCohort, double[] zscoreSnpCohort, double[] zscoreCovariateCohort, double[] zscoreInteractionCohort, double[] rSquaredCohort, double zscoreSnpMeta, double zscoreCovariateMeta, double zscoreInteractionMeta) throws BinaryInteractionFileException {
 		this.samplesInteractionCohort = samplesInteractionCohort;

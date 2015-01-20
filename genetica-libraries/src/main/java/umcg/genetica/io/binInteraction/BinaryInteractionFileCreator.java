@@ -169,10 +169,8 @@ public class BinaryInteractionFileCreator {
 			covariatesTested = new int[countVariantGeneCombinations][];
 			variantCummulativeGeneCounts = new int[variants.length + 1];
 			for (int i = 0; i < variants.length; ++i) {
-				System.out.println(variantCummulativeGeneCounts[i] + variants[i].getGeneCount());
 				variantCummulativeGeneCounts[i + 1] = variantCummulativeGeneCounts[i] + variants[i].getGeneCount();
 			}
-			System.out.println(covariatesTested.length);
 		}
 
 		int variantIndex = variantMap.get(variantName);
@@ -189,11 +187,6 @@ public class BinaryInteractionFileCreator {
 		BinaryInteractionVariantCreator variant = variants[variantIndex];
 
 		int variantGenePointerIndex = variant.getIndexOfGenePointer(geneIndex);
-		
-		System.out.println(geneName);
-		System.out.println(variantName);
-		System.out.println("variantGenePointerIndex " + variantGenePointerIndex);
-		System.out.println("variant index: " + variantIndex);
 
 		if (variantGenePointerIndex < 0) {
 			throw new BinaryInteractionFileException("Cannot add a interaction variant-gene combination does not exist: " + variantName + "-" + geneName);
@@ -215,8 +208,6 @@ public class BinaryInteractionFileCreator {
 		}
 
 		Arrays.sort(variantGeneCovariateArray);
-
-		System.out.println("variantCummulativeGeneCounts[variantIndex] " + variantCummulativeGeneCounts[variantIndex]);
 		
 		int indexInCovariatesTested = variantCummulativeGeneCounts[variantIndex] + variantGenePointerIndex;
 		
@@ -228,7 +219,6 @@ public class BinaryInteractionFileCreator {
 			throw new BinaryInteractionFileException("Something has gone wrong :(");
 		}
 
-		System.out.println("index: " + indexInCovariatesTested);
 		covariatesTested[indexInCovariatesTested] = variantGeneCovariateArray;
 
 	}
@@ -355,14 +345,9 @@ public class BinaryInteractionFileCreator {
 			startNormalQtlSection = -1;
 		}
 
-		System.out.println("sizeNormalQtlSection" + sizeNormalQtlSection);
-		System.out.println("startNormalQtlSection " + startNormalQtlSection);
 
 		final long startInteractionSection = startData + sizeNormalQtlSection;
 		final long sizeInteractionBlock = calculateSizeInteractionResultBlock(cohorts.length, flippedZscoreStored, metaAnalysis) * interactions;
-
-		System.out.println("startInteractionSection" + startInteractionSection);
-		System.out.println("sizeInteractionBlock " + sizeInteractionBlock);
 		
 		RandomAccessFile fileRandomAccess = new RandomAccessFile(file, "rw"); //rw stands for open in read/write mode.
 		fileRandomAccess.setLength(startData + sizeNormalQtlSection + sizeInteractionBlock);
