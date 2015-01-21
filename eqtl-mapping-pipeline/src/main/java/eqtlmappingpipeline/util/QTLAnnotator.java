@@ -42,12 +42,17 @@ class QTLAnnotator {
 //                "1;1;1;10;1;11;1;4;1;4;1;4", "snp;probe;probe;probe;probe;probe", "D:\\UMCG\\ProbeMapping\\Info\\V70\\gencode.v15.annotation.gtf.gz",
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Primary\\eQTLProbesFDR0.05-ProbeLevel_ldDrivenEffectsRemoved-ExtendedInfo.txt");
 
-        addAnnotationToQTLOutput(
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs_2014\\eQTLSNPsFDR0.05-SNPLevel.txt",
-                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
-                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20;0;1-2-3-4", "snp;probe;snp;snp", null,
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs_2014\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo.txt");
+//        addAnnotationToQTLOutput(
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
+//                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
+//                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142;0;1-2-3-4", "snp;probe;snp;snp", null,
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo2.txt");
         
+        addAnnotationToQTLOutput(
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
+                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
+                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-148;0;1-2-3-4", "snp;probe;snp;snp", null,
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel_ExtendedInfo3.txt");
     }
 
     static void addAnnotationToQTLOutput(String in, String sources, String keyValuePairs, String idsToAnnotate, String reannotateGene, String out) throws IOException {
