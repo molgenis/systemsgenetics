@@ -247,6 +247,7 @@ public class Aligner {
 		System.out.println("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 
 		if (studyVariantList.isEmpty()) {
+			snpLogWriter.close();
 			throw new GenotypeAlignmentException("Zero of the input variants found in reference set. Are both datasets the same genome build? Perhapse you need use --forceChr.");
 		}
 
