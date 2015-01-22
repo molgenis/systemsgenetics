@@ -567,7 +567,7 @@ public class BinaryInteractionFile implements Closeable {
 
 	}
 
-	public long getInteractionPointer(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException {
+	private long getInteractionPointer(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException {
 
 		int variantIndex = variantMap.get(variantName);
 		int geneIndex = genesMap.get(geneName);
@@ -871,11 +871,6 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		double[] array = new double[length];
 		for (int i = 0; i < length; ++i) {
-//			interactionBuffer.mark();
-//			for (int j = 0; j < 8; ++j) {
-//				System.out.println(i + " - " + interactionBuffer.get());
-//			}
-//			interactionBuffer.reset();
 			array[i] = interactionBuffer.getDouble();
 		}
 		return array;

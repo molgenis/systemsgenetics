@@ -58,7 +58,7 @@ public class BinaryInteractionFileCreator {
 	 * @param flippedZscoreStored
 	 * @throws BinaryInteractionFileException
 	 */
-	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException {
+	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException, IOException {
 		this.file = file;
 		this.variants = variants;
 		this.genes = genes;
@@ -72,6 +72,21 @@ public class BinaryInteractionFileCreator {
 		variantMap = new TObjectIntHashMap<String>(variants.length, 0.75f, -1);
 		genesMap = new TObjectIntHashMap<String>(genes.length, 0.75f, -1);
 		covariatesMap = new TObjectIntHashMap<String>(covariats.length, 0.75f, -1);
+		
+		if(file.getParentFile() != null){
+			if(!file.getParentFile().exists() && !file.getParentFile().mkdirs()){
+				throw new IOException("Cannot create parent folder for: " + file.getAbsolutePath());	
+			}
+		}
+		
+		if(file.exists() && !file.canWrite()){
+			throw new IOException("File exists and cannot overwrite at: " + file.getAbsolutePath());
+		}
+		
+		if(!file.exists() && !file.createNewFile()){
+			throw new IOException("Cannot create: " + file.getAbsolutePath());
+		}
+		
 
 		for (int i = 0; i < variants.length; ++i) {
 			if(variants[i] == null){

@@ -1,7 +1,6 @@
 package umcg.genetica.io.binInteraction.variant;
 
 import gnu.trove.list.array.TIntArrayList;
-import java.util.Arrays;
 import org.molgenis.genotype.Allele;
 
 /**
