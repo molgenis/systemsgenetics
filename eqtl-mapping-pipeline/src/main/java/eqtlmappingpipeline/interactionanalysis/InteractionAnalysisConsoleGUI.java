@@ -32,6 +32,7 @@ public class InteractionAnalysisConsoleGUI {
         String snpprobecombofile = null;
         String covariates = null;
         String inexp = null;
+		String cohort = null;
         RUNMODE step = null;
         boolean binaryoutput = false;
 
@@ -89,6 +90,8 @@ public class InteractionAnalysisConsoleGUI {
                 gte = val;
             } else if (arg.equals("--snpprobe")) {
                 snpprobecombofile = val;
+			} else if (arg.equals("--cohort")) {
+				cohort = val;
             } else if (arg.equals("--testMatchingCovariates")) {
                 matchCovariateNamesToExpressionProbeNames = true;
             } else if (arg.equals("--threads")) {
@@ -179,6 +182,10 @@ public class InteractionAnalysisConsoleGUI {
 //                    System.err.println("Warning: yo please supply --cellcounts");
                         //kill = true;
                     }
+					if ((binaryoutput == true) && (cohort == null)) {
+						System.err.println("Error: please supply --cohort (required in binary output mode)");
+						kill = true;
+					}
 
                     if (kill) {
                         System.err.println("");
@@ -191,7 +198,7 @@ public class InteractionAnalysisConsoleGUI {
                                 snpprobecombofile,
                                 nrThreads,
                                 out,
-                                covariateList, robust, fullStats);
+                                covariateList, robust, fullStats, binaryoutput, cohort);
 //                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                     }
 
