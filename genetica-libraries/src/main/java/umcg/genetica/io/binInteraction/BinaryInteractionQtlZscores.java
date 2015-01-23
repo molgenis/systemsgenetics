@@ -27,6 +27,13 @@ public class BinaryInteractionQtlZscores {
 		checkArrays();
 	}
 	
+	public BinaryInteractionQtlZscores(double zscore, int sampleCounts) throws BinaryInteractionFileException {
+		this.zscore = new double[] {zscore};
+		this.sampleCounts = new int[] {sampleCounts};
+		this.metaZscore = Double.NaN;
+		checkArrays();
+	}
+	
 	public BinaryInteractionQtlZscores(double metaZscore) {
 		this.zscore = emptyDoubleArray;
 		this.sampleCounts = emptyIntArray;

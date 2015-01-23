@@ -14,7 +14,7 @@ public class BinaryInteractionFileConstructorBuilder {
 	private BinaryInteractionGene[] genes;
 	private BinaryInteractionVariant[] variants;
 	private int[][] covariatesTested = null;
-	private String[] covariats;
+	private String[] covariates;
 	private long timeStamp;
 	private boolean allCovariants;
 	private boolean metaAnalysis;
@@ -58,8 +58,8 @@ public class BinaryInteractionFileConstructorBuilder {
 		return this;
 	}
 
-	public BinaryInteractionFileConstructorBuilder setCovariats(String[] covariats) {
-		this.covariats = covariats;
+	public BinaryInteractionFileConstructorBuilder setCovariates(String[] covariates) {
+		this.covariates = covariates;
 		return this;
 	}
 	
@@ -109,7 +109,7 @@ public class BinaryInteractionFileConstructorBuilder {
 	}
 
 	public BinaryInteractionFile createBinaryInteractionFile() throws BinaryInteractionFileException, FileNotFoundException, IOException {
-		return new BinaryInteractionFile(interactionFile, readOnly, cohorts, genes, variants, covariats, covariatesTested, timeStamp, allCovariants, metaAnalysis, normalQtlStored, flippedZscoreStored, fileDescription, interactions, startQtlBlock, startInteractionBlock);
+		return new BinaryInteractionFile(interactionFile, readOnly, cohorts, genes, variants, covariates, covariatesTested, timeStamp, allCovariants, metaAnalysis, normalQtlStored, flippedZscoreStored, fileDescription, interactions, startQtlBlock, startInteractionBlock);
 	}
 
 }
