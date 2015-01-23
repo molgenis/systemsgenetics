@@ -8,6 +8,7 @@ import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.ase.AnnotateAseWithSnpEffVcf;
 import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.ase.AseRecalculate;
+import eqtlmappingpipeline.binaryInteraction.ConvertTextOutputToBinary;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
@@ -110,6 +111,9 @@ public class EQTLMappingPipelineConsole {
 				return;
 			} else if (mode.equals("aseR")) {
 				AseRecalculate.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("itb")) {
+				ConvertTextOutputToBinary.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
 			} else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));

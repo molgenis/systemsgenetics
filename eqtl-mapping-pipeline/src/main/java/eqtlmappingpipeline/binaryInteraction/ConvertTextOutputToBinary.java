@@ -2,6 +2,7 @@ package eqtlmappingpipeline.binaryInteraction;
 
 import au.com.bytecode.opencsv.CSVReader;
 import eqtlmappingpipeline.Main;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.lang3.StringUtils;
 import org.molgenis.genotype.Allele;
 import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;
@@ -149,25 +151,25 @@ public class ConvertTextOutputToBinary {
 			return;
 		}
 
-		final CSVReader inputInteractionReaderRun1;
+		final BufferedReader inputInteractionReaderRun1;
 		if (inputInteractionFile.getName().endsWith(".gz")) {
-			inputInteractionReaderRun1 = new CSVReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputInteractionFile)), ENCODING), '\t', '\0', 1);
+			inputInteractionReaderRun1 = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputInteractionFile)), ENCODING));
 		} else {
-			inputInteractionReaderRun1 = new CSVReader(new InputStreamReader(new FileInputStream(inputInteractionFile), ENCODING), '\t', '\0', 1);
+			inputInteractionReaderRun1 = new BufferedReader(new InputStreamReader(new FileInputStream(inputInteractionFile), ENCODING));
 		}
 		
-		final CSVReader inputInteractionReaderRun2;
+		final BufferedReader inputInteractionReaderRun2;
 		if (inputInteractionFile.getName().endsWith(".gz")) {
-			inputInteractionReaderRun2 = new CSVReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputInteractionFile)), ENCODING), '\t', '\0', 1);
+			inputInteractionReaderRun2 = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputInteractionFile)), ENCODING));
 		} else {
-			inputInteractionReaderRun2 = new CSVReader(new InputStreamReader(new FileInputStream(inputInteractionFile), ENCODING), '\t', '\0', 1);
+			inputInteractionReaderRun2 = new BufferedReader(new InputStreamReader(new FileInputStream(inputInteractionFile), ENCODING));
 		}
 
 		final CSVReader inputSnpReader;
-		if (inputInteractionFile.getName().endsWith(".gz")) {
-			inputSnpReader = new CSVReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputInteractionFile)), ENCODING), '\t', '\0', 1);
+		if (inputSnpFile.getName().endsWith(".gz")) {
+			inputSnpReader = new CSVReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputSnpFile)), ENCODING), '\t', '\0', 1);
 		} else {
-			inputSnpReader = new CSVReader(new InputStreamReader(new FileInputStream(inputInteractionFile), ENCODING), '\t', '\0', 1);
+			inputSnpReader = new CSVReader(new InputStreamReader(new FileInputStream(inputSnpFile), ENCODING), '\t', '\0', 1);
 		}
 		
 		ArrayList<BinaryInteractionVariantCreator> variants = new ArrayList<BinaryInteractionVariantCreator>();
@@ -198,11 +200,15 @@ public class ConvertTextOutputToBinary {
 		
 		System.out.println("Completed reading SNP information");
 		
-		ArrayList<BinaryInteractionGeneCreator> genes = new ArrayList<BinaryInteractionGeneCreator>();
-		ArrayList<String> covariates = new ArrayList<String>();
+		LinkedHashSet<BinaryInteractionGeneCreator> genes = new LinkedHashSet<BinaryInteractionGeneCreator>();
+		LinkedHashSet<String> covariates = new LinkedHashSet<String>();
 		LinkedHashSet<VariantGene> variantGenes = new LinkedHashSet<VariantGene>();
 		
-		while ((nextLine = inputInteractionReaderRun1.readNext()) != null) {
+		String line;
+		inputInteractionReaderRun1.readLine();
+		while ((line = inputInteractionReaderRun1.readLine()) != null) {
+			
+			nextLine = StringUtils.split(line, '\t');
 			
 			final String variantName = nextLine[0];
 			final String geneName = nextLine[1];
@@ -217,7 +223,13 @@ public class ConvertTextOutputToBinary {
 		
 		inputInteractionReaderRun1.close();
 		
-		System.out.println("Done first round parsing text file");
+		System.out.println("Completed first round parsing text file");
+		System.out.println("Detected:");
+		System.out.println(" - " + variants.size() + " variants" );
+		System.out.println(" - " + genes.size() + " genes" );
+		System.out.println(" - " + covariates.size() + " covariates" );
+		System.out.println(" - " + variantGenes.size() + " variant-gene combinations" );
+		System.out.println();
 		
 		BinaryInteractionCohort[] cohorts = {new BinaryInteractionCohort(cohortName, -1)};
 		
@@ -231,7 +243,10 @@ public class ConvertTextOutputToBinary {
 		
 		BinaryInteractionFile binaryInteractionFile = binaryFileCreator.create();
 		
-		while ((nextLine = inputInteractionReaderRun2.readNext()) != null) {
+		inputInteractionReaderRun2.readLine();
+		while ((line = inputInteractionReaderRun2.readLine()) != null) {
+			
+			nextLine = StringUtils.split(line, '\t');
 			
 			final String variantName = nextLine[0];
 			final String geneName = nextLine[1];
@@ -260,7 +275,11 @@ public class ConvertTextOutputToBinary {
 		binaryInteractionFile.finalizeWriting();
 		binaryInteractionFile.close();
 		
-		System.out.println("Writing completed");
+		System.out.println("Completed binary file");
+		System.out.println("Writen:");
+		System.out.println(" - " + binaryInteractionFile.getInteractionZscoresSet() +  " interaction with z-scores written. Using " + binaryInteractionFile.getInteractionWriteBufferFlused()+ " buffer flushes");
+		System.out.println(" - " + binaryInteractionFile.getQtlZscoresSet() + " interaction with z-scores written. Using " + binaryInteractionFile.getQtlWriteBufferFlused() + " buffer flushes");
+		
 
 	}
 	

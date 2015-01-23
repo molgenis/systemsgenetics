@@ -79,6 +79,14 @@ public class BinaryInteractionFile implements Closeable {
 	private boolean interactionBufferWriting = false;
 	private long qtlBufferStart = Long.MIN_VALUE;
 	private long interactionBufferStart = Long.MIN_VALUE;
+	private long qtlZscoresSet = 0;
+	private long interactionZscoresSet = 0;
+	private long qtlZscoresRead = 0;
+	private long interactionZscoresRead = 0;
+	private long interactionWriteBufferFlused = 0;
+	private long qtlWriteBufferFlused = 0;
+	private long interactionReadBufferLoaded = 0;
+	private long qtlReadBufferLoaded = 0;
 
 	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariats, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) throws BinaryInteractionFileException, FileNotFoundException, IOException {
 		this.interactionFile = interactionFile;
@@ -529,6 +537,38 @@ public class BinaryInteractionFile implements Closeable {
 		}
 	}
 
+	public long getQtlZscoresSet() {
+		return qtlZscoresSet;
+	}
+
+	public long getInteractionZscoresSet() {
+		return interactionZscoresSet;
+	}
+
+	public long getQtlZscoresRead() {
+		return qtlZscoresRead;
+	}
+
+	public long getInteractionZscoresRead() {
+		return interactionZscoresRead;
+	}
+
+	public long getInteractionWriteBufferFlused() {
+		return interactionWriteBufferFlused;
+	}
+
+	public long getQtlWriteBufferFlused() {
+		return qtlWriteBufferFlused;
+	}
+
+	public long getInteractionReadBufferLoaded() {
+		return interactionReadBufferLoaded;
+	}
+
+	public long getQtlReadBufferLoaded() {
+		return qtlReadBufferLoaded;
+	}
+
 	@Override
 	public void close() throws IOException {
 		channel.close();
@@ -627,6 +667,8 @@ public class BinaryInteractionFile implements Closeable {
 		for (int i = 0; i < cohorts.length; i++) {
 			sampleCounts[i] = qtlBuffer.getInt();
 		}
+		
+		++qtlZscoresRead;
 
 		if (metaAnalysis) {
 			double metaZscore = qtlBuffer.getDouble();
@@ -667,6 +709,8 @@ public class BinaryInteractionFile implements Closeable {
 		if (metaAnalysis) {
 			qtlBuffer.putDouble(zscores.getMetaZscore());
 		}
+		
+		++qtlZscoresSet;
 
 	}
 
@@ -711,6 +755,7 @@ public class BinaryInteractionFile implements Closeable {
 				channel.read(qtlBuffer);
 				qtlBuffer.flip();
 				qtlBufferStart = qtlPointer;
+				++qtlReadBufferLoaded;
 				//return;
 			}
 
@@ -730,7 +775,7 @@ public class BinaryInteractionFile implements Closeable {
 		qtlBuffer.flip();
 		channel.write(qtlBuffer);
 		qtlBufferWriting = false;
-
+		++qtlWriteBufferFlused;
 	}
 
 	public BinaryInteractionZscores readInteractionResults(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException, IOException {
@@ -740,6 +785,7 @@ public class BinaryInteractionFile implements Closeable {
 
 		setInteactionBuffer(interactionPointer, false);
 
+		++interactionZscoresRead;
 
 		final int[] samplesInteractionCohort = readIntArrayFromInteractionBuffer(cohorts.length);
 		final double[] zscoreSnpCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
@@ -796,6 +842,8 @@ public class BinaryInteractionFile implements Closeable {
 				interactionBuffer.putDouble(zscores.getZscoreInteractionFlippedMeta());
 			}
 		}
+		
+		++interactionZscoresSet;
 
 	}
 
@@ -841,6 +889,7 @@ public class BinaryInteractionFile implements Closeable {
 				channel.read(interactionBuffer);
 				interactionBuffer.flip();
 				interactionBufferStart = interactionPointer;
+				++interactionReadBufferLoaded;
 				//return;
 			}
 
@@ -862,6 +911,7 @@ public class BinaryInteractionFile implements Closeable {
 		interactionBuffer.flip();
 		channel.write(interactionBuffer);
 		interactionBufferWriting = false;
+		++interactionWriteBufferFlused;
 
 	}
 
