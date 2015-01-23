@@ -61,14 +61,14 @@ public class BinaryInteractionFileTest {
 		BinaryInteractionCohort[] cohorts = new BinaryInteractionCohort[1];
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[1];
 		BinaryInteractionVariantCreator[] variants = new BinaryInteractionVariantCreator[1];
-		String[] covariats = new String[1];
+		String[] covariates = new String[1];
 
 		cohorts[0] = new BinaryInteractionCohort("cohort1", 12);
 		genes[0] = new BinaryInteractionGeneCreator("Gene1", "Chr1", 10, 100);
 		variants[0] = new BinaryInteractionVariantCreator("Var1", "Chr2", 4, Allele.A, Allele.T);
-		covariats[0] = "CellCount";
+		covariates[0] = "CellCount";
 
-		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariats, true, true, true, true);
+		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariates, true, true, true, true);
 
 		creator.addTestedVariantGene("Var1", "Gene1");
 		creator.setDescription("Test file 1");
@@ -114,8 +114,8 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getCreationDataEpoch(), loadedInteractions.getCreationDataEpoch());
 
-		assertTrue(createdInteractions.areAllCovariatsTestedForAllVariantGenes());
-		assertTrue(loadedInteractions.areAllCovariatsTestedForAllVariantGenes());
+		assertTrue(createdInteractions.areAllCovariatesTestedForAllVariantGenes());
+		assertTrue(loadedInteractions.areAllCovariatesTestedForAllVariantGenes());
 
 		assertTrue(createdInteractions.isFlippedZscoreStored());
 		assertTrue(loadedInteractions.isFlippedZscoreStored());
@@ -175,8 +175,8 @@ public class BinaryInteractionFileTest {
 		assertEquals(loadedGene.getVariantPointers()[0], 0);
 		assertEquals(loadedGene.getVariantPointers().length, 1);
 
-		assertEquals(createdInteractions.getCovariats().get(0), "CellCount");
-		assertEquals(loadedInteractions.getCovariats().get(0), "CellCount");
+		assertEquals(createdInteractions.getCovariates().get(0), "CellCount");
+		assertEquals(loadedInteractions.getCovariates().get(0), "CellCount");
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 1l);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 1l);
@@ -193,7 +193,7 @@ public class BinaryInteractionFileTest {
 		BinaryInteractionCohort[] cohorts = new BinaryInteractionCohort[2];
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[2];
 		BinaryInteractionVariantCreator[] variants = new BinaryInteractionVariantCreator[2];
-		String[] covariats = new String[2];
+		String[] covariates = new String[2];
 
 		cohorts[0] = new BinaryInteractionCohort("cohort1", 12);
 		cohorts[1] = new BinaryInteractionCohort("cohort2", 60000);
@@ -201,14 +201,14 @@ public class BinaryInteractionFileTest {
 		genes[1] = new BinaryInteractionGeneCreator("Gene2", "ChrX", 5354467, 5351467);
 		variants[0] = new BinaryInteractionVariantCreator("Var1", "Chr2", 4, Allele.A, Allele.T);
 		variants[1] = new BinaryInteractionVariantCreator("Var2", "Chr2", 5, Allele.create("AT"), Allele.T);
-		covariats[0] = "CellCount";
-		covariats[1] = "Age";
+		covariates[0] = "CellCount";
+		covariates[1] = "Age";
 		
 		String[] covVar1Gene1 = {"CellCount", "Age"};
 		String[] covVar2Gene1 = {"CellCount"};
 		String[] covVar1Gene2 = {"Age"};
 
-		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariats, false, true, true, false);
+		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariates, false, true, true, false);
 
 		creator.addTestedVariantGene("Var1", "Gene1");
 		creator.addTestedVariantGene("Var2", "Gene1");
@@ -317,8 +317,8 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getCreationDataEpoch(), loadedInteractions.getCreationDataEpoch());
 
-		assertFalse(createdInteractions.areAllCovariatsTestedForAllVariantGenes());
-		assertFalse(loadedInteractions.areAllCovariatsTestedForAllVariantGenes());
+		assertFalse(createdInteractions.areAllCovariatesTestedForAllVariantGenes());
+		assertFalse(loadedInteractions.areAllCovariatesTestedForAllVariantGenes());
 
 		assertFalse(createdInteractions.isFlippedZscoreStored());
 		assertFalse(loadedInteractions.isFlippedZscoreStored());
@@ -423,11 +423,11 @@ public class BinaryInteractionFileTest {
 		assertEquals(loadedGene.getVariantPointers()[0], 0);
 		assertEquals(loadedGene.getVariantPointers().length, 1);
 
-		assertEquals(createdInteractions.getCovariats().get(0), "CellCount");
-		assertEquals(loadedInteractions.getCovariats().get(0), "CellCount");
+		assertEquals(createdInteractions.getCovariates().get(0), "CellCount");
+		assertEquals(loadedInteractions.getCovariates().get(0), "CellCount");
 		
-		assertEquals(createdInteractions.getCovariats().get(1), "Age");
-		assertEquals(loadedInteractions.getCovariats().get(1), "Age");
+		assertEquals(createdInteractions.getCovariates().get(1), "Age");
+		assertEquals(loadedInteractions.getCovariates().get(1), "Age");
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 4);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 4);
@@ -444,7 +444,7 @@ public class BinaryInteractionFileTest {
 		BinaryInteractionCohort[] cohorts = new BinaryInteractionCohort[2];
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[2];
 		BinaryInteractionVariantCreator[] variants = new BinaryInteractionVariantCreator[2];
-		String[] covariats = new String[2];
+		String[] covariates = new String[2];
 
 		cohorts[0] = new BinaryInteractionCohort("cohort1", 12);
 		cohorts[1] = new BinaryInteractionCohort("cohort2", 60000);
@@ -452,14 +452,14 @@ public class BinaryInteractionFileTest {
 		genes[1] = new BinaryInteractionGeneCreator("Gene2", "ChrX", 5354467, 5351467);
 		variants[0] = new BinaryInteractionVariantCreator("Var1", "Chr2", 4, Allele.A, Allele.T);
 		variants[1] = new BinaryInteractionVariantCreator("Var2", "Chr2", 5, Allele.create("AT"), Allele.T);
-		covariats[0] = "CellCount";
-		covariats[1] = "Age";
+		covariates[0] = "CellCount";
+		covariates[1] = "Age";
 		
 		String[] covVar1Gene1 = {"CellCount", "Age"};
 		String[] covVar2Gene1 = {"CellCount"};
 		String[] covVar1Gene2 = {"Age"};
 
-		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariats, false, false, true, false);
+		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariates, false, false, true, false);
 
 		creator.addTestedVariantGene("Var1", "Gene1");
 		creator.addTestedVariantGene("Var2", "Gene1");
@@ -553,8 +553,8 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getCreationDataEpoch(), loadedInteractions.getCreationDataEpoch());
 
-		assertFalse(createdInteractions.areAllCovariatsTestedForAllVariantGenes());
-		assertFalse(loadedInteractions.areAllCovariatsTestedForAllVariantGenes());
+		assertFalse(createdInteractions.areAllCovariatesTestedForAllVariantGenes());
+		assertFalse(loadedInteractions.areAllCovariatesTestedForAllVariantGenes());
 
 		assertFalse(createdInteractions.isFlippedZscoreStored());
 		assertFalse(loadedInteractions.isFlippedZscoreStored());
@@ -659,11 +659,11 @@ public class BinaryInteractionFileTest {
 		assertEquals(loadedGene.getVariantPointers()[0], 0);
 		assertEquals(loadedGene.getVariantPointers().length, 1);
 
-		assertEquals(createdInteractions.getCovariats().get(0), "CellCount");
-		assertEquals(loadedInteractions.getCovariats().get(0), "CellCount");
+		assertEquals(createdInteractions.getCovariates().get(0), "CellCount");
+		assertEquals(loadedInteractions.getCovariates().get(0), "CellCount");
 		
-		assertEquals(createdInteractions.getCovariats().get(1), "Age");
-		assertEquals(loadedInteractions.getCovariats().get(1), "Age");
+		assertEquals(createdInteractions.getCovariates().get(1), "Age");
+		assertEquals(loadedInteractions.getCovariates().get(1), "Age");
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 4);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 4);

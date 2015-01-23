@@ -277,8 +277,8 @@ public class ConvertTextOutputToBinary {
 		
 		System.out.println("Completed binary file");
 		System.out.println("Writen:");
-		System.out.println(" - " + binaryInteractionFile.getInteractionZscoresSet() +  " interaction with z-scores written. Using " + binaryInteractionFile.getInteractionWriteBufferFlused()+ " buffer flushes");
-		System.out.println(" - " + binaryInteractionFile.getQtlZscoresSet() + " interaction with z-scores written. Using " + binaryInteractionFile.getQtlWriteBufferFlused() + " buffer flushes");
+		System.out.println(" - " + binaryInteractionFile.getInteractionZscoresSet() +  " interaction with z-scores written. Using " + binaryInteractionFile.getInteractionWriteBufferFlushed()+ " buffer flushes");
+		System.out.println(" - " + binaryInteractionFile.getQtlZscoresSet() + " interaction with z-scores written. Using " + binaryInteractionFile.getQtlWriteBufferFlushed() + " buffer flushes");
 		
 
 	}
