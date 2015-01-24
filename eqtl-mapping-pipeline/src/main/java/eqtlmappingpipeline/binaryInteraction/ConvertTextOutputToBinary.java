@@ -12,6 +12,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -58,8 +59,6 @@ public class ConvertTextOutputToBinary {
 	private static final Options OPTIONS;
 	private static final String ENCODING = "ISO-8859-1";
 	private static final Pattern SLASH_PATTERN = Pattern.compile("/");
-	
-	
 
 	static {
 
@@ -94,7 +93,7 @@ public class ConvertTextOutputToBinary {
 		OptionBuilder.withLongOpt("cohort");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("c"));
-		
+
 	}
 
 	public static void main(String[] args) throws UnsupportedEncodingException, IOException, Exception {
@@ -157,7 +156,7 @@ public class ConvertTextOutputToBinary {
 		} else {
 			inputInteractionReaderRun1 = new BufferedReader(new InputStreamReader(new FileInputStream(inputInteractionFile), ENCODING));
 		}
-		
+
 		final BufferedReader inputInteractionReaderRun2;
 		if (inputInteractionFile.getName().endsWith(".gz")) {
 			inputInteractionReaderRun2 = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(inputInteractionFile)), ENCODING));
@@ -171,87 +170,101 @@ public class ConvertTextOutputToBinary {
 		} else {
 			inputSnpReader = new CSVReader(new InputStreamReader(new FileInputStream(inputSnpFile), ENCODING), '\t', '\0', 1);
 		}
-		
+
 		ArrayList<BinaryInteractionVariantCreator> variants = new ArrayList<BinaryInteractionVariantCreator>();
 
 		String[] nextLine;
 		while ((nextLine = inputSnpReader.readNext()) != null) {
-			
+
 			final String snpName = nextLine[0];
 			final String chr = nextLine[1];
 			final int pos = Integer.parseInt(nextLine[2]);
 			final String[] alleles = SLASH_PATTERN.split(nextLine[3]);
 			final Allele ma = Allele.create(nextLine[4]);
-	
+
 			Allele a1 = Allele.create(alleles[0]);
 			Allele a2 = Allele.create(alleles[1]);
-			
-			if(ma == a1){
+
+			if (ma == a1) {
 				a1 = a2;
 				a2 = ma;
-			} else if (ma != a2){
+			} else if (ma != a2) {
 				throw new Exception("Minor allele not one of the alles for SNP: " + snpName);
 			}
-			
+
 			variants.add(new BinaryInteractionVariantCreator(snpName, chr, pos, a1, a2));
-			
+
 		}
 		inputSnpReader.close();
-		
-		System.out.println("Completed reading SNP information");
-		
-		LinkedHashSet<BinaryInteractionGeneCreator> genes = new LinkedHashSet<BinaryInteractionGeneCreator>();
+
+		System.out.println("Completed reading " + variants.size() + " variants");
+
+		LinkedHashMap<String, BinaryInteractionGeneCreator> genes = new LinkedHashMap<String, BinaryInteractionGeneCreator>();
 		LinkedHashSet<String> covariates = new LinkedHashSet<String>();
 		LinkedHashSet<VariantGene> variantGenes = new LinkedHashSet<VariantGene>();
-		
+
 		String line;
 		inputInteractionReaderRun1.readLine();
+		int lastReport = 0;
 		while ((line = inputInteractionReaderRun1.readLine()) != null) {
-			
+
 			nextLine = StringUtils.split(line, '\t');
-			
+
 			final String variantName = nextLine[0];
 			final String geneName = nextLine[1];
 			final String covariateName = nextLine[2];
-			
-			genes.add(new BinaryInteractionGeneCreator(geneName));
+
+			if (!genes.containsKey(geneName)) {
+				genes.put(geneName, new BinaryInteractionGeneCreator(geneName));
+			}
+
 			covariates.add(covariateName);
-			
+
 			variantGenes.add(new VariantGene(variantName, geneName));
-			
+
+//			if (variantGenes.size() != lastReport && variantGenes.size() % 1000 == 0) {
+//				lastReport = variantGenes.size();
+//				System.out.println("Running first round, so far detected:");
+//				System.out.println(" - " + genes.size() + " genes");
+//				System.out.println(" - " + covariates.size() + " covariates");
+//				System.out.println(" - " + variantGenes.size() + " variant-gene combinations");
+//			}
+
 		}
-		
+
 		inputInteractionReaderRun1.close();
-		
-		System.out.println("Completed first round parsing text file");
+
+		System.out.println("Completed first round parsing interaction text file");
 		System.out.println("Detected:");
-		System.out.println(" - " + variants.size() + " variants" );
-		System.out.println(" - " + genes.size() + " genes" );
-		System.out.println(" - " + covariates.size() + " covariates" );
-		System.out.println(" - " + variantGenes.size() + " variant-gene combinations" );
+		System.out.println(" - " + genes.size() + " genes");
+		System.out.println(" - " + covariates.size() + " covariates");
+		System.out.println(" - " + variantGenes.size() + " variant-gene combinations");
 		System.out.println();
-		
+
 		BinaryInteractionCohort[] cohorts = {new BinaryInteractionCohort(cohortName, -1)};
-		
-		BinaryInteractionFileCreator binaryFileCreator = new BinaryInteractionFileCreator(outputFile, variants.toArray(new BinaryInteractionVariantCreator[variants.size()]), genes.toArray(new BinaryInteractionGeneCreator[genes.size()]), cohorts, covariates.toArray(new String[covariates.size()]), true, false, true, true);
-		
-		for(VariantGene variantGene : variantGenes){
+
+		BinaryInteractionFileCreator binaryFileCreator = new BinaryInteractionFileCreator(outputFile, variants.toArray(new BinaryInteractionVariantCreator[variants.size()]), genes.values().toArray(new BinaryInteractionGeneCreator[genes.size()]), cohorts, covariates.toArray(new String[covariates.size()]), true, false, true, true);
+
+		for (VariantGene variantGene : variantGenes) {
 			binaryFileCreator.addTestedVariantGene(variantGene.getVariantName(), variantGene.getGeneName());
 		}
-		
+
 		binaryFileCreator.setDescription("File converted from txt result: " + inputInteractionFile.getAbsolutePath() + ". Using eQTL pipeline version: " + VERSION);
-		
+
 		BinaryInteractionFile binaryInteractionFile = binaryFileCreator.create();
-		
+
+		String lastGene = "";
+		String lastVariant = "";
+
 		inputInteractionReaderRun2.readLine();
 		while ((line = inputInteractionReaderRun2.readLine()) != null) {
-			
+
 			nextLine = StringUtils.split(line, '\t');
-			
+
 			final String variantName = nextLine[0];
 			final String geneName = nextLine[1];
 			final String covariateName = nextLine[2];
-			
+
 			final double zscoreSnpCohort = Double.parseDouble(nextLine[3]);
 			final double zscoreCovariateCohort = Double.parseDouble(nextLine[4]);
 			final double zscoreInteractionCohort = Double.parseDouble(nextLine[5]);
@@ -259,32 +272,38 @@ public class ConvertTextOutputToBinary {
 			final double zscoreInteractionFlippedCohort = Double.parseDouble(nextLine[7]);
 			final int samplesInteractionCohort = Integer.parseInt(nextLine[8]);
 			final double rSquaredCohort = Double.parseDouble(nextLine[9]);
-			
+
 			BinaryInteractionZscores zscoresInteractions = new BinaryInteractionZscores(samplesInteractionCohort, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreInteractionFlippedCohort);
-			
+
 			binaryInteractionFile.setInteractionResults(variantName, geneName, covariateName, zscoresInteractions);
-			
-			BinaryInteractionQtlZscores zscoresQtl = new BinaryInteractionQtlZscores(zscoreQtl, samplesInteractionCohort);
-			binaryInteractionFile.setQtlResults(variantName, geneName, zscoresQtl);
-			
-			
+
+			if (!lastGene.equals(geneName) || !lastVariant.equals(variantName)) {
+				BinaryInteractionQtlZscores zscoresQtl = new BinaryInteractionQtlZscores(zscoreQtl, samplesInteractionCohort);
+				binaryInteractionFile.setQtlResults(variantName, geneName, zscoresQtl);
+				lastGene = geneName;
+				lastVariant = variantName;
+			}
+
+
 		}
-		
+
 		inputInteractionReaderRun2.close();
-		
+
 		binaryInteractionFile.finalizeWriting();
 		binaryInteractionFile.close();
-		
+
 		System.out.println("Completed binary file");
 		System.out.println("Writen:");
-		System.out.println(" - " + binaryInteractionFile.getInteractionZscoresSet() +  " interaction with z-scores written. Using " + binaryInteractionFile.getInteractionWriteBufferFlushed()+ " buffer flushes");
-		System.out.println(" - " + binaryInteractionFile.getQtlZscoresSet() + " interaction with z-scores written. Using " + binaryInteractionFile.getQtlWriteBufferFlushed() + " buffer flushes");
-		
+		System.out.println(" - " + binaryInteractionFile.getInteractionZscoresSet() + " interaction with z-scores written. Using " + binaryInteractionFile.getInteractionWriteBufferFlushed() + " buffer flushes");
+		System.out.println(" - " + binaryInteractionFile.getQtlZscoresSet() + " qtls with z-scores written. Using " + binaryInteractionFile.getQtlWriteBufferFlushed() + " buffer flushes");
+		System.out.println("");
+		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(new Date()));
+
 
 	}
-	
+
 	private static class VariantGene {
-		
+
 		private final String variantName;
 		private final String geneName;
 
@@ -326,9 +345,5 @@ public class ConvertTextOutputToBinary {
 			}
 			return true;
 		}
-		
-		
-				
 	}
-	
 }
