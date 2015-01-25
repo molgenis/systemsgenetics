@@ -948,4 +948,96 @@ public class BinaryInteractionFile implements Closeable {
 			interactionBuffer.putInt(array[i]);
 		}
 	}
+	
+	public int getGeneCount(){
+		return genes.length;
+	}
+	
+	public int getCovariateCount(){
+		return covariates.length;
+	}
+	
+	public int getVariantCount(){
+		return variants.length;
+	}
+	
+	public int getCohortCount(){
+		return cohorts.length;
+	}
+	
+	public int getVariantGeneCombinations(){
+		return covariatesTested.length;
+	}
+	
+	public boolean containsGene(String geneName){
+		return genesMap.containsKey(geneName);
+	}
+	
+	public boolean containsVariant(String variantName){
+		return variantMap.containsKey(variantName);
+	}
+	
+	public boolean containsCovariant(String covariateName){
+		return covariatesMap.containsKey(covariateName);
+	}
+	
+	public boolean containsVariantGene(String variantName, String geneName){
+		
+		int variantIndex = variantMap.get(variantName);
+		int geneIndex = genesMap.get(geneName);
+
+		if (variantIndex < 0) {
+			return false;
+		}
+
+		if (geneIndex < 0) {
+			return false;
+		}
+
+		int geneIndexInVariant = variants[variantIndex].getIndexOfGenePointer(geneIndex);
+
+		if (geneIndexInVariant < 0) {
+			return false;
+		} else {
+			return true;
+		}
+		
+	}
+	
+	public boolean containsInteraction(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException {
+
+		int variantIndex = variantMap.get(variantName);
+		int geneIndex = genesMap.get(geneName);
+		int covariateIndex = covariatesMap.get(covariateName);
+
+		if (variantIndex < 0) {
+			return false;
+		}
+
+		if (geneIndex < 0) {
+			return false;
+		}
+
+		if (covariateIndex < 0) {
+			return false;
+		}
+
+		int geneIndexInVariant = variants[variantIndex].getIndexOfGenePointer(geneIndex);
+
+		if (geneIndexInVariant < 0) {
+			return false;
+		}
+
+		if (allCovariants) {
+			return true;
+		} else {
+			int variantGeneIndex = cummulativeGeneCountUpToVariant[variantIndex] + geneIndexInVariant;
+			int variantGeneCovariateIndex = Arrays.binarySearch(covariatesTested[variantGeneIndex], covariateIndex);
+			if (variantGeneCovariateIndex < 0) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
 }

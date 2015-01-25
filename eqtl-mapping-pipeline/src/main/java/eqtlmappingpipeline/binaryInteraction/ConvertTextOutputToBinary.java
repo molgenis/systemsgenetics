@@ -100,7 +100,7 @@ public class ConvertTextOutputToBinary {
 
 		System.out.println(HEADER);
 		System.out.println();
-		System.out.println("          --- Version: " + VERSION + " ---");
+		System.out.println("     --- Version: " + VERSION + " ---");
 		System.out.println();
 
 		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
@@ -137,6 +137,7 @@ public class ConvertTextOutputToBinary {
 		System.out.println("Input interaction file: " + inputInteractionFile.getAbsolutePath());
 		System.out.println("Input SNP file: " + inputSnpFile.getAbsolutePath());
 		System.out.println("Output file: " + outputFile.getAbsolutePath());
+		System.out.println("Cohort name: " + cohortName);
 
 		if (!inputInteractionFile.canRead()) {
 			System.err.println("Cannot read input file.");
