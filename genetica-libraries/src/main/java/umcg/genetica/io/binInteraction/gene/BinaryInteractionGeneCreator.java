@@ -17,6 +17,7 @@ public class BinaryInteractionGeneCreator extends BinaryInteractionGeneAbstract 
 
 	public BinaryInteractionGeneCreator(String name) {
 		super(name, "", -1, -1);
+		variantPointers = new TIntArrayList();
 	}
 
 	@Override
