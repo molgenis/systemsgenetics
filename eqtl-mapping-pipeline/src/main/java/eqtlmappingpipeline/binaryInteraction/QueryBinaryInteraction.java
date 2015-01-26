@@ -187,11 +187,11 @@ public class QueryBinaryInteraction {
 		//CSVWriter writer = new CSVWriter(outputWriter, '\t', '\0', '\0');
 		
 		if(queryGeneName != null && queryVariantName != null && queryCovariateName != null){
-			
+						
 			BinaryInteractionQtlZscores zscroresQtl = inputFile.readQtlResults(queryVariantName, queryGeneName);
 			outputWriter.write("QTL: " + zscroresQtl.getZscore()[0]);
 			outputWriter.write('\n');
-			
+						
 			BinaryInteractionZscores zscroresInteraction = inputFile.readInteractionResults(queryVariantName, queryGeneName, queryCovariateName);
 			
 			outputWriter.write("SNP: " + zscroresInteraction.getZscoreSnpCohort()[0]);
