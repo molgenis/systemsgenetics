@@ -30,7 +30,13 @@ public class BinaryInteractionCovariateIterator implements Iterator<BinaryIntera
 	
 	@Override
 	public boolean hasNext() {
-		if(covariatsTested != null){
+		System.out.println("variantName" + variantName);
+		System.out.println("geneName" + geneName);
+		System.out.println("covariatsTested " + covariatsTested);
+		System.out.println("variantGeneCovariateIndex "+ variantGeneCovariateIndex);
+		System.out.println("file.getCovariateCount() " + file.getCovariateCount());
+		System.out.println("if not null covariatsTested.length: " + (covariatsTested != null ? covariatsTested.length : ""));
+		if(covariatsTested == null){
 			return variantGeneCovariateIndex + 1 < file.getCovariateCount();
 		} else {
 			return variantGeneCovariateIndex + 1 < covariatsTested.length;
