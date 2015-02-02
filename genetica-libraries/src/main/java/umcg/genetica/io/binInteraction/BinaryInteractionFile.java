@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneStatic;
@@ -46,7 +47,7 @@ public class BinaryInteractionFile implements Closeable {
 	private final BinaryInteractionCohort[] cohorts;
 	private final BinaryInteractionGene[] genes;
 	private final BinaryInteractionVariant[] variants;
-	private final String[] covariates;
+	protected final String[] covariates;
 	private final int[][] covariatesTested;
 	private final long timeStamp;
 	private final boolean allCovariants;
@@ -58,7 +59,7 @@ public class BinaryInteractionFile implements Closeable {
 	private final long startQtlBlock;
 	private final long startInteractionBlock;
 	private final long sizeQtlBlock;
-	private final long sizeInteractionBlock;
+	protected final long sizeInteractionBlock;
 	/**
 	 * Number of variant gene combinations upto a variant. Length = variants + 1
 	 */
@@ -777,11 +778,44 @@ public class BinaryInteractionFile implements Closeable {
 		qtlBufferWriting = false;
 		++qtlWriteBufferFlushed;
 	}
-
+	
 	public BinaryInteractionZscores readInteractionResults(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException, IOException {
-
 		//Check will be done in get pointer
 		long interactionPointer = getInteractionPointer(variantName, geneName, covariateName);
+		return readInteractionResults(interactionPointer);
+	}
+	
+	public Iterator<BinaryInteractionQueryResult> readVariantGeneResults(String variantName, String geneName) throws BinaryInteractionFileException, IOException{
+		
+		int variantIndex = variantMap.get(variantName);
+		int geneIndex = genesMap.get(geneName);
+
+		if (variantIndex < 0) {
+			throw new BinaryInteractionFileException("Variant not found: " + variantName);
+		}
+
+		if (geneIndex < 0) {
+			throw new BinaryInteractionFileException("Gene not found: " + geneName);
+		}
+
+		int geneIndexInVariant = variants[variantIndex].getIndexOfGenePointer(geneIndex);
+
+		if (geneIndexInVariant < 0) {
+			throw new BinaryInteractionFileException("Cannot find variant gene combination for: " + variantName + "-" + geneName);
+		}
+
+		int variantGeneIndex = cummulativeGeneCountUpToVariant[variantIndex] + geneIndexInVariant;
+		
+		BinaryInteractionQtlZscores qtlZscore = readQtlResults(variantName, geneName);
+		
+		long startVariantGeneBlock = startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] * sizeInteractionBlock);
+
+		return new BinaryInteractionCovariateIterator(variantName, geneName, allCovariants ? null : covariatesTested[variantGeneIndex] , this, startVariantGeneBlock, qtlZscore);
+
+		
+	}
+
+	protected BinaryInteractionZscores readInteractionResults(long interactionPointer) throws BinaryInteractionFileException, IOException {
 
 		setInteactionBuffer(interactionPointer, false);
 

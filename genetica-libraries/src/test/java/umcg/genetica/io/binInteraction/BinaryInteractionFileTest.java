@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 import org.molgenis.genotype.Allele;
 import org.testng.annotations.Test;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
@@ -181,6 +182,15 @@ public class BinaryInteractionFileTest {
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 1l);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 1l);
 
+		Iterator<BinaryInteractionQueryResult> iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene1");
+		BinaryInteractionQueryResult interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore);
+		assertFalse(iterator.hasNext());
+		
 		createdInteractions.close();
 		loadedInteractions.close();
 
@@ -431,7 +441,42 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 4);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 4);
-
+		
+		Iterator<BinaryInteractionQueryResult> iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene1");
+		BinaryInteractionQueryResult interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores1);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+		
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores2);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+			
+		iterator = loadedInteractions.readVariantGeneResults("Var2", "Gene1");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var2");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores4);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore2);
+		
+		assertFalse(iterator.hasNext());
+		
+		iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene2");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene2");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores3);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore3);
+		
+		assertFalse(iterator.hasNext());
+		
 		createdInteractions.close();
 		loadedInteractions.close();
 
@@ -668,6 +713,41 @@ public class BinaryInteractionFileTest {
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 4);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 4);
 
+		Iterator<BinaryInteractionQueryResult> iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene1");
+		BinaryInteractionQueryResult interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores1);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+		
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores2);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+			
+		iterator = loadedInteractions.readVariantGeneResults("Var2", "Gene1");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var2");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores4);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore2);
+		
+		assertFalse(iterator.hasNext());
+		
+		iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene2");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene2");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores3);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore3);
+		
+		assertFalse(iterator.hasNext());
+		
 		createdInteractions.close();
 		loadedInteractions.close();
 
