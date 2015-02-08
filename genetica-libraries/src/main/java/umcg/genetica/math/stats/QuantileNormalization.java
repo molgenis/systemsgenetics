@@ -58,9 +58,6 @@ public class QuantileNormalization {
             double[] probesQuantileNormalized = new double[probeCount];
             for (int p = 0; p < probeCount; p++) {
                 probesQuantileNormalized[p] = rankedMean[(int) probesRanked[p]];
-            }
-            
-            for (int p = 0; p < probeCount; p++) {
                 rawData[p][s] = (double) probesQuantileNormalized[p];
             }
 //            double[] probesRankedAfterQQNorm = rda.rank(probesQuantileNormalized, false);
