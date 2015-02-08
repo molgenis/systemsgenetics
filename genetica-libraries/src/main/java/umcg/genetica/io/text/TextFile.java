@@ -335,6 +335,31 @@ public class TextFile implements Iterable<String> {
 		}
 		return output;
 	}
+    
+    public Map<String, String> readAsHashMap(int col1, int[] col2, String seperator) throws IOException {
+		Map<String, String> output = new HashMap<String, String>();
+        
+        int maxInt = col1;
+        for(int i : col2){
+            if(i >maxInt){
+                maxInt = i;
+            }
+        }
+        
+		String[] elems = readLineElems(tab);
+		while (elems != null) {
+			if (elems.length > maxInt) {
+                StringBuilder value = new StringBuilder(elems[col2[0]]);
+                for(int i = 1;i<col2.length;++i){
+                    value.append(seperator);
+                    value.append(elems[col2[i]]);
+                }
+				output.put(elems[col1], value.toString());
+			}
+			elems = readLineElems(tab);
+		}
+		return output;
+	}
 
 	public Map<String, String> readAsHashMap(int col1, int col2, Pattern p) throws IOException {
 		Map<String, String> output = new HashMap<String, String>();
