@@ -120,6 +120,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
         
         HashSet<String> snpRecodingInfo = new HashSet<String>();
         
+        //Should we skip writing the genotypes?
         
 		String[] samples = genotypeData.getSampleNames();
 		int sampleCount = samples.length;
