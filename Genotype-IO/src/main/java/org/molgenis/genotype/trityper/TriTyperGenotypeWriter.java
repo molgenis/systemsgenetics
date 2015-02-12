@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
@@ -133,27 +132,43 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 			float[] dosageValues = variant.getSampleDosages();
 			int i = 0;
 			for (Alleles sampleAlleles : variant.getSampleVariants()) {
-                System.out.println(sampleAlleles.get(0));
-                System.out.println(sampleAlleles.get(1));
                 
 				if (sampleAlleles.getAlleleCount() != 2) {
 					LOGGER.debug("variant at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " set to missing for " + samples[i]);
 					sampleAlleles = Alleles.BI_ALLELIC_MISSING;
+                    //ToDo should we continue here?
 				}
 
 				try {
-                    System.out.println(variant.isSnp());
-                    if(variant.isSnp()){
-                        System.out.println("In?");
-                        snpBuffer[i] = sampleAlleles.get(0).isSnpAllele() && sampleAlleles.get(0) != Allele.ZERO ? (byte) sampleAlleles.get(0).getAlleleAsSnp() : 0;
-                        snpBuffer[i + sampleCount] = sampleAlleles.get(1).isSnpAllele() && sampleAlleles.get(1) != Allele.ZERO ? (byte) sampleAlleles.get(1).getAlleleAsSnp() : 0;
-                    } else { 
-                        System.out.println("In here?");
-                        System.out.println(variant.getPrimaryVariantId()+"\t"+sampleAlleles.get(0)+"\t"+sampleAlleles.get(1)+"\tC\tA");
-//                        snpRecodingInfo.add(variant.getPrimaryVariantId()+"\t"+variant.getRefAllele().getAlleleAsString()+"\t"+variant.getMinorAllele().getAlleleAsString()+"\tC\tA");
+                    byte a;
+                    byte b;
+                    if (variant.isSnp()){
+                        a = sampleAlleles.get(0).isSnpAllele() && sampleAlleles.get(0) != Allele.ZERO ? (byte) sampleAlleles.get(0).getAlleleAsSnp() : 0;
+                        b = sampleAlleles.get(1).isSnpAllele() && sampleAlleles.get(1) != Allele.ZERO ? (byte) sampleAlleles.get(1).getAlleleAsSnp() : 0;
+                    } else {
+                        snpRecodingInfo.add(variant.getPrimaryVariantId()+"\t"+variant.getSequenceName()+"\t"+variant.getStartPos()+"\t"+variant.getVariantAlleles().get(0)+"\t"+variant.getVariantAlleles().get(1)+"\tA\tC");
                         
+                        if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                            a = (byte) 'A';
+                        } else if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                            a = (byte) 'C';
+                        } else {
+                            a = 0;
+                        }
+                        
+                        if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                            b = (byte) 'A';
+                        } else if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                            b = (byte) 'C';
+                        } else {
+                            b = 0;
+                        }
+
                     }
-					
+                    
+                    snpBuffer[i] = a;
+                    snpBuffer[i + sampleCount] = b;
+
 				} catch (Exception e) {
 					throw new GenotypeDataException("Error writing TriTyper data: " + e.getMessage(), e);
 				}
@@ -180,7 +195,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
         if(!snpRecodingInfo.isEmpty()){
             BufferedWriter allelRecodingFileWriter = new BufferedWriter(new FileWriter(allelRecodingFile));
             
-            allelRecodingFileWriter.write("Variant_ID\tReference_allel\tMinor_allel\tNew_ref_allel\tNew_minor_allel\n");
+            allelRecodingFileWriter.write("Variant_ID\tchr\tpos\tAllel1\tAllel2\tNew_Allel1\tNew_Allel2\n");
             for(String s : snpRecodingInfo){
                 allelRecodingFileWriter.write(s+"\n");
             }
