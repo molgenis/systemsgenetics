@@ -42,38 +42,38 @@ public class QueryBinaryInteraction {
 		Option option;
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Binary interaction file");
 		OptionBuilder.withLongOpt("input");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("i"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Output file");
 		OptionBuilder.withLongOpt("output");
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
 		OptionBuilder.withArgName("string");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Gene name");
 		OptionBuilder.withLongOpt("gene");
 		OPTIONS.addOption(OptionBuilder.create("g"));
 
 		OptionBuilder.withArgName("string");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Covariate name");
 		OptionBuilder.withLongOpt("cocariate");
 		OPTIONS.addOption(OptionBuilder.create("c"));
 
 		OptionBuilder.withArgName("string");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Variant name");
 		OptionBuilder.withLongOpt("variant");
 		OPTIONS.addOption(OptionBuilder.create("v"));
 
 		OptionBuilder.withArgName("string");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Minimum absolute interaction z-score");
 		OptionBuilder.withLongOpt("interactionZ");
 		OPTIONS.addOption(OptionBuilder.create("iz"));
@@ -189,7 +189,7 @@ public class QueryBinaryInteraction {
 		if(queryGeneName != null && queryVariantName != null && queryCovariateName != null){
 						
 			BinaryInteractionQtlZscores zscroresQtl = inputFile.readQtlResults(queryVariantName, queryGeneName);
-			outputWriter.write("QTL: " + zscroresQtl.getZscore()[0]);
+			outputWriter.write("QTL: " + zscroresQtl.getZscores()[0]);
 			outputWriter.write('\n');
 						
 			BinaryInteractionZscores zscroresInteraction = inputFile.readInteractionResults(queryVariantName, queryGeneName, queryCovariateName);

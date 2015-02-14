@@ -783,7 +783,7 @@ public class BinaryInteractionFileTest {
 		
 		assertEquals(actual.getCohortCount(), expected.getCohortCount());
 		
-		assertEqualsDoubleArray(actual.getZscore(), expected.getZscore(), 1e-10);
+		assertEqualsDoubleArray(actual.getZscores(), expected.getZscores(), 1e-10);
 		assertEqualsIntArray(actual.getSampleCounts(), expected.getSampleCounts());
 		assertEqualsNaN(actual.getMetaZscore(), expected.getMetaZscore(), 1e-10);
 		

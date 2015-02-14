@@ -89,7 +89,7 @@ public class BinaryInteractionFile implements Closeable {
 	private long interactionReadBufferLoaded = 0;
 	private long qtlReadBufferLoaded = 0;
 
-	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariates, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) throws BinaryInteractionFileException, FileNotFoundException, IOException {
+	protected BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariates, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) throws BinaryInteractionFileException, FileNotFoundException, IOException {
 		this.interactionFile = interactionFile;
 		this.readOnly = readOnly;
 		this.cohorts = cohorts;
@@ -505,9 +505,25 @@ public class BinaryInteractionFile implements Closeable {
 	public List<BinaryInteractionGene> getGenes() {
 		return Collections.unmodifiableList(Arrays.asList(genes));
 	}
+	
+	public BinaryInteractionGene getGene(String name) throws BinaryInteractionFileException{
+		int index = genesMap.get(name);
+		if(index == NO_ENTRY_INT_MAP){
+			throw new BinaryInteractionFileException("Gene not found: " + name);
+		}
+		return genes[index];
+	}
 
 	public List<BinaryInteractionVariant> getVariants() {
 		return Collections.unmodifiableList(Arrays.asList(variants));
+	}
+	
+	public BinaryInteractionVariant getVariant(String name) throws BinaryInteractionFileException{
+		int index = variantMap.get(name);
+		if(index == NO_ENTRY_INT_MAP){
+			throw new BinaryInteractionFileException("Variant not found: " + name);
+		}
+		return variants[index];
 	}
 
 	public List<String> getCovariates() {
@@ -686,8 +702,8 @@ public class BinaryInteractionFile implements Closeable {
 			throw new BinaryInteractionFileException("This file does not store normal QTL restuls");
 		}
 
-		if (zscores.getZscore().length != cohorts.length) {
-			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getZscore().length + " Z-scores");
+		if (zscores.getZscores().length != cohorts.length) {
+			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getZscores().length + " Z-scores");
 		}
 
 		if (zscores.getSampleCounts().length != cohorts.length) {
@@ -700,7 +716,7 @@ public class BinaryInteractionFile implements Closeable {
 		setQtlBuffer(qtlPointer, true);
 
 		for (int i = 0; i < cohorts.length; i++) {
-			qtlBuffer.putDouble(zscores.getZscore()[i]);
+			qtlBuffer.putDouble(zscores.getZscores()[i]);
 		}
 
 		for (int i = 0; i < cohorts.length; i++) {
