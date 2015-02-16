@@ -869,12 +869,11 @@ public class InteractionAnalysisMultiThreaded {
 
 	private BinaryInteractionFile createBinaryOutputHeader(File binaryOutFile, String[] snpsPassingQCArr, HashMap<String, SNP> snpStats, LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest, DoubleMatrixDataset<String, String> covariateData, HashSet<String> expressionIndividualsInPCCorrectedData, String cohort) throws BinaryInteractionFileException, IOException {
 		LinkedHashSet<String> geneIds = new LinkedHashSet<String>();
+		System.out.println("snpProbeCombinationsToTest size: " + snpProbeCombinationsToTest.size());
 		for (Pair<String, String> snpProbePair : snpProbeCombinationsToTest){
 			String gene = snpProbePair.getRight();
 			geneIds.add(gene);
 		}
-		String[] genesArr = geneIds.toArray(new String[0]);
-		geneIds.clear();
 
 		int numSNPs = snpsPassingQCArr.length;
 		int numGenes = geneIds.size();
@@ -898,9 +897,12 @@ public class InteractionAnalysisMultiThreaded {
 
 		//fill genes
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[numGenes];
-		for (int g = 0; g < numGenes; g++){
-			genes[g] = new BinaryInteractionGeneCreator(genesArr[g], "", 0, 0); //pull Patrick
+		int geneIdx = 0;
+		for (String gene : geneIds){
+			genes[geneIdx] = new BinaryInteractionGeneCreator(gene);
+			geneIdx++;
 		}
+
 
 		//fill covariates
 		String[] covariates = covariateData.rowObjects.toArray(new String[0]);
