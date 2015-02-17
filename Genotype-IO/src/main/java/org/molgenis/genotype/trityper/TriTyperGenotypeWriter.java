@@ -147,19 +147,19 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
                         a = sampleAlleles.get(0).isSnpAllele() && sampleAlleles.get(0) != Allele.ZERO ? (byte) sampleAlleles.get(0).getAlleleAsSnp() : 0;
                         b = sampleAlleles.get(1).isSnpAllele() && sampleAlleles.get(1) != Allele.ZERO ? (byte) sampleAlleles.get(1).getAlleleAsSnp() : 0;
                     } else {
-                        snpRecodingInfo.add(variant.getPrimaryVariantId()+"\t"+variant.getSequenceName()+"\t"+variant.getStartPos()+"\t"+variant.getVariantAlleles().get(0)+"\t"+variant.getVariantAlleles().get(1)+"\tA\tC");
+                        snpRecodingInfo.add(variant.getPrimaryVariantId()+"\t"+variant.getSequenceName()+"\t"+variant.getStartPos()+"\t"+variant.getVariantAlleles().get(0)+"\t"+variant.getVariantAlleles().get(1));
                         
-                        if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                        if(sampleAlleles.get(0).equals(variant.getVariantAlleles().get(0))){
                             a = (byte) 'A';
-                        } else if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                        } else if(sampleAlleles.get(0).equals(variant.getVariantAlleles().get(1))){
                             a = (byte) 'C';
                         } else {
                             a = 0;
                         }
                         
-                        if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                        if(sampleAlleles.get(1).equals(variant.getVariantAlleles().get(0))){
                             b = (byte) 'A';
-                        } else if(variant.getVariantAlleles().get(0).equals(variant.getVariantAlleles().get(0))){
+                        } else if(sampleAlleles.get(1).equals(variant.getVariantAlleles().get(1))){
                             b = (byte) 'C';
                         } else {
                             b = 0;
@@ -196,7 +196,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
         if(!snpRecodingInfo.isEmpty()){
             BufferedWriter allelRecodingFileWriter = new BufferedWriter(new FileWriter(allelRecodingFile));
             
-            allelRecodingFileWriter.write("Variant_ID\tchr\tpos\tAllel1\tAllel2\tNew_Allel1\tNew_Allel2\n");
+            allelRecodingFileWriter.write("Variant_ID\tchr\tpos\tAllel1\tAllel2\n");
             for(String s : snpRecodingInfo){
                 allelRecodingFileWriter.write(s+"\n");
             }

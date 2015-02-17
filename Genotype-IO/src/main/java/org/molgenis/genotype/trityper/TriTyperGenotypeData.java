@@ -78,6 +78,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final SampleFilter sampleFilter;
 	private int unfilteredSnpCount;
 	private final GeneticVariantMeta geneticVariantMeta;
+    
+    private final File alleleRecodeFile;
+    private final HashMap<String, String[]> allelRecodingInfo;
+    
 	/**
 	 * These are the samples as visible to the outside. if sample filter is used
 	 * then a subset of all samples in dataset otherwise ref to all samples
@@ -115,10 +119,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
-		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter);
+		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter, new File(location, "allelRecodingInformation.txt").exists() ? new File(location, "allelRecodingInformation.txt") : null);
 	}
 
-	public TriTyperGenotypeData(File genotypeDataFile, File imputedDosageDataFile, File snpFile, File snpMapFile, File individualFile, File phenotypeAnnotationFile, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
+	public TriTyperGenotypeData(File genotypeDataFile, File imputedDosageDataFile, File snpFile, File snpMapFile, File individualFile, File phenotypeAnnotationFile, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, File allelRecoding) throws IOException {
 
 		this.variantFilter = variantFilter;
 		this.sampleFilter = sampleFilter;
@@ -161,7 +165,27 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		if (!this.phenotypeAnnotationFile.exists()) {
 			throw new GenotypeDataException("PhenotypeInformation.txt or PhenotypeInformation.txt.gz at:" + this.phenotypeAnnotationFile.getAbsolutePath());
 		}
+        
+        this.alleleRecodeFile = allelRecoding;
+        if (this.alleleRecodeFile != null && this.alleleRecodeFile.exists()) {
+            
+            BufferedReader recodeReader = new BufferedReader(new FileReader(this.alleleRecodeFile));
+            String line = recodeReader.readLine();
+            this.allelRecodingInfo = new HashMap<String, String[]>();
+            
+            while ((line = recodeReader.readLine()) != null) {
+                String lineParts[] = line.split("\t");
+                String[] recode = new String[2];
+                recode[0] = lineParts[3];
+                recode[1] = lineParts[4];
+                allelRecodingInfo.put(lineParts[0], recode);
+            }
+            recodeReader.close();
 
+        } else {
+            this.allelRecodingInfo = null;
+        }
+        
 		// create file handles //
 		if (imputedDosageDataFile != null) {
 			dosageHandle = new RandomAccessFile(imputedDosageDataFile, "r");
@@ -188,8 +212,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		snps = snpsFactory.createRange();
 
 		checkFileSize();
-
-
 
 	}
 
@@ -451,7 +473,28 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				alleles.add(a);
 			}
 		}
-
+        
+        if(alleleRecodeFile != null && allelRecodingInfo!=null){
+            if(allelRecodingInfo.containsKey(variant.getPrimaryVariantId())){
+                String[] recodingInfo = allelRecodingInfo.get(variant.getPrimaryVariantId());
+                
+                for(int i=0; i<alleles.size(); i++){
+                    String[] originalAllels = new String[2];
+                    for(int j=0; j<alleles.get(i).getAllelesAsString().size(); j++){
+                        if(alleles.get(i).getAllelesAsString().get(j).equals("A")){
+                            originalAllels[j]=recodingInfo[0];
+                        } else {
+                            originalAllels[j]=recodingInfo[1];
+                        }
+                    }
+                    
+                    Alleles a = Alleles.createBasedOnString(originalAllels[0], originalAllels[1]);
+                    alleles.set(i, a);
+                }
+            }
+        }
+        
+        
 		return alleles;
 	}
 

@@ -7,7 +7,10 @@ package org.molgenis.genotype.trityper;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Map.Entry;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -46,10 +49,10 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 				for (File file : tmpOutputFolder.listFiles()) {
 					System.out.println(" - Deleting: " + file.getAbsolutePath());
                     //Why?
-				//	file.delete();
+					file.delete();
 				}
 				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-//				tmpOutputFolder.delete();
+				tmpOutputFolder.delete();
 			}
 		});
 
@@ -87,7 +90,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 
 		int numSamples = trityper.getSamples().size();
 
-		GeneticVariant variant = original.getSnpVariantByPos("1", 1);
+		GeneticVariant variant = trityper.getSnpVariantByPos("1", 1);
 		GeneticVariant originalVariant = original.getSnpVariantByPos("1", 1);
 
 		float[] dosageValues = variant.getSampleDosages();
@@ -99,7 +102,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		}
 
 
-		variant = original.getSnpVariantByPos("22", 14432918);
+		variant = trityper.getSnpVariantByPos("22", 14432918);
 		originalVariant = original.getSnpVariantByPos("22", 14432918);
 
 		dosageValues = variant.getSampleDosages();
@@ -138,7 +141,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 
 		int numSamples = trityper.getSamples().size();
 
-		GeneticVariant variant = original.getSnpVariantByPos("1", 1);
+		GeneticVariant variant = trityper.getSnpVariantByPos("1", 1);
 		GeneticVariant originalVariant = original.getSnpVariantByPos("1", 1);
 
 		float[] dosageValues = variant.getSampleDosages();
@@ -148,15 +151,8 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
-
-        //Check allels
-//        System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
-//		for(int i = 0; i < numSamples; i++){
-//			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
-//		}
         
-
-		variant = original.getSnpVariantByPos("22", 14432918);
+		variant = trityper.getSnpVariantByPos("22", 14432918);
 		originalVariant = original.getSnpVariantByPos("22", 14432918);
 
 		dosageValues = variant.getSampleDosages();
@@ -167,10 +163,27 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
 		
-        //Check allels
-//        System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
-//		for(int i = 0; i < numSamples; i++){
-//			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
-//		}
+        System.out.println("\nTest allels");
+        
+        assertEquals(trityper.getVariantIdMap().keySet(), original.getVariantIdMap().keySet());
+        
+        for(Entry<String, GeneticVariant> variantTT : trityper.getVariantIdMap().entrySet()){
+            originalVariant = original.getVariantIdMap().get(variantTT.getKey());
+            
+            ArrayList<Alleles> originalAllelList = new ArrayList<Alleles>(originalVariant.getSampleVariants());
+            ArrayList<Alleles> newAllelList = new ArrayList<Alleles>(variantTT.getValue().getSampleVariants());
+            
+            if(trityper.getSeqNames().equals(original.getSeqNames())){
+                for(int i =0; i<original.getSamples().size();++i){
+                    System.out.println(originalAllelList.get(i)+"\t"+newAllelList.get(i));
+                }
+                assertEquals(newAllelList, originalAllelList);
+            } else {
+                System.out.println("Sample order is different, current test can't handel this.");
+            }
+            
+        }
+
+        
 	}
 }
