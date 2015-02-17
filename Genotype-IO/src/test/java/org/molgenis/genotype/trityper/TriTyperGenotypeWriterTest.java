@@ -96,7 +96,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		float[] dosageValues = variant.getSampleDosages();
 		float[] originalDosageValues = originalVariant.getSampleDosages();
 
-		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
@@ -108,7 +108,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		dosageValues = variant.getSampleDosages();
 		originalDosageValues = originalVariant.getSampleDosages();
 
-		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
@@ -147,7 +147,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		float[] dosageValues = variant.getSampleDosages();
 		float[] originalDosageValues = originalVariant.getSampleDosages();
 
-		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
@@ -158,12 +158,12 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		dosageValues = variant.getSampleDosages();
 		originalDosageValues = originalVariant.getSampleDosages();
 
-		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
 		
-        System.out.println("\nTest allels");
+//        System.out.println("\nTest allels");
         
         assertEquals(trityper.getVariantIdMap().keySet(), original.getVariantIdMap().keySet());
         
@@ -173,15 +173,9 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
             ArrayList<Alleles> originalAllelList = new ArrayList<Alleles>(originalVariant.getSampleVariants());
             ArrayList<Alleles> newAllelList = new ArrayList<Alleles>(variantTT.getValue().getSampleVariants());
             
-            if(trityper.getSeqNames().equals(original.getSeqNames())){
-                for(int i =0; i<original.getSamples().size();++i){
-                    System.out.println(originalAllelList.get(i)+"\t"+newAllelList.get(i));
-                }
-                assertEquals(newAllelList, originalAllelList);
-            } else {
-                System.out.println("Sample order is different, current test can't handel this.");
-            }
-            
+            assertTrue(trityper.getSeqNames().equals(original.getSeqNames()), "Sample order is different, current test can't handel this.");
+
+            assertEquals(newAllelList, originalAllelList);
         }
 
         

@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import static org.molgenis.genotype.GenotypeData.BOOL_INCLUDE_SAMPLE;
@@ -80,7 +81,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final GeneticVariantMeta geneticVariantMeta;
     
     private final File alleleRecodeFile;
-    private final HashMap<String, String[]> allelRecodingInfo;
+    private final HashMap<String, Allele[]> allelRecodingInfo;
     
 	/**
 	 * These are the samples as visible to the outside. if sample filter is used
@@ -171,13 +172,13 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
             
             BufferedReader recodeReader = new BufferedReader(new FileReader(this.alleleRecodeFile));
             String line = recodeReader.readLine();
-            this.allelRecodingInfo = new HashMap<String, String[]>();
+            this.allelRecodingInfo = new HashMap<String, Allele[]>();
             
             while ((line = recodeReader.readLine()) != null) {
-                String lineParts[] = line.split("\t");
-                String[] recode = new String[2];
-                recode[0] = lineParts[3];
-                recode[1] = lineParts[4];
+                String lineParts[] = StringUtils.split(line, '\t');
+                Allele[] recode = new Allele[2];
+                recode[0] = Allele.create(lineParts[3]);
+                recode[1] = Allele.create(lineParts[4]);
                 allelRecodingInfo.put(lineParts[0], recode);
             }
             recodeReader.close();
@@ -476,20 +477,19 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
         
         if(alleleRecodeFile != null && allelRecodingInfo!=null){
             if(allelRecodingInfo.containsKey(variant.getPrimaryVariantId())){
-                String[] recodingInfo = allelRecodingInfo.get(variant.getPrimaryVariantId());
+                Allele[] recodingInfo = allelRecodingInfo.get(variant.getPrimaryVariantId());
                 
                 for(int i=0; i<alleles.size(); i++){
-                    String[] originalAllels = new String[2];
-                    for(int j=0; j<alleles.get(i).getAllelesAsString().size(); j++){
-                        if(alleles.get(i).getAllelesAsString().get(j).equals("A")){
+                    Allele[] originalAllels = new Allele[2];
+                    for(int j=0; j<alleles.get(i).getAlleleCount(); j++){
+                        if(alleles.get(i).getAlleles().get(j) == Allele.A){
                             originalAllels[j]=recodingInfo[0];
                         } else {
                             originalAllels[j]=recodingInfo[1];
                         }
                     }
                     
-                    Alleles a = Alleles.createBasedOnString(originalAllels[0], originalAllels[1]);
-                    alleles.set(i, a);
+                    alleles.set(i, Alleles.createAlleles(originalAllels[0],originalAllels[1]));
                 }
             }
         }
