@@ -6,7 +6,6 @@
 package umcg.genetica.math.stats;
 
 import static org.testng.Assert.*;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -44,7 +43,7 @@ public class QuantileNormalizationNGTest {
         
         for(int i=0; i<testMatrix.length;++i){
             for(int j=0; j<testMatrix[i].length;++j){
-                assertEquals(testMatrix[i][j], expectedMatrix[i][j]);
+                assertEquals(testMatrix[i][j], expectedMatrix[i][j],0.0000000001);
             }
             System.out.println("");
         }
