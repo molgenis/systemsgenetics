@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.regex.Pattern;
 import umcg.genetica.io.gwascatalog.GWASCatalog;
 import umcg.genetica.io.gwascatalog.GWASSNP;
 import umcg.genetica.io.gwascatalog.GWASTrait;
@@ -43,11 +44,28 @@ class QTLAnnotator {
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Primary\\eQTLProbesFDR0.05-ProbeLevel_ldDrivenEffectsRemoved-ExtendedInfo.txt");
 
         addAnnotationToQTLOutput(
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs_2014\\eQTLSNPsFDR0.05-SNPLevel.txt",
-                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
-                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20;0;1-2-3-4", "snp;probe;snp;snp", null,
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_2MB_TSS_extendedCis_eQTMs_2014\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo.txt");
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
+                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
+                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4", "snp;probe;snp;snp", null,
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo5.txt");
+//        
+        addAnnotationToQTLOutput(
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
+                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt",  
+                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4", "snp;probe;snp;snp", null,
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel_ExtendedInfo4.txt");
         
+//        addAnnotationToQTLOutput(
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Comparison_eQTLs_meQTLs.txt",
+//                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation_InterestCis_MJ_v1.txt.gz",  
+//                "1;8-9-10-11-12-13-14;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4;0;3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29-30-31-32-33-34-35-36-37", "probe;probe;probe;snp", null,
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Comparison_eQTLs_meQTLs3.txt");
+//        
+//        addAnnotationToQTLOutput(
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Comparison_QTLs_eQTMs\\Comparison_forAnnot.txt",
+//                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation_InterestCis_MJ_v1.txt.gz",  
+//                "1;8-9-10-11-12-13-14;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4;0;3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29-30-31-32-33-34-35-36-37", "probe;probe;probe;snp", null,
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Comparison_QTLs_eQTMs\\Comparison_forAnnot_out.txt");
     }
 
     static void addAnnotationToQTLOutput(String in, String sources, String keyValuePairs, String idsToAnnotate, String reannotateGene, String out) throws IOException {
@@ -221,10 +239,13 @@ class QTLAnnotator {
                 }
                 
 //                System.out.println(keyInt +"\t"+ valueInt);
-                for(int valInt : valueInt){
-                    extraHeaders += "\tAnnotionSource:" + masterId+"_Col:"+valInt;
+                if(valueInt.length==1){
                     TextFile t = new TextFile(annotationSource, TextFile.R);
-                    HashMap<String, String> annotationFromSource = (HashMap<String, String>) t.readAsHashMap(keyInt, valInt);
+                    String[] header = t.readLineElems(Pattern.compile("\t"));
+                    
+                    extraHeaders += "\t" +header[valueInt[0]];
+
+                    HashMap<String, String> annotationFromSource = (HashMap<String, String>) t.readAsHashMap(keyInt, valueInt[0]);
 
                     int id = 0;
                     for (EQTL eQtl : qtls) {
@@ -245,8 +266,69 @@ class QTLAnnotator {
                             }
 
                         } else {
-                            System.out.println("here");
-                            System.exit(0);
+                            System.out.println("Error, something wrong. Desired information is not pressent.");
+                            
+                            if (annotationIdList[masterId].equalsIgnoreCase("probe")) {
+                                System.out.println(eQtl.getProbe());
+                            } else {
+                                System.out.println(eQtl.getRsName());
+                            }
+                            
+                            System.exit(-1);
+    //                        System.out.println("-");
+                            if (!addTo) {
+                                extraAnnotation.add("-");
+                            } else {
+                                
+                                extraAnnotation.set(id, extraAnnotation.get(id) + "\t-");
+                            }
+
+                        }
+                        id++;
+                    }
+                    if (!extraAnnotation.isEmpty()) {
+                        addTo = true;
+                    }
+                    t.close();
+                }  else if (valueInt.length>1) {
+                    
+                    TextFile t = new TextFile(annotationSource, TextFile.R);
+                    String[] header = t.readLineElems(Pattern.compile("\t"));
+                    for(int val : valueInt){
+                        extraHeaders += "\t" +header[val];
+                    }
+                    
+
+                    HashMap<String, String> annotationFromSource = (HashMap<String, String>) t.readAsHashMap(keyInt, valueInt, "\t");
+
+                    int id = 0;
+                    for (EQTL eQtl : qtls) {
+
+                        String newInfo;
+                        if (annotationIdList[masterId].equalsIgnoreCase("probe")) {
+                            newInfo = annotationFromSource.get(eQtl.getProbe());
+                        } else {
+                            newInfo = annotationFromSource.get(eQtl.getRsName());
+                        }
+
+                        if (newInfo != null) {
+    //                        System.out.println(newInfo);
+                            if (!addTo) {
+                                extraAnnotation.add(newInfo);
+                            } else {
+                                extraAnnotation.set(id, extraAnnotation.get(id) + "\t" + newInfo);
+                            }
+
+                        } else {
+                            System.out.println("Error, something wrong. Desired information is not pressent.");
+                            
+                            if (annotationIdList[masterId].equalsIgnoreCase("probe")) {
+                                System.out.println(eQtl.getProbe());
+                            } else {
+                                System.out.println(eQtl.getRsName());
+                            }
+                            
+                            System.exit(-1);
     //                        System.out.println("-");
                             if (!addTo) {
                                 extraAnnotation.add("-");
