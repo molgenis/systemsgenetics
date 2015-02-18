@@ -54,7 +54,7 @@ public class QueryBinaryInteraction {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Output file");
+		OptionBuilder.withDescription("Output file (optional)");
 		OptionBuilder.withLongOpt("output");
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
@@ -66,7 +66,7 @@ public class QueryBinaryInteraction {
 
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Covariate name");
+		OptionBuilder.withDescription("Covariate name (optional)");
 		OptionBuilder.withLongOpt("cocariate");
 		OPTIONS.addOption(OptionBuilder.create("c"));
 
