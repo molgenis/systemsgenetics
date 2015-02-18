@@ -4,11 +4,9 @@
  */
 package umcg.genetica.math.stats;
 
-import cern.colt.list.tdouble.DoubleArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
-import org.apache.commons.collections.primitives.ArrayIntList;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.util.RankArray;
 
@@ -44,6 +42,7 @@ public class QuantileNormalization {
                 rankedMean[probeID] += x[probeID];
             }
         }
+        
         for (int probeID = 0; probeID < probeCount; probeID++) {
             rankedMean[probeID] /= (double) sampleCount;
         }
@@ -55,17 +54,20 @@ public class QuantileNormalization {
             for (int p = 0; p < probeCount; p++) {
                 probes[p] = rawData[p][s];
             }
-            double[] probesRanked = rda.rank(probes, false);
+            double[] probesRanked = rda.rank(probes, true);
+            
             double[] probesQuantileNormalized = new double[probeCount];
             for (int p = 0; p < probeCount; p++) {
-                probesQuantileNormalized[p] = rankedMean[(int) probesRanked[p]];
+                                
+                if((probesRanked[p]%1)!=0){
+                    probesQuantileNormalized[p] = ((rankedMean[(int)Math.floor(probesRanked[p])]+rankedMean[(int)Math.ceil(probesRanked[p])])/2);
+                    rawData[p][s] = probesQuantileNormalized[p];
+                } else {
+                    probesQuantileNormalized[p] = rankedMean[(int) probesRanked[p]];
+                    rawData[p][s] = probesQuantileNormalized[p];
+                }
             }
-            for (int p = 0; p < probeCount; p++) {
-                rawData[p][s] = (double) probesQuantileNormalized[p];
-            }
-            
-            
-            double[] probesRankedAfterQQNorm = rda.rank(probesQuantileNormalized, false);
+//            double[] probesRankedAfterQQNorm = rda.rank(probesQuantileNormalized, false);
             
             System.out.println("Normalized sample:\t" + (s+1) + "\tCorrelation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(probes, probesRanked) + "\tCorrelation original data and quantile normalized data:\t" + JSci.maths.ArrayMath.correlation(probes, probesQuantileNormalized) + "\tSpearman: "+spearman.correlation(probes, probesQuantileNormalized));
         }
