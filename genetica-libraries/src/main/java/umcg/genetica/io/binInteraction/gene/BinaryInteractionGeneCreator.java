@@ -15,6 +15,11 @@ public class BinaryInteractionGeneCreator extends BinaryInteractionGeneAbstract 
 		variantPointers = new TIntArrayList();
 	}
 
+	public BinaryInteractionGeneCreator(String name) {
+		super(name, "", -1, -1);
+		variantPointers = new TIntArrayList();
+	}
+
 	@Override
 	public int[] getVariantPointers() {
 		return variantPointers.toArray();

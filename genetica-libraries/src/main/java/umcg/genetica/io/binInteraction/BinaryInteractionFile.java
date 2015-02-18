@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneStatic;
@@ -46,7 +47,7 @@ public class BinaryInteractionFile implements Closeable {
 	private final BinaryInteractionCohort[] cohorts;
 	private final BinaryInteractionGene[] genes;
 	private final BinaryInteractionVariant[] variants;
-	private final String[] covariats;
+	protected final String[] covariates;
 	private final int[][] covariatesTested;
 	private final long timeStamp;
 	private final boolean allCovariants;
@@ -58,7 +59,7 @@ public class BinaryInteractionFile implements Closeable {
 	private final long startQtlBlock;
 	private final long startInteractionBlock;
 	private final long sizeQtlBlock;
-	private final long sizeInteractionBlock;
+	protected final long sizeInteractionBlock;
 	/**
 	 * Number of variant gene combinations upto a variant. Length = variants + 1
 	 */
@@ -79,14 +80,22 @@ public class BinaryInteractionFile implements Closeable {
 	private boolean interactionBufferWriting = false;
 	private long qtlBufferStart = Long.MIN_VALUE;
 	private long interactionBufferStart = Long.MIN_VALUE;
+	private long qtlZscoresSet = 0;
+	private long interactionZscoresSet = 0;
+	private long qtlZscoresRead = 0;
+	private long interactionZscoresRead = 0;
+	private long interactionWriteBufferFlushed = 0;
+	private long qtlWriteBufferFlushed = 0;
+	private long interactionReadBufferLoaded = 0;
+	private long qtlReadBufferLoaded = 0;
 
-	public BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariats, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) throws BinaryInteractionFileException, FileNotFoundException, IOException {
+	protected BinaryInteractionFile(File interactionFile, boolean readOnly, BinaryInteractionCohort[] cohorts, BinaryInteractionGene[] genes, BinaryInteractionVariant[] variants, String[] covariates, int[][] covariatesTested, long timeStamp, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored, String fileDescription, long interactions, long startQtlBlock, long startInteractionBlock) throws BinaryInteractionFileException, FileNotFoundException, IOException {
 		this.interactionFile = interactionFile;
 		this.readOnly = readOnly;
 		this.cohorts = cohorts;
 		this.genes = genes;
 		this.variants = variants;
-		this.covariats = covariats;
+		this.covariates = covariates;
 		this.covariatesTested = covariatesTested;
 		this.timeStamp = timeStamp;
 		this.allCovariants = allCovariants;
@@ -112,7 +121,7 @@ public class BinaryInteractionFile implements Closeable {
 			for (int v = 0; v < variants.length; ++v) {
 				int variantGeneCount = variants[v].getGeneCount();
 				for (int g = 0; g < variantGeneCount; ++g) {
-					cummalitiveInteractionCountUptoVariantGene[i] = cummalitiveInteractionCountUptoVariantGene[i - 1] + (allCovariants ? covariats.length : this.covariatesTested[i - 1].length);
+					cummalitiveInteractionCountUptoVariantGene[i] = cummalitiveInteractionCountUptoVariantGene[i - 1] + (allCovariants ? covariates.length : this.covariatesTested[i - 1].length);
 					++i;
 				}
 			}
@@ -124,7 +133,7 @@ public class BinaryInteractionFile implements Closeable {
 
 		variantMap = new TObjectIntHashMap<String>(variants.length, 0.75f, -1);
 		genesMap = new TObjectIntHashMap<String>(genes.length, 0.75f, -1);
-		covariatesMap = new TObjectIntHashMap<String>(covariats.length, 0.75f, -1);
+		covariatesMap = new TObjectIntHashMap<String>(covariates.length, 0.75f, -1);
 
 		for (int i = 0; i < variants.length; ++i) {
 			if (variantMap.put(variants[i].getName(), i) != NO_ENTRY_INT_MAP) {
@@ -138,9 +147,9 @@ public class BinaryInteractionFile implements Closeable {
 			}
 		}
 
-		for (int i = 0; i < covariats.length; ++i) {
-			if (covariatesMap.put(covariats[i], i) != NO_ENTRY_INT_MAP) {
-				throw new BinaryInteractionFileException("Cannot store the same covariate twice (" + covariats[i] + ")");
+		for (int i = 0; i < covariates.length; ++i) {
+			if (covariatesMap.put(covariates[i], i) != NO_ENTRY_INT_MAP) {
+				throw new BinaryInteractionFileException("Cannot store the same covariate twice (" + covariates[i] + ")");
 			}
 		}
 
@@ -209,7 +218,7 @@ public class BinaryInteractionFile implements Closeable {
 			final int allelesCount = inputStream.readInt();
 			final int genesCount = inputStream.readInt();
 			final int variantCount = inputStream.readInt();
-			final int covariatsCount = inputStream.readInt();
+			final int covariatesCount = inputStream.readInt();
 
 			long totalInteractions = inputStream.readLong();
 			builder.setInteractions(totalInteractions);
@@ -222,12 +231,12 @@ public class BinaryInteractionFile implements Closeable {
 
 			builder.setVariants(variants);
 			builder.setGenes(readGenes(inputStream, genesCount, chrDictionary));
-			builder.setCovariats(readStringArray(inputStream, covariatsCount, "Chromosomes"));
+			builder.setCovariates(readStringArray(inputStream, covariatesCount, "Chromosomes"));
 
 			final int totalVariantGeneCombinations = getTotalVariantGeneCombinations(variants);
 
 			if (!allCovariants) {
-				builder.setCovariatesTested(readCovariantsData(inputStream, totalVariantGeneCombinations, totalInteractions));
+				builder.setCovariatesTested(readCovariatesData(inputStream, totalVariantGeneCombinations, totalInteractions));
 			}
 
 			final long startData = inputStreamCounted.getCount();
@@ -364,23 +373,23 @@ public class BinaryInteractionFile implements Closeable {
 
 	}
 
-	private static int[][] readCovariantsData(DataInputStream inputStream, int totalSnpGeneCombinations, long totalInteractions) throws BinaryInteractionFileException, EOFException, IOException {
+	private static int[][] readCovariatesData(DataInputStream inputStream, int totalSnpGeneCombinations, long totalInteractions) throws BinaryInteractionFileException, EOFException, IOException {
 
-		int[][] testedCovariats = new int[totalSnpGeneCombinations][];
+		int[][] testedCovariates = new int[totalSnpGeneCombinations][];
 
-		long interactionSumCovariats = 0;
+		long interactionSumCovariates = 0;
 
 		for (int i = 0; i < totalSnpGeneCombinations; ++i) {
-			int covariatsCount = inputStream.readInt();
-			testedCovariats[i] = readIntArray(inputStream, covariatsCount);
-			interactionSumCovariats += testedCovariats[i].length;
+			int covariatesCount = inputStream.readInt();
+			testedCovariates[i] = readIntArray(inputStream, covariatesCount);
+			interactionSumCovariates += testedCovariates[i].length;
 		}
 
-		if (interactionSumCovariats != totalInteractions) {
-			throw new BinaryInteractionFileException("Interactions in header differs from interactions in covariate block. Header: " + totalInteractions + " covariate sum: " + interactionSumCovariats);
+		if (interactionSumCovariates != totalInteractions) {
+			throw new BinaryInteractionFileException("Interactions in header differs from interactions in covariate block. Header: " + totalInteractions + " covariate sum: " + interactionSumCovariates);
 		}
 
-		return testedCovariats;
+		return testedCovariates;
 
 	}
 
@@ -481,7 +490,7 @@ public class BinaryInteractionFile implements Closeable {
 		return fileDescription;
 	}
 
-	public boolean areAllCovariatsTestedForAllVariantGenes() {
+	public boolean areAllCovariatesTestedForAllVariantGenes() {
 		return allCovariants;
 	}
 
@@ -496,13 +505,29 @@ public class BinaryInteractionFile implements Closeable {
 	public List<BinaryInteractionGene> getGenes() {
 		return Collections.unmodifiableList(Arrays.asList(genes));
 	}
+	
+	public BinaryInteractionGene getGene(String name) throws BinaryInteractionFileException{
+		int index = genesMap.get(name);
+		if(index == NO_ENTRY_INT_MAP){
+			throw new BinaryInteractionFileException("Gene not found: " + name);
+		}
+		return genes[index];
+	}
 
 	public List<BinaryInteractionVariant> getVariants() {
 		return Collections.unmodifiableList(Arrays.asList(variants));
 	}
+	
+	public BinaryInteractionVariant getVariant(String name) throws BinaryInteractionFileException{
+		int index = variantMap.get(name);
+		if(index == NO_ENTRY_INT_MAP){
+			throw new BinaryInteractionFileException("Variant not found: " + name);
+		}
+		return variants[index];
+	}
 
-	public List<String> getCovariats() {
-		return Collections.unmodifiableList(Arrays.asList(covariats));
+	public List<String> getCovariates() {
+		return Collections.unmodifiableList(Arrays.asList(covariates));
 	}
 
 	public void finalizeWriting() throws IOException, BinaryInteractionFileException {
@@ -527,6 +552,38 @@ public class BinaryInteractionFile implements Closeable {
 				throw new RuntimeException(ex);
 			}
 		}
+	}
+
+	public long getQtlZscoresSet() {
+		return qtlZscoresSet;
+	}
+
+	public long getInteractionZscoresSet() {
+		return interactionZscoresSet;
+	}
+
+	public long getQtlZscoresRead() {
+		return qtlZscoresRead;
+	}
+
+	public long getInteractionZscoresRead() {
+		return interactionZscoresRead;
+	}
+
+	public long getInteractionWriteBufferFlushed() {
+		return interactionWriteBufferFlushed;
+	}
+
+	public long getQtlWriteBufferFlushed() {
+		return qtlWriteBufferFlushed;
+	}
+
+	public long getInteractionReadBufferLoaded() {
+		return interactionReadBufferLoaded;
+	}
+
+	public long getQtlReadBufferLoaded() {
+		return qtlReadBufferLoaded;
 	}
 
 	@Override
@@ -567,7 +624,7 @@ public class BinaryInteractionFile implements Closeable {
 
 	}
 
-	public long getInteractionPointer(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException {
+	private long getInteractionPointer(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException {
 
 		int variantIndex = variantMap.get(variantName);
 		int geneIndex = genesMap.get(geneName);
@@ -627,6 +684,8 @@ public class BinaryInteractionFile implements Closeable {
 		for (int i = 0; i < cohorts.length; i++) {
 			sampleCounts[i] = qtlBuffer.getInt();
 		}
+		
+		++qtlZscoresRead;
 
 		if (metaAnalysis) {
 			double metaZscore = qtlBuffer.getDouble();
@@ -643,8 +702,8 @@ public class BinaryInteractionFile implements Closeable {
 			throw new BinaryInteractionFileException("This file does not store normal QTL restuls");
 		}
 
-		if (zscores.getZscore().length != cohorts.length) {
-			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getZscore().length + " Z-scores");
+		if (zscores.getZscores().length != cohorts.length) {
+			throw new BinaryInteractionFileException("Error setting qtl " + variantName + "-" + geneName + " expected " + cohorts.length + " but found " + zscores.getZscores().length + " Z-scores");
 		}
 
 		if (zscores.getSampleCounts().length != cohorts.length) {
@@ -657,7 +716,7 @@ public class BinaryInteractionFile implements Closeable {
 		setQtlBuffer(qtlPointer, true);
 
 		for (int i = 0; i < cohorts.length; i++) {
-			qtlBuffer.putDouble(zscores.getZscore()[i]);
+			qtlBuffer.putDouble(zscores.getZscores()[i]);
 		}
 
 		for (int i = 0; i < cohorts.length; i++) {
@@ -667,6 +726,8 @@ public class BinaryInteractionFile implements Closeable {
 		if (metaAnalysis) {
 			qtlBuffer.putDouble(zscores.getMetaZscore());
 		}
+		
+		++qtlZscoresSet;
 
 	}
 
@@ -711,6 +772,7 @@ public class BinaryInteractionFile implements Closeable {
 				channel.read(qtlBuffer);
 				qtlBuffer.flip();
 				qtlBufferStart = qtlPointer;
+				++qtlReadBufferLoaded;
 				//return;
 			}
 
@@ -730,16 +792,70 @@ public class BinaryInteractionFile implements Closeable {
 		qtlBuffer.flip();
 		channel.write(qtlBuffer);
 		qtlBufferWriting = false;
-
+		++qtlWriteBufferFlushed;
 	}
-
+	
 	public BinaryInteractionZscores readInteractionResults(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException, IOException {
-
 		//Check will be done in get pointer
 		long interactionPointer = getInteractionPointer(variantName, geneName, covariateName);
+		return readInteractionResults(interactionPointer);
+	}
+	
+	public BinaryInteractionQueryResult readVariantGeneCovariateResults(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException, IOException{
+		
+		BinaryInteractionQtlZscores qtlZscores;
+		if(isNormalQtlStored()){
+			qtlZscores = readQtlResults(variantName, geneName);
+		} else {
+			qtlZscores = null;
+		}
+		
+		BinaryInteractionZscores interactionRestuls = readInteractionResults(variantName, geneName, covariateName);
+		
+		return new BinaryInteractionQueryResult(variantName, geneName, covariateName, qtlZscores, interactionRestuls);
+		
+	}
+	
+	public Iterator<BinaryInteractionQueryResult> readVariantGeneResults(String variantName, String geneName) throws BinaryInteractionFileException, IOException{
+		
+		int variantIndex = variantMap.get(variantName);
+		int geneIndex = genesMap.get(geneName);
+
+		if (variantIndex < 0) {
+			throw new BinaryInteractionFileException("Variant not found: " + variantName);
+		}
+
+		if (geneIndex < 0) {
+			throw new BinaryInteractionFileException("Gene not found: " + geneName);
+		}
+
+		int geneIndexInVariant = variants[variantIndex].getIndexOfGenePointer(geneIndex);
+
+		if (geneIndexInVariant < 0) {
+			throw new BinaryInteractionFileException("Cannot find variant gene combination for: " + variantName + "-" + geneName);
+		}
+
+		int variantGeneIndex = cummulativeGeneCountUpToVariant[variantIndex] + geneIndexInVariant;
+		
+		BinaryInteractionQtlZscores qtlZscore;
+		if(isNormalQtlStored()){
+			qtlZscore = readQtlResults(variantName, geneName);
+		} else {
+			qtlZscore = null;
+		}
+		
+		long startVariantGeneBlock = startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] * sizeInteractionBlock);
+
+		return new BinaryInteractionCovariateIterator(variantName, geneName, allCovariants ? null : covariatesTested[variantGeneIndex] , this, startVariantGeneBlock, qtlZscore);
+
+		
+	}
+
+	protected BinaryInteractionZscores readInteractionResults(long interactionPointer) throws BinaryInteractionFileException, IOException {
 
 		setInteactionBuffer(interactionPointer, false);
 
+		++interactionZscoresRead;
 
 		final int[] samplesInteractionCohort = readIntArrayFromInteractionBuffer(cohorts.length);
 		final double[] zscoreSnpCohort = readDoubleArrayFromInteractionBuffer(cohorts.length);
@@ -796,6 +912,8 @@ public class BinaryInteractionFile implements Closeable {
 				interactionBuffer.putDouble(zscores.getZscoreInteractionFlippedMeta());
 			}
 		}
+		
+		++interactionZscoresSet;
 
 	}
 
@@ -841,6 +959,7 @@ public class BinaryInteractionFile implements Closeable {
 				channel.read(interactionBuffer);
 				interactionBuffer.flip();
 				interactionBufferStart = interactionPointer;
+				++interactionReadBufferLoaded;
 				//return;
 			}
 
@@ -862,6 +981,7 @@ public class BinaryInteractionFile implements Closeable {
 		interactionBuffer.flip();
 		channel.write(interactionBuffer);
 		interactionBufferWriting = false;
+		++interactionWriteBufferFlushed;
 
 	}
 
@@ -871,11 +991,6 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		double[] array = new double[length];
 		for (int i = 0; i < length; ++i) {
-//			interactionBuffer.mark();
-//			for (int j = 0; j < 8; ++j) {
-//				System.out.println(i + " - " + interactionBuffer.get());
-//			}
-//			interactionBuffer.reset();
 			array[i] = interactionBuffer.getDouble();
 		}
 		return array;
@@ -901,6 +1016,98 @@ public class BinaryInteractionFile implements Closeable {
 	private void writeIntArrayToInteractionBuffer(int[] array) {
 		for (int i = 0; i < array.length; ++i) {
 			interactionBuffer.putInt(array[i]);
+		}
+	}
+	
+	public int getGeneCount(){
+		return genes.length;
+	}
+	
+	public int getCovariateCount(){
+		return covariates.length;
+	}
+	
+	public int getVariantCount(){
+		return variants.length;
+	}
+	
+	public int getCohortCount(){
+		return cohorts.length;
+	}
+	
+	public int getVariantGeneCombinations(){
+		return covariatesTested.length;
+	}
+	
+	public boolean containsGene(String geneName){
+		return genesMap.containsKey(geneName);
+	}
+	
+	public boolean containsVariant(String variantName){
+		return variantMap.containsKey(variantName);
+	}
+	
+	public boolean containsCovariant(String covariateName){
+		return covariatesMap.containsKey(covariateName);
+	}
+	
+	public boolean containsVariantGene(String variantName, String geneName){
+		
+		int variantIndex = variantMap.get(variantName);
+		int geneIndex = genesMap.get(geneName);
+
+		if (variantIndex < 0) {
+			return false;
+		}
+
+		if (geneIndex < 0) {
+			return false;
+		}
+
+		int geneIndexInVariant = variants[variantIndex].getIndexOfGenePointer(geneIndex);
+
+		if (geneIndexInVariant < 0) {
+			return false;
+		} else {
+			return true;
+		}
+		
+	}
+	
+	public boolean containsInteraction(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException {
+
+		int variantIndex = variantMap.get(variantName);
+		int geneIndex = genesMap.get(geneName);
+		int covariateIndex = covariatesMap.get(covariateName);
+
+		if (variantIndex < 0) {
+			return false;
+		}
+
+		if (geneIndex < 0) {
+			return false;
+		}
+
+		if (covariateIndex < 0) {
+			return false;
+		}
+
+		int geneIndexInVariant = variants[variantIndex].getIndexOfGenePointer(geneIndex);
+
+		if (geneIndexInVariant < 0) {
+			return false;
+		}
+
+		if (allCovariants) {
+			return true;
+		} else {
+			int variantGeneIndex = cummulativeGeneCountUpToVariant[variantIndex] + geneIndexInVariant;
+			int variantGeneCovariateIndex = Arrays.binarySearch(covariatesTested[variantGeneIndex], covariateIndex);
+			if (variantGeneCovariateIndex < 0) {
+				return false;
+			} else {
+				return true;
+			}
 		}
 	}
 }

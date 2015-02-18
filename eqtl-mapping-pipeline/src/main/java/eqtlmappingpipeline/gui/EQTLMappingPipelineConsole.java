@@ -8,6 +8,8 @@ import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.ase.AnnotateAseWithSnpEffVcf;
 import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.ase.AseRecalculate;
+import eqtlmappingpipeline.binaryInteraction.ConvertTextOutputToBinary;
+import eqtlmappingpipeline.binaryInteraction.QueryBinaryInteraction;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
 import eqtlmappingpipeline.chromosomeyexpressionplotter.ChrYExpressionPlotConsoleGUI;
 import eqtlmappingpipeline.conditionalanalysis.ConditionalAnalysisConsoleGUI;
@@ -111,6 +113,12 @@ public class EQTLMappingPipelineConsole {
 			} else if (mode.equals("aseR")) {
 				AseRecalculate.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
+			} else if (mode.equals("itb")) {
+				ConvertTextOutputToBinary.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("queryInteraction") || mode.equals("qi")) {
+				QueryBinaryInteraction.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
 			} else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
@@ -153,6 +161,7 @@ public class EQTLMappingPipelineConsole {
 				+ "       interaction\teQTL mapping using interaction model\n"
 				+ "       util\tSmall utilities\n"
 				+ "       ase\t\tAllele Specific Expression mapping\n"
+				+ "       queryInteraction\t\tQuery binary interaction file\n"
 				+ "       pileupToVcf\tConvert a pileup file to vcf for usage in ASE mapping");
 		System.out.println("");
 		System.out.println("More information: www.molgenis.org/systemsgenetics/QTL-mapping-pipeline");

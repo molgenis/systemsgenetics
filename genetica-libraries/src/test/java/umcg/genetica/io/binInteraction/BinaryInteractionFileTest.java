@@ -10,8 +10,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import org.apache.mahout.math.Arrays;
-import org.junit.BeforeClass;
+import java.util.Iterator;
 import org.molgenis.genotype.Allele;
 import org.testng.annotations.Test;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
@@ -45,9 +44,9 @@ public class BinaryInteractionFileTest {
 			@Override
 			public void run() {
 				for (File file : tmpOutputFolder.listFiles()) {
-						//file.delete();
+						file.delete();
 				}
-				//tmpOutputFolder.delete();
+				tmpOutputFolder.delete();
 			}
 		});
 
@@ -63,14 +62,14 @@ public class BinaryInteractionFileTest {
 		BinaryInteractionCohort[] cohorts = new BinaryInteractionCohort[1];
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[1];
 		BinaryInteractionVariantCreator[] variants = new BinaryInteractionVariantCreator[1];
-		String[] covariats = new String[1];
+		String[] covariates = new String[1];
 
 		cohorts[0] = new BinaryInteractionCohort("cohort1", 12);
 		genes[0] = new BinaryInteractionGeneCreator("Gene1", "Chr1", 10, 100);
 		variants[0] = new BinaryInteractionVariantCreator("Var1", "Chr2", 4, Allele.A, Allele.T);
-		covariats[0] = "CellCount";
+		covariates[0] = "CellCount";
 
-		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariats, true, true, true, true);
+		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariates, true, true, true, true);
 
 		creator.addTestedVariantGene("Var1", "Gene1");
 		creator.setDescription("Test file 1");
@@ -116,8 +115,8 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getCreationDataEpoch(), loadedInteractions.getCreationDataEpoch());
 
-		assertTrue(createdInteractions.areAllCovariatsTestedForAllVariantGenes());
-		assertTrue(loadedInteractions.areAllCovariatsTestedForAllVariantGenes());
+		assertTrue(createdInteractions.areAllCovariatesTestedForAllVariantGenes());
+		assertTrue(loadedInteractions.areAllCovariatesTestedForAllVariantGenes());
 
 		assertTrue(createdInteractions.isFlippedZscoreStored());
 		assertTrue(loadedInteractions.isFlippedZscoreStored());
@@ -177,12 +176,21 @@ public class BinaryInteractionFileTest {
 		assertEquals(loadedGene.getVariantPointers()[0], 0);
 		assertEquals(loadedGene.getVariantPointers().length, 1);
 
-		assertEquals(createdInteractions.getCovariats().get(0), "CellCount");
-		assertEquals(loadedInteractions.getCovariats().get(0), "CellCount");
+		assertEquals(createdInteractions.getCovariates().get(0), "CellCount");
+		assertEquals(loadedInteractions.getCovariates().get(0), "CellCount");
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 1l);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 1l);
 
+		Iterator<BinaryInteractionQueryResult> iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene1");
+		BinaryInteractionQueryResult interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore);
+		assertFalse(iterator.hasNext());
+		
 		createdInteractions.close();
 		loadedInteractions.close();
 
@@ -195,7 +203,7 @@ public class BinaryInteractionFileTest {
 		BinaryInteractionCohort[] cohorts = new BinaryInteractionCohort[2];
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[2];
 		BinaryInteractionVariantCreator[] variants = new BinaryInteractionVariantCreator[2];
-		String[] covariats = new String[2];
+		String[] covariates = new String[2];
 
 		cohorts[0] = new BinaryInteractionCohort("cohort1", 12);
 		cohorts[1] = new BinaryInteractionCohort("cohort2", 60000);
@@ -203,14 +211,14 @@ public class BinaryInteractionFileTest {
 		genes[1] = new BinaryInteractionGeneCreator("Gene2", "ChrX", 5354467, 5351467);
 		variants[0] = new BinaryInteractionVariantCreator("Var1", "Chr2", 4, Allele.A, Allele.T);
 		variants[1] = new BinaryInteractionVariantCreator("Var2", "Chr2", 5, Allele.create("AT"), Allele.T);
-		covariats[0] = "CellCount";
-		covariats[1] = "Age";
+		covariates[0] = "CellCount";
+		covariates[1] = "Age";
 		
 		String[] covVar1Gene1 = {"CellCount", "Age"};
 		String[] covVar2Gene1 = {"CellCount"};
 		String[] covVar1Gene2 = {"Age"};
 
-		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariats, false, true, true, false);
+		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariates, false, true, true, false);
 
 		creator.addTestedVariantGene("Var1", "Gene1");
 		creator.addTestedVariantGene("Var2", "Gene1");
@@ -319,8 +327,8 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getCreationDataEpoch(), loadedInteractions.getCreationDataEpoch());
 
-		assertFalse(createdInteractions.areAllCovariatsTestedForAllVariantGenes());
-		assertFalse(loadedInteractions.areAllCovariatsTestedForAllVariantGenes());
+		assertFalse(createdInteractions.areAllCovariatesTestedForAllVariantGenes());
+		assertFalse(loadedInteractions.areAllCovariatesTestedForAllVariantGenes());
 
 		assertFalse(createdInteractions.isFlippedZscoreStored());
 		assertFalse(loadedInteractions.isFlippedZscoreStored());
@@ -425,15 +433,50 @@ public class BinaryInteractionFileTest {
 		assertEquals(loadedGene.getVariantPointers()[0], 0);
 		assertEquals(loadedGene.getVariantPointers().length, 1);
 
-		assertEquals(createdInteractions.getCovariats().get(0), "CellCount");
-		assertEquals(loadedInteractions.getCovariats().get(0), "CellCount");
+		assertEquals(createdInteractions.getCovariates().get(0), "CellCount");
+		assertEquals(loadedInteractions.getCovariates().get(0), "CellCount");
 		
-		assertEquals(createdInteractions.getCovariats().get(1), "Age");
-		assertEquals(loadedInteractions.getCovariats().get(1), "Age");
+		assertEquals(createdInteractions.getCovariates().get(1), "Age");
+		assertEquals(loadedInteractions.getCovariates().get(1), "Age");
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 4);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 4);
-
+		
+		Iterator<BinaryInteractionQueryResult> iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene1");
+		BinaryInteractionQueryResult interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores1);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+		
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores2);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+			
+		iterator = loadedInteractions.readVariantGeneResults("Var2", "Gene1");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var2");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores4);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore2);
+		
+		assertFalse(iterator.hasNext());
+		
+		iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene2");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene2");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores3);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore3);
+		
+		assertFalse(iterator.hasNext());
+		
 		createdInteractions.close();
 		loadedInteractions.close();
 
@@ -446,7 +489,7 @@ public class BinaryInteractionFileTest {
 		BinaryInteractionCohort[] cohorts = new BinaryInteractionCohort[2];
 		BinaryInteractionGeneCreator[] genes = new BinaryInteractionGeneCreator[2];
 		BinaryInteractionVariantCreator[] variants = new BinaryInteractionVariantCreator[2];
-		String[] covariats = new String[2];
+		String[] covariates = new String[2];
 
 		cohorts[0] = new BinaryInteractionCohort("cohort1", 12);
 		cohorts[1] = new BinaryInteractionCohort("cohort2", 60000);
@@ -454,14 +497,14 @@ public class BinaryInteractionFileTest {
 		genes[1] = new BinaryInteractionGeneCreator("Gene2", "ChrX", 5354467, 5351467);
 		variants[0] = new BinaryInteractionVariantCreator("Var1", "Chr2", 4, Allele.A, Allele.T);
 		variants[1] = new BinaryInteractionVariantCreator("Var2", "Chr2", 5, Allele.create("AT"), Allele.T);
-		covariats[0] = "CellCount";
-		covariats[1] = "Age";
+		covariates[0] = "CellCount";
+		covariates[1] = "Age";
 		
 		String[] covVar1Gene1 = {"CellCount", "Age"};
 		String[] covVar2Gene1 = {"CellCount"};
 		String[] covVar1Gene2 = {"Age"};
 
-		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariats, false, false, true, false);
+		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(file, variants, genes, cohorts, covariates, false, false, true, false);
 
 		creator.addTestedVariantGene("Var1", "Gene1");
 		creator.addTestedVariantGene("Var2", "Gene1");
@@ -555,8 +598,8 @@ public class BinaryInteractionFileTest {
 
 		assertEquals(createdInteractions.getCreationDataEpoch(), loadedInteractions.getCreationDataEpoch());
 
-		assertFalse(createdInteractions.areAllCovariatsTestedForAllVariantGenes());
-		assertFalse(loadedInteractions.areAllCovariatsTestedForAllVariantGenes());
+		assertFalse(createdInteractions.areAllCovariatesTestedForAllVariantGenes());
+		assertFalse(loadedInteractions.areAllCovariatesTestedForAllVariantGenes());
 
 		assertFalse(createdInteractions.isFlippedZscoreStored());
 		assertFalse(loadedInteractions.isFlippedZscoreStored());
@@ -661,15 +704,50 @@ public class BinaryInteractionFileTest {
 		assertEquals(loadedGene.getVariantPointers()[0], 0);
 		assertEquals(loadedGene.getVariantPointers().length, 1);
 
-		assertEquals(createdInteractions.getCovariats().get(0), "CellCount");
-		assertEquals(loadedInteractions.getCovariats().get(0), "CellCount");
+		assertEquals(createdInteractions.getCovariates().get(0), "CellCount");
+		assertEquals(loadedInteractions.getCovariates().get(0), "CellCount");
 		
-		assertEquals(createdInteractions.getCovariats().get(1), "Age");
-		assertEquals(loadedInteractions.getCovariats().get(1), "Age");
+		assertEquals(createdInteractions.getCovariates().get(1), "Age");
+		assertEquals(loadedInteractions.getCovariates().get(1), "Age");
 
 		assertEquals(createdInteractions.getTotalNumberInteractions(), 4);
 		assertEquals(loadedInteractions.getTotalNumberInteractions(), 4);
 
+		Iterator<BinaryInteractionQueryResult> iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene1");
+		BinaryInteractionQueryResult interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores1);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+		
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores2);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore1);
+			
+		iterator = loadedInteractions.readVariantGeneResults("Var2", "Gene1");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene1");
+		assertEquals(interaction.getVariantName(), "Var2");
+		assertEquals(interaction.getCovariateName(), "CellCount");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores4);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore2);
+		
+		assertFalse(iterator.hasNext());
+		
+		iterator = loadedInteractions.readVariantGeneResults("Var1", "Gene2");
+		interaction = iterator.next();
+		assertEquals(interaction.getGeneName(), "Gene2");
+		assertEquals(interaction.getVariantName(), "Var1");
+		assertEquals(interaction.getCovariateName(), "Age");
+		assertEqualsInteractionZscores(interaction.getInteractionZscores(), interactionZscores3);
+		assertEqualsQtlZscores(interaction.getQtlZscores(), qtlZscore3);
+		
+		assertFalse(iterator.hasNext());
+		
 		createdInteractions.close();
 		loadedInteractions.close();
 
@@ -705,7 +783,7 @@ public class BinaryInteractionFileTest {
 		
 		assertEquals(actual.getCohortCount(), expected.getCohortCount());
 		
-		assertEqualsDoubleArray(actual.getZscore(), expected.getZscore(), 1e-10);
+		assertEqualsDoubleArray(actual.getZscores(), expected.getZscores(), 1e-10);
 		assertEqualsIntArray(actual.getSampleCounts(), expected.getSampleCounts());
 		assertEqualsNaN(actual.getMetaZscore(), expected.getMetaZscore(), 1e-10);
 		

@@ -27,7 +27,7 @@ public class BinaryInteractionFileCreator {
 	private final BinaryInteractionVariantCreator[] variants;
 	private final BinaryInteractionGeneCreator[] genes;
 	private final BinaryInteractionCohort[] cohorts;
-	private final String[] covariats;
+	private final String[] covariates;
 	private final boolean allCovariants;
 	private final boolean metaAnalysis;
 	private final boolean normalQtlStored;
@@ -51,19 +51,19 @@ public class BinaryInteractionFileCreator {
 	 * @param variants
 	 * @param genes
 	 * @param cohorts
-	 * @param covariats
+	 * @param covariates
 	 * @param allCovariants
 	 * @param metaAnalysis
 	 * @param normalQtlStored
 	 * @param flippedZscoreStored
 	 * @throws BinaryInteractionFileException
 	 */
-	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariats, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException {
+	public BinaryInteractionFileCreator(File file, BinaryInteractionVariantCreator[] variants, BinaryInteractionGeneCreator[] genes, BinaryInteractionCohort[] cohorts, String[] covariates, boolean allCovariants, boolean metaAnalysis, boolean normalQtlStored, boolean flippedZscoreStored) throws BinaryInteractionFileException, IOException {
 		this.file = file;
 		this.variants = variants;
 		this.genes = genes;
 		this.cohorts = cohorts;
-		this.covariats = covariats;
+		this.covariates = covariates;
 		this.allCovariants = allCovariants;
 		this.metaAnalysis = metaAnalysis;
 		this.normalQtlStored = normalQtlStored;
@@ -71,7 +71,22 @@ public class BinaryInteractionFileCreator {
 
 		variantMap = new TObjectIntHashMap<String>(variants.length, 0.75f, -1);
 		genesMap = new TObjectIntHashMap<String>(genes.length, 0.75f, -1);
-		covariatesMap = new TObjectIntHashMap<String>(covariats.length, 0.75f, -1);
+		covariatesMap = new TObjectIntHashMap<String>(covariates.length, 0.75f, -1);
+		
+		if(file.getParentFile() != null){
+			if(!file.getParentFile().exists() && !file.getParentFile().mkdirs()){
+				throw new IOException("Cannot create parent folder for: " + file.getAbsolutePath());	
+			}
+		}
+		
+		if(file.exists() && !file.canWrite()){
+			throw new IOException("File exists and cannot overwrite at: " + file.getAbsolutePath());
+		}
+		
+		if(!file.exists() && !file.createNewFile()){
+			throw new IOException("Cannot create: " + file.getAbsolutePath());
+		}
+		
 
 		for (int i = 0; i < variants.length; ++i) {
 			if(variants[i] == null){
@@ -91,12 +106,12 @@ public class BinaryInteractionFileCreator {
 			}
 		}
 
-		for (int i = 0; i < covariats.length; ++i) {
-			if(covariats[i] == null){
+		for (int i = 0; i < covariates.length; ++i) {
+			if(covariates[i] == null){
 				throw new BinaryInteractionFileException("Covariate not set at index: " + i);
 			}
-			if (covariatesMap.put(covariats[i], i) != NO_ENTRY_INT_MAP) {
-				throw new BinaryInteractionFileException("Cannot store the same covariate twice (" + covariats[i] + ")");
+			if (covariatesMap.put(covariates[i], i) != NO_ENTRY_INT_MAP) {
+				throw new BinaryInteractionFileException("Cannot store the same covariate twice (" + covariates[i] + ")");
 			}
 		}
 
@@ -236,7 +251,7 @@ public class BinaryInteractionFileCreator {
 		}
 
 		if (allCovariants) {
-			interactions = (long) countVariantGeneCombinations * (long) covariats.length;
+			interactions = (long) countVariantGeneCombinations * (long) covariates.length;
 		}
 
 		HashSet<Allele> alleles = createAlleleDictionary(variants);
@@ -271,7 +286,7 @@ public class BinaryInteractionFileCreator {
 		dataOutputStream.writeInt(alleles.size());
 		dataOutputStream.writeInt(genes.length);
 		dataOutputStream.writeInt(variants.length);
-		dataOutputStream.writeInt(covariats.length);
+		dataOutputStream.writeInt(covariates.length);
 		dataOutputStream.writeLong(interactions);
 
 		for (BinaryInteractionCohort cohort : cohorts) {
@@ -314,7 +329,7 @@ public class BinaryInteractionFileCreator {
 
 		}
 
-		for (String covariate : covariats) {
+		for (String covariate : covariates) {
 			writeString(dataOutputStream, covariate);
 		}
 
@@ -356,7 +371,7 @@ public class BinaryInteractionFileCreator {
 		constructorBuilder.setAllCovariants(allCovariants);
 		constructorBuilder.setCohorts(cohorts);
 		constructorBuilder.setCovariatesTested(covariatesTested);
-		constructorBuilder.setCovariats(covariats);
+		constructorBuilder.setCovariates(covariates);
 		constructorBuilder.setFileDescription(description);
 		constructorBuilder.setFlippedZscoreStored(flippedZscoreStored);
 		constructorBuilder.setGenes(genes);
