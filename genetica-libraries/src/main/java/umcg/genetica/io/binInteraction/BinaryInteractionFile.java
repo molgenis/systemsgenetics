@@ -801,6 +801,21 @@ public class BinaryInteractionFile implements Closeable {
 		return readInteractionResults(interactionPointer);
 	}
 	
+	public BinaryInteractionQueryResult readVariantGeneCovariateResults(String variantName, String geneName, String covariateName) throws BinaryInteractionFileException, IOException{
+		
+		BinaryInteractionQtlZscores qtlZscores;
+		if(isNormalQtlStored()){
+			qtlZscores = readQtlResults(variantName, geneName);
+		} else {
+			qtlZscores = null;
+		}
+		
+		BinaryInteractionZscores interactionRestuls = readInteractionResults(variantName, geneName, covariateName);
+		
+		return new BinaryInteractionQueryResult(variantName, geneName, covariateName, qtlZscores, interactionRestuls);
+		
+	}
+	
 	public Iterator<BinaryInteractionQueryResult> readVariantGeneResults(String variantName, String geneName) throws BinaryInteractionFileException, IOException{
 		
 		int variantIndex = variantMap.get(variantName);
@@ -822,7 +837,12 @@ public class BinaryInteractionFile implements Closeable {
 
 		int variantGeneIndex = cummulativeGeneCountUpToVariant[variantIndex] + geneIndexInVariant;
 		
-		BinaryInteractionQtlZscores qtlZscore = readQtlResults(variantName, geneName);
+		BinaryInteractionQtlZscores qtlZscore;
+		if(isNormalQtlStored()){
+			qtlZscore = readQtlResults(variantName, geneName);
+		} else {
+			qtlZscore = null;
+		}
 		
 		long startVariantGeneBlock = startInteractionBlock + (cummalitiveInteractionCountUptoVariantGene[variantGeneIndex] * sizeInteractionBlock);
 
