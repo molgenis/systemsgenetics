@@ -1,6 +1,5 @@
 package eqtlmappingpipeline.binaryInteraction;
 
-import au.com.bytecode.opencsv.CSVWriter;
 import eqtlmappingpipeline.Main;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,6 +22,7 @@ import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;
 import umcg.genetica.io.binInteraction.BinaryInteractionQtlZscores;
 import umcg.genetica.io.binInteraction.BinaryInteractionZscores;
+import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
 
 /**
  *
@@ -188,6 +188,12 @@ public class QueryBinaryInteraction {
 		
 		if(queryGeneName != null && queryVariantName != null && queryCovariateName != null){
 						
+			BinaryInteractionVariant variant = inputFile.getVariant(queryVariantName);
+			outputWriter.write("Chr variant: " + variant.getChr());
+			outputWriter.write('\n');
+			outputWriter.write("Pos variant: " + variant.getPos());
+			outputWriter.write('\n');
+			
 			BinaryInteractionQtlZscores zscroresQtl = inputFile.readQtlResults(queryVariantName, queryGeneName);
 			outputWriter.write("QTL: " + zscroresQtl.getZscores()[0]);
 			outputWriter.write('\n');

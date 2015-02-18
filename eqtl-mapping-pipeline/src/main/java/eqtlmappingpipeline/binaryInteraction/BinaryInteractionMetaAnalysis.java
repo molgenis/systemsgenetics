@@ -261,42 +261,41 @@ public class BinaryInteractionMetaAnalysis {
 
 				for (String covariate : covariates) {
 
-						int[] sampleCountsInteraction = new int[cohortCount];
+					int[] sampleCountsInteraction = new int[cohortCount];
 
-						int i = 0;
-						for (BinaryInteractionFile binaryInteractionFile : binaryInteractionFiles) {
+					int i = 0;
+					for (BinaryInteractionFile binaryInteractionFile : binaryInteractionFiles) {
 
-							if (binaryInteractionFile.containsInteraction(variant, gene, covariate)){
+						if (binaryInteractionFile.containsInteraction(variant, gene, covariate)) {
 
-								BinaryInteractionZscores interactionRes = binaryInteractionFile.readInteractionResults(variant, gene, covariate);
-								
-								for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
-									sampleCountsInteraction[i] = interactionRes.getSamplesInteractionCohort()[j];
-									++i;
-								}
+							BinaryInteractionZscores interactionRes = binaryInteractionFile.readInteractionResults(variant, gene, covariate);
 
-							} else {
-								for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
-									sampleCountsInteraction[i] = -1;
-									++j;
-								}
+							for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
+								sampleCountsInteraction[i] = interactionRes.getSamplesInteractionCohort()[j];
+								++i;
 							}
 
-
+						} else {
+							for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
+								sampleCountsInteraction[i] = -1;
+								++j;
+							}
 						}
 
-						double metaZscore = Double.NaN; //TODO
-
-						//output.setInteractionResults(variant, gene, covariate, new BinaryInteractionZscores);
 
 					}
+
+					double metaZscore = Double.NaN; //TODO
+
+					//output.setInteractionResults(variant, gene, covariate, new BinaryInteractionZscores);
 
 				}
 
 			}
 
 		}
-
+		
+		output.close();
 
 	}
 
