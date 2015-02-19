@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -17,6 +18,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.molgenis.genotype.Allele;
 import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;
 import umcg.genetica.io.binInteraction.BinaryInteractionFileCreator;
@@ -161,6 +163,17 @@ public class BinaryInteractionMetaAnalysis {
 			for (BinaryInteractionVariant variant : binaryInteractionFile.getVariants()) {
 				if (!variants.containsKey(variant.getName())) {
 					variants.put(variant.getName(), new BinaryInteractionVariantCreator(variant.getName(), variant.getChr(), variant.getPos(), variant.getRefAllele(), variant.getAltAllele()));
+				} else {
+
+					BinaryInteractionVariantCreator metaVariant = variants.get(variant.getName());
+
+					if (!(metaVariant.getRefAllele() == variant.getRefAllele() && metaVariant.getAltAllele() == variant.getAltAllele())
+							&& !(metaVariant.getRefAllele() == variant.getAltAllele() && metaVariant.getAltAllele() == variant.getRefAllele())) {
+						System.err.println("Error: different alleles detected for variant: " + variant.getName());
+						System.exit(1);
+						return;
+					}
+
 				}
 				for (int geneIndex : variant.getGenePointers()) {
 					variantGenes.add(new VariantGene(variant.getName(), fileGenes.get(geneIndex).getName()));
@@ -221,30 +234,39 @@ public class BinaryInteractionMetaAnalysis {
 
 		BinaryInteractionFile output = outputCreator.create();
 
-		for (String variant : variants.keySet()) {
+		for (Map.Entry<String, BinaryInteractionVariantCreator> variantEntry : variants.entrySet()) {
+
+			String variantName = variantEntry.getKey();
+			BinaryInteractionVariantCreator variant = variantEntry.getValue();
+			Allele assessedAllele = variant.getAltAllele();
 
 			for (String gene : genes.keySet()) {
 
 				if (allStoreQtl) {
 
-					int[] sampleCountsQtl = new int[cohortCount];
-					double[] zscoresQtl = new double[cohortCount];
+					final int[] sampleCountsQtl = new int[cohortCount];
+					final double[] zscoresQtl = new double[cohortCount];
 
 					int i = 0;
 					for (BinaryInteractionFile binaryInteractionFile : binaryInteractionFiles) {
 
-						if (binaryInteractionFile.containsVariantGene(variant, gene)) {
+						if (binaryInteractionFile.containsVariantGene(variantName, gene)) {
 
-							BinaryInteractionQtlZscores qtlRes = binaryInteractionFile.readQtlResults(variant, gene);
+							boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
+
+							BinaryInteractionQtlZscores qtlRes = binaryInteractionFile.readQtlResults(variantName, gene);
 							for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
 								sampleCountsQtl[i] = qtlRes.getSampleCounts()[j];
 								zscoresQtl[i] = qtlRes.getZscores()[j];
+								if (swap) {
+									zscoresQtl[i] *= -1;
+								}
 								++i;
 							}
 
 						} else {
 							for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
-								sampleCountsQtl[i] = -1;
+								sampleCountsQtl[i] = 0;
 								zscoresQtl[i] = Double.NaN;
 								++j;
 							}
@@ -255,46 +277,76 @@ public class BinaryInteractionMetaAnalysis {
 
 					double metaZscore = Double.NaN; //TODO
 
-					output.setQtlResults(variant, gene, new BinaryInteractionQtlZscores(zscoresQtl, sampleCountsQtl, metaZscore));
+					output.setQtlResults(variantName, gene, new BinaryInteractionQtlZscores(zscoresQtl, sampleCountsQtl, metaZscore));
 
 				}
 
 				for (String covariate : covariates) {
 
-					int[] sampleCountsInteraction = new int[cohortCount];
+					final int[] sampleCountsInteraction = new int[cohortCount];
+					final double[] zscoreSnpCohort = new double[cohortCount];
+					final double[] zscoreCovariateCohort = new double[cohortCount];
+					final double[] zscoreInteractionCohort = new double[cohortCount];
+					final double[] rSquaredCohort = new double[cohortCount];
+					final double[] zscoreInteractionFlippedCohort = new double[cohortCount];
 
 					int i = 0;
 					for (BinaryInteractionFile binaryInteractionFile : binaryInteractionFiles) {
 
-						if (binaryInteractionFile.containsInteraction(variant, gene, covariate)) {
+						if (binaryInteractionFile.containsInteraction(variantName, gene, covariate)) {
 
-							BinaryInteractionZscores interactionRes = binaryInteractionFile.readInteractionResults(variant, gene, covariate);
+							BinaryInteractionZscores interactionRes = binaryInteractionFile.readInteractionResults(variantName, gene, covariate);
+							
+							boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
 
 							for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
 								sampleCountsInteraction[i] = interactionRes.getSamplesInteractionCohort()[j];
+								zscoreSnpCohort[i] = interactionRes.getZscoreSnpCohort()[j];
+								zscoreCovariateCohort[i] = interactionRes.getZscoreCovariateCohort()[j];
+								zscoreInteractionCohort[i] = interactionRes.getZscoreInteractionCohort()[j];
+								rSquaredCohort[i] = interactionRes.getrSquaredCohort()[j];
+								zscoreInteractionFlippedCohort[i] = interactionRes.getZscoreInteractionFlippedCohort()[j];
+								if (swap) {
+									zscoreSnpCohort[i] *= -1;
+									zscoreInteractionCohort[i] *= -1;
+									zscoreInteractionFlippedCohort[i] *= -1;
+								}
 								++i;
 							}
 
 						} else {
 							for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
-								sampleCountsInteraction[i] = -1;
-								++j;
+								sampleCountsInteraction[i] = 0;
+								zscoreSnpCohort[i] = Double.NaN;
+								zscoreCovariateCohort[i] = Double.NaN;
+								zscoreInteractionCohort[i] = Double.NaN;
+								rSquaredCohort[i] = Double.NaN;
+								zscoreInteractionFlippedCohort[i] = Double.NaN;
+								++i;
 							}
 						}
 
 
 					}
 
-					double metaZscore = Double.NaN; //TODO
+					final double zscoreSnpMeta = Double.NaN; // TODO
+					final double zscoreCovariateMeta = Double.NaN; // TODO
+					final double zscoreInteractionMeta = Double.NaN; // TODO
+					final double zscoreInteractionFlippedMeta;
+					if (allStoreFlipped) {
+						zscoreInteractionFlippedMeta = Double.NaN; // TODO
+					} else {
+						zscoreInteractionFlippedMeta = Double.NaN;
+					}
 
-					//output.setInteractionResults(variant, gene, covariate, new BinaryInteractionZscores);
+					output.setInteractionResults(variantName, gene, covariate, new BinaryInteractionZscores(sampleCountsInteraction, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreInteractionFlippedCohort, zscoreSnpMeta, zscoreCovariateMeta, zscoreInteractionMeta, zscoreInteractionFlippedMeta));
 
 				}
 
 			}
 
 		}
-		
+
 		output.close();
 
 	}
