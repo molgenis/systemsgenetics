@@ -2,6 +2,7 @@ package eqtlmappingpipeline.binaryInteraction;
 
 import eqtlmappingpipeline.Main;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
@@ -11,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -22,6 +25,7 @@ import org.molgenis.genotype.Allele;
 import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;
 import umcg.genetica.io.binInteraction.BinaryInteractionFileCreator;
+import umcg.genetica.io.binInteraction.BinaryInteractionFileException;
 import umcg.genetica.io.binInteraction.BinaryInteractionQtlZscores;
 import umcg.genetica.io.binInteraction.BinaryInteractionZscores;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
@@ -76,7 +80,7 @@ public class BinaryInteractionMetaAnalysis {
 
 	}
 
-	public static void main(String[] args) throws UnsupportedEncodingException, IOException, Exception {
+	public static void main(String[] args) throws UnsupportedEncodingException, IOException, FileNotFoundException, BinaryInteractionFileException {
 
 		System.out.println(HEADER);
 		System.out.println();
@@ -275,7 +279,20 @@ public class BinaryInteractionMetaAnalysis {
 
 					}
 
-					double metaZscore = Double.NaN; //TODO
+					double metaZscore;
+					try {
+						metaZscore = weightedZscore(zscoresQtl, sampleCountsQtl);
+					} catch (MetaZscoreException ex) {
+						if(ex.specifiedI()){
+							System.err.println("Error calculating QTL meta Z-score for: " + variantName + "-" + gene + ". Problem with: " + cohorts.values().toArray(new String[cohortCount])[ex.getI()] + " error:" + ex.getMessage());
+							System.exit(1);
+							return;
+						} else {
+							System.err.println("Error calculating QTL meta Z-score for: " + variantName + "-" + gene + ". Error:" + ex.getMessage());
+							System.exit(1);
+							return;
+						}
+					}
 
 					output.setQtlResults(variantName, gene, new BinaryInteractionQtlZscores(zscoresQtl, sampleCountsQtl, metaZscore));
 
@@ -349,6 +366,58 @@ public class BinaryInteractionMetaAnalysis {
 
 		output.close();
 
+	}
+	
+	protected static double weightedZscore(double[] zscores, int[] samples) throws MetaZscoreException{
+		
+		double numerator = 0;
+		double denominator = 0;
+		
+		for(int i = 0 ; i < zscores.length ; ++i){
+			if(samples[i] == 0){
+				continue;
+			} else if(samples[i] < 0){
+				throw new MetaZscoreException(i, "Sample count < 0");
+			} else if(Double.isNaN(zscores[i])) {
+				throw new MetaZscoreException(i, "Z-score = NaN");
+			} else if(Double.isInfinite(zscores[i])){
+				throw new MetaZscoreException(i, "Z-score = Inf");
+			} else {
+				numerator += zscores[i] * samples[i];
+				denominator += samples[i] * samples[i];
+			}
+		}
+		
+		if(denominator < 1){
+			throw new MetaZscoreException("No samples included");
+		}
+		
+		return numerator / Math.sqrt(denominator);
+		
+	}
+	
+	private static class MetaZscoreException extends Exception {
+
+		private final int i;
+
+		public MetaZscoreException(String message) {
+			super(message);
+			this.i = -1;
+		}
+		
+		public MetaZscoreException(int i, String message) {
+			super(message);
+			this.i = i;
+		}
+		
+		public boolean specifiedI(){
+			return i >= 0;
+		}
+
+		public int getI() {
+			return i;
+		}
+		
 	}
 
 	private static class VariantGene {
