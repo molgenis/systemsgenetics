@@ -517,7 +517,6 @@ public class InteractionAnalysisMultiThreaded {
 		LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest = new LinkedHashSet<Pair<String, String>>();
 		HashSet<String> snpsPassingQC = new HashSet<String>();
 		HashSet<String> snpsVisited = new HashSet<String>();
-
 		HashMap<String, SNP> snpStats = new HashMap<String, SNP>(); // for the binary output
 		SNPLoader loader = genotypeData.createSNPLoader();
 
@@ -541,6 +540,7 @@ public class InteractionAnalysisMultiThreaded {
                         snpsPassingQC.add(snp);
                         snpProbeCombinationsToTest.add(p);
 					if (binaryOutput){
+
 							snpStats.put(snp, snpObj);
 						}
 					} else {
@@ -867,8 +867,8 @@ public class InteractionAnalysisMultiThreaded {
 	}
 
 
-
 	private BinaryInteractionFile createBinaryOutputHeader(File binaryOutFile, String[] snpsPassingQCArr, HashMap<String, SNP> snpStats, LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest, DoubleMatrixDataset<String, String> covariateData, HashSet<String> expressionIndividualsInPCCorrectedData, String cohort) throws BinaryInteractionFileException, IOException, BinaryInteractionFileException {
+
 		LinkedHashSet<String> geneIds = new LinkedHashSet<String>();
 		System.out.println("snpProbeCombinationsToTest size: " + snpProbeCombinationsToTest.size());
 		for (Pair<String, String> snpProbePair : snpProbeCombinationsToTest){
@@ -893,7 +893,7 @@ public class InteractionAnalysisMultiThreaded {
 			else
 				majorAllele = alleles[0];
 
-			variants[snpIdx] = new BinaryInteractionVariantCreator(snpId, String.valueOf((char)snpObj.getChr()), snpObj.getChrPos(), Allele.create((char) majorAllele), Allele.create((char)minorAllele));
+			variants[snpIdx] = new BinaryInteractionVariantCreator(snpId, snpObj.getChr() + "", snpObj.getChrPos(), Allele.create((char) majorAllele), Allele.create((char)minorAllele));
 		}
 
 		//fill genes
