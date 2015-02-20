@@ -12,7 +12,7 @@
     <modelVersion>4.0.0</modelVersion>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
             <version>1.0.5-SNAPSHOT</version>
         </dependency>
@@ -138,5 +138,5 @@
                 </configuration>
             </plugin>
         </plugins>
-    </build>	
+    </build>
 </project>
