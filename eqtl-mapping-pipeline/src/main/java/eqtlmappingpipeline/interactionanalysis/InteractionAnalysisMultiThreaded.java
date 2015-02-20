@@ -892,7 +892,7 @@ public class InteractionAnalysisMultiThreaded {
 			else
 				majorAllele = alleles[0];
 
-			variants[snpIdx] = new BinaryInteractionVariantCreator(snpId, String.valueOf((char)snpObj.getChr()), snpObj.getChrPos(), Allele.create((char) majorAllele), Allele.create((char)minorAllele));
+			variants[snpIdx] = new BinaryInteractionVariantCreator(snpId, snpObj.getChr() + "", snpObj.getChrPos(), Allele.create((char) majorAllele), Allele.create((char)minorAllele));
 		}
 
 		//fill genes
