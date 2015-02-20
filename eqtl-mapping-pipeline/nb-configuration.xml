@@ -6,13 +6,6 @@ The configuration is intended to be shared among all the users of project and
 therefore it is assumed to be part of version control checkout.
 Without this configuration present, some functionality in the IDE may be limited or fail altogether.
 -->
-    <config-data xmlns="http://www.netbeans.org/ns/maven-config-data/1">
-        <configurations>
-            <configuration id="testAse" profiles=""/>
-            <configuration id="testQtl" profiles=""/>
-            <configuration id="AseRerun" profiles=""/>
-        </configurations>
-    </config-data>
     <properties xmlns="http://www.netbeans.org/ns/maven-properties-data/1">
         <!--
 Properties that influence various parts of the IDE, especially code formatting and the like. 
@@ -22,4 +15,12 @@ Any value defined here will override the pom.xml file value but is only applicab
 -->
         <netbeans.hint.jdkPlatform>JDK_1.7</netbeans.hint.jdkPlatform>
     </properties>
+    <config-data xmlns="http://www.netbeans.org/ns/maven-config-data/1">
+        <configurations>
+            <configuration id="AseRerun" profiles=""/>
+            <configuration id="testAse" profiles=""/>
+            <configuration id="testQtl" profiles=""/>
+            <configuration id="TestInteractionMeta" profiles=""/>
+        </configurations>
+    </config-data>
 </project-shared-configuration>

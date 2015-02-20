@@ -26,6 +26,7 @@ import umcg.genetica.io.binInteraction.BinaryInteractionFileException;
 import umcg.genetica.io.binInteraction.BinaryInteractionQtlZscores;
 import umcg.genetica.io.binInteraction.BinaryInteractionQueryResult;
 import umcg.genetica.io.binInteraction.BinaryInteractionZscores;
+import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
 import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
 
 /**
@@ -252,7 +253,27 @@ public class QueryBinaryInteraction {
 				addRow(iterator.next(), inputFile, tableWriter, row);
 			}
 
+		} else if (queryVariantName != null) {
+
+			int[] genePointers = inputFile.getVariant(queryVariantName).getGenePointers();
+			for (int genePointer : genePointers) {
+
+				BinaryInteractionGene gene = inputFile.getGene(genePointer);
+				if (queryCovariateName != null) {
+
+					addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+
+				} else {
+					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, gene.getName()); iterator.hasNext();) {
+						addRow(iterator.next(), inputFile, tableWriter, row);
+					}
+				}
+
+
+			}
+
 		} else {
+			tableWriter.close();
 			outputWriter.append("ERROR not yet supported");
 			System.err.println("ERROR not yet supported");
 		}

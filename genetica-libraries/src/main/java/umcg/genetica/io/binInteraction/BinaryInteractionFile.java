@@ -513,6 +513,11 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		return genes[index];
 	}
+	
+	public BinaryInteractionGene getGene(int pointer) throws BinaryInteractionFileException{
+		return genes[pointer];
+	}
+
 
 	public List<BinaryInteractionVariant> getVariants() {
 		return Collections.unmodifiableList(Arrays.asList(variants));

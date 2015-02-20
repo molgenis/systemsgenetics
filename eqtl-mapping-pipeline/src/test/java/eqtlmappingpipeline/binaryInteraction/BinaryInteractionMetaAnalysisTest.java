@@ -54,4 +54,15 @@ public class BinaryInteractionMetaAnalysisTest {
 		assertEquals(result, expected, 0.0000001);
 		
 	}
+	
+	@Test
+	public void testweightedZscore4() throws Exception {
+		
+		double[] zscore = {2.3263479};
+		int[] samples = {10};
+		double expected = 2.3263479;
+		double result = BinaryInteractionMetaAnalysis.weightedZscore(zscore, samples);
+		assertEquals(result, expected, 0.0000001);
+		
+	}
 }

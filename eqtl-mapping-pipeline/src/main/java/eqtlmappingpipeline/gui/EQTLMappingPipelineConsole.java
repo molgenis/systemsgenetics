@@ -8,6 +8,7 @@ import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.ase.AnnotateAseWithSnpEffVcf;
 import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.ase.AseRecalculate;
+import eqtlmappingpipeline.binaryInteraction.BinaryInteractionMetaAnalysis;
 import eqtlmappingpipeline.binaryInteraction.ConvertTextOutputToBinary;
 import eqtlmappingpipeline.binaryInteraction.QueryBinaryInteraction;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
@@ -119,7 +120,10 @@ public class EQTLMappingPipelineConsole {
 			} else if (mode.equals("queryInteraction") || mode.equals("qi")) {
 				QueryBinaryInteraction.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
-			} else if (mode.equals("pileupToVcf")) {
+			} else if (mode.equals("binaryMeta") || mode.equals("bm")) {
+				BinaryInteractionMetaAnalysis.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			}else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
 			} else if (mode.equals("aseSnpEff")) {
@@ -161,6 +165,7 @@ public class EQTLMappingPipelineConsole {
 				+ "       interaction\teQTL mapping using interaction model\n"
 				+ "       util\tSmall utilities\n"
 				+ "       ase\t\tAllele Specific Expression mapping\n"
+				+ "       binaryMeta\t\tDo interaction meta analysis on binary files\n"
 				+ "       queryInteraction\t\tQuery binary interaction file\n"
 				+ "       pileupToVcf\tConvert a pileup file to vcf for usage in ASE mapping");
 		System.out.println("");
