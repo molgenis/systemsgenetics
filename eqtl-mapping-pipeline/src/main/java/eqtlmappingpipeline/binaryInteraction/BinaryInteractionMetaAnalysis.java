@@ -219,9 +219,9 @@ public class BinaryInteractionMetaAnalysis {
 		System.out.println("Genes: " + genes.size());
 		System.out.println("Covariates: " + covariates.size());
 		System.out.println("Variant Genes: " + variantGenes.size());
-		for (VariantGene variantGene : variantGenes) {
-			System.out.println(" - " + variantGene.getVariantName() + " - " + variantGene.getGeneName());
-		}
+//		for (VariantGene variantGene : variantGenes) {
+//			System.out.println(" - " + variantGene.getVariantName() + " - " + variantGene.getGeneName());
+//		}
 
 		System.out.println();
 		if (!allInteractions) {

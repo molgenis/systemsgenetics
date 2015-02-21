@@ -61,7 +61,7 @@ public class QueryBinaryInteraction {
 
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Gene name");
+		OptionBuilder.withDescription("Gene name (optional)");
 		OptionBuilder.withLongOpt("gene");
 		OPTIONS.addOption(OptionBuilder.create("g"));
 
@@ -73,7 +73,7 @@ public class QueryBinaryInteraction {
 
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Variant name");
+		OptionBuilder.withDescription("Variant name (optional)");
 		OptionBuilder.withLongOpt("variant");
 		OPTIONS.addOption(OptionBuilder.create("v"));
 
@@ -261,10 +261,32 @@ public class QueryBinaryInteraction {
 				BinaryInteractionGene gene = inputFile.getGene(genePointer);
 				if (queryCovariateName != null) {
 
-					addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+					if (inputFile.containsInteraction(queryVariantName, gene.getName(), queryCovariateName)) {
+						addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+					}
 
 				} else {
 					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, gene.getName()); iterator.hasNext();) {
+						addRow(iterator.next(), inputFile, tableWriter, row);
+					}
+				}
+
+			}
+
+		} else if (queryGeneName != null) {
+
+			int[] variantPointers = inputFile.getGene(queryGeneName).getVariantPointers();
+			for (int variantPointer : variantPointers) {
+
+				BinaryInteractionVariant variant = inputFile.getVariant(variantPointer);
+				if (queryCovariateName != null) {
+
+					if (inputFile.containsInteraction(variant.getName(), queryGeneName, queryCovariateName)) {
+						addRow(inputFile.readVariantGeneCovariateResults(variant.getName(), queryGeneName, queryCovariateName), inputFile, tableWriter, row);
+					}
+
+				} else {
+					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variant.getName(), queryGeneName); iterator.hasNext();) {
 						addRow(iterator.next(), inputFile, tableWriter, row);
 					}
 				}
@@ -273,9 +295,33 @@ public class QueryBinaryInteraction {
 			}
 
 		} else {
-			tableWriter.close();
-			outputWriter.append("ERROR not yet supported");
-			System.err.println("ERROR not yet supported");
+
+			for (BinaryInteractionVariant variant  : inputFile.getVariants()) {
+				
+				String variantName = variant.getName();
+				
+				int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
+				for (int genePointer : genePointers) {
+
+					BinaryInteractionGene gene = inputFile.getGene(genePointer);
+					if (queryCovariateName != null) {
+
+						if (inputFile.containsInteraction(variantName, gene.getName(), queryCovariateName)) {
+							addRow(inputFile.readVariantGeneCovariateResults(variantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+						}
+
+					} else {
+						for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
+							addRow(iterator.next(), inputFile, tableWriter, row);
+						}
+					}
+
+				}
+
+			}
+
+
+
 		}
 
 		tableWriter.close();

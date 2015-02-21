@@ -530,6 +530,10 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		return variants[index];
 	}
+	
+	public BinaryInteractionVariant getVariant(int pointer) throws BinaryInteractionFileException{
+		return variants[pointer];
+	}
 
 	public List<String> getCovariates() {
 		return Collections.unmodifiableList(Arrays.asList(covariates));
