@@ -18,9 +18,10 @@ Any value defined here will override the pom.xml file value but is only applicab
     <config-data xmlns="http://www.netbeans.org/ns/maven-config-data/1">
         <configurations>
             <configuration id="AseRerun" profiles=""/>
+            <configuration id="TestInteractionMeta" profiles=""/>
             <configuration id="testAse" profiles=""/>
             <configuration id="testQtl" profiles=""/>
-            <configuration id="TestInteractionMeta" profiles=""/>
+            <configuration id="TestReplicateInteraction" profiles=""/>
         </configurations>
     </config-data>
 </project-shared-configuration>

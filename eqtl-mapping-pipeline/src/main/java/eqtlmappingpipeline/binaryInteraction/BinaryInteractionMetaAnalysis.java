@@ -250,24 +250,25 @@ public class BinaryInteractionMetaAnalysis {
 		for (VariantGene variantGene : variantGenes) {
 			outputCreator.addTestedVariantGene(variantGene.getVariantName(), variantGene.getGeneName());
 		}
-		
+
 		StringBuilder description = new StringBuilder();
 		description.append("Binary interaction meta analysis using version: ").append(VERSION).append(". ");
 		description.append("Files included: ");
 		boolean first = true;
-		for(File inputFile : inputInteractionFiles){
-			if(first){
+		for (File inputFile : inputInteractionFiles) {
+			if (first) {
 				first = false;
 			} else {
 				description.append(", ");
 			}
 			description.append(inputFile.getAbsolutePath());
 		}
-		
+
 		outputCreator.setDescription(description.toString());
 
 		BinaryInteractionFile output = outputCreator.create();
 
+		int reporter = 3;
 		for (VariantGene variantGene : variantGenes) {
 			String variantName = variantGene.getVariantName();
 			String geneName = variantGene.getGeneName();
@@ -442,7 +443,10 @@ public class BinaryInteractionMetaAnalysis {
 
 			}
 
-
+			++reporter;
+			if (reporter % 500 == 0) {
+				System.out.println("Processed " + reporter + " of " + variantGenes.size() + " variant-gene combinations");
+			}
 
 		}
 
