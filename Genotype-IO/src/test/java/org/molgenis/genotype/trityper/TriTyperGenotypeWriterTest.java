@@ -48,7 +48,6 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 				System.out.println("Removing tmp dir and files");
 				for (File file : tmpOutputFolder.listFiles()) {
 					System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    //Why?
 					file.delete();
 				}
 				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
@@ -167,14 +166,19 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
         
         assertEquals(trityper.getVariantIdMap().keySet(), original.getVariantIdMap().keySet());
         
+        assertEquals(trityper.getSamples().size(), original.getSamples().size(), "Different number of samples in the files to compare.");
+        
+        for(int i = 0; i < trityper.getSamples().size(); ++i){
+//            System.out.println(trityper.getSamples().get(i).getId()+"\t"+original.getSamples().get(i).getId());
+            assertTrue(trityper.getSamples().get(i).getId().equals(original.getSamples().get(i).getId()), "Different ordering in the sample files." );
+        }
+        
         for(Entry<String, GeneticVariant> variantTT : trityper.getVariantIdMap().entrySet()){
             originalVariant = original.getVariantIdMap().get(variantTT.getKey());
             
             ArrayList<Alleles> originalAllelList = new ArrayList<Alleles>(originalVariant.getSampleVariants());
             ArrayList<Alleles> newAllelList = new ArrayList<Alleles>(variantTT.getValue().getSampleVariants());
-            
-            assertTrue(trityper.getSeqNames().equals(original.getSeqNames()), "Sample order is different, current test can't handel this.");
-
+        
             assertEquals(newAllelList, originalAllelList);
         }
 
