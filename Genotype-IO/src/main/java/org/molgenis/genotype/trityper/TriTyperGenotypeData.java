@@ -88,7 +88,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	 * then a subset of all samples in dataset otherwise ref to all samples
 	 * arraylist.
 	 */
-	private ArrayList<Sample> includedSamples;
+	private List<Sample> includedSamples;
 	/**
 	 * These are samples present in the dataset. If sample filters are used then
 	 * the it could be that there are fewer samples returned
@@ -313,6 +313,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		} else {
 			includedSamples = samples;
 		}
+                includedSamples = Collections.unmodifiableList(includedSamples);
 
 		LOG.info("Loaded " + includedSamples.size() + " out of " + samples.size() + " samples.");
 

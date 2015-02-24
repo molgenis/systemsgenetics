@@ -179,7 +179,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 
 	@Override
 	public List<Sample> getSamples() {
-		return samples;
+		return Collections.unmodifiableList(samples);
 	}
 
 	@Override
