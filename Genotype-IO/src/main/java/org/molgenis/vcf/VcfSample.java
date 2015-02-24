@@ -31,7 +31,7 @@ public class VcfSample
 	 * @return data for the sample record at the given position or null if data is set to the missing value
 	 */
 	public String getData(int idx) {
-		String data = tokens[idx];
+		String data = idx == 0 || idx < tokens.length ? tokens[idx] : null; // return null for trailing values that are not specified 
 		return data != null && data.equals(VcfRecord.MISSING_VALUE) ? null : data;
 	}
 	
