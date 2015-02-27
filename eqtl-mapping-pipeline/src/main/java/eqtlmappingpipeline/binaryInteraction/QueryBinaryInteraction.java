@@ -26,6 +26,7 @@ import umcg.genetica.io.binInteraction.BinaryInteractionFileException;
 import umcg.genetica.io.binInteraction.BinaryInteractionQtlZscores;
 import umcg.genetica.io.binInteraction.BinaryInteractionQueryResult;
 import umcg.genetica.io.binInteraction.BinaryInteractionZscores;
+import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
 import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
 
 /**
@@ -54,25 +55,25 @@ public class QueryBinaryInteraction {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Output file");
+		OptionBuilder.withDescription("Output file (optional)");
 		OptionBuilder.withLongOpt("output");
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Gene name");
+		OptionBuilder.withDescription("Gene name (optional)");
 		OptionBuilder.withLongOpt("gene");
 		OPTIONS.addOption(OptionBuilder.create("g"));
 
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Covariate name");
+		OptionBuilder.withDescription("Covariate name (optional)");
 		OptionBuilder.withLongOpt("cocariate");
 		OPTIONS.addOption(OptionBuilder.create("c"));
 
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Variant name");
+		OptionBuilder.withDescription("Variant name (optional)");
 		OptionBuilder.withLongOpt("variant");
 		OPTIONS.addOption(OptionBuilder.create("v"));
 
@@ -252,9 +253,75 @@ public class QueryBinaryInteraction {
 				addRow(iterator.next(), inputFile, tableWriter, row);
 			}
 
+		} else if (queryVariantName != null) {
+
+			int[] genePointers = inputFile.getVariant(queryVariantName).getGenePointers();
+			for (int genePointer : genePointers) {
+
+				BinaryInteractionGene gene = inputFile.getGene(genePointer);
+				if (queryCovariateName != null) {
+
+					if (inputFile.containsInteraction(queryVariantName, gene.getName(), queryCovariateName)) {
+						addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+					}
+
+				} else {
+					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, gene.getName()); iterator.hasNext();) {
+						addRow(iterator.next(), inputFile, tableWriter, row);
+					}
+				}
+
+			}
+
+		} else if (queryGeneName != null) {
+
+			int[] variantPointers = inputFile.getGene(queryGeneName).getVariantPointers();
+			for (int variantPointer : variantPointers) {
+
+				BinaryInteractionVariant variant = inputFile.getVariant(variantPointer);
+				if (queryCovariateName != null) {
+
+					if (inputFile.containsInteraction(variant.getName(), queryGeneName, queryCovariateName)) {
+						addRow(inputFile.readVariantGeneCovariateResults(variant.getName(), queryGeneName, queryCovariateName), inputFile, tableWriter, row);
+					}
+
+				} else {
+					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variant.getName(), queryGeneName); iterator.hasNext();) {
+						addRow(iterator.next(), inputFile, tableWriter, row);
+					}
+				}
+
+
+			}
+
 		} else {
-			outputWriter.append("ERROR not yet supported");
-			System.err.println("ERROR not yet supported");
+
+			for (BinaryInteractionVariant variant  : inputFile.getVariants()) {
+				
+				String variantName = variant.getName();
+				
+				int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
+				for (int genePointer : genePointers) {
+
+					BinaryInteractionGene gene = inputFile.getGene(genePointer);
+					if (queryCovariateName != null) {
+
+						if (inputFile.containsInteraction(variantName, gene.getName(), queryCovariateName)) {
+							addRow(inputFile.readVariantGeneCovariateResults(variantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+						}
+
+					} else {
+						for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
+							addRow(iterator.next(), inputFile, tableWriter, row);
+						}
+					}
+
+				}
+
+			}
+
+
+
 		}
 
 		tableWriter.close();

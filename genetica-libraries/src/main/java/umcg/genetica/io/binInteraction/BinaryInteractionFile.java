@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import org.molgenis.genotype.Allele;
+import umcg.genetica.collections.ChrPosMap;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneStatic;
 import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
 
@@ -47,6 +48,7 @@ public class BinaryInteractionFile implements Closeable {
 	private final BinaryInteractionCohort[] cohorts;
 	private final BinaryInteractionGene[] genes;
 	private final BinaryInteractionVariant[] variants;
+	private ChrPosMap<BinaryInteractionVariant> variantsByPos = null;
 	protected final String[] covariates;
 	private final int[][] covariatesTested;
 	private final long timeStamp;
@@ -513,6 +515,11 @@ public class BinaryInteractionFile implements Closeable {
 		}
 		return genes[index];
 	}
+	
+	public BinaryInteractionGene getGene(int pointer) throws BinaryInteractionFileException{
+		return genes[pointer];
+	}
+
 
 	public List<BinaryInteractionVariant> getVariants() {
 		return Collections.unmodifiableList(Arrays.asList(variants));
@@ -524,6 +531,10 @@ public class BinaryInteractionFile implements Closeable {
 			throw new BinaryInteractionFileException("Variant not found: " + name);
 		}
 		return variants[index];
+	}
+	
+	public BinaryInteractionVariant getVariant(int pointer) throws BinaryInteractionFileException{
+		return variants[pointer];
 	}
 
 	public List<String> getCovariates() {
@@ -1036,7 +1047,7 @@ public class BinaryInteractionFile implements Closeable {
 	}
 	
 	public int getVariantGeneCombinations(){
-		return covariatesTested.length;
+		return cummalitiveInteractionCountUptoVariantGene.length - 1;
 	}
 	
 	public boolean containsGene(String geneName){
@@ -1109,5 +1120,25 @@ public class BinaryInteractionFile implements Closeable {
 				return true;
 			}
 		}
+	}
+	
+	private void createVariantChrPosMap(){
+		variantsByPos = new ChrPosMap<BinaryInteractionVariant>();
+		for(BinaryInteractionVariant variant : variants){
+			variantsByPos.put(variant.getChr(), variant.getPos(), variant);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param chr
+	 * @param pos
+	 * @return null if not found
+	 */
+	public BinaryInteractionVariant getVariant(String chr, int pos){
+		if(variantsByPos == null){
+			createVariantChrPosMap();
+		}
+		return variantsByPos.get(chr, pos);
 	}
 }
