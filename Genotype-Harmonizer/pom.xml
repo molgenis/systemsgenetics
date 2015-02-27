@@ -8,13 +8,13 @@
 	<parent>
 		<groupId>nl.systemsgenetics</groupId>
 		<artifactId>systemsgenetics</artifactId>
-		<version>1.0.1-SNAPSHOT</version>
+		<version>1.0.1</version>
 	</parent>
 	<dependencies>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>Genotype-IO</artifactId>
-			<version>1.0.1-SNAPSHOT</version>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>
