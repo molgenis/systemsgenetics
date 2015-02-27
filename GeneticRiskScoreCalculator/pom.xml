@@ -5,10 +5,10 @@
     <parent>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>systemsgenetics</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1</version>
     </parent>
     <artifactId>GeneticRiskScoreCalculator</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.2</version>
     <name>Genetic Risk Score Calculator</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>Genotype-IO</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
-            <version>1.0.5-SNAPSHOT</version>
+            <version>1.0.5</version>
         </dependency>
     </dependencies>
 	
