@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.interactionanalysis;
 
+import eqtlmappingpipeline.Main;
 import org.molgenis.genotype.Allele;
 import umcg.genetica.graphics.ScatterPlot;
 import eqtlmappingpipeline.normalization.Normalizer;
@@ -612,7 +613,14 @@ public class InteractionAnalysisMultiThreaded {
 		// Write binary output header
 		if (binaryOutput){
 			File binaryOutFile = new File(out + "InteractionResults.binary.dat");
-			binaryInteractionFile = createBinaryOutputHeader(binaryOutFile, snpsPassingQCArr, snpStats, snpProbeCombinationsToTest, covariateData, expressionIndividualsInPCCorrectedData, cohort);
+			String description = "Genotypes: " + ingt + 
+					" Expresion: " + inExpPCCorrected + 
+					" GTE: " + gte + 
+					" Covariates: " + covariateFile + 
+					" Covariates List: " + covariateList + 
+					" SNP-probes: " + snpprobecombinationfile +
+					" Software version: " + Main.VERSION;
+			binaryInteractionFile = createBinaryOutputHeader(binaryOutFile, snpsPassingQCArr, snpStats, snpProbeCombinationsToTest, covariateData, expressionIndividualsInPCCorrectedData, cohort, description);
 		}
 		else{
 			System.out.println("Output will be written to: " + out + "InteractionResults.txt");
@@ -867,7 +875,7 @@ public class InteractionAnalysisMultiThreaded {
 	}
 
 
-	private BinaryInteractionFile createBinaryOutputHeader(File binaryOutFile, String[] snpsPassingQCArr, HashMap<String, SNP> snpStats, LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest, DoubleMatrixDataset<String, String> covariateData, HashSet<String> expressionIndividualsInPCCorrectedData, String cohort) throws BinaryInteractionFileException, IOException {
+	private BinaryInteractionFile createBinaryOutputHeader(File binaryOutFile, String[] snpsPassingQCArr, HashMap<String, SNP> snpStats, LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest, DoubleMatrixDataset<String, String> covariateData, HashSet<String> expressionIndividualsInPCCorrectedData, String cohort, String description) throws BinaryInteractionFileException, IOException {
 		LinkedHashSet<String> geneIds = new LinkedHashSet<String>();
 		System.out.println("snpProbeCombinationsToTest size: " + snpProbeCombinationsToTest.size());
 		for (Pair<String, String> snpProbePair : snpProbeCombinationsToTest){
@@ -918,6 +926,8 @@ public class InteractionAnalysisMultiThreaded {
 
 		// initialize
 		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(binaryOutFile, variants, genes, cohorts, covariates, true, false, true, true);
+		
+		creator.setDescription(description);
 
 		for (Pair<String, String> eqtl : snpProbeCombinationsToTest){
 			creator.addTestedVariantGene(eqtl.getLeft(), eqtl.getRight());
