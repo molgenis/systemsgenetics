@@ -4,10 +4,10 @@
     <parent>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>systemsgenetics</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1</version>
     </parent>
     <artifactId>genetica-libraries</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.5</version>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
     <build>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>Genotype-IO</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>commons-collections</groupId>
