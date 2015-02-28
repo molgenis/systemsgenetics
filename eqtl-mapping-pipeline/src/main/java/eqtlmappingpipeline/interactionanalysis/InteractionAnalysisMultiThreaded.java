@@ -691,6 +691,7 @@ public class InteractionAnalysisMultiThreaded {
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
+						System.exit(1);
 					}
 
 					nrRetrieved++;
@@ -732,9 +733,16 @@ public class InteractionAnalysisMultiThreaded {
 			binaryInteractionFile.finalizeWriting();
 			System.out.println("Interaction results writer buffer flushed: " + binaryInteractionFile.getInteractionWriteBufferFlushed());
 			System.out.println("QTL results writer buffer flushed: " + binaryInteractionFile.getQtlWriteBufferFlushed());
-			System.out.println("Total number of interactions: " + binaryInteractionFile.getTotalNumberInteractions());
-			System.out.println("Number of QTL z-scores read" + binaryInteractionFile.getQtlZscoresRead());
+			System.out.println("Total number of expected interactions: " + binaryInteractionFile.getTotalNumberInteractions());
+			System.out.println("Total number of writen interactions: " + binaryInteractionFile.getInteractionZscoresSet());
+			System.out.println("Number of QTL z-scores: " + binaryInteractionFile.getVariantCount());
 			binaryInteractionFile.close();
+			
+			if(binaryInteractionFile.getInteractionZscoresSet() != binaryInteractionFile.getTotalNumberInteractions()){
+				System.out.println("WARNING!!! written and expected interactions not the same");
+				System.err.println("WARNING!!! written and expected interactions not the same");
+			}
+			
 		}
 		else{
 			outputFile.close();
@@ -857,7 +865,7 @@ public class InteractionAnalysisMultiThreaded {
 
 				//interaction z-scores
 				double interactionZ = interactionZScoreMatrix[e][c];
-				final int[] samplesInteractionCohort = {numSamples};
+				final int[] samplesInteractionCohort = {(Double.isNaN(interactionZ) ? 0 : numSamples)};
 				final double[] zscoreSnpCohort = {SNPZResultMatrix[e][c]};
 				final double[] zscoreCovariateCohort = {covariateZResultMatrix[e][c]};
 				final double[] zscoreInteractionCohort = {interactionZ};
@@ -870,6 +878,7 @@ public class InteractionAnalysisMultiThreaded {
 				BinaryInteractionZscores interactionZscores = new BinaryInteractionZscores(samplesInteractionCohort, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreInteractionFlippedCohort);
 				createdInteractions.setInteractionResults(snp, gene, covariate, interactionZscores);
 			}
+			pb.iterate();
 		}
 		return createdInteractions;
 	}
