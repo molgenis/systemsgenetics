@@ -19,9 +19,10 @@ Any value defined here will override the pom.xml file value but is only applicab
         <configurations>
             <configuration id="AseRerun" profiles=""/>
             <configuration id="TestInteractionMeta" profiles=""/>
+            <configuration id="TestReplicateInteraction" profiles=""/>
             <configuration id="testAse" profiles=""/>
             <configuration id="testQtl" profiles=""/>
-            <configuration id="TestReplicateInteraction" profiles=""/>
+            <configuration id="sumChi2InteractionTest" profiles=""/>
         </configurations>
     </config-data>
 </project-shared-configuration>

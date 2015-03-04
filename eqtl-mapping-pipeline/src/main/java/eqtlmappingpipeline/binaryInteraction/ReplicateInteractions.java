@@ -36,15 +36,11 @@ import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
  */
 public class ReplicateInteractions {
 
-	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-	private static final Date currentDataTime = new Date();
 	private static final Options OPTIONS;
 
 	static {
 
 		OPTIONS = new Options();
-
-		Option option;
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
