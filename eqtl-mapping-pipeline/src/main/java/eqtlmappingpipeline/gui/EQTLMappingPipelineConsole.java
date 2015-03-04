@@ -10,6 +10,7 @@ import eqtlmappingpipeline.ase.Ase;
 import eqtlmappingpipeline.ase.AseRecalculate;
 import eqtlmappingpipeline.binaryInteraction.BinaryInteractionMetaAnalysis;
 import eqtlmappingpipeline.binaryInteraction.ConvertTextOutputToBinary;
+import eqtlmappingpipeline.binaryInteraction.CovariateImportance;
 import eqtlmappingpipeline.binaryInteraction.QueryBinaryInteraction;
 import eqtlmappingpipeline.binaryInteraction.ReplicateInteractions;
 import eqtlmappingpipeline.interactionanalysis.InteractionAnalysisConsoleGUI;
@@ -126,6 +127,9 @@ public class EQTLMappingPipelineConsole {
 				return;
 			} else if (mode.equals("replicateInteraction") || mode.equals("ri")) {
 				ReplicateInteractions.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("interactionChi2") || mode.equals("ic")) {
+				CovariateImportance.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
 			} else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));

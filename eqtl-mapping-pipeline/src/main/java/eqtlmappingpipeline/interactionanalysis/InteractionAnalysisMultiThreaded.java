@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.interactionanalysis;
 
+import eqtlmappingpipeline.Main;
 import org.molgenis.genotype.Allele;
 import umcg.genetica.graphics.ScatterPlot;
 import eqtlmappingpipeline.normalization.Normalizer;
@@ -612,7 +613,14 @@ public class InteractionAnalysisMultiThreaded {
 		// Write binary output header
 		if (binaryOutput){
 			File binaryOutFile = new File(out + "InteractionResults.binary.dat");
-			binaryInteractionFile = createBinaryOutputHeader(binaryOutFile, snpsPassingQCArr, snpStats, snpProbeCombinationsToTest, covariateData, expressionIndividualsInPCCorrectedData, cohort);
+			String description = "Genotypes: " + ingt + 
+					" Expresion: " + inExpPCCorrected + 
+					" GTE: " + gte + 
+					" Covariates: " + covariateFile + 
+					" Covariates List: " + covariateList + 
+					" SNP-probes: " + snpprobecombinationfile +
+					" Software version: " + Main.VERSION;
+			binaryInteractionFile = createBinaryOutputHeader(binaryOutFile, snpsPassingQCArr, snpStats, snpProbeCombinationsToTest, covariateData, expressionIndividualsInPCCorrectedData, cohort, description);
 		}
 		else{
 			System.out.println("Output will be written to: " + out + "InteractionResults.txt");
@@ -683,6 +691,7 @@ public class InteractionAnalysisMultiThreaded {
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
+						System.exit(1);
 					}
 
 					nrRetrieved++;
@@ -724,9 +733,16 @@ public class InteractionAnalysisMultiThreaded {
 			binaryInteractionFile.finalizeWriting();
 			System.out.println("Interaction results writer buffer flushed: " + binaryInteractionFile.getInteractionWriteBufferFlushed());
 			System.out.println("QTL results writer buffer flushed: " + binaryInteractionFile.getQtlWriteBufferFlushed());
-			System.out.println("Total number of interactions: " + binaryInteractionFile.getTotalNumberInteractions());
-			System.out.println("Number of QTL z-scores read" + binaryInteractionFile.getQtlZscoresRead());
+			System.out.println("Total number of expected interactions: " + binaryInteractionFile.getTotalNumberInteractions());
+			System.out.println("Total number of writen interactions: " + binaryInteractionFile.getInteractionZscoresSet());
+			System.out.println("Number of QTL z-scores: " + binaryInteractionFile.getVariantCount());
 			binaryInteractionFile.close();
+			
+			if(binaryInteractionFile.getInteractionZscoresSet() != binaryInteractionFile.getTotalNumberInteractions()){
+				System.out.println("WARNING!!! written and expected interactions not the same");
+				System.err.println("WARNING!!! written and expected interactions not the same");
+			}
+			
 		}
 		else{
 			outputFile.close();
@@ -849,7 +865,7 @@ public class InteractionAnalysisMultiThreaded {
 
 				//interaction z-scores
 				double interactionZ = interactionZScoreMatrix[e][c];
-				final int[] samplesInteractionCohort = {numSamples};
+				final int[] samplesInteractionCohort = {(Double.isNaN(interactionZ) ? 0 : numSamples)};
 				final double[] zscoreSnpCohort = {SNPZResultMatrix[e][c]};
 				final double[] zscoreCovariateCohort = {covariateZResultMatrix[e][c]};
 				final double[] zscoreInteractionCohort = {interactionZ};
@@ -862,12 +878,13 @@ public class InteractionAnalysisMultiThreaded {
 				BinaryInteractionZscores interactionZscores = new BinaryInteractionZscores(samplesInteractionCohort, zscoreSnpCohort, zscoreCovariateCohort, zscoreInteractionCohort, rSquaredCohort, zscoreInteractionFlippedCohort);
 				createdInteractions.setInteractionResults(snp, gene, covariate, interactionZscores);
 			}
+			pb.iterate();
 		}
 		return createdInteractions;
 	}
 
 
-	private BinaryInteractionFile createBinaryOutputHeader(File binaryOutFile, String[] snpsPassingQCArr, HashMap<String, SNP> snpStats, LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest, DoubleMatrixDataset<String, String> covariateData, HashSet<String> expressionIndividualsInPCCorrectedData, String cohort) throws BinaryInteractionFileException, IOException {
+	private BinaryInteractionFile createBinaryOutputHeader(File binaryOutFile, String[] snpsPassingQCArr, HashMap<String, SNP> snpStats, LinkedHashSet<Pair<String, String>> snpProbeCombinationsToTest, DoubleMatrixDataset<String, String> covariateData, HashSet<String> expressionIndividualsInPCCorrectedData, String cohort, String description) throws BinaryInteractionFileException, IOException {
 		LinkedHashSet<String> geneIds = new LinkedHashSet<String>();
 		System.out.println("snpProbeCombinationsToTest size: " + snpProbeCombinationsToTest.size());
 		for (Pair<String, String> snpProbePair : snpProbeCombinationsToTest){
@@ -918,6 +935,8 @@ public class InteractionAnalysisMultiThreaded {
 
 		// initialize
 		BinaryInteractionFileCreator creator = new BinaryInteractionFileCreator(binaryOutFile, variants, genes, cohorts, covariates, true, false, true, true);
+		
+		creator.setDescription(description);
 
 		for (Pair<String, String> eqtl : snpProbeCombinationsToTest){
 			creator.addTestedVariantGene(eqtl.getLeft(), eqtl.getRight());
