@@ -9,15 +9,12 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.text.DateFormat;
+import java.io.Writer;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -138,19 +135,21 @@ public class ReplicateInteractions {
 			System.exit(1);
 			return;
 		}
+		BufferedWriter logWriter = new BufferedWriter(new FileWriter(outputPrefix + "_Log.txt"));
 
-		System.out.println("Input file: " + inputInteractionFile.getAbsolutePath());
-		System.out.println("Replication file: " + replicationInteractionFile.getAbsolutePath());
-		System.out.println("Output prefix: " + outputPrefix);
-		System.out.println("Min interaction z-score: " + minAbsInteractionZ);
-		System.out.println("Min replication interaction z-score: " + minAbsReplicationInteractionZ);
+		writeAndOut("Input file: " + inputInteractionFile.getAbsolutePath(), logWriter);
+		writeAndOut("Replication file: " + replicationInteractionFile.getAbsolutePath(), logWriter);
+		writeAndOut("Output prefix: " + outputPrefix, logWriter);
+		writeAndOut("Min interaction z-score: " + minAbsInteractionZ, logWriter);
+		writeAndOut("Min replication interaction z-score: " + minAbsReplicationInteractionZ, logWriter);
 		if (matchOnChrPos) {
-			System.out.println("Matching variants on chr-pos");
+			writeAndOut("Matching variants on chr-pos", logWriter);
 		}
 		if (covariatesToIncludeFile != null) {
-			System.out.println("Covariates to include: " + covariatesToIncludeFile.getAbsolutePath());
+			writeAndOut("Covariates to include: " + covariatesToIncludeFile.getAbsolutePath(), logWriter);
 		}
-		System.out.println();
+		writeAndOut("", logWriter);
+		
 
 		final HashSet<String> covariantsToInclude;
 		if (covariatesToIncludeFile != null) {
@@ -160,8 +159,8 @@ public class ReplicateInteractions {
 			while ((line = reader.readLine()) != null) {
 				covariantsToInclude.add(line.trim());
 			}
-			System.out.println("Covariates included: " + covariantsToInclude.size());
-			System.out.println();
+			writeAndOut("Covariates included: " + covariantsToInclude.size(), logWriter);
+			writeAndOut("", logWriter);
 		} else {
 			covariantsToInclude = null;
 		}
@@ -291,17 +290,19 @@ public class ReplicateInteractions {
 		numberFormat.setMinimumFractionDigits(0);
 		numberFormat.setMaximumFractionDigits(2);
 
-		System.out.println("");
-		System.out.println("Total number of interactions: " + numberFormat.format(notSignificant + significant));
-		System.out.println(" - Not significant: " + numberFormat.format(notSignificant) + " (" + numberFormat.format(notSignificant * 100d / (notSignificant + significant)) + "%)");
-		System.out.println(" - Significant: " + numberFormat.format(significant) + " (" + numberFormat.format(significant * 100d / (notSignificant + significant)) + "%)");
-		System.out.println("  * Not in replication: " + numberFormat.format(notTestedInReplication) + " (" + numberFormat.format(notTestedInReplication * 100d / significant) + "%)");
-		System.out.println("  * Not significant in replication: " + numberFormat.format(notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection) + " (" + numberFormat.format((notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection) * 100d / significant) + "%)");
-		System.out.println("   # Same direction: " + numberFormat.format(notSignificantReplicationSameDirection) + " (" + numberFormat.format(notSignificantReplicationSameDirection * 100d / (notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection)) + "%)");
-		System.out.println("   # Opposite direction: " + numberFormat.format(notSignificantReplicationOppositeDirection) + " (" + numberFormat.format(notSignificantReplicationOppositeDirection * 100d / (notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection)) + "%)");
-		System.out.println("  * Significant in replication: " + numberFormat.format(significantReplicationSameDirection + significantReplicationOppositeDirection) + " (" + numberFormat.format((significantReplicationSameDirection + significantReplicationOppositeDirection) * 100d / significant) + "%)");
-		System.out.println("   # Same direction: " + numberFormat.format(significantReplicationSameDirection) + " (" + numberFormat.format(significantReplicationSameDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)");
-		System.out.println("   # Opposite direction: " + numberFormat.format(significantReplicationOppositeDirection) + " (" + numberFormat.format(significantReplicationOppositeDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)");
+		writeAndOut("", logWriter);
+		writeAndOut("Total number of interactions: " + numberFormat.format(notSignificant + significant), logWriter);
+		writeAndOut(" - Not significant: " + numberFormat.format(notSignificant) + " (" + numberFormat.format(notSignificant * 100d / (notSignificant + significant)) + "%)", logWriter);
+		writeAndOut(" - Significant: " + numberFormat.format(significant) + " (" + numberFormat.format(significant * 100d / (notSignificant + significant)) + "%)", logWriter);
+		writeAndOut("  * Not in replication: " + numberFormat.format(notTestedInReplication) + " (" + numberFormat.format(notTestedInReplication * 100d / significant) + "%)", logWriter);
+		writeAndOut("  * Not significant in replication: " + numberFormat.format(notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection) + " (" + numberFormat.format((notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection) * 100d / significant) + "%)", logWriter);
+		writeAndOut("   # Same direction: " + numberFormat.format(notSignificantReplicationSameDirection) + " (" + numberFormat.format(notSignificantReplicationSameDirection * 100d / (notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection)) + "%)", logWriter);
+		writeAndOut("   # Opposite direction: " + numberFormat.format(notSignificantReplicationOppositeDirection) + " (" + numberFormat.format(notSignificantReplicationOppositeDirection * 100d / (notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection)) + "%)", logWriter);
+		writeAndOut("  * Significant in replication: " + numberFormat.format(significantReplicationSameDirection + significantReplicationOppositeDirection) + " (" + numberFormat.format((significantReplicationSameDirection + significantReplicationOppositeDirection) * 100d / significant) + "%)", logWriter);
+		writeAndOut("   # Same direction: " + numberFormat.format(significantReplicationSameDirection) + " (" + numberFormat.format(significantReplicationSameDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)", logWriter);
+		writeAndOut("   # Opposite direction: " + numberFormat.format(significantReplicationOppositeDirection) + " (" + numberFormat.format(significantReplicationOppositeDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)", logWriter);
+		
+		logWriter.close();
 
 	}
 
@@ -345,5 +346,11 @@ public class ReplicateInteractions {
 		row[c++] = "Replication_meta_interaction";
 		replicatedSameDirectionWriter.writeNext(row);
 		return replicatedSameDirectionWriter;
+	}
+	
+	private static void writeAndOut(String message, Writer writer) throws IOException{
+		writer.append(message);
+		writer.append('\n');
+		System.out.println(message);
 	}
 }
