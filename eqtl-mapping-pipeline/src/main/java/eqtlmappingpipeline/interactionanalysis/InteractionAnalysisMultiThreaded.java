@@ -398,7 +398,7 @@ public class InteractionAnalysisMultiThreaded {
 
 	public void runInteractionAnalysis(String inExpPCCorrected, String covariateFile, String ingt,
 									   String gte, String snpprobecombinationfile, Integer nrThreads, String out,
-									   String covariateList, boolean robustSE, boolean fullStats, boolean binaryOutput, String cohort) throws IOException, Exception {
+									   String covariateList, boolean sem, boolean robustSE, boolean fullStats, boolean binaryOutput, String cohort) throws IOException, Exception {
 		String probeannot = null;
 
 		double mafthreshold = 0.05;
@@ -409,7 +409,7 @@ public class InteractionAnalysisMultiThreaded {
 			throw new IllegalArgumentException("ERROR: please provide snpprobe combination file");
 		}
 
-		if (robustSE) {
+		if (robustSE || sem) {
 			System.out.println("Running tests for robust standard errors. Now testing R connection");
 			try {
 				RConnection rConnection = new RConnection();
@@ -668,6 +668,7 @@ public class InteractionAnalysisMultiThreaded {
 						expInds,
 						covariateData,
 						pcCorrectedExpressionData,
+						sem, 
 						robustSE,
 						fullStats
 				);
