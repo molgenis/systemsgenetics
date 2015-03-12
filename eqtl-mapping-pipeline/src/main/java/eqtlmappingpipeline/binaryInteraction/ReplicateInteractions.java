@@ -1,6 +1,7 @@
 package eqtlmappingpipeline.binaryInteraction;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import eqtlmappingpipeline.Main;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -13,6 +14,8 @@ import java.io.Writer;
 import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
@@ -74,6 +77,20 @@ public class ReplicateInteractions {
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("riz"));
 
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Minimum absolute interaction z-score to count covariate");
+		OptionBuilder.withLongOpt("covariateInteractionZ");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("ciz"));
+
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Minimum absolute replication interaction z-score to count covariate");
+		OptionBuilder.withLongOpt("covariateReplicationInteractionZ");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("criz"));
+
 		OptionBuilder.withDescription("If set match variant on chr-pos");
 		OptionBuilder.withLongOpt("chrPos");
 		OPTIONS.addOption(OptionBuilder.create("cp"));
@@ -92,6 +109,8 @@ public class ReplicateInteractions {
 		final File replicationInteractionFile;
 		final double minAbsInteractionZ;
 		final double minAbsReplicationInteractionZ;
+		final double minAbsInteractionZCovariateCount;
+		final double minAbsReplicationInteractionZCovariateCount;
 		final boolean matchOnChrPos;
 		final String outputPrefix;
 		final File covariatesToIncludeFile;
@@ -119,6 +138,22 @@ public class ReplicateInteractions {
 				return;
 			}
 
+			try {
+				minAbsInteractionZCovariateCount = Double.parseDouble(commandLine.getOptionValue("ciz"));
+			} catch (NumberFormatException ex) {
+				System.out.println("Cannot not parse --covariateInteractionZ as double: " + commandLine.getOptionValue("ciz"));
+				System.exit(1);
+				return;
+			}
+
+			try {
+				minAbsReplicationInteractionZCovariateCount = Double.parseDouble(commandLine.getOptionValue("criz"));
+			} catch (NumberFormatException ex) {
+				System.out.println("Cannot not parse --covariateReplicationInteractionZ as double: " + commandLine.getOptionValue("criz"));
+				System.exit(1);
+				return;
+			}
+
 			if (commandLine.hasOption("c")) {
 				covariatesToIncludeFile = new File(commandLine.getOptionValue("c"));
 			} else {
@@ -137,11 +172,14 @@ public class ReplicateInteractions {
 		}
 		BufferedWriter logWriter = new BufferedWriter(new FileWriter(outputPrefix + "_Log.txt"));
 
+		writeAndOut("Software version: " + Main.VERSION, logWriter);
 		writeAndOut("Input file: " + inputInteractionFile.getAbsolutePath(), logWriter);
 		writeAndOut("Replication file: " + replicationInteractionFile.getAbsolutePath(), logWriter);
 		writeAndOut("Output prefix: " + outputPrefix, logWriter);
 		writeAndOut("Min interaction z-score: " + minAbsInteractionZ, logWriter);
 		writeAndOut("Min replication interaction z-score: " + minAbsReplicationInteractionZ, logWriter);
+		writeAndOut("Min interaction z-score covariate counter: " + minAbsInteractionZCovariateCount, logWriter);
+		writeAndOut("Min replication interaction z-score covariate counter: " + minAbsReplicationInteractionZCovariateCount, logWriter);
 		if (matchOnChrPos) {
 			writeAndOut("Matching variants on chr-pos", logWriter);
 		}
@@ -149,13 +187,13 @@ public class ReplicateInteractions {
 			writeAndOut("Covariates to include: " + covariatesToIncludeFile.getAbsolutePath(), logWriter);
 		}
 		writeAndOut("", logWriter);
-		
+
 
 		final HashSet<String> covariantsToInclude;
 		if (covariatesToIncludeFile != null) {
 			covariantsToInclude = new HashSet<String>();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(covariatesToIncludeFile), "UTF-8"));
-			String line;			
+			String line;
 			while ((line = reader.readLine()) != null) {
 				covariantsToInclude.add(line.trim());
 			}
@@ -178,6 +216,7 @@ public class ReplicateInteractions {
 		int significant = 0;
 		int notSignificant = 0;
 		int notTestedInReplication = 0;
+		int nanReplication = 0;
 		int notSignificantReplicationSameDirection = 0;
 		int notSignificantReplicationOppositeDirection = 0;
 		int significantReplicationOppositeDirection = 0;
@@ -185,11 +224,17 @@ public class ReplicateInteractions {
 
 		int reporter = 0;
 
+		LinkedHashMap<String, CovariateCount> covariateCounts = new LinkedHashMap<String, CovariateCount>(inputFile.getCovariateCount());
+		for (String covariate : inputFile.getCovariates()) {
+			covariateCounts.put(covariate, new CovariateCount());
+		}
+
 		for (BinaryInteractionVariant variant : inputFile.getVariants()) {
 
 			String variantName = variant.getName();
 
 			BinaryInteractionVariant replicationVariant;
+			boolean swap;
 
 			if (matchOnChrPos) {
 				replicationVariant = replicationFile.getVariant(variant.getChr(), variant.getPos());
@@ -200,6 +245,17 @@ public class ReplicateInteractions {
 					replicationVariant = null;
 				}
 			}
+
+			if (replicationVariant != null) {
+				if (!(variant.getRefAllele() == replicationVariant.getRefAllele() && variant.getAltAllele() == replicationVariant.getAltAllele())
+						&& !(variant.getRefAllele() == replicationVariant.getAltAllele() && variant.getAltAllele() == replicationVariant.getRefAllele())) {
+					System.err.println("Allele mismatch!");
+				}
+				swap = variant.getAltAllele() != replicationVariant.getAltAllele();
+			} else {
+				swap = false;
+			}
+
 			//Do loop anyway to also count not replicated
 
 			int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
@@ -223,45 +279,41 @@ public class ReplicateInteractions {
 
 						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interation.getCovariateName())) {
 
-							if (!(variant.getRefAllele() == replicationVariant.getRefAllele() && variant.getAltAllele() == replicationVariant.getAltAllele())
-									&& !(variant.getRefAllele() == replicationVariant.getAltAllele() && variant.getAltAllele() == replicationVariant.getRefAllele())) {
-								System.err.println("Allele mismatch!");
-								continue covairates;
-							}
-
 							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interation.getCovariateName());
 							double replicationInteractionZscore = replicationZscores.getZscoreInteractionMeta();
 
-							boolean swap = variant.getAltAllele() != replicationVariant.getAltAllele();
-
 							BinaryInteractionQtlZscores replicationQtlRes = replicationFile.readQtlResults(replicationVariant.getName(), gene.getName());
 
-							if (swap) {
-								replicationInteractionZscore *= -1;
-							}
+							if (!Double.isNaN(replicationInteractionZscore)) {
 
-							if (replicationInteractionZscore <= -minAbsReplicationInteractionZ || replicationInteractionZscore >= minAbsReplicationInteractionZ) {
-								if (metaInteractionZ * replicationInteractionZscore >= 0) {
-									++significantReplicationSameDirection;
+								if (swap) {
+									replicationInteractionZscore *= -1;
+								}
+
+								if (replicationInteractionZscore <= -minAbsReplicationInteractionZ || replicationInteractionZscore >= minAbsReplicationInteractionZ) {
+									if (metaInteractionZ * replicationInteractionZscore >= 0) {
+										++significantReplicationSameDirection;
 
 
-									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedSameDirectionWriter);
+										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedSameDirectionWriter);
 
+									} else {
+										++significantReplicationOppositeDirection;
+
+										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedOppositeDirectionWriter);
+									}
 								} else {
-									++significantReplicationOppositeDirection;
-
-									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedOppositeDirectionWriter);
+									if (metaInteractionZ * replicationInteractionZscore >= 0) {
+										++notSignificantReplicationSameDirection;
+										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedSameDirectionWriter);
+									} else {
+										++notSignificantReplicationOppositeDirection;
+										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedOppositeDirectionWriter);
+									}
 								}
 							} else {
-								if (metaInteractionZ * replicationInteractionZscore >= 0) {
-									++notSignificantReplicationSameDirection;
-									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedSameDirectionWriter);
-								} else {
-									++notSignificantReplicationOppositeDirection;
-									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedOppositeDirectionWriter);
-								}
+								++nanReplication;
 							}
-
 
 						} else {
 							++notTestedInReplication;
@@ -270,6 +322,48 @@ public class ReplicateInteractions {
 					} else {
 						++notSignificant;
 					}
+
+					if (metaInteractionZ >= minAbsInteractionZCovariateCount || metaInteractionZ <= -minAbsInteractionZCovariateCount) {
+
+						CovariateCount thisCovariateCounts = covariateCounts.get(interation.getCovariateName());
+						thisCovariateCounts.incrementCovariateSignificant();
+
+						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interation.getCovariateName())) {
+
+							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interation.getCovariateName());
+							double replicationInteractionZscore = replicationZscores.getZscoreInteractionMeta();
+
+							if (!Double.isNaN(replicationInteractionZscore)) {
+
+								if (swap) {
+									replicationInteractionZscore *= -1;
+								}
+
+								if (replicationInteractionZscore <= -minAbsReplicationInteractionZCovariateCount || replicationInteractionZscore >= minAbsReplicationInteractionZCovariateCount) {
+									if (metaInteractionZ * replicationInteractionZscore >= 0) {
+										thisCovariateCounts.incrementReplicatedSameDirection();
+
+									} else {
+										thisCovariateCounts.incrementReplicatedOppositeDirection();
+									}
+								} else {
+									if (metaInteractionZ * replicationInteractionZscore >= 0) {
+										thisCovariateCounts.incrementNotReplicatedSameDirection();
+									} else {
+										thisCovariateCounts.incrementNotReplicatedOppositeDirection();
+									}
+								}
+
+							} else {
+							}
+							
+						} else {
+						}
+
+					} else {
+					}
+
+
 				}
 
 				++reporter;
@@ -286,6 +380,8 @@ public class ReplicateInteractions {
 		notReplicatedSameDirectionWriter.close();
 		notReplicatedOppositeDirectionWriter.close();
 
+		writeCovaraiteCounts(new File(outputPrefix + "_CovariateCounts.txt"), covariateCounts);
+
 		NumberFormat numberFormat = NumberFormat.getInstance();
 		numberFormat.setMinimumFractionDigits(0);
 		numberFormat.setMaximumFractionDigits(2);
@@ -295,13 +391,14 @@ public class ReplicateInteractions {
 		writeAndOut(" - Not significant: " + numberFormat.format(notSignificant) + " (" + numberFormat.format(notSignificant * 100d / (notSignificant + significant)) + "%)", logWriter);
 		writeAndOut(" - Significant: " + numberFormat.format(significant) + " (" + numberFormat.format(significant * 100d / (notSignificant + significant)) + "%)", logWriter);
 		writeAndOut("  * Not in replication: " + numberFormat.format(notTestedInReplication) + " (" + numberFormat.format(notTestedInReplication * 100d / significant) + "%)", logWriter);
+		writeAndOut("  * NaN in replication: " + numberFormat.format(nanReplication) + " (" + numberFormat.format(notTestedInReplication * 100d / significant) + "%)", logWriter);
 		writeAndOut("  * Not significant in replication: " + numberFormat.format(notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection) + " (" + numberFormat.format((notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection) * 100d / significant) + "%)", logWriter);
 		writeAndOut("   # Same direction: " + numberFormat.format(notSignificantReplicationSameDirection) + " (" + numberFormat.format(notSignificantReplicationSameDirection * 100d / (notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection)) + "%)", logWriter);
 		writeAndOut("   # Opposite direction: " + numberFormat.format(notSignificantReplicationOppositeDirection) + " (" + numberFormat.format(notSignificantReplicationOppositeDirection * 100d / (notSignificantReplicationSameDirection + notSignificantReplicationOppositeDirection)) + "%)", logWriter);
 		writeAndOut("  * Significant in replication: " + numberFormat.format(significantReplicationSameDirection + significantReplicationOppositeDirection) + " (" + numberFormat.format((significantReplicationSameDirection + significantReplicationOppositeDirection) * 100d / significant) + "%)", logWriter);
 		writeAndOut("   # Same direction: " + numberFormat.format(significantReplicationSameDirection) + " (" + numberFormat.format(significantReplicationSameDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)", logWriter);
 		writeAndOut("   # Opposite direction: " + numberFormat.format(significantReplicationOppositeDirection) + " (" + numberFormat.format(significantReplicationOppositeDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)", logWriter);
-		
+
 		logWriter.close();
 
 	}
@@ -347,10 +444,91 @@ public class ReplicateInteractions {
 		replicatedSameDirectionWriter.writeNext(row);
 		return replicatedSameDirectionWriter;
 	}
-	
-	private static void writeAndOut(String message, Writer writer) throws IOException{
+
+	private static void writeCovaraiteCounts(File file, LinkedHashMap<String, CovariateCount> covariateCounts) throws IOException {
+
+		CSVWriter covariateCountWriter = new CSVWriter(new BufferedWriter(new FileWriter(file)), '\t', '\0', '\0');
+		int c = 0;
+		String[] row2 = new String[6];
+		row2[c++] = "Covariate";
+		row2[c++] = "Significant";
+		row2[c++] = "ReplicatedSameDirection";
+		row2[c++] = "ReplicatedOppositeDirection";
+		row2[c++] = "NotReplicateSameDirection";
+		row2[c++] = "NotReplicatedOppositeDirection";
+		covariateCountWriter.writeNext(row2);
+
+		for (Map.Entry<String, CovariateCount> covariateEntry : covariateCounts.entrySet()) {
+
+			CovariateCount thisCounts = covariateEntry.getValue();
+
+			c = 0;
+			row2[c++] = covariateEntry.getKey();
+			row2[c++] = String.valueOf(thisCounts.getCovariateSignificant());
+			row2[c++] = String.valueOf(thisCounts.getReplicatedSameDirection());
+			row2[c++] = String.valueOf(thisCounts.getReplicatedOppositeDirection());
+			row2[c++] = String.valueOf(thisCounts.getNotReplicatedSameDirection());
+			row2[c++] = String.valueOf(thisCounts.getNotReplicatedOppositeDirection());
+			covariateCountWriter.writeNext(row2);
+
+		}
+
+		covariateCountWriter.close();
+
+	}
+
+	private static void writeAndOut(String message, Writer writer) throws IOException {
 		writer.append(message);
 		writer.append('\n');
 		System.out.println(message);
+	}
+
+	private static class CovariateCount {
+
+		private int covariateSignificant = 0;
+		private int replicatedSameDirection = 0;
+		private int replicatedOppositeDirection = 0;
+		private int notReplicatedSameDirection = 0;
+		private int notReplicatedOppositeDirection = 0;
+
+		public int getCovariateSignificant() {
+			return covariateSignificant;
+		}
+
+		public int getReplicatedSameDirection() {
+			return replicatedSameDirection;
+		}
+
+		public int getReplicatedOppositeDirection() {
+			return replicatedOppositeDirection;
+		}
+
+		public int getNotReplicatedSameDirection() {
+			return notReplicatedSameDirection;
+		}
+
+		public int getNotReplicatedOppositeDirection() {
+			return notReplicatedOppositeDirection;
+		}
+
+		public void incrementCovariateSignificant() {
+			covariateSignificant++;
+		}
+
+		public void incrementReplicatedSameDirection() {
+			replicatedSameDirection++;
+		}
+
+		public void incrementReplicatedOppositeDirection() {
+			replicatedOppositeDirection++;
+		}
+
+		public void incrementNotReplicatedSameDirection() {
+			notReplicatedSameDirection++;
+		}
+
+		public void incrementNotReplicatedOppositeDirection() {
+			notReplicatedOppositeDirection++;
+		}
 	}
 }
