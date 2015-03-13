@@ -266,20 +266,20 @@ public class ReplicateInteractions {
 				covairates:
 				for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
 
-					BinaryInteractionQueryResult interation = iterator.next();
+					BinaryInteractionQueryResult interaction = iterator.next();
 
-					if (covariantsToInclude != null && !covariantsToInclude.contains(interation.getCovariateName())) {
+					if (covariantsToInclude != null && !covariantsToInclude.contains(interaction.getCovariateName())) {
 						continue covairates;
 					}
 
-					double metaInteractionZ = interation.getInteractionZscores().getZscoreInteractionMeta();
+					double metaInteractionZ = interaction.getInteractionZscores().getZscoreInteractionMeta();
 
 					if (metaInteractionZ >= minAbsInteractionZ || metaInteractionZ <= -minAbsInteractionZ) {
 						++significant;
 
-						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interation.getCovariateName())) {
+						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interaction.getCovariateName())) {
 
-							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interation.getCovariateName());
+							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interaction.getCovariateName());
 							double replicationInteractionZscore = replicationZscores.getZscoreInteractionMeta();
 
 							BinaryInteractionQtlZscores replicationQtlRes = replicationFile.readQtlResults(replicationVariant.getName(), gene.getName());
@@ -295,20 +295,20 @@ public class ReplicateInteractions {
 										++significantReplicationSameDirection;
 
 
-										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedSameDirectionWriter);
+										writeInteraction(row, variantName, gene, interaction, variant, replicationQtlRes, replicationZscores, swap, replicatedSameDirectionWriter);
 
 									} else {
 										++significantReplicationOppositeDirection;
 
-										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedOppositeDirectionWriter);
+										writeInteraction(row, variantName, gene, interaction, variant, replicationQtlRes, replicationZscores, swap, replicatedOppositeDirectionWriter);
 									}
 								} else {
 									if (metaInteractionZ * replicationInteractionZscore >= 0) {
 										++notSignificantReplicationSameDirection;
-										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedSameDirectionWriter);
+										writeInteraction(row, variantName, gene, interaction, variant, replicationQtlRes, replicationZscores, swap, notReplicatedSameDirectionWriter);
 									} else {
 										++notSignificantReplicationOppositeDirection;
-										writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedOppositeDirectionWriter);
+										writeInteraction(row, variantName, gene, interaction, variant, replicationQtlRes, replicationZscores, swap, notReplicatedOppositeDirectionWriter);
 									}
 								}
 							} else {
@@ -325,12 +325,12 @@ public class ReplicateInteractions {
 
 					if (metaInteractionZ >= minAbsInteractionZCovariateCount || metaInteractionZ <= -minAbsInteractionZCovariateCount) {
 
-						CovariateCount thisCovariateCounts = covariateCounts.get(interation.getCovariateName());
+						CovariateCount thisCovariateCounts = covariateCounts.get(interaction.getCovariateName());
 						thisCovariateCounts.incrementCovariateSignificant();
 
-						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interation.getCovariateName())) {
+						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interaction.getCovariateName())) {
 
-							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interation.getCovariateName());
+							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interaction.getCovariateName());
 							double replicationInteractionZscore = replicationZscores.getZscoreInteractionMeta();
 
 							if (!Double.isNaN(replicationInteractionZscore)) {
