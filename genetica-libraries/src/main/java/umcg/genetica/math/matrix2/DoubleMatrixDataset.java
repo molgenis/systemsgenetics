@@ -13,6 +13,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -71,7 +73,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         this.matrix = matrix;
     }
 
-    public DoubleMatrixDataset(List<R> rowNames, List<C> colNames) {
+    public DoubleMatrixDataset(Collection<R> rowNames, Collection<C> colNames) {
 
         hashRows = new LinkedHashMap<R, Integer>(rowNames.size());
         hashCols = new LinkedHashMap<C, Integer>(colNames.size());
