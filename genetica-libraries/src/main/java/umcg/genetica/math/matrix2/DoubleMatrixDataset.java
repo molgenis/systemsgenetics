@@ -87,6 +87,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         i = 0;
         for (C col : colNames) {
             hashCols.put(col, i);
+			++i;
         }
 
         if ((hashRows.size() * (long) hashCols.size()) < (Integer.MAX_VALUE - 2)) {
