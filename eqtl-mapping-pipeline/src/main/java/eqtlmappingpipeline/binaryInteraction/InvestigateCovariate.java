@@ -258,7 +258,7 @@ public class InvestigateCovariate {
 					continue genes;
 				}
 
-				if (!(inputInteractionZ <= -minAbsInteractionZ || inputInteractionZ >= -minAbsInteractionZ)) {
+				if (!(inputInteractionZ <= -minAbsInteractionZ || inputInteractionZ >= minAbsInteractionZ)) {
 					continue genes;
 				}
 				
@@ -273,7 +273,7 @@ public class InvestigateCovariate {
 					continue genes;
 				}
 
-				if (!(replicationInteractionZ <= -minAbsReplicationInteractionZ || replicationInteractionZ >= -minAbsReplicationInteractionZ)) {
+				if (!(replicationInteractionZ <= -minAbsReplicationInteractionZ || replicationInteractionZ >= minAbsReplicationInteractionZ)) {
 					continue genes;
 				}
 
@@ -350,7 +350,7 @@ public class InvestigateCovariate {
 						continue;
 					}
 
-					if (!(inputInteractionZ <= -minAbsInteractionZ || inputInteractionZ >= -minAbsInteractionZ)) {
+					if (!(inputInteractionZ <= -minAbsInteractionZ || inputInteractionZ >= minAbsInteractionZ)) {
 						continue covairates;
 					}
 					
@@ -365,7 +365,7 @@ public class InvestigateCovariate {
 						continue covairates;
 					}
 
-					if (!(replicationInteractionZ <= -minAbsReplicationInteractionZ || replicationInteractionZ >= -minAbsReplicationInteractionZ)) {
+					if (!(replicationInteractionZ <= -minAbsReplicationInteractionZ || replicationInteractionZ >= minAbsReplicationInteractionZ)) {
 						continue covairates;
 					}
 
@@ -437,6 +437,7 @@ public class InvestigateCovariate {
 
 					final BinaryInteractionZscores inputInteractionResult = inputFile.readInteractionResults(variantName, geneName, covariateName);
 
+					//System.out.println(covariateName +  "-"  + geneName +  "-"  + inputInteractionResult.getZscoreInteractionMeta());
 					interactionZscores.setElement(covariateName, geneName, inputInteractionResult.getZscoreInteractionMeta());
 
 					final BinaryInteractionZscores replicationInteractionResult = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), covariateName);
@@ -451,6 +452,9 @@ public class InvestigateCovariate {
 
 			}
 		}
+		
+		System.out.println("TEST: " + interactionZscores.getElement("ENSG00000001167", "ENSG00000066084"));
+		System.out.println("TEST: " + interactionZscores.getElement("ENSG00000001167", "ENSG00000183604"));
 
 		interactionZscores.save(outputPrefix + "_InteractionMatrix.txt");
 		replicationInteractionZscores.save(outputPrefix + "_ReplicationInteractionMatrix.txt");
