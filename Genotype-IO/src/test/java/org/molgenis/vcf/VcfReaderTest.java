@@ -14,6 +14,7 @@ import java.util.Iterator;
 
 import net.sf.samtools.util.BlockCompressedInputStream;
 
+import org.molgenis.genotype.Allele;
 import org.molgenis.vcf.meta.VcfMeta;
 import org.testng.annotations.Test;
 
@@ -30,6 +31,19 @@ public class VcfReaderTest
 			"##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n" + 
 			"#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO\n" + 
 			"1	565286	rs1578391	C	T	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754\n";
+	
+	private static String vcfStrSampleMissingValues = "##fileformat=VCFv4.1\n" +
+			"##mycustomheader=mycustomvalue\n" +
+			"##contig=<ID=1,length=249240621>\n" +
+			"##contig=<ID=2,length=259240621>\n" +
+			"##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of Samples With Data\">\n" + 
+			"##FILTER=<ID=flt,Description=\"Failing one of the filters\">\n" + 
+			"##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n" + 
+			"##FORMAT=<ID=GQ,Number=1,Type=Float,Description=\"Genotype Quality\">\n" +
+			"#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE0\n" +
+			"1	565286	rs1578391	C	T	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754	GT:GQ	0/1:12\n" +
+			"1	565287	rs1578391	C	T	.	flt	NS=1;DP=5;AF=1.000;ANNOT=INT;GI=LOC100131754	GT:GQ	./.\n";
+	
 	
 	@Test
 	public void close_Reader() throws IOException
@@ -81,5 +95,54 @@ public class VcfReaderTest
 			vcfReader.close();
 		}
 	}
+	
+	@Test
+	public void iteratorSampleMissingValues() throws IOException
+	{
+		VcfReader vcfReader = new VcfReader(new StringReader(vcfStrSampleMissingValues));
+		try {
+			
+			Iterator<VcfRecord> vcfIterator = vcfReader.iterator();		
+			
+			// record 1
+			if (vcfIterator.hasNext()){
+				VcfRecord r = vcfIterator.next();
+				
+				Iterator<VcfSample> samples = r.getSamples().iterator();
+				
+				if (samples.hasNext()){
+					VcfSample s = samples.next();
+					
+					assertEquals(s.getAlleles().get(0), Allele.C);			
+					assertEquals(s.getAlleles().get(1), Allele.T);
+					
+					int idx = r.getFormatIndex("GQ");
+					assertEquals(s.getData(idx), "12");
+				}
+			}
+			
+			// record 2
+			if (vcfIterator.hasNext()){
+				VcfRecord r = vcfIterator.next();
+				
+				Iterator<VcfSample> samples = r.getSamples().iterator();
+				
+				if (samples.hasNext()){
+					VcfSample s = samples.next();
+					
+					assertEquals(s.getAlleles().get(0), Allele.ZERO);
+					assertEquals(s.getAlleles().get(1), Allele.ZERO);
+					
+					int idx = r.getFormatIndex("GQ");
+					assertEquals(s.getData(idx), null);
+				}
+			}
+			
+		} finally {
+			vcfReader.close();
+		}
+	}
 }
+
+
 

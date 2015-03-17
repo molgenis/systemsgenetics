@@ -7,6 +7,7 @@ package eqtlmappingpipeline.interactionanalysis;
 import cern.jet.random.tdouble.StudentT;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
+import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
@@ -36,6 +37,8 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
     private final boolean sandwich;
     private final boolean provideFullStats;
+	
+	private final Pair<Double, Double> NAN_PAIR = new Pair<Double, Double>(Double.NaN, Double.NaN);
 
     public InteractionAnalysisTask(SNP snpObj, ArrayList<Pair<String, String>> eQTLsForSNP, double[][] pcCorrectedData,
             int[] wgaId,
@@ -289,21 +292,39 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     // double intersect = regressionParameters[0]; 
                     double corr = JSci.maths.ArrayMath.correlation(genotypesCalled, olsY);
                     mainZ = Correlation.convertCorrelationToZScore(genotypesCalled.length, corr);
-                    // Get the regression parameters and R-square value and print it.
-                    double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
-                    double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+                    
+					
+					// Get the regression parameters and R-square value and print it.
+                    try {
+						double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+						double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+						
+						betaInteraction = regressionParameters[3];
+						seInteraction = regressionStandardErrors[3];
 
-                    betaInteraction = regressionParameters[3];
-                    seInteraction = regressionStandardErrors[3];
+						// Get the regression parameters and R-square value and print it.
+						betaSNP = regressionParameters[1];
+						seSNP = regressionStandardErrors[1];
+						
+						betaCovariate = regressionParameters[2];
+						seCovariate = regressionStandardErrors[2];
+						
+						rsquared = regressionFullWithInteraction.calculateRSquared();
+						
+					} catch (SingularMatrixException ex) {
+						betaInteraction = Double.NaN;
+						seInteraction = Double.NaN;
 
-                    // Get the regression parameters and R-square value and print it.
-                    betaSNP = regressionParameters[1];
-                    seSNP = regressionStandardErrors[1];
+						// Get the regression parameters and R-square value and print it.
+						betaSNP = Double.NaN;
+						seSNP = Double.NaN;
+						
+						betaCovariate = Double.NaN;
+						seCovariate = Double.NaN;
+						
+						rsquared = Double.NaN;
+					}
 
-                    betaCovariate = regressionParameters[2];
-                    seCovariate = regressionStandardErrors[2];
-
-                    rsquared = regressionFullWithInteraction.calculateRSquared();
                 }
 
                 Pair<Double, Double> pair = convertBetaToP(betaInteraction, seInteraction, tDistColt);
@@ -375,6 +396,11 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
     }
 
     private Pair<Double, Double> convertBetaToP(double beta, double se, StudentT tDistColt) {
+		
+		if(Double.isNaN(beta)){
+			return NAN_PAIR;
+		}
+		
         double t = beta / se;
         double p = 1;
         double z = 0;

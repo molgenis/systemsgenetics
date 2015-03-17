@@ -1,12 +1,19 @@
 package eqtlmappingpipeline.binaryInteraction;
 
+import au.com.bytecode.opencsv.CSVWriter;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -17,6 +24,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;
 import umcg.genetica.io.binInteraction.BinaryInteractionFileException;
+import umcg.genetica.io.binInteraction.BinaryInteractionQtlZscores;
 import umcg.genetica.io.binInteraction.BinaryInteractionQueryResult;
 import umcg.genetica.io.binInteraction.BinaryInteractionZscores;
 import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
@@ -28,15 +36,11 @@ import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
  */
 public class ReplicateInteractions {
 
-	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-	private static final Date currentDataTime = new Date();
 	private static final Options OPTIONS;
 
 	static {
 
 		OPTIONS = new Options();
-
-		Option option;
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
@@ -51,6 +55,13 @@ public class ReplicateInteractions {
 		OptionBuilder.withLongOpt("replication");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("r"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Ouput prefix");
+		OptionBuilder.withLongOpt("output");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("o"));
 
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
@@ -70,6 +81,12 @@ public class ReplicateInteractions {
 		OptionBuilder.withLongOpt("chrPos");
 		OPTIONS.addOption(OptionBuilder.create("cp"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with covariates to include in analysis");
+		OptionBuilder.withLongOpt("covariats");
+		OPTIONS.addOption(OptionBuilder.create("c"));
+
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, BinaryInteractionFileException {
@@ -79,12 +96,15 @@ public class ReplicateInteractions {
 		final double minAbsInteractionZ;
 		final double minAbsReplicationInteractionZ;
 		final boolean matchOnChrPos;
+		final String outputPrefix;
+		final File covariatesToIncludeFile;
 
 		try {
 			final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
 			inputInteractionFile = new File(commandLine.getOptionValue("i"));
 			replicationInteractionFile = new File(commandLine.getOptionValue("r"));
+			outputPrefix = commandLine.getOptionValue("o");
 
 			try {
 				minAbsInteractionZ = Double.parseDouble(commandLine.getOptionValue("iz"));
@@ -101,7 +121,13 @@ public class ReplicateInteractions {
 				System.exit(1);
 				return;
 			}
-			
+
+			if (commandLine.hasOption("c")) {
+				covariatesToIncludeFile = new File(commandLine.getOptionValue("c"));
+			} else {
+				covariatesToIncludeFile = null;
+			}
+
 			matchOnChrPos = commandLine.hasOption("cp");
 
 		} catch (ParseException ex) {
@@ -112,18 +138,43 @@ public class ReplicateInteractions {
 			System.exit(1);
 			return;
 		}
-		
+
 		System.out.println("Input file: " + inputInteractionFile.getAbsolutePath());
 		System.out.println("Replication file: " + replicationInteractionFile.getAbsolutePath());
+		System.out.println("Output prefix: " + outputPrefix);
 		System.out.println("Min interaction z-score: " + minAbsInteractionZ);
 		System.out.println("Min replication interaction z-score: " + minAbsReplicationInteractionZ);
-		if(matchOnChrPos){
+		if (matchOnChrPos) {
 			System.out.println("Matching variants on chr-pos");
 		}
-		System.out.println("");
+		if (covariatesToIncludeFile != null) {
+			System.out.println("Covariates to include: " + covariatesToIncludeFile.getAbsolutePath());
+		}
+		System.out.println();
+
+		final HashSet<String> covariantsToInclude;
+		if (covariatesToIncludeFile != null) {
+			covariantsToInclude = new HashSet<String>();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(covariatesToIncludeFile), "UTF-8"));
+			String line;			
+			while ((line = reader.readLine()) != null) {
+				covariantsToInclude.add(line.trim());
+			}
+			System.out.println("Covariates included: " + covariantsToInclude.size());
+			System.out.println();
+		} else {
+			covariantsToInclude = null;
+		}
 
 		BinaryInteractionFile inputFile = BinaryInteractionFile.load(inputInteractionFile, true);
 		BinaryInteractionFile replicationFile = BinaryInteractionFile.load(replicationInteractionFile, true);
+
+		String[] row = new String[15];
+
+		CSVWriter replicatedSameDirectionWriter = writeHeader(new File(outputPrefix + "_ReplicatedSameDirection.txt"), row);
+		CSVWriter replicatedOppositeDirectionWriter = writeHeader(new File(outputPrefix + "_ReplicatedOppositeDirection.txt"), row);
+		CSVWriter notReplicatedSameDirectionWriter = writeHeader(new File(outputPrefix + "_NotReplicatedSameDirection.txt"), row);
+		CSVWriter notReplicatedOppositeDirectionWriter = writeHeader(new File(outputPrefix + "_NotReplicatedOppositeDirection.txt"), row);
 
 		int significant = 0;
 		int notSignificant = 0;
@@ -132,19 +183,19 @@ public class ReplicateInteractions {
 		int notSignificantReplicationOppositeDirection = 0;
 		int significantReplicationOppositeDirection = 0;
 		int significantReplicationSameDirection = 0;
-		
+
 		int reporter = 0;
 
 		for (BinaryInteractionVariant variant : inputFile.getVariants()) {
 
 			String variantName = variant.getName();
-			
+
 			BinaryInteractionVariant replicationVariant;
-			
-			if(matchOnChrPos){
+
+			if (matchOnChrPos) {
 				replicationVariant = replicationFile.getVariant(variant.getChr(), variant.getPos());
 			} else {
-				if(replicationFile.containsVariant(variantName)){
+				if (replicationFile.containsVariant(variantName)) {
 					replicationVariant = replicationFile.getVariant(variantName);
 				} else {
 					replicationVariant = null;
@@ -162,13 +213,17 @@ public class ReplicateInteractions {
 
 					BinaryInteractionQueryResult interation = iterator.next();
 
+					if (covariantsToInclude != null && !covariantsToInclude.contains(interation.getCovariateName())) {
+						continue covairates;
+					}
+
 					double metaInteractionZ = interation.getInteractionZscores().getZscoreInteractionMeta();
 
 					if (metaInteractionZ >= minAbsInteractionZ || metaInteractionZ <= -minAbsInteractionZ) {
 						++significant;
 
 						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interation.getCovariateName())) {
-							
+
 							if (!(variant.getRefAllele() == replicationVariant.getRefAllele() && variant.getAltAllele() == replicationVariant.getAltAllele())
 									&& !(variant.getRefAllele() == replicationVariant.getAltAllele() && variant.getAltAllele() == replicationVariant.getRefAllele())) {
 								System.err.println("Allele mismatch!");
@@ -177,22 +232,34 @@ public class ReplicateInteractions {
 
 							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interation.getCovariateName());
 							double replicationInteractionZscore = replicationZscores.getZscoreInteractionMeta();
-	
-							if(variant.getAltAllele() != replicationVariant.getAltAllele()){
+
+							boolean swap = variant.getAltAllele() != replicationVariant.getAltAllele();
+
+							BinaryInteractionQtlZscores replicationQtlRes = replicationFile.readQtlResults(replicationVariant.getName(), gene.getName());
+
+							if (swap) {
 								replicationInteractionZscore *= -1;
 							}
-							
-							if(replicationInteractionZscore <= -minAbsReplicationInteractionZ || replicationInteractionZscore >= minAbsReplicationInteractionZ){
-								if(metaInteractionZ * replicationInteractionZscore >= 0){
+
+							if (replicationInteractionZscore <= -minAbsReplicationInteractionZ || replicationInteractionZscore >= minAbsReplicationInteractionZ) {
+								if (metaInteractionZ * replicationInteractionZscore >= 0) {
 									++significantReplicationSameDirection;
+
+
+									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedSameDirectionWriter);
+
 								} else {
 									++significantReplicationOppositeDirection;
+
+									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, replicatedOppositeDirectionWriter);
 								}
 							} else {
-								if(metaInteractionZ * replicationInteractionZscore >= 0){
+								if (metaInteractionZ * replicationInteractionZscore >= 0) {
 									++notSignificantReplicationSameDirection;
+									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedSameDirectionWriter);
 								} else {
 									++notSignificantReplicationOppositeDirection;
+									writeInteraction(row, variantName, gene, interation, variant, replicationQtlRes, replicationZscores, swap, notReplicatedOppositeDirectionWriter);
 								}
 							}
 
@@ -207,17 +274,23 @@ public class ReplicateInteractions {
 				}
 
 				++reporter;
-				if(reporter % 500 == 0){
+				if (reporter % 500 == 0) {
 					System.out.println("Parsed " + reporter + " of " + inputFile.getVariantGeneCombinations() + " variant-gene combinations");
 				}
-					
+
 			}
+
 		}
-		
+
+		replicatedSameDirectionWriter.close();
+		replicatedOppositeDirectionWriter.close();
+		notReplicatedSameDirectionWriter.close();
+		notReplicatedOppositeDirectionWriter.close();
+
 		NumberFormat numberFormat = NumberFormat.getInstance();
 		numberFormat.setMinimumFractionDigits(0);
 		numberFormat.setMaximumFractionDigits(2);
-		
+
 		System.out.println("");
 		System.out.println("Total number of interactions: " + numberFormat.format(notSignificant + significant));
 		System.out.println(" - Not significant: " + numberFormat.format(notSignificant) + " (" + numberFormat.format(notSignificant * 100d / (notSignificant + significant)) + "%)");
@@ -230,5 +303,47 @@ public class ReplicateInteractions {
 		System.out.println("   # Same direction: " + numberFormat.format(significantReplicationSameDirection) + " (" + numberFormat.format(significantReplicationSameDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)");
 		System.out.println("   # Opposite direction: " + numberFormat.format(significantReplicationOppositeDirection) + " (" + numberFormat.format(significantReplicationOppositeDirection * 100d / (significantReplicationSameDirection + significantReplicationOppositeDirection)) + "%)");
 
+	}
+
+	private static void writeInteraction(String[] row, String variantName, BinaryInteractionGene gene, BinaryInteractionQueryResult interation, BinaryInteractionVariant variant, BinaryInteractionQtlZscores replicationQtlRes, BinaryInteractionZscores replicationZscores, boolean swap, CSVWriter interactionWriter) {
+		int c = 0;
+		row[c++] = variantName;
+		row[c++] = gene.getName();
+		row[c++] = interation.getCovariateName();
+		row[c++] = variant.getChr();
+		row[c++] = String.valueOf(variant.getPos());
+		row[c++] = variant.getRefAllele().getAlleleAsString() + "/" + variant.getAltAllele().getAlleleAsString();
+		row[c++] = variant.getAltAllele().getAlleleAsString();
+		row[c++] = String.valueOf(interation.getQtlZscores().getMetaZscore());
+		row[c++] = String.valueOf(interation.getInteractionZscores().getZscoreSnpMeta());
+		row[c++] = String.valueOf(interation.getInteractionZscores().getZscoreCovariateMeta());
+		row[c++] = String.valueOf(interation.getInteractionZscores().getZscoreInteractionMeta());
+		row[c++] = String.valueOf(replicationQtlRes.getMetaZscore() * (swap ? -1 : 1));
+		row[c++] = String.valueOf(replicationZscores.getZscoreSnpMeta() * (swap ? -1 : 1));
+		row[c++] = String.valueOf(replicationZscores.getZscoreCovariateMeta());
+		row[c++] = String.valueOf(replicationZscores.getZscoreInteractionMeta() * (swap ? -1 : 1));
+		interactionWriter.writeNext(row);
+	}
+
+	private static CSVWriter writeHeader(File file, String[] row) throws IOException {
+		CSVWriter replicatedSameDirectionWriter = new CSVWriter(new BufferedWriter(new FileWriter(file)), '\t', '\0', '\0');
+		int c = 0;
+		row[c++] = "Variant";
+		row[c++] = "Gene";
+		row[c++] = "Covariate";
+		row[c++] = "Variant_chr";
+		row[c++] = "Variant_pos";
+		row[c++] = "Variant alleles";
+		row[c++] = "Assessed_allele";
+		row[c++] = "Discovery_meta_QTL";
+		row[c++] = "Discovery_meta_SNP";
+		row[c++] = "Discovery_meta_covariate";
+		row[c++] = "Discovery_meta_interaction";
+		row[c++] = "Replication_meta_QTL";
+		row[c++] = "Replication_meta_SNP";
+		row[c++] = "Replication_meta_covariate";
+		row[c++] = "Replication_meta_interaction";
+		replicatedSameDirectionWriter.writeNext(row);
+		return replicatedSameDirectionWriter;
 	}
 }
