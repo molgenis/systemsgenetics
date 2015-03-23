@@ -452,9 +452,6 @@ public class InvestigateCovariate {
 
 			}
 		}
-		
-		System.out.println("TEST: " + interactionZscores.getElement("ENSG00000001167", "ENSG00000066084"));
-		System.out.println("TEST: " + interactionZscores.getElement("ENSG00000001167", "ENSG00000183604"));
 
 		interactionZscores.save(outputPrefix + "_InteractionMatrix.txt");
 		replicationInteractionZscores.save(outputPrefix + "_ReplicationInteractionMatrix.txt");

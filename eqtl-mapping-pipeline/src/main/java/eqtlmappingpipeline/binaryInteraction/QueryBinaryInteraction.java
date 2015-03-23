@@ -1,9 +1,11 @@
 package eqtlmappingpipeline.binaryInteraction;
 
+import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import eqtlmappingpipeline.Main;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -13,6 +15,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -68,7 +71,7 @@ public class QueryBinaryInteraction {
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Covariate name (optional)");
-		OptionBuilder.withLongOpt("cocariate");
+		OptionBuilder.withLongOpt("covariate");
 		OPTIONS.addOption(OptionBuilder.create("c"));
 
 		OptionBuilder.withArgName("string");
@@ -76,6 +79,12 @@ public class QueryBinaryInteraction {
 		OptionBuilder.withDescription("Variant name (optional)");
 		OptionBuilder.withLongOpt("variant");
 		OPTIONS.addOption(OptionBuilder.create("v"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with queries. Must have header. All columns are optional, options are gene, variant and covariate. Any combination of headers is possible (optional)");
+		OptionBuilder.withLongOpt("queryFile");
+		OPTIONS.addOption(OptionBuilder.create("qf"));
 
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
@@ -93,6 +102,7 @@ public class QueryBinaryInteraction {
 		final String queryCovariateName;
 		final String queryVariantName;
 		final double queryMinAbsInteractionZ;
+		final File queryFile;
 
 		try {
 			final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -107,11 +117,22 @@ public class QueryBinaryInteraction {
 			queryCovariateName = commandLine.getOptionValue("c");
 			queryVariantName = commandLine.getOptionValue("v");
 
+			if (commandLine.hasOption("qf")) {
+				queryFile = new File(commandLine.getOptionValue("qf"));
+				if (queryGeneName != null || queryVariantName != null || queryCovariateName != null) {
+					System.err.println("Cannot combine query file with commandline query arguments");
+					System.exit(1);
+					return;
+				}
+			} else {
+				queryFile = null;
+			}
+
 			if (commandLine.hasOption("iz")) {
 				try {
 					queryMinAbsInteractionZ = Double.parseDouble(commandLine.getOptionValue("iz"));
 				} catch (NumberFormatException ex) {
-					System.out.println("Cannot not parse interactionZ as double: " + commandLine.getOptionValue("iz"));
+					System.err.println("Cannot not parse interactionZ as double: " + commandLine.getOptionValue("iz"));
 					System.exit(1);
 					return;
 				}
@@ -165,6 +186,10 @@ public class QueryBinaryInteraction {
 			outputWriter.write("# - Query minimum absote interaction z-score: " + queryMinAbsInteractionZ);
 			outputWriter.write('\n');
 		}
+		if (queryFile != null) {
+			outputWriter.write("# - Query file: " + queryFile.getAbsolutePath());
+			outputWriter.write('\n');
+		}
 		outputWriter.write("#\n");
 
 		outputWriter.write("# Interaction file meta data: ");
@@ -187,7 +212,75 @@ public class QueryBinaryInteraction {
 		outputWriter.write('\n');
 		outputWriter.write("#\n");
 
+		final LinkedHashSet<InteractoinQuery> interactionQueries;
+		if (queryFile != null) {
+			interactionQueries = new LinkedHashSet<InteractoinQuery>();
+			CSVReader queryReader = new CSVReader(new FileReader(queryFile), '\t', '\0');
 
+			String[] nextLine = queryReader.readNext();
+
+			int variantCol = -1;
+			int geneCol = -1;
+			int covariateCol = -1;
+
+			//Parse header
+			for (int i = 0; i < nextLine.length; ++i) {
+				String headerEntry = nextLine[i].toLowerCase();
+				switch (headerEntry) {
+					case "variant":
+						if (variantCol != -1) {
+							System.err.println("Variant column found twice");
+							System.exit(1);
+							return;
+						}
+						variantCol = i;
+						break;
+					case "gene":
+						if (geneCol != -1) {
+							System.err.println("Gene column found twice");
+							System.exit(1);
+							return;
+						}
+						geneCol = i;
+						break;
+					case "covariate":
+						if (covariateCol != -1) {
+							System.err.println("Covariate column found twice");
+							System.exit(1);
+							return;
+						}
+						covariateCol = i;
+						break;
+
+				}
+
+			}
+
+			if (variantCol == -1 && geneCol == -1 && covariateCol == -1) {
+				System.err.println("Did not detect appropiate header in query file");
+				System.exit(1);
+				return;
+			}
+
+			while ((nextLine = queryReader.readNext()) != null) {
+				String variant = null;
+				String gene = null;
+				String covariate = null;
+				
+				if(variantCol != -1){
+					variant = nextLine[variantCol];
+				}
+				if(geneCol != -1){
+					gene = nextLine[geneCol];
+				}
+				if(covariateCol != -1){
+					covariate = nextLine[covariateCol];
+				}
+				interactionQueries.add(new InteractoinQuery(variant, gene, covariate));
+			}
+		} else {
+			interactionQueries = null;
+		}
 
 		CSVWriter tableWriter = new CSVWriter(outputWriter, '\t', '\0', '\0');
 
@@ -243,86 +336,16 @@ public class QueryBinaryInteraction {
 
 		tableWriter.writeNext(row);
 
-		if (queryGeneName != null && queryVariantName != null && queryCovariateName != null) {
 
-			addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, queryGeneName, queryCovariateName), inputFile, tableWriter, row);
-
-		} else if (queryGeneName != null && queryVariantName != null) {
-
-			for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, queryGeneName); iterator.hasNext();) {
-				addRow(iterator.next(), inputFile, tableWriter, row);
+		if (interactionQueries != null) {
+			for(InteractoinQuery interactionQuery : interactionQueries){
+				doQuery(interactionQuery.getGene(), interactionQuery.getVariant(), interactionQuery.getCovariate(), inputFile, tableWriter, row);
 			}
-
-		} else if (queryVariantName != null) {
-
-			int[] genePointers = inputFile.getVariant(queryVariantName).getGenePointers();
-			for (int genePointer : genePointers) {
-
-				BinaryInteractionGene gene = inputFile.getGene(genePointer);
-				if (queryCovariateName != null) {
-
-					if (inputFile.containsInteraction(queryVariantName, gene.getName(), queryCovariateName)) {
-						addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
-					}
-
-				} else {
-					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, gene.getName()); iterator.hasNext();) {
-						addRow(iterator.next(), inputFile, tableWriter, row);
-					}
-				}
-
-			}
-
-		} else if (queryGeneName != null) {
-
-			int[] variantPointers = inputFile.getGene(queryGeneName).getVariantPointers();
-			for (int variantPointer : variantPointers) {
-
-				BinaryInteractionVariant variant = inputFile.getVariant(variantPointer);
-				if (queryCovariateName != null) {
-
-					if (inputFile.containsInteraction(variant.getName(), queryGeneName, queryCovariateName)) {
-						addRow(inputFile.readVariantGeneCovariateResults(variant.getName(), queryGeneName, queryCovariateName), inputFile, tableWriter, row);
-					}
-
-				} else {
-					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variant.getName(), queryGeneName); iterator.hasNext();) {
-						addRow(iterator.next(), inputFile, tableWriter, row);
-					}
-				}
-
-
-			}
-
 		} else {
-
-			for (BinaryInteractionVariant variant  : inputFile.getVariants()) {
-				
-				String variantName = variant.getName();
-				
-				int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
-				for (int genePointer : genePointers) {
-
-					BinaryInteractionGene gene = inputFile.getGene(genePointer);
-					if (queryCovariateName != null) {
-
-						if (inputFile.containsInteraction(variantName, gene.getName(), queryCovariateName)) {
-							addRow(inputFile.readVariantGeneCovariateResults(variantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
-						}
-
-					} else {
-						for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
-							addRow(iterator.next(), inputFile, tableWriter, row);
-						}
-					}
-
-				}
-
-			}
-
-
-
+			doQuery(queryGeneName, queryVariantName, queryCovariateName, inputFile, tableWriter, row);
 		}
+
+
 
 		tableWriter.close();
 		outputWriter.close();
@@ -378,5 +401,143 @@ public class QueryBinaryInteraction {
 		}
 
 		tableWriter.writeNext(row);
+	}
+
+	private static void doQuery(final String queryGeneName, final String queryVariantName, final String queryCovariateName, BinaryInteractionFile inputFile, CSVWriter tableWriter, String[] row) throws IOException, BinaryInteractionFileException {
+		if (queryGeneName != null && queryVariantName != null && queryCovariateName != null) {
+
+			addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, queryGeneName, queryCovariateName), inputFile, tableWriter, row);
+
+		} else if (queryGeneName != null && queryVariantName != null) {
+
+			for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, queryGeneName); iterator.hasNext();) {
+				addRow(iterator.next(), inputFile, tableWriter, row);
+			}
+
+		} else if (queryVariantName != null) {
+
+			int[] genePointers = inputFile.getVariant(queryVariantName).getGenePointers();
+			for (int genePointer : genePointers) {
+
+				BinaryInteractionGene gene = inputFile.getGene(genePointer);
+				if (queryCovariateName != null) {
+
+					if (inputFile.containsInteraction(queryVariantName, gene.getName(), queryCovariateName)) {
+						addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+					}
+
+				} else {
+					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, gene.getName()); iterator.hasNext();) {
+						addRow(iterator.next(), inputFile, tableWriter, row);
+					}
+				}
+
+			}
+
+		} else if (queryGeneName != null) {
+
+			int[] variantPointers = inputFile.getGene(queryGeneName).getVariantPointers();
+			for (int variantPointer : variantPointers) {
+
+				BinaryInteractionVariant variant = inputFile.getVariant(variantPointer);
+				if (queryCovariateName != null) {
+
+					if (inputFile.containsInteraction(variant.getName(), queryGeneName, queryCovariateName)) {
+						addRow(inputFile.readVariantGeneCovariateResults(variant.getName(), queryGeneName, queryCovariateName), inputFile, tableWriter, row);
+					}
+
+				} else {
+					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variant.getName(), queryGeneName); iterator.hasNext();) {
+						addRow(iterator.next(), inputFile, tableWriter, row);
+					}
+				}
+
+
+			}
+
+		} else {
+
+			for (BinaryInteractionVariant variant : inputFile.getVariants()) {
+
+				String variantName = variant.getName();
+
+				int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
+				for (int genePointer : genePointers) {
+
+					BinaryInteractionGene gene = inputFile.getGene(genePointer);
+					if (queryCovariateName != null) {
+
+						if (inputFile.containsInteraction(variantName, gene.getName(), queryCovariateName)) {
+							addRow(inputFile.readVariantGeneCovariateResults(variantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+						}
+
+					} else {
+						for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
+							addRow(iterator.next(), inputFile, tableWriter, row);
+						}
+					}
+
+				}
+
+			}
+
+
+
+		}
+	}
+
+	private static class InteractoinQuery {
+
+		private final String variant;
+		private final String gene;
+		private final String covariate;
+
+		public InteractoinQuery(String variant, String gene, String covariate) {
+			this.variant = variant;
+			this.gene = gene;
+			this.covariate = covariate;
+		}
+
+		public String getVariant() {
+			return variant;
+		}
+
+		public String getGene() {
+			return gene;
+		}
+
+		public String getCovariate() {
+			return covariate;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 5;
+			hash = 67 * hash + (this.variant != null ? this.variant.hashCode() : 0);
+			hash = 67 * hash + (this.gene != null ? this.gene.hashCode() : 0);
+			hash = 67 * hash + (this.covariate != null ? this.covariate.hashCode() : 0);
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final InteractoinQuery other = (InteractoinQuery) obj;
+			if ((this.variant == null) ? (other.variant != null) : !this.variant.equals(other.variant)) {
+				return false;
+			}
+			if ((this.gene == null) ? (other.gene != null) : !this.gene.equals(other.gene)) {
+				return false;
+			}
+			if ((this.covariate == null) ? (other.covariate != null) : !this.covariate.equals(other.covariate)) {
+				return false;
+			}
+			return true;
+		}
 	}
 }
