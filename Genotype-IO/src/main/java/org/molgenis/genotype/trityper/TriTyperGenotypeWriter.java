@@ -15,6 +15,7 @@ import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
+import org.molgenis.genotype.variant.id.GeneticVariantId;
 
 /**
  *
@@ -70,14 +71,22 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 //				continue;
 //			}
 
-			snpFileWriter.append(variant.getPrimaryVariantId());
+			final GeneticVariantId snpId = variant.getVariantId();
+			final String snpName;
+			if(snpId.containsId()){
+				snpName = snpId.getPrimairyId();
+			} else {
+				snpName = variant.getSequenceName() + ':' + String.valueOf(variant.getStartPos());
+			}
+			
+			snpFileWriter.append(snpName);
 			snpFileWriter.append('\n');
 
 			snpMapFileWriter.append(variant.getSequenceName());
 			snpMapFileWriter.append('\t');
 			snpMapFileWriter.append(String.valueOf(variant.getStartPos()));
 			snpMapFileWriter.append('\t');
-			snpMapFileWriter.append(variant.getPrimaryVariantId());
+			snpMapFileWriter.append(snpName);
 			snpMapFileWriter.append('\n');
 		}
 
