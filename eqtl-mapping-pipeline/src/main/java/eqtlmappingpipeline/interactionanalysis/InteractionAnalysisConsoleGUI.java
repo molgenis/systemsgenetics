@@ -32,11 +32,12 @@ public class InteractionAnalysisConsoleGUI {
         String snpprobecombofile = null;
         String covariates = null;
         String inexp = null;
-		String cohort = null;
+        String cohort = null;
         RUNMODE step = null;
         boolean binaryoutput = false;
 
         boolean robust = false;
+        boolean sem = false;
         boolean fullStats = false;
 
         boolean matchCovariateNamesToExpressionProbeNames = false;
@@ -70,7 +71,10 @@ public class InteractionAnalysisConsoleGUI {
             } else if (arg.equals("--robust")) {
                 System.out.println("WARNING: using R connection!! Make sure Rserve and sandwich are installed");
                 robust = true;
-            } else if (arg.equals("--fullstats")) {
+            } else if (arg.equals("--sem")) {
+                System.out.println("WARNING: using R connection!! Make sure Rserve and lavaan are installed");
+                sem = true;
+            }else if (arg.equals("--fullstats")) {
                 fullStats = true;
             } else if (arg.equals("--covariates")) {
                 covariates = val;
@@ -90,8 +94,8 @@ public class InteractionAnalysisConsoleGUI {
                 gte = val;
             } else if (arg.equals("--snpprobe")) {
                 snpprobecombofile = val;
-			} else if (arg.equals("--cohort")) {
-				cohort = val;
+            } else if (arg.equals("--cohort")) {
+                cohort = val;
             } else if (arg.equals("--testMatchingCovariates")) {
                 matchCovariateNamesToExpressionProbeNames = true;
             } else if (arg.equals("--threads")) {
@@ -182,10 +186,10 @@ public class InteractionAnalysisConsoleGUI {
 //                    System.err.println("Warning: yo please supply --cellcounts");
                         //kill = true;
                     }
-					if ((binaryoutput == true) && (cohort == null)) {
-						System.err.println("Error: please supply --cohort (required in binary output mode)");
-						kill = true;
-					}
+                    if ((binaryoutput == true) && (cohort == null)) {
+                        System.err.println("Error: please supply --cohort (required in binary output mode)");
+                        kill = true;
+                    }
 
                     if (kill) {
                         System.err.println("");
@@ -198,7 +202,7 @@ public class InteractionAnalysisConsoleGUI {
                                 snpprobecombofile,
                                 nrThreads,
                                 out,
-                                covariateList, robust, fullStats, binaryoutput, cohort);
+                                covariateList, sem, robust, fullStats, binaryoutput, cohort);
 //                    qmt.runCelltypeSpecificEQTLMapping(inexppccorrected, inexpraw, in, gte, snpprobecombofile, cellcountfile, nrThreads, out, testAllCovariatesInCovariateData);
                     }
 
@@ -238,6 +242,7 @@ public class InteractionAnalysisConsoleGUI {
                 + "--threads\t\tInteger\t\tThe number of threads to use for calculations.\n"
                 + "--covariatelist\t\tList of covariates to test\n"
                 + "--robust\t\tUse robust estimates of standard errors (Requires Rserve and sandwich packages, and R)\n"
+                + "--sem\t\tStructural equation modeling (requires RServe and Lavaan)\n"
                 + "--fullstats\t\tOutput extra columns of statistics (SEs and Betas)");
 
         System.out.println("");
