@@ -189,7 +189,7 @@ public class InteractionAnalysisMultiThreaded {
 		// 4. PCA on sample correlation matrix
 		rawExpressionDataset.transposeDataset(); // put samples back on columns
 		// this method returns two DoubleMatrixDatasets: left are the PC scores, right are the Eigenvalues and expects the samples to be on the columns
-		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = n.calculatePCA(rawExpressionDataset, sampleCorrelationMatrix, expressionOutputDirectory + "PCAResults", 1);
+		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = n.calculatePCA(rawExpressionDataset, sampleCorrelationMatrix, expressionOutputDirectory + "PCAResults", 2);
 
 		// 5. Correlate samples with PC1 - scores (QC step to determine poor RNA samples)
 		// This dataset needs to be transposed if rows are currently PCs, and columns contain samples.
