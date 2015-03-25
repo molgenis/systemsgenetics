@@ -189,7 +189,7 @@ public class InteractionAnalysisMultiThreaded {
 		// 4. PCA on sample correlation matrix
 		rawExpressionDataset.transposeDataset(); // put samples back on columns
 		// this method returns two DoubleMatrixDatasets: left are the PC scores, right are the Eigenvalues and expects the samples to be on the columns
-		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = n.calculatePCA(rawExpressionDataset, sampleCorrelationMatrix, expressionOutputDirectory + "PCAResults", 1);
+		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = n.calculatePCA(rawExpressionDataset, sampleCorrelationMatrix, expressionOutputDirectory + "PCAResults", 2);
 
 		// 5. Correlate samples with PC1 - scores (QC step to determine poor RNA samples)
 		// This dataset needs to be transposed if rows are currently PCs, and columns contain samples.
@@ -398,7 +398,7 @@ public class InteractionAnalysisMultiThreaded {
 
 	public void runInteractionAnalysis(String inExpPCCorrected, String covariateFile, String ingt,
 									   String gte, String snpprobecombinationfile, Integer nrThreads, String out,
-									   String covariateList, boolean robustSE, boolean fullStats, boolean binaryOutput, String cohort) throws IOException, Exception {
+									   String covariateList, boolean sem, boolean robustSE, boolean fullStats, boolean binaryOutput, String cohort) throws IOException, Exception {
 		String probeannot = null;
 
 		double mafthreshold = 0.05;
@@ -409,7 +409,7 @@ public class InteractionAnalysisMultiThreaded {
 			throw new IllegalArgumentException("ERROR: please provide snpprobe combination file");
 		}
 
-		if (robustSE) {
+		if (robustSE || sem) {
 			System.out.println("Running tests for robust standard errors. Now testing R connection");
 			try {
 				RConnection rConnection = new RConnection();
@@ -668,6 +668,7 @@ public class InteractionAnalysisMultiThreaded {
 						expInds,
 						covariateData,
 						pcCorrectedExpressionData,
+						sem, 
 						robustSE,
 						fullStats
 				);
