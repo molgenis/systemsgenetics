@@ -20,6 +20,8 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
+import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.math.stats.Normalization;
 
 /**
  *
@@ -37,13 +39,14 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
     private final boolean sandwich;
     private final boolean provideFullStats;
-	
-	private final Pair<Double, Double> NAN_PAIR = new Pair<Double, Double>(Double.NaN, Double.NaN);
+
+    private final Pair<Double, Double> NAN_PAIR = new Pair<Double, Double>(Double.NaN, Double.NaN);
+    private final boolean sem;
 
     public InteractionAnalysisTask(SNP snpObj, ArrayList<Pair<String, String>> eQTLsForSNP, double[][] pcCorrectedData,
             int[] wgaId,
             String[] expInds, DoubleMatrixDataset<String, String> covariateData,
-            TriTyperExpressionData expressionData, boolean robustSE, boolean provideFullStats) {
+            TriTyperExpressionData expressionData, boolean sem, boolean robustSE, boolean provideFullStats) {
         this.eQTLSNPObj = snpObj;
         this.eQTLsForSNP = eQTLsForSNP;
         this.pcCorrectedExpressionData = pcCorrectedData;
@@ -53,6 +56,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
         this.covariateData = covariateData;
         this.sandwich = robustSE;
         this.provideFullStats = provideFullStats;
+        this.sem = sem;
     }
 
     @Override
@@ -163,13 +167,17 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
                 double rsquared = 0;
 
-                if (sandwich) {
+                if (sandwich || sem) {
                     RConnection rConnection = null;
                     // this code is very suboptimal and is here for validation purposes only anyway
                     try {
                         rConnection = new RConnection();
 //                rConnection.voidEval("install.packages('sandwich')");
-                        rConnection.voidEval("library(sandwich)");
+                        if (sandwich) {
+                            rConnection.voidEval("library(sandwich)");
+                        } else {
+                            rConnection.voidEval("library(lavaan)");
+                        }
                     } catch (RserveException ex) {
                         System.err.println(ex.getMessage());
                         rConnection = null;
@@ -177,32 +185,34 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
                     if (rConnection == null) {
                         System.err.println("Error: using R connection but none found");
+                        return null;
                     }
-                    if (rConnection != null) {
-                        try {
-                            if (rConnection.isConnected()) {
-                                double[] olsY = new double[nrCalled]; //Ordinary least squares: Our gene expression
-                                double[] olsX = new double[nrCalled];
-                                double[] covariateValues = new double[nrCalled];
+
+                    try {
+                        if (rConnection.isConnected()) {
+                            double[] olsY = new double[nrCalled]; //Ordinary least squares: Our gene expression
+                            double[] olsX = new double[nrCalled];
+                            double[] covariateValues = new double[nrCalled];
 //No interaction term, linear model: y ~ a * SNP + b * CellCount + c
 //                                double[][] olsXFullWithInteraction = new double[nrCalled][3];       //With interaction term, linear model: y ~ a * SNP + b * CellCount + c + d * SNP * CellCount
-                                int itr = 0;
-                                for (int s = 0; s < valsX.length; s++) {
-                                    double genotype = valsX[s];
-                                    if (genotype != -1 && !Double.isNaN(tmpVarCelCount[s])) {
-                                        if (signInteractionEffectDirection == -1) {
-                                            genotype = 2 - genotype;
-                                        }
-                                        covariateValues[itr] = tmpVarCelCount[s];
-                                        olsY[itr] = valsY[s];
-                                        olsX[itr] = genotype;
-                                        itr++;
+                            int itr = 0;
+                            for (int s = 0; s < valsX.length; s++) {
+                                double genotype = valsX[s];
+                                if (genotype != -1 && !Double.isNaN(tmpVarCelCount[s])) {
+                                    if (signInteractionEffectDirection == -1) {
+                                        genotype = 2 - genotype;
                                     }
+                                    covariateValues[itr] = tmpVarCelCount[s];
+                                    olsY[itr] = valsY[s];
+                                    olsX[itr] = genotype;
+                                    itr++;
                                 }
+                            }
 
-                                double corr = JSci.maths.ArrayMath.correlation(olsX, olsY);
-                                mainZ = Correlation.convertCorrelationToZScore(olsX.length, corr);
+                            double corr = JSci.maths.ArrayMath.correlation(olsX, olsY);
+                            mainZ = Correlation.convertCorrelationToZScore(olsX.length, corr);
 
+                            if (sandwich) {
                                 rConnection.assign("y", olsY);
                                 rConnection.assign("x", olsX);
                                 rConnection.assign("z", covariateValues);
@@ -224,17 +234,63 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                                 betaCovariate = rConnection.eval("modelsummary$coefficients[3,1]").asDouble();
                                 seCovariate = rConnection.eval("modelsummary$coefficients[3,2]").asDouble();
                                 rsquared = rConnection.eval("modelsummary$r.squared").asDouble();
-                                rConnection.close();
                             } else {
-                                System.err.println("ERROR: R is not connected.");
-                            }
+                                // use structural equation modeling (errors-in-variables compensation)
 
-                        } catch (REngineException ex) {
-                            System.err.println(ex.getMessage());
-                        } catch (REXPMismatchException ex) {
-                            System.err.println(ex.getMessage());
+                                // define model
+                                // z-transform, otherwise the used covariances in lavaan may be wrong
+                                double[] olsYZ = Normalization.standardNormalize(valsY);
+                                double[] olsXZ = Normalization.standardNormalize(olsX);
+                                double[] covariatesZ = Normalization.standardNormalize(covariateValues);
+                                double[] interactionVals = new double[covariatesZ.length];
+                                for (int i = 0; i < valsY.length; i++) {
+                                    interactionVals[i] = olsX[i] * covariateValues[i];
+                                }
+                                double[] interactionZ = Normalization.standardNormalize(interactionVals);
+
+                                System.out.println("Var Y: " + Descriptives.variance(olsY) + "\t" + Descriptives.mean(olsY));
+                                System.out.println("Var gen: " + Descriptives.variance(olsX) + "\t" + Descriptives.mean(olsX));
+                                System.out.println("Var cov: " + Descriptives.variance(covariateValues) + "\t" + Descriptives.mean(covariateValues));
+                                System.out.println("Var int: " + Descriptives.variance(interactionVals) + "\t" + Descriptives.mean(interactionVals));
+
+                                System.out.println("");
+
+                                if (Descriptives.variance(olsY) > 1E-5 && Descriptives.variance(olsX) > 1E-5) {
+                                    rConnection.assign("expression", olsY);
+                                    rConnection.assign("genotype", olsX);
+                                    rConnection.assign("covariate", covariateValues);
+                                    rConnection.assign("interaction", interactionVals);
+                                    rConnection.voidEval("df <- data.frame(expression, genotype, covariate, interaction)");
+
+                                    String model = "model <- 'expression ~ genotype\n" // + latentCovariate + latentInteraction\n"
+                                            
+                                            //                                        + "latentInteraction =~ interaction\n"
+                                                + "expression ~~ genotype\n"
+                                            //                                        + "covariate ~~ interaction\n"
+                                            //                                        + "genotype ~~ interaction\n"
+                                            + "'";
+
+                                    rConnection.voidEval(model);
+                                    rConnection.voidEval("fit <- sem(model, data=df)");
+                                    rConnection.voidEval("modelsummary <- summary(fit)");
+                                    System.exit(0);
+                                }
+
+//                                String[] output = rConnection.eval("modelsummary").asStrings();
+//                                for (String s : output) {
+//                                    System.out.println(s);
+//
+//                                }
+                            }
+                            rConnection.close();
+                        } else {
+                            System.err.println("ERROR: R is not connected.");
                         }
 
+                    } catch (REngineException ex) {
+                        System.err.println(ex.getMessage());
+                    } catch (REXPMismatchException ex) {
+                        System.err.println(ex.getMessage());
                     }
 
                 } else {
@@ -292,38 +348,37 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
                     // double intersect = regressionParameters[0]; 
                     double corr = JSci.maths.ArrayMath.correlation(genotypesCalled, olsY);
                     mainZ = Correlation.convertCorrelationToZScore(genotypesCalled.length, corr);
-                    
-					
-					// Get the regression parameters and R-square value and print it.
+
+                    // Get the regression parameters and R-square value and print it.
                     try {
-						double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
-						double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
-						
-						betaInteraction = regressionParameters[3];
-						seInteraction = regressionStandardErrors[3];
+                        double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+                        double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
 
-						// Get the regression parameters and R-square value and print it.
-						betaSNP = regressionParameters[1];
-						seSNP = regressionStandardErrors[1];
-						
-						betaCovariate = regressionParameters[2];
-						seCovariate = regressionStandardErrors[2];
-						
-						rsquared = regressionFullWithInteraction.calculateRSquared();
-						
-					} catch (SingularMatrixException ex) {
-						betaInteraction = Double.NaN;
-						seInteraction = Double.NaN;
+                        betaInteraction = regressionParameters[3];
+                        seInteraction = regressionStandardErrors[3];
 
-						// Get the regression parameters and R-square value and print it.
-						betaSNP = Double.NaN;
-						seSNP = Double.NaN;
-						
-						betaCovariate = Double.NaN;
-						seCovariate = Double.NaN;
-						
-						rsquared = Double.NaN;
-					}
+                        // Get the regression parameters and R-square value and print it.
+                        betaSNP = regressionParameters[1];
+                        seSNP = regressionStandardErrors[1];
+
+                        betaCovariate = regressionParameters[2];
+                        seCovariate = regressionStandardErrors[2];
+
+                        rsquared = regressionFullWithInteraction.calculateRSquared();
+
+                    } catch (SingularMatrixException ex) {
+                        betaInteraction = Double.NaN;
+                        seInteraction = Double.NaN;
+
+                        // Get the regression parameters and R-square value and print it.
+                        betaSNP = Double.NaN;
+                        seSNP = Double.NaN;
+
+                        betaCovariate = Double.NaN;
+                        seCovariate = Double.NaN;
+
+                        rsquared = Double.NaN;
+                    }
 
                 }
 
@@ -396,11 +451,11 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
     }
 
     private Pair<Double, Double> convertBetaToP(double beta, double se, StudentT tDistColt) {
-		
-		if(Double.isNaN(beta)){
-			return NAN_PAIR;
-		}
-		
+
+        if (Double.isNaN(beta)) {
+            return NAN_PAIR;
+        }
+
         double t = beta / se;
         double p = 1;
         double z = 0;
