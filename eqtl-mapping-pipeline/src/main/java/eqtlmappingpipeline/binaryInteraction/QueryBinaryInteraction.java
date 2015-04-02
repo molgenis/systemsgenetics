@@ -5,6 +5,7 @@ import au.com.bytecode.opencsv.CSVWriter;
 import eqtlmappingpipeline.Main;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -14,15 +15,16 @@ import java.io.Writer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;
 import umcg.genetica.io.binInteraction.BinaryInteractionFileException;
@@ -46,8 +48,6 @@ public class QueryBinaryInteraction {
 	static {
 
 		OPTIONS = new Options();
-
-		Option option;
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
@@ -92,6 +92,10 @@ public class QueryBinaryInteraction {
 		OptionBuilder.withLongOpt("interactionZ");
 		OPTIONS.addOption(OptionBuilder.create("iz"));
 
+		OptionBuilder.withDescription("Only output meta z-scores");
+		OptionBuilder.withLongOpt("onlyMetaZ");
+		OPTIONS.addOption(OptionBuilder.create("oz"));
+
 	}
 
 	public static void main(String[] args) throws UnsupportedEncodingException, IOException, Exception {
@@ -103,6 +107,7 @@ public class QueryBinaryInteraction {
 		final String queryVariantName;
 		final double queryMinAbsInteractionZ;
 		final File queryFile;
+		final boolean onlyOutputMetaZ;
 
 		try {
 			final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -140,6 +145,8 @@ public class QueryBinaryInteraction {
 				queryMinAbsInteractionZ = -1;
 			}
 
+			onlyOutputMetaZ = commandLine.hasOption("oz");
+
 		} catch (ParseException ex) {
 			System.err.println("Invalid command line arguments: ");
 			System.err.println(ex.getMessage());
@@ -152,7 +159,7 @@ public class QueryBinaryInteraction {
 		BinaryInteractionFile inputFile = BinaryInteractionFile.load(inputInteractionFile, true);
 
 		final Writer outputWriter;
-		if (outputFile != null) {
+		if (outputFile != null && !onlyOutputMetaZ) {
 			outputWriter = new BufferedWriter(new FileWriter(outputFile));
 		} else {
 			outputWriter = new OutputStreamWriter(System.out);
@@ -190,6 +197,10 @@ public class QueryBinaryInteraction {
 			outputWriter.write("# - Query file: " + queryFile.getAbsolutePath());
 			outputWriter.write('\n');
 		}
+		if (onlyOutputMetaZ) {
+			outputWriter.write("# - Only outputing meta z-scores");
+			outputWriter.write('\n');
+		}
 		outputWriter.write("#\n");
 
 		outputWriter.write("# Interaction file meta data: ");
@@ -212,137 +223,107 @@ public class QueryBinaryInteraction {
 		outputWriter.write('\n');
 		outputWriter.write("#\n");
 
+		outputWriter.flush();
+
 		final LinkedHashSet<InteractoinQuery> interactionQueries;
+		final boolean interactionQueriesOnlyCovariates;
 		if (queryFile != null) {
-			interactionQueries = new LinkedHashSet<InteractoinQuery>();
-			CSVReader queryReader = new CSVReader(new FileReader(queryFile), '\t', '\0');
-
-			String[] nextLine = queryReader.readNext();
-
-			int variantCol = -1;
-			int geneCol = -1;
-			int covariateCol = -1;
-
-			//Parse header
-			for (int i = 0; i < nextLine.length; ++i) {
-				String headerEntry = nextLine[i].toLowerCase();
-				switch (headerEntry) {
-					case "variant":
-						if (variantCol != -1) {
-							System.err.println("Variant column found twice");
-							System.exit(1);
-							return;
-						}
-						variantCol = i;
-						break;
-					case "gene":
-						if (geneCol != -1) {
-							System.err.println("Gene column found twice");
-							System.exit(1);
-							return;
-						}
-						geneCol = i;
-						break;
-					case "covariate":
-						if (covariateCol != -1) {
-							System.err.println("Covariate column found twice");
-							System.exit(1);
-							return;
-						}
-						covariateCol = i;
-						break;
-
-				}
-
-			}
-
-			if (variantCol == -1 && geneCol == -1 && covariateCol == -1) {
-				System.err.println("Did not detect appropiate header in query file");
-				System.exit(1);
-				return;
-			}
-
-			while ((nextLine = queryReader.readNext()) != null) {
-				String variant = null;
-				String gene = null;
-				String covariate = null;
-				
-				if(variantCol != -1){
-					variant = nextLine[variantCol];
-				}
-				if(geneCol != -1){
-					gene = nextLine[geneCol];
-				}
-				if(covariateCol != -1){
-					covariate = nextLine[covariateCol];
-				}
-				interactionQueries.add(new InteractoinQuery(variant, gene, covariate));
-			}
+			Pair<LinkedHashSet<InteractoinQuery>, Boolean> loadRes = loadInteractionQueries(queryFile);
+			interactionQueries = loadRes.getLeft();
+			interactionQueriesOnlyCovariates = loadRes.getRight();
 		} else {
 			interactionQueries = null;
+			interactionQueriesOnlyCovariates = false;
 		}
 
-		CSVWriter tableWriter = new CSVWriter(outputWriter, '\t', '\0', '\0');
-
-		int columnCount =
-				7
-				+ ((5 + (inputFile.isNormalQtlStored() ? 2 : 0) + (inputFile.isFlippedZscoreStored() ? 1 : 0)) * inputFile.getCohortCount())
-				+ (inputFile.isMetaAnalysis() ? (3 + (inputFile.isNormalQtlStored() ? 1 : 0) + (inputFile.isFlippedZscoreStored() ? 1 : 0)) : 0);
-
-
-		String[] row = new String[columnCount];
-		int c = 0;
-
-		row[c++] = "Variant";
-		row[c++] = "Gene";
-		row[c++] = "Covariate";
-		row[c++] = "Variant_chr";
-		row[c++] = "Variant_pos";
-		row[c++] = "Variant alleles";
-		row[c++] = "Assessed_allele";
-
-		for (BinaryInteractionCohort cohort : inputFile.getCohorts()) {
-
-			String cohortName = cohort.getName();
-
-			if (inputFile.isNormalQtlStored()) {
-				row[c++] = cohortName + "_QTL_sample_count";
-				row[c++] = cohortName + "_QTL_Z-score";
+		CSVWriter tableWriter;
+		if (onlyOutputMetaZ) {
+			if (outputFile == null) {
+				throw new Exception("Use of option --onlyMetaZ only possible in combination with output file");
 			}
-
-			row[c++] = cohortName + "_interaction_sample_count";
-			row[c++] = cohortName + "_interaction_r2";
-			row[c++] = cohortName + "_variant_Z-score";
-			row[c++] = cohortName + "_covariate_Z-score";
-			row[c++] = cohortName + "_interaction_Z-score";
-
-			if (inputFile.isFlippedZscoreStored()) {
-				row[c++] = cohortName + "_flipped_interaction_Z-score";
-			}
-
+			tableWriter = new CSVWriter(new BufferedWriter(new FileWriter(outputFile)), '\t', '\0', '\0');
+		} else {
+			tableWriter = new CSVWriter(outputWriter, '\t', '\0', '\0');
 		}
 
-		if (inputFile.isMetaAnalysis()) {
-			if (inputFile.isNormalQtlStored()) {
-				row[c++] = "Meta_QTL_Z-score";
-			}
-			row[c++] = "Meta_variant_Z-score";
-			row[c++] = "Meta_covariate_Z-score";
-			row[c++] = "Meta_interaction_Z-score";
-			if (inputFile.isFlippedZscoreStored()) {
-				row[c++] = "Meta_flipped_interaction_Z-score";
-			}
+		if (onlyOutputMetaZ && !inputFile.isMetaAnalysis()) {
+			throw new Exception("No meta analysis information detected cannot use option: --onlyMetaZ");
 		}
 
-		tableWriter.writeNext(row);
+		final String[] row;
 
+		if (onlyOutputMetaZ) {
+			row = new String[1];
+		} else {
+			final int columnCount = 7
+					+ ((5 + (inputFile.isNormalQtlStored() ? 2 : 0) + (inputFile.isFlippedZscoreStored() ? 1 : 0)) * inputFile.getCohortCount())
+					+ (inputFile.isMetaAnalysis() ? (3 + (inputFile.isNormalQtlStored() ? 1 : 0) + (inputFile.isFlippedZscoreStored() ? 1 : 0)) : 0);
+
+
+
+			row = new String[columnCount];
+			int c = 0;
+
+			row[c++] = "Variant";
+			row[c++] = "Gene";
+			row[c++] = "Covariate";
+			row[c++] = "Variant_chr";
+			row[c++] = "Variant_pos";
+			row[c++] = "Variant alleles";
+			row[c++] = "Assessed_allele";
+
+			for (BinaryInteractionCohort cohort : inputFile.getCohorts()) {
+
+				String cohortName = cohort.getName();
+
+				if (inputFile.isNormalQtlStored()) {
+					row[c++] = cohortName + "_QTL_sample_count";
+					row[c++] = cohortName + "_QTL_Z-score";
+				}
+
+				row[c++] = cohortName + "_interaction_sample_count";
+				row[c++] = cohortName + "_interaction_r2";
+				row[c++] = cohortName + "_variant_Z-score";
+				row[c++] = cohortName + "_covariate_Z-score";
+				row[c++] = cohortName + "_interaction_Z-score";
+
+				if (inputFile.isFlippedZscoreStored()) {
+					row[c++] = cohortName + "_flipped_interaction_Z-score";
+				}
+
+			}
+
+			if (inputFile.isMetaAnalysis()) {
+				if (inputFile.isNormalQtlStored()) {
+					row[c++] = "Meta_QTL_Z-score";
+				}
+				row[c++] = "Meta_variant_Z-score";
+				row[c++] = "Meta_covariate_Z-score";
+				row[c++] = "Meta_interaction_Z-score";
+				if (inputFile.isFlippedZscoreStored()) {
+					row[c++] = "Meta_flipped_interaction_Z-score";
+				}
+			}
+
+			tableWriter.writeNext(row);
+		}
 
 		if (interactionQueries != null) {
-			for(InteractoinQuery interactionQuery : interactionQueries){
-				doQuery(interactionQuery.getGene(), interactionQuery.getVariant(), interactionQuery.getCovariate(), inputFile, tableWriter, row);
+			
+			if (interactionQueriesOnlyCovariates) {
+				HashSet<String> covariateNames = new HashSet<>(interactionQueries.size());
+				for (InteractoinQuery interactionQuery : interactionQueries) {
+					covariateNames.add(interactionQuery.getCovariate());
+				}
+				doQueryCovariates(covariateNames, inputFile, tableWriter, row, onlyOutputMetaZ);
+			} else {
+				for (InteractoinQuery interactionQuery : interactionQueries) {
+					doQuery(interactionQuery.getGene(), interactionQuery.getVariant(), interactionQuery.getCovariate(), inputFile, tableWriter, row, onlyOutputMetaZ);
+				}
 			}
+			
 		} else {
-			doQuery(queryGeneName, queryVariantName, queryCovariateName, inputFile, tableWriter, row);
+			doQuery(queryGeneName, queryVariantName, queryCovariateName, inputFile, tableWriter, row, onlyOutputMetaZ);
 		}
 
 
@@ -353,65 +334,73 @@ public class QueryBinaryInteraction {
 	}
 
 	@SuppressWarnings({"null", "ConstantConditions"})
-	private static void addRow(BinaryInteractionQueryResult queryRestult, BinaryInteractionFile inputFile, CSVWriter tableWriter, String[] row) throws BinaryInteractionFileException, IOException {
-		int c = 0;
+	private static void addRow(BinaryInteractionQueryResult queryRestult, BinaryInteractionFile inputFile, CSVWriter tableWriter, String[] row, boolean onlyOutputMetaZ) throws BinaryInteractionFileException, IOException {
 
-		row[c++] = queryRestult.getVariantName();
-		row[c++] = queryRestult.getGeneName();
-		row[c++] = queryRestult.getCovariateName();
+		if (onlyOutputMetaZ) {
+			BinaryInteractionZscores zscroresInteraction = queryRestult.getInteractionZscores();
+			row[0] = String.valueOf(zscroresInteraction.getZscoreInteractionMeta());
+		} else {
+			int c = 0;
 
-		BinaryInteractionVariant variant = inputFile.getVariant(queryRestult.getVariantName());
-		row[c++] = variant.getChr();
-		row[c++] = String.valueOf(variant.getPos());
-		row[c++] = variant.getRefAllele().getAlleleAsString() + '/' + variant.getAltAllele().getAlleleAsString();
-		row[c++] = variant.getAltAllele().toString();
+			row[c++] = queryRestult.getVariantName();
+			row[c++] = queryRestult.getGeneName();
+			row[c++] = queryRestult.getCovariateName();
 
-		BinaryInteractionQtlZscores zscroresQtl = queryRestult.getQtlZscores();
-		BinaryInteractionZscores zscroresInteraction = queryRestult.getInteractionZscores();
+			BinaryInteractionVariant variant = inputFile.getVariant(queryRestult.getVariantName());
+			row[c++] = variant.getChr();
+			row[c++] = String.valueOf(variant.getPos());
+			row[c++] = variant.getRefAllele().getAlleleAsString() + '/' + variant.getAltAllele().getAlleleAsString();
+			row[c++] = variant.getAltAllele().toString();
 
-		for (int cohortIndex = 0; cohortIndex < inputFile.getCohortCount(); ++cohortIndex) {
+			BinaryInteractionQtlZscores zscroresQtl = queryRestult.getQtlZscores();
+			BinaryInteractionZscores zscroresInteraction = queryRestult.getInteractionZscores();
 
-			if (inputFile.isNormalQtlStored()) {
-				row[c++] = String.valueOf(zscroresQtl.getSampleCounts()[cohortIndex]);
-				row[c++] = String.valueOf(zscroresQtl.getZscores()[cohortIndex]);
+			for (int cohortIndex = 0; cohortIndex < inputFile.getCohortCount(); ++cohortIndex) {
+
+				if (inputFile.isNormalQtlStored()) {
+					row[c++] = String.valueOf(zscroresQtl.getSampleCounts()[cohortIndex]);
+					row[c++] = String.valueOf(zscroresQtl.getZscores()[cohortIndex]);
+				}
+
+				row[c++] = String.valueOf(zscroresInteraction.getSamplesInteractionCohort()[cohortIndex]);
+				row[c++] = String.valueOf(zscroresInteraction.getrSquaredCohort()[cohortIndex]);
+				row[c++] = String.valueOf(zscroresInteraction.getZscoreSnpCohort()[cohortIndex]);
+				row[c++] = String.valueOf(zscroresInteraction.getZscoreCovariateCohort()[cohortIndex]);
+				row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionCohort()[cohortIndex]);
+
+				if (inputFile.isFlippedZscoreStored()) {
+					row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionFlippedCohort()[cohortIndex]);
+				}
+
 			}
 
-			row[c++] = String.valueOf(zscroresInteraction.getSamplesInteractionCohort()[cohortIndex]);
-			row[c++] = String.valueOf(zscroresInteraction.getrSquaredCohort()[cohortIndex]);
-			row[c++] = String.valueOf(zscroresInteraction.getZscoreSnpCohort()[cohortIndex]);
-			row[c++] = String.valueOf(zscroresInteraction.getZscoreCovariateCohort()[cohortIndex]);
-			row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionCohort()[cohortIndex]);
-
-			if (inputFile.isFlippedZscoreStored()) {
-				row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionFlippedCohort()[cohortIndex]);
+			if (inputFile.isMetaAnalysis()) {
+				if (inputFile.isNormalQtlStored()) {
+					row[c++] = String.valueOf(zscroresQtl.getMetaZscore());
+				}
+				row[c++] = String.valueOf(zscroresInteraction.getZscoreSnpMeta());
+				row[c++] = String.valueOf(zscroresInteraction.getZscoreCovariateMeta());
+				row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionMeta());
+				if (inputFile.isFlippedZscoreStored()) {
+					row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionFlippedMeta());
+				}
 			}
-
 		}
 
-		if (inputFile.isMetaAnalysis()) {
-			if (inputFile.isNormalQtlStored()) {
-				row[c++] = String.valueOf(zscroresQtl.getMetaZscore());
-			}
-			row[c++] = String.valueOf(zscroresInteraction.getZscoreSnpMeta());
-			row[c++] = String.valueOf(zscroresInteraction.getZscoreCovariateMeta());
-			row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionMeta());
-			if (inputFile.isFlippedZscoreStored()) {
-				row[c++] = String.valueOf(zscroresInteraction.getZscoreInteractionFlippedMeta());
-			}
-		}
 
 		tableWriter.writeNext(row);
 	}
 
-	private static void doQuery(final String queryGeneName, final String queryVariantName, final String queryCovariateName, BinaryInteractionFile inputFile, CSVWriter tableWriter, String[] row) throws IOException, BinaryInteractionFileException {
+	private static void doQuery(final String queryGeneName, final String queryVariantName, final String queryCovariateName, BinaryInteractionFile inputFile, CSVWriter tableWriter, String[] row, boolean onlyOutputMetaZ) throws IOException, BinaryInteractionFileException {
+
 		if (queryGeneName != null && queryVariantName != null && queryCovariateName != null) {
 
-			addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, queryGeneName, queryCovariateName), inputFile, tableWriter, row);
+			addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, queryGeneName, queryCovariateName), inputFile, tableWriter, row, onlyOutputMetaZ);
 
 		} else if (queryGeneName != null && queryVariantName != null) {
 
 			for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, queryGeneName); iterator.hasNext();) {
-				addRow(iterator.next(), inputFile, tableWriter, row);
+				addRow(iterator.next(), inputFile, tableWriter, row, onlyOutputMetaZ);
 			}
 
 		} else if (queryVariantName != null) {
@@ -423,12 +412,12 @@ public class QueryBinaryInteraction {
 				if (queryCovariateName != null) {
 
 					if (inputFile.containsInteraction(queryVariantName, gene.getName(), queryCovariateName)) {
-						addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+						addRow(inputFile.readVariantGeneCovariateResults(queryVariantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row, onlyOutputMetaZ);
 					}
 
 				} else {
 					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(queryVariantName, gene.getName()); iterator.hasNext();) {
-						addRow(iterator.next(), inputFile, tableWriter, row);
+						addRow(iterator.next(), inputFile, tableWriter, row, onlyOutputMetaZ);
 					}
 				}
 
@@ -443,12 +432,12 @@ public class QueryBinaryInteraction {
 				if (queryCovariateName != null) {
 
 					if (inputFile.containsInteraction(variant.getName(), queryGeneName, queryCovariateName)) {
-						addRow(inputFile.readVariantGeneCovariateResults(variant.getName(), queryGeneName, queryCovariateName), inputFile, tableWriter, row);
+						addRow(inputFile.readVariantGeneCovariateResults(variant.getName(), queryGeneName, queryCovariateName), inputFile, tableWriter, row, onlyOutputMetaZ);
 					}
 
 				} else {
 					for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variant.getName(), queryGeneName); iterator.hasNext();) {
-						addRow(iterator.next(), inputFile, tableWriter, row);
+						addRow(iterator.next(), inputFile, tableWriter, row, onlyOutputMetaZ);
 					}
 				}
 
@@ -468,12 +457,12 @@ public class QueryBinaryInteraction {
 					if (queryCovariateName != null) {
 
 						if (inputFile.containsInteraction(variantName, gene.getName(), queryCovariateName)) {
-							addRow(inputFile.readVariantGeneCovariateResults(variantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row);
+							addRow(inputFile.readVariantGeneCovariateResults(variantName, gene.getName(), queryCovariateName), inputFile, tableWriter, row, onlyOutputMetaZ);
 						}
 
 					} else {
 						for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
-							addRow(iterator.next(), inputFile, tableWriter, row);
+							addRow(iterator.next(), inputFile, tableWriter, row, onlyOutputMetaZ);
 						}
 					}
 
@@ -484,6 +473,95 @@ public class QueryBinaryInteraction {
 
 
 		}
+	}
+
+	private static void doQueryCovariates(final HashSet<String> queryCovariateNames, BinaryInteractionFile inputFile, CSVWriter tableWriter, String[] row, boolean onlyOutputMetaZ) throws IOException, BinaryInteractionFileException {
+
+		for (BinaryInteractionVariant variant : inputFile.getVariants()) {
+
+			String variantName = variant.getName();
+
+			int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
+			for (int genePointer : genePointers) {
+
+				BinaryInteractionGene gene = inputFile.getGene(genePointer);
+
+				for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
+					BinaryInteractionQueryResult next = iterator.next();
+					if(queryCovariateNames.contains(next.getCovariateName())){
+						addRow(next, inputFile, tableWriter, row, onlyOutputMetaZ);
+					}
+					
+				}
+
+			}
+
+		}
+
+	}
+
+	private static Pair<LinkedHashSet<InteractoinQuery>, Boolean> loadInteractionQueries(File queryFile) throws FileNotFoundException, IOException, Exception {
+
+		LinkedHashSet<InteractoinQuery> interactionQueries = new LinkedHashSet<InteractoinQuery>();
+		final CSVReader queryReader = new CSVReader(new FileReader(queryFile), '\t', '\0');
+
+		String[] nextLine = queryReader.readNext();
+
+		int variantCol = -1;
+		int geneCol = -1;
+		int covariateCol = -1;
+
+		//Parse header
+		for (int i = 0; i < nextLine.length; ++i) {
+			String headerEntry = nextLine[i].toLowerCase();
+			switch (headerEntry) {
+				case "variant":
+					if (variantCol != -1) {
+						throw new Exception("Variant column found twice");
+					}
+					variantCol = i;
+					break;
+				case "gene":
+					if (geneCol != -1) {
+						throw new Exception("Gene column found twice");
+					}
+					geneCol = i;
+					break;
+				case "covariate":
+					if (covariateCol != -1) {
+						throw new Exception("Covariate column found twice");
+					}
+					covariateCol = i;
+					break;
+
+			}
+
+		}
+
+		if (variantCol == -1 && geneCol == -1 && covariateCol == -1) {
+			throw new Exception("Did not detect appropiate header in query file");
+
+		}
+
+		while ((nextLine = queryReader.readNext()) != null) {
+			String variant = null;
+			String gene = null;
+			String covariate = null;
+
+			if (variantCol != -1) {
+				variant = nextLine[variantCol];
+			}
+			if (geneCol != -1) {
+				gene = nextLine[geneCol];
+			}
+			if (covariateCol != -1) {
+				covariate = nextLine[covariateCol];
+			}
+			interactionQueries.add(new InteractoinQuery(variant, gene, covariate));
+		}
+		queryReader.close();
+
+		return new Pair(interactionQueries, variantCol == -1 && geneCol == -1);
 	}
 
 	private static class InteractoinQuery {
