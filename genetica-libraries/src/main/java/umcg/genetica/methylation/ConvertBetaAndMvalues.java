@@ -58,6 +58,15 @@ public class ConvertBetaAndMvalues {
         }
     }
     
+    public static double[] transformMToBetavalue(double[] rawData){
+        double[] betaCopy = new double[rawData.length];
+        for (int s=0; s<rawData.length; s++) {
+            double tmpBeta = Math.pow(2, rawData[s]);
+            betaCopy[s] = tmpBeta/(tmpBeta+1);
+        }
+        return betaCopy;
+    }
+    
     public static void transformMToBetavalue(double[][] rawData){
         
         int probeCount = rawData.length;
