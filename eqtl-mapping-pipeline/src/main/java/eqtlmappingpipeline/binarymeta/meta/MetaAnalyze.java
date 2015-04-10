@@ -6,25 +6,25 @@ package eqtlmappingpipeline.binarymeta.meta;
 //
 //import eqtlmappingpipeline.gpio.binary.Dataset;
 
-import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
 import eqtlmappingpipeline.binarymeta.meta.graphics.ZScorePlot;
+import eqtlmappingpipeline.metaqtl3.FDR;
+import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.bin.BinaryResultDataset;
 import umcg.genetica.io.trityper.bin.BinaryResultProbe;
 import umcg.genetica.io.trityper.bin.BinaryResultSNP;
-import java.util.Arrays;
+import umcg.genetica.io.trityper.probeannotation.ProbeTranslation;
 import umcg.genetica.math.stats.Descriptives;
 
-import eqtlmappingpipeline.metaqtl3.FDR;
-import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.DataFormatException;
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.EQTL;
 
 ///**
 // *
@@ -162,15 +162,15 @@ public class MetaAnalyze {
             int ctr = 0;
             String[] felems = stf.readLineElems(TextFile.tab);
             while (felems != null) {
-                String snp = felems[0];
-                String probe = felems[1];
+                String snp = felems[0].intern();
+                String probe = felems[1].intern();
                 HashSet<String> probesForSNP = selectedSNPProbePairs.get(snp);
                 if (probesForSNP == null) {
                     probesForSNP = new HashSet<String>();
                 }
-                probesForSNP.add(probe);
-                selectedSNPs.add(snp);
-                selectedSNPProbePairs.put(snp, probesForSNP);
+                probesForSNP.add(probe.intern());
+                selectedSNPs.add(snp.intern());
+                selectedSNPProbePairs.put(snp.intern(), probesForSNP);
                 ctr++;
                 felems = stf.readLineElems(TextFile.tab);
             }
@@ -219,11 +219,11 @@ public class MetaAnalyze {
             }
 
             for (BinaryResultSNP s : dsSNPs) {
-                if (!uniqueSNPs.contains(s.getName()) && (selectedSNPs == null || selectedSNPs.contains(s.getName()))) {
-                    snps.add(s.getName());
+                if (!uniqueSNPs.contains(s.getName().intern()) && (selectedSNPs == null || selectedSNPs.contains(s.getName().intern()))) {
+                    snps.add(s.getName().intern());
                     snpChr.add(s.getChr());
                     snpChrPos.add(s.getChrpos());
-                    uniqueSNPs.add(s.getName());
+                    uniqueSNPs.add(s.getName().intern());
                 }
             }
 

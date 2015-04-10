@@ -1,6 +1,15 @@
 package eqtlmappingpipeline.binaryInteraction;
 
 import eqtlmappingpipeline.Main;
+import org.apache.commons.cli.*;
+import org.molgenis.genotype.Allele;
+import umcg.genetica.io.binInteraction.*;
+import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
+import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
+import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
+import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariantCreator;
+import umcg.genetica.io.trityper.util.BaseAnnot;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -11,27 +20,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
-import org.molgenis.genotype.Allele;
-import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
-import umcg.genetica.io.binInteraction.BinaryInteractionFile;
-import umcg.genetica.io.binInteraction.BinaryInteractionFileCreator;
-import umcg.genetica.io.binInteraction.BinaryInteractionFileException;
-import umcg.genetica.io.binInteraction.BinaryInteractionQtlZscores;
-import umcg.genetica.io.binInteraction.BinaryInteractionZscores;
-import umcg.genetica.io.binInteraction.gene.BinaryInteractionGene;
-import umcg.genetica.io.binInteraction.gene.BinaryInteractionGeneCreator;
-import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariant;
-import umcg.genetica.io.binInteraction.variant.BinaryInteractionVariantCreator;
 
 /**
- *
  * @author Patrick Deelen
  */
 public class BinaryInteractionMetaAnalysis {
@@ -39,18 +29,18 @@ public class BinaryInteractionMetaAnalysis {
 	private static final String VERSION = Main.VERSION;
 	private static final String HEADER =
 			"  /---------------------------------------\\\n"
-			+ "  |   Binary interaction meta analysis    |\n"
-			+ "  |                                       |\n"
-			+ "  |             Patrick Deelen            |\n"
-			+ "  |        patrickdeelen@gmail.com        |\n"
-			+ "  |                                       |\n"
-			+ "  |   Dasha Zhernakova, Marc Jan Bonder   |\n"
-			+ "  |      Lude Franke, Morris Swertz       |\n"
-			+ "  |                                       |\n"
-			+ "  |     Genomics Coordication Center      |\n"
-			+ "  |        Department of Genetics         |\n"
-			+ "  |  University Medical Center Groningen  |\n"
-			+ "  \\---------------------------------------/";
+					+ "  |   Binary interaction meta analysis    |\n"
+					+ "  |                                       |\n"
+					+ "  |             Patrick Deelen            |\n"
+					+ "  |        patrickdeelen@gmail.com        |\n"
+					+ "  |                                       |\n"
+					+ "  |   Dasha Zhernakova, Marc Jan Bonder   |\n"
+					+ "  |      Lude Franke, Morris Swertz       |\n"
+					+ "  |                                       |\n"
+					+ "  |     Genomics Coordication Center      |\n"
+					+ "  |        Department of Genetics         |\n"
+					+ "  |  University Medical Center Groningen  |\n"
+					+ "  \\---------------------------------------/";
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
 	private static final Options OPTIONS;
@@ -168,13 +158,25 @@ public class BinaryInteractionMetaAnalysis {
 
 					BinaryInteractionVariantCreator metaVariant = variants.get(variant.getName());
 
-					if (!(metaVariant.getRefAllele() == variant.getRefAllele() && metaVariant.getAltAllele() == variant.getAltAllele())
-							&& !(metaVariant.getRefAllele() == variant.getAltAllele() && metaVariant.getAltAllele() == variant.getRefAllele())) {
+					Boolean flipAlleles = BaseAnnot.flipalleles(variant.getRefAllele().getAlleleAsString() + "/" + variant.getAltAllele().getAlleleAsString(), variant.getRefAllele().getAlleleAsString(),
+							metaVariant.getRefAllele().getAlleleAsString() + "/" + metaVariant.getAltAllele().getAlleleAsString(), metaVariant.getRefAllele().getAlleleAsString());
+
+
+//					if (!(metaVariant.getRefAllele() == variant.getRefAllele() && metaVariant.getAltAllele() == variant.getAltAllele())
+//							&& !(metaVariant.getRefAllele() == variant.getAltAllele() && metaVariant.getAltAllele() == variant.getRefAllele())) {
+//						System.err.println("Error: different alleles detected for variant: " + variant.getName());
+//						System.exit(1);
+//						return;
+//					}
+
+
+					if (flipAlleles == null) {
 						System.err.println("Error: different alleles detected for variant: " + variant.getName());
+						System.err.println("Expected: " + metaVariant.getRefAllele().getAlleleAsString() + " / " + metaVariant.getAltAllele().getAlleleAsString());
+						System.err.println("Found: " + variant.getRefAllele().getAlleleAsString() + " / " + variant.getAltAllele().getAlleleAsString());
 						System.exit(1);
 						return;
 					}
-
 				}
 				for (int geneIndex : variant.getGenePointers()) {
 					variantGenes.add(new VariantGene(variant.getName(), fileGenes.get(geneIndex).getName()));
@@ -283,13 +285,18 @@ public class BinaryInteractionMetaAnalysis {
 
 					if (binaryInteractionFile.containsVariantGene(variantName, geneName)) {
 
-						boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
+						BinaryInteractionVariant currentVariant = binaryInteractionFile.getVariant(variantName);
+						// boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
+
+						// sorry for the ugly code :|
+						Boolean flipAlleles = BaseAnnot.flipalleles(variant.getRefAllele().getAlleleAsString() + "/" + variant.getAltAllele().getAlleleAsString(), assessedAllele.getAlleleAsString(),
+								currentVariant.getRefAllele().getAlleleAsString() + "/" + currentVariant.getAltAllele().getAlleleAsString(), currentVariant.getAltAllele().getAlleleAsString());
 
 						BinaryInteractionQtlZscores qtlRes = binaryInteractionFile.readQtlResults(variantName, geneName);
 						for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
 							sampleCountsQtl[i] = qtlRes.getSampleCounts()[j];
 							zscoresQtl[i] = qtlRes.getZscores()[j];
-							if (swap) {
+							if (flipAlleles) {
 								zscoresQtl[i] *= -1;
 							}
 							++i;
@@ -341,7 +348,15 @@ public class BinaryInteractionMetaAnalysis {
 
 						BinaryInteractionZscores interactionRes = binaryInteractionFile.readInteractionResults(variantName, geneName, covariate);
 
-						boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
+//						boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
+
+						BinaryInteractionVariant currentVariant = binaryInteractionFile.getVariant(variantName);
+						// boolean swap = binaryInteractionFile.getVariant(variantName).getAltAllele() != assessedAllele;
+
+						// sorry for the ugly code :|
+						Boolean flipAlleles = BaseAnnot.flipalleles(variant.getRefAllele().getAlleleAsString() + "/" + variant.getAltAllele().getAlleleAsString(), assessedAllele.getAlleleAsString(),
+								currentVariant.getRefAllele().getAlleleAsString() + "/" + currentVariant.getAltAllele().getAlleleAsString(), currentVariant.getAltAllele().getAlleleAsString());
+
 
 						for (int j = 0; j < binaryInteractionFile.getCohortCount(); ++j) {
 							sampleCountsInteraction[i] = interactionRes.getSamplesInteractionCohort()[j];
@@ -350,7 +365,7 @@ public class BinaryInteractionMetaAnalysis {
 							zscoreInteractionCohort[i] = interactionRes.getZscoreInteractionCohort()[j];
 							rSquaredCohort[i] = interactionRes.getrSquaredCohort()[j];
 							zscoreInteractionFlippedCohort[i] = interactionRes.getZscoreInteractionFlippedCohort()[j];
-							if (swap) {
+							if (flipAlleles) {
 								zscoreSnpCohort[i] *= -1;
 								zscoreInteractionCohort[i] *= -1;
 								zscoreInteractionFlippedCohort[i] *= -1;
