@@ -577,7 +577,7 @@ public class InteractionAnalysisMultiThreaded {
 			}
 
 			double[][] covariates = covariateData.getRawData();
-			for (int row = 0; row < expressiondata.length; row++) {
+			for (int row = 0; row < covariates.length; row++) {
 				covariates[row] = norm.forceNormal(covariates[row]);
 			}
 			covariateData.setRawData(covariates);
