@@ -4,10 +4,11 @@
  */
 package umcg.genetica.io.trityper.probeannotation;
 
-import java.io.IOException;
-import java.util.HashMap;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
+
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  *
@@ -64,7 +65,7 @@ public class ProbeTranslation {
                 String symbol = elems[4];
                 num = 0;
 
-                probeName[probeNum] = elems[0];
+                probeName[probeNum] = elems[0].intern();
 
                 byte bchr = -1;
                 try {
@@ -107,7 +108,7 @@ public class ProbeTranslation {
                 actualMappingPosition.put(probeNum, chrpos);
                 probeChr[probeNum] = bchr;
                 probeChrPos[probeNum] = bchrpos;
-                probeSymbol[probeNum] = symbol;
+                probeSymbol[probeNum] = symbol.intern();
 
                 for (int i = 5; i < elems.length; i++) {
 
@@ -116,9 +117,9 @@ public class ProbeTranslation {
                         try {
                             String[] addresselems = arrayaddress.split(",");
                             for (int q = 0; q < addresselems.length; q++) {
-                                String address = addresselems[q];
+                                String address = addresselems[q].intern();
 
-                                oldToNewProbeAddress.put(annotationname[i - 5] + address, probeNum);
+                                oldToNewProbeAddress.put(annotationname[i - 5] + address.intern(), probeNum);
 
                             }
 
