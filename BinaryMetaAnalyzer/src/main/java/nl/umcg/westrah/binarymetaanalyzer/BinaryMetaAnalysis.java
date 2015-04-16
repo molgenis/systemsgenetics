@@ -249,7 +249,7 @@ public class BinaryMetaAnalysis {
                         if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
                             // create output object
                             QTL q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
-                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
+//                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
                             addEQTL(q);
                         } else {
 //                            if (!printed) {
@@ -311,7 +311,7 @@ public class BinaryMetaAnalysis {
                         // create output object
                         if (!Double.isNaN(metaAnalysisP) && !Double.isNaN(metaAnalysisZ)) {
                             QTL q = new QTL(metaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), metaAnalysisZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
-                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
+//                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
                             addEQTL(q);
                         }
                     }
