@@ -4,6 +4,7 @@
  */
 package umcg.genetica.io.probemapping;
 
+import gnu.trove.map.hash.THashMap;
 import java.awt.TextField;
 import java.io.BufferedReader;
 import java.io.File;
@@ -398,8 +399,8 @@ public class reading {
      * @param sizeMap
      * @return 
      */
-    public static HashMap<String, HashMap<String, String>> readAnnotationFile(String annotationFile, int storingId, int sizeMap) {
-        HashMap<String, HashMap<String, String>> probeInfo = new HashMap<String, HashMap<String, String>>((int) Math.ceil(sizeMap / 0.75));
+    public static THashMap<String, THashMap<String, String>> readAnnotationFile(String annotationFile, int storingId, int sizeMap) {
+        THashMap<String, THashMap<String, String>> probeInfo = new THashMap<String, THashMap<String, String>>((int) Math.ceil(sizeMap / 0.75));
         int entryId = 0;
         try {
             TextFile in = new TextFile(annotationFile, TextFile.R);
@@ -411,7 +412,7 @@ public class reading {
 
             while ((str = in.readLine()) != null) {
                 String[] strParts = SPLIT_ON_TAB.split(str);
-                HashMap<String, String> t = new HashMap<String, String>((int) Math.ceil(header.length / 0.75));
+                THashMap<String, String> t = new THashMap<String, String>((int) Math.ceil(header.length / 0.75));
                 for (int i = 0; i < strParts.length; ++i) {
                     if (i != storingId) {
                         t.put(header[i], strParts[i]);
