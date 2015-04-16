@@ -148,6 +148,20 @@ public class ZScores {
         
         return Probability.normalInverse(p);
     }
+    
+    /**
+     *
+     * Returns the absolute Z-score for a given p-value using a normal
+     * distribution.
+     *
+     * @param p p-value
+     * @return absolute Z-score
+     */
+    public static double pToZTwoTailed(double p) {
+        
+        p = p/2;
+        return pToZ(p);
+    }
 
     /**
      *

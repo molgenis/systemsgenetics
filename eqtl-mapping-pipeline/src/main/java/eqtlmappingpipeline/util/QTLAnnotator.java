@@ -43,17 +43,24 @@ class QTLAnnotator {
 //                "1;1;1;10;1;11;1;4;1;4;1;4", "snp;probe;probe;probe;probe;probe", "D:\\UMCG\\ProbeMapping\\Info\\V70\\gencode.v15.annotation.gtf.gz",
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Primary\\eQTLProbesFDR0.05-ProbeLevel_ldDrivenEffectsRemoved-ExtendedInfo.txt");
 
-        addAnnotationToQTLOutput(
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
-                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
-                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4", "snp;probe;snp;snp", null,
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo5.txt");
+//        addAnnotationToQTLOutput(
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
+//                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt", 
+//                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4", "snp;probe;snp;snp", null,
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\Optimal_PC_and_QTL_Corrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt-ExtendedInfo5.txt");
+        
+//        addAnnotationToQTLOutput(
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
+//                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\GC_ContentSuroundingProbes_full.txt;",  
+//                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4;0;1-2-3-4-5-6-7-8-9-10-11-12-13-14-15", "snp;probe;snp;snp;snp", null,
+//                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel_ExtendedInfo4.txt");
 //        
+        
         addAnnotationToQTLOutput(
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel.txt",
-                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\UMCG\\Data\\RP3_RNA_Seq\\annotation_geneIds+overlapping_v71_cut.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt",  
-                "1;8-9-10-11-12-13-14;1;4-5;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4", "snp;probe;snp;snp", null,
-                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs\\QTLCorrected\\RP3_0.25MB_TSS_extendedCis_eQTMs_2015\\eQTLSNPsFDR0.05-SNPLevel_ExtendedInfo4.txt");
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs_Exon\\Optimal_PC_and_QTL_Corrected\\eQTLSNPsFDR0.05-SNPLevel.txt",
+                "D:\\UMCG\\Methylation_GPL13534\\annotationFile\\Illumina450K_MQtlMappingFile_Extensive.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Annotation450k_AdditionMJ_v5.txt.gz;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\CODAM_NTR_LLS_LLD_RS_BBMRI_450K_var_mean_median.txt;D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\GC_ContentSuroundingProbes_full.txt;",  
+                "1;8-9-10-11-12-13-14;0;17-18-20-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-65-66-67-68-70-71-81-133-134-141-142-176-177-178-179-180-181-182-183-184-185-186-187-188-189-190-191-148-149-150-151-152-153-154-155-156-157-158-159-160-161-162-163-164-165-166-167-168-169-170-171-172-173-174-175-192-193-194-195-196-197-198;0;1-2-3-4;0;1-2-3-4-5-6-7-8-9-10-11-12-13-14-15", "snp;snp;snp;snp", null,
+                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\eQTMs_Exon\\Optimal_PC_and_QTL_Corrected\\eQTLSNPsFDR0.05-SNPLevel_ExtendedInfo.txt");
         
 //        addAnnotationToQTLOutput(
 //                "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\Comparison_eQTLs_meQTLs.txt",

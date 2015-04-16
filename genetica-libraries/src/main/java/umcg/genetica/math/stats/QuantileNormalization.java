@@ -46,6 +46,12 @@ public class QuantileNormalization {
         for (int probeID = 0; probeID < probeCount; probeID++) {
             rankedMean[probeID] /= (double) sampleCount;
         }
+        
+        double[] rankedMeanClasses =  new double[probeCount-1];
+        
+        for (int probeID = 0; probeID < (probeCount-1); probeID++) {
+            rankedMeanClasses[probeID] = ((rankedMean[probeID]+rankedMean[probeID+1])/2);
+        }
 
         RankArray rda = new RankArray();
         //Iterate through each sample:
@@ -60,7 +66,7 @@ public class QuantileNormalization {
             for (int p = 0; p < probeCount; p++) {
                                 
                 if((probesRanked[p]%1)!=0){
-                    probesQuantileNormalized[p] = ((rankedMean[(int)Math.floor(probesRanked[p])]+rankedMean[(int)Math.ceil(probesRanked[p])])/2);
+                    probesQuantileNormalized[p] = rankedMeanClasses[(int)Math.floor(probesRanked[p])];
                     rawData[p][s] = probesQuantileNormalized[p];
                 } else {
                     probesQuantileNormalized[p] = rankedMean[(int) probesRanked[p]];
@@ -69,7 +75,7 @@ public class QuantileNormalization {
             }
 //            double[] probesRankedAfterQQNorm = rda.rank(probesQuantileNormalized, false);
             
-            System.out.println("Normalized sample:\t" + (s+1) + "\tCorrelation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(probes, probesRanked) + "\tCorrelation original data and quantile normalized data:\t" + JSci.maths.ArrayMath.correlation(probes, probesQuantileNormalized) + "\tSpearman: "+spearman.correlation(probes, probesQuantileNormalized));
+            System.out.println("Normalized sample:\t" + (s+1) + "\tPearson correlation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(probes, probesRanked) + "\ttSpearman correlation original data and quantile normalized data:\t"+spearman.correlation(probes, probesQuantileNormalized));
         }
     }
 

@@ -46,7 +46,7 @@ public class BinaryMetaAnalysis {
             settingsFile = args[0];
 
         } else {
-            System.out.println("Usage: settings.xml replacetext replacetextwith");
+            System.out.println("Usage of the binary meta-analysis: settings.xml replacetext replacetextwith");
             System.exit(-1);
         }
 
@@ -106,6 +106,7 @@ public class BinaryMetaAnalysis {
         loadProbeAnnotation();
 
         for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
+            Arrays.fill(finalEQTLs, null);
             // create dataset objects
             System.out.println("Running permutation " + permutation);
             datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
@@ -245,9 +246,10 @@ public class BinaryMetaAnalysis {
                         double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
                         double p = Descriptives.convertZscoreToPvalue(metaZ);
 
-                        if (!Double.isNaN(p)) {
+                        if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
                             // create output object
                             QTL q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
+                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
                             addEQTL(q);
                         } else {
 //                            if (!printed) {
@@ -307,8 +309,9 @@ public class BinaryMetaAnalysis {
                         double metaAnalysisP = Descriptives.convertZscoreToPvalue(metaAnalysisZ);
 
                         // create output object
-                        if (!Double.isNaN(metaAnalysisP)) {
+                        if (!Double.isNaN(metaAnalysisP) && !Double.isNaN(metaAnalysisZ)) {
                             QTL q = new QTL(metaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), metaAnalysisZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
+                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
                             addEQTL(q);
                         }
                     }

@@ -105,7 +105,7 @@ public class BinaryMicrobePcaAnalysis {
         loadProbeAnnotation();
 
         for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
-            finalEQTLs = new QTL[bufferSize];
+            Arrays.fill(finalEQTLs, null);
             locationToStoreResult = 0;
             bufferHasOverFlown = false;
             maxSavedPvalue = -Double.MAX_VALUE;
