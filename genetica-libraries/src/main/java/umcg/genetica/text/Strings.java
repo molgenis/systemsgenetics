@@ -65,7 +65,7 @@ public class Strings {
         }
         return output.toString();
     }
-    
+
     public static String concat(double[] s, DecimalFormat f, Pattern t) {
 
         StringBuilder output = new StringBuilder();
@@ -78,13 +78,15 @@ public class Strings {
         }
         return output.toString();
     }
-    
+
     public static String concat(float[] s, DecimalFormat f, Pattern t) {
 
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < s.length; i++) {
             if (i == 0) {
                 output.append(f.format(s[i]));
+            } else if (Float.isNaN(i)) {
+                output.append("NaN");
             } else {
                 output.append(t.toString()).append(f.format(s[i]));
             }
@@ -134,7 +136,6 @@ public class Strings {
             }
             i++;
         }
-
 
         return list.toArray(new String[0]);
     }

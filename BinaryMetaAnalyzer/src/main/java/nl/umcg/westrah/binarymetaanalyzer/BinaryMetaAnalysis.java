@@ -106,7 +106,13 @@ public class BinaryMetaAnalysis {
         loadProbeAnnotation();
 
         for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
+            
+            // reinitialize buffer
             Arrays.fill(finalEQTLs, null);
+            locationToStoreResult = 0;
+            maxSavedPvalue = -Double.MAX_VALUE;
+            bufferHasOverFlown = false;
+            
             // create dataset objects
             System.out.println("Running permutation " + permutation);
             datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
