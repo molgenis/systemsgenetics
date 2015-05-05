@@ -2,11 +2,15 @@ package eqtlmappingpipeline.binaryInteraction;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -46,6 +50,12 @@ public class CovariateImportance {
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with covariates to include in analysis");
+		OptionBuilder.withLongOpt("covariats");
+		OPTIONS.addOption(OptionBuilder.create("c"));
+
 	}
 
 	/**
@@ -55,12 +65,19 @@ public class CovariateImportance {
 
 		final File inputInteractionFile;
 		final File outputFile;
+		final File covariatesToIncludeFile;
 
 		try {
 			final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
 			inputInteractionFile = new File(commandLine.getOptionValue("i"));
 			outputFile = new File(commandLine.getOptionValue("o"));
+
+			if (commandLine.hasOption("c")) {
+				covariatesToIncludeFile = new File(commandLine.getOptionValue("c"));
+			} else {
+				covariatesToIncludeFile = null;
+			}
 
 		} catch (ParseException ex) {
 			System.err.println("Invalid command line arguments: ");
@@ -73,6 +90,23 @@ public class CovariateImportance {
 
 		System.out.println("Input file: " + inputInteractionFile.getAbsolutePath());
 		System.out.println("Output file: " + outputFile);
+		if (covariatesToIncludeFile != null) {
+			System.out.println("Covariates to include: " + covariatesToIncludeFile.getAbsolutePath());
+		}
+
+		final HashSet<String> covariantsToInclude;
+		if (covariatesToIncludeFile != null) {
+			covariantsToInclude = new HashSet<String>();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(covariatesToIncludeFile), "UTF-8"));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				covariantsToInclude.add(line.trim());
+			}
+			System.out.println("Covariates included: " + covariantsToInclude.size());
+			System.out.println();
+		} else {
+			covariantsToInclude = null;
+		}
 
 		BinaryInteractionFile inputFile = BinaryInteractionFile.load(inputInteractionFile, true);
 
@@ -82,7 +116,7 @@ public class CovariateImportance {
 		for (BinaryInteractionVariant variant : inputFile.getVariants()) {
 
 			String variantName = variant.getName();
-			int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
+			int[] genePointers = variant.getGenePointers();
 
 			for (int genePointer : genePointers) {
 
@@ -92,6 +126,11 @@ public class CovariateImportance {
 				for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
 
 					BinaryInteractionQueryResult interation = iterator.next();
+
+					if (covariantsToInclude != null && !covariantsToInclude.contains(interation.getCovariateName())) {
+						continue covariates;
+					}
+
 					double metaZ = interation.getInteractionZscores().getZscoreInteractionMeta();
 					if (Double.isNaN(metaZ)) {
 						continue covariates;
@@ -100,12 +139,15 @@ public class CovariateImportance {
 					sumChi2.adjustOrPutValue(interation.getCovariateName(), chi2, chi2);
 
 				}
+
+				++reporter;
+				if (reporter % 500 == 0) {
+					System.out.println("Parsed " + reporter + " of " + inputFile.getVariantGeneCombinations() + " variant-gene combinations");
+				}
+
 			}
 
-			++reporter;
-			if (reporter % 500 == 0) {
-				System.out.println("Parsed " + reporter + " of " + inputFile.getVariantGeneCombinations() + " variant-gene combinations");
-			}
+
 
 		}
 
