@@ -105,9 +105,7 @@ public class BinaryMicrobePcaAnalysis {
         loadProbeAnnotation();
 
         for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
-            Arrays.fill(finalEQTLs, null);
-            locationToStoreResult = 0;
-            bufferHasOverFlown = false;
+            clearResultsBuffer();
             maxSavedPvalue = -Double.MAX_VALUE;
             // create dataset objects
             System.out.println("Running permutation " + permutation);
@@ -545,5 +543,11 @@ public class BinaryMicrobePcaAnalysis {
 
         System.out.println(
                 "Done.");
+    }
+    
+    private void clearResultsBuffer() {
+        Arrays.fill(finalEQTLs, null);
+        bufferHasOverFlown = false;
+        locationToStoreResult=0;
     }
 }
