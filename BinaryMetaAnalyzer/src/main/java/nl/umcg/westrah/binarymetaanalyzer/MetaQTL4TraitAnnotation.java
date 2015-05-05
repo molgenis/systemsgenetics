@@ -67,8 +67,9 @@ public class MetaQTL4TraitAnnotation {
             }
         }
 
-
         int probeCounter = 0;
+
+        // parse lines
         for (String[] elems : tf.readLineElemsIterable(TextFile.tab)) {
 
             String metaTraitName = elems[0];
@@ -89,12 +90,14 @@ public class MetaQTL4TraitAnnotation {
             }
 
             String hugo = elems[4];
+
             String[] platformIds = new String[nrPlatforms];
             // int metaTraitId, String metaTraitName, String chr, int chrStart, int chrEnd, String annotation, String[] platformIds
+
             MetaQTL4MetaTrait metaTraitObj = new MetaQTL4MetaTrait(probeCounter, metaTraitName, chr, chrstartpos, chrendpos, hugo, platformIds);
 
+            platformNr = 0;
             for (int i = 5; i < elems.length; i++) {
-                platformNr = 0;
                 if (colsToInclude[i]) {
                     platformIds[platformNr] = elems[i];
                     HashMap<String, MetaQTL4MetaTrait> probeToId = traitHashPerPlatform.get(platformNr);
@@ -102,6 +105,7 @@ public class MetaQTL4TraitAnnotation {
                     platformNr++;
                 }
             }
+            
             probeCounter++;
             metatraits.add(metaTraitObj);
             metaTraitNameToObj.put(metaTraitName, metaTraitObj);
@@ -116,6 +120,10 @@ public class MetaQTL4TraitAnnotation {
 
     public MetaQTL4MetaTrait getTraitForPlatformId(Integer platformId, String platformTrait) {
         return traitHashPerPlatform.get(platformId).get(platformTrait);
+    }
+
+    public HashMap<String, MetaQTL4MetaTrait> getTraitHashForPlatform(Integer platformId) {
+        return traitHashPerPlatform.get(platformId);
     }
 
     public String[] getPlatforms() {
