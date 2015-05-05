@@ -38,11 +38,16 @@ public class BinaryMetaAnalysisDataset {
     private final int platformId;
     private RandomAccessFile raf;
 
-    public BinaryMetaAnalysisDataset(String dir, String prefix, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
+    private String name = null;
+    private String platform = null;
+
+    public BinaryMetaAnalysisDataset(String dir, String name, String prefix, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
         dir = Gpio.formatAsDirectory(dir);
         String matrix = dir;
         String probeFile = dir;
         String snpFile = dir;
+        this.platform = platform;
+        this.name = name;
         this.probeAnnotation = probeAnnotation;
         this.platformId = probeAnnotation.getPlatformId(platform);
         String pref = "Dataset";
@@ -263,6 +268,14 @@ public class BinaryMetaAnalysisDataset {
 
     public void close() throws IOException {
         raf.close();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPlatform() {
+        return platform;
     }
 
 }

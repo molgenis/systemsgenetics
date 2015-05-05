@@ -107,6 +107,8 @@ public class MetaAnalysisResultThread extends Thread {
 			}
 			snpout.close();
 
+			java.util.Arrays.sort(finalEQTLBuffer);
+
 			// write eQTL results..
 
 			writeresults();
@@ -162,8 +164,8 @@ public class MetaAnalysisResultThread extends Thread {
 
 		Integer[] probeList = pack.getListOfTestedProbes();
 		for (int i = 0; i < probeList.length; i++) {
-			String probe = probes.get(probeList[i]).intern();
-			if (allowedProbes == null || allowedProbes.contains(probe)) {
+			String probe = probes.get(probeList[i]);
+			if (probe != null && (allowedProbes == null || allowedProbes.contains(probe))) {
 				totalNumberOfEQTLs++;
 				uniqueProbes.add(probeList[i]);
 			}
@@ -252,13 +254,13 @@ public class MetaAnalysisResultThread extends Thread {
 		System.arraycopy(toMerge, 0, tmp, 0, toMerge.length);
 		System.arraycopy(finalEQTLBuffer, 0, tmp, toMerge.length, finalEQTLBuffer.length);
 
-		java.util.Arrays.sort(tmp);
 
 		nrInFinalBuffer += toMerge.length;
 		if (nrInFinalBuffer < m_settings.getFinalEQTLBufferMaxLength()) {
 			finalEQTLBuffer = tmp;
 		} else {
 
+			java.util.Arrays.sort(tmp);
 			finalEQTLBuffer = new EQTL[m_settings.getFinalEQTLBufferMaxLength()];
 //            System.out.println(finalEQTLBuffer.length+"\t"+tmp.length);
 			System.arraycopy(tmp, 0, finalEQTLBuffer, 0, m_settings.getFinalEQTLBufferMaxLength());
@@ -275,7 +277,7 @@ public class MetaAnalysisResultThread extends Thread {
 		if (perm > 0) {
 			out = new TextFile(m_settings.getOutput() + "PermutedEQTLsPermutationRound" + perm + ".txt.gz", TextFile.W);
 		} else {
-			out = new TextFile(m_settings.getOutput() + "eQTLs.txt", TextFile.W);
+			out = new TextFile(m_settings.getOutput() + "eQTLs.txt.gz", TextFile.W);
 		}
 
 

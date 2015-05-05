@@ -354,7 +354,7 @@ public class ResultProcessorThread extends Thread {
                 SNP[] snps = currentWP.getSnps();
                 int numDatasets = zscores.length;
                 double[] finalZscores = r.finalZScore;
-                String snpoutput = null;
+                StringBuilder snpoutput = null;
 
                 // if we're doing a meta-analysis, write the meta-analysis Z to a separate binaryFile
                 if (m_gg.length > 1) {
@@ -372,7 +372,14 @@ public class ResultProcessorThread extends Thread {
                                 alleleassessed = alleles[0];
                             }
                             if (snpoutput == null) {
-                                snpoutput = snpname + "\t" + BaseAnnot.getAllelesDescription(alleles) + "\t" + BaseAnnot.toString(minorAllele) + "\t" + BaseAnnot.toString(alleleassessed);
+                                snpoutput = new StringBuilder();
+                                snpoutput.append(snpname);
+                                snpoutput.append("\t");
+                                snpoutput.append(BaseAnnot.getAllelesDescription(alleles));
+                                snpoutput.append("\t");
+                                snpoutput.append(BaseAnnot.toString(minorAllele));
+                                snpoutput.append("\t");
+                                snpoutput.append(BaseAnnot.toString(alleleassessed));
                             }
                             totalSampleNr += r.numSamples[d];
                         }
@@ -398,12 +405,21 @@ public class ResultProcessorThread extends Thread {
                         }
                     }
 
-                    if (sb != null) {
-                        zScoreMetaAnalysisRowNamesFile.writeln(snpoutput + "\t" + totalSampleNr + "\t-\t-\t-\t" + finalZscores.length + "\t" + sb.toString());
-                    } else {
-                        zScoreMetaAnalysisRowNamesFile.writeln(snpoutput + "\t" + totalSampleNr + "\t-\t-\t-\t" + finalZscores.length + "\t-");
+                    if (snpoutput != null) {
+                        snpoutput.append("\t");
+                        snpoutput.append(totalSampleNr);
+                        snpoutput.append("\t-\t-\t-\t");
+                        snpoutput.append(finalZscores.length);
+                        snpoutput.append("\t");
+                        if (sb != null) {
+                            snpoutput.append(sb.toString());
+                        } else {
+                            snpoutput.append("-");
+                        }
+                        zScoreMetaAnalysisRowNamesFile.writeln(snpoutput.toString());
                     }
                 }
+
                 for (int d = 0; d < numDatasets; d++) {
                     double[] datasetZScores = zscores[d];
                     SNP datasetSNP = snps[d];
@@ -447,11 +463,32 @@ public class ResultProcessorThread extends Thread {
                             }
                         }
 
+                        StringBuilder buffer = new StringBuilder();
+                        buffer.append(snpname)
+                                .append("\t")
+                                .append(BaseAnnot.getAllelesDescription(alleles))
+                                .append("\t")
+                                .append(BaseAnnot.toString(minorAllele))
+                                .append("\t")
+                                .append(BaseAnnot.toString(alleleassessed))
+                                .append("\t")
+                                .append(datasetSNP.getNrCalled())
+                                .append("\t")
+                                .append(maf)
+                                .append("\t")
+                                .append(hwe)
+                                .append("\t")
+                                .append(cr)
+                                .append("\t")
+                                .append(datasetZScores.length)
+                                .append("\t");
                         if (sb != null) {
-                            snpfile.writeln(snpname + "\t" + BaseAnnot.getAllelesDescription(alleles) + "\t" + BaseAnnot.toString(minorAllele) + "\t" + BaseAnnot.toString(alleleassessed) + "\t" + datasetSNP.getNrCalled() + "\t" + maf + "\t" + hwe + "\t" + cr + "\t" + datasetZScores.length + "\t" + sb.toString());
+                            buffer.append(sb.toString());
                         } else {
-                            snpfile.writeln(snpname + "\t" + BaseAnnot.getAllelesDescription(alleles) + "\t" + BaseAnnot.toString(minorAllele) + "\t" + BaseAnnot.toString(alleleassessed) + "\t" + datasetSNP.getNrCalled() + "\t" + maf + "\t" + hwe + "\t" + cr + "\t" + datasetZScores.length + "\t-");
+                            buffer.append("-");
                         }
+
+                        snpfile.writeln(buffer.toString());
 
                     }
                 }
