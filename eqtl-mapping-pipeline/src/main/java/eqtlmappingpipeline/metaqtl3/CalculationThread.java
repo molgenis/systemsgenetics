@@ -333,7 +333,7 @@ class CalculationThread extends Thread {
         // now push the results in the queue..
         try {
             wp.setNumTested(testsPerformed);
-            m_result_queue.put(wp);
+            throwResult(wp);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -341,6 +341,8 @@ class CalculationThread extends Thread {
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
+    
+    
     protected static void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r, WorkPackage wp, boolean metaAnalyseModelCorrelationYHat, boolean metaAnalyseInteractionTerms, boolean determinefoldchange) {
         final double[] y;
         double[][] covariates = covariateRawData;
@@ -826,4 +828,8 @@ class CalculationThread extends Thread {
 //        }
 //        randomNumberGenerator.deflatedZScores = inflatedZScores;
 //    }
+
+    private void throwResult(WorkPackage wp) throws InterruptedException {
+        m_result_queue.put(wp);
+    }
 }

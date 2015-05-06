@@ -101,6 +101,12 @@ public class ReplicateInteractions {
 		OptionBuilder.withLongOpt("covariats");
 		OPTIONS.addOption(OptionBuilder.create("c"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with eQTL genes to include in analysis");
+		OptionBuilder.withLongOpt("genes");
+		OPTIONS.addOption(OptionBuilder.create("g"));
+
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, BinaryInteractionFileException {
@@ -114,6 +120,7 @@ public class ReplicateInteractions {
 		final boolean matchOnChrPos;
 		final String outputPrefix;
 		final File covariatesToIncludeFile;
+		final File genesToIncludeFile;
 
 		try {
 			final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -160,6 +167,12 @@ public class ReplicateInteractions {
 				covariatesToIncludeFile = null;
 			}
 
+			if (commandLine.hasOption("g")) {
+				genesToIncludeFile = new File(commandLine.getOptionValue("g"));
+			} else {
+				genesToIncludeFile = null;
+			}
+
 			matchOnChrPos = commandLine.hasOption("cp");
 
 		} catch (ParseException ex) {
@@ -186,6 +199,9 @@ public class ReplicateInteractions {
 		if (covariatesToIncludeFile != null) {
 			writeAndOut("Covariates to include: " + covariatesToIncludeFile.getAbsolutePath(), logWriter);
 		}
+		if (genesToIncludeFile != null) {
+			writeAndOut("eQTL genes to include: " + genesToIncludeFile.getAbsolutePath(), logWriter);
+		}
 		writeAndOut("", logWriter);
 
 
@@ -203,6 +219,20 @@ public class ReplicateInteractions {
 			covariantsToInclude = null;
 		}
 
+		final HashSet<String> genesToInclude;
+		if (genesToIncludeFile != null) {
+			genesToInclude = new HashSet<String>();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(genesToIncludeFile), "UTF-8"));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				genesToInclude.add(line.trim());
+			}
+			writeAndOut("eQTL genes included: " + genesToInclude.size(), logWriter);
+			writeAndOut("", logWriter);
+		} else {
+			genesToInclude = null;
+		}
+
 		BinaryInteractionFile inputFile = BinaryInteractionFile.load(inputInteractionFile, true);
 		BinaryInteractionFile replicationFile = BinaryInteractionFile.load(replicationInteractionFile, true);
 
@@ -212,6 +242,7 @@ public class ReplicateInteractions {
 		CSVWriter replicatedOppositeDirectionWriter = writeHeader(new File(outputPrefix + "_ReplicatedOppositeDirection.txt"), row);
 		CSVWriter notReplicatedSameDirectionWriter = writeHeader(new File(outputPrefix + "_NotReplicatedSameDirection.txt"), row);
 		CSVWriter notReplicatedOppositeDirectionWriter = writeHeader(new File(outputPrefix + "_NotReplicatedOppositeDirection.txt"), row);
+		CSVWriter notInReplicationWriter = writeHeader(new File(outputPrefix + "_NotInReplication.txt"), row);
 
 		int significant = 0;
 		int notSignificant = 0;
@@ -259,9 +290,13 @@ public class ReplicateInteractions {
 			//Do loop anyway to also count not replicated
 
 			int[] genePointers = inputFile.getVariant(variantName).getGenePointers();
+			genes:
 			for (int genePointer : genePointers) {
 
 				BinaryInteractionGene gene = inputFile.getGene(genePointer);
+				if (genesToInclude != null && !genesToInclude.contains(gene.getName())) {
+					continue genes;
+				}
 
 				covairates:
 				for (Iterator<BinaryInteractionQueryResult> iterator = inputFile.readVariantGeneResults(variantName, gene.getName()); iterator.hasNext();) {
@@ -312,10 +347,12 @@ public class ReplicateInteractions {
 									}
 								}
 							} else {
+								writeInteraction(row, variantName, gene, interaction, variant, replicationQtlRes, replicationZscores, swap, notInReplicationWriter);
 								++nanReplication;
 							}
 
 						} else {
+							writeInteraction(row, variantName, gene, interaction, variant, null, null, swap, notInReplicationWriter);
 							++notTestedInReplication;
 						}
 
@@ -356,7 +393,7 @@ public class ReplicateInteractions {
 
 							} else {
 							}
-							
+
 						} else {
 						}
 
@@ -379,6 +416,7 @@ public class ReplicateInteractions {
 		replicatedOppositeDirectionWriter.close();
 		notReplicatedSameDirectionWriter.close();
 		notReplicatedOppositeDirectionWriter.close();
+		notInReplicationWriter.close();
 
 		writeCovaraiteCounts(new File(outputPrefix + "_CovariateCounts.txt"), covariateCounts);
 
@@ -416,10 +454,10 @@ public class ReplicateInteractions {
 		row[c++] = String.valueOf(interation.getInteractionZscores().getZscoreSnpMeta());
 		row[c++] = String.valueOf(interation.getInteractionZscores().getZscoreCovariateMeta());
 		row[c++] = String.valueOf(interation.getInteractionZscores().getZscoreInteractionMeta());
-		row[c++] = String.valueOf(replicationQtlRes.getMetaZscore() * (swap ? -1 : 1));
-		row[c++] = String.valueOf(replicationZscores.getZscoreSnpMeta() * (swap ? -1 : 1));
-		row[c++] = String.valueOf(replicationZscores.getZscoreCovariateMeta());
-		row[c++] = String.valueOf(replicationZscores.getZscoreInteractionMeta() * (swap ? -1 : 1));
+		row[c++] = replicationQtlRes == null ? "NaN" : String.valueOf(replicationQtlRes.getMetaZscore() * (swap ? -1 : 1));
+		row[c++] = replicationZscores == null ? "NaN" : String.valueOf(replicationZscores.getZscoreSnpMeta() * (swap ? -1 : 1));
+		row[c++] = replicationZscores == null ? "NaN" : String.valueOf(replicationZscores.getZscoreCovariateMeta());
+		row[c++] = replicationZscores == null ? "NaN" : String.valueOf(replicationZscores.getZscoreInteractionMeta() * (swap ? -1 : 1));
 		interactionWriter.writeNext(row);
 	}
 
