@@ -106,6 +106,18 @@ public class ReplicateInteractions {
 		OptionBuilder.withDescription("File with eQTL genes to include in analysis");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("g"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with covariates to test for replication");
+		OptionBuilder.withLongOpt("covariatsReplication");
+		OPTIONS.addOption(OptionBuilder.create("cr"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with eQTL genes to test for replication");
+		OptionBuilder.withLongOpt("genesReplication");
+		OPTIONS.addOption(OptionBuilder.create("gr"));
 
 	}
 
@@ -121,6 +133,8 @@ public class ReplicateInteractions {
 		final String outputPrefix;
 		final File covariatesToIncludeFile;
 		final File genesToIncludeFile;
+		final File covariatesReplicationToIncludeFile;
+		final File genesReplicationToIncludeFile;
 
 		try {
 			final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -172,6 +186,18 @@ public class ReplicateInteractions {
 			} else {
 				genesToIncludeFile = null;
 			}
+			
+			if (commandLine.hasOption("cr")) {
+				covariatesReplicationToIncludeFile = new File(commandLine.getOptionValue("cr"));
+			} else {
+				covariatesReplicationToIncludeFile = null;
+			}
+
+			if (commandLine.hasOption("gr")) {
+				genesReplicationToIncludeFile = new File(commandLine.getOptionValue("gr"));
+			} else {
+				genesReplicationToIncludeFile = null;
+			}
 
 			matchOnChrPos = commandLine.hasOption("cp");
 
@@ -202,6 +228,13 @@ public class ReplicateInteractions {
 		if (genesToIncludeFile != null) {
 			writeAndOut("eQTL genes to include: " + genesToIncludeFile.getAbsolutePath(), logWriter);
 		}
+		if (covariatesReplicationToIncludeFile != null) {
+			writeAndOut("Covariates replication to include: " + covariatesReplicationToIncludeFile.getAbsolutePath(), logWriter);
+		}
+		if (genesReplicationToIncludeFile != null) {
+			writeAndOut("eQTL genes replication to include: " + genesReplicationToIncludeFile.getAbsolutePath(), logWriter);
+		}
+		
 		writeAndOut("", logWriter);
 
 
@@ -231,6 +264,34 @@ public class ReplicateInteractions {
 			writeAndOut("", logWriter);
 		} else {
 			genesToInclude = null;
+		}
+		
+		final HashSet<String> covariantsReplicationToInclude;
+		if (covariatesReplicationToIncludeFile != null) {
+			covariantsReplicationToInclude = new HashSet<String>();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(covariatesReplicationToIncludeFile), "UTF-8"));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				covariantsReplicationToInclude.add(line.trim());
+			}
+			writeAndOut("Covariates replication included: " + covariantsReplicationToInclude.size(), logWriter);
+			writeAndOut("", logWriter);
+		} else {
+			covariantsReplicationToInclude = null;
+		}
+
+		final HashSet<String> genesReplicationToInclude;
+		if (genesReplicationToIncludeFile != null) {
+			genesReplicationToInclude = new HashSet<String>();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(genesReplicationToIncludeFile), "UTF-8"));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				genesReplicationToInclude.add(line.trim());
+			}
+			writeAndOut("eQTL genes replication included: " + genesReplicationToInclude.size(), logWriter);
+			writeAndOut("", logWriter);
+		} else {
+			genesReplicationToInclude = null;
 		}
 
 		BinaryInteractionFile inputFile = BinaryInteractionFile.load(inputInteractionFile, true);
@@ -312,7 +373,7 @@ public class ReplicateInteractions {
 					if (metaInteractionZ >= minAbsInteractionZ || metaInteractionZ <= -minAbsInteractionZ) {
 						++significant;
 
-						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interaction.getCovariateName())) {
+						if (replicationVariant != null && replicationFile.containsInteraction(replicationVariant.getName(), gene.getName(), interaction.getCovariateName()) && (genesReplicationToInclude == null || genesReplicationToInclude.contains(interaction.getGeneName()) && (covariantsReplicationToInclude == null || covariantsToInclude.contains(interaction.getCovariateName())) )) {
 
 							BinaryInteractionZscores replicationZscores = replicationFile.readInteractionResults(replicationVariant.getName(), gene.getName(), interaction.getCovariateName());
 							double replicationInteractionZscore = replicationZscores.getZscoreInteractionMeta();
