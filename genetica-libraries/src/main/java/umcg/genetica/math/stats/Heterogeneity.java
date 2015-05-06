@@ -88,7 +88,7 @@ public class Heterogeneity {
         double hetSum = 0;
         int hetDf = 0;
         for (int d = 0; d < datasetZ.length; d++) {
-            if (Double.isNaN(datasetZ[d])) {
+            if (!Double.isNaN(datasetZ[d])) {
                 double expectedZ = Math.sqrt(datasetWeights[d]) * weightedZ / totalSample;
 
                 hetSum += (datasetZ[d] - expectedZ) * (datasetZ[d] - expectedZ);
