@@ -807,7 +807,7 @@ public class MetaQTL3 {
                 expressionToGenotypeIds[d] = m_gg[d].getExpressionToGenotypeIdArray();
             }
 
-            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(100);
+            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(250);
             ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
                     m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
             resultthread.setName("ResultProcessorThread");
