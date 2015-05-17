@@ -1,8 +1,12 @@
 package eqtlmappingpipeline.interactionanalysis;
 
+import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.CSVWriter;
 import gnu.trove.list.array.TDoubleArrayList;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -79,7 +83,7 @@ public class InteractionAnalysisDetermineDirection {
 				+ "* TRITYPER - TriTyper format folder");
 		OptionBuilder.withLongOpt("genotypesFormat");
 		OPTIONS.addOption(OptionBuilder.create("G"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Expression data");
@@ -93,21 +97,35 @@ public class InteractionAnalysisDetermineDirection {
 		OptionBuilder.withLongOpt("covariates");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("c"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Genotype to expression coupling");
 		OptionBuilder.withLongOpt("gte");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("gte"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Query variant <tab> gene <tab> covariate. No header");
+		OptionBuilder.withDescription("Query variant <tab> gene <tab> covariate <tab> assessedAllele. No header");
 		OptionBuilder.withLongOpt("query");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("q"));
 		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Output file");
+		OptionBuilder.withLongOpt("output");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("o"));
+
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Fraction of tail of either end of covarate to use.");
+		OptionBuilder.withLongOpt("fraction");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("f"));
+
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -149,19 +167,23 @@ public class InteractionAnalysisDetermineDirection {
 			System.exit(1);
 			return;
 		}
-		
+
 		final String expressionDataPath = commandLine.getOptionValue("e");
 		final String covariateDataPath = commandLine.getOptionValue("c");
 		final String gtePath = commandLine.getOptionValue("gte");
-		final String gueryPath = commandLine.getOptionValue("q");
-		
+		final String queryPath = commandLine.getOptionValue("q");
+		final String outputPath = commandLine.getOptionValue("o");
+		final double fractionToUse = Double.parseDouble(commandLine.getOptionValue("f"));
+
 		System.out.println("Genotype data: " + genotypePath);
 		System.out.println("Genotype data format: " + genotypeFormat);
 		System.out.println("Expression data: " + expressionDataPath);
 		System.out.println("Covariate data: " + covariateDataPath);
 		System.out.println("Gte data: " + gtePath);
-		System.out.println("Query: " + gueryPath);
-		
+		System.out.println("Query: " + queryPath);
+		System.out.println("Output: " + outputPath);
+		System.out.println("Outer fractions to use: " + fractionToUse);
+
 		final RandomAccessGenotypeData genotypeData;
 
 		try {
@@ -186,32 +208,65 @@ public class InteractionAnalysisDetermineDirection {
 		}
 
 		System.out.println("Genotype data loaded for " + genotypeData.getSampleNames().length + " individuals");
-		
+
 		final DoubleMatrixDataset<String, String> expressionData = DoubleMatrixDataset.loadDoubleTextData(expressionDataPath, "\t");
-		
+
 		System.out.println("Loaded expression data for: " + expressionData.rows() + " genes and " + expressionData.columns() + " individuals");
-		
+
 		final DoubleMatrixDataset<String, String> covariatesData = DoubleMatrixDataset.loadDoubleTextData(covariateDataPath, "\t");
-		
+
 		System.out.println("Loaded covariate data for: " + expressionData.rows() + " genes and " + expressionData.columns() + " individuals");
-		
+
 		final BidiMap<String, String> gte = loadGte(gtePath);
+
+		InteractionAnalysisDetermineDirection directionTool = new InteractionAnalysisDetermineDirection(genotypeData, expressionData, covariatesData, gte);
+
+		CSVReader reader = new CSVReader(new FileReader(queryPath), '\t', '\0', 1);
+		CSVWriter writer = new CSVWriter(new FileWriter(outputPath), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 		
+		String[] outputLine = new String[5];
+		
+		
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+			final String variant = nextLine[0];
+			final String gene = nextLine[1];
+			final String covariate = nextLine[2];
+			final Allele assessedAllele = Allele.create(nextLine[3]);
+			
+			final double direction = directionTool.calculateEffectDifference(variant, gene, covariate, assessedAllele, fractionToUse);
+			
+			int c = 0;
+			outputLine[c++] = variant;
+			outputLine[c++] = gene;
+			outputLine[c++] = covariate;
+			outputLine[c++] = assessedAllele.getAlleleAsString();
+			outputLine[c++] = String.valueOf(direction);
+			writer.writeNext(outputLine);
+			
+		}
+		writer.close();
+		reader.close();
+		System.out.println("Done");
+
 	}
-	
+
 	private static BidiMap<String, String> loadGte(String gtePath) throws IOException {
-		
+
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(gtePath), "UTF-8"));
-		
+
 		String line;
-		
+
 		BidiMap<String, String> gte = new DualHashBidiMap<String, String>();
-		
+
 		while ((line = reader.readLine()) != null) {
 			String[] elements = StringUtils.split(line, '\t');
+			if (elements.length != 2) {
+				throw new RuntimeException("Error in GTE file line: " + line);
+			}
 			gte.put(elements[0], elements[1]);
 		}
-		
+
 		return gte;
 	}
 
