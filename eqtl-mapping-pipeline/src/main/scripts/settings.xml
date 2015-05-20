@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <settings>
-<defaults>
- 		<qc>
+	<defaults>
+		<qc>
 			<snpqccallratethreshold>0.95</snpqccallratethreshold>
 			<snpqchwethreshold>0.0001</snpqchwethreshold>
 			<snpqcmafthreshold>0.05</snpqcmafthreshold>
@@ -20,8 +20,8 @@
 		<multipletesting>
 			<type>fdr</type>
 			<threshold>0.05</threshold>
-            <fdrtype>probe-level</fdrtype>
-            <largeFdrFileOut>false</largeFdrFileOut>
+			<fdrtype>probe-level</fdrtype>
+			<largeFdrFileOut>false</largeFdrFileOut>
 			<permutations>100</permutations>
 		</multipletesting>
 		
@@ -36,15 +36,15 @@
 		
 		<confine>
 			<snp></snp>
-			<snpProbe/>
+			<snpProbe></snpProbe>
 			<probe></probe>
 			<confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets>
 			<confineSNPsSelectSNPInStrongestLD>false</confineSNPsSelectSNPInStrongestLD>
 			<confineProbesThatMapToKnownChromosome>true</confineProbesThatMapToKnownChromosome>
 		</confine>	
-</defaults>
+	</defaults>
 	
-<datasets>
+	<datasets>
 
 		<dataset>
 			<name>Dataset1</name>
