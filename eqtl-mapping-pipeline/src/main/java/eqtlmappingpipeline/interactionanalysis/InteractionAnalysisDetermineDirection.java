@@ -111,7 +111,7 @@ public class InteractionAnalysisDetermineDirection {
 		OptionBuilder.withLongOpt("query");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("q"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Output file");
@@ -223,27 +223,36 @@ public class InteractionAnalysisDetermineDirection {
 
 		CSVReader reader = new CSVReader(new FileReader(queryPath), '\t', '\0', 1);
 		CSVWriter writer = new CSVWriter(new FileWriter(outputPath), '\t', CSVWriter.NO_QUOTE_CHARACTER);
-		
-		String[] outputLine = new String[5];
-		
-		
+
+		String[] outputLine = new String[6];
+		int c = 0;
+		outputLine[c++] = "variant";
+		outputLine[c++] = "gene";
+		outputLine[c++] = "covariate";
+		outputLine[c++] = "assessedAllele";
+		outputLine[c++] = "rhoLow";
+		outputLine[c++] = "rhoHigh";
+		writer.writeNext(outputLine);
+
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
+			
 			final String variant = nextLine[0];
 			final String gene = nextLine[1];
 			final String covariate = nextLine[2];
 			final Allele assessedAllele = Allele.create(nextLine[3]);
-			
-			final double direction = directionTool.calculateEffectDifference(variant, gene, covariate, assessedAllele, fractionToUse);
-			
-			int c = 0;
+
+			final EffectDiffResult effectDiff = directionTool.calculateEffectDifference(variant, gene, covariate, assessedAllele, fractionToUse);
+
+			c = 0;
 			outputLine[c++] = variant;
 			outputLine[c++] = gene;
 			outputLine[c++] = covariate;
 			outputLine[c++] = assessedAllele.getAlleleAsString();
-			outputLine[c++] = String.valueOf(direction);
+			outputLine[c++] = String.valueOf(effectDiff.getRhoLow());
+			outputLine[c++] = String.valueOf(effectDiff.getRhoHigh());
 			writer.writeNext(outputLine);
-			
+
 		}
 		writer.close();
 		reader.close();
@@ -301,18 +310,18 @@ public class InteractionAnalysisDetermineDirection {
 
 	}
 
-	public double calculateEffectDifference(String snpId, String geneName, String covariateName, Allele assessedAllele, double fractionOfSamplesPerGroup) {
+	public EffectDiffResult calculateEffectDifference(String snpId, String geneName, String covariateName, Allele assessedAllele, double fractionOfSamplesPerGroup) {
 
 		if (!variantIdMap.containsKey(snpId)) {
-			return Double.NaN;
+			return new EffectDiffResult(Double.NaN, Double.NaN);
 		}
 
 		if (!expressionData.containsRow(geneName)) {
-			return Double.NaN;
+			return new EffectDiffResult(Double.NaN, Double.NaN);
 		}
 
 		if (!covariatesData.containsRow(covariateName)) {
-			return Double.NaN;
+			return new EffectDiffResult(Double.NaN, Double.NaN);
 		}
 
 		if (fractionOfSamplesPerGroup <= 0 || fractionOfSamplesPerGroup >= 1) {
@@ -323,11 +332,11 @@ public class InteractionAnalysisDetermineDirection {
 		Alleles variantAlleles = variant.getVariantAlleles();
 
 		if (!variantAlleles.contains(assessedAllele)) {
-			return Double.NaN;
+			return new EffectDiffResult(Double.NaN, Double.NaN);
 		}
 
 		if (variantAlleles.getAlleleCount() != 2) {
-			return Double.NaN;
+			return new EffectDiffResult(Double.NaN, Double.NaN);
 		}
 
 		float[] dosagesAll = variant.getSampleDosages();
@@ -386,7 +395,26 @@ public class InteractionAnalysisDetermineDirection {
 		System.out.println("rho low:" + rhoLow);
 		System.out.println("rho high:" + rhoHigh);
 
-		return rhoHigh - rhoLow;
+		return new EffectDiffResult(rhoLow, rhoHigh);
 
+	}
+
+	static class EffectDiffResult {
+
+		private final double rhoLow;
+		private final double rhoHigh;
+
+		public EffectDiffResult(double rhoLow, double rhoHigh) {
+			this.rhoLow = rhoLow;
+			this.rhoHigh = rhoHigh;
+		}
+
+		public double getRhoLow() {
+			return rhoLow;
+		}
+
+		public double getRhoHigh() {
+			return rhoHigh;
+		}
 	}
 }
