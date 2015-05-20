@@ -82,6 +82,11 @@ public interface RandomAccessGenotypeData extends GenotypeData {
 	HashMap<String, GeneticVariant> getVariantIdMap(VariantFilter filter);
 	
 	/**
+	 * Variant ID map without filter is saved as cache, use this function to clear this cache.
+	 */
+	void clearVariantIdMap();
+	
+	/**
 	 * Get a HashMap with the variants that have a primairy ID.
 	 * 
 	 * Variants without an ID will always be ignored.
