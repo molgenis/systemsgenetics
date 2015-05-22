@@ -18,6 +18,12 @@ import org.apache.commons.math3.stat.ranking.TiesStrategy;
  *
  * @author harmjan
  */
+
+//Please use the math3 natural ranker, especialy in tie resolving it is much faster!
+//Note we can also chose to make this depend on natural ranker and do some more speed tweaks, no NaN strategy and only one tie fixer.
+//Also make it directly 0 based in this case!
+
+@Deprecated
 public class RankArray {
 //    public static double[] rank(double[] x){
 //        umcg.genetica.util.Rank rank = new umcg.genetica.util.Rank(x, 0d);
