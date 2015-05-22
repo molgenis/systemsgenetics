@@ -7,15 +7,20 @@ package umcg.genetica.math.stats;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.util.RankArray;
+
 
 /**
  *
  * @author Harm Jan & Marc Jan Bonder
  */
 public class QuantileNormalization {
-
+    private static final RankingAlgorithm COV_RANKER_TIE = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
     /**
      * Quantile normalize a double[][] double[probes][sample]
      *
@@ -53,25 +58,24 @@ public class QuantileNormalization {
             rankedMeanClasses[probeID] = ((rankedMean[probeID]+rankedMean[probeID+1])/2);
         }
 
-        RankArray rda = new RankArray();
         //Iterate through each sample:
         for (int s = 0; s < sampleCount; s++) {
             double[] probes = new double[probeCount];
             for (int p = 0; p < probeCount; p++) {
                 probes[p] = rawData[p][s];
             }
-            double[] probesRanked = rda.rank(probes, true);
+            double[] probesRanked = COV_RANKER_TIE.rank(probes);
             
             double[] probesQuantileNormalized = new double[probeCount];
             for (int p = 0; p < probeCount; p++) {
                                 
                 if((probesRanked[p]%1)!=0){
-                    probesQuantileNormalized[p] = rankedMeanClasses[(int)Math.floor(probesRanked[p])];
-                    rawData[p][s] = probesQuantileNormalized[p];
+                    probesQuantileNormalized[p] = rankedMeanClasses[(int)Math.floor((probesRanked[p]-1))];
                 } else {
-                    probesQuantileNormalized[p] = rankedMean[(int) probesRanked[p]];
-                    rawData[p][s] = probesQuantileNormalized[p];
+                    probesQuantileNormalized[p] = rankedMean[(int) (probesRanked[p]-1)];
                 }
+                
+                rawData[p][s] = probesQuantileNormalized[p];
             }
 //            double[] probesRankedAfterQQNorm = rda.rank(probesQuantileNormalized, false);
             
