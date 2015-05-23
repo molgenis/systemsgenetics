@@ -104,16 +104,16 @@ public class RankArray {
     }
 
     public double[] rank(double[] x, boolean giveTiesSameRank) {
-        double[] rank;
+        double[] rank = null;
         if (!giveTiesSameRank) {
             rank = COV_RANKER.rank(x);
         } else {
             rank = COV_RANKER_TIE.rank(x);
         }
         for (int v = 0; v < rank.length; v++) {
-            rank[v] = rank[v]-1;
-        }
-        return rank;
+                rank[v] = rank[v]-1;
+            }
+            return rank;
     }
 
     public float[] rank(float[] x, boolean giveTiesSameRank) {
