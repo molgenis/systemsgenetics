@@ -27,7 +27,7 @@ import umcg.genetica.io.trityper.util.ChrAnnotation;
  *
  * @author MarcJan
  */
-class HiCTransQTLAnnotator {
+class HiCTransQTLAnnotator_V2 {
 
     private static final Pattern SPLIT_TAB = Pattern.compile("\t");
 
