@@ -10,7 +10,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -18,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
+import umcg.genetica.io.chrContacts.DesiredChrContact;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
@@ -35,14 +41,15 @@ class HiCTransQTLAnnotator_V2 {
 
 //        String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
         String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\PermutedEQTLsPermutationRoundX.head.txt";
-        String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps.txt";
-//        String proxyfile = null;
-        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_5kb_proxy_annotated.txt";
-        String folderHighC = "G:\\Contacts\\GM12878_combined_interchromosomal\\";
-        String resolution = "5kb"; //5kb
-        String qualityCutOff = "0"; //0 or E30
-        String normMethod = null; //null / KRnorm / SQRTVCnorm / VCnorm
-        double minValueQuality = 0;
+//        String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps.txt";
+        String proxyfile = null;
+        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_PermutationRoundX_KR_HiC_1kb_E30_annotated.txt";
+        String folderHighC = "G:\\Contacts\\";
+        String resolution = "1kb"; //5kb / 1kb
+        String qualityCutOff = "E30"; //0 or E30
+        String normMethod = null;
+//        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
+        double minValueQuality = 0.5;
         boolean permutationFile = true;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
@@ -64,181 +71,112 @@ class HiCTransQTLAnnotator_V2 {
 
     }
 
-    static void addAnnotationToQTLOutput(String in, String inProxies, String folderHighC, String resolution, String qualityCutOff, String normMethod, double minValue, boolean permutationFile, String probeMap, String snpMap, String out) throws IOException {
+    private static void addAnnotationToQTLOutput(String in, String inProxies, String folderHighC, String resolution, String qualityCutOff, String normMethod, double minValue, boolean permutationFile, String probeMap, String snpMap, String out) throws IOException {
 
-        ArrayList<EQTL> qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile);
+        HashMap<String, ArrayList<DesiredChrContact>> qtls = readInQtlInformation2(in, inProxies, probeMap, snpMap, permutationFile, resolution);
 
-        ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " QTLs");
+        ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " Chromosome combinations");
 
         //Remake class to be-able to search for multiple entries in 1 file.
         TextFile outWriter = new TextFile(out, TextFile.W);
-        HashMap<String, String> contactBuffer = new HashMap<>();
-        for (EQTL eqtl : qtls) {
-
-            String chrProbe = String.valueOf(eqtl.getProbeChr());
-            String chrSnp = String.valueOf(eqtl.getRsChr());
-
-//            System.out.println(chrProbe+"\t"+chrSnp);
-            if (chrProbe.equals(chrSnp)) {
-                //Here we need to check how to normalize and treat intra-chromosomal data.
-                continue;
-            }
-
-            int posChrSmaller;
-            int posChrLarger;
-            String ChrSmaller;
-            String ChrLarger;
-            int bin1;
-            int bin2;
+        
+        for (Entry<String,ArrayList<DesiredChrContact>> contactsToCheck : qtls.entrySet()) {
+            Collections.sort(contactsToCheck.getValue());
+            
+            String[] chrs = contactsToCheck.getKey().split("-");
+            
+            String ChrSmaller = chrs[0];
+            String ChrLarger = chrs[1];
+            
             String baseName;
             String fileToReads;
-
-            if (Integer.parseInt(chrProbe) < Integer.parseInt(chrSnp)) {
-                posChrSmaller = eqtl.getProbeChrPos();
-                posChrLarger = eqtl.getRsChrPos();
-
-                ChrSmaller = chrProbe;
-                ChrLarger = chrSnp;
-
-                //Determine bin1
-                //Startscounting at 0-resulution
-                bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
-                //        System.out.println("\t"+bin1);
-                //Determine bin2
-                bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
-
-                baseName = folderHighC + resolution + "_resolution_interchromosomal\\chr" + chrProbe + "_chr" + chrSnp + "\\MAPQG" + qualityCutOff;
-                fileToReads = baseName + "\\chr" + chrProbe + "_" + chrSnp + "_" + resolution + ".RAWobserved";
-//                    System.out.println("Reading: " + fileToReads);
-
+            boolean intra = false;
+            
+            if(ChrSmaller.equals(ChrLarger)){
+                baseName = folderHighC+"\\GM12878_combined_intrachromosomal\\" + resolution + "_resolution_intrachromosomal\\chr" + ChrSmaller + "\\MAPQG" + qualityCutOff;
+                fileToReads = baseName + "\\chr" + ChrSmaller + "_" + resolution + ".RAWobserved";
+                intra = true;
+//                continue;
             } else {
-                posChrSmaller = eqtl.getRsChrPos();
-                posChrLarger = eqtl.getProbeChrPos();
-
-                ChrSmaller = chrSnp;
-                ChrLarger = chrProbe;
-
-                bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
-                //        System.out.println("\t"+bin1);
-                //Determine bin2
-                bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
-
-                baseName = folderHighC + resolution + "_resolution_interchromosomal\\chr" + chrSnp + "_chr" + chrProbe + "\\MAPQG" + qualityCutOff;
-                fileToReads = baseName + "\\chr" + chrSnp + "_" + chrProbe + "_" + resolution + ".RAWobserved";
-//                    System.out.println("Reading: " + fileToReads);
-
+                baseName = folderHighC+"\\GM12878_combined_interchromosomal\\" + resolution + "_resolution_interchromosomal\\chr" + ChrSmaller + "_chr" + ChrLarger + "\\MAPQG" + qualityCutOff;
+                fileToReads = baseName + "\\chr" + ChrSmaller + "_" + ChrLarger + "_" + resolution + ".RAWobserved";
             }
-
+            
             if (normMethod == null) {
-                if (contactBuffer.containsKey(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2)) {
-                    outWriter.writeln(eqtl.getRsName() + "\t" + eqtl.getProbe() + "\t" + contactBuffer.get(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2));
+                readRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), outWriter, intra);
+            } 
+            else {
+                if(intra){
+                    readNormalizedIntraContactInformation(fileToReads, baseName, normMethod, ChrSmaller, contactsToCheck.getValue(), resolution, minValue, outWriter);  
                 } else {
-                    if (readRawInterContactInformation(fileToReads, minValue, bin1, bin2)) {
-                        outWriter.writeln(eqtl.getRsName() + "\t" + eqtl.getProbe() + "\tContact");
-                        contactBuffer.put(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2, "Contact");
-                    } else {
-                        outWriter.writeln(eqtl.getRsName() + "\t" + eqtl.getProbe() + "\t-");
-                        contactBuffer.put(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2, "-");
-                    }
-                }
-            } else {
-                if (contactBuffer.containsKey(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2)) {
-                    outWriter.writeln(eqtl.getRsName() + "\t" + eqtl.getProbe() + "\t" + contactBuffer.get(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2));
-                } else {
-                    if (readNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, posChrSmaller, posChrLarger, resolution, minValue)) {
-                        outWriter.writeln(eqtl.getRsName() + "\t" + eqtl.getProbe() + "\tContact");
-                        contactBuffer.put(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2, "Contact");
-                    } else {
-                        outWriter.writeln(eqtl.getRsName() + "\t" + eqtl.getProbe() + "\t-");
-                        contactBuffer.put(ChrSmaller + "_" + ChrLarger + "_" + bin1 + "_" + bin2, "-");
-                    }
+                    readNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, contactsToCheck.getValue(), resolution, minValue, outWriter);  
                 }
             }
+            
             pb.iterate();
         }
         pb.close();
         outWriter.close();
     }
 
-    private static ArrayList<EQTL> includeProxyInfo(ArrayList<EQTL> qtls, String inProxies) throws IOException {
-        ArrayList<EQTL> newQtlList = new ArrayList<EQTL>();
-
-        TextFile readProxies = new TextFile(inProxies, TextFile.R);
-
-        String line = readProxies.readLine();
-//        System.out.println(line);
-        while ((line = readProxies.readLine()) != null) {
-//            System.out.println(line);
-            String[] lineParts = SPLIT_TAB.split(line);
-            String chr = lineParts[4];
-            int chrPos = Integer.parseInt(lineParts[5]);
-            int chrNewPos = Integer.parseInt(lineParts[8]);
-            for (EQTL e : qtls) {
-                if (String.valueOf(e.getRsChr()).equals(chr) && e.getRsChrPos() == chrPos) {
-                    EQTL newQtl = new EQTL();
-                    newQtl.setProbe(e.getProbe());
-                    newQtl.setProbeChr(e.getProbeChr());
-                    newQtl.setProbeChrPos(e.getProbeChrPos());
-
-                    newQtl.setRsName(e.getRsName() + "-" + lineParts[1]);
-                    newQtl.setRsChr(e.getRsChr());
-                    newQtl.setRsChrPos(chrNewPos);
-                    newQtlList.add(newQtl);
-                }
-            }
-        }
-
-        for (EQTL e : qtls) {
-            newQtlList.add(e);
-        }
-
-        return newQtlList;
-    }
-
     //For example, here is a line from the 5kb chr1 MAPQGE30 raw observed contact matrix (GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.RAWobserved):
 //40000000 40100000 59.0
-    private static boolean readRawInterContactInformation(String fileToReads, double minValue, int bin1, int bin2) throws IOException {
-//        System.out.println("\t\t"+fileToReads);
-//        System.out.println("\t"+bin2);
-        //See if bin1 and bin2 are in the file.
-        boolean contactFound = false;
+    private static void readRawContactInformation(String fileToRead, double minValue, ArrayList<DesiredChrContact> contactsToCheck, TextFile outWriter, boolean intra) throws IOException {
 
         //Check if sorted version is available
         //If not make sorted available.
-        if (!Gpio.exists(fileToReads + ".sorted")) {
-            umcg.genetica.io.chrContacts.SortInterChrContacts.readNonSortedWriteSorted(fileToReads, fileToReads + ".sorted");
+        
+        if (!Gpio.exists(fileToRead + ".sorted")) {
+            if(intra){
+                umcg.genetica.io.chrContacts.SortIntraChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
+            } else {
+                umcg.genetica.io.chrContacts.SortInterChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
+            }
+            
         }
 
-        LineIterator it = FileUtils.lineIterator(new File(fileToReads + ".sorted"), "UTF-8");
-
-        String row;
+        int numberToBeMatched = 0;
+        
+        LineIterator it = FileUtils.lineIterator(new File(fileToRead + ".sorted"), "UTF-8");
+        
 
         try {
             while (it.hasNext()) {
                 String[] parts = StringUtils.split(it.nextLine(), '\t');
-//            System.out.println(row);
 
                 int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
-                if (posChr1 == bin1) {
-                    int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
-                    if (posChr2 == bin2) {
-                        double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
-                        if (contact >= minValue) {
-                            contactFound = true;
+                int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
+                
+                while(numberToBeMatched<contactsToCheck.size()){
+                    if(posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()){
+                        break;
+                    } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
+                        if(posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()){
+                            break;
                         }
-                        break;
-                    } else if (posChr2 > bin2) {
-                        break;
+                        if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
+                            double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
+                            if (contact >= minValue) {
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\tContact");
+                                numberToBeMatched++;
+                            } else{
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                                numberToBeMatched++;
+                            }
+                        } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            numberToBeMatched++;
+                        }
+                    } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                        numberToBeMatched++;
                     }
-                } else if (posChr1 > bin1) {
-                    break;
                 }
             }
         } finally {
             LineIterator.closeQuietly(it);
         }
 
-        return contactFound;
     }
 
     //For example, here is a line from the 5kb chr1 MAPQGE30 raw observed contact matrix (GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.RAWobserved):
@@ -248,72 +186,157 @@ class HiCTransQTLAnnotator_V2 {
     //The 8021st line of the KR norm file is 1.6080499717941548. So the corresponding KR normalized entry for the entry above is 59.0/(1.2988778370674694*1.6080499717941548)
     //or 28.24776973966101. 
     //If the KR normalization vector file is empty or all NaNs, then the KR algorithm didn’t converge on that particular matrix (likely due to sparsity of the matrix).
-    private static boolean readNormalizedInterContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, String chrLarger, int posChrSmaller, int posChrLarger, String resolution, double minValue) throws IOException {
-        //Determine bin1
-        //Starts counting at 0-resulution
-        int bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
-
-        //Determine bin2
-        int bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
+    private static void readNormalizedInterContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, String chrLarger, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
 
         //ReadIn normalization chr1
         TextFile inputNormChr1 = new TextFile(baseName + "\\chr" + chrSmaller + "_" + resolution + "." + normMethod, TextFile.R);
         ArrayList<String> normFactorSmallerChr = inputNormChr1.readAsArrayList();
         inputNormChr1.close();
+        
+//        System.out.println("Done reading norm factor 1");
 
         //ReadIn normalization chr2
         TextFile inputNormChr2 = new TextFile(baseName + "\\chr" + chrLarger + "_" + resolution + "." + normMethod, TextFile.R);
         ArrayList<String> normFactorLargerChr = inputNormChr2.readAsArrayList();
-
         inputNormChr2.close();
 
+//        System.out.println("Done reading norm factor 2");
+        
         if (!Gpio.exists(fileToRead + ".sorted")) {
             umcg.genetica.io.chrContacts.SortInterChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
         }
 
-        BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(fileToRead + ".sorted"), "UTF-8"));
+        int numberToBeMatched = 0;
+        
+        LineIterator it = FileUtils.lineIterator(new File(fileToRead + ".sorted"), "UTF-8");
+        
 
-        String row;
+        try {
+            while (it.hasNext()) {
+                String[] parts = StringUtils.split(it.nextLine(), '\t');
 
-        //See if bin1 and bin2 are in the file.
-        boolean contactFound = false;
-
-        while ((row = input.readLine()) != null) {
-            String[] parts = StringUtils.split(row, '\t');
-
-            int posChr1 = Integer.parseInt(parts[0]);
-            if (posChr1 == bin1) {
-                int posChr2 = Integer.parseInt(parts[1]);
-                if (posChr2 == bin2) {
-
-                    String factor1Base = normFactorSmallerChr.get((posChr1 / getNumericResolution(resolution)) + 1);
-                    String factor2Base = normFactorLargerChr.get((posChr2 / getNumericResolution(resolution)) + 1);
-
-                    double factor1;
-                    double factor2;
-
-                    if (StringUtils.isNumeric(factor1Base) && StringUtils.isNumeric(factor2Base)) {
-                        factor1 = Double.parseDouble(factor1Base);
-                        factor2 = Double.parseDouble(factor2Base);
-
-                        double contact = Double.parseDouble(parts[2]) / (factor1 * factor2);
-                        if (contact >= minValue) {
-                            contactFound = true;
-                        }
+                int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
+                int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
+                
+                while(numberToBeMatched<contactsToCheck.size()){
+                    if(posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()){
                         break;
-                    }
+                    } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
+                        if(posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()){
+                            break;
+                        }
+                        if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
+                            
+                            String factor1Base = normFactorSmallerChr.get((posChr1 / getNumericResolution(resolution)) + 1);
+                            String factor2Base = normFactorLargerChr.get((posChr2 / getNumericResolution(resolution)) + 1);
 
-                } else if (posChr2 > bin2) {
-                    break;
+                            double factor1;
+                            double factor2;
+
+                            if (StringUtils.isNumeric(factor1Base) && StringUtils.isNumeric(factor2Base)) {
+                                factor1 = org.apache.commons.lang.math.NumberUtils.createDouble(factor1Base);
+                                factor2 = org.apache.commons.lang.math.NumberUtils.createDouble(factor2Base);
+
+                                double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
+                                if (contact >= minValue) {
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\tContact");
+                                    numberToBeMatched++;
+                                } else{
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                                    numberToBeMatched++;
+                                }
+                            } else {
+                                System.out.println("Error in files.");
+                                numberToBeMatched++;
+                            }
+                        } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            numberToBeMatched++;
+                        }
+                    } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                        numberToBeMatched++;
+                    }
                 }
-            } else if (posChr1 > bin1) {
-                break;
             }
+        } finally {
+            LineIterator.closeQuietly(it);
         }
-        input.close();
-        return contactFound;
+
     }
 
+    private static void readNormalizedIntraContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
+
+        //ReadIn normalization chr1
+        TextFile inputNormChr1 = new TextFile(baseName + "\\chr" + chrSmaller + "_" + resolution + "." + normMethod, TextFile.R);
+        ArrayList<String> normFactorSmallerChr = inputNormChr1.readAsArrayList();
+        inputNormChr1.close();
+        
+//        System.out.println("Done reading norm factor 1");
+        
+        if (!Gpio.exists(fileToRead + ".sorted")) {
+            umcg.genetica.io.chrContacts.SortIntraChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
+        }
+
+        int numberToBeMatched = 0;
+        
+        LineIterator it = FileUtils.lineIterator(new File(fileToRead + ".sorted"), "UTF-8");
+        
+
+        try {
+            while (it.hasNext()) {
+                String[] parts = StringUtils.split(it.nextLine(), '\t');
+
+                int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
+                int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
+                
+                while(numberToBeMatched<contactsToCheck.size()){
+                    if(posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()){
+                        break;
+                    } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
+                        if(posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()){
+                            break;
+                        }
+                        if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
+                            
+                            String factor1Base = normFactorSmallerChr.get((posChr1 / getNumericResolution(resolution)) + 1);
+                            String factor2Base = normFactorSmallerChr.get((posChr2 / getNumericResolution(resolution)) + 1);
+
+                            double factor1;
+                            double factor2;
+
+                            if (StringUtils.isNumeric(factor1Base) && StringUtils.isNumeric(factor2Base)) {
+                                factor1 = org.apache.commons.lang.math.NumberUtils.createDouble(factor1Base);
+                                factor2 = org.apache.commons.lang.math.NumberUtils.createDouble(factor2Base);
+
+                                double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
+                                if (contact >= minValue) {
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\tContact");
+                                    numberToBeMatched++;
+                                } else{
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                                    numberToBeMatched++;
+                                }
+                            } else {
+                                System.out.println("Error in files.");
+                                numberToBeMatched++;
+                            }
+                        } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            numberToBeMatched++;
+                        }
+                    } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                        numberToBeMatched++;
+                    }
+                }
+            }
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+
+    }
+    
     private static int getNumericResolution(String resolution) {
         if (resolution.equals("1kb")) {
             return 1000;
@@ -325,7 +348,92 @@ class HiCTransQTLAnnotator_V2 {
         }
         return 0;
     }
+    
+    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlInformation2(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution){
+        ArrayList<EQTL> qtls = null;
+        
+        try {
+            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile);
+        } catch (IOException ex) {
+            Logger.getLogger(HiCTransQTLAnnotator_V2.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        HashMap<String, ArrayList<DesiredChrContact>> desiredContacts = new HashMap<String, ArrayList<DesiredChrContact>>();
+        
+        for(EQTL qtl : qtls){
+            
+            
+            String chrProbe = String.valueOf(qtl.getProbeChr());
+            String chrSnp = String.valueOf(qtl.getRsChr());
+            int posChrSmaller;
+            int posChrLarger;
+            int bin1;
+            int bin2;
+            String ChrSmaller;
+            String ChrLarger;
+            
 
+            if (chrProbe.equals(chrSnp)) {
+                ChrSmaller = chrProbe;
+                ChrLarger = chrSnp;
+                
+                
+                int binx = qtl.getProbeChrPos() - (qtl.getProbeChrPos() % getNumericResolution(resolution));
+                //        System.out.println("\t"+bin1);
+                //Determine bin2
+                int biny = qtl.getRsChrPos() - (qtl.getRsChrPos() % getNumericResolution(resolution));
+                
+                //Check if logic is consistent.
+                
+                if (binx < biny) {
+                    bin1 = binx;
+                    bin2 = biny;
+                } else {
+                    bin2 = binx;
+                    bin1 = biny;
+                }
+                
+            } else {
+                
+
+                if (Integer.parseInt(chrProbe) < Integer.parseInt(chrSnp)) {
+                    posChrSmaller = qtl.getProbeChrPos();
+                    posChrLarger = qtl.getRsChrPos();
+                    
+                    //Determine bin1
+                    //Startscounting at 0-resulution
+                    bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
+                    //        System.out.println("\t"+bin1);
+                    //Determine bin2
+                    bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
+                    
+                    ChrSmaller = chrProbe;
+                    ChrLarger = chrSnp;
+                } else {
+                    posChrSmaller = qtl.getRsChrPos();
+                    posChrLarger = qtl.getProbeChrPos();
+                    
+                    bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
+                    //        System.out.println("\t"+bin1);
+                    //Determine bin2
+                    bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
+
+                    
+                    ChrSmaller = chrSnp;
+                    ChrLarger = chrProbe;
+                }
+            }
+            
+            
+            String key  = ChrSmaller+"-"+ChrLarger;
+            if(!desiredContacts.containsKey(key)){
+                desiredContacts.put(key, new ArrayList<DesiredChrContact>());
+            }
+            desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
+        }
+        return desiredContacts;
+    }
+    
     private static ArrayList<EQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile) throws IOException {
         ArrayList<EQTL> qtls = null;
         if (!permutationFile) {
@@ -380,6 +488,41 @@ class HiCTransQTLAnnotator_V2 {
         return qtls;
     }
 
+    private static ArrayList<EQTL> includeProxyInfo(ArrayList<EQTL> qtls, String inProxies) throws IOException {
+        ArrayList<EQTL> newQtlList = new ArrayList<EQTL>();
+
+        TextFile readProxies = new TextFile(inProxies, TextFile.R);
+
+        String line = readProxies.readLine();
+//        System.out.println(line);
+        while ((line = readProxies.readLine()) != null) {
+//            System.out.println(line);
+            String[] lineParts = SPLIT_TAB.split(line);
+            String chr = lineParts[4];
+            int chrPos = Integer.parseInt(lineParts[5]);
+            int chrNewPos = Integer.parseInt(lineParts[8]);
+            for (EQTL e : qtls) {
+                if (String.valueOf(e.getRsChr()).equals(chr) && e.getRsChrPos() == chrPos) {
+                    EQTL newQtl = new EQTL();
+                    newQtl.setProbe(e.getProbe());
+                    newQtl.setProbeChr(e.getProbeChr());
+                    newQtl.setProbeChrPos(e.getProbeChrPos());
+
+                    newQtl.setRsName(e.getRsName() + "-" + lineParts[1]);
+                    newQtl.setRsChr(e.getRsChr());
+                    newQtl.setRsChrPos(chrNewPos);
+                    newQtlList.add(newQtl);
+                }
+            }
+        }
+
+        for (EQTL e : qtls) {
+            newQtlList.add(e);
+        }
+
+        return newQtlList;
+    }
+    
     private static HashMap<String, Pair<Byte, Integer>> readChrLocation(String file, int key, int value1, int value2, boolean skipFirstRow) throws IOException {
         HashMap<String, Pair<Byte, Integer>> locationInfo = new HashMap<>();
         TextFile textFile = new TextFile(file, TextFile.R);

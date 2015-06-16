@@ -220,7 +220,7 @@ class HiCTransQTLAnnotator {
 
                 int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
                 if (posChr1 == bin1) {
-                    int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
+                    int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
                     if (posChr2 == bin2) {
                         double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
                         if (contact >= minValue) {
