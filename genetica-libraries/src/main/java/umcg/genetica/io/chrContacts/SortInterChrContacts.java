@@ -59,18 +59,14 @@ public class SortInterChrContacts {
 
     }
     
-    public static ArrayList<ChrContact> writeRawInterContactInformation(ArrayList<ChrContact> contacts, String fileToWrite) throws IOException {
-        ArrayList<ChrContact> chrContactInfo = new ArrayList<ChrContact>();
+    public static void writeRawInterContactInformation(ArrayList<ChrContact> contacts, String fileToWrite) throws IOException {
 
         TextFile outWriter = new TextFile(fileToWrite, TextFile.W);
-
-        String row;
 
         for(ChrContact contact : contacts){
             outWriter.writeln(contact.getChrLocationSmaller()+"\t"+contact.getChrLocationLarger()+"\t"+contact.getContactValue());
         }
         outWriter.close();
-        return chrContactInfo;
 
     }
 }

@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
@@ -34,36 +35,38 @@ class HiCTransQTLAnnotator_V2 {
     private static final Pattern SPLIT_TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws IOException {
-
-//        String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
-        String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound9.head.txt";
-//        String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps.txt";
-        String proxyfile = null;
-        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_PermutationRoundX_KR_HiC_1kb_E30_annotated.txt";
         String folderHighC = "G:\\Contacts\\";
-        String resolution = "1kb"; //5kb / 1kb
-        String qualityCutOff = "E30"; //0 or E30
-        String normMethod = null;
-//        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
-        double minValueQuality = 0.5;
-        boolean permutationFile = true;
+        String resolution = "5kb"; //5kb / 1kb
+        String qualityCutOff = "0"; //0 or E30
+//        String normMethod = null;
+        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
+        double minValueQuality = 0.0;
+        boolean permutationFile = false;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
 
-//        readInQtlInformation(QTLfile, proxyfile, probeMap, snpMap, permutationFile);
-        
-        addAnnotationToQTLOutput(
-                QTLfile,
-                proxyfile,
-                folderHighC,
-                resolution,
-                qualityCutOff,
-                normMethod,
-                minValueQuality,
-                permutationFile,
-                probeMap,
-                snpMap,
-                QTLoutfile);
+        //for (int i = 1; i < 11; ++i) {
+            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
+//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\eQTLProbesFDR0.05-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-ProbeLevel.txt_LdQtlFilterd.txt";
+//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
+            String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
+//            String proxyfile = null;
+            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_LD_Kr_5kb_0_annotated.txt";
+//            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
+            
+            addAnnotationToQTLOutput(
+                    QTLfile,
+                    proxyfile,
+                    folderHighC,
+                    resolution,
+                    qualityCutOff,
+                    normMethod,
+                    minValueQuality,
+                    permutationFile,
+                    probeMap,
+                    snpMap,
+                    QTLoutfile);
+//        }
 
     }
 
@@ -75,40 +78,39 @@ class HiCTransQTLAnnotator_V2 {
 
         //Remake class to be-able to search for multiple entries in 1 file.
         TextFile outWriter = new TextFile(out, TextFile.W);
-        
-        for (Entry<String,ArrayList<DesiredChrContact>> contactsToCheck : qtls.entrySet()) {
+
+        for (Entry<String, ArrayList<DesiredChrContact>> contactsToCheck : qtls.entrySet()) {
             Collections.sort(contactsToCheck.getValue());
-            
+
             String[] chrs = contactsToCheck.getKey().split("-");
-            
+
             String ChrSmaller = chrs[0];
             String ChrLarger = chrs[1];
-            
+
             String baseName;
             String fileToReads;
             boolean intra = false;
-            
-            if(ChrSmaller.equals(ChrLarger)){
-                baseName = folderHighC+"\\GM12878_combined_intrachromosomal\\" + resolution + "_resolution_intrachromosomal\\chr" + ChrSmaller + "\\MAPQG" + qualityCutOff;
+
+            if (ChrSmaller.equals(ChrLarger)) {
+                baseName = folderHighC + "\\GM12878_combined_intrachromosomal\\" + resolution + "_resolution_intrachromosomal\\chr" + ChrSmaller + "\\MAPQG" + qualityCutOff;
                 fileToReads = baseName + "\\chr" + ChrSmaller + "_" + resolution + ".RAWobserved";
                 intra = true;
 //                continue;
             } else {
-                baseName = folderHighC+"\\GM12878_combined_interchromosomal\\" + resolution + "_resolution_interchromosomal\\chr" + ChrSmaller + "_chr" + ChrLarger + "\\MAPQG" + qualityCutOff;
+                baseName = folderHighC + "\\GM12878_combined_interchromosomal\\" + resolution + "_resolution_interchromosomal\\chr" + ChrSmaller + "_chr" + ChrLarger + "\\MAPQG" + qualityCutOff;
                 fileToReads = baseName + "\\chr" + ChrSmaller + "_" + ChrLarger + "_" + resolution + ".RAWobserved";
             }
-            
+
             if (normMethod == null) {
-                readRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), outWriter, intra);
-            } 
-            else {
-                if(intra){
-                    readNormalizedIntraContactInformation(fileToReads, baseName, normMethod, ChrSmaller, contactsToCheck.getValue(), resolution, minValue, outWriter);  
+                processRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), outWriter, intra);
+            } else {
+                if (intra) {
+                    processNormalizedIntraContactInformation(fileToReads, baseName, normMethod, ChrSmaller, contactsToCheck.getValue(), resolution, minValue, outWriter);
                 } else {
-                    readNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, contactsToCheck.getValue(), resolution, minValue, outWriter);  
+                    processNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, contactsToCheck.getValue(), resolution, minValue, outWriter);
                 }
             }
-            
+
             pb.iterate();
         }
         pb.close();
@@ -117,24 +119,22 @@ class HiCTransQTLAnnotator_V2 {
 
     //For example, here is a line from the 5kb chr1 MAPQGE30 raw observed contact matrix (GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.RAWobserved):
 //40000000 40100000 59.0
-    private static void readRawContactInformation(String fileToRead, double minValue, ArrayList<DesiredChrContact> contactsToCheck, TextFile outWriter, boolean intra) throws IOException {
+    private static void processRawContactInformation(String fileToRead, double minValue, ArrayList<DesiredChrContact> contactsToCheck, TextFile outWriter, boolean intra) throws IOException {
 
         //Check if sorted version is available
         //If not make sorted available.
-        
         if (!Gpio.exists(fileToRead + ".sorted")) {
-            if(intra){
+            if (intra) {
                 umcg.genetica.io.chrContacts.SortIntraChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
             } else {
                 umcg.genetica.io.chrContacts.SortInterChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
             }
-            
+
         }
 
         int numberToBeMatched = 0;
-        
+
         LineIterator it = FileUtils.lineIterator(new File(fileToRead + ".sorted"), "UTF-8");
-        
 
         try {
             while (it.hasNext()) {
@@ -142,29 +142,29 @@ class HiCTransQTLAnnotator_V2 {
 
                 int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
                 int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
-                
-                while(numberToBeMatched<contactsToCheck.size()){
-                    if(posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()){
+
+                while (numberToBeMatched < contactsToCheck.size()) {
+                    if (posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
                         break;
                     } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        if(posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()){
+                        if (posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
                             break;
                         }
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
                             double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
                             if (contact >= minValue) {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\tContact");
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact);
                                 numberToBeMatched++;
-                            } else{
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            } else {
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
                                 numberToBeMatched++;
                             }
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -182,30 +182,27 @@ class HiCTransQTLAnnotator_V2 {
     //The 8021st line of the KR norm file is 1.6080499717941548. So the corresponding KR normalized entry for the entry above is 59.0/(1.2988778370674694*1.6080499717941548)
     //or 28.24776973966101. 
     //If the KR normalization vector file is empty or all NaNs, then the KR algorithm didn’t converge on that particular matrix (likely due to sparsity of the matrix).
-    private static void readNormalizedInterContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, String chrLarger, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
+    private static void processNormalizedInterContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, String chrLarger, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
 
         //ReadIn normalization chr1
         TextFile inputNormChr1 = new TextFile(baseName + "\\chr" + chrSmaller + "_" + resolution + "." + normMethod, TextFile.R);
         ArrayList<String> normFactorSmallerChr = inputNormChr1.readAsArrayList();
         inputNormChr1.close();
-        
-//        System.out.println("Done reading norm factor 1");
 
+//        System.out.println("Done reading norm factor 1");
         //ReadIn normalization chr2
         TextFile inputNormChr2 = new TextFile(baseName + "\\chr" + chrLarger + "_" + resolution + "." + normMethod, TextFile.R);
         ArrayList<String> normFactorLargerChr = inputNormChr2.readAsArrayList();
         inputNormChr2.close();
 
 //        System.out.println("Done reading norm factor 2");
-        
         if (!Gpio.exists(fileToRead + ".sorted")) {
             umcg.genetica.io.chrContacts.SortInterChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
         }
 
         int numberToBeMatched = 0;
-        
+
         LineIterator it = FileUtils.lineIterator(new File(fileToRead + ".sorted"), "UTF-8");
-        
 
         try {
             while (it.hasNext()) {
@@ -213,44 +210,63 @@ class HiCTransQTLAnnotator_V2 {
 
                 int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
                 int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
-                
-                while(numberToBeMatched<contactsToCheck.size()){
-                    if(posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()){
+
+                while (numberToBeMatched < contactsToCheck.size()) {
+                    if (posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
                         break;
                     } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        if(posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()){
+                        if (posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
                             break;
                         }
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            
+                            if(((posChr1 / getNumericResolution(resolution)) + 1)>normFactorSmallerChr.size()){
+                                System.out.println(baseName);
+                                System.out.println("Smaller");
+                                System.out.println((posChr1 / getNumericResolution(resolution)+1));
+                                System.out.println(normFactorSmallerChr.size());
+                                System.exit(-1);
+                            }
+                            if(((posChr2 / getNumericResolution(resolution)) + 1)>normFactorLargerChr.size()){
+                                System.out.println(baseName);
+                                System.out.println("Larger");
+                                System.out.println((posChr2 / getNumericResolution(resolution)) + 1);
+                                System.out.println(normFactorLargerChr.size());
+                                System.exit(-1);
+                            }
                             String factor1Base = normFactorSmallerChr.get((posChr1 / getNumericResolution(resolution)) + 1);
                             String factor2Base = normFactorLargerChr.get((posChr2 / getNumericResolution(resolution)) + 1);
 
-                            double factor1;
-                            double factor2;
+                            double factor1 = 1.0;
+                            double factor2 = 1.0;
 
-                            if (StringUtils.isNumeric(factor1Base) && StringUtils.isNumeric(factor2Base)) {
-                                factor1 = org.apache.commons.lang.math.NumberUtils.createDouble(factor1Base);
-                                factor2 = org.apache.commons.lang.math.NumberUtils.createDouble(factor2Base);
-
-                                double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
-                                if (contact >= minValue) {
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\tContact");
-                                    numberToBeMatched++;
-                                } else{
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
-                                    numberToBeMatched++;
-                                }
-                            } else {
+                            if (NumberUtils.isNumber(factor1Base) && NumberUtils.isNumber(factor2Base)) {
+                                factor1 = Double.parseDouble(factor1Base);
+                                factor2 = Double.parseDouble(factor2Base);
+                            } else if (NumberUtils.isNumber(factor1Base)) {
+                                factor1 = Double.parseDouble(factor1Base);
                                 System.out.println("Error in files.");
+                                System.out.println("Base 2 is reset to 1");
+                            } else if (NumberUtils.isNumber(factor2Base)) {
+                                factor2 = Double.parseDouble(factor2Base);
+                                System.out.println("Error in files.");
+                                System.out.println("Base 1 is reset to 1");
+                            }
+
+                            double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
+                            if (contact >= minValue) {
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact+"\t"+org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
+                                numberToBeMatched++;
+                            } else {
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
                                 numberToBeMatched++;
                             }
+
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -261,23 +277,21 @@ class HiCTransQTLAnnotator_V2 {
 
     }
 
-    private static void readNormalizedIntraContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
+    private static void processNormalizedIntraContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
 
         //ReadIn normalization chr1
         TextFile inputNormChr1 = new TextFile(baseName + "\\chr" + chrSmaller + "_" + resolution + "." + normMethod, TextFile.R);
         ArrayList<String> normFactorSmallerChr = inputNormChr1.readAsArrayList();
         inputNormChr1.close();
-        
+
 //        System.out.println("Done reading norm factor 1");
-        
         if (!Gpio.exists(fileToRead + ".sorted")) {
             umcg.genetica.io.chrContacts.SortIntraChrContacts.readNonSortedWriteSorted(fileToRead, fileToRead + ".sorted");
         }
 
         int numberToBeMatched = 0;
-        
+
         LineIterator it = FileUtils.lineIterator(new File(fileToRead + ".sorted"), "UTF-8");
-        
 
         try {
             while (it.hasNext()) {
@@ -285,16 +299,16 @@ class HiCTransQTLAnnotator_V2 {
 
                 int posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
                 int posChr2 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
-                
-                while(numberToBeMatched<contactsToCheck.size()){
-                    if(posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()){
+
+                while (numberToBeMatched < contactsToCheck.size()) {
+                    if (posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
                         break;
                     } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        if(posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()){
+                        if (posChr2 < contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
                             break;
                         }
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            
+
                             String factor1Base = normFactorSmallerChr.get((posChr1 / getNumericResolution(resolution)) + 1);
                             String factor2Base = normFactorSmallerChr.get((posChr2 / getNumericResolution(resolution)) + 1);
 
@@ -307,10 +321,10 @@ class HiCTransQTLAnnotator_V2 {
 
                                 double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
                                 if (contact >= minValue) {
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\tContact");
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact+"\t"+org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
                                     numberToBeMatched++;
-                                } else{
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                                } else {
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
                                     numberToBeMatched++;
                                 }
                             } else {
@@ -318,11 +332,11 @@ class HiCTransQTLAnnotator_V2 {
                                 numberToBeMatched++;
                             }
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -332,7 +346,7 @@ class HiCTransQTLAnnotator_V2 {
         }
 
     }
-    
+
     private static int getNumericResolution(String resolution) {
         if (resolution.equals("1kb")) {
             return 1000;
@@ -344,21 +358,20 @@ class HiCTransQTLAnnotator_V2 {
         }
         return 0;
     }
-    
-    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlInformation2(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution){
+
+    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlInformation2(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution) {
         ArrayList<EQTL> qtls = null;
-        
+
         try {
             qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile);
         } catch (IOException ex) {
             Logger.getLogger(HiCTransQTLAnnotator_V2.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         HashMap<String, ArrayList<DesiredChrContact>> desiredContacts = new HashMap<String, ArrayList<DesiredChrContact>>();
-        
-        for(EQTL qtl : qtls){
-            
-            
+
+        for (EQTL qtl : qtls) {
+
             String chrProbe = String.valueOf(qtl.getProbeChr());
             String chrSnp = String.valueOf(qtl.getRsChr());
             int posChrSmaller;
@@ -367,20 +380,17 @@ class HiCTransQTLAnnotator_V2 {
             int bin2;
             String ChrSmaller;
             String ChrLarger;
-            
 
             if (chrProbe.equals(chrSnp)) {
                 ChrSmaller = chrProbe;
                 ChrLarger = chrSnp;
-                
-                
+
                 int binx = qtl.getProbeChrPos() - (qtl.getProbeChrPos() % getNumericResolution(resolution));
                 //        System.out.println("\t"+bin1);
                 //Determine bin2
                 int biny = qtl.getRsChrPos() - (qtl.getRsChrPos() % getNumericResolution(resolution));
-                
+
                 //Check if logic is consistent.
-                
                 if (binx < biny) {
                     bin1 = binx;
                     bin2 = biny;
@@ -388,48 +398,45 @@ class HiCTransQTLAnnotator_V2 {
                     bin2 = binx;
                     bin1 = biny;
                 }
-                
+
             } else {
-                
 
                 if (Integer.parseInt(chrProbe) < Integer.parseInt(chrSnp)) {
                     posChrSmaller = qtl.getProbeChrPos();
                     posChrLarger = qtl.getRsChrPos();
-                    
+
                     //Determine bin1
                     //Startscounting at 0-resulution
                     bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
                     //        System.out.println("\t"+bin1);
                     //Determine bin2
                     bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
-                    
+
                     ChrSmaller = chrProbe;
                     ChrLarger = chrSnp;
                 } else {
                     posChrSmaller = qtl.getRsChrPos();
                     posChrLarger = qtl.getProbeChrPos();
-                    
+
                     bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
                     //        System.out.println("\t"+bin1);
                     //Determine bin2
                     bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
 
-                    
                     ChrSmaller = chrSnp;
                     ChrLarger = chrProbe;
                 }
             }
-            
-            
-            String key  = ChrSmaller+"-"+ChrLarger;
-            if(!desiredContacts.containsKey(key)){
+
+            String key = ChrSmaller + "-" + ChrLarger;
+            if (!desiredContacts.containsKey(key)) {
                 desiredContacts.put(key, new ArrayList<DesiredChrContact>());
             }
             desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
         }
         return desiredContacts;
     }
-    
+
     private static ArrayList<EQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile) throws IOException {
         ArrayList<EQTL> qtls = null;
         if (!permutationFile) {
@@ -437,10 +444,10 @@ class HiCTransQTLAnnotator_V2 {
             qtls = eqtlTextFile.readList();
             eqtlTextFile.close();
         } else {
-            
-            HashMap<String, Pair<Byte, Integer>> probeLocation = readChrLocation(probeMap, 1,3,5, true);
-            HashMap<String, Pair<Byte, Integer>> snpLocation = readChrLocation(snpMap, 2,0,1, true);
-            
+
+            HashMap<String, Pair<Byte, Integer>> probeLocation = readChrLocation(probeMap, 1, 3, 5, true);
+            HashMap<String, Pair<Byte, Integer>> snpLocation = readChrLocation(snpMap, 2, 0, 1, true);
+
             TextFile textFile = new TextFile(in, TextFile.R);
             qtls = new ArrayList<>();
 
@@ -451,35 +458,34 @@ class HiCTransQTLAnnotator_V2 {
 
                 EQTL newQtl = new EQTL();
                 newQtl.setProbe(parts[2]);
-                
+
                 newQtl.setProbeChr(probeLocation.get(parts[2]).getLeft());
                 newQtl.setProbeChrPos(probeLocation.get(parts[2]).getRight());
 
                 newQtl.setRsName(parts[1]);
-                if(snpLocation.containsKey(parts[1])){
+                if (snpLocation.containsKey(parts[1])) {
                     newQtl.setRsChr(snpLocation.get(parts[1]).getLeft());
                     newQtl.setRsChrPos(snpLocation.get(parts[1]).getRight());
                 } else {
-                    System.out.println("Error SNP: "+parts[1]+" not present in your SNP mapping file.");
+                    System.out.println("Error SNP: " + parts[1] + " not present in your SNP mapping file.");
                     System.exit(0);
                 }
                 qtls.add(newQtl);
-                
+
             }
-            
+
             textFile.close();
         }
-        
+
         if (inProxies != null) {
             qtls = includeProxyInfo(qtls, inProxies);
         }
-        
+
         //Write file to disk.
 //        QTLTextFile out = new QTLTextFile( "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound9.head.extended.txt" ,QTLTextFile.W);
 //        out.write(qtls);
 //        out.close();
 //        System.exit(0);
-        
         return qtls;
     }
 
@@ -517,14 +523,14 @@ class HiCTransQTLAnnotator_V2 {
 
         return newQtlList;
     }
-    
+
     private static HashMap<String, Pair<Byte, Integer>> readChrLocation(String file, int key, int value1, int value2, boolean skipFirstRow) throws IOException {
         HashMap<String, Pair<Byte, Integer>> locationInfo = new HashMap<>();
         TextFile textFile = new TextFile(file, TextFile.R);
         ArrayList<EQTL> qtls = new ArrayList<>();
 
         String row;
-        if(skipFirstRow){
+        if (skipFirstRow) {
             row = textFile.readLine();
         }
         while ((row = textFile.readLine()) != null) {

@@ -11,11 +11,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
-import static umcg.genetica.io.chrContacts.SortInterChrContacts.writeRawInterContactInformation;
+import umcg.genetica.io.text.TextFile;
 
 /**
  *
@@ -33,16 +32,15 @@ public class SortIntraChrContacts {
         Collections.sort(contacts);
         
         try {
-            writeRawInterContactInformation(contacts, fileToWrite);
+            writeRawIntraContactInformation(contacts, fileToWrite);
         } catch (IOException ex) {
             Logger.getLogger(SortIntraChrContacts.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+        contacts = null;
     }
     
     private static ArrayList<ChrContact> readRawIntraContactInformation(String fileToReads) throws IOException {
         ArrayList<ChrContact> chrContactInfo = new ArrayList<ChrContact>();
-        HashSet<String> obsChrContactInfo = new HashSet<String>();
 
         BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(fileToReads), "UTF-8"));
 
@@ -66,15 +64,29 @@ public class SortIntraChrContacts {
                 posChr2 = posChrX;
             }
             
-            if(!obsChrContactInfo.contains(posChr1+"-"+posChr2)){
-                double contact = Double.parseDouble(parts[2]);
-                chrContactInfo.add(new ChrContact(posChr1, posChr2, contact));
-                obsChrContactInfo.add(posChr1+"-"+posChr2);
-            }
-            
+            double contact = Double.parseDouble(parts[2]);
+            chrContactInfo.add(new ChrContact(posChr1, posChr2, contact));
         }
         input.close();
         return chrContactInfo;
+
+    }
+    
+    public static void writeRawIntraContactInformation(ArrayList<ChrContact> contacts, String fileToWrite) throws IOException {
+
+        TextFile outWriter = new TextFile(fileToWrite, TextFile.W);
+
+        int previousSmaller = -1;
+        int previousLarger = -1;
+
+        for(ChrContact contact : contacts){
+            if (previousSmaller!=contact.getChrLocationSmaller() && previousLarger!=contact.getChrLocationLarger()){
+                outWriter.writeln(contact.getChrLocationSmaller()+"\t"+contact.getChrLocationLarger()+"\t"+contact.getContactValue());
+            }
+            previousSmaller = contact.getChrLocationSmaller();
+            previousLarger = contact.getChrLocationLarger();
+        }
+        outWriter.close();
 
     }
 
