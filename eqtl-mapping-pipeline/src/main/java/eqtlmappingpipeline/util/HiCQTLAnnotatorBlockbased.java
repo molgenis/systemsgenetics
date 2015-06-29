@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,16 +31,16 @@ import umcg.genetica.io.trityper.util.ChrAnnotation;
  *
  * @author MarcJan
  */
-class HiCTransQTLAnnotator_V2 {
+class HiCQTLAnnotatorBlockbased {
 
     private static final Pattern SPLIT_TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws IOException {
         String folderHighC = "G:\\Contacts\\";
-        String resolution = "5kb"; //5kb / 1kb
-        String qualityCutOff = "0"; //0 or E30
-//        String normMethod = null;
-        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
+        String resolution = "1kb"; //5kb / 1kb
+        String qualityCutOff = "E30"; //0 or E30
+        String normMethod = null;
+//        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
         double minValueQuality = 0.0;
         boolean permutationFile = false;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
@@ -51,7 +52,7 @@ class HiCTransQTLAnnotator_V2 {
 //            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
             String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
 //            String proxyfile = null;
-            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_LD_Kr_5kb_0_annotated.txt";
+            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_LD_Kr_5kb_0_annotated.txt";
 //            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
             
             addAnnotationToQTLOutput(
@@ -72,7 +73,7 @@ class HiCTransQTLAnnotator_V2 {
 
     private static void addAnnotationToQTLOutput(String in, String inProxies, String folderHighC, String resolution, String qualityCutOff, String normMethod, double minValue, boolean permutationFile, String probeMap, String snpMap, String out) throws IOException {
 
-        HashMap<String, ArrayList<DesiredChrContact>> qtls = readInQtlInformation2(in, inProxies, probeMap, snpMap, permutationFile, resolution);
+        HashMap<String, ArrayList<DesiredChrContact>> qtls = readInQtlTransformBlocks(in, inProxies, probeMap, snpMap, permutationFile, resolution);
 
         ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " Chromosome combinations");
 
@@ -359,23 +360,23 @@ class HiCTransQTLAnnotator_V2 {
         return 0;
     }
 
-    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlInformation2(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution) {
+    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlTransformBlocks(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution) {
         ArrayList<EQTL> qtls = null;
 
         try {
             qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile);
         } catch (IOException ex) {
-            Logger.getLogger(HiCTransQTLAnnotator_V2.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(HiCQTLAnnotatorBlockbased.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         HashMap<String, ArrayList<DesiredChrContact>> desiredContacts = new HashMap<String, ArrayList<DesiredChrContact>>();
-
+        HashSet<String> keysAdded = new HashSet<String>();
         for (EQTL qtl : qtls) {
 
             String chrProbe = String.valueOf(qtl.getProbeChr());
             String chrSnp = String.valueOf(qtl.getRsChr());
-            int posChrSmaller;
-            int posChrLarger;
+            int posChrSmaller = 0;
+            int posChrLarger = 0;
             int bin1;
             int bin2;
             String ChrSmaller;
@@ -430,9 +431,15 @@ class HiCTransQTLAnnotator_V2 {
 
             String key = ChrSmaller + "-" + ChrLarger;
             if (!desiredContacts.containsKey(key)) {
+                
                 desiredContacts.put(key, new ArrayList<DesiredChrContact>());
             }
-            desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
+            String extendedKey = key+"-"+posChrSmaller+"-"+posChrLarger;
+            
+            if(!keysAdded.contains(extendedKey)){
+                desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
+                keysAdded.add(extendedKey);
+            }
         }
         return desiredContacts;
     }
