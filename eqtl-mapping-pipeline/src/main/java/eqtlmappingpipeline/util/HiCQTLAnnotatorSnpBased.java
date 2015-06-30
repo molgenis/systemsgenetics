@@ -76,7 +76,6 @@ class HiCQTLAnnotatorSnpBased {
 
         ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " Chromosome combinations");
 
-        //Remake class to be-able to search for multiple entries in 1 file.
         TextFile outWriter = new TextFile(out, TextFile.W);
 
         for (Entry<String, ArrayList<DesiredChrContact>> contactsToCheck : qtls.entrySet()) {
@@ -347,7 +346,7 @@ class HiCQTLAnnotatorSnpBased {
 
     }
 
-    private static int getNumericResolution(String resolution) {
+    public static int getNumericResolution(String resolution) {
         if (resolution.equals("1kb")) {
             return 1000;
         } else if (resolution.equals("5kb")) {
@@ -363,7 +362,7 @@ class HiCQTLAnnotatorSnpBased {
         ArrayList<EQTL> qtls = null;
 
         try {
-            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile);
+            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, true);
         } catch (IOException ex) {
             Logger.getLogger(HiCQTLAnnotatorSnpBased.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -437,7 +436,7 @@ class HiCQTLAnnotatorSnpBased {
         return desiredContacts;
     }
 
-    private static ArrayList<EQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile) throws IOException {
+    public static ArrayList<EQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, boolean changeNameOfSnp) throws IOException {
         ArrayList<EQTL> qtls = null;
         if (!permutationFile) {
             QTLTextFile eqtlTextFile = new QTLTextFile(in, QTLTextFile.R);
@@ -478,7 +477,7 @@ class HiCQTLAnnotatorSnpBased {
         }
 
         if (inProxies != null) {
-            qtls = includeProxyInfo(qtls, inProxies);
+            qtls = includeProxyInfo(qtls, inProxies, changeNameOfSnp);
         }
 
         //Write file to disk.
@@ -489,7 +488,7 @@ class HiCQTLAnnotatorSnpBased {
         return qtls;
     }
 
-    private static ArrayList<EQTL> includeProxyInfo(ArrayList<EQTL> qtls, String inProxies) throws IOException {
+    private static ArrayList<EQTL> includeProxyInfo(ArrayList<EQTL> qtls, String inProxies, boolean changeNameOfSnp) throws IOException {
         ArrayList<EQTL> newQtlList = new ArrayList<EQTL>();
 
         TextFile readProxies = new TextFile(inProxies, TextFile.R);
@@ -508,8 +507,12 @@ class HiCQTLAnnotatorSnpBased {
                     newQtl.setProbe(e.getProbe());
                     newQtl.setProbeChr(e.getProbeChr());
                     newQtl.setProbeChrPos(e.getProbeChrPos());
-
-                    newQtl.setRsName(e.getRsName() + "-" + lineParts[1]);
+                    
+                    if(changeNameOfSnp){
+                        newQtl.setRsName(e.getRsName() + "-" + lineParts[1]);
+                    } else {
+                        newQtl.setRsName(e.getRsName());
+                    }
                     newQtl.setRsChr(e.getRsChr());
                     newQtl.setRsChrPos(chrNewPos);
                     newQtlList.add(newQtl);

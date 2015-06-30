@@ -4,6 +4,8 @@
  */
 package eqtlmappingpipeline.util;
 
+import static eqtlmappingpipeline.util.HiCQTLAnnotatorSnpBased.getNumericResolution;
+import static eqtlmappingpipeline.util.HiCQTLAnnotatorSnpBased.readInQtlInformation;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,27 +15,21 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.chrContacts.DesiredChrContact;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.QTLTextFile;
-import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 /**
  *
  * @author MarcJan
  */
 class HiCQTLAnnotatorBlockbased {
-
-    private static final Pattern SPLIT_TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws IOException {
         String folderHighC = "G:\\Contacts\\";
@@ -52,7 +48,7 @@ class HiCQTLAnnotatorBlockbased {
 //            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
             String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
 //            String proxyfile = null;
-            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_LD_Kr_5kb_0_annotated.txt";
+            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_LD_Kr_5kb_0_annotated2222.txt";
 //            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
             
             addAnnotationToQTLOutput(
@@ -77,7 +73,6 @@ class HiCQTLAnnotatorBlockbased {
 
         ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " Chromosome combinations");
 
-        //Remake class to be-able to search for multiple entries in 1 file.
         TextFile outWriter = new TextFile(out, TextFile.W);
 
         for (Entry<String, ArrayList<DesiredChrContact>> contactsToCheck : qtls.entrySet()) {
@@ -102,16 +97,16 @@ class HiCQTLAnnotatorBlockbased {
                 fileToReads = baseName + "\\chr" + ChrSmaller + "_" + ChrLarger + "_" + resolution + ".RAWobserved";
             }
 
-            if (normMethod == null) {
-                processRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), outWriter, intra);
-            } else {
-                if (intra) {
-                    processNormalizedIntraContactInformation(fileToReads, baseName, normMethod, ChrSmaller, contactsToCheck.getValue(), resolution, minValue, outWriter);
-                } else {
-                    processNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, contactsToCheck.getValue(), resolution, minValue, outWriter);
-                }
-            }
-
+//            if (normMethod == null) {
+                processRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), intra);
+//            } else {
+//                if (intra) {
+//                    processNormalizedIntraContactInformation(fileToReads, baseName, normMethod, ChrSmaller, contactsToCheck.getValue(), resolution, minValue, outWriter);
+//                } else {
+//                    processNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, contactsToCheck.getValue(), resolution, minValue, outWriter);
+//                }
+//            }
+                printOutContacts(contactsToCheck.getValue(), outWriter);
             pb.iterate();
         }
         pb.close();
@@ -120,7 +115,7 @@ class HiCQTLAnnotatorBlockbased {
 
     //For example, here is a line from the 5kb chr1 MAPQGE30 raw observed contact matrix (GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.RAWobserved):
 //40000000 40100000 59.0
-    private static void processRawContactInformation(String fileToRead, double minValue, ArrayList<DesiredChrContact> contactsToCheck, TextFile outWriter, boolean intra) throws IOException {
+    private static void processRawContactInformation(String fileToRead, double minValue, ArrayList<DesiredChrContact> contactsToCheck, boolean intra) throws IOException {
 
         //Check if sorted version is available
         //If not make sorted available.
@@ -154,18 +149,15 @@ class HiCQTLAnnotatorBlockbased {
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
                             double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
                             if (contact >= minValue) {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact);
+                                contactsToCheck.get(numberToBeMatched).setContact();
                                 numberToBeMatched++;
                             } else {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
                                 numberToBeMatched++;
                             }
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -348,23 +340,11 @@ class HiCQTLAnnotatorBlockbased {
 
     }
 
-    private static int getNumericResolution(String resolution) {
-        if (resolution.equals("1kb")) {
-            return 1000;
-        } else if (resolution.equals("5kb")) {
-            return 5000;
-        } else {
-            System.out.println("\nError in resolution setting!\n");
-            System.exit(-1);
-        }
-        return 0;
-    }
-
     private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlTransformBlocks(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution) {
         ArrayList<EQTL> qtls = null;
 
         try {
-            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile);
+            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, false);
         } catch (IOException ex) {
             Logger.getLogger(HiCQTLAnnotatorBlockbased.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -444,108 +424,20 @@ class HiCQTLAnnotatorBlockbased {
         return desiredContacts;
     }
 
-    private static ArrayList<EQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile) throws IOException {
-        ArrayList<EQTL> qtls = null;
-        if (!permutationFile) {
-            QTLTextFile eqtlTextFile = new QTLTextFile(in, QTLTextFile.R);
-            qtls = eqtlTextFile.readList();
-            eqtlTextFile.close();
-        } else {
-
-            HashMap<String, Pair<Byte, Integer>> probeLocation = readChrLocation(probeMap, 1, 3, 5, true);
-            HashMap<String, Pair<Byte, Integer>> snpLocation = readChrLocation(snpMap, 2, 0, 1, true);
-
-            TextFile textFile = new TextFile(in, TextFile.R);
-            qtls = new ArrayList<>();
-
-            String row = textFile.readLine();
-            while ((row = textFile.readLine()) != null) {
-                String[] parts = StringUtils.split(row, '\t');
-//                System.out.println(row);
-
-                EQTL newQtl = new EQTL();
-                newQtl.setProbe(parts[2]);
-
-                newQtl.setProbeChr(probeLocation.get(parts[2]).getLeft());
-                newQtl.setProbeChrPos(probeLocation.get(parts[2]).getRight());
-
-                newQtl.setRsName(parts[1]);
-                if (snpLocation.containsKey(parts[1])) {
-                    newQtl.setRsChr(snpLocation.get(parts[1]).getLeft());
-                    newQtl.setRsChrPos(snpLocation.get(parts[1]).getRight());
-                } else {
-                    System.out.println("Error SNP: " + parts[1] + " not present in your SNP mapping file.");
-                    System.exit(0);
-                }
-                qtls.add(newQtl);
-
-            }
-
-            textFile.close();
-        }
-
-        if (inProxies != null) {
-            qtls = includeProxyInfo(qtls, inProxies);
-        }
-
-        //Write file to disk.
-//        QTLTextFile out = new QTLTextFile( "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound9.head.extended.txt" ,QTLTextFile.W);
-//        out.write(qtls);
-//        out.close();
-//        System.exit(0);
-        return qtls;
-    }
-
-    private static ArrayList<EQTL> includeProxyInfo(ArrayList<EQTL> qtls, String inProxies) throws IOException {
-        ArrayList<EQTL> newQtlList = new ArrayList<EQTL>();
-
-        TextFile readProxies = new TextFile(inProxies, TextFile.R);
-
-        String line = readProxies.readLine();
-//        System.out.println(line);
-        while ((line = readProxies.readLine()) != null) {
-//            System.out.println(line);
-            String[] lineParts = SPLIT_TAB.split(line);
-            String chr = lineParts[4];
-            int chrPos = Integer.parseInt(lineParts[5]);
-            int chrNewPos = Integer.parseInt(lineParts[8]);
-            for (EQTL e : qtls) {
-                if (String.valueOf(e.getRsChr()).equals(chr) && e.getRsChrPos() == chrPos) {
-                    EQTL newQtl = new EQTL();
-                    newQtl.setProbe(e.getProbe());
-                    newQtl.setProbeChr(e.getProbeChr());
-                    newQtl.setProbeChrPos(e.getProbeChrPos());
-
-                    newQtl.setRsName(e.getRsName() + "-" + lineParts[1]);
-                    newQtl.setRsChr(e.getRsChr());
-                    newQtl.setRsChrPos(chrNewPos);
-                    newQtlList.add(newQtl);
-                }
+    private static void printOutContacts(ArrayList<DesiredChrContact> contacts, TextFile outWriter) throws IOException {
+        HashMap<String, Boolean> textToStore = new HashMap<>();
+        
+        for(DesiredChrContact c : contacts){
+            String key = c.getProbeName()+"-"+c.getSnpName();
+            
+            if(c.hasContact()){
+                textToStore.put(key, Boolean.TRUE);
+            } else if (!textToStore.containsKey(key)){
+                textToStore.put(key, Boolean.FALSE);
             }
         }
-
-        for (EQTL e : qtls) {
-            newQtlList.add(e);
+        for(Entry<String, Boolean> contactInfo : textToStore.entrySet()){
+            outWriter.write(contactInfo.getKey()+"\t"+contactInfo.getValue());
         }
-
-        return newQtlList;
-    }
-
-    private static HashMap<String, Pair<Byte, Integer>> readChrLocation(String file, int key, int value1, int value2, boolean skipFirstRow) throws IOException {
-        HashMap<String, Pair<Byte, Integer>> locationInfo = new HashMap<>();
-        TextFile textFile = new TextFile(file, TextFile.R);
-        ArrayList<EQTL> qtls = new ArrayList<>();
-
-        String row;
-        if (skipFirstRow) {
-            row = textFile.readLine();
-        }
-        while ((row = textFile.readLine()) != null) {
-//            System.out.println(row);
-            String[] parts = SPLIT_TAB.split(row, '\t');
-            locationInfo.put(parts[key], new Pair<>(ChrAnnotation.parseChr(parts[value1]), Integer.parseInt(parts[value2])));
-        }
-        textFile.close();
-        return locationInfo;
     }
 }
