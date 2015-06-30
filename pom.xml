@@ -82,5 +82,6 @@
 		<module>eqtl-functional-enrichment</module>
 		<module>GeneticRiskScoreCalculator</module>
 		<module>BinaryMetaAnalyzer</module>
-	</modules>
+    <module>eQTLInteractionAnalyser</module>
+  </modules>
 </project>

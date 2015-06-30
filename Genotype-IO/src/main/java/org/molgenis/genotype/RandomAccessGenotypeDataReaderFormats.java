@@ -310,6 +310,10 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			return PLINK_BED;
 		} else if (value.equals("B_PLINK")){
 			return PLINK_BED;
+		} else if (value.equals("PLINKB")){
+			return PLINK_BED;
+		} else if (value.equals("PLINK_B")){
+			return PLINK_BED;
 		}
 		return RandomAccessGenotypeDataReaderFormats.valueOf(value);
 		
