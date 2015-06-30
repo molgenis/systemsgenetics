@@ -24,6 +24,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.binInteraction.BinaryInteractionCohort;
 import umcg.genetica.io.binInteraction.BinaryInteractionFile;

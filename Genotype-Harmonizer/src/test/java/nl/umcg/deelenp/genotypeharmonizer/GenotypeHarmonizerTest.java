@@ -115,7 +115,7 @@ public class GenotypeHarmonizerTest {
 
 		}
 
-		assertEquals(variantCounter, 3745);
+		assertEquals(variantCounter, 3747);
 
 		//Check if ID is updated based on 1000G
 		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
@@ -183,7 +183,7 @@ public class GenotypeHarmonizerTest {
 
 		}
 
-		assertEquals(variantCounter, 4086);
+		assertEquals(variantCounter, 4088);
 
 		//Check if number of samples is correct
 		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
@@ -252,7 +252,7 @@ public class GenotypeHarmonizerTest {
 
 		}
 
-		assertEquals(variantCounter, 4086);
+		assertEquals(variantCounter, 4088);
 
 		//Check if ID is updated based on 1000G
 		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
@@ -358,7 +358,7 @@ public class GenotypeHarmonizerTest {
 
 		}
 
-		assertEquals(variantCounter, 3778);
+		assertEquals(variantCounter, 3780);
 
 		//Check if ID is updated based on 1000G
 		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
@@ -423,7 +423,7 @@ public class GenotypeHarmonizerTest {
 
 		}
 
-		assertEquals(variantCounter, 3745);
+		assertEquals(variantCounter, 3747);
 
 		//Check if ID is updated based on 1000G
 		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
@@ -486,7 +486,7 @@ public class GenotypeHarmonizerTest {
 
 		}
 
-		assertEquals(variantCounter, 4078);
+		assertEquals(variantCounter, 4087);
 
 		//Check if number of samples is correct
 		assertEquals(aligenedHapmap3Data.getSamples().size(), 155);

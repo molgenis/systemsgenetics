@@ -407,12 +407,14 @@ public class Normalizer {
 			}
 		}
 
-		DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawdata, traitData.rowObjects, traitData.colObjects);
-		fileNamePrefix += ".CovariatesRemoved";
-		datasetNormalized.save(fileNamePrefix + ".txt.gz");
-
 		traitData.rawData = rawdata;
+		
+		//Why was this done???????
+		//DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawdata, traitData.rowObjects, traitData.colObjects);
+		fileNamePrefix += ".CovariatesRemoved";
+		traitData.save(fileNamePrefix + ".txt.gz");
 
+		
 
 		return fileNamePrefix;
 	}
