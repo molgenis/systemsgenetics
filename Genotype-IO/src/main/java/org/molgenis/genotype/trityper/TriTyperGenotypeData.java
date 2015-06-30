@@ -345,6 +345,9 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		String line;
 		while ((line = snpFileReader.readLine()) != null) {
+			if(allSNPHash.contains(line)){
+				throw new GenotypeDataException("SNP found twice: " + line + ". All SNP ID's must be unique");
+			}
 			if (variantFilter == null || variantFilter.doesIdPassFilter(line)) {
 				allSNPHash.put(line, unfilteredSnpCount);
 			}
@@ -459,11 +462,17 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		try {
 			genotypeHandle.seek(indexLong);
 			if (genotypeHandle.read(buffer) != buffer.length) {
+				
+				LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+				
 				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 			}
 
 		} catch (IOException e) {
-			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
+			
+			LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+			
+			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")", e);
 		}
 
 		List<Alleles> alleles = new ArrayList<Alleles>(includedSamples.size());
