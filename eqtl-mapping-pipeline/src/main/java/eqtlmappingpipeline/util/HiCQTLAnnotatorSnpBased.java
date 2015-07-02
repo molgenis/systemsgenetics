@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,6 +23,7 @@ import umcg.genetica.io.Gpio;
 import umcg.genetica.io.chrContacts.DesiredChrContact;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
+import umcg.genetica.io.trityper.MinimalEQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 
@@ -42,7 +42,6 @@ class HiCQTLAnnotatorSnpBased {
 //        String normMethod = null;
         String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
         double minValueQuality = 0.0;
-        boolean alternativePermutation = false;
         boolean permutationFile = false;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
@@ -64,7 +63,6 @@ class HiCQTLAnnotatorSnpBased {
                     qualityCutOff,
                     normMethod,
                     minValueQuality,
-                    alternativePermutation, 
                     permutationFile,
                     probeMap,
                     snpMap,
@@ -73,9 +71,9 @@ class HiCQTLAnnotatorSnpBased {
 
     }
 
-    private static void addAnnotationToQTLOutput(String in, String inProxies, String folderHighC, String resolution, String qualityCutOff, String normMethod, double minValue, boolean alternativePermutation, boolean permutationFile, String probeMap, String snpMap, String out) throws IOException {
+    private static void addAnnotationToQTLOutput(String in, String inProxies, String folderHighC, String resolution, String qualityCutOff, String normMethod, double minValue, boolean permutationFile, String probeMap, String snpMap, String out) throws IOException {
 
-        HashMap<String, ArrayList<DesiredChrContact>> qtls = readInQtlInformation2(in, inProxies, probeMap, snpMap, permutationFile, resolution, alternativePermutation);
+        HashMap<String, ArrayList<DesiredChrContact>> qtls = readInQtlInformation2(in, inProxies, probeMap, snpMap, permutationFile, resolution);
 
         ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " Chromosome combinations");
 
@@ -361,18 +359,18 @@ class HiCQTLAnnotatorSnpBased {
         return 0;
     }
 
-    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlInformation2(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution, boolean alternativePermutation) {
-        ArrayList<EQTL> qtls = null;
+    private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlInformation2(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution) {
+        ArrayList<MinimalEQTL> qtls = null;
         boolean renameSnpProxie = true;
         try {
-            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, renameSnpProxie, alternativePermutation);
+            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, renameSnpProxie);
         } catch (IOException ex) {
             Logger.getLogger(HiCQTLAnnotatorSnpBased.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         HashMap<String, ArrayList<DesiredChrContact>> desiredContacts = new HashMap<String, ArrayList<DesiredChrContact>>();
 
-        for (EQTL qtl : qtls) {
+        for (MinimalEQTL qtl : qtls) {
 
             String chrProbe = String.valueOf(qtl.getProbeChr());
             String chrSnp = String.valueOf(qtl.getRsChr());
@@ -439,11 +437,12 @@ class HiCQTLAnnotatorSnpBased {
         return desiredContacts;
     }
 
-    public static ArrayList<EQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, boolean changeNameOfSnp, boolean alternativePermutation) throws IOException {
-        ArrayList<EQTL> qtls = null;
+    public static ArrayList<MinimalEQTL> readInQtlInformation(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, boolean changeNameOfSnp) throws IOException {
+        ArrayList<MinimalEQTL> qtls = null;
         if (!permutationFile) {
             QTLTextFile eqtlTextFile = new QTLTextFile(in, QTLTextFile.R);
-            qtls = eqtlTextFile.readList();
+            ArrayList<EQTL> qtlsBuffer = eqtlTextFile.readList();
+            qtls = MinimalEQTL.convertArray(qtlsBuffer);
             eqtlTextFile.close();
         } else {
 
@@ -458,7 +457,7 @@ class HiCQTLAnnotatorSnpBased {
                 String[] parts = StringUtils.split(row, '\t');
 //                System.out.println(row);
 
-                EQTL newQtl = new EQTL();
+                MinimalEQTL newQtl = new MinimalEQTL();
                 newQtl.setProbe(parts[2]);
 
                 newQtl.setProbeChr(probeLocation.get(parts[2]).getLeft());
@@ -478,13 +477,11 @@ class HiCQTLAnnotatorSnpBased {
 
             textFile.close();
         }
-        
-        if(alternativePermutation){
-          qtls = makeAlternativePermutation(qtls); 
-        }
-
+        System.out.println("Number of QTLs input: "+qtls.size());
         if (inProxies != null) {
+            System.out.println("Including proxies");
             qtls = includeProxyInfo(qtls, inProxies, changeNameOfSnp);
+            System.out.println("Number of QTLs after including proxies: "+qtls.size());
         }
 
         //Write file to disk.
@@ -495,8 +492,8 @@ class HiCQTLAnnotatorSnpBased {
         return qtls;
     }
 
-    private static ArrayList<EQTL> includeProxyInfo(ArrayList<EQTL> qtls, String inProxies, boolean changeNameOfSnp) throws IOException {
-        ArrayList<EQTL> newQtlList = new ArrayList<EQTL>();
+    private static ArrayList<MinimalEQTL> includeProxyInfo(ArrayList<MinimalEQTL> qtls, String inProxies, boolean changeNameOfSnp) throws IOException {
+        ArrayList<MinimalEQTL> newQtlList = new ArrayList<>();
 
         TextFile readProxies = new TextFile(inProxies, TextFile.R);
 
@@ -508,9 +505,9 @@ class HiCQTLAnnotatorSnpBased {
             String chr = lineParts[4];
             int chrPos = Integer.parseInt(lineParts[5]);
             int chrNewPos = Integer.parseInt(lineParts[8]);
-            for (EQTL e : qtls) {
+            for (MinimalEQTL e : qtls) {
                 if (String.valueOf(e.getRsChr()).equals(chr) && e.getRsChrPos() == chrPos) {
-                    EQTL newQtl = new EQTL();
+                    MinimalEQTL newQtl = new MinimalEQTL();
                     newQtl.setProbe(e.getProbe());
                     newQtl.setProbeChr(e.getProbeChr());
                     newQtl.setProbeChrPos(e.getProbeChrPos());
@@ -527,7 +524,7 @@ class HiCQTLAnnotatorSnpBased {
             }
         }
 
-        for (EQTL e : qtls) {
+        for (MinimalEQTL e : qtls) {
             newQtlList.add(e);
         }
 
@@ -552,32 +549,4 @@ class HiCQTLAnnotatorSnpBased {
         return locationInfo;
     }
 
-    private static ArrayList<EQTL> makeAlternativePermutation(ArrayList<EQTL> qtls) {
-        ArrayList<EQTL> permutedQTLs = new ArrayList<>();
-        HashMap<String, Pair<Byte, Integer>> cpgs = new HashMap<>();
-        HashSet<String> trueCombinations = new HashSet<>();
-        
-        for(EQTL e : qtls){
-            cpgs.put(e.getProbe(), new Pair<>(e.getProbeChr(), e.getProbeChrPos()));
-            trueCombinations.add(e.getProbe()+"-"+e.getRsName());
-        }
-        
-        for(EQTL e : qtls){
-            for(Entry<String, Pair<Byte, Integer>> cpg : cpgs.entrySet() ){
-                if(!trueCombinations.contains(cpg.getKey()+"-"+e.getRsName())){
-                    EQTL newQtl = new EQTL();
-                    newQtl.setProbe(cpg.getKey());
-                    newQtl.setProbeChr(cpg.getValue().getLeft());
-                    newQtl.setProbeChrPos(cpg.getValue().getRight());
-                    newQtl.setRsName(e.getRsName());
-                    newQtl.setRsChr(e.getRsChr());
-                    newQtl.setRsChrPos(e.getRsChrPos());
-                    permutedQTLs.add(newQtl);
-                }
-            }
-        }
-        
-        
-        return(permutedQTLs);
-    }
 }
