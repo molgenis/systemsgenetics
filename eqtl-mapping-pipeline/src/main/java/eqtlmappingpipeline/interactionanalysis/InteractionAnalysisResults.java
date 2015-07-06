@@ -5,7 +5,12 @@
 package eqtlmappingpipeline.interactionanalysis;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+
 import umcg.genetica.containers.Pair;
+import umcg.genetica.io.trityper.SNP;
 
 /**
  *
@@ -86,6 +91,7 @@ public class InteractionAnalysisResults {
         this.rsquared = rsquaredMatrix;
     }
 
+
     public String getQcString() {
         return qcString;
     }
@@ -142,4 +148,24 @@ public class InteractionAnalysisResults {
         return covariateSE;
     }
 
+	public ArrayList<String> getProbeIds() {
+		ArrayList<String> probeIds = new ArrayList<String>();
+
+		for (Pair<String, String> eqtl : eQTLsTested){
+			String gene = eqtl.getRight();
+			if (! probeIds.contains(gene))
+				probeIds.add(gene);
+		}
+		return probeIds;
+	}
+	public ArrayList<String> getSNPIds() {
+		ArrayList<String> snpIds = new ArrayList<String>();
+
+		for (Pair<String, String> eqtl : eQTLsTested){
+			String snp = eqtl.getLeft();
+			if (! snpIds.contains(snp))
+				snpIds.add(snp);
+		}
+		return snpIds;
+	}
 }
