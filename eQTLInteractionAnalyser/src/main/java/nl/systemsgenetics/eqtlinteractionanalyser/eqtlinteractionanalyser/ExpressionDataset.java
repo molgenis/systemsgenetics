@@ -447,6 +447,7 @@ public class ExpressionDataset {
                 rawData[probeID][s] = (float) (vals[s] / standardDeviation);
             }
         }
+        System.out.println("Mean and stdev done");
 
     }
 
