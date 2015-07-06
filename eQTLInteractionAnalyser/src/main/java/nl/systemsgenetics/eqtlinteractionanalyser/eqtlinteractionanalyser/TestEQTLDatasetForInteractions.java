@@ -6,12 +6,12 @@
 
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Vector;
 import java.util.concurrent.CompletionService;
@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import umcg.genetica.io.text.TextFile;
 
 /**
  *
@@ -29,17 +30,18 @@ import org.apache.commons.math3.stat.ranking.NaturalRanking;
 public class TestEQTLDatasetForInteractions {
     
     String inputDir = null;
+    String outputDir = null;
     
-    public TestEQTLDatasetForInteractions(String inputDir) {
+    public TestEQTLDatasetForInteractions(String inputDir, String outputDir) throws IOException {
         
         this.inputDir = inputDir;
-        
+        this.outputDir = outputDir;
         //preprocessData();
         
-        if (1==2) {
-            String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS","ENSG00000116701","ENSG00000126353"};
+        if (1==1) {
+            String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS"};
             while (1==1) {
-                 String topCov = performInteractionAnalysis(covsToCorrect);
+                 String topCov = performInteractionAnalysis(covsToCorrect, null, null);
                  String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
                  for (int c=0;c<covsToCorrect.length; c++) {
                      covsToCorrectNew[c] = covsToCorrect[c];
@@ -49,24 +51,60 @@ public class TestEQTLDatasetForInteractions {
             }
         }
 
-        interpretInteractionZScoreMatrix();
+        //interpretInteractionZScoreMatrix();
         
     }
-    
-    
+
+    public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName) throws IOException {
+
+        this.inputDir = inputDir;
+        this.outputDir = outputDir;
+        TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
+        HashMap <String, String> eqtlGenes = getEqtls(eQTLfileName);
+
+        String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS"};
+        int cnt = 0;
+        int maxNumTopCovs = 300;
+        while (cnt < maxNumTopCovs) {
+            String topCov = performInteractionAnalysis(covsToCorrect, eqtlGenes, outputTopCovs);
+            String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
+            for (int c=0;c<covsToCorrect.length; c++) {
+                covsToCorrectNew[c] = covsToCorrect[c];
+            }
+            covsToCorrectNew[covsToCorrect.length] = topCov;
+            covsToCorrect = covsToCorrectNew;
+            cnt++;
+        }
+        outputTopCovs.close();
+    }
+
+    private HashMap <String, String> getEqtls(String fname) throws IOException {
+        TextFile file = new TextFile(fname, false);
+        ArrayList<String> genes = file.readAsArrayList(4, TextFile.tab);
+        HashMap <String, String> eqtlGenes = new HashMap<String, String>();
+        for (String gene : genes){
+            eqtlGenes.put(gene, null);
+        }
+        file.close();
+        return eqtlGenes;
+
+    }
     public void interpretInteractionZScoreMatrix() {
 
-        /*
-        for (int nrCovsRemoved = 11; nrCovsRemoved<=14; nrCovsRemoved++) {
-            ExpressionDataset dataset = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
+
+        for (int nrCovsRemoved = 4; nrCovsRemoved<=50; nrCovsRemoved++) {
+            ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
             dataset.save(dataset.fileName + ".binary");
         }
-        */
+
         
-        for (int nrCovsRemoved = 6; nrCovsRemoved<=13; nrCovsRemoved++) {
+        for (int nrCovsRemoved = 4; nrCovsRemoved<=50; nrCovsRemoved++) {
         
-            ExpressionDataset dataset = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
-            ExpressionDataset dataset2 = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
+            //ExpressionDataset dataset = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
+            //ExpressionDataset dataset2 = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
+            ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
+            ExpressionDataset dataset2 = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
+
             for (int q=0; q<dataset.nrSamples; q++) {
                 double maxAbsZDiff = 0;
                 String output = "";
@@ -131,9 +169,8 @@ public class TestEQTLDatasetForInteractions {
     }
     
     
-    public String performInteractionAnalysis(String[] covsToCorrect) {
+    public String performInteractionAnalysis(String[] covsToCorrect, HashMap hashEQTLs, TextFile outputTopCovs) throws IOException {
 
-        HashMap hashEQTLs = null;
         HashMap hashSamples = new HashMap();
         
         if (1==1) {
@@ -389,14 +426,14 @@ public class TestEQTLDatasetForInteractions {
                 covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
             }
             for (int snp=0; snp<datasetGenotypes.nrProbes; snp++) {
-                double[][] valsX = new double[nrSamples][1 + covsToCorrect.length*2]; 
+                double[][] valsX = new double[nrSamples][1 + covsToCorrect.length*2]; //store genotypes, covariates, interactions
                 for (int s=0; s<nrSamples; s++) {
-                    valsX[s][0] = datasetGenotypes.rawData[snp][s];
+                    valsX[s][0] = datasetGenotypes.rawData[snp][s]; //genotypes
                 }
                 for (int c=0; c<covsToCorrect.length; c++) {
                     for (int s=0; s<nrSamples; s++) {
-                        valsX[s][c * 2 + 1]= datasetCovariates.rawData[covsToCorrectIndex[c]][s];
-                        valsX[s][c * 2 + 2]=valsX[s][0] * valsX[s][c * 2 + 1];
+                        valsX[s][c * 2 + 1]= datasetCovariates.rawData[covsToCorrectIndex[c]][s]; //covariate
+                        valsX[s][c * 2 + 2]=valsX[s][0] * valsX[s][c * 2 + 1]; //interction
                     }
                 }
                 double[] valsY = datasetExpression.rawData[snp];
@@ -461,15 +498,19 @@ public class TestEQTLDatasetForInteractions {
             }
             datasetGenotypes = datasetGenotypes2;
         }
- 
-        
-        if (1==1) {
+
+
+            if (1==1) {
+
+
 
             ExpressionDataset datasetZScores = new ExpressionDataset(datasetCovariates.nrProbes, datasetExpression.nrProbes);
             datasetZScores.probeNames = datasetCovariates.probeNames;
             datasetZScores.sampleNames = datasetGenotypes.probeNames;
             datasetZScores.recalculateHashMaps();
-            
+
+
+
             java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
             CompletionService<DoubleArrayIntegerObject> pool = new ExecutorCompletionService<DoubleArrayIntegerObject>(threadPool);
             int nrTasks = 0;
@@ -500,7 +541,7 @@ public class TestEQTLDatasetForInteractions {
                             maxChi2 = chi2Sum;
                             maxChi2Cov = datasetCovariates.probeNames[cov];
                         }
-                        System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
+                        //System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
                     } catch (ExecutionException ex) {
                         Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -512,14 +553,18 @@ public class TestEQTLDatasetForInteractions {
             }
             
             System.out.println("Top covariate:\t" + maxChi2 + "\t" + maxChi2Cov);
-            datasetZScores.save("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + covsToCorrect.length + "Covariates.txt");
+            outputTopCovs.writeln("Top covariate:\t" + maxChi2 + "\t" + maxChi2Cov);
+            //datasetZScores.save("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + covsToCorrect.length + "Covariates.txt");
+            datasetZScores.save(outputDir + "/InteractionZScoresMatrix-" + covsToCorrect.length + "Covariates.txt");
             
             return maxChi2Cov;
         }
         
        return null;
     }
-    
+
+
+
     public void makeInteractionPlot(String fileName, double[] genotype, double[] expression, double[] covariate, String[] sampleNames) {
         
         int nrSamples = genotype.length;

@@ -6,21 +6,22 @@
 
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
+import java.io.IOException;
+
 /**
  *
  * @author lude
  */
 public class EQTLInteractionAnalyser {
 
+
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         // TODO code application logic here
         
-        new TestEQTLDatasetForInteractions("/Users/lude/Documents/InteractionAnalyser/");
-        //new TestEQTLDatasetForInteractions(args[0]);
-        
+        new TestEQTLDatasetForInteractions(args[0], args[1], args[2]);
     }
     
 }
