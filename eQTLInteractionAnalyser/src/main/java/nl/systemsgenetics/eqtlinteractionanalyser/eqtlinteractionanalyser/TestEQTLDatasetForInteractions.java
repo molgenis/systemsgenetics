@@ -63,7 +63,7 @@ public class TestEQTLDatasetForInteractions {
 		this.inputDir = inputDir;
 		this.outputDir = outputDir;
 
-                //preprocessData();
+		//preprocessData();
 
 		TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
 		HashMap<String, String> eqtlGenes = getEqtls(eQTLfileName);
@@ -228,7 +228,7 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-                ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", hashEQTLs, hashSamples);
+		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", hashEQTLs, hashSamples);
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", hashEQTLs, hashSamples);
 		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", null, hashSamples);
 
@@ -478,7 +478,7 @@ public class TestEQTLDatasetForInteractions {
 				}
 			}
 
-System.out.println("Expression data now force normal");
+			System.out.println("Expression data now force normal");
 
 		}
 
@@ -549,16 +549,18 @@ System.out.println("Expression data now force normal");
 						for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
 							double z = result.doubleArray[snp];
 							datasetZScores.rawData[cov][snp] = z;
-							chi2Sum += z * z;
+							if(!Double.isNaN(z)){
+								chi2Sum += z * z;
+							}
 						}
 						if (chi2Sum > maxChi2) {
 							maxChi2 = chi2Sum;
 							maxChi2Cov = datasetCovariates.probeNames[cov];
 						}
 						//System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
-                                                if((task + 1) % 512 == 0){
-System.out.println(task + 1 + " tasks processed");
-}          
+						if ((task + 1) % 512 == 0) {
+							System.out.println(task + 1 + " tasks processed");
+						}
 					} catch (ExecutionException ex) {
 						Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
 					}
