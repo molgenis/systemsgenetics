@@ -57,6 +57,10 @@ public class TestEQTLDatasetForInteractions {
 
     public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName) throws IOException {
 
+		System.out.println("Input dir: " + inputDir);
+		System.out.println("Output dir: " + outputDir);
+		System.out.println("eQTL file: " + eQTLfileName);
+		
         this.inputDir = inputDir;
         this.outputDir = outputDir;
         TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
@@ -169,7 +173,7 @@ public class TestEQTLDatasetForInteractions {
     }
     
     
-    public String performInteractionAnalysis(String[] covsToCorrect, HashMap hashEQTLs, TextFile outputTopCovs) throws IOException {
+    public final String performInteractionAnalysis(String[] covsToCorrect, HashMap hashEQTLs, TextFile outputTopCovs) throws IOException {
 
         HashMap hashSamples = new HashMap();
         
