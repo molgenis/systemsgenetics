@@ -62,6 +62,9 @@ public class TestEQTLDatasetForInteractions {
 
 		this.inputDir = inputDir;
 		this.outputDir = outputDir;
+
+                //preprocessData();
+
 		TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
 		HashMap<String, String> eqtlGenes = getEqtls(eQTLfileName);
 
@@ -225,7 +228,7 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", hashEQTLs, hashSamples);
+                ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", hashEQTLs, hashSamples);
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", hashEQTLs, hashSamples);
 		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", null, hashSamples);
 
@@ -475,6 +478,8 @@ public class TestEQTLDatasetForInteractions {
 				}
 			}
 
+System.out.println("Expression data now force normal");
+
 		}
 
 		if (1 == 2) {
@@ -551,6 +556,9 @@ public class TestEQTLDatasetForInteractions {
 							maxChi2Cov = datasetCovariates.probeNames[cov];
 						}
 						//System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
+                                                if((task + 1) % 512 == 0){
+System.out.println(task + 1 + " tasks processed");
+}          
 					} catch (ExecutionException ex) {
 						Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
 					}
