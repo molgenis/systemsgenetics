@@ -546,9 +546,10 @@ public class TestEQTLDatasetForInteractions {
 						DoubleArrayIntegerObject result = pool.take().get();
 						int cov = result.intValue;
 						double chi2Sum = 0;
+						double[] covZ = datasetZScores.rawData[cov];
 						for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
 							double z = result.doubleArray[snp];
-							datasetZScores.rawData[cov][snp] = z;
+							covZ[snp] = z;
 							if(!Double.isNaN(z)){
 								chi2Sum += z * z;
 							}
