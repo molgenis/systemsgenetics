@@ -36,9 +36,55 @@ public class TestEQTLDatasetForInteractions {
         
         //preprocessData();
         
-        String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS"};
-        performInteractionAnalysis(covsToCorrect);
+        if (1==2) {
+            String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS","ENSG00000116701","ENSG00000126353"};
+            while (1==1) {
+                 String topCov = performInteractionAnalysis(covsToCorrect);
+                 String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
+                 for (int c=0;c<covsToCorrect.length; c++) {
+                     covsToCorrectNew[c] = covsToCorrect[c];
+                 }
+                 covsToCorrectNew[covsToCorrect.length] = topCov;
+                 covsToCorrect = covsToCorrectNew;
+            }
+        }
+
+        interpretInteractionZScoreMatrix();
         
+    }
+    
+    
+    public void interpretInteractionZScoreMatrix() {
+
+        /*
+        for (int nrCovsRemoved = 11; nrCovsRemoved<=14; nrCovsRemoved++) {
+            ExpressionDataset dataset = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
+            dataset.save(dataset.fileName + ".binary");
+        }
+        */
+        
+        for (int nrCovsRemoved = 6; nrCovsRemoved<=13; nrCovsRemoved++) {
+        
+            ExpressionDataset dataset = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
+            ExpressionDataset dataset2 = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
+            for (int q=0; q<dataset.nrSamples; q++) {
+                double maxAbsZDiff = 0;
+                String output = "";
+                for (int p=0; p<dataset.nrProbes; p++) {
+                    double zDiff = dataset.rawData[p][q] - dataset2.rawData[p][q];
+                    double absZDiff = Math.abs(zDiff);
+                    if (absZDiff > 4 && absZDiff > maxAbsZDiff) {
+                        maxAbsZDiff = absZDiff;
+                        output = nrCovsRemoved + "\t" + p + "\t" + dataset.probeNames[p] + "\t" + q + "\t" + dataset.sampleNames[q] + "\t" + dataset.rawData[p][q] + "\t" + dataset2.rawData[p][q] + "\t" + zDiff;
+                    }
+                }
+                if (maxAbsZDiff > 4) {
+                    System.out.println(output);
+                }
+            }
+        }
+        
+        System.exit(0);
     }
 
     public void preprocessData() {
@@ -85,7 +131,7 @@ public class TestEQTLDatasetForInteractions {
     }
     
     
-    public void performInteractionAnalysis(String[] covsToCorrect) {
+    public String performInteractionAnalysis(String[] covsToCorrect) {
 
         HashMap hashEQTLs = null;
         HashMap hashSamples = new HashMap();
@@ -285,7 +331,7 @@ public class TestEQTLDatasetForInteractions {
                 System.exit(0);
             }
             
-            if (1==1) {
+            if (1==2) {
                 ExpressionDataset datasetICA = new ExpressionDataset("/Users/lude/Documents/ICA/mixingmatrix.txt");
                 //ExpressionDataset datasetICA = new ExpressionDataset("/Users/lude/Documents/ICA/signals.txt");
                 datasetICA.transposeDataset();
@@ -328,7 +374,6 @@ public class TestEQTLDatasetForInteractions {
         }
         
         cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
-        cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(nrSamples - 4, randomEngine);
 
         ExpressionDataset datasetExpressionBeforeEQTLCorrection = new ExpressionDataset(datasetExpression.nrProbes, datasetExpression.nrSamples);
         for (int p=0; p<datasetExpression.nrProbes; p++) {
@@ -436,6 +481,9 @@ public class TestEQTLDatasetForInteractions {
                     nrTasks++;
                 }
             }
+
+            String maxChi2Cov = "";
+            double maxChi2 = 0;
             try {
                 
                 for (int task = 0; task<nrTasks; task++) {    
@@ -448,10 +496,11 @@ public class TestEQTLDatasetForInteractions {
                             datasetZScores.rawData[cov][snp] = z;
                             chi2Sum+=z*z;
                         }
-                        System.out.println(cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
-                        if (task>0 && task%1000==0) {
-                            datasetZScores.save(inputDir + "/InteractionZScoresMatrix.txt");
+                        if (chi2Sum > maxChi2) {
+                            maxChi2 = chi2Sum;
+                            maxChi2Cov = datasetCovariates.probeNames[cov];
                         }
+                        System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
                     } catch (ExecutionException ex) {
                         Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -462,12 +511,13 @@ public class TestEQTLDatasetForInteractions {
                 System.out.println(e.getMessage());
             }
             
-            datasetZScores.save(inputDir + "/InteractionZScoresMatrix.txt");
+            System.out.println("Top covariate:\t" + maxChi2 + "\t" + maxChi2Cov);
+            datasetZScores.save("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + covsToCorrect.length + "Covariates.txt");
             
-            System.exit(0);
+            return maxChi2Cov;
         }
         
-        System.exit(0);
+       return null;
     }
     
     public void makeInteractionPlot(String fileName, double[] genotype, double[] expression, double[] covariate, String[] sampleNames) {
