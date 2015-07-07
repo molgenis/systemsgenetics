@@ -7,6 +7,8 @@ package nl.systemsgenetics.cell_type_specific_ase;
 
 import java.text.NumberFormat;
 import java.util.regex.Pattern;
+import static nl.systemsgenetics.cell_type_specific_ase.parseForBinomialTest.parseForBinomialTest;
+import static nl.systemsgenetics.cell_type_specific_ase.readGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -17,6 +19,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeInfo;
+import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
 /**
  *
@@ -25,8 +28,7 @@ import org.molgenis.genotype.GenotypeInfo;
 public class EntryPoint {
     /**
      * This is the entrypoint for cell type specific ASE,
-     * In the future it will do the correct stuff based command line arguments, 
-     * but currently it will just be used for testing purposes.
+     * This will provide the logic, based on what to do based on command line statements.
      * @param args
     */
     private static final Logger LOGGER;
@@ -42,7 +44,7 @@ public class EntryPoint {
 
 		Option option;
 
-		option = OptionBuilder.withArgName("action")
+		option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Determine what to do in this program, currently the following options are available:\n"+
                                                  "\t1\tDetermine Allele specific reads per SNP:     \tASREADS\n" +  
@@ -52,17 +54,85 @@ public class EntryPoint {
                                                 )
 				.withLongOpt("action")
 				.isRequired()
-				.create("A");
+				.create('A');
 		OPTIONS.addOption(option);
-
+                
+                option = OptionBuilder.withArgName("string")
+				.hasArgs()
+				.withDescription("Path to bamfile from which to load data.\n "
+                                               + "Required when action is: ASREADS")                                                
+				.withLongOpt("bam_file")
+				.create('B');
+		OPTIONS.addOption(option);
+                
+                option = OptionBuilder.withArgName("string")
+				.hasArgs()
+				.withDescription("Path to a file containing paths from which to load data for testing.\n "
+                                               + "Required when action is: BINOMTEST.")                                                
+				.withLongOpt("as_locations")
+				.create('L');
+		OPTIONS.addOption(option);
+                
+                
+                
 
 	}
     
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
+        
+        String bamFile = new String();
+        String asLocations  = new String();
         
         try {
             CommandLineParser parser = new PosixParser();
             final CommandLine commandLine = parser.parse(OPTIONS, args, true);
+            
+            try{
+                if(commandLine.hasOption('A')){
+                    String programAction = commandLine.getOptionValue('A').toUpperCase();
+                    
+                    if(programAction.equals("ASREADS")              || programAction.equals("1")){
+        
+                        //Do the AS part of the program
+                        if(commandLine.hasOption('B')){
+                            bamFile = commandLine.getOptionValue('B');
+                        } else{
+                            throw new ParseException("Required input --bamFile when --action is ASREADS");
+                        }
+                        //TODO, add the genotype folder location, and add the coupling file location.
+                        readGenoAndAsFromIndividual(bamFile);
+                        
+                    
+                    }else if(programAction.equals("BINOMTEST")      || programAction.equals("2")){
+                        //Do a binomial test
+                        
+                        if(commandLine.hasOption('L')){
+                            asLocations = commandLine.getOptionValue('L');
+                        } else{
+                            throw new ParseException("Required input --as_location when --action is BinomTest");
+                        }
+                        
+                        parseForBinomialTest(asLocations);
+                        
+                    }else if(programAction.equals("BETABINOMDISP") ||  programAction.equals("3")){
+                        //Determine Allele specific reads per individual
+                    
+                        
+                    
+                    }else{
+                        throw new ParseException("Unable to determine what to do. Please specify --Action");
+                    }
+                }
+                
+                
+                
+            }catch (ParseException ex) {
+                LOGGER.fatal("Invalid command line arguments");
+                LOGGER.fatal(ex.getMessage());
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp(" ", OPTIONS);
+            
+            }
             
         
         } catch (ParseException ex) {
