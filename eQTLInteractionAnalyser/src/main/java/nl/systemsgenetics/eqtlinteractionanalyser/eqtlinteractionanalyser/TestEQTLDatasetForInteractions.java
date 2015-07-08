@@ -31,41 +31,28 @@ public class TestEQTLDatasetForInteractions {
     
     String inputDir = null;
     String outputDir = null;
-    
+
     public TestEQTLDatasetForInteractions(String inputDir, String outputDir) throws IOException {
-        
+
         this.inputDir = inputDir;
         this.outputDir = outputDir;
-        //preprocessData();
-        
-        if (1==1) {
-            String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS"};
-            while (1==1) {
-                 String topCov = performInteractionAnalysis(covsToCorrect, null, null);
-                 String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
-                 for (int c=0;c<covsToCorrect.length; c++) {
-                     covsToCorrectNew[c] = covsToCorrect[c];
-                 }
-                 covsToCorrectNew[covsToCorrect.length] = topCov;
-                 covsToCorrect = covsToCorrectNew;
-            }
-        }
-
-        //interpretInteractionZScoreMatrix();
-        
     }
 
-    public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName) throws IOException {
+    public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs) throws IOException {
 
         this.inputDir = inputDir;
         this.outputDir = outputDir;
+
+        System.out.println("Maximum number of covariates to regress out: " + maxNumTopCovs);
+
         TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
         HashMap <String, String> eqtlGenes = getEqtls(eQTLfileName);
 
         String[] covsToCorrect = {"gender","GC","MEDIAN_5PRIME_BIAS","MEDIAN_3PRIME_BIAS"};
         int cnt = 0;
-        int maxNumTopCovs = 300;
+
         while (cnt < maxNumTopCovs) {
+            System.out.println("Counter: " + cnt);
             String topCov = performInteractionAnalysis(covsToCorrect, eqtlGenes, outputTopCovs);
             String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
             for (int c=0;c<covsToCorrect.length; c++) {
@@ -76,6 +63,7 @@ public class TestEQTLDatasetForInteractions {
             cnt++;
         }
         outputTopCovs.close();
+        System.out.println("Finshed!");
     }
 
     private HashMap <String, String> getEqtls(String fname) throws IOException {
@@ -100,8 +88,6 @@ public class TestEQTLDatasetForInteractions {
         
         for (int nrCovsRemoved = 4; nrCovsRemoved<=50; nrCovsRemoved++) {
         
-            //ExpressionDataset dataset = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
-            //ExpressionDataset dataset2 = new ExpressionDataset("/Volumes/Promise_RAID/lude/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
             ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
             ExpressionDataset dataset2 = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
 
