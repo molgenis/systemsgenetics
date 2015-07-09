@@ -7,7 +7,7 @@ package nl.systemsgenetics.cell_type_specific_ase;
 
 import java.text.NumberFormat;
 import java.util.regex.Pattern;
-import static nl.systemsgenetics.cell_type_specific_ase.parseForBinomialTest.parseForBinomialTest;
+import static nl.systemsgenetics.cell_type_specific_ase.BinomialEntry.BinomialEntry;
 import static nl.systemsgenetics.cell_type_specific_ase.readGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -19,7 +19,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeInfo;
-import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
+
 
 /**
  *
@@ -49,7 +49,7 @@ public class EntryPoint {
 				.withDescription("Determine what to do in this program, currently the following options are available:\n"+
                                                  "\t1\tDetermine Allele specific reads per SNP:     \tASREADS\n" +  
                                                  "\t2\tPerform a binomial test for ASE:             \tBINOMTEST\n" + 
-                                                 "\t3\tEstimate per sample beta binomoverdispersion:\tBETABINOMDISP\n" +
+                                                 "\t3\tEstimate per sample beta binomoverdispersion:\tBETABINOMTEST\n" +
                                                  "Please Run an option based on the number in the first column, or through the name in the third column."
                                                 )
 				.withLongOpt("action")
@@ -68,12 +68,10 @@ public class EntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Path to a file containing paths from which to load data for testing.\n "
-                                               + "Required when action is: BINOMTEST.")                                                
+                                               + "Required when action is: BINOMTEST, BETABINOMTEST.")                                                
 				.withLongOpt("as_locations")
 				.create('L');
-		OPTIONS.addOption(option);
-                
-                
+		OPTIONS.addOption(option);                
                 
 
 	}
@@ -82,6 +80,7 @@ public class EntryPoint {
         
         String bamFile = new String();
         String asLocations  = new String();
+        String asFile = new String();
         
         try {
             CommandLineParser parser = new PosixParser();
@@ -91,7 +90,7 @@ public class EntryPoint {
                 if(commandLine.hasOption('A')){
                     String programAction = commandLine.getOptionValue('A').toUpperCase();
                     
-                    if(programAction.equals("ASREADS")              || programAction.equals("1")){
+                    if(programAction.equals("ASREADS") || programAction.equals("1")){
         
                         //Do the AS part of the program
                         if(commandLine.hasOption('B')){
@@ -100,24 +99,36 @@ public class EntryPoint {
                             throw new ParseException("Required input --bamFile when --action is ASREADS");
                         }
                         //TODO, add the genotype folder location, and add the coupling file location.
+                        
+                        //START reading for AS reads.
                         readGenoAndAsFromIndividual(bamFile);
                         
                     
-                    }else if(programAction.equals("BINOMTEST")      || programAction.equals("2")){
+                    }else if(programAction.equals("BINOMTEST") || programAction.equals("2")){
                         //Do a binomial test
                         
                         if(commandLine.hasOption('L')){
                             asLocations = commandLine.getOptionValue('L');
                         } else{
-                            throw new ParseException("Required input --as_location when --action is BinomTest");
+                            throw new ParseException("Required input --as_location when --action is BINOMTEST");
                         }
                         
-                        parseForBinomialTest(asLocations);
+                        //START BINOMIAL
+                        BinomialEntry(asLocations);
                         
-                    }else if(programAction.equals("BETABINOMDISP") ||  programAction.equals("3")){
+                    }else if(programAction.equals("BETABINOMTEST") || programAction.equals("3")){
                         //Determine Allele specific reads per individual
-                    
                         
+                        if(commandLine.hasOption('L')){
+                            asFile = commandLine.getOptionValue('L');
+                        } else{
+                            throw new ParseException("Required input --as_location when --action is BETABINOMTEST");
+                        }
+                        
+                        //TODO maybe fix this
+                        
+                        //START BETABINOMIAL
+                        BetaBinomEntry  a = new BetaBinomEntry(asFile);
                     
                     }else{
                         throw new ParseException("Unable to determine what to do. Please specify --Action");

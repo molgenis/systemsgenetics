@@ -47,14 +47,14 @@ public class BinomialTest {
     // Calculate log likelihoods, and do a likelihood ratio test.
     
     public BinomialTest(ArrayList<IndividualSnpData> all_individuals){
-        boolean debug = true;
+        boolean debug = false;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
         
         //Isolate heterozygotes:
-        ArrayList<IndividualSnpData> het_individuals = all_individuals;
+        ArrayList<IndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
         
         numberOfHets = het_individuals.size();
         
@@ -80,7 +80,7 @@ public class BinomialTest {
         }
         
         
-        if(total_overlap > 10){
+        if(total_overlap > 5){
             if(debug){
                 System.out.println("debug:");
                 System.out.println("Number of hets: " + Integer.toString(numberOfHets));

@@ -37,9 +37,9 @@ import org.apache.commons.io.FilenameUtils;
  *
  * @author Adriaan van der Graaf
  */
-public class read_geno_and_as_from_individual {
+public class readGenoAndAsFromIndividual {
     
-    public static void read_geno_and_as_from_individual(String loc_of_bam1) throws IOException, Exception{
+    public static void readGenoAndAsFromIndividual(String loc_of_bam1) throws IOException, Exception{
         
         //now do some other stuff.
         

@@ -19,15 +19,15 @@ import java.util.ArrayList;
  * @author Adriaan
  */
 
-public class parse_for_binomial_test {
+public class BinomialEntry {
 
-    public static void parse_for_binomial_test() throws FileNotFoundException, UnsupportedEncodingException, IOException {
+    public static void BinomialEntry(String asLocations) throws FileNotFoundException, UnsupportedEncodingException, IOException {
 
         PrintWriter out_writer;
-        out_writer = new PrintWriter("/media/fast/GENETICA/implementInJava/CEUASCOUNTS/binomial_output.txt", "UTF-8");
+        out_writer = new PrintWriter("/media/fast/GENETICA/implementInJava/CEUASCOUNTS/beta_binomial_output.txt", "UTF-8");
 
         // filenames_file, is a file containing per line a filename, which to load.
-        String filenames_file = "/media/fast/GENETICA/implementInJava/CEUASCOUNTS/as_file_names.txt";
+        String filenames_file = asLocations;
 
         //open all the files we want to open.
         ArrayList<File> all_files;

@@ -24,16 +24,22 @@ import org.apache.commons.math3.optim.univariate.SearchInterval;
  *
  * @author adriaan
  */
-public class BetaBinomOverdispInSample {
+public class betaBinomOverdispInSample {
     
-    final String sampleName;
-    double[] overdispersion = new double[1];
-    
+    private final String sampleName;
+    private double[] overdispersion = new double[1];
+    double precision = 1e-7;
     
     @SuppressWarnings({"empty-statement", "empty-statement"})
-    public BetaBinomOverdispInSample(String filename) throws FileNotFoundException, IOException{
+    public betaBinomOverdispInSample(String filename) throws FileNotFoundException, IOException{
         
         sampleName = filename;
+        
+        
+        System.out.println("\n--- Starting beta binomial dispersion estimate ---");
+        System.out.println("AS File: " + sampleName);
+        System.out.println("--------------------------------------------------");
+
         
         ArrayList<IndividualSnpData> allSnps = new ArrayList<IndividualSnpData>();
         
@@ -67,16 +73,17 @@ public class BetaBinomOverdispInSample {
                     
             
         }
+        System.out.println("sample loaded");
+
+        System.out.println("\ttotal_ref = " + totalRef);
+        System.out.println("\ttotal_alt = " + totalAlt);
         
-        
-        System.out.println("total_ref = " + totalRef);
-        System.out.println("total_alt = " + totalAlt);
         
         
         BetaBinomLikelihoodForOverdispersion betaBinom = new BetaBinomLikelihoodForOverdispersion(asRef, asAlt);
         NelderMeadSimplex simplex;
         simplex = new NelderMeadSimplex(1);
-        SimplexOptimizer optimizer = new SimplexOptimizer(1e-8, 1e-8); //numbers are to which precision you want it to be done.
+        SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
         PointValuePair solution = optimizer.optimize(
                                             new ObjectiveFunction(betaBinom),
                                             new MaxEval(500),
@@ -88,22 +95,14 @@ public class BetaBinomOverdispInSample {
         
         overdispersion = solution.getFirst();
         
-        System.out.println("Overdispersion sigma: " + overdispersion[0]);
-        System.out.println("the point of the solution:" + Arrays.toString(solution.getPoint()));
-        System.out.println(betaBinom.value(overdispersion));
+        System.out.println("Log likelihood converged to a threshold of " + Double.toString(precision));
+        
+        System.out.println("\tDispersion sigma: " + Double.toString(overdispersion[0]));
+        System.out.println("\tLog likelihood:   " + Double.toString(betaBinom.value(overdispersion)));
 
-        
-//        I used this for testing compared to python.
-//        BetaBinomLikelihood betaBinomTest = new BetaBinomLikelihood(new int[] {4,1}, new int[] {1,4});
-//        System.out.println(betaBinomTest.validate_with_output(overdispersion));
-//        
-        double pythonResult[]; 
-        pythonResult= new double[1] ;
-        pythonResult[0]= 0.23195;
-        System.out.println("python input: " +  betaBinom.value(pythonResult));
-        
-        //System.out.println("Overdispersion alpha: " + overdispersion[1]);
-        //System.out.println("Overdispersion beta: " + overdispersion[2]);
+        // Checked this in python version of WASP. 
+        // Creates the same results.
+        // But needs quite some testing still
 
     }
     
@@ -128,6 +127,20 @@ public class BetaBinomOverdispInSample {
         }
         
         return hets;
+    }
+
+    /**
+     * @return the sampleName
+     */
+    public String getSampleName() {
+        return sampleName;
+    }
+
+    /**
+     * @return the overdispersion
+     */
+    public double[] getOverdispersion() {
+        return overdispersion;
     }
 
     

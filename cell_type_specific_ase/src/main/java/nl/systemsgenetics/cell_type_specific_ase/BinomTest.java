@@ -13,8 +13,7 @@ import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 /**
  *
  * @author Adriaan van der Graaf 2015
- * This is a class that only stored Binomial test statistics, don't know If 
- * I should add a constructor to this class.
+ * This is a class that creates and stores Binomial test statistics,
  * It is created in BinomialTest.java class where it is filled.
  */
 public class BinomTest {
