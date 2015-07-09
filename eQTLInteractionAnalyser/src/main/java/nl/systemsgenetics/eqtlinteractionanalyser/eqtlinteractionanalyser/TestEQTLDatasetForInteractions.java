@@ -84,7 +84,7 @@ public class TestEQTLDatasetForInteractions {
 		outputTopCovs.close();
 	}
 
-	private HashMap<String, String> getEqtls(String fname) throws IOException {
+	static public HashMap<String, String> getEqtls(String fname) throws IOException {
 		TextFile file = new TextFile(fname, false);
 		ArrayList<String> genes = file.readAsArrayList(4, TextFile.tab);
 		HashMap<String, String> eqtlGenes = new HashMap<String, String>();
@@ -583,207 +583,7 @@ public class TestEQTLDatasetForInteractions {
 		return null;
 	}
 
-	public void makeInteractionPlot(String fileName, double[] genotype, double[] expression, double[] covariate, String[] sampleNames) {
-
-		int nrSamples = genotype.length;
-
-		int[] cohortIndex = new int[4];
-		String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
-		for (int cohort = 0; cohort < cohorts.length; cohort++) {
-			for (int s = 0; s < nrSamples; s++) {
-				if (sampleNames[s].startsWith(cohorts[cohort])) {
-					cohortIndex[cohort] = s;
-					break;
-				}
-			}
-		}
-
-		int marginLeft = 100;
-		int marginRight = 200;
-		int marginTop = 100;
-		int marginBottom = 100;
-		int innerHeight = 500;
-		int innerWidth = 500;
-		int docWidth = marginLeft + marginRight + innerWidth;
-		int docHeight = marginTop + marginBottom + innerHeight;
-
-		BufferedImage bimage = new BufferedImage(docWidth, docHeight, BufferedImage.TYPE_INT_RGB);
-		Graphics2D g2d = bimage.createGraphics();
-
-		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		g2d.setColor(new Color(255, 255, 255));
-		g2d.fillRect(0, 0, docWidth, docHeight);
-		java.awt.AlphaComposite alphaComposite10 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.10f);
-		java.awt.AlphaComposite alphaComposite25 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.25f);
-		java.awt.AlphaComposite alphaComposite50 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f);
-		java.awt.AlphaComposite alphaComposite100 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC, 1.00f);
-
-		float fontSize = 12f;
-		java.awt.Font font = new java.awt.Font("Gill Sans MT", java.awt.Font.PLAIN, (int) fontSize);
-		java.awt.Font fontBold = new java.awt.Font("Gill Sans MT", java.awt.Font.BOLD, (int) fontSize);
-		java.awt.Font fontSmall = new java.awt.Font("Gill Sans MT", java.awt.Font.PLAIN, 8);
-		java.awt.Font fontBoldSmall = new java.awt.Font("Gill Sans MT", java.awt.Font.BOLD, 8);
-
-		java.awt.Color dataColor[] = new Color[10];
-		dataColor[0] = new java.awt.Color(167, 72, 20);
-		dataColor[1] = new java.awt.Color(62, 138, 20);
-		dataColor[2] = new java.awt.Color(228, 171, 0);
-		dataColor[3] = new java.awt.Color(0, 148, 183);
-		dataColor[4] = new java.awt.Color(119, 80, 152);
-		dataColor[5] = new java.awt.Color(106, 106, 106);
-		dataColor[6] = new java.awt.Color(212, 215, 10);
-		dataColor[7] = new java.awt.Color(210, 111, 0);
-		dataColor[8] = new java.awt.Color(0, 0, 141);
-		dataColor[9] = new java.awt.Color(190, 190, 190);
-
-		g2d.setComposite(alphaComposite50);
-		g2d.setColor(new Color(0, 0, 0));
-		g2d.drawLine(marginLeft, marginTop, marginLeft, marginTop + innerHeight);
-		g2d.drawLine(marginLeft, marginTop + innerHeight, marginLeft + innerWidth, marginTop + innerHeight);
-
-		double minX = JSci.maths.ArrayMath.min(covariate);
-		double maxX = JSci.maths.ArrayMath.max(covariate);
-		double minY = JSci.maths.ArrayMath.min(expression);
-		double maxY = JSci.maths.ArrayMath.max(expression);
-
-		g2d.setComposite(alphaComposite10);
-		for (int rep = 2; rep >= 0; rep--) {
-			for (int s = 0; s < nrSamples; s++) {
-				int posY = marginTop + innerHeight - (int) ((expression[s] - minY) / (maxY - minY) * innerHeight);
-				int posX = marginLeft + (int) ((covariate[s] - minX) / (maxX - minX) * innerWidth);
-				if (genotype[s] < 0.5) {
-					g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-					g2d.setColor(new Color(204, 86, 78));
-				} else {
-					if (genotype[s] > 1.5) {
-						g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-						g2d.setColor(new Color(171, 178, 114));
-					} else {
-						g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-						g2d.setColor(new Color(98, 175, 255));
-					}
-				}
-				g2d.fillOval(posX - 3 - rep * 4, posY - 3 - rep * 4, 7 + rep * 8, 7 + rep * 8);
-
-			}
-		}
-
-		//Draw the four independent cohorts seperately:
-		//int[] cohortIndex = {0,626,1280,1933};
-		for (int rep = 2; rep >= 0; rep--) {
-			for (int s = 0; s < nrSamples; s++) {
-				int cohort = 0;
-				for (int c = 0; c < cohortIndex.length; c++) {
-					if (s >= cohortIndex[c]) {
-						cohort = c;
-					}
-				}
-
-				int posY = marginTop + 100 + cohort * 125 - (int) ((expression[s] - minY) / (maxY - minY) * 100);
-				int posX = marginLeft + innerWidth + 50 + (int) ((covariate[s] - minX) / (maxX - minX) * 100);
-				if (genotype[s] < 0.5) {
-					g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-					g2d.setColor(new Color(204, 86, 78));
-				} else {
-					if (genotype[s] > 1.5) {
-						g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-						g2d.setColor(new Color(171, 178, 114));
-					} else {
-						g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-						g2d.setColor(new Color(98, 175, 255));
-					}
-				}
-				g2d.fillOval(posX - 1 - rep * 2, posY - 1 - rep * 2, 3 + rep * 4, 3 + rep * 4);
-
-			}
-		}
-
-
-		g2d.setComposite(alphaComposite50);
-		double[][] valsX = new double[nrSamples][3];
-		for (int s = 0; s < nrSamples; s++) {
-			valsX[s][0] = genotype[s];
-			valsX[s][1] = covariate[s];
-			valsX[s][2] = valsX[s][0] * valsX[s][1];
-		}
-		double[] valsY = expression;
-		org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
-		regression.newSampleData(valsY, valsX);
-		double[] betas = regression.estimateRegressionParameters();
-		double betaInteraction = betas[3];
-		double seInteraction = regression.estimateRegressionParametersStandardErrors()[3];
-		double tInteraction = betaInteraction / seInteraction;
-		double pValueInteraction = 1;
-		double zScoreInteraction = 0;
-		cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
-		cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(genotype.length - 4, randomEngine);
-		if (tInteraction < 0) {
-			pValueInteraction = tDistColt.cdf(tInteraction);
-			if (pValueInteraction < 2.0E-323) {
-				pValueInteraction = 2.0E-323;
-			}
-			zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-		} else {
-			pValueInteraction = tDistColt.cdf(-tInteraction);
-			if (pValueInteraction < 2.0E-323) {
-				pValueInteraction = 2.0E-323;
-			}
-			zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-		}
-		pValueInteraction *= 2;
-
-		String pValueString = (new java.text.DecimalFormat("0.##E0", new java.text.DecimalFormatSymbols(java.util.Locale.US))).format(pValueInteraction);
-		if (pValueInteraction > 0.001) {
-			pValueString = (new java.text.DecimalFormat("##.###;-##.###", new java.text.DecimalFormatSymbols(java.util.Locale.US))).format(pValueInteraction);
-		}
-		g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
-		g2d.setColor(new Color(0, 0, 0));
-		int posX = marginLeft;
-		int posY = marginTop + innerHeight + 20;
-		g2d.drawString("Interaction P-Value: " + pValueString, posX, posY);
-
-
-		for (int g = 0; g <= 2; g++) {
-
-			double valMin = betas[0] + betas[1] * g + minX * betas[2] + betas[3] * g * minX;
-			double valMax = betas[0] + betas[1] * g + maxX * betas[2] + betas[3] * g * maxX;
-			int posXMin = marginLeft + (int) ((minX - minX) / (maxX - minX) * innerWidth);
-			int posYMin = marginTop + innerHeight - (int) ((valMin - minY) / (maxY - minY) * innerHeight);
-			int posXMax = marginLeft + (int) ((maxX - minX) / (maxX - minX) * innerWidth);
-			int posYMax = marginTop + innerHeight - (int) ((valMax - minY) / (maxY - minY) * innerHeight);
-
-			g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
-			g2d.setColor(new Color(255, 255, 255));
-			g2d.setStroke(new java.awt.BasicStroke(5.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-			g2d.drawLine(posXMin, posYMin, posXMax, posYMax);
-			if (g < 0.5) {
-				g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.30f));
-				g2d.setColor(new Color(204, 86, 78));
-			} else {
-				if (g > 1.5) {
-					g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f));
-					g2d.setColor(new Color(171, 178, 114));
-				} else {
-					g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f));
-					g2d.setColor(new Color(98, 175, 255));
-				}
-			}
-			g2d.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-			g2d.drawLine(posXMin, posYMin, posXMax, posYMax);
-
-		}
-
-		try {
-			javax.imageio.ImageIO.write(bimage, "png", new File(fileName));
-		} catch (IOException e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
-		}
-
-
-	}
-
-	public void orthogonalizeDataset(String inputFile) {
+	static public void orthogonalizeDataset(String inputFile) {
 
 		ExpressionDataset dataset = new ExpressionDataset(inputFile);
 		dataset.transposeDataset();
@@ -865,7 +665,7 @@ public class TestEQTLDatasetForInteractions {
 
 	}
 
-	public ExpressionDataset orthogonalizeMatrix(ExpressionDataset dataset) {
+	static public ExpressionDataset orthogonalizeMatrix(ExpressionDataset dataset) {
 
 		dataset.standardNormalizeData();
 		int nrVars = dataset.nrProbes;
@@ -931,7 +731,7 @@ public class TestEQTLDatasetForInteractions {
 
 	}
 
-	public double[] getLinearRegressionCoefficients(double[] xVal, double[] yVal) {
+	static public double[] getLinearRegressionCoefficients(double[] xVal, double[] yVal) {
 		double n = (double) xVal.length;
 		double sumX = 0;
 		double sumXX = 0;
@@ -953,13 +753,13 @@ public class TestEQTLDatasetForInteractions {
 		return regressionCoefficients;
 	}
 
-	private Jama.EigenvalueDecomposition eigenValueDecomposition(double[][] data) {
+	static public Jama.EigenvalueDecomposition eigenValueDecomposition(double[][] data) {
 		Jama.Matrix m = new Jama.Matrix(data);
 		Jama.EigenvalueDecomposition eig = m.eig();
 		return eig;
 	}
 
-	private double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {
+	static public double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {
 		Jama.Matrix eigenValueMatrix = eig.getV();
 		double[][] eigenValueMat = eigenValueMatrix.getArray();
 		double[] eigenVector = new double[eigenValueMat.length];
@@ -969,7 +769,7 @@ public class TestEQTLDatasetForInteractions {
 		return eigenVector;
 	}
 
-	private double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {
+	static public double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {
 		Jama.Matrix eigenValueMatrix = eig.getV();
 		double[][] eigenValueMat = eigenValueMatrix.getArray();
 		double[] eigenVector = new double[eigenValueMat.length];
@@ -979,7 +779,7 @@ public class TestEQTLDatasetForInteractions {
 		return eigenVector;
 	}
 
-	private double getEigenValueVar(double[] eigenValues, int pca) {
+	static public double getEigenValueVar(double[] eigenValues, int pca) {
 		double sumEigenvalues = 0.0;
 		for (Double d : eigenValues) {
 			sumEigenvalues += Math.abs(d);
@@ -988,7 +788,7 @@ public class TestEQTLDatasetForInteractions {
 		return result;
 	}
 
-	private double[] getEigenVectorSVD(Jama.SingularValueDecomposition svd, double[] singularValues, int pca) {
+	static public double[] getEigenVectorSVD(Jama.SingularValueDecomposition svd, double[] singularValues, int pca) {
 		Jama.Matrix eigenValueMatrix = svd.getV();
 		double[][] eigenValueMat = eigenValueMatrix.getArray();
 		double[] eigenVector = new double[eigenValueMat.length];
