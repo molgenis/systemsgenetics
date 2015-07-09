@@ -26,8 +26,8 @@ public class ExpressionDataset {
     public int nrProbes = 0;
     public String[] probeNames = null;
     public String[] sampleNames = null;
-    public HashMap hashSamples = new HashMap();
-    public HashMap hashProbes = new HashMap();
+    public HashMap<String, Integer> hashSamples = new HashMap<String, Integer>();
+    public HashMap<String, Integer> hashProbes = new HashMap<String, Integer>();
     private HashMap hashProbesToInclude = null;
     private HashMap hashSamplesToInclude = null;
     public String fileName = null;
@@ -447,6 +447,7 @@ public class ExpressionDataset {
                 rawData[probeID][s] = (float) (vals[s] / standardDeviation);
             }
         }
+        System.out.println("Mean and stdev done");
 
     }
 
