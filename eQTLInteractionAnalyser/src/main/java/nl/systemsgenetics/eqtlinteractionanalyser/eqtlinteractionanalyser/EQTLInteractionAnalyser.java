@@ -89,9 +89,7 @@ public class EQTLInteractionAnalyser {
         System.out.println("Starting interaction analysis");
         System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
         System.out.println();
-
-        args = new String[] {"-c", "gender", "-c", "LLS", "-a", "/Users/dashazhernakova/Documents/UMCG/hg19/v71/annotations/annotation_geneIds+overlapping_v71_cut.24-06-14.txt", "-e", "/Users/dashazhernakova/Documents/UMCG/data/BBMRI/first_run_final/genes/LL+RS+CODAM+LLS_eqtls_genes_23062014/GWAS/Crohns.txt", "-i", "/Users/dashazhernakova/Documents/UMCG/data/BBMRI/interactionWithTFs/allGenes/LudeInteractionAnalyser", "-o", "/Users/dashazhernakova/Documents/UMCG/data/BBMRI/interactionWithTFs/allGenes/LudeInteractionAnalyser/output/test3/", "-n", "2", "--interpret", "False"};
-
+        
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
         int maxNumCovariatesToRegress = 20;
         boolean interpret = false, chi2sumDiff = false;
