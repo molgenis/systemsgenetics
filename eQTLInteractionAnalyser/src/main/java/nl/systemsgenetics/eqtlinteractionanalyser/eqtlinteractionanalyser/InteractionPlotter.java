@@ -45,8 +45,8 @@ public class InteractionPlotter {
 		System.out.println("covariate: " + covariate);
 		System.out.println("genes file: " + genesFile.getAbsolutePath());
 
-		//String[] covsToCorrect = {"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "CEU", "GBR", "FIN", "TSI", "YRI"};
-		String[] covsToCorrect = {"age", "gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "LLS", "RS", "CODAM"};
+		String[] covsToCorrect = {"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "CEU", "GBR", "FIN", "TSI", "YRI"};
+		//String[] covsToCorrect = {"age", "gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "LLS", "RS", "CODAM"};
 		HashMap hashEQTLs = getEqtls(eQTLfileName);
 
 		HashMap hashSamples = new HashMap();
@@ -358,6 +358,8 @@ public class InteractionPlotter {
 		while ((nextLine = reader.readNext()) != null) {
 
 			String eQtlGene = nextLine[0];
+			
+			System.out.println(eQtlGene);
 
 			Integer eQtlGeneI = datasetExpression.hashProbes.get(eQtlGene);
 			Integer covariateI = datasetCovariates.hashProbes.get(covariate);
