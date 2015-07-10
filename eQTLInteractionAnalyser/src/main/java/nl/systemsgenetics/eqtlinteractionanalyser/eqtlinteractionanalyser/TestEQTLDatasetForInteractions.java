@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
+import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -49,7 +50,9 @@ public class TestEQTLDatasetForInteractions {
 
         this.inputDir = inputDir;
         this.outputDir = outputDir;
-
+        if (!Gpio.exists(outputDir)) {
+            Gpio.createDir(outputDir);
+        }
 
         HashMap <String, String> eqtlGenes = getEqtls(eQTLfileName);
 
@@ -99,6 +102,9 @@ public class TestEQTLDatasetForInteractions {
      * @throws IOException
      */
     public static HashMap<String, String> getEqtls(String fname) throws IOException {
+        if (fname == null){
+            return null;
+        }
         TextFile file = new TextFile(fname, false);
         ArrayList<String> genes = file.readAsArrayList(4, TextFile.tab);
         HashMap<String, String> eqtlGenes = new HashMap<String, String>();
@@ -362,12 +368,8 @@ public class TestEQTLDatasetForInteractions {
                 int[] covsToCorrectIndex = new int[covsToCorrect.length];
                 for (int c = 0; c < covsToCorrect.length; c++) {
                     hashCovsToCorrect.put(covsToCorrect[c], null);
-                    try {
-                        covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
-                    } catch (Exception e){
-                        System.out.println("test");
-                    }
-                        for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+                    covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+                    for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
                         datasetCovariatesToCorrectFor.rawData[c][s] = datasetCovariates.rawData[covsToCorrectIndex[c]][s];
                     }
                 }
@@ -485,11 +487,8 @@ public class TestEQTLDatasetForInteractions {
             System.out.println("Correcting expression data for predefined gene environment interaction effects (GC content, Gender, 5'Median Bias, 3'Median Bias):");
             int[] covsToCorrectIndex = new int[covsToCorrect.length];
             for (int c = 0; c < covsToCorrect.length; c++) {
-                try {
-                    covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
-                } catch (Exception e){
-                    System.out.println("test");
-                }
+                covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+
             }
             for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
                 double[][] valsX = new double[nrSamples][1 + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
