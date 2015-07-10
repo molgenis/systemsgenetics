@@ -361,12 +361,8 @@ public class TestEQTLDatasetForInteractions {
                 int[] covsToCorrectIndex = new int[covsToCorrect.length];
                 for (int c = 0; c < covsToCorrect.length; c++) {
                     hashCovsToCorrect.put(covsToCorrect[c], null);
-                    try {
-                        covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
-                    } catch (Exception e){
-                        System.out.println("test");
-                    }
-                        for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+                    covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+                    for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
                         datasetCovariatesToCorrectFor.rawData[c][s] = datasetCovariates.rawData[covsToCorrectIndex[c]][s];
                     }
                 }
@@ -484,11 +480,8 @@ public class TestEQTLDatasetForInteractions {
             System.out.println("Correcting expression data for predefined gene environment interaction effects (GC content, Gender, 5'Median Bias, 3'Median Bias):");
             int[] covsToCorrectIndex = new int[covsToCorrect.length];
             for (int c = 0; c < covsToCorrect.length; c++) {
-                try {
-                    covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
-                } catch (Exception e){
-                    System.out.println("test");
-                }
+                covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+
             }
             for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
                 double[][] valsX = new double[nrSamples][1 + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
