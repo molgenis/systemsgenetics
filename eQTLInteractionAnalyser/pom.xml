@@ -47,6 +47,12 @@
 			<artifactId>genetica-libraries</artifactId>
 			<version>1.0.7-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>3.4</version>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>

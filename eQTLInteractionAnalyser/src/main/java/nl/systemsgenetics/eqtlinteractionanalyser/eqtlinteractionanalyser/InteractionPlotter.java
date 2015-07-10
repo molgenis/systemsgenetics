@@ -1,10 +1,13 @@
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
+import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.CSVWriter;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import static nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser.TestEQTLDatasetForInteractions.getEqtls;
@@ -20,27 +23,32 @@ public class InteractionPlotter {
 
 	static String inputDir = null;
 	static String outputDir = null;
-	
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) throws IOException {
-        
+
+	/**
+	 * @param args the command line arguments
+	 */
+	public static void main(String[] args) throws IOException {
+
 		//makeInteractionPlot("D:\\tmp\\test.png", new double[]{0,0,0,0.2,1,1,1,1,2,2,2}, new double[]{5,4,3,0.2,8,12,6,7,23,5,7}, new double[]{3,2,1,0.2,2,6,4,6,20,2,5});
-		
+
 		inputDir = args[0];
 		outputDir = args[1];
 		String eQTLfileName = args[2];
-		
+		String covariate = args[3];
+		File genesFile = new File(args[4]);
+
+
+
 		System.out.println("Input dir: " + inputDir);
 		System.out.println("Output dir: " + outputDir);
 		System.out.println("eQTL file: " + eQTLfileName);
-		
+		System.out.println("covariate: " + covariate);
+		System.out.println("genes file: " + genesFile.getAbsolutePath());
 
 		//String[] covsToCorrect = {"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "CEU", "GBR", "FIN", "TSI", "YRI"};
 		String[] covsToCorrect = {"age", "gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "LLS", "RS", "CODAM"};
 		HashMap hashEQTLs = getEqtls(eQTLfileName);
-		
+
 		HashMap hashSamples = new HashMap();
 
 		if (1 == 1) {
@@ -344,22 +352,23 @@ public class InteractionPlotter {
 
 		}
 
-		String eQtlGene = "ENSG00000116688";
-		String covariate = "ENSG00000084072";
-		
-		Integer eQtlGeneI = datasetExpression.hashProbes.get(eQtlGene);
-		Integer covariateI = datasetCovariates.hashProbes.get(covariate);
-		Integer snpI = eQtlGeneI;
-		
-		
-		
-		makeInteractionPlot(outputDir + "/" + covariate + "-" + eQtlGene + ".png" , datasetGenotypes.rawData[snpI], datasetExpression.rawData[eQtlGeneI], datasetCovariates.rawData[covariateI]);
 
-		
-		
-		
-    }
-	
+		CSVReader reader = new CSVReader(new FileReader(genesFile), '\t', CSVWriter.NO_QUOTE_CHARACTER);
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			String eQtlGene = nextLine[0];
+
+			Integer eQtlGeneI = datasetExpression.hashProbes.get(eQtlGene);
+			Integer covariateI = datasetCovariates.hashProbes.get(covariate);
+			Integer snpI = eQtlGeneI;
+
+			makeInteractionPlot(outputDir + "/" + covariate + "-" + eQtlGene + ".png", datasetGenotypes.rawData[snpI], datasetExpression.rawData[eQtlGeneI], datasetCovariates.rawData[covariateI]);
+
+		}
+
+	}
+
 	public static void makeInteractionPlot(String fileName, double[] genotype, double[] expression, double[] covariate) {
 
 		int nrSamples = genotype.length;
@@ -440,9 +449,9 @@ public class InteractionPlotter {
 						g2d.setColor(new Color(98, 175, 255));
 					}
 				}
-				
+
 				g2d.fillOval(posX - 5 - rep * 4, posY - 5 - rep * 4, 7 + rep * 8, 7 + rep * 8);
-							
+
 			}
 		}
 
@@ -560,5 +569,4 @@ public class InteractionPlotter {
 
 
 	}
-
 }
