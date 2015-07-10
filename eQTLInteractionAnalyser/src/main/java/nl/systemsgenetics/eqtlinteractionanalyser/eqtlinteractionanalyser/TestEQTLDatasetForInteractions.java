@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
+import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -49,7 +50,9 @@ public class TestEQTLDatasetForInteractions {
 
         this.inputDir = inputDir;
         this.outputDir = outputDir;
-
+        if (!Gpio.exists(outputDir)) {
+            Gpio.createDir(outputDir);
+        }
 
         HashMap <String, String> eqtlGenes = getEqtls(eQTLfileName);
 
@@ -99,6 +102,9 @@ public class TestEQTLDatasetForInteractions {
      * @throws IOException
      */
     public static HashMap<String, String> getEqtls(String fname) throws IOException {
+        if (fname == null){
+            return null;
+        }
         TextFile file = new TextFile(fname, false);
         ArrayList<String> genes = file.readAsArrayList(4, TextFile.tab);
         HashMap<String, String> eqtlGenes = new HashMap<String, String>();
