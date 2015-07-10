@@ -26,10 +26,14 @@ public class CompareToGeuvadis {
 
 				String covariate = covariateEntry.getKey();
 				String eQtlGene = eQtlGeneEntry.getKey();
+				
+				if(!covariate.equals("ENSG00000084072")){
+					continue;
+				}
 
 				double biosInteractionZ = bios.rawData[covariateEntry.getValue()][eQtlGeneEntry.getValue()];
 
-				if (biosInteractionZ >= 4 || biosInteractionZ <= -4) {
+				if (biosInteractionZ >= 3 || biosInteractionZ <= -3) {
 
 					Integer geuvadisCovI = geuvadis.hashProbes.get(covariate);
 					Integer geuvadisGenI = geuvadis.hashSamples.get(eQtlGene);
@@ -38,7 +42,7 @@ public class CompareToGeuvadis {
 
 						double geuvadisInteractionZ = geuvadis.rawData[geuvadisCovI][geuvadisGenI];
 
-						if (geuvadisInteractionZ >= 4 || geuvadisInteractionZ <= -4) {
+						if (geuvadisInteractionZ >= 2 || geuvadisInteractionZ <= -2) {
 						
 							covariatesReplicated.add(covariate);
 							genesReplicated.add(eQtlGene);

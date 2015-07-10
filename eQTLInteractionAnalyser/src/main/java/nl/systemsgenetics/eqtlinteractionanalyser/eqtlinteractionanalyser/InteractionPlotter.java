@@ -28,16 +28,17 @@ public class InteractionPlotter {
         
 		//makeInteractionPlot("D:\\tmp\\test.png", new double[]{0,0,0,0.2,1,1,1,1,2,2,2}, new double[]{5,4,3,0.2,8,12,6,7,23,5,7}, new double[]{3,2,1,0.2,2,6,4,6,20,2,5});
 		
-		inputDir = args[1];
-		outputDir = args[2];
-		String eQTLfileName = args[3];
+		inputDir = args[0];
+		outputDir = args[1];
+		String eQTLfileName = args[2];
 		
 		System.out.println("Input dir: " + inputDir);
 		System.out.println("Output dir: " + outputDir);
 		System.out.println("eQTL file: " + eQTLfileName);
 		
 
-		String[] covsToCorrect = {"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "CEU", "GBR", "FIN", "TSI", "YRI"};
+		//String[] covsToCorrect = {"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "CEU", "GBR", "FIN", "TSI", "YRI"};
+		String[] covsToCorrect = {"age", "gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "LLS", "RS", "CODAM"};
 		HashMap hashEQTLs = getEqtls(eQTLfileName);
 		
 		HashMap hashSamples = new HashMap();
@@ -343,14 +344,16 @@ public class InteractionPlotter {
 
 		}
 
-		String eQtlGene = "ENSG00000084072";
-		String covariate = "";
+		String eQtlGene = "ENSG00000116688";
+		String covariate = "ENSG00000084072";
 		
 		Integer eQtlGeneI = datasetExpression.hashProbes.get(eQtlGene);
 		Integer covariateI = datasetCovariates.hashProbes.get(covariate);
 		Integer snpI = eQtlGeneI;
 		
-		makeInteractionPlot("D:\\tmp\test2.png", datasetGenotypes.rawData[snpI], datasetExpression.rawData[eQtlGeneI], datasetCovariates.rawData[covariateI]);
+		
+		
+		makeInteractionPlot(outputDir + "/" + covariate + "-" + eQtlGene + ".png" , datasetGenotypes.rawData[snpI], datasetExpression.rawData[eQtlGeneI], datasetCovariates.rawData[covariateI]);
 
 		
 		
@@ -421,7 +424,7 @@ public class InteractionPlotter {
 		double maxY = JSci.maths.ArrayMath.max(expression);
 
 		g2d.setComposite(alphaComposite10);
-		for (int rep = 1; rep >= 1; rep--) {
+		for (int rep = 0; rep >= 0; rep--) {
 			for (int s = 0; s < nrSamples; s++) {
 				int posY = marginTop + innerHeight - (int) ((expression[s] - minY) / (maxY - minY) * innerHeight);
 				int posX = marginLeft + (int) ((covariate[s] - minX) / (maxX - minX) * innerWidth);
