@@ -98,7 +98,7 @@ public class TestEQTLDatasetForInteractions {
      * @return gene names in keys of a HashMap
      * @throws IOException
      */
-    private HashMap<String, String> getEqtls(String fname) throws IOException {
+    public static HashMap<String, String> getEqtls(String fname) throws IOException {
         TextFile file = new TextFile(fname, false);
         ArrayList<String> genes = file.readAsArrayList(4, TextFile.tab);
         HashMap<String, String> eqtlGenes = new HashMap<String, String>();
@@ -357,6 +357,7 @@ public class TestEQTLDatasetForInteractions {
 //                        }
 //                    }
 //                }
+
                 HashMap hashCovsToCorrect = new HashMap();
                 int[] covsToCorrectIndex = new int[covsToCorrect.length];
                 for (int c = 0; c < covsToCorrect.length; c++) {
@@ -719,418 +720,218 @@ public class TestEQTLDatasetForInteractions {
         return false;
     }
 
-    public void makeInteractionPlot(String fileName, double[] genotype, double[] expression, double[] covariate, String[] sampleNames) {
+	static public void orthogonalizeDataset(String inputFile) {
 
-        int nrSamples = genotype.length;
+		ExpressionDataset dataset = new ExpressionDataset(inputFile);
+		dataset.transposeDataset();
+		dataset.standardNormalizeData();
+		int nrVars = dataset.nrProbes;
+		int nrSamples = dataset.nrSamples;
 
-        int[] cohortIndex = new int[4];
-        String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
-        for (int cohort = 0; cohort < cohorts.length; cohort++) {
-            for (int s = 0; s < nrSamples; s++) {
-                if (sampleNames[s].startsWith(cohorts[cohort])) {
-                    cohortIndex[cohort] = s;
-                    break;
-                }
-            }
-        }
+		double[][] matrix = new double[nrVars][nrSamples];
+		for (int s = 0; s < nrVars; s++) {
+			for (int sample = 0; sample < nrSamples; sample++) {
+				matrix[s][sample] = dataset.rawData[s][sample];
+			}
+		}
+		double[][] correlationMatrix = new double[nrVars][nrVars];
+		for (int p = 0; p < nrVars; p++) {
+			correlationMatrix[p][p] = 1d;
+			for (int q = p + 1; q < nrVars; q++) {
+				double covariance = 0;
+				for (int sample = 0; sample < nrSamples; sample++) {
+					covariance += matrix[p][sample] * matrix[q][sample];
+				}
+				covariance /= (double) (nrSamples - 1);
+				correlationMatrix[p][q] = covariance;
+				correlationMatrix[q][p] = covariance;
+			}
+		}
+		Jama.EigenvalueDecomposition eig = eigenValueDecomposition(correlationMatrix);
+		double[] eigenValues = eig.getRealEigenvalues();
 
-        int marginLeft = 100;
-        int marginRight = 200;
-        int marginTop = 100;
-        int marginBottom = 100;
-        int innerHeight = 500;
-        int innerWidth = 500;
-        int docWidth = marginLeft + marginRight + innerWidth;
-        int docHeight = marginTop + marginBottom + innerHeight;
+		double[][] eigenVectors = new double[correlationMatrix.length][correlationMatrix.length];
+		ExpressionDataset datasetEigenvectors = new ExpressionDataset(correlationMatrix.length, correlationMatrix.length);
+		ExpressionDataset datasetEigenvalues = new ExpressionDataset(correlationMatrix.length, 2);
+		for (int pca = 0; pca < correlationMatrix.length; pca++) {
+			datasetEigenvectors.probeNames[pca] = "Comp" + (pca + 1);
+			datasetEigenvalues.probeNames[pca] = "Comp" + (pca + 1);
+			datasetEigenvectors.sampleNames[pca] = dataset.probeNames[pca];
+		}
+		datasetEigenvalues.sampleNames[0] = "Eigenvalues";
+		datasetEigenvalues.sampleNames[1] = "ExplainedVariance";
+		for (int pca = 0; pca < correlationMatrix.length; pca++) {
+			datasetEigenvectors.rawData[pca] = getEigenVector(eig, pca);
+			datasetEigenvalues.rawData[pca][0] = eigenValues[eigenValues.length - 1 - pca];
+			datasetEigenvalues.rawData[pca][1] = getEigenValueVar(eigenValues, pca);
+			System.out.println(pca + "\tExplainedVariance:\t" + getEigenValueVar(eigenValues, pca) + "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca]);
+		}
+		datasetEigenvectors.transposeDataset();
+		datasetEigenvectors.save(inputFile + ".Eigenvectors.txt");
+		datasetEigenvalues.save(inputFile + ".Eigenvalues.txt");
 
-        BufferedImage bimage = new BufferedImage(docWidth, docHeight, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = bimage.createGraphics();
+		//Calculate principal components:
+		ExpressionDataset datasetPCs = new ExpressionDataset(dataset.nrSamples, correlationMatrix.length);
+		for (int pca = 0; pca < correlationMatrix.length; pca++) {
+			datasetPCs.sampleNames[pca] = "Comp" + (pca + 1);
+		}
+		for (int p = 0; p < datasetPCs.nrProbes; p++) {
+			datasetPCs.probeNames[p] = dataset.sampleNames[p];
+		}
+		for (int pca = 0; pca < correlationMatrix.length; pca++) {
+			for (int p = 0; p < dataset.nrProbes; p++) {
+				for (int s = 0; s < dataset.nrSamples; s++) {
+					datasetPCs.rawData[s][pca] += datasetEigenvectors.rawData[p][pca] * dataset.rawData[p][s];
+				}
+			}
+		}
+		datasetPCs.save(dataset.fileName + ".PrincipalComponents.txt");
 
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(new Color(255, 255, 255));
-        g2d.fillRect(0, 0, docWidth, docHeight);
-        java.awt.AlphaComposite alphaComposite10 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.10f);
-        java.awt.AlphaComposite alphaComposite25 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.25f);
-        java.awt.AlphaComposite alphaComposite50 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f);
-        java.awt.AlphaComposite alphaComposite100 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC, 1.00f);
+		ExpressionDataset datasetFactorloadings = new ExpressionDataset(correlationMatrix.length, correlationMatrix.length);
+		datasetPCs.transposeDataset();
+		for (int p = 0; p < dataset.nrProbes; p++) {
+			datasetFactorloadings.probeNames[p] = dataset.probeNames[p];
+		}
+		for (int pca = 0; pca < datasetPCs.nrProbes; pca++) {
+			datasetFactorloadings.sampleNames[pca] = "Comp" + (pca + 1);
+			for (int p = 0; p < dataset.nrProbes; p++) {
+				datasetFactorloadings.rawData[p][pca] = JSci.maths.ArrayMath.correlation(datasetPCs.rawData[pca], dataset.rawData[p]);
+			}
+		}
+		datasetFactorloadings.save(dataset.fileName + ".Factorloadings.txt");
 
-        float fontSize = 12f;
-        java.awt.Font font = new java.awt.Font("Gill Sans MT", java.awt.Font.PLAIN, (int) fontSize);
-        java.awt.Font fontBold = new java.awt.Font("Gill Sans MT", java.awt.Font.BOLD, (int) fontSize);
-        java.awt.Font fontSmall = new java.awt.Font("Gill Sans MT", java.awt.Font.PLAIN, 8);
-        java.awt.Font fontBoldSmall = new java.awt.Font("Gill Sans MT", java.awt.Font.BOLD, 8);
+	}
 
-        java.awt.Color dataColor[] = new Color[10];
-        dataColor[0] = new java.awt.Color(167, 72, 20);
-        dataColor[1] = new java.awt.Color(62, 138, 20);
-        dataColor[2] = new java.awt.Color(228, 171, 0);
-        dataColor[3] = new java.awt.Color(0, 148, 183);
-        dataColor[4] = new java.awt.Color(119, 80, 152);
-        dataColor[5] = new java.awt.Color(106, 106, 106);
-        dataColor[6] = new java.awt.Color(212, 215, 10);
-        dataColor[7] = new java.awt.Color(210, 111, 0);
-        dataColor[8] = new java.awt.Color(0, 0, 141);
-        dataColor[9] = new java.awt.Color(190, 190, 190);
+	static public ExpressionDataset orthogonalizeMatrix(ExpressionDataset dataset) {
 
-        g2d.setComposite(alphaComposite50);
-        g2d.setColor(new Color(0, 0, 0));
-        g2d.drawLine(marginLeft, marginTop, marginLeft, marginTop + innerHeight);
-        g2d.drawLine(marginLeft, marginTop + innerHeight, marginLeft + innerWidth, marginTop + innerHeight);
+		dataset.standardNormalizeData();
+		int nrVars = dataset.nrProbes;
+		int nrSamples = dataset.nrSamples;
+		double[][] matrix = new double[nrVars][nrSamples];
+		for (int s = 0; s < nrVars; s++) {
+			for (int sample = 0; sample < nrSamples; sample++) {
+				matrix[s][sample] = dataset.rawData[s][sample];
+			}
+		}
+		double[][] correlationMatrix = new double[nrVars][nrVars];
+		for (int p = 0; p < nrVars; p++) {
+			correlationMatrix[p][p] = 1d;
+			for (int q = p + 1; q < nrVars; q++) {
+				double covariance = 0;
+				for (int sample = 0; sample < nrSamples; sample++) {
+					covariance += matrix[p][sample] * matrix[q][sample];
+				}
+				covariance /= (double) (nrSamples - 1);
+				if (covariance > 1) {
+					covariance = 1d;
+				}
+				if (covariance < -1) {
+					covariance = -1d;
+				}
+				correlationMatrix[p][q] = covariance;
+				correlationMatrix[q][p] = covariance;
+			}
+		}
+		Jama.EigenvalueDecomposition eig = eigenValueDecomposition(correlationMatrix);
+		double[] eigenValues = eig.getRealEigenvalues();
+		int nrCompsWithPositiveEigenvalues = 0;
+		for (int e = 0; e < eigenValues.length; e++) {
+			//System.out.println(e + "\t" + eigenValues[e]);
+			if (eigenValues[e] > 1e-10) {
+				nrCompsWithPositiveEigenvalues++;
+			}
+		}
 
-        double minX = JSci.maths.ArrayMath.min(covariate);
-        double maxX = JSci.maths.ArrayMath.max(covariate);
-        double minY = JSci.maths.ArrayMath.min(expression);
-        double maxY = JSci.maths.ArrayMath.max(expression);
+		ExpressionDataset datasetEigenvectors = new ExpressionDataset(correlationMatrix.length, correlationMatrix.length);
+		for (int pca = 0; pca < correlationMatrix.length; pca++) {
+			datasetEigenvectors.rawData[pca] = getEigenVector(eig, pca);
+		}
+		datasetEigenvectors.transposeDataset();
 
-        g2d.setComposite(alphaComposite10);
-        for (int rep = 2; rep >= 0; rep--) {
-            for (int s = 0; s < nrSamples; s++) {
-                int posY = marginTop + innerHeight - (int) ((expression[s] - minY) / (maxY - minY) * innerHeight);
-                int posX = marginLeft + (int) ((covariate[s] - minX) / (maxX - minX) * innerWidth);
-                if (genotype[s] < 0.5) {
-                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-                    g2d.setColor(new Color(204, 86, 78));
-                } else {
-                    if (genotype[s] > 1.5) {
-                        g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-                        g2d.setColor(new Color(171, 178, 114));
-                    } else {
-                        g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-                        g2d.setColor(new Color(98, 175, 255));
-                    }
-                }
-                g2d.fillOval(posX - 3 - rep * 4, posY - 3 - rep * 4, 7 + rep * 8, 7 + rep * 8);
+		//Calculate principal components:
+		ExpressionDataset datasetPCs = new ExpressionDataset(dataset.nrSamples, nrCompsWithPositiveEigenvalues);
+		for (int pca = 0; pca < nrCompsWithPositiveEigenvalues; pca++) {
+			datasetPCs.sampleNames[pca] = "Comp" + (pca + 1);
+		}
+		for (int p = 0; p < datasetPCs.nrProbes; p++) {
+			datasetPCs.probeNames[p] = dataset.sampleNames[p];
+		}
+		for (int pca = 0; pca < nrCompsWithPositiveEigenvalues; pca++) {
+			for (int p = 0; p < dataset.nrProbes; p++) {
+				for (int s = 0; s < dataset.nrSamples; s++) {
+					datasetPCs.rawData[s][pca] += datasetEigenvectors.rawData[p][pca] * dataset.rawData[p][s];
+				}
+			}
+		}
+		datasetPCs.transposeDataset();
+		return datasetPCs;
 
-            }
-        }
+	}
 
-        //Draw the four independent cohorts seperately:
-        //int[] cohortIndex = {0,626,1280,1933};
-        for (int rep = 2; rep >= 0; rep--) {
-            for (int s = 0; s < nrSamples; s++) {
-                int cohort = 0;
-                for (int c = 0; c < cohortIndex.length; c++) {
-                    if (s >= cohortIndex[c]) {
-                        cohort = c;
-                    }
-                }
+	static public double[] getLinearRegressionCoefficients(double[] xVal, double[] yVal) {
+		double n = (double) xVal.length;
+		double sumX = 0;
+		double sumXX = 0;
+		double sumY = 0;
+		double sumXY = 0;
+		for (int x = 0; x < xVal.length; x++) {
+			sumX += xVal[x];
+			sumXX += xVal[x] * xVal[x];
+			sumY += yVal[x];
+			sumXY += xVal[x] * yVal[x];
+		}
+		double sXX = sumXX - sumX * sumX / n;
+		double sXY = sumXY - sumX * sumY / n;
+		double a = sXY / sXX;
+		double b = (sumY - a * sumX) / n;
+		double[] regressionCoefficients = new double[2];
+		regressionCoefficients[0] = a;
+		regressionCoefficients[1] = b;
+		return regressionCoefficients;
+	}
 
-                int posY = marginTop + 100 + cohort * 125 - (int) ((expression[s] - minY) / (maxY - minY) * 100);
-                int posX = marginLeft + innerWidth + 50 + (int) ((covariate[s] - minX) / (maxX - minX) * 100);
-                if (genotype[s] < 0.5) {
-                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-                    g2d.setColor(new Color(204, 86, 78));
-                } else {
-                    if (genotype[s] > 1.5) {
-                        g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-                        g2d.setColor(new Color(171, 178, 114));
-                    } else {
-                        g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_ATOP, 0.30f - (float) rep / 10f));
-                        g2d.setColor(new Color(98, 175, 255));
-                    }
-                }
-                g2d.fillOval(posX - 1 - rep * 2, posY - 1 - rep * 2, 3 + rep * 4, 3 + rep * 4);
+	static public Jama.EigenvalueDecomposition eigenValueDecomposition(double[][] data) {
+		Jama.Matrix m = new Jama.Matrix(data);
+		Jama.EigenvalueDecomposition eig = m.eig();
+		return eig;
+	}
 
-            }
-        }
+	static public double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {
+		Jama.Matrix eigenValueMatrix = eig.getV();
+		double[][] eigenValueMat = eigenValueMatrix.getArray();
+		double[] eigenVector = new double[eigenValueMat.length];
+		for (int i = 0; i < eigenValueMat.length; i++) {
+			eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);
+		}
+		return eigenVector;
+	}
 
+	static public double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {
+		Jama.Matrix eigenValueMatrix = eig.getV();
+		double[][] eigenValueMat = eigenValueMatrix.getArray();
+		double[] eigenVector = new double[eigenValueMat.length];
+		for (int i = 0; i < eigenValueMat.length; i++) {
+			eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);
+		}
+		return eigenVector;
+	}
 
-        g2d.setComposite(alphaComposite50);
-        double[][] valsX = new double[nrSamples][3];
-        for (int s = 0; s < nrSamples; s++) {
-            valsX[s][0] = genotype[s];
-            valsX[s][1] = covariate[s];
-            valsX[s][2] = valsX[s][0] * valsX[s][1];
-        }
-        double[] valsY = expression;
-        org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
-        regression.newSampleData(valsY, valsX);
-        double[] betas = regression.estimateRegressionParameters();
-        double betaInteraction = betas[3];
-        double seInteraction = regression.estimateRegressionParametersStandardErrors()[3];
-        double tInteraction = betaInteraction / seInteraction;
-        double pValueInteraction = 1;
-        double zScoreInteraction = 0;
-        cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
-        cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(genotype.length - 4, randomEngine);
-        if (tInteraction < 0) {
-            pValueInteraction = tDistColt.cdf(tInteraction);
-            if (pValueInteraction < 2.0E-323) {
-                pValueInteraction = 2.0E-323;
-            }
-            zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-        } else {
-            pValueInteraction = tDistColt.cdf(-tInteraction);
-            if (pValueInteraction < 2.0E-323) {
-                pValueInteraction = 2.0E-323;
-            }
-            zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-        }
-        pValueInteraction *= 2;
+	static public double getEigenValueVar(double[] eigenValues, int pca) {
+		double sumEigenvalues = 0.0;
+		for (Double d : eigenValues) {
+			sumEigenvalues += Math.abs(d);
+		}
+		double result = eigenValues[eigenValues.length - 1 - pca] / sumEigenvalues;
+		return result;
+	}
 
-        String pValueString = (new java.text.DecimalFormat("0.##E0", new java.text.DecimalFormatSymbols(java.util.Locale.US))).format(pValueInteraction);
-        if (pValueInteraction > 0.001) {
-            pValueString = (new java.text.DecimalFormat("##.###;-##.###", new java.text.DecimalFormatSymbols(java.util.Locale.US))).format(pValueInteraction);
-        }
-        g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
-        g2d.setColor(new Color(0, 0, 0));
-        int posX = marginLeft;
-        int posY = marginTop + innerHeight + 20;
-        g2d.drawString("Interaction P-Value: " + pValueString, posX, posY);
-
-
-        for (int g = 0; g <= 2; g++) {
-
-            double valMin = betas[0] + betas[1] * g + minX * betas[2] + betas[3] * g * minX;
-            double valMax = betas[0] + betas[1] * g + maxX * betas[2] + betas[3] * g * maxX;
-            int posXMin = marginLeft + (int) ((minX - minX) / (maxX - minX) * innerWidth);
-            int posYMin = marginTop + innerHeight - (int) ((valMin - minY) / (maxY - minY) * innerHeight);
-            int posXMax = marginLeft + (int) ((maxX - minX) / (maxX - minX) * innerWidth);
-            int posYMax = marginTop + innerHeight - (int) ((valMax - minY) / (maxY - minY) * innerHeight);
-
-            g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
-            g2d.setColor(new Color(255, 255, 255));
-            g2d.setStroke(new java.awt.BasicStroke(5.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-            g2d.drawLine(posXMin, posYMin, posXMax, posYMax);
-            if (g < 0.5) {
-                g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.30f));
-                g2d.setColor(new Color(204, 86, 78));
-            } else {
-                if (g > 1.5) {
-                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f));
-                    g2d.setColor(new Color(171, 178, 114));
-                } else {
-                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f));
-                    g2d.setColor(new Color(98, 175, 255));
-                }
-            }
-            g2d.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-            g2d.drawLine(posXMin, posYMin, posXMax, posYMax);
-
-        }
-
-        try {
-            javax.imageio.ImageIO.write(bimage, "png", new File(fileName));
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        }
-
-
-    }
-
-    public void orthogonalizeDataset(String inputFile) {
-
-        ExpressionDataset dataset = new ExpressionDataset(inputFile);
-        dataset.transposeDataset();
-        dataset.standardNormalizeData();
-        int nrVars = dataset.nrProbes;
-        int nrSamples = dataset.nrSamples;
-
-        double[][] matrix = new double[nrVars][nrSamples];
-        for (int s = 0; s < nrVars; s++) {
-            for (int sample = 0; sample < nrSamples; sample++) {
-                matrix[s][sample] = dataset.rawData[s][sample];
-            }
-        }
-        double[][] correlationMatrix = new double[nrVars][nrVars];
-        for (int p = 0; p < nrVars; p++) {
-            correlationMatrix[p][p] = 1d;
-            for (int q = p + 1; q < nrVars; q++) {
-                double covariance = 0;
-                for (int sample = 0; sample < nrSamples; sample++) {
-                    covariance += matrix[p][sample] * matrix[q][sample];
-                }
-                covariance /= (double) (nrSamples - 1);
-                correlationMatrix[p][q] = covariance;
-                correlationMatrix[q][p] = covariance;
-            }
-        }
-        Jama.EigenvalueDecomposition eig = eigenValueDecomposition(correlationMatrix);
-        double[] eigenValues = eig.getRealEigenvalues();
-
-        double[][] eigenVectors = new double[correlationMatrix.length][correlationMatrix.length];
-        ExpressionDataset datasetEigenvectors = new ExpressionDataset(correlationMatrix.length, correlationMatrix.length);
-        ExpressionDataset datasetEigenvalues = new ExpressionDataset(correlationMatrix.length, 2);
-        for (int pca = 0; pca < correlationMatrix.length; pca++) {
-            datasetEigenvectors.probeNames[pca] = "Comp" + (pca + 1);
-            datasetEigenvalues.probeNames[pca] = "Comp" + (pca + 1);
-            datasetEigenvectors.sampleNames[pca] = dataset.probeNames[pca];
-        }
-        datasetEigenvalues.sampleNames[0] = "Eigenvalues";
-        datasetEigenvalues.sampleNames[1] = "ExplainedVariance";
-        for (int pca = 0; pca < correlationMatrix.length; pca++) {
-            datasetEigenvectors.rawData[pca] = getEigenVector(eig, pca);
-            datasetEigenvalues.rawData[pca][0] = eigenValues[eigenValues.length - 1 - pca];
-            datasetEigenvalues.rawData[pca][1] = getEigenValueVar(eigenValues, pca);
-            System.out.println(pca + "\tExplainedVariance:\t" + getEigenValueVar(eigenValues, pca) + "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca]);
-        }
-        datasetEigenvectors.transposeDataset();
-        datasetEigenvectors.save(inputFile + ".Eigenvectors.txt");
-        datasetEigenvalues.save(inputFile + ".Eigenvalues.txt");
-
-        //Calculate principal components:
-        ExpressionDataset datasetPCs = new ExpressionDataset(dataset.nrSamples, correlationMatrix.length);
-        for (int pca = 0; pca < correlationMatrix.length; pca++) {
-            datasetPCs.sampleNames[pca] = "Comp" + (pca + 1);
-        }
-        for (int p = 0; p < datasetPCs.nrProbes; p++) {
-            datasetPCs.probeNames[p] = dataset.sampleNames[p];
-        }
-        for (int pca = 0; pca < correlationMatrix.length; pca++) {
-            for (int p = 0; p < dataset.nrProbes; p++) {
-                for (int s = 0; s < dataset.nrSamples; s++) {
-                    datasetPCs.rawData[s][pca] += datasetEigenvectors.rawData[p][pca] * dataset.rawData[p][s];
-                }
-            }
-        }
-        datasetPCs.save(dataset.fileName + ".PrincipalComponents.txt");
-
-        ExpressionDataset datasetFactorloadings = new ExpressionDataset(correlationMatrix.length, correlationMatrix.length);
-        datasetPCs.transposeDataset();
-        for (int p = 0; p < dataset.nrProbes; p++) {
-            datasetFactorloadings.probeNames[p] = dataset.probeNames[p];
-        }
-        for (int pca = 0; pca < datasetPCs.nrProbes; pca++) {
-            datasetFactorloadings.sampleNames[pca] = "Comp" + (pca + 1);
-            for (int p = 0; p < dataset.nrProbes; p++) {
-                datasetFactorloadings.rawData[p][pca] = JSci.maths.ArrayMath.correlation(datasetPCs.rawData[pca], dataset.rawData[p]);
-            }
-        }
-        datasetFactorloadings.save(dataset.fileName + ".Factorloadings.txt");
-
-    }
-
-    public ExpressionDataset orthogonalizeMatrix(ExpressionDataset dataset) {
-
-        dataset.standardNormalizeData();
-        int nrVars = dataset.nrProbes;
-        int nrSamples = dataset.nrSamples;
-        double[][] matrix = new double[nrVars][nrSamples];
-        for (int s = 0; s < nrVars; s++) {
-            for (int sample = 0; sample < nrSamples; sample++) {
-                matrix[s][sample] = dataset.rawData[s][sample];
-            }
-        }
-        double[][] correlationMatrix = new double[nrVars][nrVars];
-        for (int p = 0; p < nrVars; p++) {
-            correlationMatrix[p][p] = 1d;
-            for (int q = p + 1; q < nrVars; q++) {
-                double covariance = 0;
-                for (int sample = 0; sample < nrSamples; sample++) {
-                    covariance += matrix[p][sample] * matrix[q][sample];
-                }
-                covariance /= (double) (nrSamples - 1);
-                if (covariance > 1) {
-                    covariance = 1d;
-                }
-                if (covariance < -1) {
-                    covariance = -1d;
-                }
-                correlationMatrix[p][q] = covariance;
-                correlationMatrix[q][p] = covariance;
-            }
-        }
-        Jama.EigenvalueDecomposition eig = eigenValueDecomposition(correlationMatrix);
-        double[] eigenValues = eig.getRealEigenvalues();
-        int nrCompsWithPositiveEigenvalues = 0;
-        for (int e = 0; e < eigenValues.length; e++) {
-            //System.out.println(e + "\t" + eigenValues[e]);
-            if (eigenValues[e] > 1e-10) {
-                nrCompsWithPositiveEigenvalues++;
-            }
-        }
-
-        ExpressionDataset datasetEigenvectors = new ExpressionDataset(correlationMatrix.length, correlationMatrix.length);
-        for (int pca = 0; pca < correlationMatrix.length; pca++) {
-            datasetEigenvectors.rawData[pca] = getEigenVector(eig, pca);
-        }
-        datasetEigenvectors.transposeDataset();
-
-        //Calculate principal components:
-        ExpressionDataset datasetPCs = new ExpressionDataset(dataset.nrSamples, nrCompsWithPositiveEigenvalues);
-        for (int pca = 0; pca < nrCompsWithPositiveEigenvalues; pca++) {
-            datasetPCs.sampleNames[pca] = "Comp" + (pca + 1);
-        }
-        for (int p = 0; p < datasetPCs.nrProbes; p++) {
-            datasetPCs.probeNames[p] = dataset.sampleNames[p];
-        }
-        for (int pca = 0; pca < nrCompsWithPositiveEigenvalues; pca++) {
-            for (int p = 0; p < dataset.nrProbes; p++) {
-                for (int s = 0; s < dataset.nrSamples; s++) {
-                    datasetPCs.rawData[s][pca] += datasetEigenvectors.rawData[p][pca] * dataset.rawData[p][s];
-                }
-            }
-        }
-        datasetPCs.transposeDataset();
-        return datasetPCs;
-
-    }
-
-    public double[] getLinearRegressionCoefficients(double[] xVal, double[] yVal) {
-        double n = (double) xVal.length;
-        double sumX = 0;
-        double sumXX = 0;
-        double sumY = 0;
-        double sumXY = 0;
-        for (int x = 0; x < xVal.length; x++) {
-            sumX += xVal[x];
-            sumXX += xVal[x] * xVal[x];
-            sumY += yVal[x];
-            sumXY += xVal[x] * yVal[x];
-        }
-        double sXX = sumXX - sumX * sumX / n;
-        double sXY = sumXY - sumX * sumY / n;
-        double a = sXY / sXX;
-        double b = (sumY - a * sumX) / n;
-        double[] regressionCoefficients = new double[2];
-        regressionCoefficients[0] = a;
-        regressionCoefficients[1] = b;
-        return regressionCoefficients;
-    }
-
-    private Jama.EigenvalueDecomposition eigenValueDecomposition(double[][] data) {
-        Jama.Matrix m = new Jama.Matrix(data);
-        Jama.EigenvalueDecomposition eig = m.eig();
-        return eig;
-    }
-
-    private double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {
-        Jama.Matrix eigenValueMatrix = eig.getV();
-        double[][] eigenValueMat = eigenValueMatrix.getArray();
-        double[] eigenVector = new double[eigenValueMat.length];
-        for (int i = 0; i < eigenValueMat.length; i++) {
-            eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);
-        }
-        return eigenVector;
-    }
-
-    private double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {
-        Jama.Matrix eigenValueMatrix = eig.getV();
-        double[][] eigenValueMat = eigenValueMatrix.getArray();
-        double[] eigenVector = new double[eigenValueMat.length];
-        for (int i = 0; i < eigenValueMat.length; i++) {
-            eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);
-        }
-        return eigenVector;
-    }
-
-    private double getEigenValueVar(double[] eigenValues, int pca) {
-        double sumEigenvalues = 0.0;
-        for (Double d : eigenValues) {
-            sumEigenvalues += Math.abs(d);
-        }
-        double result = eigenValues[eigenValues.length - 1 - pca] / sumEigenvalues;
-        return result;
-    }
-
-    private double[] getEigenVectorSVD(Jama.SingularValueDecomposition svd, double[] singularValues, int pca) {
-        Jama.Matrix eigenValueMatrix = svd.getV();
-        double[][] eigenValueMat = eigenValueMatrix.getArray();
-        double[] eigenVector = new double[eigenValueMat.length];
-        for (int i = 0; i < eigenValueMat.length; i++) {
-            eigenVector[i] = eigenValueMat[i][pca] * Math.sqrt(singularValues[pca]);
-        }
-        return eigenVector;
-    }
+	static public double[] getEigenVectorSVD(Jama.SingularValueDecomposition svd, double[] singularValues, int pca) {
+		Jama.Matrix eigenValueMatrix = svd.getV();
+		double[][] eigenValueMat = eigenValueMatrix.getArray();
+		double[] eigenVector = new double[eigenValueMat.length];
+		for (int i = 0; i < eigenValueMat.length; i++) {
+			eigenVector[i] = eigenValueMat[i][pca] * Math.sqrt(singularValues[pca]);
+		}
+		return eigenVector;
+	}
 }
