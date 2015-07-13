@@ -20,6 +20,8 @@ public class CompareToGeuvadis {
 		HashSet<String> covariatesReplicated = new HashSet<String>();
 		HashSet<String> genesReplicated = new HashSet<String>();
 		int interactionsReplicated = 0;
+		int sameDirection = 0;
+		int oppositeDirection = 0;
 		
 		for (Map.Entry<String, Integer> covariateEntry : bios.hashProbes.entrySet()) {
 			for (Map.Entry<String, Integer> eQtlGeneEntry : bios.hashSamples.entrySet()) {
@@ -48,6 +50,12 @@ public class CompareToGeuvadis {
 							genesReplicated.add(eQtlGene);
 							interactionsReplicated++;
 							
+							if(biosInteractionZ * geuvadisInteractionZ > 0){
+								sameDirection++;
+							} else {
+								oppositeDirection++;
+							}
+							
 							System.out.println(covariate + "\t" + eQtlGene + "\t" + biosInteractionZ + "\t" + geuvadisInteractionZ);
 							
 						}
@@ -63,6 +71,8 @@ public class CompareToGeuvadis {
 		System.out.println("Covariates replicated: " + covariatesReplicated.size());
 		System.out.println("Genes replicated: " + genesReplicated.size());
 		System.out.println("Interactions replicated: " + interactionsReplicated);
+		System.out.println("Interactions replicated same: " + sameDirection);
+		System.out.println("Interactions replicated opposite: " + oppositeDirection);
 		
     }
 
