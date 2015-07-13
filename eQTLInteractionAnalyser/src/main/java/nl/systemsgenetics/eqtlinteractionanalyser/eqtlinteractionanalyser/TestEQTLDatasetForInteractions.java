@@ -38,6 +38,7 @@ public class TestEQTLDatasetForInteractions {
 
         this.inputDir = inputDir;
         this.outputDir = outputDir;
+        primaryCovsToCorrect = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "RS", "CODAM", "LLS"};
         //preprocessData();
     }
 
