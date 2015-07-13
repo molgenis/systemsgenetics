@@ -89,7 +89,7 @@ public class EQTLInteractionAnalyser {
         System.out.println("Starting interaction analysis");
         System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
         System.out.println();
-        
+
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
         int maxNumCovariatesToRegress = 20;
         boolean interpret = false, chi2sumDiff = false;
@@ -110,7 +110,7 @@ public class EQTLInteractionAnalyser {
                 interpret = Boolean.parseBoolean(commandLine.getOptionValue("t"));
             }
             if (commandLine.hasOption("dif")) {
-                chi2sumDiff = Boolean.parseBoolean(commandLine.getOptionValue("d"));
+                chi2sumDiff = Boolean.parseBoolean(commandLine.getOptionValue("dif"));
             }
             if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
