@@ -18,11 +18,11 @@ import org.apache.commons.math3.distribution.ChiSquaredDistribution;
  */
 public class BinomTest {
     
-    private final double pVal;
-    private final double chiSq;
-    private final double binomRatio;
-    private final double nullLogLik;
-    private final double altLogLik;
+    private double pVal;
+    private double chiSq;
+    private double binomRatio;
+    private double nullLogLik;
+    private double altLogLik;
 
     
     public BinomTest(ArrayList<Integer> asRef, ArrayList<Integer> asAlt){
@@ -52,6 +52,14 @@ public class BinomTest {
         altLogLik =  BinomLogLik(binomRatio, asRef, asAlt);
         //chi squared statistic is determined based on both null and alt loglikelihoods.
         chiSq = 2.0 * (nullLogLik - altLogLik);
+        
+        //chi sq distribution below cannot handle infinity values.
+        if(chiSq == Double.POSITIVE_INFINITY){
+            chiSq = Double.MAX_VALUE ;
+        }
+        
+        
+        System.out.println("Chi squared from function: " +  Double.toString(chiSq));
         
         //determine P value based on distribution
         ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
