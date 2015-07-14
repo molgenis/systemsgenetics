@@ -73,13 +73,6 @@ public class TestEQTLDatasetForInteractions {
 		TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
 
 
-		if (covariatesToCorrect != null) {
-			primaryCovsToCorrect = covariatesToCorrect;
-		} else {
-			primaryCovsToCorrect = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS"};
-		}
-
-
 		System.out.print("\nPrimary covariates to correct for before running interaction analysis: ");
 		for (String cov : primaryCovsToCorrect) {
 			System.out.print("\n\t" + cov);

@@ -104,7 +104,7 @@ public class EQTLInteractionAnalyser {
         int maxNumCovariatesToRegress = 20;
         final boolean interpret, chi2sumDiff;
 		
-        String[] covariates = null;
+        final String[] covariates;
 		final String[] covariates2;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -133,7 +133,9 @@ public class EQTLInteractionAnalyser {
             }
             else if (commandLine.hasOption("c")){
                 covariates = commandLine.getOptionValues("c");
-            }
+            } else {
+				covariates = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS"};
+			}
 			
 			if (commandLine.hasOption("c2")){
                 covariates2 = commandLine.getOptionValues("c2");
