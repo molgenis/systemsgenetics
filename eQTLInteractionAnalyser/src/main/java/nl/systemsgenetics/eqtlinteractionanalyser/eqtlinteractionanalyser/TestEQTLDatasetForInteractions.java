@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.mahout.math.Arrays;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -53,11 +54,12 @@ public class TestEQTLDatasetForInteractions {
 		System.out.println("Output dir: " + outputDir);
 		System.out.println("eQTL file: " + eQTLfileName);
 		System.out.println("Maximum number of covariates to regress out: " + maxNumTopCovs);
-		System.out.println("Covariates to correct for with interaction: " + covariatesToCorrect.toString());
-		System.out.println("Covariates to correct for without interaction: " + covariatesToCorrect2.toString());
+		System.out.println("Covariates to correct for with interaction: " + Arrays.toString(covariatesToCorrect));
+		System.out.println("Covariates to correct for without interaction: " + Arrays.toString(covariatesToCorrect2));
 
 		this.inputDir = inputDir;
 		this.outputDir = outputDir;
+		primaryCovsToCorrect = covariatesToCorrect;
 		if (!Gpio.exists(outputDir)) {
 			Gpio.createDir(outputDir);
 		}
@@ -78,7 +80,7 @@ public class TestEQTLDatasetForInteractions {
 		}
 		System.out.println();
 
-		primaryCovsToCorrect = covariatesToCorrect;
+		
 
 		String[] covsToCorrect = primaryCovsToCorrect;
 		int cnt = 0;
@@ -297,7 +299,7 @@ public class TestEQTLDatasetForInteractions {
 
 			for (int i = 0; i < covsToCorrect2.length; ++i) {
 				String cov = covsToCorrect2[i];
-				Integer c = datasetCovariatesToCorrectFor.hashProbes.get(cov);
+				Integer c = datasetCovariates.hashProbes.get(cov);
 				if (c == null) {
 					throw new Exception("Covariate not found: " + cov);
 				}
@@ -407,7 +409,7 @@ public class TestEQTLDatasetForInteractions {
 
 				for (int i = 0; i < covsToCorrect2.length; ++i) {
 					String cov = covsToCorrect2[i];
-					Integer c = datasetCovariatesToCorrectFor.hashProbes.get(cov);
+					Integer c = datasetCovariates.hashProbes.get(cov);
 					if (c == null) {
 						throw new Exception("Covariate not found: " + cov);
 					}
