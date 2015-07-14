@@ -61,14 +61,10 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("maxcov");
         OPTIONS.addOption(OptionBuilder.create("n"));
 
-        OptionBuilder.withArgName("boolean");
-        OptionBuilder.hasArg();
         OptionBuilder.withDescription("Interpret the z-score matrices");
         OptionBuilder.withLongOpt("interpret");
         OPTIONS.addOption(OptionBuilder.create("it"));
 
-        OptionBuilder.withArgName("boolean");
-        OptionBuilder.hasArg();
         OptionBuilder.withDescription("Find chi2sum differences for each covariate between 2 consequtive interaction runs");
         OptionBuilder.withLongOpt("chi2sumDiff");
         OPTIONS.addOption(OptionBuilder.create("dif"));
@@ -100,7 +96,8 @@ public class EQTLInteractionAnalyser {
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
 		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
-        boolean interpret = false, chi2sumDiff = false;
+        final boolean interpret, chi2sumDiff;
+		
         String[] covariates = null;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -114,12 +111,10 @@ public class EQTLInteractionAnalyser {
             if (commandLine.hasOption('n')) {
                 maxNumCovariatesToRegress = Integer.parseInt(commandLine.getOptionValue("n"));
             }
-            if (commandLine.hasOption("it")) {
-                interpret = Boolean.parseBoolean(commandLine.getOptionValue("t"));
-            }
-            if (commandLine.hasOption("dif")) {
-                chi2sumDiff = Boolean.parseBoolean(commandLine.getOptionValue("dif"));
-            }
+            
+			interpret = commandLine.hasOption("t");
+			chi2sumDiff = commandLine.hasOption("dif");
+
             if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
             }
