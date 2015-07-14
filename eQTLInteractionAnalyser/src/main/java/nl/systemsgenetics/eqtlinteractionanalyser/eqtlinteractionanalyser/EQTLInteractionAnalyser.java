@@ -6,6 +6,7 @@
 
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
+import java.io.File;
 import org.apache.commons.cli.*;
 import umcg.genetica.io.text.TextFile;
 
@@ -83,6 +84,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("File containing the covariates to correct for before running the interaction analysis. No header, each covariate on a separate line");
         OptionBuilder.withLongOpt("covFile");
         OPTIONS.addOption(OptionBuilder.create("cf"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("File containing the SNPs to swap");
+        OptionBuilder.withLongOpt("swap");
+        OPTIONS.addOption(OptionBuilder.create("sw"));
     }
 
     public static void main(String[] args) throws IOException {
@@ -91,6 +98,7 @@ public class EQTLInteractionAnalyser {
         System.out.println();
 
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
+		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
         boolean interpret = false, chi2sumDiff = false;
         String[] covariates = null;
@@ -122,8 +130,14 @@ public class EQTLInteractionAnalyser {
                 covFile.close();
             }
             else if (commandLine.hasOption("c")){
-                covariates = commandLine.getOptionValues("cf");
+                covariates = commandLine.getOptionValues("c");
             }
+			
+			if (commandLine.hasOption("sw")){
+                snpsToSwapFile = new File(commandLine.getOptionValue("sw"));
+            } else {
+				snpsToSwapFile = null;
+			}
 
         } catch (ParseException ex) {
             System.err.println("Invalid command line arguments: ");
@@ -143,7 +157,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, snpsToSwapFile);
         }
     }
 
