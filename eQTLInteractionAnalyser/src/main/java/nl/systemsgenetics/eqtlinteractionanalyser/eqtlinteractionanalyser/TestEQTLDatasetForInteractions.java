@@ -390,9 +390,6 @@ public class TestEQTLDatasetForInteractions {
 
 		}
 
-		System.exit(0);
-
-
 		if (1 == 1) {
 
 			if (1 == 1) {
