@@ -72,7 +72,6 @@ public class TestEQTLDatasetForInteractions {
 
 		TextFile outputTopCovs = new TextFile(outputDir + "/outputTopCovariates.txt", true);
 
-
 		System.out.print("\nPrimary covariates to correct for before running interaction analysis: ");
 		for (String cov : primaryCovsToCorrect) {
 			System.out.print("\n\t" + cov);
@@ -564,8 +563,8 @@ public class TestEQTLDatasetForInteractions {
 				double[] valsY = datasetExpression.rawData[snp];
 				regression.newSampleData(valsY, valsX);
 				datasetExpression.rawData[snp] = regression.estimateResiduals();
+				}
 			}
-		}
 
 
 		if (1 == 1) {
