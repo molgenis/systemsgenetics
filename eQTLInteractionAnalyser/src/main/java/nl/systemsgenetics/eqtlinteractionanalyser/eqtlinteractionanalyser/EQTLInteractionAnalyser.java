@@ -69,15 +69,21 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("chi2sumDiff");
         OPTIONS.addOption(OptionBuilder.create("dif"));
 
-        OptionBuilder.withArgName("string");
-        OptionBuilder.hasArg();
-        OptionBuilder.withDescription("covariates to correct for before running the interaction analysis");
+        OptionBuilder.withArgName("strings");
+        OptionBuilder.hasArgs();
+        OptionBuilder.withDescription("covariates to correct for using an interaction term before running the interaction analysis");
         OptionBuilder.withLongOpt("cov");
         OPTIONS.addOption(OptionBuilder.create("c"));
+		
+		OptionBuilder.withArgName("strings");
+        OptionBuilder.hasArgs();
+        OptionBuilder.withDescription("Covariates to correct for without interaction term before running the interaction analysis");
+        OptionBuilder.withLongOpt("cov2");
+        OPTIONS.addOption(OptionBuilder.create("c2"));
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("File containing the covariates to correct for before running the interaction analysis. No header, each covariate on a separate line");
+        OptionBuilder.withDescription("File containing the covariates to correct for using an interaction term before running the interaction analysis. No header, each covariate on a separate line");
         OptionBuilder.withLongOpt("covFile");
         OPTIONS.addOption(OptionBuilder.create("cf"));
 		
@@ -88,7 +94,7 @@ public class EQTLInteractionAnalyser {
         OPTIONS.addOption(OptionBuilder.create("sw"));
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, Exception {
         System.out.println("Starting interaction analysis");
         System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
         System.out.println();
@@ -99,6 +105,7 @@ public class EQTLInteractionAnalyser {
         final boolean interpret, chi2sumDiff;
 		
         String[] covariates = null;
+		final String[] covariates2;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -128,6 +135,12 @@ public class EQTLInteractionAnalyser {
                 covariates = commandLine.getOptionValues("c");
             }
 			
+			if (commandLine.hasOption("c2")){
+                covariates2 = commandLine.getOptionValues("c2");
+            } else {
+				covariates2 = new String[0];
+			}
+			
 			if (commandLine.hasOption("sw")){
                 snpsToSwapFile = new File(commandLine.getOptionValue("sw"));
             } else {
@@ -152,7 +165,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, snpsToSwapFile);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile);
         }
     }
 
