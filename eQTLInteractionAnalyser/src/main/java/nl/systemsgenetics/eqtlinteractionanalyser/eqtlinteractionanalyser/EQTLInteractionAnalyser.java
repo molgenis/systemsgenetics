@@ -6,6 +6,7 @@
 
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
+import java.io.File;
 import org.apache.commons.cli.*;
 import umcg.genetica.io.text.TextFile;
 
@@ -60,46 +61,51 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("maxcov");
         OPTIONS.addOption(OptionBuilder.create("n"));
 
-        OptionBuilder.withArgName("boolean");
-        OptionBuilder.hasArg();
         OptionBuilder.withDescription("Interpret the z-score matrices");
         OptionBuilder.withLongOpt("interpret");
         OPTIONS.addOption(OptionBuilder.create("it"));
 
-        OptionBuilder.withArgName("boolean");
-        OptionBuilder.hasArg();
         OptionBuilder.withDescription("Find chi2sum differences for each covariate between 2 consequtive interaction runs");
         OptionBuilder.withLongOpt("chi2sumDiff");
         OPTIONS.addOption(OptionBuilder.create("dif"));
 
-        OptionBuilder.withArgName("boolean");
-        OptionBuilder.hasArg();
-        OptionBuilder.withDescription("Run interaction analysis on permuted genotype data");
-        OptionBuilder.withLongOpt("perm");
-        OPTIONS.addOption(OptionBuilder.create("perm"));
-
-        OptionBuilder.withArgName("string");
-        OptionBuilder.hasArg();
-        OptionBuilder.withDescription("covariates to correct for before running the interaction analysis");
+        OptionBuilder.withArgName("strings");
+        OptionBuilder.hasArgs();
+        OptionBuilder.withDescription("covariates to correct for using an interaction term before running the interaction analysis");
         OptionBuilder.withLongOpt("cov");
         OPTIONS.addOption(OptionBuilder.create("c"));
+		
+		OptionBuilder.withArgName("strings");
+        OptionBuilder.hasArgs();
+        OptionBuilder.withDescription("Covariates to correct for without interaction term before running the interaction analysis");
+        OptionBuilder.withLongOpt("cov2");
+        OPTIONS.addOption(OptionBuilder.create("c2"));
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("File containing the covariates to correct for before running the interaction analysis. No header, each covariate on a separate line");
+        OptionBuilder.withDescription("File containing the covariates to correct for using an interaction term before running the interaction analysis. No header, each covariate on a separate line");
         OptionBuilder.withLongOpt("covFile");
         OPTIONS.addOption(OptionBuilder.create("cf"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("File containing the SNPs to swap");
+        OptionBuilder.withLongOpt("swap");
+        OPTIONS.addOption(OptionBuilder.create("sw"));
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, Exception {
         System.out.println("Starting interaction analysis");
         System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
         System.out.println();
 
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
+		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
-        boolean interpret = false, chi2sumDiff = false, permute = false;
-        String[] covariates = null;
+        final boolean interpret, chi2sumDiff;
+		
+        final String[] covariates;
+		final String[] covariates2;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -112,16 +118,11 @@ public class EQTLInteractionAnalyser {
             if (commandLine.hasOption('n')) {
                 maxNumCovariatesToRegress = Integer.parseInt(commandLine.getOptionValue("n"));
             }
-            if (commandLine.hasOption("it")) {
-                interpret = Boolean.parseBoolean(commandLine.getOptionValue("t"));
-            }
-            if (commandLine.hasOption("dif")) {
-                chi2sumDiff = Boolean.parseBoolean(commandLine.getOptionValue("dif"));
-            }
-            if (commandLine.hasOption("perm")) {
-                permute = Boolean.parseBoolean(commandLine.getOptionValue("perm"));
-            }
-            if (commandLine.hasOption('a')) {
+
+			interpret = commandLine.hasOption("t");
+			chi2sumDiff = commandLine.hasOption("dif");
+
+             if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
             }
 
@@ -131,8 +132,22 @@ public class EQTLInteractionAnalyser {
                 covFile.close();
             }
             else if (commandLine.hasOption("c")){
-                covariates = commandLine.getOptionValues("cf");
-            }
+                covariates = commandLine.getOptionValues("c");
+            } else {
+				covariates = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS"};
+			}
+			
+			if (commandLine.hasOption("c2")){
+                covariates2 = commandLine.getOptionValues("c2");
+            } else {
+				covariates2 = new String[0];
+			}
+			
+			if (commandLine.hasOption("sw")){
+                snpsToSwapFile = new File(commandLine.getOptionValue("sw"));
+            } else {
+				snpsToSwapFile = null;
+			}
 
         } catch (ParseException ex) {
             System.err.println("Invalid command line arguments: ");
@@ -152,7 +167,8 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, permute);
+
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile);
         }
     }
 

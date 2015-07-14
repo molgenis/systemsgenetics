@@ -20,6 +20,8 @@ public class CompareToGeuvadis {
 		HashSet<String> covariatesReplicated = new HashSet<String>();
 		HashSet<String> genesReplicated = new HashSet<String>();
 		int interactionsReplicated = 0;
+		int sameDirection = 0;
+		int oppositeDirection = 0;
 		
 		for (Map.Entry<String, Integer> covariateEntry : bios.hashProbes.entrySet()) {
 			for (Map.Entry<String, Integer> eQtlGeneEntry : bios.hashSamples.entrySet()) {
@@ -27,13 +29,13 @@ public class CompareToGeuvadis {
 				String covariate = covariateEntry.getKey();
 				String eQtlGene = eQtlGeneEntry.getKey();
 				
-				if(!covariate.equals("ENSG00000084072")){
-					continue;
-				}
+//				if(!covariate.equals("ENSG00000084072")){
+//					continue;
+//				}
 
 				double biosInteractionZ = bios.rawData[covariateEntry.getValue()][eQtlGeneEntry.getValue()];
 
-				if (biosInteractionZ >= 3 || biosInteractionZ <= -3) {
+				if (biosInteractionZ >= 6 || biosInteractionZ <= -6) {
 
 					Integer geuvadisCovI = geuvadis.hashProbes.get(covariate);
 					Integer geuvadisGenI = geuvadis.hashSamples.get(eQtlGene);
@@ -42,11 +44,17 @@ public class CompareToGeuvadis {
 
 						double geuvadisInteractionZ = geuvadis.rawData[geuvadisCovI][geuvadisGenI];
 
-						if (geuvadisInteractionZ >= 2 || geuvadisInteractionZ <= -2) {
+						if (geuvadisInteractionZ >= 5 || geuvadisInteractionZ <= -5) {
 						
 							covariatesReplicated.add(covariate);
 							genesReplicated.add(eQtlGene);
 							interactionsReplicated++;
+							
+							if(biosInteractionZ * geuvadisInteractionZ > 0){
+								sameDirection++;
+							} else {
+								oppositeDirection++;
+							}
 							
 							System.out.println(covariate + "\t" + eQtlGene + "\t" + biosInteractionZ + "\t" + geuvadisInteractionZ);
 							
@@ -63,6 +71,8 @@ public class CompareToGeuvadis {
 		System.out.println("Covariates replicated: " + covariatesReplicated.size());
 		System.out.println("Genes replicated: " + genesReplicated.size());
 		System.out.println("Interactions replicated: " + interactionsReplicated);
+		System.out.println("Interactions replicated same: " + sameDirection);
+		System.out.println("Interactions replicated opposite: " + oppositeDirection);
 		
     }
 
