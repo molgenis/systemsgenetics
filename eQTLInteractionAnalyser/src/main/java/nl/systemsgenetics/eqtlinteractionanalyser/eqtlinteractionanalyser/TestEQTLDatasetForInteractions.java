@@ -78,6 +78,7 @@ public class TestEQTLDatasetForInteractions {
 		}
 		System.out.println();
 
+		primaryCovsToCorrect = covariatesToCorrect;
 
 		String[] covsToCorrect = primaryCovsToCorrect;
 		int cnt = 0;
