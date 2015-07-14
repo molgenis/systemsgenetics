@@ -65,6 +65,10 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("interpret");
         OPTIONS.addOption(OptionBuilder.create("it"));
 
+        OptionBuilder.withDescription("Run permutation");
+        OptionBuilder.withLongOpt("permute");
+        OPTIONS.addOption(OptionBuilder.create("perm"));
+
         OptionBuilder.withDescription("Find chi2sum differences for each covariate between 2 consequtive interaction runs");
         OptionBuilder.withLongOpt("chi2sumDiff");
         OPTIONS.addOption(OptionBuilder.create("dif"));
@@ -102,7 +106,7 @@ public class EQTLInteractionAnalyser {
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
 		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
-        final boolean interpret, chi2sumDiff;
+        final boolean interpret, chi2sumDiff, permute;
 		
         final String[] covariates;
 		final String[] covariates2;
@@ -121,6 +125,7 @@ public class EQTLInteractionAnalyser {
 
 			interpret = commandLine.hasOption("t");
 			chi2sumDiff = commandLine.hasOption("dif");
+            permute = commandLine.hasOption("perm");
 
              if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
@@ -167,8 +172,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute);
         }
     }
 
