@@ -72,6 +72,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("chi2sumDiff");
         OPTIONS.addOption(OptionBuilder.create("dif"));
 
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Run interaction analysis on permuted genotype data");
+        OptionBuilder.withLongOpt("perm");
+        OPTIONS.addOption(OptionBuilder.create("perm"));
+
         OptionBuilder.withArgName("string");
         OptionBuilder.hasArg();
         OptionBuilder.withDescription("covariates to correct for before running the interaction analysis");
@@ -92,7 +98,7 @@ public class EQTLInteractionAnalyser {
 
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
         int maxNumCovariatesToRegress = 20;
-        boolean interpret = false, chi2sumDiff = false;
+        boolean interpret = false, chi2sumDiff = false, permute = false;
         String[] covariates = null;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
@@ -111,6 +117,9 @@ public class EQTLInteractionAnalyser {
             }
             if (commandLine.hasOption("dif")) {
                 chi2sumDiff = Boolean.parseBoolean(commandLine.getOptionValue("dif"));
+            }
+            if (commandLine.hasOption("perm")) {
+                permute = Boolean.parseBoolean(commandLine.getOptionValue("perm"));
             }
             if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
@@ -143,7 +152,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, permute);
         }
     }
 

@@ -42,7 +42,7 @@ public class TestEQTLDatasetForInteractions {
         //preprocessData();
     }
 
-    public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect) throws IOException {
+    public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, boolean permute) throws IOException {
 
         System.out.println("Input dir: " + inputDir);
         System.out.println("Output dir: " + outputDir);
@@ -84,7 +84,7 @@ public class TestEQTLDatasetForInteractions {
         String[] covsToCorrect = primaryCovsToCorrect;
         int cnt = 0;
         while (cnt < maxNumTopCovs) {
-            String topCov = performInteractionAnalysis(covsToCorrect, eqtlGenes, outputTopCovs);
+            String topCov = performInteractionAnalysis(covsToCorrect, eqtlGenes, outputTopCovs, permute);
             String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
             for (int c = 0; c < covsToCorrect.length; c++) {
                 covsToCorrectNew[c] = covsToCorrect[c];
@@ -229,7 +229,7 @@ public class TestEQTLDatasetForInteractions {
 
     }
 
-    public final String performInteractionAnalysis(String[] covsToCorrect, HashMap hashEQTLs, TextFile outputTopCovs) throws IOException {
+    public final String performInteractionAnalysis(String[] covsToCorrect, HashMap hashEQTLs, TextFile outputTopCovs, boolean permute) throws IOException {
 
         HashMap hashSamples = new HashMap();
 
@@ -536,7 +536,7 @@ public class TestEQTLDatasetForInteractions {
 
         }
 
-        if (1 == 2) {
+        if (permute) {
             System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
             String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
             int[] permSampleIDs = new int[datasetGenotypes.nrSamples];
