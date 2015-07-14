@@ -74,7 +74,8 @@ public class TestEQTLDatasetForInteractions {
 		if (covariatesToCorrect != null) {
 			primaryCovsToCorrect = covariatesToCorrect;
 		} else {
-			primaryCovsToCorrect = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "RS", "CODAM", "LLS"};
+			//primaryCovsToCorrect = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "LLdeep", "RS", "CODAM", "LLS"};
+			primaryCovsToCorrect = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS", "CEU", "GBR", "FIN", "TSI", "YRI"};
 		}
 
 
@@ -545,8 +546,8 @@ public class TestEQTLDatasetForInteractions {
 				double[] valsY = datasetExpression.rawData[snp];
 				regression.newSampleData(valsY, valsX);
 				datasetExpression.rawData[snp] = regression.estimateResiduals();
+				}
 			}
-		}
 
 
 		if (1 == 1) {
