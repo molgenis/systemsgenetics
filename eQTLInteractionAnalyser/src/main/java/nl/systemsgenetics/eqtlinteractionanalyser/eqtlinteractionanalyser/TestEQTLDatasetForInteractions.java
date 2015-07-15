@@ -751,12 +751,15 @@ public class TestEQTLDatasetForInteractions {
 					if(s == null){
 						throw new Exception("Snp " + snp + " not found");
 					}
-					
-					x[k++] = datasetGenotypes.rawData[s];
-
+					double[] snpData = datasetGenotypes.rawData[s];
+					for(int i = 0 ; i < datasetGenotypes.nrSamples ; ++i){
+						x[i][k] = snpData[i];
+					}
+									
+					k++;
 				}				
 				
-				ols.newSampleData(datasetCovariates.rawData[p], x);
+				
 				
 				PearsonsCorrelation cor = new PearsonsCorrelation();
 					
@@ -766,6 +769,7 @@ public class TestEQTLDatasetForInteractions {
 					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
 				}
 				
+				ols.newSampleData(datasetCovariates.rawData[p], x);
 				datasetCovariates.rawData[p] = ols.estimateResiduals();
 				
 				System.out.println("After");
