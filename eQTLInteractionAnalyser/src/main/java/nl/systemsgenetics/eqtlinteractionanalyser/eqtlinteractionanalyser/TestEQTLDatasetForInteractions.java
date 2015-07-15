@@ -23,7 +23,9 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.mahout.math.Arrays;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
 import umcg.genetica.io.Gpio;
@@ -235,52 +237,8 @@ public class TestEQTLDatasetForInteractions {
 
 		HashMap hashSamples = new HashMap();
 
-		if (1 == 1) {
-
-			System.out.println("Removing outlier samples!!!");
-			HashMap hashCovariates = new HashMap();
-			hashCovariates.put("MEDIAN_5PRIME_BIAS", null);
-			hashCovariates.put("MEDIAN_3PRIME_BIAS", null);
-			ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, null);
-			hashSamples = new HashMap();
-			for (int s = 0; s < datasetCovariates.nrSamples; s++) {
-				if (datasetCovariates.rawData[0][s] != 0) {
-					hashSamples.put(datasetCovariates.sampleNames[s], null);
-				}
-			}
-			datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, hashSamples);
-			HashMap hashSamplesToExclude = new HashMap();
-			if (1 == 1) {
-				int index = ((Integer) datasetCovariates.hashProbes.get("MEDIAN_5PRIME_BIAS")).intValue();
-				double mean = JSci.maths.ArrayMath.mean(datasetCovariates.rawData[index]);
-				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[index]);
-				for (int s = 0; s < datasetCovariates.nrSamples; s++) {
-					double z = (datasetCovariates.rawData[index][s] - mean) / stdev;
-					if (Math.abs(z) > 3) {
-						hashSamplesToExclude.put(datasetCovariates.sampleNames[s], null);
-					}
-				}
-			}
-			if (1 == 1) {
-				int index = ((Integer) datasetCovariates.hashProbes.get("MEDIAN_3PRIME_BIAS")).intValue();
-				double mean = JSci.maths.ArrayMath.mean(datasetCovariates.rawData[index]);
-				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[index]);
-				for (int s = 0; s < datasetCovariates.nrSamples; s++) {
-					double z = (datasetCovariates.rawData[index][s] - mean) / stdev;
-					if (Math.abs(z) > 3) {
-						hashSamplesToExclude.put(datasetCovariates.sampleNames[s], null);
-					}
-				}
-			}
-			hashSamples = new HashMap();
-			for (int s = 0; s < datasetCovariates.nrSamples; s++) {
-				if (!hashSamplesToExclude.containsKey(datasetCovariates.sampleNames[s])) {
-					hashSamples.put(datasetCovariates.sampleNames[s], null);
-					hashSamples.put(datasetCovariates.sampleNames[s] + "_exp", null);
-					hashSamples.put(datasetCovariates.sampleNames[s] + "_dosage", null);
-				}
-			}
-		}
+		hashSamples = excludeOutliers(hashSamples);
+		
 
 		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", hashEQTLs, hashSamples);
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", hashEQTLs, hashSamples);
@@ -290,238 +248,24 @@ public class TestEQTLDatasetForInteractions {
 		int nrSamples = datasetGenotypes.nrSamples;
 
 
-		if (1 == 1) {
-			//Define a set of covariates that we want to use as correction:
-			System.out.println("Correcting gene expression data for cohort specific effects and top 25 components");
-			//String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
-			int nrCompsToCorrectFor = 25;
-			ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + nrCompsToCorrectFor, datasetGenotypes.nrSamples);
-			datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
-
-			for (int i = 0; i < covsToCorrect2.length; ++i) {
-				String cov = covsToCorrect2[i];
-				Integer c = datasetCovariates.hashProbes.get(cov);
-				if (c == null) {
-					throw new Exception("Covariate not found: " + cov);
-				}
-				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					datasetCovariatesToCorrectFor.rawData[i][s] = datasetCovariates.rawData[c][s];
-				}
-			}
-
-//			for (int p = 0; p < cohorts.length; p++) {
-//				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-//					if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
-//						datasetCovariatesToCorrectFor.rawData[p][s] = 1;
-//					}
-//				}
-//			}
-			if (nrCompsToCorrectFor > 0) {
-				for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
-					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-						datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + comp][s] = datasetCovariates.rawData[datasetCovariates.nrProbes - 51 + comp][s];
-					}
-				}
-			}
-
-			datasetCovariatesToCorrectFor.transposeDataset();
-
-			datasetCovariatesToCorrectFor.save(inputDir + "/CovariatesToCorrectFor.txt");
-			orthogonalizeDataset(inputDir + "/CovariatesToCorrectFor.txt");
-			datasetCovariatesToCorrectFor = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
-			datasetCovariatesToCorrectFor.transposeDataset();
-			ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
-			for (int snp = 0; snp < datasetExpression.nrProbes; snp++) {
-				for (int cov = 0; cov < datasetCovariatesToCorrectFor.nrProbes; cov++) {
-					if (datasetCovariatesToCorrectForEigenvalues.rawData[cov][0] > 1E-5) {
-						double[] rc = getLinearRegressionCoefficients(datasetCovariatesToCorrectFor.rawData[cov], datasetExpression.rawData[snp]);
-						for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-							datasetExpression.rawData[snp][s] -= rc[0] * datasetCovariatesToCorrectFor.rawData[cov][s];
-						}
-					}
-				}
-			}
-
-
-		}
-
-
-
-
-
-		//double[] mainEQTLCorr = new double[datasetGenotypes.nrProbes];
-
-
-		if (snpsToSwapFile != null) {
-			System.out.println("Enforcing for every eQTL that the genotype dosage is swapped based on: " + snpsToSwapFile.getAbsolutePath());
-
-			HashSet<String> snpsToSwap = new HashSet<String>();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(snpsToSwapFile), "UTF-8"));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				snpsToSwap.add(line);
-			}
-			reader.close();
-
-			for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
-
-				if (snpsToSwap.contains(datasetGenotypes.probeNames[snp])) {
-
-					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-						datasetGenotypes.rawData[snp][s] = 2 - datasetGenotypes.rawData[snp][s];
-					}
-
-				}
-
-				//mainEQTLCorr[snp] = corr;
-			}
-
-
-		} else {
-			System.out.println("Enforcing for every eQTL that the genotype dosage positively correlated with gene expression levels:");
-
-			Writer writer = new BufferedWriter(new FileWriter(outputDir + "/swappedDosages.txt"));
-			for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
-				double corr = JSci.maths.ArrayMath.correlation(datasetGenotypes.rawData[snp], datasetExpression.rawData[snp]);
-				//System.out.println(datasetExpression.probeNames[snp] + "\t" + snp + "\t" + corr);
-
-				if (corr < 0) {
-					corr = -corr;
-					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-						datasetGenotypes.rawData[snp][s] = 2 - datasetGenotypes.rawData[snp][s];
-					}
-					writer.append(datasetGenotypes.probeNames[snp]);
-					writer.append('\n');
-				}
-
-				//mainEQTLCorr[snp] = corr;
-			}
-			writer.close();
-
-		}
+		correctExpressionData(covsToCorrect2, datasetGenotypes, datasetCovariates, datasetExpression);
+		
+		correctDosageDirectionForQtl(snpsToSwapFile, datasetGenotypes, datasetExpression);
 
 		if (1 == 1) {
 
-			if (1 == 1) {
-				System.out.println("Correcting covariate data for cohort specific effects:");
-//                String[] cohorts = {"LLDeep","LLS","RS","CODAM"};
-				ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + covsToCorrect.length, datasetGenotypes.nrSamples);
-				datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
+			correctCovariateData(covsToCorrect2, covsToCorrect, datasetGenotypes, datasetCovariates);
 
-				for (int i = 0; i < covsToCorrect2.length; ++i) {
-					String cov = covsToCorrect2[i];
-					Integer c = datasetCovariates.hashProbes.get(cov);
-					if (c == null) {
-						throw new Exception("Covariate not found: " + cov);
-					}
-					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-						datasetCovariatesToCorrectFor.rawData[i][s] = datasetCovariates.rawData[c][s];
-					}
-				}
-
-//                for (int p=0; p<cohorts.length; p++) {
-//                    for (int s=0; s<datasetGenotypes.nrSamples; s++) {
-//                        if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
-//                            datasetCovariatesToCorrectFor.rawData[p][s]=1;
-//                        }
-//                    }
-//                }
-
-				HashMap hashCovsToCorrect = new HashMap();
-				int[] covsToCorrectIndex = new int[covsToCorrect.length];
-				for (int c = 0; c < covsToCorrect.length; c++) {
-					hashCovsToCorrect.put(covsToCorrect[c], null);
-					covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
-					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-						datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + c][s] = datasetCovariates.rawData[covsToCorrectIndex[c]][s];
-					}
-				}
-
-				datasetCovariatesToCorrectFor.transposeDataset();
-
-				datasetCovariatesToCorrectFor.save(inputDir + "/CovariatesToCorrectFor.txt");
-				orthogonalizeDataset(inputDir + "/CovariatesToCorrectFor.txt");
-				datasetCovariatesToCorrectFor = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
-				datasetCovariatesToCorrectFor.transposeDataset();
-				ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
-
-				for (int p = 0; p < datasetCovariates.nrProbes; p++) {
-					if (!hashCovsToCorrect.containsKey(datasetCovariates.probeNames[p])) {
-						for (int cov = 0; cov < datasetCovariatesToCorrectFor.nrProbes; cov++) {
-							if (datasetCovariatesToCorrectForEigenvalues.rawData[cov][0] > 1E-5) {
-								double[] rc = getLinearRegressionCoefficients(datasetCovariatesToCorrectFor.rawData[cov], datasetCovariates.rawData[p]);
-								for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-									datasetCovariates.rawData[p][s] -= rc[0] * datasetCovariatesToCorrectFor.rawData[cov][s];
-								}
-							}
-						}
-						double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[p]);
-						double mean = JSci.maths.ArrayMath.mean(datasetCovariates.rawData[p]);
-						if (stdev < 1E-5) {
-							for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-								datasetCovariates.rawData[p][s] = mean;
-							}
-						}
-					}
-				}
-
-
-			}
 			correctCovariatesForQtls(datasetCovariates, datasetExpression, datasetGenotypes);
 
 			if (1 == 2) {
-				datasetCovariates.save(inputDir + "/CovariatesCorrected.txt");
-				HashMap hashProbesToFilter = new HashMap();
-				for (int p = 0; p < datasetCovariates.nrProbes; p++) {
-					if (datasetCovariates.probeNames[p].startsWith("ENSG")) {
-						hashProbesToFilter.put(datasetCovariates.probeNames[p], null);
-					}
-				}
-				ExpressionDataset datasetCovariatesCorrected = new ExpressionDataset(inputDir + "/CovariatesCorrected.txt", "\t", hashProbesToFilter, null);
-				datasetCovariatesCorrected.transposeDataset();
-				datasetCovariatesCorrected.save(inputDir + "/CovariatesCorrected.txt");
-				System.exit(0);
+				saveCorrectedCovariates(datasetCovariates);
 			}
 
 			if (1 == 2) {
-				ExpressionDataset datasetICA = new ExpressionDataset("/Users/lude/Documents/ICA/mixingmatrix.txt");
-				//ExpressionDataset datasetICA = new ExpressionDataset("/Users/lude/Documents/ICA/signals.txt");
-				datasetICA.transposeDataset();
-				for (int p = 0; p < datasetICA.nrProbes; p++) {
-					datasetCovariates.rawData[p] = datasetICA.rawData[p];
-					datasetCovariates.probeNames[p] = datasetICA.probeNames[p];
-					if (p == 7) {
-						for (int q = 0; q < datasetCovariates.nrProbes; q++) {
-							double corr = JSci.maths.ArrayMath.correlation(datasetICA.rawData[p], datasetCovariates.rawData[q]);
-							System.out.println(p + "\t" + datasetICA.probeNames[p] + "\t" + q + "\t" + datasetCovariates.probeNames[q] + "\t" + corr + "\t" + corr * corr);
-						}
-					}
-				}
-
-				orthogonalizeDataset("/Users/lude/Documents/ICA/mixingmatrix.txt");
-				//System.exit(0);
+				icaCovariates(datasetCovariates);
 			}
-
-			System.out.println("Enforcing normal distribution on covariates");
-
-			NaturalRanking ranker = new NaturalRanking();
-
-			for (int p = 0; p < datasetCovariates.nrProbes; p++) {
-				//Rank order the expression values:
-				double[] values = new double[datasetCovariates.nrSamples];
-				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					values[s] = datasetCovariates.rawData[p][s];
-				}
-				double[] rankedValues = ranker.rank(values);
-				//Replace the original expression value with the standard distribution enforce:
-				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					//Convert the rank to a proportion, with range <0, 1>
-					double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
-					//Convert the pValue to a Z-Score:
-					double zScore = cern.jet.stat.tdouble.Probability.normalInverse(pValue);
-					datasetCovariates.rawData[p][s] = zScore; //Replace original expression value with the Z-Score
-				}
-			}
+			forceNormalCovariates(datasetCovariates, datasetGenotypes);
 
 		}
 
@@ -534,57 +278,10 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-		if (1 == 1) {
-			System.out.println("Correcting expression data for predefined gene environment interaction effects (GC content, Gender, 5'Median Bias, 3'Median Bias):");
-			int[] covsToCorrectIndex = new int[covsToCorrect.length];
-			for (int c = 0; c < covsToCorrect.length; c++) {
-				covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+		correctExpressionDataForInteractions(covsToCorrect, datasetCovariates, datasetGenotypes, nrSamples, datasetExpression, regression);
 
-			}
-			for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
-				double[][] valsX = new double[nrSamples][1 + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
-				for (int s = 0; s < nrSamples; s++) {
-					valsX[s][0] = datasetGenotypes.rawData[snp][s]; //genotypes
-				}
-				for (int c = 0; c < covsToCorrect.length; c++) {
-					for (int s = 0; s < nrSamples; s++) {
-						valsX[s][c * 2 + 1] = datasetCovariates.rawData[covsToCorrectIndex[c]][s]; //covariate
-						valsX[s][c * 2 + 2] = valsX[s][0] * valsX[s][c * 2 + 1]; //interction
-					}
-				}
-				double[] valsY = datasetExpression.rawData[snp];
-				regression.newSampleData(valsY, valsX);
-				datasetExpression.rawData[snp] = regression.estimateResiduals();
-			}
-		}
+		forceNormalExpressionData(datasetExpression);
 
-
-		if (1 == 1) {
-			System.out.println("Enforcing normal distribution on expression data:");
-
-			NaturalRanking ranker = new NaturalRanking();
-
-			for (int p = 0; p < datasetExpression.nrProbes; p++) {
-				//Rank order the expression values:
-				double[] values = new double[datasetExpression.nrSamples];
-				for (int s = 0; s < datasetExpression.nrSamples; s++) {
-					values[s] = datasetExpression.rawData[p][s];
-				}
-
-				double[] rankedValues = ranker.rank(values);
-				//Replace the original expression value with the standard distribution enforce:
-				for (int s = 0; s < datasetExpression.nrSamples; s++) {
-					//Convert the rank to a proportion, with range <0, 1>
-					double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
-					//Convert the pValue to a Z-Score:
-					double zScore = cern.jet.stat.tdouble.Probability.normalInverse(pValue);
-					datasetExpression.rawData[p][s] = zScore; //Replace original expression value with the Z-Score
-				}
-			}
-
-			System.out.println("Expression data now force normal");
-
-		}
 
 		if (permute) {
 			System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
@@ -1001,5 +698,329 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
+	}
+
+	private HashMap excludeOutliers(HashMap hashSamples) {
+		System.out.println("Removing outlier samples!!!");
+		HashMap hashCovariates = new HashMap();
+		hashCovariates.put("MEDIAN_5PRIME_BIAS", null);
+		hashCovariates.put("MEDIAN_3PRIME_BIAS", null);
+		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, null);
+		hashSamples = new HashMap();
+		for (int s = 0; s < datasetCovariates.nrSamples; s++) {
+			if (datasetCovariates.rawData[0][s] != 0) {
+				hashSamples.put(datasetCovariates.sampleNames[s], null);
+			}
+		}
+		datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, hashSamples);
+		HashMap hashSamplesToExclude = new HashMap();
+		if (1 == 1) {
+			int index = ((Integer) datasetCovariates.hashProbes.get("MEDIAN_5PRIME_BIAS")).intValue();
+			double mean = JSci.maths.ArrayMath.mean(datasetCovariates.rawData[index]);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[index]);
+			for (int s = 0; s < datasetCovariates.nrSamples; s++) {
+				double z = (datasetCovariates.rawData[index][s] - mean) / stdev;
+				if (Math.abs(z) > 3) {
+					hashSamplesToExclude.put(datasetCovariates.sampleNames[s], null);
+				}
+			}
+		}
+		if (1 == 1) {
+			int index = ((Integer) datasetCovariates.hashProbes.get("MEDIAN_3PRIME_BIAS")).intValue();
+			double mean = JSci.maths.ArrayMath.mean(datasetCovariates.rawData[index]);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[index]);
+			for (int s = 0; s < datasetCovariates.nrSamples; s++) {
+				double z = (datasetCovariates.rawData[index][s] - mean) / stdev;
+				if (Math.abs(z) > 3) {
+					hashSamplesToExclude.put(datasetCovariates.sampleNames[s], null);
+				}
+			}
+		}
+		hashSamples = new HashMap();
+		for (int s = 0; s < datasetCovariates.nrSamples; s++) {
+			if (!hashSamplesToExclude.containsKey(datasetCovariates.sampleNames[s])) {
+				hashSamples.put(datasetCovariates.sampleNames[s], null);
+				hashSamples.put(datasetCovariates.sampleNames[s] + "_exp", null);
+				hashSamples.put(datasetCovariates.sampleNames[s] + "_dosage", null);
+			}
+		}
+		return hashSamples;
+	}
+
+	private void correctCovariateData(String[] covsToCorrect2, String[] covsToCorrect, ExpressionDataset datasetGenotypes, ExpressionDataset datasetCovariates) throws Exception {
+		
+		System.out.println("Correcting covariate data for cohort specific effects:");
+//                String[] cohorts = {"LLDeep","LLS","RS","CODAM"};
+		ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + covsToCorrect.length, datasetGenotypes.nrSamples);
+		datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
+
+		for (int i = 0; i < covsToCorrect2.length; ++i) {
+			String cov = covsToCorrect2[i];
+			Integer c = datasetCovariates.hashProbes.get(cov);
+			if (c == null) {
+				throw new Exception("Covariate not found: " + cov);
+			}
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				datasetCovariatesToCorrectFor.rawData[i][s] = datasetCovariates.rawData[c][s];
+			}
+		}
+
+//                for (int p=0; p<cohorts.length; p++) {
+//                    for (int s=0; s<datasetGenotypes.nrSamples; s++) {
+//                        if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
+//                            datasetCovariatesToCorrectFor.rawData[p][s]=1;
+//                        }
+//                    }
+//                }
+
+		HashMap hashCovsToCorrect = new HashMap();
+		int[] covsToCorrectIndex = new int[covsToCorrect.length];
+		for (int c = 0; c < covsToCorrect.length; c++) {
+			hashCovsToCorrect.put(covsToCorrect[c], null);
+			covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + c][s] = datasetCovariates.rawData[covsToCorrectIndex[c]][s];
+			}
+		}
+
+		datasetCovariatesToCorrectFor.transposeDataset();
+
+		datasetCovariatesToCorrectFor.save(inputDir + "/CovariatesToCorrectFor.txt");
+		orthogonalizeDataset(inputDir + "/CovariatesToCorrectFor.txt");
+		datasetCovariatesToCorrectFor = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
+		datasetCovariatesToCorrectFor.transposeDataset();
+		ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
+
+		for (int p = 0; p < datasetCovariates.nrProbes; p++) {
+			if (!hashCovsToCorrect.containsKey(datasetCovariates.probeNames[p])) {
+				for (int cov = 0; cov < datasetCovariatesToCorrectFor.nrProbes; cov++) {
+					if (datasetCovariatesToCorrectForEigenvalues.rawData[cov][0] > 1E-5) {
+						double[] rc = getLinearRegressionCoefficients(datasetCovariatesToCorrectFor.rawData[cov], datasetCovariates.rawData[p]);
+						for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+							datasetCovariates.rawData[p][s] -= rc[0] * datasetCovariatesToCorrectFor.rawData[cov][s];
+						}
+					}
+				}
+				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[p]);
+				double mean = JSci.maths.ArrayMath.mean(datasetCovariates.rawData[p]);
+				if (stdev < 1E-5) {
+					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+						datasetCovariates.rawData[p][s] = mean;
+					}
+				}
+			}
+		}
+	}
+
+	private void correctExpressionData(String[] covsToCorrect2, ExpressionDataset datasetGenotypes, ExpressionDataset datasetCovariates, ExpressionDataset datasetExpression) throws Exception {
+		//Define a set of covariates that we want to use as correction:
+		System.out.println("Correcting gene expression data for cohort specific effects and top 25 components");
+		//String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
+		int nrCompsToCorrectFor = 25;
+		ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + nrCompsToCorrectFor, datasetGenotypes.nrSamples);
+		datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
+
+		for (int i = 0; i < covsToCorrect2.length; ++i) {
+			String cov = covsToCorrect2[i];
+			Integer c = datasetCovariates.hashProbes.get(cov);
+			if (c == null) {
+				throw new Exception("Covariate not found: " + cov);
+			}
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				datasetCovariatesToCorrectFor.rawData[i][s] = datasetCovariates.rawData[c][s];
+			}
+		}
+
+//			for (int p = 0; p < cohorts.length; p++) {
+//				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+//					if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
+//						datasetCovariatesToCorrectFor.rawData[p][s] = 1;
+//					}
+//				}
+//			}
+		if (nrCompsToCorrectFor > 0) {
+			for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
+				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + comp][s] = datasetCovariates.rawData[datasetCovariates.nrProbes - 51 + comp][s];
+				}
+			}
+		}
+
+		datasetCovariatesToCorrectFor.transposeDataset();
+
+		datasetCovariatesToCorrectFor.save(inputDir + "/CovariatesToCorrectFor.txt");
+		orthogonalizeDataset(inputDir + "/CovariatesToCorrectFor.txt");
+		datasetCovariatesToCorrectFor = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
+		datasetCovariatesToCorrectFor.transposeDataset();
+		ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
+		for (int snp = 0; snp < datasetExpression.nrProbes; snp++) {
+			for (int cov = 0; cov < datasetCovariatesToCorrectFor.nrProbes; cov++) {
+				if (datasetCovariatesToCorrectForEigenvalues.rawData[cov][0] > 1E-5) {
+					double[] rc = getLinearRegressionCoefficients(datasetCovariatesToCorrectFor.rawData[cov], datasetExpression.rawData[snp]);
+					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+						datasetExpression.rawData[snp][s] -= rc[0] * datasetCovariatesToCorrectFor.rawData[cov][s];
+					}
+				}
+			}
+		}
+	}
+
+	private void correctDosageDirectionForQtl(File snpsToSwapFile, ExpressionDataset datasetGenotypes, ExpressionDataset datasetExpression) throws IOException {
+		//double[] mainEQTLCorr = new double[datasetGenotypes.nrProbes];
+
+
+		if (snpsToSwapFile != null) {
+			System.out.println("Enforcing for every eQTL that the genotype dosage is swapped based on: " + snpsToSwapFile.getAbsolutePath());
+
+			HashSet<String> snpsToSwap = new HashSet<String>();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(snpsToSwapFile), "UTF-8"));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				snpsToSwap.add(line);
+			}
+			reader.close();
+
+			for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
+
+				if (snpsToSwap.contains(datasetGenotypes.probeNames[snp])) {
+
+					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+						datasetGenotypes.rawData[snp][s] = 2 - datasetGenotypes.rawData[snp][s];
+					}
+
+				}
+
+				//mainEQTLCorr[snp] = corr;
+			}
+
+
+		} else {
+			System.out.println("Enforcing for every eQTL that the genotype dosage positively correlated with gene expression levels:");
+
+			Writer writer = new BufferedWriter(new FileWriter(outputDir + "/swappedDosages.txt"));
+			for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
+				double corr = JSci.maths.ArrayMath.correlation(datasetGenotypes.rawData[snp], datasetExpression.rawData[snp]);
+				//System.out.println(datasetExpression.probeNames[snp] + "\t" + snp + "\t" + corr);
+
+				if (corr < 0) {
+					corr = -corr;
+					for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+						datasetGenotypes.rawData[snp][s] = 2 - datasetGenotypes.rawData[snp][s];
+					}
+					writer.append(datasetGenotypes.probeNames[snp]);
+					writer.append('\n');
+				}
+
+				//mainEQTLCorr[snp] = corr;
+			}
+			writer.close();
+
+		}
+	}
+
+	private void saveCorrectedCovariates(ExpressionDataset datasetCovariates) {
+		datasetCovariates.save(inputDir + "/CovariatesCorrected.txt");
+		HashMap hashProbesToFilter = new HashMap();
+		for (int p = 0; p < datasetCovariates.nrProbes; p++) {
+			if (datasetCovariates.probeNames[p].startsWith("ENSG")) {
+				hashProbesToFilter.put(datasetCovariates.probeNames[p], null);
+			}
+		}
+		ExpressionDataset datasetCovariatesCorrected = new ExpressionDataset(inputDir + "/CovariatesCorrected.txt", "\t", hashProbesToFilter, null);
+		datasetCovariatesCorrected.transposeDataset();
+		datasetCovariatesCorrected.save(inputDir + "/CovariatesCorrected.txt");
+		System.exit(0);
+	}
+
+	private void icaCovariates(ExpressionDataset datasetCovariates) {
+		ExpressionDataset datasetICA = new ExpressionDataset("/Users/lude/Documents/ICA/mixingmatrix.txt");
+		//ExpressionDataset datasetICA = new ExpressionDataset("/Users/lude/Documents/ICA/signals.txt");
+		datasetICA.transposeDataset();
+		for (int p = 0; p < datasetICA.nrProbes; p++) {
+			datasetCovariates.rawData[p] = datasetICA.rawData[p];
+			datasetCovariates.probeNames[p] = datasetICA.probeNames[p];
+			if (p == 7) {
+				for (int q = 0; q < datasetCovariates.nrProbes; q++) {
+					double corr = JSci.maths.ArrayMath.correlation(datasetICA.rawData[p], datasetCovariates.rawData[q]);
+					System.out.println(p + "\t" + datasetICA.probeNames[p] + "\t" + q + "\t" + datasetCovariates.probeNames[q] + "\t" + corr + "\t" + corr * corr);
+				}
+			}
+		}
+
+		orthogonalizeDataset("/Users/lude/Documents/ICA/mixingmatrix.txt");
+		//System.exit(0);
+	}
+
+	private void forceNormalCovariates(ExpressionDataset datasetCovariates, ExpressionDataset datasetGenotypes) throws ArithmeticException {
+		System.out.println("Enforcing normal distribution on covariates");
+
+		NaturalRanking ranker = new NaturalRanking();
+
+		for (int p = 0; p < datasetCovariates.nrProbes; p++) {
+			//Rank order the expression values:
+			double[] values = new double[datasetCovariates.nrSamples];
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				values[s] = datasetCovariates.rawData[p][s];
+			}
+			double[] rankedValues = ranker.rank(values);
+			//Replace the original expression value with the standard distribution enforce:
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				//Convert the rank to a proportion, with range <0, 1>
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+				//Convert the pValue to a Z-Score:
+				double zScore = cern.jet.stat.tdouble.Probability.normalInverse(pValue);
+				datasetCovariates.rawData[p][s] = zScore; //Replace original expression value with the Z-Score
+			}
+		}
+	}
+
+	private void correctExpressionDataForInteractions(String[] covsToCorrect, ExpressionDataset datasetCovariates, ExpressionDataset datasetGenotypes, int nrSamples, ExpressionDataset datasetExpression, OLSMultipleLinearRegression regression) throws MathIllegalArgumentException {
+		System.out.println("Correcting expression data for predefined gene environment interaction effects (GC content, Gender, 5'Median Bias, 3'Median Bias):");
+		int[] covsToCorrectIndex = new int[covsToCorrect.length];
+		for (int c = 0; c < covsToCorrect.length; c++) {
+			covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+
+		}
+		for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
+			double[][] valsX = new double[nrSamples][1 + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
+			for (int s = 0; s < nrSamples; s++) {
+				valsX[s][0] = datasetGenotypes.rawData[snp][s]; //genotypes
+			}
+			for (int c = 0; c < covsToCorrect.length; c++) {
+				for (int s = 0; s < nrSamples; s++) {
+					valsX[s][c * 2 + 1] = datasetCovariates.rawData[covsToCorrectIndex[c]][s]; //covariate
+					valsX[s][c * 2 + 2] = valsX[s][0] * valsX[s][c * 2 + 1]; //interction
+				}
+			}
+			double[] valsY = datasetExpression.rawData[snp];
+			regression.newSampleData(valsY, valsX);
+			datasetExpression.rawData[snp] = regression.estimateResiduals();
+		}
+	}
+
+	private void forceNormalExpressionData(ExpressionDataset datasetExpression) throws ArithmeticException {
+		System.out.println("Enforcing normal distribution on expression data:");
+
+		NaturalRanking ranker = new NaturalRanking();
+
+		for (int p = 0; p < datasetExpression.nrProbes; p++) {
+			//Rank order the expression values:
+			double[] values = new double[datasetExpression.nrSamples];
+			for (int s = 0; s < datasetExpression.nrSamples; s++) {
+				values[s] = datasetExpression.rawData[p][s];
+			}
+
+			double[] rankedValues = ranker.rank(values);
+			//Replace the original expression value with the standard distribution enforce:
+			for (int s = 0; s < datasetExpression.nrSamples; s++) {
+				//Convert the rank to a proportion, with range <0, 1>
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+				//Convert the pValue to a Z-Score:
+				double zScore = cern.jet.stat.tdouble.Probability.normalInverse(pValue);
+				datasetExpression.rawData[p][s] = zScore; //Replace original expression value with the Z-Score
+			}
+		}
+
+		System.out.println("Expression data now force normal");
 	}
 }
