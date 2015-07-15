@@ -208,6 +208,9 @@ public class TestEQTLDatasetForInteractions {
 		HashMap hashGenotypes = new HashMap();
 		HashMap hashExpression = new HashMap();
 		HashMap hashEQTLs = new HashMap();
+		ArrayList<String> snps = new ArrayList<String>();
+		int countExcludedLines = 0;
+		
 		try {
 			java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File(inputDir + "/bigTableLude.txt")));
 			String str = in.readLine();
@@ -226,10 +229,13 @@ public class TestEQTLDatasetForInteractions {
 				if (!str.contains("NA")) {
 					data = str.split("\t");
 					hashEQTLs.put(data[0], null);
+					snps.add(data[1]);
 					itr++;
 					if (itr % 100 == 0) {
 						System.out.println(itr);
 					}
+				} else {
+					++countExcludedLines;
 				}
 			}
 		} catch (Exception e) {
@@ -237,7 +243,12 @@ public class TestEQTLDatasetForInteractions {
 			e.printStackTrace();
 		}
 
+		System.out.println("EXCLUDED LINES: " + countExcludedLines);
+		
 		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt", "\t", hashEQTLs, hashGenotypes);
+		datasetGenotypes.probeNames = snps.toArray(new String[snps.size()]);
+		datasetGenotypes.recalculateHashMaps();
+		
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt", "\t", hashEQTLs, hashExpression);
 		datasetGenotypes.save(datasetGenotypes.fileName + ".Genotypes.binary");
 		datasetExpression.save(datasetGenotypes.fileName + ".Expression.binary");
