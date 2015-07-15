@@ -718,7 +718,7 @@ public class TestEQTLDatasetForInteractions {
 		HashMap<String, Integer> snpMap = new HashMap<String, Integer>(datasetGenotypes.nrProbes);
 		for(Map.Entry<String, Integer> snpEntry : datasetGenotypes.hashProbes.entrySet()){
 			try{
-				snpMap.put(snpEntry.getKey().substring(0, snpEntry.getKey().charAt('_')), snpEntry.getValue());
+				snpMap.put(snpEntry.getKey().substring(0, snpEntry.getKey().indexOf('_')), snpEntry.getValue());
 			} catch(Exception e){
 				System.out.println(snpEntry.getKey());
 				throw e;
