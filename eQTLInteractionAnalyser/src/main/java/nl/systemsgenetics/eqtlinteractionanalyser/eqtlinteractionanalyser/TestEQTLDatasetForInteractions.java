@@ -728,7 +728,12 @@ public class TestEQTLDatasetForInteractions {
 			System.out.println("");
 			System.out.println("-------------------------------------");
 			System.out.println("");
-			System.out.println("probe");
+			System.out.println(probe);
+			System.out.println("");
+			
+			
+			
+			
 			
 			if(!probeQtls.isEmpty()){
 				
@@ -749,9 +754,16 @@ public class TestEQTLDatasetForInteractions {
 				ols.newSampleData(datasetCovariates.rawData[p], x);
 				
 				PearsonsCorrelation cor = new PearsonsCorrelation();
-								
+					
+				System.out.println("Before");
+				for(String snp : probeQtls){
+					Integer s = snpMap.get(snp);
+					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
+				}
+				
 				datasetCovariates.rawData[p] = ols.estimateResiduals();
 				
+				System.out.println("After");
 				for(String snp : probeQtls){
 					Integer s = snpMap.get(snp);
 					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
