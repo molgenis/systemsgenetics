@@ -264,11 +264,25 @@ public class TestEQTLDatasetForInteractions {
 		HashMap hashSamples = new HashMap();
 
 		hashSamples = excludeOutliers(hashSamples);
+
+		String[] covariatesToTest = new String[]{"ENSG00000116701"};
 		
+		HashMap<String, Integer> covariatesToLoad = new HashMap();
+		if(covariatesToTest != null){
+			for(String c : covariatesToTest){
+				covariatesToLoad.put(c, null);
+			}
+			for(String c : covsToCorrect){
+				covariatesToLoad.put(c, null);
+			}
+			for(String c : covsToCorrect2){
+				covariatesToLoad.put(c, null);
+			}
+		}
 
 		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", null, hashSamples);
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", null, hashSamples);
-		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", null, hashSamples);
+		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", covariatesToLoad, hashSamples);
 
 		org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		int nrSamples = datasetGenotypes.nrSamples;
