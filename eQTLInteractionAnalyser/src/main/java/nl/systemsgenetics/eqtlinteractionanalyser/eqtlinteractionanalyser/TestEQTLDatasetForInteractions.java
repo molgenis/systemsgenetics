@@ -733,7 +733,7 @@ public class TestEQTLDatasetForInteractions {
 			System.out.println("");
 			System.out.println("-------------------------------------");
 			System.out.println("");
-			System.out.println(probe);
+			System.out.println(probe + " with " + probeQtls.size() + " SNPs");
 			System.out.println("");
 			
 			
