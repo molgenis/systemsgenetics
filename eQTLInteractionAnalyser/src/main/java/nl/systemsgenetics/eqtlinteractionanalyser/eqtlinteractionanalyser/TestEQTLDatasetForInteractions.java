@@ -373,6 +373,7 @@ public class TestEQTLDatasetForInteractions {
 			for (int cov = 0; cov < datasetCovariates.nrProbes; cov++) {
 				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[cov]);
 				if (stdev > 0) {
+					System.out.println("Starting thread for: " + datasetCovariates.probeNames[cov]);
 					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, cov);
 					pool.submit(task);
 					nrTasks++;
@@ -386,6 +387,7 @@ public class TestEQTLDatasetForInteractions {
 				if (geneDistanceMap != null) {
 					for (int task = 0; task < nrTasks; task++) {
 						try {
+							System.out.println("Waiting on thread for: " + datasetCovariates.probeNames[cov]);
 							DoubleArrayIntegerObject result = pool.take().get();
 							int cov = result.intValue;
 							double chi2Sum = 0;
@@ -403,7 +405,7 @@ public class TestEQTLDatasetForInteractions {
 								maxChi2 = chi2Sum;
 								maxChi2Cov = datasetCovariates.probeNames[cov];
 							}
-							//System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
+							System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
 							if ((task + 1) % 512 == 0) {
 								System.out.println(task + 1 + " tasks processed");
 							}
