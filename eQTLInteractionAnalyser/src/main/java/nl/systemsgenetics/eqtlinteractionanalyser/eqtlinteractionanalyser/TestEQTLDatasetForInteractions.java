@@ -730,15 +730,12 @@ public class TestEQTLDatasetForInteractions {
 			String probe = datasetCovariates.probeNames[p];
 			Set<String> probeQtls = qtlProbeSnpMultiMap.get(probe);
 			
-			System.out.println("");
-			System.out.println("-------------------------------------");
-			System.out.println("");
-			System.out.println(probe + " with " + probeQtls.size() + " SNPs");
-			System.out.println("");
-			
-			
-			
-			
+//			System.out.println("");
+//			System.out.println("-------------------------------------");
+//			System.out.println("");
+//			System.out.println(probe + " with " + probeQtls.size() + " SNPs");
+//			System.out.println("");
+
 			
 			if(!probeQtls.isEmpty()){
 				
@@ -761,22 +758,22 @@ public class TestEQTLDatasetForInteractions {
 				
 				
 				
-				PearsonsCorrelation cor = new PearsonsCorrelation();
+//				PearsonsCorrelation cor = new PearsonsCorrelation();
 					
-				System.out.println("Before");
-				for(String snp : probeQtls){
-					Integer s = snpMap.get(snp);
-					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
-				}
+//				System.out.println("Before");
+//				for(String snp : probeQtls){
+//					Integer s = snpMap.get(snp);
+//					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
+//				}
 				
 				ols.newSampleData(datasetCovariates.rawData[p], x);
 				datasetCovariates.rawData[p] = ols.estimateResiduals();
 				
-				System.out.println("After");
-				for(String snp : probeQtls){
-					Integer s = snpMap.get(snp);
-					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
-				}
+//				System.out.println("After");
+//				for(String snp : probeQtls){
+//					Integer s = snpMap.get(snp);
+//					System.out.println(snp + " - " + cor.correlation(datasetCovariates.rawData[p], datasetGenotypes.rawData[s]));	
+//				}
 				
 			}
 			
