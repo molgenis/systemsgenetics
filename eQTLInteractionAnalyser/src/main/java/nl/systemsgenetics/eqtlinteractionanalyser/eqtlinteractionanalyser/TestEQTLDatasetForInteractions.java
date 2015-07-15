@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -464,19 +465,7 @@ public class TestEQTLDatasetForInteractions {
 
 
 			}
-
-			if (1 == 1) {
-				System.out.println("Correcting covariate data for cis-eQTL effects:");
-				for (int p = 0; p < datasetCovariates.nrProbes; p++) {
-					if (datasetExpression.hashProbes.containsKey(datasetCovariates.probeNames[p])) {
-						int index = ((Integer) datasetExpression.hashProbes.get(datasetCovariates.probeNames[p])).intValue();
-						double[] rc = getLinearRegressionCoefficients(datasetGenotypes.rawData[index], datasetCovariates.rawData[p]);
-						for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-							datasetCovariates.rawData[p][s] -= rc[0] * datasetGenotypes.rawData[index][s];
-						}
-					}
-				}
-			}
+			correctCovariatesForQtls(datasetCovariates, datasetExpression, datasetGenotypes);
 
 			if (1 == 2) {
 				datasetCovariates.save(inputDir + "/CovariatesCorrected.txt");
@@ -564,8 +553,8 @@ public class TestEQTLDatasetForInteractions {
 				double[] valsY = datasetExpression.rawData[snp];
 				regression.newSampleData(valsY, valsX);
 				datasetExpression.rawData[snp] = regression.estimateResiduals();
-				}
 			}
+		}
 
 
 		if (1 == 1) {
@@ -995,5 +984,20 @@ public class TestEQTLDatasetForInteractions {
 			eigenVector[i] = eigenValueMat[i][pca] * Math.sqrt(singularValues[pca]);
 		}
 		return eigenVector;
+	}
+
+	private void correctCovariatesForQtls(ExpressionDataset datasetCovariates, ExpressionDataset datasetExpression, ExpressionDataset datasetGenotypes) {
+
+		System.out.println("Correcting covariate data for cis-eQTL effects:");
+		for (int p = 0; p < datasetCovariates.nrProbes; p++) {
+			if (datasetExpression.hashProbes.containsKey(datasetCovariates.probeNames[p])) {
+				int index = ((Integer) datasetExpression.hashProbes.get(datasetCovariates.probeNames[p])).intValue();
+				double[] rc = getLinearRegressionCoefficients(datasetGenotypes.rawData[index], datasetCovariates.rawData[p]);
+				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+					datasetCovariates.rawData[p][s] -= rc[0] * datasetGenotypes.rawData[index][s];
+				}
+			}
+		}
+
 	}
 }
