@@ -351,9 +351,15 @@ public class TestEQTLDatasetForInteractions {
 
 			ExpressionDataset datasetZScores = new ExpressionDataset(datasetCovariates.nrProbes, datasetExpression.nrProbes);
 			datasetZScores.probeNames = datasetCovariates.probeNames;
-			datasetZScores.sampleNames = datasetGenotypes.probeNames;
+			
+			datasetZScores.sampleNames = new String[datasetGenotypes.probeNames.length];
+			for(int i = 0 ; i < datasetGenotypes.probeNames.length ; ++i){
+				datasetZScores.sampleNames[i] = datasetGenotypes.probeNames[i] + datasetExpression.probeNames[i].substring(datasetExpression.probeNames[i].lastIndexOf('_'));
+			}				
+			
 			datasetZScores.recalculateHashMaps();
 
+			SkippedInteractionWriter skippedWriter = new SkippedInteractionWriter(null);
 
 			java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 			CompletionService<DoubleArrayIntegerObject> pool = new ExecutorCompletionService<DoubleArrayIntegerObject>(threadPool);
@@ -361,7 +367,7 @@ public class TestEQTLDatasetForInteractions {
 			for (int cov = 0; cov < datasetCovariates.nrProbes; cov++) {
 				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[cov]);
 				if (stdev > 0) {
-					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, datasetCovariatesPCAForceNormal, cov);
+					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, datasetCovariatesPCAForceNormal, cov, skippedWriter);
 					pool.submit(task);
 					nrTasks++;
 				}
