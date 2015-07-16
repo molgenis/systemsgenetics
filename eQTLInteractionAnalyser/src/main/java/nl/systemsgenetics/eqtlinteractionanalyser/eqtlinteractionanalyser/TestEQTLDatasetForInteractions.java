@@ -413,42 +413,14 @@ public class TestEQTLDatasetForInteractions {
 							}
 							//}
 						}
-<<<<<<< HEAD
-					}
-				} //If gene annotation not provided, use all gene pairs
-				else {
-					for (int task = 0; task < nrTasks; task++) {
-						try {
-							DoubleArrayIntegerObject result = pool.take().get();
-							int cov = result.intValue;
-							double chi2Sum = 0;
-							double[] covZ = datasetZScores.rawData[cov];
-							for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
-								double z = result.doubleArray[snp];
-								covZ[snp] = z;
-								if (!Double.isNaN(z)) {
-									chi2Sum += z * z;
-								}
-							}
-							if (chi2Sum > maxChi2 && !datasetCovariates.probeNames[cov].startsWith("Comp")) {
-								maxChi2 = chi2Sum;
-								maxChi2Cov = datasetCovariates.probeNames[cov];
-							}
-							System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
-							if ((task + 1) % 512 == 0) {
-								System.out.println(task + 1 + " tasks processed");
-							}
-						} catch (ExecutionException ex) {
-							Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
-=======
+
 						if (chi2Sum > maxChi2) {
 							maxChi2 = chi2Sum;
 							maxChi2Cov = datasetCovariates.probeNames[cov];
 						}
-						//System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
+						System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
 						if ((task + 1) % 512 == 0) {
 							System.out.println(task + 1 + " tasks processed");
->>>>>>> FETCH_HEAD
 						}
 					} catch (ExecutionException ex) {
 						Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
