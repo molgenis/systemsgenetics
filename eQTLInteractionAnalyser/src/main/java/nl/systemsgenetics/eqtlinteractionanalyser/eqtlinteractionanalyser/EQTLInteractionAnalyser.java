@@ -88,6 +88,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Covariates to correct for without interaction term before running the interaction analysis");
         OptionBuilder.withLongOpt("cov2");
         OPTIONS.addOption(OptionBuilder.create("c2"));
+		
+		OptionBuilder.withArgName("strings");
+        OptionBuilder.hasArgs();
+        OptionBuilder.withDescription("Covariates to to test in interaction analysis. Optinal, all are tested if not used");
+        OptionBuilder.withLongOpt("covTest");
+        OPTIONS.addOption(OptionBuilder.create("ct"));
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
@@ -114,6 +120,7 @@ public class EQTLInteractionAnalyser {
 		
         final String[] covariates;
 		final String[] covariates2;
+		final String[] covariatesToTest;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -153,6 +160,12 @@ public class EQTLInteractionAnalyser {
 				covariates2 = new String[0];
 			}
 			
+			if (commandLine.hasOption("ct")){
+                covariatesToTest = commandLine.getOptionValues("ct");
+            } else {
+				covariatesToTest = null;
+			}
+			
 			if (commandLine.hasOption("sw")){
                 snpsToSwapFile = new File(commandLine.getOptionValue("sw"));
             } else {
@@ -180,7 +193,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest);
         }
     }
 
