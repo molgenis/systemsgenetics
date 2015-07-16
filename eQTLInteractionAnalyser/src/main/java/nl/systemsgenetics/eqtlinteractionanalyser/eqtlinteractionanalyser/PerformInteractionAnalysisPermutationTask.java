@@ -97,9 +97,10 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 		for (int s = 0; s < expression.length; s++) {
 			simpleRegression.addData(expression[s], genotypes[s]);
 		}
-		if (datasetGenotypes.probeNames[snp].equals(datasetCovariatesPCAForceNormal.probeNames[covToTest])){
-			System.out.println("Same gene! " + datasetGenotypes.probeNames[snp] + "\t" + datasetCovariatesPCAForceNormal.probeNames[covToTest] + "\t" + simpleRegression.getSignificance() + "\t" + simpleRegression.getR());
-		}
+		//This is not working now that we have the _rs next to the gene names
+//		if (datasetGenotypes.probeNames[snp].equals(datasetCovariatesPCAForceNormal.probeNames[covToTest])){
+//			System.out.println("Same gene! " + datasetGenotypes.probeNames[snp] + "\t" + datasetCovariatesPCAForceNormal.probeNames[covToTest] + "\t" + simpleRegression.getSignificance() + "\t" + simpleRegression.getR());
+//		}
 		return simpleRegression.getSignificance();
 	}
 }
