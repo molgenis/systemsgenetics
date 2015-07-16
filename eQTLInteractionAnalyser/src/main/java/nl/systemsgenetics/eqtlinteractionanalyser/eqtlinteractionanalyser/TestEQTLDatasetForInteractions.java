@@ -27,6 +27,8 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
@@ -265,7 +267,7 @@ public class TestEQTLDatasetForInteractions {
 
 		hashSamples = excludeOutliers(hashSamples);
 
-		//String[] covariatesToTest = new String[]{"ENSG00000116701"};
+		//covariatesToTest = new String[]{"ENSG00000116701"};
 		
 		HashMap<String, Integer> covariatesToLoad = new HashMap();
 		if(covariatesToTest != null){
@@ -286,7 +288,6 @@ public class TestEQTLDatasetForInteractions {
 		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", null, hashSamples);
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", null, hashSamples);
 		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", covariatesToLoad, hashSamples);
-
 		org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		int nrSamples = datasetGenotypes.nrSamples;
 
@@ -295,7 +296,8 @@ public class TestEQTLDatasetForInteractions {
 		
 		correctDosageDirectionForQtl(snpsToSwapFile, datasetGenotypes, datasetExpression);
 
-		ExpressionDataset datasetCovariatesPCAForceNormal = correctCovariateDataPCA(covsToCorrect2,covsToCorrect,datasetGenotypes,datasetCovariates);
+		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", covariatesToLoad, hashSamples);
+		correctCovariateDataPCA(covsToCorrect2,covsToCorrect,datasetGenotypes,datasetCovariatesPCAForceNormal);
 
 		if (1 == 1) {
 
@@ -326,34 +328,7 @@ public class TestEQTLDatasetForInteractions {
 		forceNormalExpressionData(datasetExpression);
 
 		if (permute) {
-			System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
-			String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
-			int[] permSampleIDs = new int[datasetGenotypes.nrSamples];
-			for (int p = 0; p < cohorts.length; p++) {
-				Vector vecSamples = new Vector();
-				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
-						vecSamples.add(s);
-					}
-				}
-				int nrSamplesThisCohort = vecSamples.size();
-				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
-						int randomSample = ((Integer) vecSamples.remove((int) ((double) vecSamples.size() * Math.random()))).intValue();
-						permSampleIDs[s] = randomSample;
-					}
-				}
-			}
-			ExpressionDataset datasetGenotypes2 = new ExpressionDataset(datasetGenotypes.nrProbes, datasetGenotypes.nrSamples);
-			datasetGenotypes2.probeNames = datasetGenotypes.probeNames;
-			datasetGenotypes2.sampleNames = datasetGenotypes.sampleNames;
-			datasetGenotypes2.recalculateHashMaps();
-			for (int p = 0; p < datasetGenotypes2.nrProbes; p++) {
-				for (int s = 0; s < datasetGenotypes2.nrSamples; s++) {
-					datasetGenotypes2.rawData[p][s] = datasetGenotypes.rawData[p][permSampleIDs[s]];
-				}
-			}
-			datasetGenotypes = datasetGenotypes2;
+			datasetGenotypes = permuteGenotypeData(datasetGenotypes);
 		}
 
 
@@ -924,25 +899,25 @@ public class TestEQTLDatasetForInteractions {
 		}
 	}
 
-	private ExpressionDataset correctCovariateDataPCA(String[] covsToCorrect2, String[] covsToCorrect, ExpressionDataset datasetGenotypes, ExpressionDataset datasetCovariates) throws Exception {
+	private ExpressionDataset correctCovariateDataPCA(String[] covsToCorrect2, String[] covsToCorrect, ExpressionDataset datasetGenotypes, ExpressionDataset datasetCovariatesPCAForceNormal) throws Exception {
 
 		int nrCompsToCorrectFor = 25;
 
 		System.out.println("Preparing data for testing eQTL effects of SNPs on covariate data:");
 		System.out.println("Correcting covariate data for cohort specific effects:");
-		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", null, datasetCovariates.hashSamples);
+
 		ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + covsToCorrect.length + nrCompsToCorrectFor, datasetGenotypes.nrSamples);
 		datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
 
 		// add covariates from the second list
 		for (int i = 0; i < covsToCorrect2.length; ++i) {
 			String cov = covsToCorrect2[i];
-			Integer c = datasetCovariates.hashProbes.get(cov);
+			Integer c = datasetCovariatesPCAForceNormal.hashProbes.get(cov);
 			if (c == null) {
 				throw new Exception("Covariate not found: " + cov);
 			}
 			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-				datasetCovariatesToCorrectFor.rawData[i][s] = datasetCovariates.rawData[c][s];
+				datasetCovariatesToCorrectFor.rawData[i][s] = datasetCovariatesPCAForceNormal.rawData[c][s];
 			}
 		}
 
@@ -951,9 +926,9 @@ public class TestEQTLDatasetForInteractions {
 		int[] covsToCorrectIndex = new int[covsToCorrect.length];
 		for (int c = 0; c < covsToCorrect.length; c++) {
 			hashCovsToCorrect.put(covsToCorrect[c], null);
-			covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
+			covsToCorrectIndex[c] = ((Integer) datasetCovariatesPCAForceNormal.hashProbes.get(covsToCorrect[c])).intValue();
 			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-				datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + c][s] = datasetCovariates.rawData[covsToCorrectIndex[c]][s];
+				datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + c][s] = datasetCovariatesPCAForceNormal.rawData[covsToCorrectIndex[c]][s];
 			}
 		}
 
@@ -961,7 +936,7 @@ public class TestEQTLDatasetForInteractions {
 		if (nrCompsToCorrectFor > 0) {
 			for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
 				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + covsToCorrect.length + comp][s] = datasetCovariates.rawData[datasetCovariates.nrProbes - 51 + comp][s];
+					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + covsToCorrect.length + comp][s] = datasetCovariatesPCAForceNormal.rawData[datasetCovariatesPCAForceNormal.nrProbes - 51 + comp][s];
 				}
 			}
 		}
@@ -1227,5 +1202,36 @@ public class TestEQTLDatasetForInteractions {
 		}
 
 		System.out.println("Expression data now force normal");
+	}
+
+	private ExpressionDataset permuteGenotypeData(ExpressionDataset datasetGenotypes){
+		System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
+		String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
+		int[] permSampleIDs = new int[datasetGenotypes.nrSamples];
+		for (int p = 0; p < cohorts.length; p++) {
+			Vector vecSamples = new Vector();
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
+					vecSamples.add(s);
+				}
+			}
+			int nrSamplesThisCohort = vecSamples.size();
+			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+				if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
+					int randomSample = ((Integer) vecSamples.remove((int) ((double) vecSamples.size() * Math.random()))).intValue();
+					permSampleIDs[s] = randomSample;
+				}
+			}
+		}
+		ExpressionDataset datasetGenotypes2 = new ExpressionDataset(datasetGenotypes.nrProbes, datasetGenotypes.nrSamples);
+		datasetGenotypes2.probeNames = datasetGenotypes.probeNames;
+		datasetGenotypes2.sampleNames = datasetGenotypes.sampleNames;
+		datasetGenotypes2.recalculateHashMaps();
+		for (int p = 0; p < datasetGenotypes2.nrProbes; p++) {
+			for (int s = 0; s < datasetGenotypes2.nrSamples; s++) {
+				datasetGenotypes2.rawData[p][s] = datasetGenotypes.rawData[p][permSampleIDs[s]];
+			}
+		}
+		return datasetGenotypes2;
 	}
 }
