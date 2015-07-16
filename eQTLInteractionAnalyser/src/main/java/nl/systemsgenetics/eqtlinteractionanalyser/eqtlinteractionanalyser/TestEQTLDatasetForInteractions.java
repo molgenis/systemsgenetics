@@ -281,6 +281,8 @@ public class TestEQTLDatasetForInteractions {
 			for(int i = 1 ; i <= 50 ; ++i){
 				covariatesToLoad.put("Comp" + i, null);
 			}
+		} else {
+			covariatesToLoad = null;
 		}
 
 		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", null, hashSamples);
