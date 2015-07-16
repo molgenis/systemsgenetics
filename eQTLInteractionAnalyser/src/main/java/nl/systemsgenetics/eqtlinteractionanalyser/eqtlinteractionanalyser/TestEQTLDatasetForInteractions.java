@@ -414,7 +414,7 @@ public class TestEQTLDatasetForInteractions {
 							//}
 						}
 
-						if (chi2Sum > maxChi2) {
+						if (chi2Sum > maxChi2 && !datasetCovariates.probeNames[cov].startsWith("Comp") && !datasetCovariates.probeNames[cov].equals("LLS") && !datasetCovariates.probeNames[cov].equals("LLdeep") && !datasetCovariates.probeNames[cov].equals("RS") && !datasetCovariates.probeNames[cov].equals("CODAM")) {
 							maxChi2 = chi2Sum;
 							maxChi2Cov = datasetCovariates.probeNames[cov];
 						}
