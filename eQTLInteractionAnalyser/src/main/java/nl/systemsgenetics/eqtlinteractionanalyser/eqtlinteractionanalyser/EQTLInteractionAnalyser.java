@@ -91,7 +91,7 @@ public class EQTLInteractionAnalyser {
 		
 		OptionBuilder.withArgName("strings");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("Covariates to to test in interaction analysis. Optinal, all are tested if not used");
+        OptionBuilder.withDescription("Covariates to to test in interaction analysis. Optional, all are tested if not used");
         OptionBuilder.withLongOpt("covTest");
         OPTIONS.addOption(OptionBuilder.create("ct"));
 
@@ -123,7 +123,7 @@ public class EQTLInteractionAnalyser {
 		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
         final boolean interpret, chi2sumDiff, permute, preproces;
-		
+        
         final String[] covariates;
 		final String[] covariates2;
 		final String[] covariatesToTest;
