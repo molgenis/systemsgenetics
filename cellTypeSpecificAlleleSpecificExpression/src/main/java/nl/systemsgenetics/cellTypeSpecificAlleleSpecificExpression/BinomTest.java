@@ -3,6 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import static java.lang.Math.log;
@@ -59,8 +60,6 @@ public class BinomTest {
         }
         
         
-        System.out.println("Chi squared from function: " +  Double.toString(chiSq));
-        
         //determine P value based on distribution
         ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
         pVal = 1 - distribution.cumulativeProbability(chiSq);
@@ -81,6 +80,7 @@ public class BinomTest {
         }
         
         return -1.0 * logLik;
+        
     }
 
     /**

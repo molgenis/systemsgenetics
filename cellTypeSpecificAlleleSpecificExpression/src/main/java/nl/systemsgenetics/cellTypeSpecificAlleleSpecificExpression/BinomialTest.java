@@ -47,7 +47,7 @@ public class BinomialTest {
     // Calculate log likelihoods, and do a likelihood ratio test.
     
     public BinomialTest(ArrayList<IndividualSnpData> all_individuals, int minReads, int minHets){
-        boolean debug = false;
+        boolean debug = true;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
@@ -87,11 +87,22 @@ public class BinomialTest {
                 System.out.println(het_individuals.get(0).getSnpName());
                 System.out.println(total_overlap);
                 
-                System.out.println("asRef:" +  asRef.toString());
-                System.out.println("asAlt:" +  asAlt.toString());
+                System.out.println("asRef:          " +  asRef.toString());
+                System.out.println("asAlt:          " +  asAlt.toString());
             }
             // There is data to perform the binomial test, perform it.       
             testStatistics = new BinomTest(asRef, asAlt);
+            
+            if(debug){
+                System.out.println("Test completed:");
+                System.out.println("\tNull logLik:  " + Double.toString(testStatistics.getNullLogLik()));
+                System.out.println("\tAlt logLik:   " + Double.toString(testStatistics.getAltLogLik()));
+                System.out.println("\tchi-sq:       " + Double.toString(testStatistics.getChiSq()));
+                System.out.println("\tP value:      " + Double.toString(testStatistics.getpVal()));
+
+                
+            }
+            
             //binomial_test perfomed, will now set test performed to true
             testPerformed = true;
             

@@ -75,6 +75,14 @@
             <version>6.8.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-repository-builder</artifactId>
+            <version>1.0-alpha-2</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        
     </dependencies>
     <name>cellTypeSpecificAlleleSpecificExpression</name>
 </project>

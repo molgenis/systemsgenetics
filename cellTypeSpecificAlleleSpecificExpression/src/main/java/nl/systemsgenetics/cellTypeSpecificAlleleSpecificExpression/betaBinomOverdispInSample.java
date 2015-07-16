@@ -54,7 +54,7 @@ public class betaBinomOverdispInSample {
         fr.close();
         
         ArrayList<IndividualSnpData> hets;
-        hets = isolateHeterozygotes(allSnps);
+        hets = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnps);
         
         int numOfHets = hets.size();
        
@@ -102,32 +102,10 @@ public class betaBinomOverdispInSample {
 
         // Checked this in python version of WASP. 
         // Creates the same results.
-        // But needs quite some testing still
+        
 
     }
     
-    
-     private ArrayList<IndividualSnpData> isolateHeterozygotes(ArrayList<IndividualSnpData> all_individuals) {
-        
-        ArrayList<IndividualSnpData> hets;
-        hets = new ArrayList<IndividualSnpData>();
-        
-        for(IndividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
-    }
 
     /**
      * @return the sampleName

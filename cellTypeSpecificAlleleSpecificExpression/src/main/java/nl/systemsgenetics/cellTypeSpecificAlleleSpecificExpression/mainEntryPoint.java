@@ -6,7 +6,6 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.text.NumberFormat;
-import java.util.regex.Pattern;
 import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.BinomialEntry.BinomialEntry;
 import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.readGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
@@ -128,6 +127,15 @@ public class mainEntryPoint {
                     fully optionally arguments
                 */
                 
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("Location of a file containing a list of snp names (rs123456789 format)\n"
+                                               + "Standard setting is none.\n"
+                                               + "Used when action is: ASREADS.")                                                
+				.withLongOpt("snp_list")
+				.create("snp_list");
+		OPTIONS.addOption(option);
+                
                 
                 
                 option = OptionBuilder.withArgName("String")
@@ -154,7 +162,7 @@ public class mainEntryPoint {
 
 	}
     
-    public static void main(String[] args) throws Exception{
+    public static void main(String... args) throws Exception{
         
         //Required Arguments
         String outputLocation = new String();
@@ -163,10 +171,12 @@ public class mainEntryPoint {
         String bamFile = new String();
         String couplingLocation = new String();
         String genotypeLocation = new String();
+        String snpsLocation = new String();
+        
                 
         //BINOMTEST and BETABINOMTEST specific arguments
         String asFile = new String();
-        int  miminumReadOverlap = 10;
+        int  mininumReadOverlap = 10;
         int  minimumNumOfHets   =  1;
         
         //Cell type specific locations
@@ -211,13 +221,19 @@ public class mainEntryPoint {
                         } else{
                             throw new ParseException("Required command line input --bam_file when --action is ASREADS");
                         }         
+                        if(commandLine.hasOption("snp_list")){
+                            snpsLocation = commandLine.getOptionValue("snp_list");
+                        }else{
+                            snpsLocation = "";
+                        
+                        }      
                         
                         
                         
                         /*
                             START reading for AS reads.
                         */
-                        readGenoAndAsFromIndividual(bamFile, genotypeLocation, couplingLocation, outputLocation);
+                        readGenoAndAsFromIndividual(bamFile, genotypeLocation, couplingLocation, outputLocation, snpsLocation);
                         
                     
                     }else if(programAction.equals("BINOMTEST") || programAction.equals("2")){
@@ -235,7 +251,7 @@ public class mainEntryPoint {
                             minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_heterozygotes"));
                         }
                         if(commandLine.hasOption("minimum_reads")){
-                            minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
+                            mininumReadOverlap = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
                         }
                         
                         
@@ -244,7 +260,7 @@ public class mainEntryPoint {
                             START BINOMIAL
                         */
                                 
-                        BinomialEntry(asFile, outputLocation, miminumReadOverlap, minimumNumOfHets);
+                        BinomialEntry(asFile, outputLocation, mininumReadOverlap, minimumNumOfHets);
                         
                     }else if(programAction.equals("BETABINOMTEST") || programAction.equals("3")){
                         //Determine Allele specific reads per individual
@@ -260,13 +276,13 @@ public class mainEntryPoint {
                             minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_heterozygotes"));
                         }
                         if(commandLine.hasOption("minimum_reads")){
-                            minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
+                            mininumReadOverlap = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
                         }
                         
                         /*
                             START BETABINOMIAL
                         */
-                        BetaBinomEntry  a = new BetaBinomEntry(asFile, outputLocation, miminumReadOverlap, minimumNumOfHets);
+                        BetaBinomEntry  a = new BetaBinomEntry(asFile, outputLocation, mininumReadOverlap, minimumNumOfHets);
                     
                         
                         
@@ -289,14 +305,14 @@ public class mainEntryPoint {
                             minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_heterozygotes"));
                         }
                         if(commandLine.hasOption("minimum_reads")){
-                            minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
+                            mininumReadOverlap = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
                         }
                        
                         /*
                             START BINOMIAL CELL TYPE SPECIFIC TEST
                         */
                         
-                        CTSbinomialEntry a =  new CTSbinomialEntry(asFile, phenoTypeLocation,  outputLocation, miminumReadOverlap, minimumNumOfHets);
+                        CTSbinomialEntry a =  new CTSbinomialEntry(asFile, phenoTypeLocation,  outputLocation, mininumReadOverlap, minimumNumOfHets);
                         
                     }else if(programAction.equals("CTSBETABINOMTEST") || programAction.equals("5")){
 
@@ -316,14 +332,14 @@ public class mainEntryPoint {
                             minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_heterozygotes"));
                         }
                         if(commandLine.hasOption("minimum_reads")){
-                            minimumNumOfHets = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
+                            mininumReadOverlap = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
                         }
                        
                         /*
                             START BETA BINOMIAL CELL TYPE SPECIFIC TEST
                         */
                         
-                        CTSbetaBinomialEntry a =  new CTSbetaBinomialEntry(asFile, phenoTypeLocation,  outputLocation, miminumReadOverlap, minimumNumOfHets);
+                        CTSbetaBinomialEntry a =  new CTSbetaBinomialEntry(asFile, phenoTypeLocation,  outputLocation, mininumReadOverlap, minimumNumOfHets);
                         
                     }else{
                         throw new ParseException("Unable to determine what to do. Please specify a correct value to --Action");

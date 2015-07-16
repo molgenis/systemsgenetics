@@ -5,9 +5,14 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import org.jdom.IllegalDataException;
+
 /**
  *
  * @author adriaan
+ * This class contains all the data of an individual SNP. 
+ * It is creating by passing a line of all the files through it.
+ * 
  */
 public class IndividualSnpData {
     final String sampleName;
@@ -25,11 +30,25 @@ public class IndividualSnpData {
 
     final String genotype;
     
+    //These values are used to check if the thing has dispersion or cellprop
+    
+    private boolean hasDispersion = false ;
+    private boolean hasCellCount = false;
+    
+    //These values are optional.
+    private double cellTypeProp;
+    private double dispersion;
+    
     
    public IndividualSnpData(String SAMPLENAME, String snpLine ){
        
        sampleName = SAMPLENAME;
        String[] values = snpLine.split("\t");
+       
+       if(values.length != 9){
+           System.out.println(snpLine);
+           throw new IllegalDataException("The SNP line printed above did not contain 9 elements.");
+       }
        
        chromosome = values[0];
        position   = values[1];
@@ -44,6 +63,26 @@ public class IndividualSnpData {
    
        genotype = values[8];
    }
+   
+    /**
+     * @param cellTypeProp the cellTypeProp to set
+     * Changes the hasCellCount field as well, for testing.
+     */
+    public void setCellTypeProp(double cellTypeProp) {
+        this.cellTypeProp = cellTypeProp;
+        hasCellCount = true;
+    }
+   
+    /**
+     * @param dispersion the dispersion to set
+     * Changes the hasCellCount field as well.
+     */
+    public void setDispersion(double dispersion) {
+        this.dispersion = dispersion;
+        hasDispersion = true;
+    }
+
+    //created automatically below.
 
     /**
      * @return the sampleName
@@ -113,6 +152,46 @@ public class IndividualSnpData {
      */
     public String getGenotype() {
         return genotype;
+    }
+
+    /**
+     * @return the cellTypeProp
+     */
+    public double getCellTypeProp() throws Exception {
+        if(hasCellCount){
+            return cellTypeProp;
+        }else{
+            throw new Exception("CellProp was not added in SNP data, you cannot retrieve it");
+        
+        }
+    }
+
+   
+
+    /**
+     * @return the dispersion
+     */
+    public double getDispersion() throws Exception {
+        if(hasDispersion){
+            return dispersion;
+        } else{
+            throw new Exception("Dispersion was not added in this SNP data, you cannot retrieve it");
+        }
+    }
+
+
+    /**
+     * @return the hasDispersion
+     */
+    public boolean hasDispersion() {
+        return hasDispersion;
+    }
+
+    /**
+     * @return the hasCellCount
+     */
+    public boolean hasCellCount() {
+        return hasCellCount;
     }
 
 

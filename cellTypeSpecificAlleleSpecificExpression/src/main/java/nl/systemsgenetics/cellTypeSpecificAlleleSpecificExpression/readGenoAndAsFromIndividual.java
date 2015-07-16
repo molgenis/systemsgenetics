@@ -39,28 +39,37 @@ import org.apache.commons.io.FilenameUtils;
  */
 public class readGenoAndAsFromIndividual {
     
-    public static void readGenoAndAsFromIndividual(String loc_of_bam1, String genotype_loc, String coupling_location, String outputLocation) throws IOException, Exception{
+    public static void readGenoAndAsFromIndividual(String loc_of_bam1,
+                                                   String genotype_loc, 
+                                                   String coupling_location, 
+                                                   String outputLocation, 
+                                                   String snpLocation) throws IOException, Exception{
         
         //Print ASREADS header
-
         System.out.println("---- Starting ASREADS for the following settings: ----");
         System.out.println("\t input bam:       " +  loc_of_bam1);
         System.out.println("\t genotype file:   " +  genotype_loc);
         System.out.println("\t coupling file:   " +  coupling_location);
         System.out.println("\t output location: " +  outputLocation);
+        if(!snpLocation.equals("")){
+            System.out.println("\t snp Location:    " +  snpLocation);
+        }else{
+            System.out.println("\t snp Location:    " +  "NONE");
+        }
+        
         System.out.println("------------------------------------------------------");
 
-
+        
+        
         String path_of_trityper = genotype_loc;
 
         //parse command line arguments
         String loc_of_bam;
-        loc_of_bam = loc_of_bam1; //"/media/fast/GENETICA/implementInJava/CEURNASEQ/ERR188047.MERGED.SORTED.bam";
+        loc_of_bam = loc_of_bam1;
         System.out.println("Location of bam file: ");
         System.out.println(loc_of_bam);
         
-        if (!new File(loc_of_bam).exists())
-        {
+        if (!new File(loc_of_bam).exists()){
            System.out.println("Location of bam file is not an existing file. Exitting.");
            return;
         }else{
@@ -78,9 +87,36 @@ public class readGenoAndAsFromIndividual {
             return;
         }
         
+        
         //get the variants in the variantIdMAP
         HashMap<String, GeneticVariant> variantIdMap = dataset1.getVariantIdMap();
         Set<String> snpNames = variantIdMap.keySet();
+        
+        ArrayList<String> SNPsToAnalyze;
+        SNPsToAnalyze = new ArrayList<String>();
+        
+        //If available, read the file with rs numbers.
+        if(!snpLocation.equals("")){
+            
+            ArrayList<String>  includeSNPs = UtilityMethods.readFileIntoStringArrayList(snpLocation);
+            
+            int snpsNotFound = 0;
+            
+            for(String snp_to_include : includeSNPs){
+                if(snpNames.contains(snp_to_include)){
+                    SNPsToAnalyze.add(snp_to_include);
+                }else{
+                    snpsNotFound++;
+                }
+            }
+            
+            System.out.println("Did not find " + Integer.toString(snpsNotFound) + " out of " + Integer.toString(includeSNPs.size()) + " SNPs in the include file.");
+            
+        }else{
+            for(String snp_to_include : snpNames){
+                SNPsToAnalyze.add(snp_to_include);
+            }
+        }
         
         
         String[] individual_names;
@@ -93,11 +129,10 @@ public class readGenoAndAsFromIndividual {
         //System.out.println(sample_map.toString());
 
        
-        //Twice beacuse my files have the .MERGED.sorted.bam suffix attached to them.
+        //Twice because my files have the .MERGED.sorted.bam suffix attached to them.
         String sample_name = FilenameUtils.getBaseName(FilenameUtils.getBaseName(FilenameUtils.getBaseName(loc_of_bam)));
         System.out.println("sample_name: " + sample_name);
-        
-        //sample name used for testing: "AC1C40ACXX-5-14";
+        System.out.println("sample_map:  " + sample_map.toString());
         Object sample_idx = sample_map.get(sample_name);   
        
         if(sample_idx == null){
@@ -116,16 +151,13 @@ public class readGenoAndAsFromIndividual {
         SamReader bam_file = SamReaderFactory.makeDefault().open(sample_file);
 
         
-        int number_of_samples;         
-        number_of_samples = Arrays.asList(sample_map).size();
-        
         System.out.println("Initialized for reading bam file");
         
         PrintWriter writer = new PrintWriter(outputLocation, "UTF-8");
         
         
         int i = 0;
-        for(String i_snp : snpNames){
+        for(String i_snp : SNPsToAnalyze){
             
             //System.out.println(i_snp);
             
@@ -134,12 +166,16 @@ public class readGenoAndAsFromIndividual {
             String chromosome = this_variant.getSequenceName();
             String position = String.valueOf(this_variant.getStartPos());
             
-//            System.out.println("chromosome: " + chromosome + " pos: " + position);
+
             
-            // We only do analyses if we find a SNP and it is biallelic      
-            if(this_variant.isSnp() & this_variant.isBiallelic()){
-//                System.out.println(this_variant.getAllIds());
-                                
+            // We only do analyses if we find a SNP and it is biallelic
+            // However this is trityper data, so if we use
+            // the allele count is used for the check of something. 
+            
+            
+            //DO NOT ENTER A SEPARATED GENOMIC DATASET OTHERWISE THIS WILL BREAK.
+            if(this_variant.isSnp() & this_variant.isBiallelic() ){
+
                 String row_of_table = get_allele_specific_overlap_at_snp(this_variant, 
                                                                         sample_index,
                                                                         chromosome,
@@ -424,6 +460,7 @@ public class readGenoAndAsFromIndividual {
     /**
      *
      * @param individual_names
+     * @param coupling_location
      * @return
      * @throws FileNotFoundException
      * @throws IOException
@@ -460,51 +497,33 @@ public class readGenoAndAsFromIndividual {
             individual_names_in_file.add(i, curr_line[0]); 
             sample_names_in_file.add(i, curr_line[1]);
 
+            //print the individual al line for checking.
+            //System.out.println("line: " + " " + curr_line[0] +" " + curr_line[1] );
+            
         }
 
         // dispose all the resources after using them.
         fis.close();
         bis.close();
         dis.close();
+        
+        
+        
         i=0;
         for(String i_name : individual_names){
             int index = individual_names_in_file.indexOf(i_name);
-            if(index < 0){
-                //System.out.println("When looking for \"" + i_name +"\" couln't find this in the coupling list."); // couldn't find this name in the following list:");
-                //System.out.println(individual_names_in_file.toString());
-                continue;
-            }
             
-            ordered_sample_names.put(sample_names_in_file.get(index), i);
+            if(index >= 0){
+                //We find a name in the genotype folder in the individual names stuff.
+                ordered_sample_names.put(sample_names_in_file.get(index), i);
+            }
             i++;
+            
         }
         return(ordered_sample_names);
     
     }
-    
-// This was used when reading all bam_files at once, but the htsjdk did not allow for this.
-//
-//    private static ArrayList<SamReader> open_all_samfiles(File[] individual_files) throws Exception{
-//        //don't know if i need this.
-//        ArrayList<SamReader> all_bams = new ArrayList(); 
-//        int i = 0;
-//        
-//        for(File i_file : individual_files){
-//            
-//            try{
-//                all_bams.add();
-//            } catch(Exception ex ){
-//                System.err.println("Error in reading a file at: " + i_file.getAbsolutePath());
-//                System.err.println("Iterator at: " + String.valueOf(i));                
-//                System.err.println("Are you sure the bam files are correct?");
-//                throw ex;
-//            }
-//            i++;
-//        }
-//    
-//    
-//        return(all_bams);
-//    }
+
 }
 
 

@@ -20,7 +20,7 @@ import java.util.ArrayList;
  */
 class CTSbinomialEntry {
 
-    public CTSbinomialEntry(String asLocations,String phenoLocation, String outputLocation, int minReads, int minHets) throws FileNotFoundException, UnsupportedEncodingException, IOException {
+    public CTSbinomialEntry(String asLocations,String phenoLocation, String outputLocation, int minReads, int minHets) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
 
         PrintWriter out_writer;
         out_writer = new PrintWriter(outputLocation, "UTF-8");
@@ -31,16 +31,17 @@ class CTSbinomialEntry {
         /*
             Determine cell proportion per sample
          */
-         
-        readFileIntoStringArrayList phenoReadObject = new readFileIntoStringArrayList(phenoLocation);
         
-        ArrayList<String> phenoString = phenoReadObject.getLines();
+        ArrayList<String> phenoString = UtilityMethods.readFileIntoStringArrayList(phenoLocation);
         
         /*
             Right now just assuming this is a file that is 
             ordered in the same way as the asLocation file.
             With per line the cell proportion that we can determine.
+            
+            This is currently the users responsibility.
         */
+        
         int i = 0;
         Double[] cellProp = new Double[phenoString.size()];
         for(String samplePheno : phenoString){
@@ -56,29 +57,24 @@ class CTSbinomialEntry {
             from the same SNP into the correct test.
         */
         
-        ArrayList<File> all_files;
-        all_files = initialize_all_files(filenames_file);
-        ArrayList<BufferedReader> all_file_readers;
-        all_file_readers = initFileReaders(all_files);
+        ReadAsLinesIntoIndividualSNPdata asReader = new ReadAsLinesIntoIndividualSNPdata(asLocations);
 
-        i = 0;
+        
         while (true) {
-
-            //read one line from all the files.
-            ArrayList<String> all_line_data = read_data_line(all_file_readers);
-
-            //step out of the loop when there is no data
-            //maybe there is a more elegant way to do this, but I'm not sure.
-            if (all_line_data.isEmpty()) {
-                break;
+            
+            //read some stuff from the files.
+            ArrayList<IndividualSnpData> allSnpData;
+            allSnpData = asReader.getIndividualsFromNextLine();
+            
+            if(allSnpData.isEmpty()) break;
+            //Add the dispersion data assuming the same ordering
+            //Which was checked previously.
+            for(int j = 0; j < cellProp.length; j++){
+                allSnpData.get(j).setCellTypeProp(cellProp[j]);
             }
 
-            //parse the lines
-            ArrayList<CTSindividualSnpData> all_snp_data;
-            all_snp_data = parse_lines(all_line_data, all_files, cellProp);
-
             //do the binomial test:
-            CTSbinomialTest results = new CTSbinomialTest(all_snp_data, minReads, minHets);
+            CTSbinomialTest results = new CTSbinomialTest(allSnpData, minReads, minHets);
 
             // Write the results to the out_file.
             if (results.isTestPerformed()) {
@@ -93,78 +89,5 @@ class CTSbinomialEntry {
         System.out.println("Finished " + Integer.toString(i) + " tests, now closing.");
 
     }
-
-    private static ArrayList<File> initialize_all_files(String filenames_file) throws IOException {
-
-        ArrayList<File> fileList = new ArrayList<File>();
-
-        File file = new File(filenames_file);
-        FileReader fr = new FileReader(file);
-        BufferedReader br = new BufferedReader(fr);
-        String line;
-
-        while ((line = br.readLine()) != null) {
-
-            File tempFile = new File(line);
-
-            fileList.add(tempFile);
-
-        }
-        br.close();
-        fr.close();
-        return fileList;
-        
-    
-    }
-    private static ArrayList<BufferedReader> initFileReaders(ArrayList<File> all_files) throws FileNotFoundException {
-        ArrayList<BufferedReader> fileList = new ArrayList<BufferedReader>();
-
-        for (File i_file : all_files) {
-
-            FileReader tempReader = new FileReader(i_file);
-            BufferedReader tempBuff = new BufferedReader(tempReader);
-            fileList.add(tempBuff);
-
-        }
-        return fileList;
-
-    }
-
-    private static ArrayList<String> read_data_line(ArrayList<BufferedReader> all_readers) throws IOException {
-
-        ArrayList<String> all_lines = new ArrayList<String>();
-
-        for (BufferedReader iFile : all_readers) {
-
-            String line = iFile.readLine();
-
-            if (line != null) {
-                all_lines.add(line);
-            } else {
-                return new ArrayList<String>();
-
-            }
-        }
-
-        return all_lines;
-    }
-
-    private static ArrayList<CTSindividualSnpData> parse_lines(ArrayList<String> all_line_data, ArrayList<File> all_files, Double[] cellProp) {
-
-        ArrayList<CTSindividualSnpData> all_individuals;
-        all_individuals = new ArrayList<CTSindividualSnpData>();
-        int i = 0;
-
-        for (String iLine : all_line_data) {
-
-            all_individuals.add(new CTSindividualSnpData(all_files.get(i).getAbsolutePath(), iLine, cellProp[i]));
-
-            i++;
-        }
-
-        return all_individuals;
-    }
-
-    
     
 }

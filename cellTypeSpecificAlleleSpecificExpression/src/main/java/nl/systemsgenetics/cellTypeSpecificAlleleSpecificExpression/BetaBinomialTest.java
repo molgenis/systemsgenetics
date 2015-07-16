@@ -6,8 +6,6 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.util.ArrayList;
-import static java.util.Collections.list;
-import java.util.List;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
@@ -66,15 +64,15 @@ class BetaBinomialTest {
     
     private final double precision = 1.0E-7;  
     
-    public BetaBinomialTest(ArrayList<dispersedIndividualSnpData> all_individuals, int minReads, int minHets){
+    public BetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, int minReads, int minHets) throws Exception{
         boolean debug=true;
-        //basic information, get the zero instance.
+        //basic information, get the zero instance, was checked as the same in ReadAsLinesIntoIndividualSNPdata
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
         
-        //isolate heterozygote individuals.
-        ArrayList<dispersedIndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals;
+        het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
     
         numberOfHets = het_individuals.size();
         
@@ -90,7 +88,7 @@ class BetaBinomialTest {
 
         
         
-        for (dispersedIndividualSnpData temp_het : het_individuals) {
+        for (IndividualSnpData temp_het : het_individuals) {
             //Do nothing if there is no data in het_individuals
 
             hetSampleNames.add(temp_het.getSampleName());
@@ -270,29 +268,6 @@ class BetaBinomialTest {
         
         }
         return out;   
-    }
-
-    
-    private ArrayList<dispersedIndividualSnpData> isolateHeterozygotes(ArrayList<dispersedIndividualSnpData> all_individuals) {
-        
-        ArrayList<dispersedIndividualSnpData> hets;
-        hets = new ArrayList<dispersedIndividualSnpData>();
-        
-        for(dispersedIndividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
     }
     
     

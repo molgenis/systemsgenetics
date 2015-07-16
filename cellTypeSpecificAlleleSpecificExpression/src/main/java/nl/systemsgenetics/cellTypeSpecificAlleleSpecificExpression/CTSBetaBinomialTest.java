@@ -77,7 +77,7 @@ class CTSBetaBinomialTest {
     double NullBetaParam;
     double NullbinomRatio;
     
-    public CTSBetaBinomialTest(ArrayList<CTSdispersedIndividualSnpData> all_individuals, int minReads, int minHets) {
+    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, int minReads, int minHets) throws Exception {
     
         boolean debug=true;
         //basic information, get the zero instance.
@@ -86,7 +86,7 @@ class CTSBetaBinomialTest {
         position = all_individuals.get(0).getPosition();
         
         //isolate heterozygote individuals.
-        ArrayList<CTSdispersedIndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
     
         numberOfHets = het_individuals.size();
         
@@ -100,7 +100,7 @@ class CTSBetaBinomialTest {
         int total_overlap = 0;
         
         //Get the basic data without doing any tests.
-        for (CTSdispersedIndividualSnpData temp_het : het_individuals) {
+        for (IndividualSnpData temp_het : het_individuals) {
             //Do nothing if there is no data in het_individuals
 
             hetSampleNames.add(temp_het.getSampleName());
@@ -197,126 +197,58 @@ class CTSBetaBinomialTest {
             
 
             
-            //Two versions of the method, one with alpha and beta parameters, other with 
-            //proportions.
-            if(false){
-                CTSbetaBinomialAltLikelihood CTSbetaBinomAlt;
-                CTSbetaBinomAlt = new CTSbetaBinomialAltLikelihood(asRefArray, 
-                                                        asAltArray,
-                                                        dispArray,
-                                                        cellPropArray
-                                                        );
-                simplex = new NelderMeadSimplex(4);
-                PointValuePair solutionAlt = optimizer.optimize(
-                                                new ObjectiveFunction(CTSbetaBinomAlt),
-                                                new MaxEval(500),
-                                                simplex,
-                                                GoalType.MINIMIZE,
-                                                new InitialGuess(new double[] {0.000, 0.000 ,valueNull[0], valueNull[1] }), //Start with the loglik of the null.
-                                                new SearchInterval(-1000.0, 1000.0)
-                                                );
+ 
+            //CHECK WHAT THE version2 DOES in terms of loglik.
+            CTSbetaBinomialAltLikelihoodVersion2 CTSbetaBinomAlt;
+            CTSbetaBinomAlt = new CTSbetaBinomialAltLikelihoodVersion2(asRefArray, 
+                                                    asAltArray,
+                                                    dispArray,
+                                                    cellPropArray
+                                                    );
 
-                double[] valueAlt = solutionAlt.getPoint();
+            simplex = new NelderMeadSimplex(2);
+            PointValuePair solutionAlt = optimizer.optimize(
+                                            new ObjectiveFunction(CTSbetaBinomAlt),
+                                            new MaxEval(500),
+                                            simplex,
+                                            GoalType.MINIMIZE,
+                                            new InitialGuess(new double[] {0.000, valueNull[0]  / (valueNull[0] + valueNull[1]) }), //Start with the loglik of the null.
+                                            new SearchInterval(0, 1)
+                                            );
 
-
-                altLogLik  = CTSbetaBinomAlt.value(valueAlt);
-
-                double checkNullInAltModel = CTSbetaBinomAlt.value(new double[] {0.000, 0.000 ,valueNull[0], valueNull[1] }); 
+            double[] valueAlt = solutionAlt.getPoint();
 
 
-                altiterations = optimizer.getIterations();
-                alphaParamCellType = valueAlt[0];
-                betaParamCellType  = valueAlt[1];
-                alphaParamResidual = valueAlt[2];
-                betaParamResidual  = valueAlt[3];
-
-                binomRatioCellType = valueAlt[0] / (valueAlt[0] + valueAlt[1]);
-                binomRatioResidual = valueAlt[2] / (valueAlt[2] + valueAlt[3]);
+            altLogLik  = CTSbetaBinomAlt.value(valueAlt);
 
 
-                //chi squared statistic is determined based on both null and alt loglikelihoods.
-                chiSq = 2.0 * (nullLogLik - altLogLik);
-
-                //determine P value based on distribution
-                ChiSquaredDistribution distribution = new ChiSquaredDistribution(2);
-                pVal = 1 - distribution.cumulativeProbability(chiSq);
-
-                //remove this line, doesn't always hold.
-                System.out.println("LogLik of Alt (version 1) converged to a threshold of " + Double.toString(precision) + "\n");
-                System.out.println("\tCelltype Alpha parameter:      " + Double.toString(valueAlt[0]));
-                System.out.println("\tCelltype Beta parameter:       " + Double.toString(valueAlt[1]));
-                System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
-                System.out.println("\tResidual Alpha parameter:      " + Double.toString(valueAlt[2]));
-                System.out.println("\tResidual Beta parameter:       " + Double.toString(valueAlt[3]));
-                System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
-                System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");
-                System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
-                System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
-                System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
-                System.out.println("\tP value:                       " + Double.toString(pVal));
-                //TODO, I want to format this properly, but not necessary
-                System.out.println("\n---- Finished SNP " + snpName);
-            }else{
-                //CHECK WHAT THE version2 DOES in terms of loglik.
-                CTSbetaBinomialAltLikelihoodVersion2 CTSbetaBinomAlt;
-                CTSbetaBinomAlt = new CTSbetaBinomialAltLikelihoodVersion2(asRefArray, 
-                                                        asAltArray,
-                                                        dispArray,
-                                                        cellPropArray
-                                                        );
-                
-                simplex = new NelderMeadSimplex(2);
-                PointValuePair solutionAlt = optimizer.optimize(
-                                                new ObjectiveFunction(CTSbetaBinomAlt),
-                                                new MaxEval(500),
-                                                simplex,
-                                                GoalType.MINIMIZE,
-                                                new InitialGuess(new double[] {0.000, valueNull[0]  / (valueNull[0] + valueNull[1]) }), //Start with the loglik of the null.
-                                                new SearchInterval(0, 1)
-                                                );
-
-                double[] valueAlt = solutionAlt.getPoint();
+            altiterations = optimizer.getIterations();
 
 
-                altLogLik  = CTSbetaBinomAlt.value(valueAlt);
+            binomRatioCellType = valueAlt[0];
+            binomRatioResidual = valueAlt[1];
 
 
-                altiterations = optimizer.getIterations();
+            //chi squared statistic is determined based on both null and alt loglikelihoods.
+            chiSq = 2.0 * (nullLogLik - altLogLik);
 
+            //determine P value based on distribution
+            ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
+            pVal = 1 - distribution.cumulativeProbability(chiSq);
 
-                binomRatioCellType = valueAlt[0];
-                binomRatioResidual = valueAlt[1];
+            //remove this line, doesn't always hold.
+            System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(precision) + "\n");
+            System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
+            System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
+            System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");
+            System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
+            System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
+            System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
+            System.out.println("\tP value:                       " + Double.toString(pVal));
+            //TODO, I want to format this properly, but not necessary
+            System.out.println("\n---- Finished SNP " + snpName);
 
-
-                //chi squared statistic is determined based on both null and alt loglikelihoods.
-                chiSq = 2.0 * (nullLogLik - altLogLik);
-
-                //determine P value based on distribution
-                ChiSquaredDistribution distribution = new ChiSquaredDistribution(2);
-                pVal = 1 - distribution.cumulativeProbability(chiSq);
-
-                //remove this line, doesn't always hold.
-                System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(precision) + "\n");
-                System.out.println("\tCelltype Alpha parameter:      " + Double.toString(0));
-                System.out.println("\tCelltype Beta parameter:       " + Double.toString(0));
-                System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
-                System.out.println("\tResidual Alpha parameter:      " + Double.toString(0));
-                System.out.println("\tResidual Beta parameter:       " + Double.toString(0));
-                System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
-                System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");
-                System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
-                System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
-                System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
-                System.out.println("\tP value:                       " + Double.toString(pVal));
-                //TODO, I want to format this properly, but not necessary
-                System.out.println("\n---- Finished SNP " + snpName);
-            
-            
-            
-            
-            
-            
-            }
+ 
             
             
             //Finally test was done, so we say the test was performed.

@@ -7,13 +7,12 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.util.ArrayList;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
+import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
 import org.apache.commons.math3.optim.PointValuePair;
-import org.apache.commons.math3.optim.SimpleBounds;
 import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
 import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
-import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.BOBYQAOptimizer;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 import org.apache.commons.math3.optim.univariate.SearchInterval;
@@ -73,14 +72,14 @@ class CTSbinomialTest {
     boolean outPutAllData = false;
     boolean testPerformed = false;
     
-    public CTSbinomialTest(ArrayList<CTSindividualSnpData> all_individuals ,int minReads, int minHets){
+    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals ,int minReads, int minHets) throws Exception{
         boolean debug=true;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
         
-       ArrayList<CTSindividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
+       ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
         
         
         numberOfHets = het_individuals.size();
@@ -97,7 +96,7 @@ class CTSbinomialTest {
         int total_overlap = 0;
         int ref_total = 0;
         
-        for (CTSindividualSnpData temp_het : het_individuals) {
+        for (IndividualSnpData temp_het : het_individuals) {
             //Do nothing if there is no data in het_individuals
 
             hetSampleNames.add(temp_het.getSampleName());
@@ -145,113 +144,113 @@ class CTSbinomialTest {
             // Just using the alternative likelihood of the binomial test here.
             // As out null loglikelihood.
 
-            CTSnullBinomialLikelihood CTSbinomNull = new CTSnullBinomialLikelihood(asRefArray, asAltArray, cellPropArray); 
+            CTSnullBinomialLikelihood CTSbinomNull = new CTSnullBinomialLikelihood(asRefArray, asAltArray, cellPropArray);             
+            
+            try{
+                NelderMeadSimplex simplex;
+                simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.25, 0.25);
+                SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
 
-            if(snpName.equals("rs2298265")){
-                
-                System.out.println("Start debugging");
-            
-            }
-                        
-            NelderMeadSimplex simplex;
-            simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.25, 0.25);
-            SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
-            
-            
-            PointValuePair solutionNull = optimizer.optimize(
-                                            new ObjectiveFunction(CTSbinomNull),
-                                            new MaxEval(500),
-                                            simplex,
-                                            GoalType.MINIMIZE,
-                                            new InitialGuess(new double[] {1.0 * (ref_total / total_overlap)}),
-                                            new SearchInterval(0.0, 1.0)
-                                            );
-            
-            double[] valueNull = solutionNull.getPoint();
-            nullLogLik = CTSbinomNull.value(valueNull);
-            
-            if (optimizer.getIterations() < 5) {
-                //I'm assuming that when the number of iterations is too small
-                //The simplex has too big steps to find a solution, so changing the
-                //simplex to make smaller steps. 
-                //Do the optimization again.
-                
-                System.out.println("The number of iterations used to converge was lower than 5.\n"
-                                 + "Trying again, with different Simplex.");
-                
-                
-                System.out.println("Old LogLik of nulleNULL converged to a threshold of " + Double.toString(precision));
+
+                PointValuePair solutionNull = optimizer.optimize(
+                                                new ObjectiveFunction(CTSbinomNull),
+                                                new MaxEval(20000),
+                                                simplex,
+                                                GoalType.MINIMIZE,
+                                                new InitialGuess(new double[] {1.0 * (ref_total / total_overlap)}),
+                                                new SearchInterval(0.0, 1.0)
+                                                );
+
+                double[] valueNull = solutionNull.getPoint();
+                nullLogLik = CTSbinomNull.value(valueNull);
+
+                if (optimizer.getIterations() < 5) {
+                    //I'm assuming that when the number of iterations is too small
+                    //The simplex has too big steps to find a solution, so changing the
+                    //simplex to make smaller steps. 
+                    //Do the optimization again.
+
+                    System.out.println("The number of iterations used to converge was lower than 5.\n"
+                                     + "Trying again, with different Simplex.");
+
+
+                    System.out.println("Old LogLik of nulleNULL converged to a threshold of " + Double.toString(precision));
+                    System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
+                    System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
+
+
+                    simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.1, 0.1);
+                    solutionNull = optimizer.optimize(
+                                    new ObjectiveFunction(CTSbinomNull),
+                                    new MaxEval(20000),
+                                    simplex,
+                                    GoalType.MINIMIZE,
+                                    new InitialGuess(new double[] {valueNull[0]}),
+                                    new SearchInterval(0.0, 1.0)
+                                    );
+
+                    valueNull = solutionNull.getPoint();
+                    nullLogLik = CTSbinomNull.value(valueNull);  
+                }
+
+
+                System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(precision));
                 System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
                 System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
-                
-                
-                simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.1, 0.1);
-                solutionNull = optimizer.optimize(
-                                new ObjectiveFunction(CTSbinomNull),
-                                new MaxEval(500),
-                                simplex,
-                                GoalType.MINIMIZE,
-                                new InitialGuess(new double[] {valueNull[0]}),
-                                new SearchInterval(0.0, 1.0)
-                                );
-                
-                valueNull = solutionNull.getPoint();
-                nullLogLik = CTSbinomNull.value(valueNull);  
+
+
+
+
+                // Now do MLE of the alternative test 
+                // Probably more computationally intensive 
+                // than the previous test.
+
+                CTSaltBinomialLikelihood CTSbinom = new CTSaltBinomialLikelihood(asRefArray, asAltArray, cellPropArray);
+
+                simplex = new NelderMeadSimplex(2, 1.0, 1.0, 2.0, 0.25, 0.25);
+                PointValuePair solutionAlt = optimizer.optimize(
+                                                new ObjectiveFunction(CTSbinom),
+                                                new MaxEval(500),
+                                                simplex,
+                                                GoalType.MINIMIZE,
+                                                new InitialGuess(new double[] {0, valueNull[0]}), 
+                                                new SearchInterval(0.0, 2.0)
+                                                );
+
+                double[] valueAlt = solutionAlt.getPoint();
+
+                altLogLik  = CTSbinom.value(valueAlt);
+                iterations = optimizer.getIterations();
+
+                MLEratioCellType = valueAlt[0];
+                MLEratioResidual = valueAlt[0];
+
+
+
+
+                //chi squared statistic is determined based on both null and alt loglikelihoods.
+                chiSq = 2.0 * (nullLogLik - altLogLik);
+
+                //determine P value based on distribution
+                ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
+                pVal = 1 - distribution.cumulativeProbability(chiSq);
+
+                System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(precision));
+                System.out.println("\tCelltype ratio:                   " + Double.toString(valueAlt[0]));
+                System.out.println("\tResidual ratio:                   " + Double.toString(valueAlt[1]));
+                System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
+                System.out.println("\tNull log likelihood:              " + Double.toString(nullLogLik));   
+                System.out.println("\tAlt log likelihood:               " + Double.toString(altLogLik) + "\n");
+                System.out.println("\tChisq statistic:                  " + Double.toString(chiSq));
+                System.out.println("\tP value:                          " + Double.toString(pVal));
+                //TODO, I want to format this properly, but not necessary
+                System.out.println("\n---- Finished SNP " + snpName);
+            
+            } catch(TooManyEvaluationsException e){
+                System.out.println("WARNING: Did not converge to a solution for " + snpName);
+                System.out.println("         After 20,000 iterations.");
+                System.out.println("         Continue-ing with the next.");
             }
-
-            
-            System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(precision));
-            System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
-            System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
-            
-            
-            
-            
-            // Now do MLE of the alternative test 
-            // Probably more computationally intensive 
-            // than the previous test.
-            
-            CTSaltBinomialLikelihood CTSbinom = new CTSaltBinomialLikelihood(asRefArray, asAltArray, cellPropArray);
-            
-            simplex = new NelderMeadSimplex(2, 1.0, 1.0, 2.0, 0.25, 0.25);
-            PointValuePair solutionAlt = optimizer.optimize(
-                                            new ObjectiveFunction(CTSbinom),
-                                            new MaxEval(500),
-                                            simplex,
-                                            GoalType.MINIMIZE,
-                                            new InitialGuess(new double[] {0, valueNull[0]}), 
-                                            new SearchInterval(0.0, 2.0)
-                                            );
-            
-            double[] valueAlt = solutionAlt.getPoint();
-            
-            altLogLik  = CTSbinom.value(valueAlt);
-            iterations = optimizer.getIterations();
-            
-            MLEratioCellType = valueAlt[0];
-            MLEratioResidual = valueAlt[0];
-    
-            
-            
-            
-            //chi squared statistic is determined based on both null and alt loglikelihoods.
-            chiSq = 2.0 * (nullLogLik - altLogLik);
-
-            //determine P value based on distribution
-            ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
-            pVal = 1 - distribution.cumulativeProbability(chiSq);
-            
-            System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(precision));
-            System.out.println("\tCelltype ratio:                   " + Double.toString(valueAlt[0]));
-            System.out.println("\tResidual ratio:                   " + Double.toString(valueAlt[1]));
-            System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
-            System.out.println("\tNull log likelihood:              " + Double.toString(nullLogLik));   
-            System.out.println("\tAlt log likelihood:               " + Double.toString(altLogLik) + "\n");
-            System.out.println("\tChisq statistic:                  " + Double.toString(chiSq));
-            System.out.println("\tP value:                          " + Double.toString(pVal));
-            //TODO, I want to format this properly, but not necessary
-            System.out.println("\n---- Finished SNP " + snpName);
-            
             
             testPerformed = true;
             
@@ -336,27 +335,4 @@ class CTSbinomialTest {
         return testPerformed;
     }
 
-    private ArrayList<CTSindividualSnpData> isolateHeterozygotes(ArrayList<CTSindividualSnpData> all_individuals) {
-        
-        ArrayList<CTSindividualSnpData> hets;
-        hets = new ArrayList<CTSindividualSnpData>();
-        
-        for(CTSindividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
-    }
-    
-    
 }
