@@ -151,7 +151,7 @@ public class EQTLInteractionAnalyser {
             else if (commandLine.hasOption("c")){
                 covariates = commandLine.getOptionValues("c");
             } else {
-				covariates = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS"};
+				covariates = new String[0];
 			}
 			
 			if (commandLine.hasOption("c2")){
