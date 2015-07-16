@@ -261,28 +261,6 @@ class CTSBetaBinomialTest {
     
     
     
-    private ArrayList<CTSdispersedIndividualSnpData> isolateHeterozygotes(ArrayList<CTSdispersedIndividualSnpData> all_individuals) {
-        
-        ArrayList<CTSdispersedIndividualSnpData> hets;
-        hets = new ArrayList<CTSdispersedIndividualSnpData>();
-        
-        for(CTSdispersedIndividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
-    }
-
     /**
      * @return the testPerformed
      */
