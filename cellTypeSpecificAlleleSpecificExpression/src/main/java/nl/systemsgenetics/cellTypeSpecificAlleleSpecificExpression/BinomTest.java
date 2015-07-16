@@ -40,6 +40,16 @@ public class BinomTest {
             totalAlt += asAlt.get(i);
         }
         
+        int[] asRefArray = new int[asRef.size()];
+        int[] asAltArray = new int[asAlt.size()];
+        
+        for(int j =0; j< asRef.size(); j++){
+            
+            asRefArray[j] = asRef.get(j);
+            asAltArray[j] = asAlt.get(j);
+        
+        }
+        
         //binomial ratio is not determined using Maximum likelihoof algorithm, 
         //just by the actual proportion, can be proven for the binomial distribution
         if(totalRef !=0 ){
@@ -48,40 +58,20 @@ public class BinomTest {
             binomRatio = 0.0;
         }
         //Null is a ratio set to 0.5 as below.
-        nullLogLik = BinomLogLik(0.5, asRef, asAlt);
+        nullLogLik = likelihoodFunctions.BinomLogLik(0.5, asRefArray, asAltArray);
         //Alt is a ratio based on the binomRatio.
-        altLogLik =  BinomLogLik(binomRatio, asRef, asAlt);
+        altLogLik =  likelihoodFunctions.BinomLogLik(binomRatio, asRefArray, asAltArray);
         //chi squared statistic is determined based on both null and alt loglikelihoods.
-        chiSq = 2.0 * (nullLogLik - altLogLik);
-        
-        //chi sq distribution below cannot handle infinity values.
-        if(chiSq == Double.POSITIVE_INFINITY){
-            chiSq = Double.MAX_VALUE ;
-        }
+        chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
         
         
         //determine P value based on distribution
-        ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
-        pVal = 1 - distribution.cumulativeProbability(chiSq);
+
+        pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
     
     }
     
-    private double BinomLogLik(double d, ArrayList<Integer> asRef, ArrayList<Integer> asAlt) {
-        
-        double logLik = 0; 
-        
-        for(int i = 0; i < asRef.size(); i++){
-            
-            int total = asRef.get(i) + asAlt.get(i);
-            //determine likelihood here.
-            BinomialDistribution binomDist = new BinomialDistribution(total, d);
-            logLik += log(binomDist.probability(asRef.get(i)));
-        
-        }
-        
-        return -1.0 * logLik;
-        
-    }
+
 
     /**
      * @return the pVal

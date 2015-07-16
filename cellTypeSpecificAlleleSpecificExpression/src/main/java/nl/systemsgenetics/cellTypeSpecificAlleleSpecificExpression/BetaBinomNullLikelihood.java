@@ -52,9 +52,6 @@ class BetaBinomNullLikelihood implements Function {
         
         for(int i=0; i < asRef.length; i++ ){
             
-            double alpha = t[0];
-            double beta  = t[0];  
-            
             double sigma = dispersion[i];
 
 
@@ -62,34 +59,11 @@ class BetaBinomNullLikelihood implements Function {
 
 
             int AS2   = asAlt[i];
-
-
-            //Copied from WASP.
-            double hetp  = 0.980198;
-            double error = 0.005;
-                    
-            double a;
-            double b;
-
-            a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-            b = Math.exp( (Math.log(beta ) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
             
-
-
-            double part1 = 0.0;
-            part1 += Beta.logBeta(AS1 + a, AS2 + b);
-            part1 -= Beta.logBeta(a, b);
-            
-            // If we do not integrate heterozygote calling error or sequencing sequencing error,
-            // part1 can be returned in the loop.
-            
-            double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
-            double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
-            
-            logLik +=  addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
+            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, t[0], t[0], new int[] {AS1}, new int[] {AS2});
         }
         
-        return -1.0 * logLik;
+        return logLik;
         
         
     }
@@ -104,13 +78,6 @@ class BetaBinomNullLikelihood implements Function {
 		
         return retval;    
     }
-    
-    
-    
-    private double addlogs(double loga, double logb){
-        double i = Math.max(loga, logb) + Math.log(1 + Math.exp(-Math.abs(loga -logb)));
-        return i;
-    
-    }
+
     
 }

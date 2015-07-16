@@ -126,6 +126,7 @@ class CTSbetaBinomialEntry {
         
         out_writer.close();
        
+        UtilityMethods.printFinalStats();
     
     }
     

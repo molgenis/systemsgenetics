@@ -164,35 +164,6 @@ class CTSbinomialTest {
                 double[] valueNull = solutionNull.getPoint();
                 nullLogLik = CTSbinomNull.value(valueNull);
 
-                if (optimizer.getIterations() < 5) {
-                    //I'm assuming that when the number of iterations is too small
-                    //The simplex has too big steps to find a solution, so changing the
-                    //simplex to make smaller steps. 
-                    //Do the optimization again.
-
-                    System.out.println("The number of iterations used to converge was lower than 5.\n"
-                                     + "Trying again, with different Simplex.");
-
-
-                    System.out.println("Old LogLik of nulleNULL converged to a threshold of " + Double.toString(precision));
-                    System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
-                    System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
-
-
-                    simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.1, 0.1);
-                    solutionNull = optimizer.optimize(
-                                    new ObjectiveFunction(CTSbinomNull),
-                                    new MaxEval(20000),
-                                    simplex,
-                                    GoalType.MINIMIZE,
-                                    new InitialGuess(new double[] {valueNull[0]}),
-                                    new SearchInterval(0.0, 1.0)
-                                    );
-
-                    valueNull = solutionNull.getPoint();
-                    nullLogLik = CTSbinomNull.value(valueNull);  
-                }
-
 
                 System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(precision));
                 System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));

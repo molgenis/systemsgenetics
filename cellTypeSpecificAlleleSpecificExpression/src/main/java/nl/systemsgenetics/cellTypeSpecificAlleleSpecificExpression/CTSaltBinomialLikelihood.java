@@ -6,6 +6,7 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import static java.lang.Math.log;
+import java.util.ArrayList;
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.ejml.simple.SimpleMatrix;
 
@@ -49,9 +50,7 @@ public class CTSaltBinomialLikelihood implements Function {
         for(int i=0; i < asRef.length; i++ ){
             
             prop = pCellType * cellProp[i] + pResidual;
-            
-            //IS this correct?
-            
+
             if(prop > 1 ){
                 prop = 1;
             }
@@ -59,15 +58,11 @@ public class CTSaltBinomialLikelihood implements Function {
                 prop = 0;
             }
             
-            int total = asRef[i] + asAlt[i];
+            logLik += likelihoodFunctions.BinomLogLik(prop, new int[] {asRef[i]}, new int[] {asAlt[i]});
             
-            //determine likelihood here.
-            
-            BinomialDistribution binomDist = new BinomialDistribution(total, prop);
-            logLik += log(binomDist.probability(asRef[i]));
         }
         
-        return -1.0 * logLik;
+        return logLik;
     }
     
     

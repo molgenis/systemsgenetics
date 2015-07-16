@@ -86,8 +86,7 @@ class CTSbinomialEntry {
 
         out_writer.close();
 
-        System.out.println("Finished " + Integer.toString(i) + " tests, now closing.");
-
+        UtilityMethods.printFinalStats();
     }
     
 }
