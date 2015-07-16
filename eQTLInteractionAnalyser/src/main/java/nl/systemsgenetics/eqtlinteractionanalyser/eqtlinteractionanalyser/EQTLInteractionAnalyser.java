@@ -106,6 +106,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("File containing the SNPs to swap");
         OptionBuilder.withLongOpt("swap");
         OPTIONS.addOption(OptionBuilder.create("sw"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Included samples");
+        OptionBuilder.withLongOpt("includedSamples");
+        OPTIONS.addOption(OptionBuilder.create("is"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -121,6 +127,7 @@ public class EQTLInteractionAnalyser {
         final String[] covariates;
 		final String[] covariates2;
 		final String[] covariatesToTest;
+		final File samplesToInculudeFile;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -171,6 +178,12 @@ public class EQTLInteractionAnalyser {
             } else {
 				snpsToSwapFile = null;
 			}
+			
+			if (commandLine.hasOption("is")){
+                samplesToInculudeFile = new File(commandLine.getOptionValue("is"));
+            } else {
+				samplesToInculudeFile = null;
+			}
 
         } catch (ParseException ex) {
             System.err.println("Invalid command line arguments: ");
@@ -193,7 +206,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile);
         }
     }
 
