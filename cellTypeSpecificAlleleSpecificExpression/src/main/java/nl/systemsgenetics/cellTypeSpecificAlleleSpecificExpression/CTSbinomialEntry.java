@@ -20,7 +20,7 @@ import java.util.ArrayList;
  */
 class CTSbinomialEntry {
 
-    public CTSbinomialEntry(String asLocations,String phenoLocation, String outputLocation, int minReads, int minHets) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
+    public CTSbinomialEntry(String asLocations,String phenoLocation, String outputLocation) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception {
 
         PrintWriter out_writer;
         out_writer = new PrintWriter(outputLocation, "UTF-8");
@@ -74,7 +74,7 @@ class CTSbinomialEntry {
             }
 
             //do the binomial test:
-            CTSbinomialTest results = new CTSbinomialTest(allSnpData, minReads, minHets);
+            CTSbinomialTest results = new CTSbinomialTest(allSnpData);
 
             // Write the results to the out_file.
             if (results.isTestPerformed()) {

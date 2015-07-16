@@ -77,7 +77,7 @@ class CTSBetaBinomialTest {
     double NullBetaParam;
     double NullbinomRatio;
     
-    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, int minReads, int minHets) throws Exception {
+    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception {
     
         boolean debug=true;
         //basic information, get the zero instance.
@@ -118,7 +118,7 @@ class CTSBetaBinomialTest {
         }
         
         //Check if we do a test.
-        if((total_overlap >= minReads) && (numberOfHets >= minHets) ){
+        if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
 
             // There is data to perform the binomial test, perform it.       
             System.out.println();

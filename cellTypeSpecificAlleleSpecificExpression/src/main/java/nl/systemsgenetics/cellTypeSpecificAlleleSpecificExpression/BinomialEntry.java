@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 public class BinomialEntry {
 
-    public static void BinomialEntry(String asLocations, String outputLocation, int minReads, int minHets) throws FileNotFoundException, UnsupportedEncodingException, IOException {
+    public static void BinomialEntry(String asLocations, String outputLocation) throws FileNotFoundException, UnsupportedEncodingException, IOException {
 
         PrintWriter out_writer;
         out_writer = new PrintWriter(outputLocation, "UTF-8");
@@ -40,13 +40,13 @@ public class BinomialEntry {
             if(allSnpData.isEmpty()) break; //when this occurs, all the files have no line
             
             
-            BinomialTest results = new BinomialTest(allSnpData, minReads, minHets);
+            BinomialTest results = new BinomialTest(allSnpData);
             
             // Write the results to the out_file.
             // And increase the number of tests.
             if (results.isTestPerformed()) {
                 out_writer.println(results.writeTestStatistics(true));
-                GlobalVariablesClass.numberOfTestPerformed++;
+                GlobalVariables.numberOfTestPerformed++;
             }
   
             

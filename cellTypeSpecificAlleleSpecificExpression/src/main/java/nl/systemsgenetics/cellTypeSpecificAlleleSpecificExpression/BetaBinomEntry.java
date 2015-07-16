@@ -33,7 +33,7 @@ import java.util.ArrayList;
 public class BetaBinomEntry {
    
     
-    public BetaBinomEntry(String asLocations, String outputLocation, int minReads, int minHets) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception{
+    public BetaBinomEntry(String asLocations, String outputLocation) throws FileNotFoundException, UnsupportedEncodingException, IOException, Exception{
         
         /*
          * PART 1: read all individual names
@@ -106,12 +106,12 @@ public class BetaBinomEntry {
 
             
             //do the beta binomial test:
-            BetaBinomialTest results = new BetaBinomialTest(allSnpData, minReads, minHets);
+            BetaBinomialTest results = new BetaBinomialTest(allSnpData);
 
             // Write the results to the out_file.
             if (results.isTestPerformed()) {
                 out_writer.println(results.writeTestStatistics(true));
-                GlobalVariablesClass.numberOfTestPerformed++;
+                GlobalVariables.numberOfTestPerformed++;
             }
 
         }

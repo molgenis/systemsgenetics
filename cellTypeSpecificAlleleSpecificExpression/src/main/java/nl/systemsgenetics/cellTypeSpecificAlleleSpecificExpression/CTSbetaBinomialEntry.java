@@ -5,10 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -19,7 +16,7 @@ import java.util.ArrayList;
  */
 class CTSbetaBinomialEntry {
 
-    public CTSbetaBinomialEntry(String asLocations, String phenoTypeLocation, String outputLocation, int minReads, int minHets) throws IOException, Exception {
+    public CTSbetaBinomialEntry(String asLocations, String phenoTypeLocation, String outputLocation) throws IOException, Exception {
         
         
         // BETABINOMIAL TEST.
@@ -117,7 +114,7 @@ class CTSbetaBinomialEntry {
             
             
             //do the beta binomial test:
-            CTSBetaBinomialTest results = new CTSBetaBinomialTest(allSnpData, minReads, minHets);
+            CTSBetaBinomialTest results = new CTSBetaBinomialTest(allSnpData);
 
             // Write the results to the out_file.
             if (results.isTestPerformed()) {

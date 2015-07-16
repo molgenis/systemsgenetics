@@ -72,7 +72,7 @@ class CTSbinomialTest {
     boolean outPutAllData = false;
     boolean testPerformed = false;
     
-    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals ,int minReads, int minHets) throws Exception{
+    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
         boolean debug=true;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
@@ -113,7 +113,7 @@ class CTSbinomialTest {
         }
         
         
-        if((total_overlap >= minReads) && (numberOfHets >= minHets) ){
+        if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             
             System.out.println();
             System.out.println("--- Starting cell type specific binomial LRT test estimate ---");

@@ -46,7 +46,7 @@ public class BinomialTest {
     // Then it will detemine the binomial proportion (no likelihood procedure, just division of ref/total).
     // Calculate log likelihoods, and do a likelihood ratio test.
     
-    public BinomialTest(ArrayList<IndividualSnpData> all_individuals, int minReads, int minHets){
+    public BinomialTest(ArrayList<IndividualSnpData> all_individuals){
         boolean debug = true;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
@@ -80,7 +80,7 @@ public class BinomialTest {
         }
         
         
-        if((total_overlap >= minReads) && (numberOfHets >= minHets) ){
+        if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             if(debug){
                 System.out.println("debug:");
                 System.out.println("Number of hets: " + Integer.toString(numberOfHets));

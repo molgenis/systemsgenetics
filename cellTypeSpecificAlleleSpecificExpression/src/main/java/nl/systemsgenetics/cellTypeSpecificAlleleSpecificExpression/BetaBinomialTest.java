@@ -64,7 +64,7 @@ class BetaBinomialTest {
     
     private final double precision = 1.0E-7;  
     
-    public BetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, int minReads, int minHets) throws Exception{
+    public BetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
         boolean debug=true;
         //basic information, get the zero instance, was checked as the same in ReadAsLinesIntoIndividualSNPdata
         snpName = all_individuals.get(0).getSnpName();
@@ -106,7 +106,7 @@ class BetaBinomialTest {
         }
         
         
-        if((total_overlap >= minReads) && (numberOfHets >= minHets) ){
+        if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             // There is data to perform the binomial test, perform it.       
             System.out.println();
             System.out.println("---- Starting beta binomial LRT test estimate ----");

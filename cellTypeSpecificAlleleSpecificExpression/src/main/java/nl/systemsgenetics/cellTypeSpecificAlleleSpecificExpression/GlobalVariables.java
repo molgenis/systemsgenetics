@@ -13,12 +13,12 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
  * Needs to be implemented soon, but the code needs quite some refactoring  
  * 
  */
-public class GlobalVariablesClass {
+public class GlobalVariables {
     
     public static int verbosity = 0;
     
-    public static int minReads = 0;
-    public static int minHets  = 0;
+    public static int minReads = 1;
+    public static int minHets  = 1;
     
     public static int maximumIterations = 20000;
     public static double simplexPrecision  = 1e7;
