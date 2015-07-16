@@ -47,7 +47,7 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 		for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
 
 			//double corrPvalue = correlateCovariateWithGenotype(snp);
-			double corrPvalue = 0;
+			double corrPvalue = 1;
 			if (corrPvalue > corrPvalueThreshold) { // don't compute the interaction if the covariate expression is affected by theis SNP
 				try {
 
