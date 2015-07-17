@@ -106,6 +106,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("File containing the SNPs to swap");
         OptionBuilder.withLongOpt("swap");
         OPTIONS.addOption(OptionBuilder.create("sw"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Included samples");
+        OptionBuilder.withLongOpt("includedSamples");
+        OPTIONS.addOption(OptionBuilder.create("is"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -121,6 +127,7 @@ public class EQTLInteractionAnalyser {
         final String[] covariates;
 		final String[] covariates2;
 		final String[] covariatesToTest;
+		final File samplesToInculudeFile;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -151,7 +158,7 @@ public class EQTLInteractionAnalyser {
             else if (commandLine.hasOption("c")){
                 covariates = commandLine.getOptionValues("c");
             } else {
-				covariates = new String[]{"gender", "GC", "MEDIAN_5PRIME_BIAS", "MEDIAN_3PRIME_BIAS"};
+				covariates = new String[0];
 			}
 			
 			if (commandLine.hasOption("c2")){
@@ -170,6 +177,12 @@ public class EQTLInteractionAnalyser {
                 snpsToSwapFile = new File(commandLine.getOptionValue("sw"));
             } else {
 				snpsToSwapFile = null;
+			}
+			
+			if (commandLine.hasOption("is")){
+                samplesToInculudeFile = new File(commandLine.getOptionValue("is"));
+            } else {
+				samplesToInculudeFile = null;
 			}
 
         } catch (ParseException ex) {
@@ -193,7 +206,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile);
         }
     }
 

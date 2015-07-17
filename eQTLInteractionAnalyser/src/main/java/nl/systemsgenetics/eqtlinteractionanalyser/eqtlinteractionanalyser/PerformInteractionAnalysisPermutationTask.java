@@ -25,14 +25,18 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 	public int nrSamples = -1;
 	public org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = null;
 	public cern.jet.random.tdouble.StudentT tDistColt = null;
+	private final SkippedInteractionTracker skippedTracker;
+	private final SkippedInteractionWriter skippedWriter;
 
-	public PerformInteractionAnalysisPermutationTask(ExpressionDataset datasetGenotypes, ExpressionDataset datasetExpression, ExpressionDataset datasetCovariates, ExpressionDataset datasetCovariatesPCAForceNormal, int covToTest) {
+	public PerformInteractionAnalysisPermutationTask(ExpressionDataset datasetGenotypes, ExpressionDataset datasetExpression, ExpressionDataset datasetCovariates, ExpressionDataset datasetCovariatesPCAForceNormal, int covToTest, SkippedInteractionWriter skippedWriter) {
 		this.datasetGenotypes = datasetGenotypes;
 		this.datasetExpression = datasetExpression;
 		this.datasetCovariates = datasetCovariates;
 		this.datasetCovariatesPCAForceNormal = datasetCovariatesPCAForceNormal;
 		this.covToTest = covToTest;
 		this.nrSamples = datasetGenotypes.nrSamples;
+		this.skippedTracker = new SkippedInteractionTracker(datasetCovariates.probeNames[covToTest]);
+		this.skippedWriter = skippedWriter;
 
 		this.regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
@@ -78,15 +82,18 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 					}
 					zScores[snp] = zScoreInteraction;
 				} catch (SingularMatrixException e) {
-					zScores[snp] = Double.NaN;
+					zScores[snp] = 0;
+					skippedTracker.addSkipped(SkippedInteractionTracker.Reason.SINGULAR, datasetGenotypes.probeNames[snp]);
 				}
 			}
 			else{
-				System.out.println("Removing covariate because of eQTL effect! " + datasetCovariatesPCAForceNormal.probeNames[covToTest] + " : " + datasetGenotypes.probeNames[snp]);
-				zScores[snp] = Double.NaN;
+				//System.out.println("Removing covariate because of eQTL effect! " + datasetCovariatesPCAForceNormal.probeNames[covToTest] + " : " + datasetGenotypes.probeNames[snp]);
+				skippedTracker.addSkipped(SkippedInteractionTracker.Reason.SHARED_QTL, datasetGenotypes.probeNames[snp]);
+				zScores[snp] = 0;
 			}
 
 		}
+		skippedWriter.add(skippedTracker);
 		return new DoubleArrayIntegerObject(zScores, covToTest);
 	}
 
