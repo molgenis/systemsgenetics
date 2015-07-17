@@ -359,7 +359,7 @@ public class TestEQTLDatasetForInteractions {
 			
 			datasetZScores.recalculateHashMaps();
 
-			SkippedInteractionWriter skippedWriter = new SkippedInteractionWriter(null);
+			SkippedInteractionWriter skippedWriter = new SkippedInteractionWriter(new File(outputDir + "/skippedInteractionsRound_" + covsToCorrect.length + ".txt"));
 
 			java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 			CompletionService<DoubleArrayIntegerObject> pool = new ExecutorCompletionService<DoubleArrayIntegerObject>(threadPool);
@@ -444,6 +444,7 @@ public class TestEQTLDatasetForInteractions {
 			System.out.println("Top covariate:\t" + maxChi2 + "\t" + maxChi2Cov);
 			outputTopCovs.writeln("Top covariate:\t" + maxChi2 + "\t" + maxChi2Cov);
 			outputTopCovs.flush();
+			skippedWriter.close();
 			datasetZScores.save(outputDir + "/InteractionZScoresMatrix-" + covsToCorrect.length + "Covariates.txt");
 
 			return maxChi2Cov;
