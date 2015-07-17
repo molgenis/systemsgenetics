@@ -29,11 +29,11 @@ class CTSbetaBinomialEntry {
         
         //PART 2: determine the per sample overdispersion in the file.
         
-        ArrayList<betaBinomOverdispInSample>  dispersionParameters = new ArrayList<betaBinomOverdispInSample>();
+        ArrayList<BetaBinomOverdispInSample>  dispersionParameters = new ArrayList<BetaBinomOverdispInSample>();
         
         for(String sampleName : allFiles){
            
-            dispersionParameters.add(new betaBinomOverdispInSample(sampleName));
+            dispersionParameters.add(new BetaBinomOverdispInSample(sampleName));
         
             /*
              * TODO: determine some way to save the overdispersion sample.
@@ -46,7 +46,7 @@ class CTSbetaBinomialEntry {
         double[] dispersionVals = new double[dispersionParameters.size()];  
         int i = 0;     
         
-        for(betaBinomOverdispInSample sampleDispersion : dispersionParameters){
+        for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
             dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
             
             

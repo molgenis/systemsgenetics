@@ -9,8 +9,8 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 /**
  *
  * @author adriaan
- * Used as a class to store all variables in. 
- * Needs to be implemented soon, but the code needs quite some refactoring  
+ * Used as a class to store all variables in that are being accessed by many functions. 
+ * 
  * 
  */
 public class GlobalVariables {
@@ -21,8 +21,16 @@ public class GlobalVariables {
     public static int minHets  = 1;
     
     public static int maximumIterations = 20000;
-    public static double simplexPrecision  = 1e7;
+    
+    public static double simplexThreshold  = 1e-8;
     
     public static int numberOfTestPerformed = 0;
     
+    
+    
+    //BETA BINOMIAL SPECIFIC PARAMETERS
+    
+    //I have some fully phased data and this is what wasp comes up with.
+    public static double hetProb  = 0.980198;
+    public static double seqError = 0.005;
 }

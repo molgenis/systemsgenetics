@@ -5,9 +5,6 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import static java.lang.Math.log;
-import java.util.ArrayList;
-import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -58,7 +55,7 @@ public class CTSaltBinomialLikelihood implements Function {
                 prop = 0;
             }
             
-            logLik += likelihoodFunctions.BinomLogLik(prop, new int[] {asRef[i]}, new int[] {asAlt[i]});
+            logLik += likelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);
             
         }
         

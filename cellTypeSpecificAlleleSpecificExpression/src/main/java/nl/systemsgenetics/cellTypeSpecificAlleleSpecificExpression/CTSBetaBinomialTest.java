@@ -64,7 +64,6 @@ class CTSBetaBinomialTest {
     double pVal;
     
     //precision
-    double precision = 1E-6;
     double alphaParamCellType;
     double binomRatioCellType;
     double betaParamCellType;
@@ -170,7 +169,7 @@ class CTSBetaBinomialTest {
                                                         );
             NelderMeadSimplex simplex;
             simplex = new NelderMeadSimplex(2);
-            SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
+            SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
             PointValuePair solutionNull = optimizer.optimize(
                                             new ObjectiveFunction(betaBinomNull),
                                             new MaxEval(500),
@@ -188,7 +187,7 @@ class CTSBetaBinomialTest {
             NullBetaParam = valueNull[1];
             NullbinomRatio = valueNull[0] / (valueNull[0] + valueNull[1]);
             
-            System.out.println("LogLik of Null converged to a threshold of " + Double.toString(precision));
+            System.out.println("LogLik of Null converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
             System.out.println("\tNull Alpha parameter:      " + Double.toString(valueNull[0]));
             System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
             System.out.println("\tIterations to converge:    " + Integer.toString(nulliterations) + "\n");
@@ -237,7 +236,7 @@ class CTSBetaBinomialTest {
             pVal = 1 - distribution.cumulativeProbability(chiSq);
 
             //remove this line, doesn't always hold.
-            System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(precision) + "\n");
+            System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
             System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
             System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
             System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");

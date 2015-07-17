@@ -6,7 +6,7 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import static java.lang.Math.log;
-import java.util.ArrayList;
+
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.special.Beta;
@@ -17,6 +17,12 @@ import org.apache.commons.math3.special.Beta;
  */
 public class likelihoodFunctions {
     
+    static double BinomLogLik(double d, int asRef, int asAlt) {
+        int total = asRef + asAlt;
+        //determine likelihood here.
+        BinomialDistribution binomDist = new BinomialDistribution(total, d);
+        return -1.0 * log(binomDist.probability(asRef));
+    }
     
     static double BinomLogLik(double d, int[] asRef, int[] asAlt) {
         
@@ -26,44 +32,50 @@ public class likelihoodFunctions {
             
             int total = asRef[i]+ asAlt[i];
             //determine likelihood here.
-            BinomialDistribution binomDist = new BinomialDistribution(total, d);
-            logLik += log(binomDist.probability(asRef[i]));
-        
+           
+            logLik += BinomLogLik(d, asRef[i], asAlt[i]);
         }
-        
-        return -1.0 * logLik;
-        
+        return logLik;
     }
     
+    
+     static double BetaBinomLogLik(double sigma, double alpha, double beta, int asRef, int asAlt){
+
+        int AS1   = asRef;
+        int AS2   = asAlt;
+        double hetp  = GlobalVariables.hetProb;
+        double error = GlobalVariables.seqError;
+
+        double a;
+        double b;
+
+        a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta))  + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+        b = Math.exp( (Math.log(beta) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+
+        double part1 = 0.0;
+        part1 += Beta.logBeta(AS1 + a, AS2 + b);
+        part1 -= Beta.logBeta(a, b);
+
+        double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
+        double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
+
+        return -1.0 * addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
+
+     }
     
     static double BetaBinomLogLik(double sigma, double alpha, double beta, int[] asRef, int[] asAlt){
         
         double logLik = 0; 
     
         for(int i=0; i < asRef.length; i++ ){
-            double AS1   = asRef[i];
-            double AS2   = asAlt[i];
-            double hetp  = 0.980198;
-            double error = 0.005;
-                    
-            double a;
-            double b;
-
-            a = Math.exp( Math.log(0.5) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-            b = Math.exp( Math.log(0.5) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-
-            double part1 = 0.0;
-            part1 += Beta.logBeta(AS1 + a, AS2 + b);
-            part1 -= Beta.logBeta(a, b);
-            
-            double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
-            double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
-            
-            logLik +=  addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
+            int AS1   = asRef[i];
+            int AS2   = asAlt[i];
+           
+            logLik +=  BetaBinomLogLik(sigma, alpha, beta, AS1, AS2);
         }
         
     
-        return -1.0 * logLik;
+        return logLik;
     }
     
     static double addlogs(double loga, double logb){

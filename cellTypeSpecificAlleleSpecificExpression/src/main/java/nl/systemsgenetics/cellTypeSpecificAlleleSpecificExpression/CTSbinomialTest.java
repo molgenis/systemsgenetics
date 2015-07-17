@@ -63,10 +63,6 @@ class CTSbinomialTest {
     double pVal;
     double chiSq;
     
-    //settings for MLE determination
-    private final double precision = 1.0E-6;  
-    
-    
     
     //some settings
     boolean outPutAllData = false;
@@ -149,7 +145,7 @@ class CTSbinomialTest {
             try{
                 NelderMeadSimplex simplex;
                 simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.25, 0.25);
-                SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
+                SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
 
 
                 PointValuePair solutionNull = optimizer.optimize(
@@ -165,7 +161,7 @@ class CTSbinomialTest {
                 nullLogLik = CTSbinomNull.value(valueNull);
 
 
-                System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(precision));
+                System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
                 System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
                 System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
 
@@ -206,7 +202,7 @@ class CTSbinomialTest {
                 ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
                 pVal = 1 - distribution.cumulativeProbability(chiSq);
 
-                System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(precision));
+                System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
                 System.out.println("\tCelltype ratio:                   " + Double.toString(valueAlt[0]));
                 System.out.println("\tResidual ratio:                   " + Double.toString(valueAlt[1]));
                 System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");

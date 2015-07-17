@@ -5,10 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -45,7 +42,7 @@ public class BinomialEntry {
             // Write the results to the out_file.
             // And increase the number of tests.
             if (results.isTestPerformed()) {
-                out_writer.println(results.writeTestStatistics(true));
+                out_writer.println(results.writeTestStatistics(false));
                 GlobalVariables.numberOfTestPerformed++;
             }
   

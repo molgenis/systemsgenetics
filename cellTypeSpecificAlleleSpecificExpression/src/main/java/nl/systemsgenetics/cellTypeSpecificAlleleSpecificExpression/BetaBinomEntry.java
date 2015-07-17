@@ -5,10 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -45,25 +42,28 @@ public class BetaBinomEntry {
         /*
          * PART 2: Determine all Overdispersion parameters for all samples.
          * TODO Implement some logic if there is already overdispersion data available.
-         *      Perhaps implement this inside the betaBinomOverdispInSample side.
+         *      Perhaps implement this inside the BetaBinomOverdispInSample side.
          *      Not necassary now, but later, yes.
          */
         
-        ArrayList<betaBinomOverdispInSample>  dispersionParameters = new ArrayList<betaBinomOverdispInSample>();
+        ArrayList<BetaBinomOverdispInSample>  dispersionParameters = new ArrayList<BetaBinomOverdispInSample>();
         
         for(String sampleName : allFiles){
            
-            dispersionParameters.add(new betaBinomOverdispInSample(sampleName));
+            dispersionParameters.add(new BetaBinomOverdispInSample(sampleName));
             /*
              * TODO: determine some way to save the overdispersion sample.
              *       But we could also do it everytime you do this, perhaps based 
              *       on the relative time compared to the full calculation.
+             *       
+                    EDIT: seems to be about 5 seconds per individual, 
+             *       so I'm fine with keeping it this way.
              */
         }
         double[] dispersionVals = new double[dispersionParameters.size()];  
         int i = 0;     
         
-        for(betaBinomOverdispInSample sampleDispersion : dispersionParameters){
+        for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
             dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
             
             

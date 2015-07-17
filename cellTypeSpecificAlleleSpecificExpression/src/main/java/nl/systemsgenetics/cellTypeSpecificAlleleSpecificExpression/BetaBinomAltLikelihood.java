@@ -5,8 +5,6 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import java.util.ArrayList;
-import org.apache.commons.math3.special.Beta;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -57,34 +55,15 @@ class BetaBinomAltLikelihood implements Function {
         for(int i=0; i < asRef.length; i++ ){
             
             double sigma = dispersion[i];
-            double AS1   = asRef[i];
-            double AS2   = asAlt[i];
-            
-            //Copied from WASP data.
-            double hetp  = 0.980198;
-            double error = 0.005;
-                    
-            double a;
-            double b;
 
-            a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-            b = Math.exp( (Math.log(beta ) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+            int AS1   = asRef[i];
 
-            double part1 = 0.0;
-            part1 += Beta.logBeta(AS1 + a, AS2 + b);
-            part1 -= Beta.logBeta(a, b);
+            int AS2   = asAlt[i];
             
-            // If we do not integrate heterozygote calling error or sequencing sequencing error,
-            // part1 can be returned in the loop.
-            // But now I want to make sure that I follow the WASP approach on the CEU data.
-            
-            double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
-            double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
-            
-            logLik +=  addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
+            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, alpha, beta, AS1, AS2);
         }
         
-        return -1.0 * logLik;
+        return logLik;
         
         
     }

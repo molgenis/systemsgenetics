@@ -11,7 +11,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
 import org.apache.commons.math3.optim.PointValuePair;
@@ -24,14 +23,14 @@ import org.apache.commons.math3.optim.univariate.SearchInterval;
  *
  * @author adriaan
  */
-public class betaBinomOverdispInSample {
+public class BetaBinomOverdispInSample {
     
     private final String sampleName;
     private double[] overdispersion = new double[1];
-    double precision = 1e-7;
+    
     
     @SuppressWarnings({"empty-statement", "empty-statement"})
-    public betaBinomOverdispInSample(String filename) throws FileNotFoundException, IOException{
+    public BetaBinomOverdispInSample(String filename) throws FileNotFoundException, IOException{
         
         sampleName = filename;
         
@@ -83,7 +82,7 @@ public class betaBinomOverdispInSample {
         BetaBinomLikelihoodForOverdispersion betaBinom = new BetaBinomLikelihoodForOverdispersion(asRef, asAlt);
         NelderMeadSimplex simplex;
         simplex = new NelderMeadSimplex(1);
-        SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
+        SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
         PointValuePair solution = optimizer.optimize(
                                             new ObjectiveFunction(betaBinom),
                                             new MaxEval(500),
@@ -95,7 +94,7 @@ public class betaBinomOverdispInSample {
         
         overdispersion = solution.getFirst();
         
-        System.out.println("Log likelihood converged to a threshold of " + Double.toString(precision));
+        System.out.println("Log likelihood converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
         
         System.out.println("\tDispersion sigma: " + Double.toString(overdispersion[0]));
         System.out.println("\tLog likelihood:   " + Double.toString(betaBinom.value(overdispersion)));

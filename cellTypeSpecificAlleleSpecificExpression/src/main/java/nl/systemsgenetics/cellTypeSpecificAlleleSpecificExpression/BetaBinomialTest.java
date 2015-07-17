@@ -62,8 +62,6 @@ class BetaBinomialTest {
     double pVal;
     
     
-    private final double precision = 1.0E-7;  
-    
     public BetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
         boolean debug=true;
         //basic information, get the zero instance, was checked as the same in ReadAsLinesIntoIndividualSNPdata
@@ -156,7 +154,7 @@ class BetaBinomialTest {
                                                         );
             NelderMeadSimplex simplex;
             simplex = new NelderMeadSimplex(2);
-            SimplexOptimizer optimizer = new SimplexOptimizer(precision, precision); //numbers are to which precision you want it to be done.
+            SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
             PointValuePair solutionAlt = optimizer.optimize(
                                             new ObjectiveFunction(betaBinomAlt),
                                             new MaxEval(500),
@@ -182,7 +180,7 @@ class BetaBinomialTest {
             pVal = 1 - distribution.cumulativeProbability(chiSq);
             
             
-            System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(precision));
+            System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
             System.out.println("\tAlpha parameter:      " + Double.toString(valueAlt[0]));
             System.out.println("\tBeta parameter:       " + Double.toString(valueAlt[1]));
             System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
@@ -194,6 +192,38 @@ class BetaBinomialTest {
             System.out.println("\n---- Finished SNP " + snpName);
             testPerformed = true;
             
+            //This below is to compare everything to python created by WASP
+            //Will put the backup back into python, just to make sure.
+            boolean pythonCheck= true;
+            if(pythonCheck){
+                System.out.println("loglikRef = " + Double.toString(altLogLik));
+                System.out.println("loglik = 0");
+                for(int i = 0; i < asRef.size();i++){
+
+                    System.out.println("loglik += AS_betabinom_loglike("
+                                        + "[math.log(" + Double.toString(alphaParam) +") - math.log(" + Double.toString(alphaParam) + " + " + Double.toString(betaParam) +"), " +
+                                       "math.log(" + Double.toString(betaParam) +") - math.log(" + Double.toString(alphaParam) + " + " + Double.toString(betaParam) + ")],"
+                                       + Double.toString(dispersion.get(i)) + ","
+                                       + Double.toString(asRef.get(i)) + ","
+                                       + Double.toString(asAlt.get(i)) + ","   
+                                       + "0.980198, 0.005)");
+                }
+                System.out.println("if allclose(-1.0 * loglik, loglikRef): correctTest += 1");
+            
+
+                //I find exactly the correct values after running it through WASP implementation in python, after one check.
+                //Using this as a foundation stone to write some tests:
+                for(int i = 0; i < asRef.size();i++){
+                    String command = "Assert.assertEquals( " +
+                             "likelihoodFunctions.BetaBinomLogLik(" + String.format("%.15g", dispArray[i]) + ","
+                              + String.format("%.15g", alphaParam) + ","
+                              + String.format("%.15g", betaParam) + "," 
+                              + Integer.toString( asRefArray[i]) + ","
+                             + Integer.toString(asAltArray[i]) + ")" +
+                            ", " + Double.toString(likelihoodFunctions.BetaBinomLogLik(dispArray[i], alphaParam, betaParam, asRefArray[i], asAltArray[i])) + ");" ;
+                     System.out.println(command);
+                }
+            }
         }
     }
 

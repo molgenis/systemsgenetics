@@ -6,7 +6,6 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 
-import org.apache.commons.math3.special.Beta;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -77,34 +76,40 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
             
             
             double sigma = dispersion[i];
-            double AS1   = asRef[i];
-            double AS2   = asAlt[i];
+            int AS1   = asRef[i];
+            int AS2   = asAlt[i];
             
-            //Copied from WASP data.
-            double hetp  = 0.980198;
-            double error = 0.005;
-                    
-            double a;
-            double b;
+            /*
+             * here I turn fullprop into alpha and beta parameters
+             * assuming alpha is 1, i change beta into the other proportion,
+             * while keeping the following assumption: 
+             *  prop = alpha / (alpha + beta)
+             *  alpha = 1
+             *  prop = 1 / (1 + beta)
+             *  beta = (1/prop) - 1 
+             * 
+             * 
+             * the python script below shows that this is the case.
+            
+            for i in range(2000):
+                prop = random.uniform(0.0,1.0)
+                alpha = 1
+                beta = (alpha / prop) - alpha
+                reflogps = [math.log(alpha) - math.log(alpha + beta),math.log(beta) - math.log(alpha + beta) ]
+                for i in range(2000):  
+                    alpha = random.uniform(0, 100)
+                    beta  = (alpha / prop) - alpha
+                    logps = [math.log(alpha) - math.log(alpha + beta),math.log(beta) - math.log(alpha + beta) ]
+                    numpy.testing.assert_array_almost_equal(reflogps, logps, decimal=7)
 
-            a = Math.exp( Math.log(fullProp) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-            b = Math.exp( Math.log(1 - fullProp) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-
-            double part1 = 0.0;
-            part1 += Beta.logBeta(AS1 + a, AS2 + b);
-            part1 -= Beta.logBeta(a, b);
+             * 
+             * 
+             */
             
-            // If we do not integrate heterozygote calling error or sequencing sequencing error,
-            // part1 can be returned in the loop.
-            // But now I want to make sure that I follow the WASP approach on the CEU data.
-            
-            double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
-            double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
-            
-            logLik +=  addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
+            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, 1.0, (1.0 / fullProp) -1 , AS1, AS2);
         }
         
-        return -1.0 * logLik;
+        return logLik;
     }
     
     
@@ -118,13 +123,6 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
         }
 		
         return retval;    
-    }
-    
-        
-    private double addlogs(double loga, double logb){
-        double i = Math.max(loga, logb) + Math.log(1 + Math.exp(-Math.abs(loga -logb)));
-        return i;
-    
     }
     
 }

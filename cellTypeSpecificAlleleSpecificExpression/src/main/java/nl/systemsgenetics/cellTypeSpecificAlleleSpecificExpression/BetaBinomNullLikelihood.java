@@ -5,9 +5,6 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import org.apache.commons.math3.special.Beta;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -60,11 +57,10 @@ class BetaBinomNullLikelihood implements Function {
 
             int AS2   = asAlt[i];
             
-            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, t[0], t[0], new int[] {AS1}, new int[] {AS2});
+            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, t[0], t[0], AS1, AS2);
         }
         
         return logLik;
-        
         
     }
 

@@ -6,10 +6,8 @@
 
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import static java.lang.Math.log;
+
 import java.util.ArrayList;
-import org.apache.commons.math3.distribution.BinomialDistribution;
-import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 
 /**
  *
