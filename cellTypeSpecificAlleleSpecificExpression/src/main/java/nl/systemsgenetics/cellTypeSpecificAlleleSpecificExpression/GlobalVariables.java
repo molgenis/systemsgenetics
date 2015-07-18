@@ -15,10 +15,15 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
  */
 public class GlobalVariables {
     
-    public static int verbosity = 0;
+    //How much will we output in stdout.
+    //Want to implement the following settings:
+    //   0: fully quiet and errors
+    //   1: Shows start, end and warnings
+    //  10: Shows human readable statistics about what's been done.
+    // 100: Shows very big debug statistics
     
-    public static int minReads = 1;
-    public static int minHets  = 1;
+    public static int verbosity = 10;
+    
     
     public static int maximumIterations = 20000;
     
@@ -30,7 +35,14 @@ public class GlobalVariables {
     
     //BETA BINOMIAL SPECIFIC PARAMETERS
     
+    
+    //TESTING SPECIFIC PARAMETERS
+    public static int minReads = 1;
+    public static int minHets  = 1;
+    
+    
     //I have some fully phased data and this is what wasp comes up with.
     public static double hetProb  = 0.980198;
     public static double seqError = 0.005;
+
 }

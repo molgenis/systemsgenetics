@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import org.jdom.IllegalDataException;
 
 /**
  *
@@ -69,9 +70,8 @@ public class BetaBinomEntry {
             
             //do a check to make sure ordering is correct.
             if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
-                System.out.println("ERROR! ordering is not correct filenames for overdispersion");
                 System.out.println(sampleDispersion.getSampleName());
-                System.out.println(allFiles.get(i));
+                throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
             }
             
             i++;

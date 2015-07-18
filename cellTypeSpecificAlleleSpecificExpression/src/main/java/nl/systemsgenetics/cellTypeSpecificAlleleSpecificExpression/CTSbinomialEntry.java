@@ -76,7 +76,7 @@ class CTSbinomialEntry {
             // Write the results to the out_file.
             if (results.isTestPerformed()) {
                 out_writer.println(results.writeTestStatistics(true));
-                i++;
+                GlobalVariables.numberOfTestPerformed++;
             }
 
         }

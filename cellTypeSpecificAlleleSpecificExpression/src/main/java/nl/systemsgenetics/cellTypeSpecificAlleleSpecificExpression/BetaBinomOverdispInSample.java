@@ -34,11 +34,11 @@ public class BetaBinomOverdispInSample {
         
         sampleName = filename;
         
-        
-        System.out.println("\n--- Starting beta binomial dispersion estimate ---");
-        System.out.println("AS File: " + sampleName);
-        System.out.println("--------------------------------------------------");
-
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("\n--- Starting beta binomial dispersion estimate ---");
+            System.out.println("AS File: " + sampleName);
+            System.out.println("--------------------------------------------------");
+        }
         
         ArrayList<IndividualSnpData> allSnps = new ArrayList<IndividualSnpData>();
         
@@ -72,11 +72,12 @@ public class BetaBinomOverdispInSample {
                     
             
         }
-        System.out.println("sample loaded");
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("sample loaded");
 
-        System.out.println("\ttotal_ref = " + totalRef);
-        System.out.println("\ttotal_alt = " + totalAlt);
-        
+            System.out.println("\ttotal_ref = " + totalRef);
+            System.out.println("\ttotal_alt = " + totalAlt);
+        }
         
         
         BetaBinomLikelihoodForOverdispersion betaBinom = new BetaBinomLikelihoodForOverdispersion(asRef, asAlt);
@@ -93,14 +94,12 @@ public class BetaBinomOverdispInSample {
                                             );
         
         overdispersion = solution.getFirst();
-        
-        System.out.println("Log likelihood converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-        
-        System.out.println("\tDispersion sigma: " + Double.toString(overdispersion[0]));
-        System.out.println("\tLog likelihood:   " + Double.toString(betaBinom.value(overdispersion)));
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("Log likelihood converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
+            System.out.println("\tDispersion sigma: " + Double.toString(overdispersion[0]));
+            System.out.println("\tLog likelihood:   " + Double.toString(betaBinom.value(overdispersion)));
+        }
 
-        // Checked this in python version of WASP. 
-        // Creates the same results.
         
 
     }

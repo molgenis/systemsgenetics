@@ -9,6 +9,7 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import org.jdom.IllegalDataException;
 
 /**
  *
@@ -52,9 +53,8 @@ class CTSbetaBinomialEntry {
             
             //do a check to make sure ordering is correct.
             if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
-                System.out.println("ERROR! ordering is not correct filenames for overdispersion");
                 System.out.println(sampleDispersion.getSampleName());
-                System.out.println(allFiles.get(i));
+                throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
             }
             
             i++;
@@ -119,7 +119,7 @@ class CTSbetaBinomialEntry {
             // Write the results to the out_file.
             if (results.isTestPerformed()) {
                 out_writer.println(results.writeTestStatistics(true));
-                i++;
+                GlobalVariables.numberOfTestPerformed++;
             }
 
         }

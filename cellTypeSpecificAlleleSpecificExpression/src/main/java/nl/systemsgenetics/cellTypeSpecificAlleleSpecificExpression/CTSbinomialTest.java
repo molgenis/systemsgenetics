@@ -69,7 +69,7 @@ class CTSbinomialTest {
     boolean testPerformed = false;
     
     public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
-        boolean debug=true;
+        
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
@@ -111,27 +111,23 @@ class CTSbinomialTest {
         
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             
-            System.out.println();
-            System.out.println("--- Starting cell type specific binomial LRT test estimate ---");
-            System.out.println("\tSNP name: " + snpName);
-            System.out.println("\tat: chr" + chromosome + ":" + position);
-            System.out.println("--------------------------------------------------------------");
-            
-            if(debug){
-                
-                System.out.println("debug:");
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println();
+                System.out.println("--- Starting cell type specific binomial LRT test estimate ---");
+                System.out.println("\tSNP name: " + snpName);
+                System.out.println("\tat: chr" + chromosome + ":" + position);
+                System.out.println("--------------------------------------------------------------");
                 System.out.println("Num of hets: " + Integer.toString(numberOfHets));
                 System.out.println(het_individuals.get(0).getSnpName());
                 System.out.println(total_overlap);
-                
                 System.out.println("asRef:       " +  asRef.toString());
                 System.out.println("asAlt:       " +  asAlt.toString());
                 System.out.println("cellProp:    " +  cellProp.toString());
-            
+                System.out.println("Starting Null estimation");
             }
             
             
-            System.out.println("Starting Null estimation");
+            
 
             Integer[] asRefArray = asRef.toArray(new Integer[asRef.size()]);
             Integer[] asAltArray = asAlt.toArray(new Integer[asAlt.size()]);
@@ -160,11 +156,11 @@ class CTSbinomialTest {
                 double[] valueNull = solutionNull.getPoint();
                 nullLogLik = CTSbinomNull.value(valueNull);
 
-
-                System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-                System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
-                System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
-
+                if(GlobalVariables.verbosity >= 10){
+                    System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
+                    System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
+                    System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
+                }
 
 
 
@@ -201,22 +197,28 @@ class CTSbinomialTest {
                 //determine P value based on distribution
                 ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
                 pVal = 1 - distribution.cumulativeProbability(chiSq);
-
-                System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-                System.out.println("\tCelltype ratio:                   " + Double.toString(valueAlt[0]));
-                System.out.println("\tResidual ratio:                   " + Double.toString(valueAlt[1]));
-                System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
-                System.out.println("\tNull log likelihood:              " + Double.toString(nullLogLik));   
-                System.out.println("\tAlt log likelihood:               " + Double.toString(altLogLik) + "\n");
-                System.out.println("\tChisq statistic:                  " + Double.toString(chiSq));
-                System.out.println("\tP value:                          " + Double.toString(pVal));
-                //TODO, I want to format this properly, but not necessary
-                System.out.println("\n---- Finished SNP " + snpName);
-            
+                
+                if(GlobalVariables.verbosity >= 10){
+                    System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
+                    System.out.println("\tCelltype ratio:                   " + Double.toString(valueAlt[0]));
+                    System.out.println("\tResidual ratio:                   " + Double.toString(valueAlt[1]));
+                    System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
+                    System.out.println("\tNull log likelihood:              " + Double.toString(nullLogLik));   
+                    System.out.println("\tAlt log likelihood:               " + Double.toString(altLogLik) + "\n");
+                    System.out.println("\tChisq statistic:                  " + Double.toString(chiSq));
+                    System.out.println("\tP value:                          " + Double.toString(pVal));
+                    //TODO, I want to format this properly, but not necessary
+                    System.out.println("\n---- Finished SNP " + snpName);
+                }
+                
             } catch(TooManyEvaluationsException e){
-                System.out.println("WARNING: Did not converge to a solution for " + snpName);
-                System.out.println("         After 20,000 iterations.");
-                System.out.println("         Continue-ing with the next.");
+                
+                if(GlobalVariables.verbosity >= 1){
+                    System.out.println("WARNING: Did not converge to a solution for " + snpName);
+                    System.out.println("         After 20,000 iterations.");
+                    System.out.println("         Continue-ing with the next.");
+                }
+            
             }
             
             testPerformed = true;

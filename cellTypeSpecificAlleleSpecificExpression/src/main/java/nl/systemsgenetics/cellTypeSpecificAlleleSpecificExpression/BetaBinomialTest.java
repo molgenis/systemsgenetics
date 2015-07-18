@@ -106,13 +106,13 @@ class BetaBinomialTest {
         
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             // There is data to perform the binomial test, perform it.       
-            System.out.println();
-            System.out.println("---- Starting beta binomial LRT test estimate ----");
-            System.out.println("SNP name: " + snpName);
-            System.out.println("at: chr" + chromosome + ":" + position);
-            System.out.println("--------------------------------------------------");
-            
-            if(debug){
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println();
+                System.out.println("---- Starting beta binomial LRT test estimate ----");
+                System.out.println("SNP name: " + snpName);
+                System.out.println("at: chr" + chromosome + ":" + position);
+                System.out.println("--------------------------------------------------");
+
                 
                 System.out.println("debug:");
                 System.out.println("Num of hets: " + Integer.toString(numberOfHets));
@@ -122,7 +122,7 @@ class BetaBinomialTest {
                 System.out.println("asRef:       " +  asRef.toString());
                 System.out.println("asAlt:       " +  asAlt.toString());
                 System.out.println("dispersion:  " +  dispersion.toString());
-            
+                System.out.println("Starting Null estimation");
             }
 
             
@@ -131,7 +131,7 @@ class BetaBinomialTest {
             Integer[] asAltArray = asAlt.toArray(new Integer[asAlt.size()]);
             Double[]  dispArray  = dispersion.toArray(new Double[dispersion.size()]);
             
-            System.out.println("Starting Null estimation");
+            
             
             BetaBinomNullLikelihood betaBinomNull;
             betaBinomNull = new BetaBinomNullLikelihood(asRefArray, 
@@ -143,9 +143,9 @@ class BetaBinomialTest {
             nullLogLik = betaBinomNull.value(new double[] {0.5});
             
 
-            
-            System.out.println("Starting Alt estimation");
-
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("Starting Alt estimation");
+            }
             
             BetaBinomAltLikelihood betaBinomAlt;
             betaBinomAlt = new BetaBinomAltLikelihood(asRefArray, 
@@ -179,23 +179,26 @@ class BetaBinomialTest {
             ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
             pVal = 1 - distribution.cumulativeProbability(chiSq);
             
+            if(GlobalVariables.verbosity >= 10){
+
+                System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
+                System.out.println("\tAlpha parameter:      " + Double.toString(valueAlt[0]));
+                System.out.println("\tBeta parameter:       " + Double.toString(valueAlt[1]));
+                System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
+                System.out.println("\tNull log likelihood:  " + Double.toString(nullLogLik));   
+                System.out.println("\tAlt log likelihood:   " + Double.toString(altLogLik) + "\n");
+                System.out.println("\tChisq statistic:      " + Double.toString(chiSq));
+                System.out.println("\tP value:              " + Double.toString(pVal));
+                //TODO, I want to format this properly, but not necessary
+                System.out.println("\n---- Finished SNP " + snpName);
+            }
             
-            System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-            System.out.println("\tAlpha parameter:      " + Double.toString(valueAlt[0]));
-            System.out.println("\tBeta parameter:       " + Double.toString(valueAlt[1]));
-            System.out.println("\tIterations to converge:           " + Integer.toString(iterations) + "\n");
-            System.out.println("\tNull log likelihood:  " + Double.toString(nullLogLik));   
-            System.out.println("\tAlt log likelihood:   " + Double.toString(altLogLik) + "\n");
-            System.out.println("\tChisq statistic:      " + Double.toString(chiSq));
-            System.out.println("\tP value:              " + Double.toString(pVal));
-            //TODO, I want to format this properly, but not necessary
-            System.out.println("\n---- Finished SNP " + snpName);
             testPerformed = true;
             
             //This below is to compare everything to python created by WASP
             //Will put the backup back into python, just to make sure.
-            boolean pythonCheck= true;
-            if(pythonCheck){
+            
+            if(GlobalVariables.verbosity >= 100){
                 System.out.println("loglikRef = " + Double.toString(altLogLik));
                 System.out.println("loglik = 0");
                 for(int i = 0; i < asRef.size();i++){
@@ -224,6 +227,7 @@ class BetaBinomialTest {
                      System.out.println(command);
                 }
             }
+        
         }
     }
 

@@ -45,20 +45,21 @@ public class readGenoAndAsFromIndividual {
                                                    String outputLocation, 
                                                    String snpLocation) throws IOException, Exception{
         
-        //Print ASREADS header
-        System.out.println("---- Starting ASREADS for the following settings: ----");
-        System.out.println("\t input bam:       " +  loc_of_bam1);
-        System.out.println("\t genotype file:   " +  genotype_loc);
-        System.out.println("\t coupling file:   " +  coupling_location);
-        System.out.println("\t output location: " +  outputLocation);
-        if(!snpLocation.equals("")){
-            System.out.println("\t snp Location:    " +  snpLocation);
-        }else{
-            System.out.println("\t snp Location:    " +  "NONE");
-        }
-        
-        System.out.println("------------------------------------------------------");
+        if(GlobalVariables.verbosity >= 1){
+            //Print ASREADS header
+            System.out.println("---- Starting ASREADS for the following settings: ----");
+            System.out.println("\t input bam:       " +  loc_of_bam1);
+            System.out.println("\t genotype file:   " +  genotype_loc);
+            System.out.println("\t coupling file:   " +  coupling_location);
+            System.out.println("\t output location: " +  outputLocation);
+            if(!snpLocation.equals("")){
+                System.out.println("\t snp Location:    " +  snpLocation);
+            }else{
+                System.out.println("\t snp Location:    " +  "NONE");
+            }
 
+            System.out.println("------------------------------------------------------");
+        }
         
         
         String path_of_trityper = genotype_loc;
@@ -70,11 +71,11 @@ public class readGenoAndAsFromIndividual {
         System.out.println(loc_of_bam);
         
         if (!new File(loc_of_bam).exists()){
-           System.out.println("Location of bam file is not an existing file. Exitting.");
-           return;
+           throw new IllegalArgumentException("ERROR! Location of bam file is not an existing file. Exitting.");
         }else{
-            System.out.println("Location of bam file is an existing file, will continue.");
-
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("Location of bam file is an existing file, will continue.");
+            }
         }
         
         
@@ -84,7 +85,7 @@ public class readGenoAndAsFromIndividual {
             dataset1 = new TriTyperGenotypeData(new File(path_of_trityper));
         } catch (IOException ex) {
             System.err.println("Error reading dataset 1: " + path_of_trityper);
-            return;
+            throw new IllegalArgumentException();
         }
         
         
@@ -110,8 +111,9 @@ public class readGenoAndAsFromIndividual {
                 }
             }
             
-            System.out.println("Did not find " + Integer.toString(snpsNotFound) + " out of " + Integer.toString(includeSNPs.size()) + " SNPs in the include file.");
-            
+            if(GlobalVariables.verbosity >= 1){
+                System.out.println("WARNING: Did not find " + Integer.toString(snpsNotFound) + " out of " + Integer.toString(includeSNPs.size()) + " SNPs in the include file.");
+            }
         }else{
             for(String snp_to_include : snpNames){
                 SNPsToAnalyze.add(snp_to_include);
@@ -125,24 +127,31 @@ public class readGenoAndAsFromIndividual {
         //String path = "/gcc/groups/lld/tmp01/projects/bamFiles/";
         //sample_map contains all the individuals that are in the sample file.
         HashMap sample_map = convert_individual_names(individual_names, coupling_location);
+        
+        if(GlobalVariables.verbosity >= 10){
         System.out.println("Sample names were loaded.");
-        //System.out.println(sample_map.toString());
-
+        }
+        if(GlobalVariables.verbosity >= 100){
+            System.out.println(sample_map.toString());
+        }
        
         //Twice because my files have the .MERGED.sorted.bam suffix attached to them.
         String sample_name = FilenameUtils.getBaseName(FilenameUtils.getBaseName(FilenameUtils.getBaseName(loc_of_bam)));
-        System.out.println("sample_name: " + sample_name);
-        System.out.println("sample_map:  " + sample_map.toString());
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("sample_name: " + sample_name);
+            System.out.println("sample_map:  " + sample_map.toString());
+        }
         Object sample_idx = sample_map.get(sample_name);   
        
         if(sample_idx == null){
-            System.out.println("Couldn't find the filename in the sample names. Quitting.");
-            return;
+            throw new IllegalArgumentException("Couldn't find the filename in the sample names. Quitting.");
         }
 
         int sample_index = Integer.parseInt(sample_idx.toString());
         
-        System.out.println("sample_index: " + sample_index);
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("sample_index: " + sample_index);
+        }
         
         //bam file path and filename
         String path_and_filename = loc_of_bam;
@@ -150,8 +159,9 @@ public class readGenoAndAsFromIndividual {
 
         SamReader bam_file = SamReaderFactory.makeDefault().open(sample_file);
 
-        
-        System.out.println("Initialized for reading bam file");
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("Initialized for reading bam file");
+        }
         
         PrintWriter writer = new PrintWriter(outputLocation, "UTF-8");
         
@@ -193,7 +203,8 @@ public class readGenoAndAsFromIndividual {
             }
          
             i++;
-            if(i % 10000 == 0){
+            
+            if((i % 10000 == 0) && (GlobalVariables.verbosity >= 10)){
 
                 System.out.println("Finished " + Integer.toString(i) + " SNPs");
             
@@ -300,9 +311,8 @@ public class readGenoAndAsFromIndividual {
         String read = sam_read.getReadString();
         int idx_of_read = 0;
         int idx_of_cigar = 0;
-        boolean debug = false;
         
-        if(debug){
+        if(GlobalVariables.verbosity >= 100){
             System.out.println("positions");
             System.out.println("curr_pos: " + Integer.toString(curr_pos));
             System.out.println("end_pos: " +  Integer.toString( end_pos));
@@ -316,7 +326,7 @@ public class readGenoAndAsFromIndividual {
             switch(cigar.getOperator()){
                 case D:
                     curr_pos += cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found D in cigar: ");
                         System.out.println("current_pos + " + Integer.toString(cigar.getLength()));
                         System.out.println("final curr_pos: " + Integer.toString(curr_pos));
@@ -325,7 +335,7 @@ public class readGenoAndAsFromIndividual {
                     break;
                 case EQ:
                     final_pos = curr_pos + cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found EQ in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
@@ -337,7 +347,7 @@ public class readGenoAndAsFromIndividual {
 
                     }
                     while(curr_pos < final_pos){
-                        if(debug){
+                        if(GlobalVariables.verbosity >= 100){
                             System.out.println("index is now:" + Integer.toString(idx_of_read));
                             System.out.println("ref pos is now:" + Integer.toString(curr_pos));
                             System.out.println("The base at this pos is:" + read.charAt(idx_of_read));
@@ -359,7 +369,7 @@ public class readGenoAndAsFromIndividual {
                     return('!');
                 case I:
                     idx_of_read += cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found I in cigar: ");
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
                         System.out.println("final idx_of_read: " + Integer.toString(idx_of_read));
@@ -368,7 +378,7 @@ public class readGenoAndAsFromIndividual {
                     break;
                 case M:    
                     final_pos = curr_pos + cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found M in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
@@ -380,7 +390,7 @@ public class readGenoAndAsFromIndividual {
 
                     }
                     while(curr_pos < final_pos){
-                        if(debug){
+                        if(GlobalVariables.verbosity >= 100){
                             System.out.println("index is now:" + Integer.toString(idx_of_read));
                             System.out.println("ref pos is now:" + Integer.toString(curr_pos));
                             System.out.println("The base at this pos is:" + read.charAt(idx_of_read));
@@ -398,7 +408,7 @@ public class readGenoAndAsFromIndividual {
                     break;
                 case N:
                     curr_pos += cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found N in cigar: ");
                         System.out.println("current_pos + " + Integer.toString(cigar.getLength()));
                         System.out.println("final curr_pos: " + Integer.toString(curr_pos));
@@ -407,7 +417,7 @@ public class readGenoAndAsFromIndividual {
                     break;
                 case P:
                     curr_pos += cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found P in cigar: ");
                         System.out.println("current_pos + " + Integer.toString(cigar.getLength()));
                         System.out.println("final curr_pos: " + Integer.toString(curr_pos));
@@ -416,7 +426,7 @@ public class readGenoAndAsFromIndividual {
                     break;
                 case S:
                     idx_of_read += cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found S in cigar: ");
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
                         System.out.println("final idx_of_read: " + Integer.toString(idx_of_read));
@@ -426,7 +436,7 @@ public class readGenoAndAsFromIndividual {
                 case X:
                     curr_pos += cigar.getLength();
                     idx_of_read += cigar.getLength();
-                    if(debug){
+                    if(GlobalVariables.verbosity >= 100){
                         System.out.println("Found X in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
@@ -448,7 +458,7 @@ public class readGenoAndAsFromIndividual {
             
         }
         //couldn't find anything, returning: '!'
-        if(debug){
+        if(GlobalVariables.verbosity >= 100){
             //System.out.println("### coulnd't find overlapping base in this read. ###");
         }
         return('!');

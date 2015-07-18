@@ -17,6 +17,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.Logger;
+import org.jdom.IllegalDataException;
 import org.molgenis.genotype.GenotypeInfo;
 
 
@@ -200,9 +201,8 @@ public class mainEntryPoint {
                     GlobalVariables.minHets = Integer.parseInt(commandLine.getOptionValue("minimum_heterozygotes"));
                     //Check if this is bigger than 0, otherwise exit 
                     if(GlobalVariables.minHets <= 0){
-                        System.out.println("Minimum Number of hets cannot be smaller than one for AS testing\n"
+                        throw new IllegalDataException("Minimum Number of hets cannot be smaller than one for AS testing\n"
                                          + "Exitting");
-                        return;
                     }
                     
                 }
@@ -211,9 +211,8 @@ public class mainEntryPoint {
                     GlobalVariables.minReads = Integer.parseInt(commandLine.getOptionValue("minimum_reads"));
                     //Check if this is bigger than 0, otherwise exit
                     if(GlobalVariables.minReads <= 0){
-                        System.out.println("Minimum Number of reads cannot be smaller than one for AS testing\n"
+                        throw new IllegalDataException("Minimum Number of reads cannot be smaller than one for AS testing\n"
                                          + "Exitting");
-                        return;
                     }
                 }
                 
@@ -356,4 +355,5 @@ public class mainEntryPoint {
             formatter.printHelp(" ", OPTIONS);
         }
     }
+
 }

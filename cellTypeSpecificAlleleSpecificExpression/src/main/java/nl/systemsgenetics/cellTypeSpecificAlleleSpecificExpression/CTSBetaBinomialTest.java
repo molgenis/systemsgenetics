@@ -118,26 +118,22 @@ class CTSBetaBinomialTest {
         
         //Check if we do a test.
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
-
             // There is data to perform the binomial test, perform it.       
-            System.out.println();
-            System.out.println("---- Starting CTS beta binomial LRT test estimate ----");
-            System.out.println("SNP name: " + snpName);
-            System.out.println("at: chr" + chromosome + ":" + position);
-            System.out.println("------------------------------------------------------");
-            
-            if(debug){
-                
-                System.out.println("debug:");
+
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println();
+                System.out.println("---- Starting CTS beta binomial LRT test estimate ----");
+                System.out.println("SNP name: " + snpName);
+                System.out.println("at: chr" + chromosome + ":" + position);
+                System.out.println("------------------------------------------------------");
                 System.out.println("Num of hets: " + Integer.toString(numberOfHets));
                 System.out.println(het_individuals.get(0).getSnpName());
                 System.out.println(total_overlap);
-                
                 System.out.println("asRef:       " +  asRef.toString());
                 System.out.println("asAlt:       " +  asAlt.toString());
                 System.out.println("dispersion:  " +  dispersion.toString());
                 System.out.println("cellProp:    " +  cellProp.toString());
-
+                System.out.println("Starting non-CTS Beta binomial Null estimation");
             
             }
             
@@ -159,7 +155,7 @@ class CTSBetaBinomialTest {
             Double[]  cellPropArray   = cellProp.toArray(new Double[cellProp.size()]);
             
             
-            System.out.println("Starting non-CTS Beta binomial Null estimation");
+            
             
             
             BetaBinomAltLikelihood betaBinomNull;
@@ -187,11 +183,12 @@ class CTSBetaBinomialTest {
             NullBetaParam = valueNull[1];
             NullbinomRatio = valueNull[0] / (valueNull[0] + valueNull[1]);
             
-            System.out.println("LogLik of Null converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-            System.out.println("\tNull Alpha parameter:      " + Double.toString(valueNull[0]));
-            System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
-            System.out.println("\tIterations to converge:    " + Integer.toString(nulliterations) + "\n");
-            
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("LogLik of Null converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
+                System.out.println("\tNull Alpha parameter:      " + Double.toString(valueNull[0]));
+                System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
+                System.out.println("\tIterations to converge:    " + Integer.toString(nulliterations) + "\n");
+            }
             
             
 
@@ -235,18 +232,18 @@ class CTSBetaBinomialTest {
             ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
             pVal = 1 - distribution.cumulativeProbability(chiSq);
 
-            //remove this line, doesn't always hold.
-            System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
-            System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
-            System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
-            System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");
-            System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
-            System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
-            System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
-            System.out.println("\tP value:                       " + Double.toString(pVal));
-            //TODO, I want to format this properly, but not necessary
-            System.out.println("\n---- Finished SNP " + snpName);
-
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
+                System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
+                System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
+                System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");
+                System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
+                System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
+                System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
+                System.out.println("\tP value:                       " + Double.toString(pVal));
+                //TODO, I want to format this properly, but not necessary
+                System.out.println("\n---- Finished SNP " + snpName);
+            }
  
             
             
