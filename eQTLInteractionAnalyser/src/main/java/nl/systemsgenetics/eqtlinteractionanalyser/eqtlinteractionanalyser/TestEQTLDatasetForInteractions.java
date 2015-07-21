@@ -5,16 +5,21 @@
  */
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
+import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.CSVWriter;
 import com.google.common.collect.HashMultimap;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,10 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.mahout.math.Arrays;
@@ -174,34 +176,100 @@ public class TestEQTLDatasetForInteractions {
 		System.exit(0);
 	}
 
-	public void findChi2SumDifferences(int maxNumRegressedCovariates) {
-
-		int numPrimaryCovsToCorrect = primaryCovsToCorrect.length;
+	public void findChi2SumDifferences(int maxNumRegressedCovariates, int numPrimaryCovsToCorrect, File ensgAnnotationFile) throws IOException {
+		
+		Map<String, GeneAnnotation> ensgAnnotations;
+		if(ensgAnnotationFile == null) {
+			 ensgAnnotations = Collections.emptyMap();
+		} else {
+			 ensgAnnotations = readEnsgAnnotations(ensgAnnotationFile);
+		}
+		
 		System.out.println("Interpreting the z-score matrix");
 		System.out.println("Preparing the data");
 		for (int nrCovsRemoved = numPrimaryCovsToCorrect; nrCovsRemoved < numPrimaryCovsToCorrect + maxNumRegressedCovariates; nrCovsRemoved++) {
-			ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
+			
+			if(new File(inputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary.dat").exists()){
+				System.out.println("");
+				System.out.println("USING EXISTING BINARY FILE!!!!");
+				System.out.println("");
+				continue;
+			}
+			
+			ExpressionDataset dataset = new ExpressionDataset(inputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
 			dataset.save(dataset.fileName + ".binary");
 		}
 
 		System.out.println("Comparing chi2sums");
+		
+		double[] previousChi2 = null;
+		String[][] output = null;
+		boolean firstDataset = true;
+		String[] header = null;
+		double topCovChi2;
+		String topCov = "Technical";
+		
 		for (int nrCovsRemoved = numPrimaryCovsToCorrect; nrCovsRemoved < numPrimaryCovsToCorrect + maxNumRegressedCovariates; nrCovsRemoved++) {
 
-			ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
-			ExpressionDataset dataset2 = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + (nrCovsRemoved + 1) + "Covariates.txt.binary");
-
-			for (int covariate = 0; covariate < dataset.nrProbes; covariate++) {
-				double chi2Sum1 = 0, chi2Sum2 = 0;
-				for (int gene = 0; gene < dataset.nrSamples; gene++) {
-					double z_before = dataset.rawData[covariate][gene];
-					chi2Sum1 += z_before * z_before;
-					double z_after = dataset2.rawData[covariate][gene];
-					chi2Sum2 += z_after * z_after;
-
+			ExpressionDataset dataset = new ExpressionDataset(inputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
+						
+			if(firstDataset){
+				previousChi2 = new double[dataset.nrProbes];
+				output = new String[dataset.nrProbes][(maxNumRegressedCovariates * 2) + 5];
+				for (int covariate = 0; covariate < dataset.nrProbes; covariate++) {
+					output[covariate][0] = dataset.probeNames[covariate];
+					GeneAnnotation geneAnnotation = ensgAnnotations.get(dataset.probeNames[covariate]);
+					output[covariate][1] = geneAnnotation.getHuho();
+					output[covariate][2] = geneAnnotation.getChr();
+					output[covariate][3] = String.valueOf(geneAnnotation.getStart());
+					output[covariate][4] = String.valueOf(geneAnnotation.getEnd());
 				}
-				System.out.println(nrCovsRemoved + "\t" + dataset.probeNames[covariate] + "\t" + chi2Sum1 + "\t" + chi2Sum2 + "\t" + (chi2Sum1 - chi2Sum2));
+				header = new String[(maxNumRegressedCovariates * 2) + 1];
+				header[0] = "Covariate gene";
+				header[1] = "Gene symbol";
+				header[2] = "Chr";
+				header[3] = "Start";
+				header[4] = "End";
 			}
+			
+			int outputColOffset = 5 + (nrCovsRemoved - numPrimaryCovsToCorrect) * 2;
+			
+			header[outputColOffset] = "Chi2sum";
+			header[1 + outputColOffset] = topCov + "_removed";
+			
+			topCovChi2 = 0;
+			
+			for (int covariate = 0; covariate < dataset.nrProbes; covariate++) {
+				double chi2Sum = 0;
+				double[] covariateData = dataset.rawData[covariate];
+				for (int gene = 0; gene < dataset.nrSamples; gene++) {
+					chi2Sum += covariateData[gene] * covariateData[gene];	
+				}
+				
+				if(chi2Sum > topCovChi2){
+					topCovChi2 = chi2Sum;
+					topCov = dataset.probeNames[covariate];
+				}
+				
+				output[covariate][outputColOffset] = String.valueOf(chi2Sum);
+				output[covariate][1 + outputColOffset] = firstDataset ? "0" : String.valueOf(previousChi2[covariate] - chi2Sum);
+				previousChi2[covariate] = chi2Sum;
+				
+				
+				//System.out.println(nrCovsRemoved + "\t" + dataset.probeNames[covariate] + "\t" + chi2Sum1 + "\t" + chi2Sum2 + "\t" + (chi2Sum1 - chi2Sum2));
+			}
+			
+			firstDataset = false;
+			
 		}
+		
+		CSVWriter writer = new CSVWriter(new FileWriter(outputDir + "/chi2diff.txt"), '\t', CSVWriter.NO_QUOTE_CHARACTER);
+		writer.writeNext(header);
+		for(String[] row : output){
+			writer.writeNext(row);
+		}
+		writer.close();
+		
 	}
 
 	public void preprocessData() {
@@ -246,11 +314,11 @@ public class TestEQTLDatasetForInteractions {
 
 		System.out.println("EXCLUDED LINES: " + countExcludedLines);
 
-		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt", "\t", hashEQTLs, hashGenotypes);
+		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt", '\t', hashEQTLs, hashGenotypes);
 		datasetGenotypes.probeNames = snps.toArray(new String[snps.size()]);
 		datasetGenotypes.recalculateHashMaps();
 
-		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt", "\t", hashEQTLs, hashExpression);
+		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt", '\t', hashEQTLs, hashExpression);
 		datasetGenotypes.save(datasetGenotypes.fileName + ".Genotypes.binary");
 		datasetExpression.save(datasetGenotypes.fileName + ".Expression.binary");
 
@@ -296,9 +364,10 @@ public class TestEQTLDatasetForInteractions {
 			covariatesToLoad = null;
 		}
 
-		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", null, hashSamples);
-		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", null, hashSamples);
-		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", covariatesToLoad, hashSamples);
+		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", '\t', null, hashSamples);
+		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", '\t', null, hashSamples);
+		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', covariatesToLoad, hashSamples);
+		
 		org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		int nrSamples = datasetGenotypes.nrSamples;
 
@@ -308,7 +377,7 @@ public class TestEQTLDatasetForInteractions {
 		correctDosageDirectionForQtl(snpsToSwapFile, datasetGenotypes, datasetExpression);
 
 
-		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", covariatesToLoad, hashSamples);
+		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', covariatesToLoad, hashSamples);
 		correctCovariateDataPCA(covsToCorrect2,covsToCorrect,datasetGenotypes,datasetCovariatesPCAForceNormal);
 
 
@@ -813,14 +882,14 @@ public class TestEQTLDatasetForInteractions {
 		HashMap hashCovariates = new HashMap();
 		hashCovariates.put("MEDIAN_5PRIME_BIAS", null);
 		hashCovariates.put("MEDIAN_3PRIME_BIAS", null);
-		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, null);
+		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', hashCovariates, null);
 		hashSamples = new HashMap();
 		for (int s = 0; s < datasetCovariates.nrSamples; s++) {
 			if (datasetCovariates.rawData[0][s] != 0) {
 				hashSamples.put(datasetCovariates.sampleNames[s], null);
 			}
 		}
-		datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, hashSamples);
+		datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', hashCovariates, hashSamples);
 		HashMap hashSamplesToExclude = new HashMap();
 		if (1 == 1) {
 			int index = ((Integer) datasetCovariates.hashProbes.get("MEDIAN_5PRIME_BIAS")).intValue();
@@ -1130,7 +1199,7 @@ public class TestEQTLDatasetForInteractions {
 				hashProbesToFilter.put(datasetCovariates.probeNames[p], null);
 			}
 		}
-		ExpressionDataset datasetCovariatesCorrected = new ExpressionDataset(inputDir + "/CovariatesCorrected.txt", "\t", hashProbesToFilter, null);
+		ExpressionDataset datasetCovariatesCorrected = new ExpressionDataset(inputDir + "/CovariatesCorrected.txt", '\t', hashProbesToFilter, null);
 		datasetCovariatesCorrected.transposeDataset();
 		datasetCovariatesCorrected.save(inputDir + "/CovariatesCorrected.txt");
 		System.exit(0);
@@ -1257,5 +1326,16 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 		return datasetGenotypes2;
+	}
+
+	private HashMap<String, GeneAnnotation> readEnsgAnnotations(File ensgAnnotationFile) throws FileNotFoundException, IOException {
+		final HashMap<String, GeneAnnotation> ensgAnnotations = new HashMap<String, GeneAnnotation>();
+		CSVReader refReader = new CSVReader(new FileReader(ensgAnnotationFile), '\t', '\0', '\0');
+		refReader.readNext();
+		String[] nextLine;
+		while ((nextLine = refReader.readNext()) != null) {
+			ensgAnnotations.put(nextLine[0], new GeneAnnotation(nextLine[0], nextLine[1], nextLine[2], Integer.valueOf(nextLine[3]), Integer.valueOf(nextLine[4])));
+		}
+		return ensgAnnotations;
 	}
 }
