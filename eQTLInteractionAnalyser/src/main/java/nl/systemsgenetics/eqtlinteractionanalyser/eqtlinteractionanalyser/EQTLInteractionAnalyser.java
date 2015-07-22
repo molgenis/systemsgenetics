@@ -227,6 +227,7 @@ public class EQTLInteractionAnalyser {
 			
 			if (commandLine.hasOption("is")){
                 File samplesToIncludeFile = new File(commandLine.getOptionValue("is"));
+                System.out.println("Samples to include file: " + samplesToIncludeFile.getAbsolutePath());
                 hashSamples = new HashMap();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(samplesToIncludeFile), "UTF-8"));
                 String line;
