@@ -71,6 +71,7 @@ public class TestEQTLDatasetForInteractions {
 		System.out.println("Maximum number of covariates to regress out: " + maxNumTopCovs);
 		System.out.println("Covariates to correct for with interaction: " + Arrays.toString(covariatesToCorrect));
 		System.out.println("Covariates to correct for without interaction: " + Arrays.toString(covariatesToCorrect2));
+		System.out.println("Samples to include file: " + samplesToInculudeFile.getAbsolutePath());
 
 		this.inputDir = inputDir;
 		this.outputDir = outputDir;
