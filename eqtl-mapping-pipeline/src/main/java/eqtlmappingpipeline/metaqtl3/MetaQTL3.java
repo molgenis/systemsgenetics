@@ -8,7 +8,7 @@ import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import umcg.genetica.math.stats.Descriptives;
