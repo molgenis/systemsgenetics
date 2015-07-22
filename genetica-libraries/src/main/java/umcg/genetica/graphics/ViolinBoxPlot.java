@@ -4,7 +4,7 @@
  */
 package umcg.genetica.graphics;
 
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -54,9 +54,9 @@ public class ViolinBoxPlot {
         Locale.setDefault(Locale.US);
         // set up Graphics2D depending on required format using iText in case PDF
         Graphics2D g2d = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
-        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
 
         BufferedImage bi = null;
 
@@ -109,17 +109,17 @@ public class ViolinBoxPlot {
         }
 
         if (output == Output.PDF) {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(docWidth, docHeight);
-            document = new com.lowagie.text.Document(rectangle);
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(docWidth, docHeight);
+            document = new com.itextpdf.text.Document(rectangle);
             try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFileName));
+                writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFileName));
             } catch (DocumentException e) {
                 throw new IOException(e.fillInStackTrace());
             }
             document.open();
             cb = writer.getDirectContent();
             cb.saveState();
-            //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            //com.itextpdf.text.pdf.DefaultFontMapper fontMap = new com.itextpdf.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(docWidth, docHeight);
         } else {
             bi = new BufferedImage(docWidth, docHeight, BufferedImage.TYPE_INT_RGB);
