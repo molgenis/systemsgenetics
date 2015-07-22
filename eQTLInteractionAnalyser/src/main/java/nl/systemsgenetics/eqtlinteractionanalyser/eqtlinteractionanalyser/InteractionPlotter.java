@@ -57,14 +57,14 @@ public class InteractionPlotter {
 			HashMap hashCovariates = new HashMap();
 			hashCovariates.put("MEDIAN_5PRIME_BIAS", null);
 			hashCovariates.put("MEDIAN_3PRIME_BIAS", null);
-			ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, null);
+			ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', hashCovariates, null);
 			hashSamples = new HashMap();
 			for (int s = 0; s < datasetCovariates.nrSamples; s++) {
 				if (datasetCovariates.rawData[0][s] != 0) {
 					hashSamples.put(datasetCovariates.sampleNames[s], null);
 				}
 			}
-			datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", hashCovariates, hashSamples);
+			datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', hashCovariates, hashSamples);
 			HashMap hashSamplesToExclude = new HashMap();
 			if (1 == 1) {
 				int index = ((Integer) datasetCovariates.hashProbes.get("MEDIAN_5PRIME_BIAS")).intValue();
@@ -98,9 +98,9 @@ public class InteractionPlotter {
 			}
 		}
 
-		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", "\t", hashEQTLs, hashSamples);
-		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", "\t", hashEQTLs, hashSamples);
-		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", "\t", null, hashSamples);
+		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", '\t', hashEQTLs, hashSamples);
+		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", '\t', hashEQTLs, hashSamples);
+		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', null, hashSamples);
 
 		org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		int nrSamples = datasetGenotypes.nrSamples;
@@ -244,7 +244,7 @@ public class InteractionPlotter {
 						hashProbesToFilter.put(datasetCovariates.probeNames[p], null);
 					}
 				}
-				ExpressionDataset datasetCovariatesCorrected = new ExpressionDataset(inputDir + "/CovariatesCorrected.txt", "\t", hashProbesToFilter, null);
+				ExpressionDataset datasetCovariatesCorrected = new ExpressionDataset(inputDir + "/CovariatesCorrected.txt", '\t', hashProbesToFilter, null);
 				datasetCovariatesCorrected.transposeDataset();
 				datasetCovariatesCorrected.save(inputDir + "/CovariatesCorrected.txt");
 				System.exit(0);

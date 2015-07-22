@@ -73,6 +73,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("chi2sumDiff");
         OPTIONS.addOption(OptionBuilder.create("dif"));
 		
+		OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Start round for chi2sumDiff option");
+        OptionBuilder.withLongOpt("start");
+        OPTIONS.addOption(OptionBuilder.create("s"));
+		
 		OptionBuilder.withDescription("Preprocess the data");
         OptionBuilder.withLongOpt("preprocess");
         OPTIONS.addOption(OptionBuilder.create("p"));
@@ -112,6 +118,18 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Included samples");
         OptionBuilder.withLongOpt("includedSamples");
         OPTIONS.addOption(OptionBuilder.create("is"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Gene annotation file");
+        OptionBuilder.withLongOpt("geneAnnotation");
+        OPTIONS.addOption(OptionBuilder.create("ga"));
+
+        OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Number of threads");
+        OptionBuilder.withLongOpt("threads");
+        OPTIONS.addOption(OptionBuilder.create("nt"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -122,12 +140,15 @@ public class EQTLInteractionAnalyser {
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
 		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
+        int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
+		final int startRoundCompareChi2;
         
         final String[] covariates;
 		final String[] covariates2;
 		final String[] covariatesToTest;
 		final File samplesToInculudeFile;
+		final File ensgAnnotationFile;
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -140,11 +161,21 @@ public class EQTLInteractionAnalyser {
             if (commandLine.hasOption('n')) {
                 maxNumCovariatesToRegress = Integer.parseInt(commandLine.getOptionValue("n"));
             }
+			
+			
 
 			interpret = commandLine.hasOption("t");
 			chi2sumDiff = commandLine.hasOption("dif");
             permute = commandLine.hasOption("perm");
 			preproces = commandLine.hasOption("p");
+			
+			if (commandLine.hasOption('s')) {
+                startRoundCompareChi2 = Integer.parseInt(commandLine.getOptionValue("s"));
+            } else if(chi2sumDiff){
+				throw new Exception("Set -s");
+			} else {
+				startRoundCompareChi2 = 0;
+			}
 
              if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
@@ -184,6 +215,18 @@ public class EQTLInteractionAnalyser {
             } else {
 				samplesToInculudeFile = null;
 			}
+			
+			
+			if (commandLine.hasOption("ga")){
+                ensgAnnotationFile = new File(commandLine.getOptionValue("ga"));
+            } else {
+				ensgAnnotationFile = null;
+			}
+            if (commandLine.hasOption("nt")) {
+                numThreads = Integer.parseInt(commandLine.getOptionValue("nt"));
+            } else {
+                numThreads = Runtime.getRuntime().availableProcessors();
+            }
 
         } catch (ParseException ex) {
             System.err.println("Invalid command line arguments: ");
@@ -203,10 +246,10 @@ public class EQTLInteractionAnalyser {
         }
         else if (chi2sumDiff){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
-            interactor.findChi2SumDifferences(maxNumCovariatesToRegress);
+            interactor.findChi2SumDifferences(maxNumCovariatesToRegress, startRoundCompareChi2, ensgAnnotationFile);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile, numThreads);
         }
     }
 

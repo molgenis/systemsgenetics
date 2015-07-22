@@ -14,6 +14,7 @@ import java.awt.*;
 import java.awt.geom.*;
 import java.lang.Math;
 import javax.imageio.*;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -36,11 +37,11 @@ public class ExpressionDataset {
         if (fileName.endsWith(".binary")) {
             loadExpressionDataInBinaryFormat(fileName);
         } else {
-            loadExpressionData(fileName, "\t");
+            loadExpressionData(fileName, '\t');
         }
     }
 
-    public ExpressionDataset(String fileName, String delimiter) {
+    public ExpressionDataset(String fileName, char delimiter) {
         if (fileName.endsWith(".binary")) {
             loadExpressionDataInBinaryFormat(fileName);
         } else {
@@ -48,7 +49,7 @@ public class ExpressionDataset {
         }
     }
 
-    public ExpressionDataset(String fileName, String delimiter, HashMap hashProbesToInclude) {
+    public ExpressionDataset(String fileName, char delimiter, HashMap hashProbesToInclude) {
         this.hashProbesToInclude = hashProbesToInclude;
         if (fileName.endsWith(".binary")) {
             loadExpressionDataInBinaryFormat(fileName);
@@ -57,7 +58,7 @@ public class ExpressionDataset {
         }
     }
 
-    public ExpressionDataset(String fileName, String delimiter, HashMap hashProbesToInclude, HashMap hashSamplesToInclude) {
+    public ExpressionDataset(String fileName, char delimiter, HashMap hashProbesToInclude, HashMap hashSamplesToInclude) {
         this.hashProbesToInclude = hashProbesToInclude;
         this.hashSamplesToInclude = hashSamplesToInclude;
         if (fileName.endsWith(".binary")) {
@@ -312,7 +313,7 @@ public class ExpressionDataset {
         System.out.println("Binary file:\t" + fileName + "\thas been loaded, nrProbes:\t" + nrProbes + "\tnrSamples:\t" + nrSamples);
     }
 
-    public void loadExpressionData(String fileName, String delimiter) {
+    public void loadExpressionData(String fileName, char delimiter) {
         this.fileName = fileName;
         boolean dataIsInTriTyperFormat = false;
         File file = new File(fileName);
@@ -325,7 +326,7 @@ public class ExpressionDataset {
         try {
             java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(file));
             String str = in.readLine();
-            String[] data = str.split(delimiter);
+            String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
             if (data.length>2 && data[1].length() > 0 && data[1].equals("MultipleHits")) {
                 dataIsInTriTyperFormat = true;
                 sampleOffset = 9;
@@ -367,7 +368,7 @@ public class ExpressionDataset {
                     nrProbes++;
                     //if (nrProbes%1000==0) System.out.println(nrProbes);
                 } else {
-                    data = str.split(delimiter);
+                    data = StringUtils.splitPreserveAllTokens(str, delimiter);
                     if (hashProbesToInclude.containsKey(data[0])) {
                         nrProbes++;
                         //if (nrProbes%1000==0) System.out.println(nrProbes);
@@ -386,12 +387,13 @@ public class ExpressionDataset {
             String str = in.readLine();
             nrProbes = 0;
             while ((str = in.readLine()) != null) {
-                String[] data = str.split(delimiter);
+                String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
                 if (hashProbesToInclude==null || hashProbesToInclude.containsKey(data[0])) {
                     probeNames[nrProbes] = new String(data[0].getBytes());
                     hashProbes.put(probeNames[nrProbes], nrProbes);
+					double[] row = rawData[nrProbes];
                     for (int s=0; s<nrSamples; s++) {
-                        rawData[nrProbes][s] = Double.parseDouble(data[sampleIndex[s] + sampleOffset]);
+                        row[s] = Double.parseDouble(data[sampleIndex[s] + sampleOffset]);
                     }
                     nrProbes++;
                     //if (nrProbes%100==0) System.out.println(nrProbes);
