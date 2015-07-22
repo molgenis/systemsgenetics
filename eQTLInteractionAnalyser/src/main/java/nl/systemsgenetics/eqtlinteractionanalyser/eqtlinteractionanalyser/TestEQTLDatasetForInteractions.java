@@ -63,7 +63,7 @@ public class TestEQTLDatasetForInteractions {
 		//preprocessData();
 	}
 
-	public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, String[] covariatesToCorrect2, File snpsToSwapFile, boolean permute, String[] covariatesToTest, File samplesToInculudeFile) throws IOException, Exception {
+	public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, String[] covariatesToCorrect2, File snpsToSwapFile, boolean permute, String[] covariatesToTest, File samplesToInculudeFile, int numThreads) throws IOException, Exception {
 
 		System.out.println("Input dir: " + inputDir);
 		System.out.println("Output dir: " + outputDir);
@@ -108,7 +108,7 @@ public class TestEQTLDatasetForInteractions {
 		String[] covsToCorrect = primaryCovsToCorrect;
 		int cnt = 0;
 		while (cnt < maxNumTopCovs) {
-			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, eqtlGenes, outputTopCovs, snpsToSwapFile, permute, qtlProbeSnpMultiMap, covariatesToTest, samplesToInculudeFile);
+			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, eqtlGenes, outputTopCovs, snpsToSwapFile, permute, qtlProbeSnpMultiMap, covariatesToTest, samplesToInculudeFile, numThreads);
 			String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
 			for (int c = 0; c < covsToCorrect.length; c++) {
 				covsToCorrectNew[c] = covsToCorrect[c];
@@ -359,7 +359,7 @@ public class TestEQTLDatasetForInteractions {
 
 	}
 
-	public final String performInteractionAnalysis(String[] covsToCorrect, String[] covsToCorrect2, HashMap hashEQTLs, TextFile outputTopCovs, File snpsToSwapFile, boolean permute, HashMultimap<String, String> qtlProbeSnpMultiMap, String[] covariatesToTest, File samplesToInculudeFile) throws IOException, Exception {
+	public final String performInteractionAnalysis(String[] covsToCorrect, String[] covsToCorrect2, HashMap hashEQTLs, TextFile outputTopCovs, File snpsToSwapFile, boolean permute, HashMultimap<String, String> qtlProbeSnpMultiMap, String[] covariatesToTest, File samplesToInculudeFile, int numThreads) throws IOException, Exception {
 
 		HashMap hashSamples;
 		if (samplesToInculudeFile != null) {
@@ -461,7 +461,7 @@ public class TestEQTLDatasetForInteractions {
 
 			SkippedInteractionWriter skippedWriter = new SkippedInteractionWriter(new File(outputDir + "/skippedInteractionsRound_" + covsToCorrect.length + ".txt"));
 
-			java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+			java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(numThreads);
 			CompletionService<DoubleArrayIntegerObject> pool = new ExecutorCompletionService<DoubleArrayIntegerObject>(threadPool);
 			int nrTasks = 0;
 			for (int cov = 0; cov < datasetCovariates.nrProbes; cov++) {

@@ -124,7 +124,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Gene annotation file");
         OptionBuilder.withLongOpt("geneAnnotation");
         OPTIONS.addOption(OptionBuilder.create("ga"));
-		
+
+        OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Number of threads");
+        OptionBuilder.withLongOpt("threads");
+        OPTIONS.addOption(OptionBuilder.create("nt"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -135,6 +140,7 @@ public class EQTLInteractionAnalyser {
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
 		final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
+        int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
 		final int startRoundCompareChi2;
         
@@ -216,6 +222,11 @@ public class EQTLInteractionAnalyser {
             } else {
 				ensgAnnotationFile = null;
 			}
+            if (commandLine.hasOption("nt")) {
+                numThreads = Integer.parseInt(commandLine.getOptionValue("nt"));
+            } else {
+                numThreads = Runtime.getRuntime().availableProcessors();
+            }
 
         } catch (ParseException ex) {
             System.err.println("Invalid command line arguments: ");
@@ -238,7 +249,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress, startRoundCompareChi2, ensgAnnotationFile);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile, numThreads);
         }
     }
 
