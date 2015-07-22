@@ -499,7 +499,7 @@ public class TestEQTLDatasetForInteractions {
 							maxChi2 = chi2Sum;
 							maxChi2Cov = datasetCovariates.probeNames[cov];
 						}
-						System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
+						//System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
 						if ((task + 1) % 512 == 0) {
 							System.out.println(task + 1 + " tasks processed");
 						}
