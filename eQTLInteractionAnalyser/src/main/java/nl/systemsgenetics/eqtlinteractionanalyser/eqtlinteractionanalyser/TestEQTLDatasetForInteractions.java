@@ -1033,9 +1033,13 @@ public class TestEQTLDatasetForInteractions {
 		ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + covsToCorrect.length + nrCompsToCorrectFor, datasetGenotypes.nrSamples);
 		datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
 
+		// add covariates from the first list
+		HashMap hashCovsToCorrect = new HashMap();
+		
 		// add covariates from the second list
 		for (int i = 0; i < covsToCorrect2.length; ++i) {
 			String cov = covsToCorrect2[i];
+			hashCovsToCorrect.put(cov, null);
 			Integer c = datasetCovariatesPCAForceNormal.hashProbes.get(cov);
 			if (c == null) {
 				throw new Exception("Covariate not found: " + cov);
@@ -1045,8 +1049,6 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-		// add covariates from the first list
-		HashMap hashCovsToCorrect = new HashMap();
 		int[] covsToCorrectIndex = new int[covsToCorrect.length];
 		for (int c = 0; c < covsToCorrect.length; c++) {
 			hashCovsToCorrect.put(covsToCorrect[c], null);
