@@ -20,10 +20,11 @@ import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.chrContacts.DesiredChrContact;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.EQTL;
+import umcg.genetica.io.trityper.MinimalEQTL;
 
 /**
  *
@@ -38,34 +39,34 @@ class HiCQTLAnnotatorBlockbased {
         String normMethod = null;
 //        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
         double minValueQuality = 0.0;
-        boolean permutationFile = false;
-        boolean alternativePermutation = true;
+        boolean permutationFile = true;
+        boolean alternativePermutation = false;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
 
-//        for (int i = 1; i < 11; ++i) {
-            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
+        for (int i = 1; i < 11; ++i) {
+//        String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
 //            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\eQTLProbesFDR0.05-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-ProbeLevel.txt_LdQtlFilterd.txt";
-//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
-            String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
+            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
+        String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
 //            String proxyfile = null;
-            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\New_HiC_5Kb_0\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_LD_5kb_0_annotated.txt";
+        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\New_HiC_5Kb_0\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_Perm"+i+"_HiC_LD_5kb_0_annotated.txt";
 //            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
-            
-            addAnnotationToQTLOutput(
-                    QTLfile,
-                    proxyfile,
-                    folderHighC,
-                    resolution,
-                    qualityCutOff,
-                    normMethod,
-                    minValueQuality,
-                    alternativePermutation,
-                    permutationFile,
-                    probeMap,
-                    snpMap,
-                    QTLoutfile);
-//        }
+
+        addAnnotationToQTLOutput(
+                QTLfile,
+                proxyfile,
+                folderHighC,
+                resolution,
+                qualityCutOff,
+                normMethod,
+                minValueQuality,
+                alternativePermutation,
+                permutationFile,
+                probeMap,
+                snpMap,
+                QTLoutfile);
+        }
 
     }
 
@@ -100,7 +101,7 @@ class HiCQTLAnnotatorBlockbased {
             }
 
 //            if (normMethod == null) {
-                processRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), intra);
+            processRawContactInformation(fileToReads, minValue, contactsToCheck.getValue(), intra);
 //            } else {
 //                if (intra) {
 //                    processNormalizedIntraContactInformation(fileToReads, baseName, normMethod, ChrSmaller, contactsToCheck.getValue(), resolution, minValue, outWriter);
@@ -108,7 +109,7 @@ class HiCQTLAnnotatorBlockbased {
 //                    processNormalizedInterContactInformation(fileToReads, baseName, normMethod, ChrSmaller, ChrLarger, contactsToCheck.getValue(), resolution, minValue, outWriter);
 //                }
 //            }
-                printOutContacts(contactsToCheck.getValue(), outWriter);
+            printOutContacts(contactsToCheck.getValue(), outWriter);
             pb.iterate();
         }
         pb.close();
@@ -214,14 +215,14 @@ class HiCQTLAnnotatorBlockbased {
                             break;
                         }
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            if(((posChr1 / getNumericResolution(resolution)) + 1)>normFactorSmallerChr.size()){
+                            if (((posChr1 / getNumericResolution(resolution)) + 1) > normFactorSmallerChr.size()) {
                                 System.out.println(baseName);
                                 System.out.println("Smaller");
-                                System.out.println((posChr1 / getNumericResolution(resolution)+1));
+                                System.out.println((posChr1 / getNumericResolution(resolution) + 1));
                                 System.out.println(normFactorSmallerChr.size());
                                 System.exit(-1);
                             }
-                            if(((posChr2 / getNumericResolution(resolution)) + 1)>normFactorLargerChr.size()){
+                            if (((posChr2 / getNumericResolution(resolution)) + 1) > normFactorLargerChr.size()) {
                                 System.out.println(baseName);
                                 System.out.println("Larger");
                                 System.out.println((posChr2 / getNumericResolution(resolution)) + 1);
@@ -249,19 +250,19 @@ class HiCQTLAnnotatorBlockbased {
 
                             double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
                             if (contact >= minValue) {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact+"\t"+org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\tContact\t" + contact + "\t" + org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
                                 numberToBeMatched++;
                             } else {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                                 numberToBeMatched++;
                             }
 
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -316,10 +317,10 @@ class HiCQTLAnnotatorBlockbased {
 
                                 double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
                                 if (contact >= minValue) {
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact+"\t"+org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\tContact\t" + contact + "\t" + org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
                                     numberToBeMatched++;
                                 } else {
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                                     numberToBeMatched++;
                                 }
                             } else {
@@ -327,11 +328,11 @@ class HiCQTLAnnotatorBlockbased {
                                 numberToBeMatched++;
                             }
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -343,103 +344,163 @@ class HiCQTLAnnotatorBlockbased {
     }
 
     private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlTransformBlocks(String in, String inProxies, String probeMap, String snpMap, boolean permutationFile, String resolution, boolean alternativePermutation) {
-        ArrayList<EQTL> qtls = null;
+        ArrayList<MinimalEQTL> qtls = null;
         boolean renameSnpProxie = false;
+        System.out.println("Read in QTL info.");
         try {
-            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, renameSnpProxie, alternativePermutation);
+            qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, renameSnpProxie);
         } catch (IOException ex) {
             Logger.getLogger(HiCQTLAnnotatorBlockbased.class.getName()).log(Level.SEVERE, null, ex);
         }
+        HashMap<String, ArrayList<DesiredChrContact>> desiredContacts;
+        HashSet<String> keysAdded = new HashSet<>();
+        if (!alternativePermutation) {
+            System.out.println("Transforming to blocks");
+            desiredContacts = new HashMap<>(qtls.size());
+            for (MinimalEQTL qtl : qtls) {
 
-        HashMap<String, ArrayList<DesiredChrContact>> desiredContacts = new HashMap<String, ArrayList<DesiredChrContact>>();
-        HashSet<String> keysAdded = new HashSet<String>();
-        for (EQTL qtl : qtls) {
-
-            String chrProbe = String.valueOf(qtl.getProbeChr());
-            String chrSnp = String.valueOf(qtl.getRsChr());
-            int posChrSmaller = 0;
-            int posChrLarger = 0;
-            int bin1;
-            int bin2;
-            String ChrSmaller;
-            String ChrLarger;
-
-            if (chrProbe.equals(chrSnp)) {
-                ChrSmaller = chrProbe;
-                ChrLarger = chrSnp;
-
-                int binx = qtl.getProbeChrPos() - (qtl.getProbeChrPos() % getNumericResolution(resolution));
-                //        System.out.println("\t"+bin1);
-                //Determine bin2
+                String chrProbe = String.valueOf(qtl.getProbeChr());
+                String chrSnp = String.valueOf(qtl.getRsChr());
                 int biny = qtl.getRsChrPos() - (qtl.getRsChrPos() % getNumericResolution(resolution));
+                int binx = qtl.getProbeChrPos() - (qtl.getProbeChrPos() % getNumericResolution(resolution));
+                int bin1;
+                int bin2;
+                String ChrSmaller;
+                String ChrLarger;
 
-                //Check if logic is consistent.
-                if (binx < biny) {
-                    bin1 = binx;
-                    bin2 = biny;
-                } else {
-                    bin2 = binx;
-                    bin1 = biny;
-                }
-
-            } else {
-
-                if (Integer.parseInt(chrProbe) < Integer.parseInt(chrSnp)) {
-                    posChrSmaller = qtl.getProbeChrPos();
-                    posChrLarger = qtl.getRsChrPos();
-
-                    //Determine bin1
-                    //Startscounting at 0-resulution
-                    bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
-                    //        System.out.println("\t"+bin1);
-                    //Determine bin2
-                    bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
-
+                if (chrProbe.equals(chrSnp)) {
                     ChrSmaller = chrProbe;
                     ChrLarger = chrSnp;
+                    if (binx < biny) {
+                        bin1 = binx;
+                        bin2 = biny;
+                    } else {
+                        bin2 = binx;
+                        bin1 = biny;
+                    }
+
                 } else {
-                    posChrSmaller = qtl.getRsChrPos();
-                    posChrLarger = qtl.getProbeChrPos();
+                    if (Integer.parseInt(chrProbe) < Integer.parseInt(chrSnp)) {
+                        ChrSmaller = chrProbe;
+                        ChrLarger = chrSnp;
+                        bin1 = binx;
+                        bin2 = biny;
+                    } else {
+                        ChrSmaller = chrSnp;
+                        ChrLarger = chrProbe;
+                        bin1 = biny;
+                        bin2 = binx;
+                    }
+                }
 
-                    bin1 = posChrSmaller - (posChrSmaller % getNumericResolution(resolution));
-                    //        System.out.println("\t"+bin1);
-                    //Determine bin2
-                    bin2 = posChrLarger - (posChrLarger % getNumericResolution(resolution));
+                String key = ChrSmaller + "-" + ChrLarger;
+                if (!desiredContacts.containsKey(key)) {
 
-                    ChrSmaller = chrSnp;
-                    ChrLarger = chrProbe;
+                    desiredContacts.put(key, new ArrayList<DesiredChrContact>());
+                }
+                
+                String extendedKey = key + "-" + bin1 + "-" + bin2 + "-" + qtl.getRsName() + "-"+ qtl.getProbe();
+
+                if (!keysAdded.contains(extendedKey)) {
+                    desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
+                    keysAdded.add(extendedKey);
+                }
+            }
+        } else {
+            System.out.println("Alternative permutation and transforming to blocks");
+            HashMap<String, Pair<String, Integer>> cpgs = new HashMap<>();
+            HashMap<String, Pair<String, Integer>> snps = new HashMap<>();
+            HashSet<String> trueCombinations = new HashSet<>(qtls.size());
+
+            //Here we need to merge creation of opposites and the blocking
+            System.out.println("step1");
+            for (MinimalEQTL e : qtls) {
+                if(!cpgs.containsKey(e.getProbe())){
+                    cpgs.put(e.getProbe(), new Pair<>(String.valueOf(e.getProbeChr()), (e.getProbeChrPos()- (e.getProbeChrPos()% getNumericResolution(resolution)))));
+                }
+                if(!snps.containsKey(e.getRsName())){
+                    snps.put(e.getRsName(), new Pair<>(String.valueOf(e.getRsChr()), (e.getRsChrPos()- (e.getRsChrPos()% getNumericResolution(resolution)))));
+                }
+                trueCombinations.add(e.getProbe() + "-" + e.getRsName());
+            }
+            qtls = null;
+            
+            desiredContacts = new HashMap<>(snps.size()*cpgs.size());
+            System.out.println("step2");
+            for (Entry<String, Pair<String, Integer>> snp : snps.entrySet()) {
+                
+                String chrSnp = String.valueOf(snp.getValue().getLeft());
+                int biny = snp.getValue().getRight();
+                
+                for (Entry<String, Pair<String, Integer>> cpg : cpgs.entrySet()) {
+                    if (!trueCombinations.contains(cpg.getKey() + "-" + snp.getKey())) {
+
+                        String chrProbe = cpg.getValue().getLeft();
+                        int binx = cpg.getValue().getRight();
+
+                        int bin1;
+                        int bin2;
+                        String ChrSmaller;
+                        String ChrLarger;
+
+                        if (chrProbe.equals(chrSnp)) {
+                            ChrSmaller = chrProbe;
+                            ChrLarger = chrSnp;
+                            if (binx < biny) {
+                                bin1 = binx;
+                                bin2 = biny;
+                            } else {
+                                bin2 = binx;
+                                bin1 = biny;
+                            }
+
+                        } else {
+                            if (Integer.parseInt(chrProbe) < Integer.parseInt(chrSnp)) {
+                                ChrSmaller = chrProbe;
+                                ChrLarger = chrSnp;
+                                bin1 = binx;
+                                bin2 = biny;
+                            } else {
+                                ChrSmaller = chrSnp;
+                                ChrLarger = chrProbe;
+                                bin1 = biny;
+                                bin2 = binx;
+                            }
+                        }
+
+                        String key = ChrSmaller + "-" + ChrLarger;
+                        if (!desiredContacts.containsKey(key)) {
+                            desiredContacts.put(key, new ArrayList<DesiredChrContact>());
+                        }
+                        String extendedKey = key + "-" + bin1 + "-" + bin2 + "-" + snp.getKey() + "-"+ cpg.getKey();
+                        if (!keysAdded.contains(extendedKey)) {
+                            desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, snp.getKey(), cpg.getKey()));
+                            keysAdded.add(extendedKey);
+                        }
+                    }
                 }
             }
 
-            String key = ChrSmaller + "-" + ChrLarger;
-            if (!desiredContacts.containsKey(key)) {
-                
-                desiredContacts.put(key, new ArrayList<DesiredChrContact>());
-            }
-            String extendedKey = key+"-"+posChrSmaller+"-"+posChrLarger;
-            
-            if(!keysAdded.contains(extendedKey)){
-                desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
-                keysAdded.add(extendedKey);
-            }
         }
+        System.out.println("Number of desiredContacts: "+keysAdded.size());
         return desiredContacts;
     }
 
     private static void printOutContacts(ArrayList<DesiredChrContact> contacts, TextFile outWriter) throws IOException {
+//        System.out.println("Write contacts to file.");
         HashMap<String, Boolean> textToStore = new HashMap<>();
-        
-        for(DesiredChrContact c : contacts){
-            String key = c.getProbeName()+"-"+c.getSnpName();
-            
-            if(c.hasContact()){
+
+        for (DesiredChrContact c : contacts) {
+            String key = c.getProbeName() + "-" + c.getSnpName();
+
+            if (c.hasContact()) {
                 textToStore.put(key, Boolean.TRUE);
-            } else if (!textToStore.containsKey(key)){
+            } else if (!textToStore.containsKey(key)) {
                 textToStore.put(key, Boolean.FALSE);
             }
         }
-        for(Entry<String, Boolean> contactInfo : textToStore.entrySet()){
-            outWriter.write(contactInfo.getKey()+"\t"+contactInfo.getValue()+"\n");
+        for (Entry<String, Boolean> contactInfo : textToStore.entrySet()) {
+            outWriter.write(contactInfo.getKey() + "\t" + contactInfo.getValue() + "\n");
         }
     }
 
