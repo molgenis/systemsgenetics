@@ -436,7 +436,7 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-		correctExpressionDataForInteractions(covsToCorrect, datasetCovariates, datasetGenotypes, nrSamples, datasetExpression, regression);
+		correctExpressionDataForInteractions(covsToCorrect, datasetCovariates, datasetGenotypes, nrSamples, datasetExpression, regression, qtlProbeSnpMultiMap);
 
 		forceNormalExpressionData(datasetExpression);
 
@@ -1035,7 +1035,7 @@ public class TestEQTLDatasetForInteractions {
 
 		// add covariates from the first list
 		HashMap hashCovsToCorrect = new HashMap();
-		
+
 		// add covariates from the second list
 		for (int i = 0; i < covsToCorrect2.length; ++i) {
 			String cov = covsToCorrect2[i];
@@ -1280,27 +1280,75 @@ public class TestEQTLDatasetForInteractions {
 		}
 	}
 
-	private void correctExpressionDataForInteractions(String[] covsToCorrect, ExpressionDataset datasetCovariates, ExpressionDataset datasetGenotypes, int nrSamples, ExpressionDataset datasetExpression, OLSMultipleLinearRegression regression) throws MathIllegalArgumentException {
+	private void correctExpressionDataForInteractions(String[] covsToCorrect, ExpressionDataset datasetCovariates, ExpressionDataset datasetGenotypes, int nrSamples, ExpressionDataset datasetExpression, OLSMultipleLinearRegression regression, HashMultimap<String, String> qtlProbeSnpMultiMap) throws MathIllegalArgumentException, Exception {
+
 		System.out.println("Correcting expression data for predefined gene environment interaction effects (GC content, Gender, 5'Median Bias, 3'Median Bias):");
 		int[] covsToCorrectIndex = new int[covsToCorrect.length];
 		for (int c = 0; c < covsToCorrect.length; c++) {
 			covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
 
 		}
-		for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
-			double[][] valsX = new double[nrSamples][1 + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
-			for (int s = 0; s < nrSamples; s++) {
-				valsX[s][0] = datasetGenotypes.rawData[snp][s]; //genotypes
+
+		HashMap<String, Integer> snpMap = new HashMap<String, Integer>(datasetGenotypes.nrProbes);
+		for (Map.Entry<String, Integer> snpEntry : datasetGenotypes.hashProbes.entrySet()) {
+			try {
+				snpMap.put(snpEntry.getKey().substring(0, snpEntry.getKey().indexOf('_')), snpEntry.getValue());
+			} catch (Exception e) {
+				System.out.println(snpEntry.getKey());
+				throw e;
 			}
+		}
+
+		for (int p = 0; p < datasetExpression.nrProbes; p++) {
+
+			String probe = datasetExpression.probeNames[p].substring(0, datasetExpression.probeNames[p].indexOf('_'));
+			Set<String> probeQtls = qtlProbeSnpMultiMap.get(probe);
+
+			if (probeQtls.isEmpty()) {
+				throw new Exception("Error 1");
+			}
+
+			//boolean foundPisS = false;
+			double[][] valsX = new double[nrSamples][probeQtls.size() + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
+			int k = 0;
+			for (String snp : probeQtls) {
+
+				Integer s = snpMap.get(snp);
+				if (s == null) {
+					throw new Exception("Snp " + snp + " not found");
+				}
+//				if(s.intValue() == p){
+//					foundPisS = true;
+//				}
+				double[] snpData = datasetGenotypes.rawData[s];
+				for (int i = 0; i < datasetGenotypes.nrSamples; ++i) {
+					valsX[i][k] = snpData[i];
+				}
+
+				k++;
+			}
+//			if(!foundPisS){
+//				
+//				System.out.println("Expected snp: " + datasetGenotypes.probeNames[p] + " at index: " + p);
+//				
+//				for(String qtlSnp : probeQtls = qtlProbeSnpMultiMap.get(probe)){
+//					System.out.println("QTL snp: " + qtlSnp + " found at index: " + snpMap.get(qtlSnp));
+//				}
+//				
+//				throw new Exception("Error 2");
+//			}
 			for (int c = 0; c < covsToCorrect.length; c++) {
+				double[] covData = datasetCovariates.rawData[covsToCorrectIndex[c]];
+				double[] snpData = datasetGenotypes.rawData[p];
+				
 				for (int s = 0; s < nrSamples; s++) {
-					valsX[s][c * 2 + 1] = datasetCovariates.rawData[covsToCorrectIndex[c]][s]; //covariate
-					valsX[s][c * 2 + 2] = valsX[s][0] * valsX[s][c * 2 + 1]; //interction
+					valsX[s][c * 2 + probeQtls.size()] = covData[s]; //covariate
+					valsX[s][c * 2 + probeQtls.size() + 1] = snpData[s] * covData[s]; //interction
 				}
 			}
-			double[] valsY = datasetExpression.rawData[snp];
+			double[] valsY = datasetExpression.rawData[p];
 			regression.newSampleData(valsY, valsX);
-			datasetExpression.rawData[snp] = regression.estimateResiduals();
+			datasetExpression.rawData[p] = regression.estimateResiduals();
 		}
 	}
 
