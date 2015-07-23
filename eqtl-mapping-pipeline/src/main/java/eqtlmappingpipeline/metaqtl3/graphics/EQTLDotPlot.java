@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3.graphics;
 
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -61,19 +61,19 @@ public class EQTLDotPlot {
         int innerHeight = y1 - y0;
 
         Graphics2D g2d = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
-        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
         BufferedImage bi = null;
         if (output == Output.PDF) {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
-            writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFile));
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
+            writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputFile));
 
             document.open();
              cb = writer.getDirectContent();
              cb.saveState();
-            //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            //com.itextpdf.text.pdf.DefaultFontMapper fontMap = new com.itextpdf.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
             bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);

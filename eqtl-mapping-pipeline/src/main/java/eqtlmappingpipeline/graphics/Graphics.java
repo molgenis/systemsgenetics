@@ -18,7 +18,7 @@ import java.awt.image.*;
  */
 public class Graphics {
 
-    private com.lowagie.text.Document document;
+    private com.itextpdf.text.Document document;
     private boolean usePDF = false;
     protected BufferedImage bi;
     protected Graphics2D g2d;
@@ -29,9 +29,9 @@ public class Graphics {
     protected int marginTop, marginBottom, marginLeft, marginRight;
     protected double scalingX, scalingY;
     protected int FILE_TYPE;
-    protected com.lowagie.text.pdf.PdfContentByte cb;
+    protected com.itextpdf.text.pdf.PdfContentByte cb;
     protected String outputLoc = "";
-    protected com.lowagie.text.pdf.PdfWriter writer;
+    protected com.itextpdf.text.pdf.PdfWriter writer;
 
     public Graphics() {
         bi = new java.awt.image.BufferedImage(100, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
@@ -51,11 +51,11 @@ public class Graphics {
     protected void init(int width, int height) {
 
         if (usePDF) {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
             writer = null;
             try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
+                writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outputLoc));
                 document.open();
                 cb = writer.getDirectContent();
                 cb.saveState();

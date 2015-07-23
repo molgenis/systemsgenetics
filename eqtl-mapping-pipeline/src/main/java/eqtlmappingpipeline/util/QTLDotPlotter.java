@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.util;
 
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import java.io.IOException;
 import java.util.logging.Level;
