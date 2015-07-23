@@ -37,27 +37,27 @@ public class QTLTextFile extends TextFile {
     public static int METAB = 18;
     public static int DATASETB = 19;
     /*
-     // PValue	
-     * SNPName	
-     * SNPChr	
-     * SNPChrPos	
-     * ProbeName	
-     * ProbeChr	
-     * ProbeCenterChrPos	
-     * CisTrans	
-     * SNPType	
-     * AlleleAssessed	
-     * OverallZScore	
-     * DatasetsWhereSNPProbePairIsAvailableAndPassesQC	
-     * DatasetsZScores	
-     * DatasetsNrSamples	
-     * IncludedDatasetsMeanProbeExpression	
-     * IncludedDatasetsProbeExpressionVariance	
-     * HGNCName	
-     * IncludedDatasetsCorrelationCoefficient	
-     * Meta-Beta (SE)	
-     * Beta (SE)	
-     * FoldChange	
+     // PValue
+     * SNPName
+     * SNPChr
+     * SNPChrPos
+     * ProbeName
+     * ProbeChr
+     * ProbeCenterChrPos
+     * CisTrans
+     * SNPType
+     * AlleleAssessed
+     * OverallZScore
+     * DatasetsWhereSNPProbePairIsAvailableAndPassesQC
+     * DatasetsZScores
+     * DatasetsNrSamples
+     * IncludedDatasetsMeanProbeExpression
+     * IncludedDatasetsProbeExpressionVariance
+     * HGNCName
+     * IncludedDatasetsCorrelationCoefficient
+     * Meta-Beta (SE)
+     * Beta (SE)
+     * FoldChange
      * FDR
      * */
     private static String sepStr = ";";
@@ -106,9 +106,15 @@ public class QTLTextFile extends TextFile {
             write(e.toString() + '\n');
         }
     }
-    
+
     public void write(ArrayList<EQTL> eqtllist) throws IOException {
         for (EQTL e : eqtllist) {
+            write(e.toString() + '\n');
+        }
+    }
+
+    public void writeMinimal(ArrayList<MinimalEQTL> eqtllist) throws IOException {
+        for (MinimalEQTL e : eqtllist) {
             write(e.toString() + '\n');
         }
     }
@@ -118,7 +124,7 @@ public class QTLTextFile extends TextFile {
         return readExpectedSize(1000);
 
     }
-    
+
     public ArrayList<EQTL> readList() throws IOException {
 
         ArrayList<EQTL> alEQTLS = new ArrayList<EQTL>();
@@ -129,7 +135,6 @@ public class QTLTextFile extends TextFile {
 
         return alEQTLS;
     }
-
 
     public EQTL[] readExpectedSize(int expSize) throws IOException {
 

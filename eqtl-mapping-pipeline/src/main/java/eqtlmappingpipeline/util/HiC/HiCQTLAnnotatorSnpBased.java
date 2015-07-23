@@ -42,31 +42,31 @@ class HiCQTLAnnotatorSnpBased {
 //        String normMethod = null;
         String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
         double minValueQuality = 0.0;
-        boolean permutationFile = false;
+        boolean permutationFile = true;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
-
-        //for (int i = 1; i < 11; ++i) {
-            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
+        System.out.println("Running");
+//        for (int i = 1; i < 11; ++i) {
+//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
 //            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\eQTLProbesFDR0.05-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-ProbeLevel.txt_LdQtlFilterd.txt";
-//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
-            String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
-//            String proxyfile = null;
-            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_AlternativePermutation_HiC_LD_Kr_1kb_E30_annotated.txt";
+        String QTLfile = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\trans-QTLs\\PermutedEQTLsPermutationRound57.head.txt";
+//            String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
+        String proxyfile = null;
+        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_AlternativePermutation_HiC_LD_Kr_1kb_E30_annotated.txt";
 //            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
-            
-            addAnnotationToQTLOutput(
-                    QTLfile,
-                    proxyfile,
-                    folderHighC,
-                    resolution,
-                    qualityCutOff,
-                    normMethod,
-                    minValueQuality,
-                    permutationFile,
-                    probeMap,
-                    snpMap,
-                    QTLoutfile);
+
+        addAnnotationToQTLOutput(
+                QTLfile,
+                proxyfile,
+                folderHighC,
+                resolution,
+                qualityCutOff,
+                normMethod,
+                minValueQuality,
+                permutationFile,
+                probeMap,
+                snpMap,
+                QTLoutfile);
 //        }
 
     }
@@ -153,18 +153,18 @@ class HiCQTLAnnotatorSnpBased {
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
                             double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
                             if (contact >= minValue) {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact);
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\tContact\t" + contact);
                                 numberToBeMatched++;
                             } else {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-");
                                 numberToBeMatched++;
                             }
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -177,10 +177,10 @@ class HiCQTLAnnotatorSnpBased {
 
     //For example, here is a line from the 5kb chr1 MAPQGE30 raw observed contact matrix (GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.RAWobserved):
     //40000000 40100000 59.0
-    //To normalize this entry using the KR normalization vector, one would divide 59.0 by the 8001st line ((40000000/5000)+1=8001) and the 8021st line ((40100000/5000)+1=8021) 
+    //To normalize this entry using the KR normalization vector, one would divide 59.0 by the 8001st line ((40000000/5000)+1=8001) and the 8021st line ((40100000/5000)+1=8021)
     //of GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.KRnorm. The 8001st line of the KR norm file is 1.2988778370674694;
     //The 8021st line of the KR norm file is 1.6080499717941548. So the corresponding KR normalized entry for the entry above is 59.0/(1.2988778370674694*1.6080499717941548)
-    //or 28.24776973966101. 
+    //or 28.24776973966101.
     //If the KR normalization vector file is empty or all NaNs, then the KR algorithm didn’t converge on that particular matrix (likely due to sparsity of the matrix).
     private static void processNormalizedInterContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, String chrLarger, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
 
@@ -219,14 +219,14 @@ class HiCQTLAnnotatorSnpBased {
                             break;
                         }
                         if (posChr2 == contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            if(((posChr1 / getNumericResolution(resolution)) + 1)>normFactorSmallerChr.size()){
+                            if (((posChr1 / getNumericResolution(resolution)) + 1) > normFactorSmallerChr.size()) {
                                 System.out.println(baseName);
                                 System.out.println("Smaller");
-                                System.out.println((posChr1 / getNumericResolution(resolution)+1));
+                                System.out.println((posChr1 / getNumericResolution(resolution) + 1));
                                 System.out.println(normFactorSmallerChr.size());
                                 System.exit(-1);
                             }
-                            if(((posChr2 / getNumericResolution(resolution)) + 1)>normFactorLargerChr.size()){
+                            if (((posChr2 / getNumericResolution(resolution)) + 1) > normFactorLargerChr.size()) {
                                 System.out.println(baseName);
                                 System.out.println("Larger");
                                 System.out.println((posChr2 / getNumericResolution(resolution)) + 1);
@@ -254,19 +254,19 @@ class HiCQTLAnnotatorSnpBased {
 
                             double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
                             if (contact >= minValue) {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact+"\t"+org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\tContact\t" + contact + "\t" + org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
                                 numberToBeMatched++;
                             } else {
-                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                                outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                                 numberToBeMatched++;
                             }
 
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -321,10 +321,10 @@ class HiCQTLAnnotatorSnpBased {
 
                                 double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]) / (factor1 * factor2);
                                 if (contact >= minValue) {
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\tContact\t" + contact+"\t"+org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\tContact\t" + contact + "\t" + org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]));
                                     numberToBeMatched++;
                                 } else {
-                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                                    outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                                     numberToBeMatched++;
                                 }
                             } else {
@@ -332,11 +332,11 @@ class HiCQTLAnnotatorSnpBased {
                                 numberToBeMatched++;
                             }
                         } else if (posChr2 > contactsToCheck.get(numberToBeMatched).getChrLocationLarger()) {
-                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                            outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                             numberToBeMatched++;
                         }
                     } else if (posChr1 > contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
-                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() +"\t"+posChr1+"\t"+posChr2+ "\t-\t-\t-");
+                        outWriter.writeln(contactsToCheck.get(numberToBeMatched).getSnpName() + "\t" + contactsToCheck.get(numberToBeMatched).getProbeName() + "\t" + posChr1 + "\t" + posChr2 + "\t-\t-\t-");
                         numberToBeMatched++;
                     }
                 }
@@ -477,16 +477,16 @@ class HiCQTLAnnotatorSnpBased {
 
             textFile.close();
         }
-        System.out.println("Number of QTLs input: "+qtls.size());
+        System.out.println("Number of QTLs input: " + qtls.size());
         if (inProxies != null) {
             System.out.println("Including proxies");
             qtls = includeProxyInfo(qtls, inProxies, changeNameOfSnp);
-            System.out.println("Number of QTLs after including proxies: "+qtls.size());
+            System.out.println("Number of QTLs after including proxies: " + qtls.size());
         }
 
-        //Write file to disk.
-//        QTLTextFile out = new QTLTextFile( "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound9.head.extended.txt" ,QTLTextFile.W);
-//        out.write(qtls);
+////        Write file to disk the input information.
+//        QTLTextFile out = new QTLTextFile(in + ".extended.txt", QTLTextFile.W);
+//        out.writeMinimal(qtls);
 //        out.close();
 //        System.exit(0);
         return qtls;
@@ -511,8 +511,8 @@ class HiCQTLAnnotatorSnpBased {
                     newQtl.setProbe(e.getProbe());
                     newQtl.setProbeChr(e.getProbeChr());
                     newQtl.setProbeChrPos(e.getProbeChrPos());
-                    
-                    if(changeNameOfSnp){
+
+                    if (changeNameOfSnp) {
                         newQtl.setRsName(e.getRsName() + "-" + lineParts[1]);
                     } else {
                         newQtl.setRsName(e.getRsName());

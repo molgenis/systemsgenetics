@@ -20,10 +20,9 @@ public class MinimalEQTL {
     private byte probeChr;
     private int probeChrPos;
 
-
     public MinimalEQTL() {
     }
-    
+
     public MinimalEQTL(EQTL e) {
         this.pvalue = e.getPvalue();
         this.rsName = e.getRsName();
@@ -32,7 +31,7 @@ public class MinimalEQTL {
         this.probe = e.getProbe();
         this.probeChr = e.getProbeChr();
         this.probeChrPos = e.getProbeChrPos();
-        
+
     }
 
     /**
@@ -132,19 +131,74 @@ public class MinimalEQTL {
     public void setProbeChrPos(int probeChrPos) {
         this.probeChrPos = probeChrPos;
     }
-    
+
     public Double getPvalueAbs() {
         return Math.abs(pvalue);
     }
-    
+
     public static ArrayList<MinimalEQTL> convertArray(ArrayList<EQTL> qtlBuffer) {
         ArrayList<MinimalEQTL> minimalQtlBuffer = new ArrayList<>();
-        
-        for(EQTL e : qtlBuffer){
+
+        for (EQTL e : qtlBuffer) {
             minimalQtlBuffer.add(new MinimalEQTL(e));
         }
-        
+
         return minimalQtlBuffer;
+    }
+
+    @Override
+    public String toString() {
+        char nullstr = '-';
+        char tabStr = '\t';
+        MinimalEQTL e = this;
+        StringBuilder out = new StringBuilder();
+
+        out.append(e.getPvalue());
+        out.append(tabStr);
+
+        out.append(e.getRsName());
+        out.append(tabStr);
+        out.append(e.getRsChr());
+        out.append(tabStr);
+        out.append(e.getRsChrPos());
+        out.append(tabStr);
+        out.append(e.getProbe());
+        out.append(tabStr);
+        out.append(e.getProbeChr());
+        out.append(tabStr);
+        out.append(e.getProbeChrPos());
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+        out.append(tabStr);
+        out.append(nullstr);
+
+        return out.toString();
     }
 
 }

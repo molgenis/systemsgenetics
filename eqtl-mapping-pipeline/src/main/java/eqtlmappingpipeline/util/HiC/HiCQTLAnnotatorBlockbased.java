@@ -34,8 +34,8 @@ class HiCQTLAnnotatorBlockbased {
 
     public static void main(String[] args) throws IOException {
         String folderHighC = "G:\\Contacts\\";
-        String resolution = "5kb"; //5kb / 1kb
-        String qualityCutOff = "0"; //0 or E30
+        String resolution = "1kb"; //5kb / 1kb
+        String qualityCutOff = "E30"; //0 or E30
         String normMethod = null;
 //        String normMethod = "KRnorm"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
         double minValueQuality = 0.0;
@@ -44,28 +44,28 @@ class HiCQTLAnnotatorBlockbased {
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
 
-        for (int i = 1; i < 11; ++i) {
-//        String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
+        for (int i = 35; i < 57; ++i) {
+//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
 //            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\eQTLProbesFDR0.05-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-ProbeLevel.txt_LdQtlFilterd.txt";
-            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRound" + i + ".head.txt";
-        String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
+            String QTLfile = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\trans-QTLs\\PermutedEQTLsPermutationRound" + i + ".head.txt";
+            String proxyfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\proxiesMeQTLSnps2.txt";
 //            String proxyfile = null;
-        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\New_HiC_5Kb_0\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_Perm"+i+"_HiC_LD_5kb_0_annotated.txt";
+            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\HiC_Annot\\New_HiC_1Kb_E30\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_Perm" + i + "_HiC_LD_1kb_E30_annotated.txt";
 //            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
 
-        addAnnotationToQTLOutput(
-                QTLfile,
-                proxyfile,
-                folderHighC,
-                resolution,
-                qualityCutOff,
-                normMethod,
-                minValueQuality,
-                alternativePermutation,
-                permutationFile,
-                probeMap,
-                snpMap,
-                QTLoutfile);
+            addAnnotationToQTLOutput(
+                    QTLfile,
+                    proxyfile,
+                    folderHighC,
+                    resolution,
+                    qualityCutOff,
+                    normMethod,
+                    minValueQuality,
+                    alternativePermutation,
+                    permutationFile,
+                    probeMap,
+                    snpMap,
+                    QTLoutfile);
         }
 
     }
@@ -173,10 +173,10 @@ class HiCQTLAnnotatorBlockbased {
 
     //For example, here is a line from the 5kb chr1 MAPQGE30 raw observed contact matrix (GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.RAWobserved):
     //40000000 40100000 59.0
-    //To normalize this entry using the KR normalization vector, one would divide 59.0 by the 8001st line ((40000000/5000)+1=8001) and the 8021st line ((40100000/5000)+1=8021) 
+    //To normalize this entry using the KR normalization vector, one would divide 59.0 by the 8001st line ((40000000/5000)+1=8001) and the 8021st line ((40100000/5000)+1=8021)
     //of GM12878_combined/5kb_resolution_intrachromosomal/chr1/MAPQGE30/chr1_5kb.KRnorm. The 8001st line of the KR norm file is 1.2988778370674694;
     //The 8021st line of the KR norm file is 1.6080499717941548. So the corresponding KR normalized entry for the entry above is 59.0/(1.2988778370674694*1.6080499717941548)
-    //or 28.24776973966101. 
+    //or 28.24776973966101.
     //If the KR normalization vector file is empty or all NaNs, then the KR algorithm didn’t converge on that particular matrix (likely due to sparsity of the matrix).
     private static void processNormalizedInterContactInformation(String fileToRead, String baseName, String normMethod, String chrSmaller, String chrLarger, ArrayList<DesiredChrContact> contactsToCheck, String resolution, double minValue, TextFile outWriter) throws IOException {
 
@@ -398,8 +398,8 @@ class HiCQTLAnnotatorBlockbased {
 
                     desiredContacts.put(key, new ArrayList<DesiredChrContact>());
                 }
-                
-                String extendedKey = key + "-" + bin1 + "-" + bin2 + "-" + qtl.getRsName() + "-"+ qtl.getProbe();
+
+                String extendedKey = key + "-" + bin1 + "-" + bin2 + "-" + qtl.getRsName() + "-" + qtl.getProbe();
 
                 if (!keysAdded.contains(extendedKey)) {
                     desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, qtl.getRsName(), qtl.getProbe()));
@@ -415,23 +415,23 @@ class HiCQTLAnnotatorBlockbased {
             //Here we need to merge creation of opposites and the blocking
             System.out.println("step1");
             for (MinimalEQTL e : qtls) {
-                if(!cpgs.containsKey(e.getProbe())){
-                    cpgs.put(e.getProbe(), new Pair<>(String.valueOf(e.getProbeChr()), (e.getProbeChrPos()- (e.getProbeChrPos()% getNumericResolution(resolution)))));
+                if (!cpgs.containsKey(e.getProbe())) {
+                    cpgs.put(e.getProbe(), new Pair<>(String.valueOf(e.getProbeChr()), (e.getProbeChrPos() - (e.getProbeChrPos() % getNumericResolution(resolution)))));
                 }
-                if(!snps.containsKey(e.getRsName())){
-                    snps.put(e.getRsName(), new Pair<>(String.valueOf(e.getRsChr()), (e.getRsChrPos()- (e.getRsChrPos()% getNumericResolution(resolution)))));
+                if (!snps.containsKey(e.getRsName())) {
+                    snps.put(e.getRsName(), new Pair<>(String.valueOf(e.getRsChr()), (e.getRsChrPos() - (e.getRsChrPos() % getNumericResolution(resolution)))));
                 }
                 trueCombinations.add(e.getProbe() + "-" + e.getRsName());
             }
             qtls = null;
-            
-            desiredContacts = new HashMap<>(snps.size()*cpgs.size());
+
+            desiredContacts = new HashMap<>(snps.size() * cpgs.size());
             System.out.println("step2");
             for (Entry<String, Pair<String, Integer>> snp : snps.entrySet()) {
-                
+
                 String chrSnp = String.valueOf(snp.getValue().getLeft());
                 int biny = snp.getValue().getRight();
-                
+
                 for (Entry<String, Pair<String, Integer>> cpg : cpgs.entrySet()) {
                     if (!trueCombinations.contains(cpg.getKey() + "-" + snp.getKey())) {
 
@@ -472,7 +472,7 @@ class HiCQTLAnnotatorBlockbased {
                         if (!desiredContacts.containsKey(key)) {
                             desiredContacts.put(key, new ArrayList<DesiredChrContact>());
                         }
-                        String extendedKey = key + "-" + bin1 + "-" + bin2 + "-" + snp.getKey() + "-"+ cpg.getKey();
+                        String extendedKey = key + "-" + bin1 + "-" + bin2 + "-" + snp.getKey() + "-" + cpg.getKey();
                         if (!keysAdded.contains(extendedKey)) {
                             desiredContacts.get(key).add(new DesiredChrContact(bin1, bin2, 0, snp.getKey(), cpg.getKey()));
                             keysAdded.add(extendedKey);
@@ -482,7 +482,7 @@ class HiCQTLAnnotatorBlockbased {
             }
 
         }
-        System.out.println("Number of desiredContacts: "+keysAdded.size());
+        System.out.println("Number of desiredContacts: " + keysAdded.size());
         return desiredContacts;
     }
 
