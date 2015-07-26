@@ -1154,11 +1154,11 @@ public class TestEQTLDatasetForInteractions {
 
 		datasetCovariatesToCorrectFor.transposeDataset();
 
-		datasetCovariatesToCorrectFor.save(inputDir + "/CovariatesToCorrectFor.txt");
-		orthogonalizeDataset(inputDir + "/CovariatesToCorrectFor.txt");
-		datasetCovariatesToCorrectFor = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
+		datasetCovariatesToCorrectFor.save(outputDir + "/CovariatesToCorrectFor.txt");
+		orthogonalizeDataset(outputDir + "/CovariatesToCorrectFor.txt");
+		datasetCovariatesToCorrectFor = new ExpressionDataset(outputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
 		datasetCovariatesToCorrectFor.transposeDataset();
-		ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
+		ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(outputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
 		for (int snp = 0; snp < datasetExpression.nrProbes; snp++) {
 			for (int cov = 0; cov < datasetCovariatesToCorrectFor.nrProbes; cov++) {
 				if (datasetCovariatesToCorrectForEigenvalues.rawData[cov][0] > 1E-5) {
