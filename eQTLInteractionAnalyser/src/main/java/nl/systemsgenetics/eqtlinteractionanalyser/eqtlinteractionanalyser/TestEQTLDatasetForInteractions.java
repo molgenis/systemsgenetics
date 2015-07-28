@@ -8,6 +8,7 @@ package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import com.google.common.collect.HashMultimap;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -42,7 +43,6 @@ import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
-import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -54,6 +54,7 @@ public class TestEQTLDatasetForInteractions {
 	String outputDir = null;
 	HashMap<String, GenomicBoundary<Integer>> geneDistanceMap = null;
 	String[] primaryCovsToCorrect;
+	ExpressionDataset datasetGenotypes;
 
 	public TestEQTLDatasetForInteractions(String inputDir, String outputDir) throws IOException {
 
@@ -63,7 +64,7 @@ public class TestEQTLDatasetForInteractions {
 		//preprocessData();
 	}
 
-	public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, String[] covariatesToCorrect2, File snpsToSwapFile, boolean permute, String[] covariatesToTest, File samplesToInculudeFile, int numThreads) throws IOException, Exception {
+	public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, String[] covariatesToCorrect2, File snpsToSwapFile, boolean permute, String[] covariatesToTest, HashMap hashSamples, int numThreads, String[] cohorts, File snpsToTestFile) throws IOException, Exception {
 
 		System.out.println("Input dir: " + inputDir);
 		System.out.println("Output dir: " + outputDir);
@@ -71,7 +72,6 @@ public class TestEQTLDatasetForInteractions {
 		System.out.println("Maximum number of covariates to regress out: " + maxNumTopCovs);
 		System.out.println("Covariates to correct for with interaction: " + Arrays.toString(covariatesToCorrect));
 		System.out.println("Covariates to correct for without interaction: " + Arrays.toString(covariatesToCorrect2));
-		System.out.println("Samples to include file: " + samplesToInculudeFile.getAbsolutePath());
 
 		this.inputDir = inputDir;
 		this.outputDir = outputDir;
@@ -80,7 +80,7 @@ public class TestEQTLDatasetForInteractions {
 			Gpio.createDir(outputDir);
 		}
 
-		HashMap<String, String> eqtlGenes = getEqtls(eQTLfileName);
+		initGenotypes(permute, hashSamples, cohorts);
 
 		HashMultimap<String, String> qtlProbeSnpMultiMap = HashMultimap.create();
 		final QTLTextFile eQtlFileReader = new QTLTextFile(eQTLfileName, false);
@@ -91,6 +91,33 @@ public class TestEQTLDatasetForInteractions {
 
 		if (annotationFile != null) {
 			createGeneDistanceMap(annotationFile);
+		}
+		
+		final TIntHashSet snpsToTest;
+		if(snpsToTestFile != null){
+			
+			snpsToTest = new TIntHashSet();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(snpsToTestFile), "UTF-8"));
+			
+			String line;			
+			while ((line = reader.readLine()) != null) {
+				Integer genotypeI = datasetGenotypes.hashProbes.get(line);
+				
+				if(genotypeI == null){
+					System.out.println("SNP " + line + " not found in genotype data");
+					continue;
+				}
+				
+				if(!snpsToTest.add(genotypeI)){
+					System.out.println("Warning including SNP twice: " + line);
+				}
+				
+			}
+
+			System.out.println("Confining testing to: " + snpsToTest.size() + " SNPs from: " + snpsToTestFile.getAbsolutePath());
+			
+		} else {
+			snpsToTest = null;
 		}
 
 		//preprocessData();
@@ -108,7 +135,7 @@ public class TestEQTLDatasetForInteractions {
 		String[] covsToCorrect = primaryCovsToCorrect;
 		int cnt = 0;
 		while (cnt < maxNumTopCovs) {
-			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, eqtlGenes, outputTopCovs, snpsToSwapFile, permute, qtlProbeSnpMultiMap, covariatesToTest, samplesToInculudeFile, numThreads);
+			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, outputTopCovs, snpsToSwapFile, qtlProbeSnpMultiMap, covariatesToTest, hashSamples, numThreads, snpsToTest);
 			String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
 			for (int c = 0; c < covsToCorrect.length; c++) {
 				covsToCorrectNew[c] = covsToCorrect[c];
@@ -118,6 +145,46 @@ public class TestEQTLDatasetForInteractions {
 			cnt++;
 		}
 		outputTopCovs.close();
+	}
+
+	private void initGenotypes(boolean permute, HashMap hashSamples, String[] cohorts){
+		
+		datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", '\t', null, hashSamples);
+
+		if (permute){
+			System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
+			if (cohorts == null) {
+				cohorts = new String[] {"LLDeep", "LLS", "RS", "CODAM"};
+			}
+			int[] permSampleIDs = new int[datasetGenotypes.nrSamples];
+			for (int p = 0; p < cohorts.length; p++) {
+				Vector vecSamples = new Vector();
+				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+					if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
+						vecSamples.add(s);
+					}
+				}
+				int nrSamplesThisCohort = vecSamples.size();
+				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
+					if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
+						int randomSample = ((Integer) vecSamples.remove((int) ((double) vecSamples.size() * Math.random()))).intValue();
+						permSampleIDs[s] = randomSample;
+					}
+				}
+			}
+
+			ExpressionDataset datasetGenotypes2 = new ExpressionDataset(datasetGenotypes.nrProbes, datasetGenotypes.nrSamples);
+			datasetGenotypes2.probeNames = datasetGenotypes.probeNames;
+			datasetGenotypes2.sampleNames = datasetGenotypes.sampleNames;
+			datasetGenotypes2.recalculateHashMaps();
+			for (int p = 0; p < datasetGenotypes2.nrProbes; p++) {
+				for (int s = 0; s < datasetGenotypes2.nrSamples; s++) {
+					datasetGenotypes2.rawData[p][s] = datasetGenotypes.rawData[p][permSampleIDs[s]];
+				}
+			}
+			datasetGenotypes = datasetGenotypes2;
+		}
+
 	}
 
 	/**
@@ -359,21 +426,8 @@ public class TestEQTLDatasetForInteractions {
 
 	}
 
-	public final String performInteractionAnalysis(String[] covsToCorrect, String[] covsToCorrect2, HashMap hashEQTLs, TextFile outputTopCovs, File snpsToSwapFile, boolean permute, HashMultimap<String, String> qtlProbeSnpMultiMap, String[] covariatesToTest, File samplesToInculudeFile, int numThreads) throws IOException, Exception {
+	public final String performInteractionAnalysis(String[] covsToCorrect, String[] covsToCorrect2, TextFile outputTopCovs, File snpsToSwapFile, HashMultimap<String, String> qtlProbeSnpMultiMap, String[] covariatesToTest, HashMap hashSamples, int numThreads, final TIntHashSet snpsToTest) throws IOException, Exception {
 
-		HashMap hashSamples;
-		if (samplesToInculudeFile != null) {
-			hashSamples = new HashMap();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(samplesToInculudeFile), "UTF-8"));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				hashSamples.put(line, null);
-				hashSamples.put(line + "_exp", null);
-				hashSamples.put(line + "_dosage", null);
-			}
-		} else {
-			hashSamples = null;
-		}
 
 		//hashSamples = excludeOutliers(hashSamples);
 
@@ -395,7 +449,6 @@ public class TestEQTLDatasetForInteractions {
 			covariatesToLoad = null;
 		}
 
-		ExpressionDataset datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", '\t', null, hashSamples);
 		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", '\t', null, hashSamples);
 		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', covariatesToLoad, hashSamples);
 
@@ -406,7 +459,6 @@ public class TestEQTLDatasetForInteractions {
 		correctExpressionData(covsToCorrect2, datasetGenotypes, datasetCovariates, datasetExpression);
 
 		correctDosageDirectionForQtl(snpsToSwapFile, datasetGenotypes, datasetExpression);
-
 
 		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', covariatesToLoad, hashSamples);
 		correctCovariateDataPCA(covsToCorrect2, covsToCorrect, datasetGenotypes, datasetCovariatesPCAForceNormal);
@@ -436,13 +488,9 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-		correctExpressionDataForInteractions(covsToCorrect, datasetCovariates, datasetGenotypes, nrSamples, datasetExpression, regression);
+		correctExpressionDataForInteractions(covsToCorrect, datasetCovariates, datasetGenotypes, nrSamples, datasetExpression, regression, qtlProbeSnpMultiMap);
 
 		forceNormalExpressionData(datasetExpression);
-
-		if (permute) {
-			datasetGenotypes = permuteGenotypeData(datasetGenotypes);
-		}
 
 
 		if (1 == 1) {
@@ -467,7 +515,7 @@ public class TestEQTLDatasetForInteractions {
 			for (int cov = 0; cov < datasetCovariates.nrProbes; cov++) {
 				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[cov]);
 				if (stdev > 0) {
-					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, datasetCovariatesPCAForceNormal, cov, skippedWriter);
+					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, datasetCovariatesPCAForceNormal, cov, skippedWriter, snpsToTest);
 					pool.submit(task);
 					nrTasks++;
 				}
@@ -1033,9 +1081,13 @@ public class TestEQTLDatasetForInteractions {
 		ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + covsToCorrect.length + nrCompsToCorrectFor, datasetGenotypes.nrSamples);
 		datasetCovariatesToCorrectFor.sampleNames = datasetGenotypes.sampleNames;
 
+		// add covariates from the first list
+		HashMap hashCovsToCorrect = new HashMap();
+
 		// add covariates from the second list
 		for (int i = 0; i < covsToCorrect2.length; ++i) {
 			String cov = covsToCorrect2[i];
+			hashCovsToCorrect.put(cov, null);
 			Integer c = datasetCovariatesPCAForceNormal.hashProbes.get(cov);
 			if (c == null) {
 				throw new Exception("Covariate not found: " + cov);
@@ -1045,8 +1097,6 @@ public class TestEQTLDatasetForInteractions {
 			}
 		}
 
-		// add covariates from the first list
-		HashMap hashCovsToCorrect = new HashMap();
 		int[] covsToCorrectIndex = new int[covsToCorrect.length];
 		for (int c = 0; c < covsToCorrect.length; c++) {
 			hashCovsToCorrect.put(covsToCorrect[c], null);
@@ -1152,11 +1202,11 @@ public class TestEQTLDatasetForInteractions {
 
 		datasetCovariatesToCorrectFor.transposeDataset();
 
-		datasetCovariatesToCorrectFor.save(inputDir + "/CovariatesToCorrectFor.txt");
-		orthogonalizeDataset(inputDir + "/CovariatesToCorrectFor.txt");
-		datasetCovariatesToCorrectFor = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
+		datasetCovariatesToCorrectFor.save(outputDir + "/CovariatesToCorrectFor.txt");
+		orthogonalizeDataset(outputDir + "/CovariatesToCorrectFor.txt");
+		datasetCovariatesToCorrectFor = new ExpressionDataset(outputDir + "/CovariatesToCorrectFor.txt.PrincipalComponents.txt");
 		datasetCovariatesToCorrectFor.transposeDataset();
-		ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(inputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
+		ExpressionDataset datasetCovariatesToCorrectForEigenvalues = new ExpressionDataset(outputDir + "/CovariatesToCorrectFor.txt.Eigenvalues.txt");
 		for (int snp = 0; snp < datasetExpression.nrProbes; snp++) {
 			for (int cov = 0; cov < datasetCovariatesToCorrectFor.nrProbes; cov++) {
 				if (datasetCovariatesToCorrectForEigenvalues.rawData[cov][0] > 1E-5) {
@@ -1278,27 +1328,75 @@ public class TestEQTLDatasetForInteractions {
 		}
 	}
 
-	private void correctExpressionDataForInteractions(String[] covsToCorrect, ExpressionDataset datasetCovariates, ExpressionDataset datasetGenotypes, int nrSamples, ExpressionDataset datasetExpression, OLSMultipleLinearRegression regression) throws MathIllegalArgumentException {
+	private void correctExpressionDataForInteractions(String[] covsToCorrect, ExpressionDataset datasetCovariates, ExpressionDataset datasetGenotypes, int nrSamples, ExpressionDataset datasetExpression, OLSMultipleLinearRegression regression, HashMultimap<String, String> qtlProbeSnpMultiMap) throws MathIllegalArgumentException, Exception {
+
 		System.out.println("Correcting expression data for predefined gene environment interaction effects (GC content, Gender, 5'Median Bias, 3'Median Bias):");
 		int[] covsToCorrectIndex = new int[covsToCorrect.length];
 		for (int c = 0; c < covsToCorrect.length; c++) {
 			covsToCorrectIndex[c] = ((Integer) datasetCovariates.hashProbes.get(covsToCorrect[c])).intValue();
 
 		}
-		for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
-			double[][] valsX = new double[nrSamples][1 + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
-			for (int s = 0; s < nrSamples; s++) {
-				valsX[s][0] = datasetGenotypes.rawData[snp][s]; //genotypes
+
+		HashMap<String, Integer> snpMap = new HashMap<String, Integer>(datasetGenotypes.nrProbes);
+		for (Map.Entry<String, Integer> snpEntry : datasetGenotypes.hashProbes.entrySet()) {
+			try {
+				snpMap.put(snpEntry.getKey().substring(0, snpEntry.getKey().indexOf('_')), snpEntry.getValue());
+			} catch (Exception e) {
+				System.out.println(snpEntry.getKey());
+				throw e;
 			}
+		}
+
+		for (int p = 0; p < datasetExpression.nrProbes; p++) {
+
+			String probe = datasetExpression.probeNames[p].substring(0, datasetExpression.probeNames[p].indexOf('_'));
+			Set<String> probeQtls = qtlProbeSnpMultiMap.get(probe);
+
+			if (probeQtls.isEmpty()) {
+				throw new Exception("No eQTLs found for: " + probe);
+			}
+
+			//boolean foundPisS = false;
+			double[][] valsX = new double[nrSamples][probeQtls.size() + covsToCorrect.length * 2]; //store genotypes, covariates, interactions
+			int k = 0;
+			for (String snp : probeQtls) {
+
+				Integer s = snpMap.get(snp);
+				if (s == null) {
+					throw new Exception("Snp " + snp + " not found");
+				}
+//				if(s.intValue() == p){
+//					foundPisS = true;
+//				}
+				double[] snpData = datasetGenotypes.rawData[s];
+				for (int i = 0; i < datasetGenotypes.nrSamples; ++i) {
+					valsX[i][k] = snpData[i];
+				}
+
+				k++;
+			}
+//			if(!foundPisS){
+//				
+//				System.out.println("Expected snp: " + datasetGenotypes.probeNames[p] + " at index: " + p);
+//				
+//				for(String qtlSnp : probeQtls = qtlProbeSnpMultiMap.get(probe)){
+//					System.out.println("QTL snp: " + qtlSnp + " found at index: " + snpMap.get(qtlSnp));
+//				}
+//				
+//				throw new Exception("Error 2");
+//			}
 			for (int c = 0; c < covsToCorrect.length; c++) {
+				double[] covData = datasetCovariates.rawData[covsToCorrectIndex[c]];
+				double[] snpData = datasetGenotypes.rawData[p];
+				
 				for (int s = 0; s < nrSamples; s++) {
-					valsX[s][c * 2 + 1] = datasetCovariates.rawData[covsToCorrectIndex[c]][s]; //covariate
-					valsX[s][c * 2 + 2] = valsX[s][0] * valsX[s][c * 2 + 1]; //interction
+					valsX[s][c * 2 + probeQtls.size()] = covData[s]; //covariate
+					valsX[s][c * 2 + probeQtls.size() + 1] = snpData[s] * covData[s]; //interction
 				}
 			}
-			double[] valsY = datasetExpression.rawData[snp];
+			double[] valsY = datasetExpression.rawData[p];
 			regression.newSampleData(valsY, valsX);
-			datasetExpression.rawData[snp] = regression.estimateResiduals();
+			datasetExpression.rawData[p] = regression.estimateResiduals();
 		}
 	}
 
@@ -1326,37 +1424,6 @@ public class TestEQTLDatasetForInteractions {
 		}
 
 		System.out.println("Expression data now force normal");
-	}
-
-	private ExpressionDataset permuteGenotypeData(ExpressionDataset datasetGenotypes) {
-		System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
-		String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
-		int[] permSampleIDs = new int[datasetGenotypes.nrSamples];
-		for (int p = 0; p < cohorts.length; p++) {
-			Vector vecSamples = new Vector();
-			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-				if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
-					vecSamples.add(s);
-				}
-			}
-			int nrSamplesThisCohort = vecSamples.size();
-			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-				if (datasetGenotypes.sampleNames[s].startsWith(cohorts[p])) {
-					int randomSample = ((Integer) vecSamples.remove((int) ((double) vecSamples.size() * Math.random()))).intValue();
-					permSampleIDs[s] = randomSample;
-				}
-			}
-		}
-		ExpressionDataset datasetGenotypes2 = new ExpressionDataset(datasetGenotypes.nrProbes, datasetGenotypes.nrSamples);
-		datasetGenotypes2.probeNames = datasetGenotypes.probeNames;
-		datasetGenotypes2.sampleNames = datasetGenotypes.sampleNames;
-		datasetGenotypes2.recalculateHashMaps();
-		for (int p = 0; p < datasetGenotypes2.nrProbes; p++) {
-			for (int s = 0; s < datasetGenotypes2.nrSamples; s++) {
-				datasetGenotypes2.rawData[p][s] = datasetGenotypes.rawData[p][permSampleIDs[s]];
-			}
-		}
-		return datasetGenotypes2;
 	}
 
 	private HashMap<String, GeneAnnotation> readEnsgAnnotations(File ensgAnnotationFile) throws FileNotFoundException, IOException {

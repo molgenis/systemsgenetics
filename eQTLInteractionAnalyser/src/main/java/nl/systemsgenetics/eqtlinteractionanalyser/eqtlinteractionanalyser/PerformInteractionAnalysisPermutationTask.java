@@ -5,10 +5,9 @@
  */
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
-import cern.jet.random.tdouble.engine.DoubleRandomEngine;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.concurrent.Callable;
 import org.apache.commons.math3.linear.SingularMatrixException;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 /**
@@ -27,8 +26,9 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 	public cern.jet.random.tdouble.StudentT tDistColt = null;
 	private final SkippedInteractionTracker skippedTracker;
 	private final SkippedInteractionWriter skippedWriter;
+	private final TIntHashSet snpsToTest;
 
-	public PerformInteractionAnalysisPermutationTask(ExpressionDataset datasetGenotypes, ExpressionDataset datasetExpression, ExpressionDataset datasetCovariates, ExpressionDataset datasetCovariatesPCAForceNormal, int covToTest, SkippedInteractionWriter skippedWriter) {
+	public PerformInteractionAnalysisPermutationTask(ExpressionDataset datasetGenotypes, ExpressionDataset datasetExpression, ExpressionDataset datasetCovariates, ExpressionDataset datasetCovariatesPCAForceNormal, int covToTest, SkippedInteractionWriter skippedWriter, final TIntHashSet snpsToTest) {
 		this.datasetGenotypes = datasetGenotypes;
 		this.datasetExpression = datasetExpression;
 		this.datasetCovariates = datasetCovariates;
@@ -37,6 +37,7 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 		this.nrSamples = datasetGenotypes.nrSamples;
 		this.skippedTracker = new SkippedInteractionTracker(datasetCovariates.probeNames[covToTest]);
 		this.skippedWriter = skippedWriter;
+		this.snpsToTest = snpsToTest;
 
 		this.regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
@@ -50,6 +51,10 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 		double[] zScores = new double[datasetGenotypes.nrProbes];
 		for (int snp = 0; snp < datasetGenotypes.nrProbes; snp++) {
 
+			if(snpsToTest != null && !snpsToTest.contains(snp)){
+				continue;
+			}
+			
 			double corrPvalue = correlateCovariateWithGenotype(snp);
 			if (corrPvalue > corrPvalueThreshold) { // don't compute the interaction if the covariate expression is affected by theis SNP
 				try {
