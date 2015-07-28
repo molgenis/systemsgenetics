@@ -137,6 +137,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Number of threads");
         OptionBuilder.withLongOpt("threads");
         OPTIONS.addOption(OptionBuilder.create("nt"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("SNPs to test");
+        OptionBuilder.withLongOpt("snpsToTest");
+        OPTIONS.addOption(OptionBuilder.create("snps"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -158,6 +164,8 @@ public class EQTLInteractionAnalyser {
         final String[] cohorts;
 		final String[] covariatesToTest;
 		final File ensgAnnotationFile;
+		final File snpsToTestFile;
+		
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -225,6 +233,12 @@ public class EQTLInteractionAnalyser {
 				snpsToSwapFile = null;
 			}
 			
+			if (commandLine.hasOption("snps")){
+                snpsToTestFile = new File(commandLine.getOptionValue("snps"));
+            } else {
+				snpsToTestFile = null;
+			}
+			
 			if (commandLine.hasOption("is")){
                 File samplesToIncludeFile = new File(commandLine.getOptionValue("is"));
                 System.out.println("Samples to include file: " + samplesToIncludeFile.getAbsolutePath());
@@ -273,7 +287,7 @@ public class EQTLInteractionAnalyser {
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress, startRoundCompareChi2, ensgAnnotationFile);
         }
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile);
         }
     }
 

@@ -8,6 +8,7 @@ package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import com.google.common.collect.HashMultimap;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -42,7 +43,6 @@ import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
-import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -64,7 +64,7 @@ public class TestEQTLDatasetForInteractions {
 		//preprocessData();
 	}
 
-	public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, String[] covariatesToCorrect2, File snpsToSwapFile, boolean permute, String[] covariatesToTest, HashMap hashSamples, int numThreads, String[] cohorts) throws IOException, Exception {
+	public TestEQTLDatasetForInteractions(String inputDir, String outputDir, String eQTLfileName, int maxNumTopCovs, String annotationFile, String[] covariatesToCorrect, String[] covariatesToCorrect2, File snpsToSwapFile, boolean permute, String[] covariatesToTest, HashMap hashSamples, int numThreads, String[] cohorts, File snpsToTestFile) throws IOException, Exception {
 
 		System.out.println("Input dir: " + inputDir);
 		System.out.println("Output dir: " + outputDir);
@@ -82,8 +82,6 @@ public class TestEQTLDatasetForInteractions {
 
 		initGenotypes(permute, hashSamples, cohorts);
 
-		HashMap<String, String> eqtlGenes = getEqtls(eQTLfileName);
-
 		HashMultimap<String, String> qtlProbeSnpMultiMap = HashMultimap.create();
 		final QTLTextFile eQtlFileReader = new QTLTextFile(eQTLfileName, false);
 		for (Iterator<EQTL> it = eQtlFileReader.getEQtlIterator(); it.hasNext();) {
@@ -93,6 +91,33 @@ public class TestEQTLDatasetForInteractions {
 
 		if (annotationFile != null) {
 			createGeneDistanceMap(annotationFile);
+		}
+		
+		final TIntHashSet snpsToTest;
+		if(snpsToTestFile != null){
+			
+			snpsToTest = new TIntHashSet();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(snpsToTestFile), "UTF-8"));
+			
+			String line;			
+			while ((line = reader.readLine()) != null) {
+				Integer genotypeI = datasetGenotypes.hashProbes.get(line);
+				
+				if(genotypeI == null){
+					System.out.println("SNP " + line + " not found in genotype data");
+					continue;
+				}
+				
+				if(!snpsToTest.add(genotypeI)){
+					System.out.println("Warning including SNP twice: " + line);
+				}
+				
+			}
+
+			System.out.println("Confining testing to: " + snpsToTest.size() + " SNPs from: " + snpsToTestFile.getAbsolutePath());
+			
+		} else {
+			snpsToTest = null;
 		}
 
 		//preprocessData();
@@ -110,7 +135,7 @@ public class TestEQTLDatasetForInteractions {
 		String[] covsToCorrect = primaryCovsToCorrect;
 		int cnt = 0;
 		while (cnt < maxNumTopCovs) {
-			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, eqtlGenes, outputTopCovs, snpsToSwapFile, qtlProbeSnpMultiMap, covariatesToTest, hashSamples, numThreads);
+			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, outputTopCovs, snpsToSwapFile, qtlProbeSnpMultiMap, covariatesToTest, hashSamples, numThreads, snpsToTest);
 			String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
 			for (int c = 0; c < covsToCorrect.length; c++) {
 				covsToCorrectNew[c] = covsToCorrect[c];
@@ -123,6 +148,7 @@ public class TestEQTLDatasetForInteractions {
 	}
 
 	private void initGenotypes(boolean permute, HashMap hashSamples, String[] cohorts){
+		
 		datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", '\t', null, hashSamples);
 
 		if (permute){
@@ -400,7 +426,7 @@ public class TestEQTLDatasetForInteractions {
 
 	}
 
-	public final String performInteractionAnalysis(String[] covsToCorrect, String[] covsToCorrect2, HashMap hashEQTLs, TextFile outputTopCovs, File snpsToSwapFile, HashMultimap<String, String> qtlProbeSnpMultiMap, String[] covariatesToTest, HashMap hashSamples, int numThreads) throws IOException, Exception {
+	public final String performInteractionAnalysis(String[] covsToCorrect, String[] covsToCorrect2, TextFile outputTopCovs, File snpsToSwapFile, HashMultimap<String, String> qtlProbeSnpMultiMap, String[] covariatesToTest, HashMap hashSamples, int numThreads, final TIntHashSet snpsToTest) throws IOException, Exception {
 
 
 		//hashSamples = excludeOutliers(hashSamples);
@@ -489,7 +515,7 @@ public class TestEQTLDatasetForInteractions {
 			for (int cov = 0; cov < datasetCovariates.nrProbes; cov++) {
 				double stdev = JSci.maths.ArrayMath.standardDeviation(datasetCovariates.rawData[cov]);
 				if (stdev > 0) {
-					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, datasetCovariatesPCAForceNormal, cov, skippedWriter);
+					PerformInteractionAnalysisPermutationTask task = new PerformInteractionAnalysisPermutationTask(datasetGenotypes, datasetExpression, datasetCovariates, datasetCovariatesPCAForceNormal, cov, skippedWriter, snpsToTest);
 					pool.submit(task);
 					nrTasks++;
 				}
@@ -1327,7 +1353,7 @@ public class TestEQTLDatasetForInteractions {
 			Set<String> probeQtls = qtlProbeSnpMultiMap.get(probe);
 
 			if (probeQtls.isEmpty()) {
-				throw new Exception("Error 1");
+				throw new Exception("No eQTLs found for: " + probe);
 			}
 
 			//boolean foundPisS = false;
