@@ -247,6 +247,7 @@ public class TestEQTLDatasetForInteractions {
 				}
 			}
 		}
+		out.close();
 	}
 
 	public void findChi2SumDifferences(int maxNumRegressedCovariates, int numPrimaryCovsToCorrect, File ensgAnnotationFile) throws IOException {
