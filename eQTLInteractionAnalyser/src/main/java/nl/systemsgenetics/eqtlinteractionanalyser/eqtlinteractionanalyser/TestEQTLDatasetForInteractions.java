@@ -209,17 +209,22 @@ public class TestEQTLDatasetForInteractions {
 
 	}
 
-	public void interpretInteractionZScoreMatrix(int maxNumRegressedCovariates) {
+	public void interpretInteractionZScoreMatrix(int maxNumRegressedCovariates, int numPrimaryCovsToCorrect, int zscoreDiffThreshold) throws IOException {
 
 		System.out.println("Interpreting the z-score matrix");
 
-		int numPrimaryCovsToCorrect = primaryCovsToCorrect.length;
 		for (int nrCovsRemoved = numPrimaryCovsToCorrect; nrCovsRemoved < numPrimaryCovsToCorrect + maxNumRegressedCovariates; nrCovsRemoved++) {
-			ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
-			dataset.save(dataset.fileName + ".binary");
+			if (! new File(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary.dat").exists()) {
+				ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt");
+				dataset.save(dataset.fileName + ".binary");
+			}
+			else {
+				System.out.println("Binary z-score matrix already exists, not overwriting it: " + outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary.dat");
+			}
 		}
 
-
+		TextFile out = new TextFile(outputDir + "zscoreDiff.txt", true);
+		out.writeln("numCovsRemoved\tcovariate\teQTL\tz-score_before\tz-score_after\tdifference");
 		for (int nrCovsRemoved = numPrimaryCovsToCorrect; nrCovsRemoved < numPrimaryCovsToCorrect + maxNumRegressedCovariates; nrCovsRemoved++) {
 
 			ExpressionDataset dataset = new ExpressionDataset(outputDir + "/InteractionZScoresMatrix-" + nrCovsRemoved + "Covariates.txt.binary");
@@ -233,16 +238,15 @@ public class TestEQTLDatasetForInteractions {
 					double absZDiff = Math.abs(zDiff);
 					if (absZDiff > 2 && absZDiff > maxAbsZDiff) {
 						maxAbsZDiff = absZDiff;
-						output = nrCovsRemoved + "\t" + p + "\t" + dataset.probeNames[p] + "\t" + q + "\t" + dataset.sampleNames[q] + "\t" + dataset.rawData[p][q] + "\t" + dataset2.rawData[p][q] + "\t" + zDiff;
+						output = nrCovsRemoved + "\t" + dataset.probeNames[p] + "\t" + dataset.sampleNames[q] + "\t" + dataset.rawData[p][q] + "\t" + dataset2.rawData[p][q] + "\t" + zDiff;
 					}
 				}
-				if (maxAbsZDiff > 2) {
+				if (maxAbsZDiff > zscoreDiffThreshold) {
 					System.out.println(output);
+					out.writeln(output);
 				}
 			}
 		}
-
-		System.exit(0);
 	}
 
 	public void findChi2SumDifferences(int maxNumRegressedCovariates, int numPrimaryCovsToCorrect, File ensgAnnotationFile) throws IOException {

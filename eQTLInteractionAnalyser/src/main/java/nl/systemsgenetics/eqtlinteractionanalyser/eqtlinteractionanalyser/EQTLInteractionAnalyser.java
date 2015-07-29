@@ -137,6 +137,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Number of threads");
         OptionBuilder.withLongOpt("threads");
         OPTIONS.addOption(OptionBuilder.create("nt"));
+
+        OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Z-score difference threshold for interpretation");
+        OptionBuilder.withLongOpt("threshold");
+        OPTIONS.addOption(OptionBuilder.create("thr"));
 		
 		OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
@@ -155,7 +161,7 @@ public class EQTLInteractionAnalyser {
         int maxNumCovariatesToRegress = 20;
         int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
-		final int startRoundCompareChi2;
+		final int startRoundCompareChi2, threshold;
 
         HashMap hashSamples;
 
@@ -178,7 +184,12 @@ public class EQTLInteractionAnalyser {
             if (commandLine.hasOption('n')) {
                 maxNumCovariatesToRegress = Integer.parseInt(commandLine.getOptionValue("n"));
             }
-			
+            if (commandLine.hasOption("thr")) {
+                threshold = Integer.parseInt(commandLine.getOptionValue("thr"));
+            }
+            else {
+                threshold = 3;
+            }
 			
 
 			interpret = commandLine.hasOption("t");
@@ -280,7 +291,7 @@ public class EQTLInteractionAnalyser {
             interactor.preprocessData();
 		} else if (interpret){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
-            interactor.interpretInteractionZScoreMatrix(maxNumCovariatesToRegress);
+            interactor.interpretInteractionZScoreMatrix(maxNumCovariatesToRegress, startRoundCompareChi2, threshold);
         }
         else if (chi2sumDiff){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
