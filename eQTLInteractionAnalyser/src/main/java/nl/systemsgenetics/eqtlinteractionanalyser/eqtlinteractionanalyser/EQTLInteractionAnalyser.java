@@ -192,7 +192,7 @@ public class EQTLInteractionAnalyser {
             }
 			
 
-			interpret = commandLine.hasOption("t");
+			interpret = commandLine.hasOption("it");
 			chi2sumDiff = commandLine.hasOption("dif");
             permute = commandLine.hasOption("perm");
 			preproces = commandLine.hasOption("p");
