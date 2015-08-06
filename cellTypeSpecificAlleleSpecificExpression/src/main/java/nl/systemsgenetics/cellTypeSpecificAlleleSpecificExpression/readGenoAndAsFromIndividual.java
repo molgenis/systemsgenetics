@@ -474,7 +474,9 @@ public class readGenoAndAsFromIndividual {
      * @return
      * @throws FileNotFoundException
      * @throws IOException
+     * 
      */
+    
     public static HashMap convert_individual_names(String[] individual_names, String coupling_location) throws FileNotFoundException, IOException{
         
         String coupling_loc = coupling_location;

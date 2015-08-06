@@ -86,7 +86,7 @@ public class BetaBinomOverdispInSample {
         SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
         PointValuePair solution = optimizer.optimize(
                                             new ObjectiveFunction(betaBinom),
-                                            new MaxEval(500),
+                                            new MaxEval(GlobalVariables.maximumIterations),
                                             simplex,
                                             GoalType.MINIMIZE,
                                             new InitialGuess(new double[] {0.5}), 

@@ -55,10 +55,18 @@ public class likelihoodFunctions {
         double part1 = 0.0;
         part1 += Beta.logBeta(AS1 + a, AS2 + b);
         part1 -= Beta.logBeta(a, b);
-
+        
+        if(GlobalVariables.hetProb == 1.0){
+            return -1.0 * part1;
+        }
+        
         double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
         double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
-
+        
+        if(GlobalVariables.hetProb == 0.0){
+            return -1.0 * addlogs(e1, e2);
+        }
+        
         return -1.0 * addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
 
      }

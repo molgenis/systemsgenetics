@@ -157,7 +157,7 @@ class BetaBinomialTest {
             SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
             PointValuePair solutionAlt = optimizer.optimize(
                                             new ObjectiveFunction(betaBinomAlt),
-                                            new MaxEval(500),
+                                            new MaxEval(GlobalVariables.maximumIterations),
                                             simplex,
                                             GoalType.MINIMIZE,
                                             new InitialGuess(new double[] {0.5, 0.5}), 

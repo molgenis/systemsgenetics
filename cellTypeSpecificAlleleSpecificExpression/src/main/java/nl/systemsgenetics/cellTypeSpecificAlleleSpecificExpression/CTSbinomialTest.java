@@ -146,7 +146,7 @@ class CTSbinomialTest {
 
                 PointValuePair solutionNull = optimizer.optimize(
                                                 new ObjectiveFunction(CTSbinomNull),
-                                                new MaxEval(20000),
+                                                new MaxEval(GlobalVariables.maximumIterations),
                                                 simplex,
                                                 GoalType.MINIMIZE,
                                                 new InitialGuess(new double[] {1.0 * (ref_total / total_overlap)}),
@@ -173,7 +173,7 @@ class CTSbinomialTest {
                 simplex = new NelderMeadSimplex(2, 1.0, 1.0, 2.0, 0.25, 0.25);
                 PointValuePair solutionAlt = optimizer.optimize(
                                                 new ObjectiveFunction(CTSbinom),
-                                                new MaxEval(500),
+                                                new MaxEval(GlobalVariables.maximumIterations),
                                                 simplex,
                                                 GoalType.MINIMIZE,
                                                 new InitialGuess(new double[] {0, valueNull[0]}), 
