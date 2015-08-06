@@ -57,8 +57,6 @@ public class CTSnullBinomialLikelihood implements Function {
             
             }
             
-            int total = asRef[i] + asAlt[i];
-            
             //determine likelihood here.
             
             logLik += likelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);
