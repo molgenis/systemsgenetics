@@ -76,8 +76,8 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
             
             
             double sigma = dispersion[i];
-            int AS1   = asRef[i];
-            int AS2   = asAlt[i];
+            int    AS1   = asRef[i]; 
+            int    AS2   = asAlt[i];
             
             /*
              * here I turn fullprop into alpha and beta parameters
