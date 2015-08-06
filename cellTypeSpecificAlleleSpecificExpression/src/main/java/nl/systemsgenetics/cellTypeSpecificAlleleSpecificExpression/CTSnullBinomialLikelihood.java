@@ -61,11 +61,10 @@ public class CTSnullBinomialLikelihood implements Function {
             
             //determine likelihood here.
             
-            BinomialDistribution binomDist = new BinomialDistribution(total, prop);
-            logLik += log(binomDist.probability(asRef[i]));
+            logLik += likelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);
         }
         
-        return -1.0 * logLik;
+        return  logLik;
     }
     
     
