@@ -32,6 +32,7 @@ public class CTSnullBinomialLikelihood implements Function {
     
     @Override
     public double value(double[] t){
+        
         double logLik = 0.0;
         
         if(t.length != 1 ){
@@ -48,20 +49,19 @@ public class CTSnullBinomialLikelihood implements Function {
             prop = pCellType * cellProp[i] + pResidual;
             
             // IS THIS CORRECT?
-            if(prop > 1 ){
-                prop = 1;
+            
+            if(prop > 1){
+                prop=1.0;
             }
             if(prop < 0){
-                prop = 0;
-            
+                prop=0.0; 
             }
             
             //determine likelihood here.
-            
             logLik += likelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);
         }
         
-        return  logLik;
+        return logLik;
     }
     
     

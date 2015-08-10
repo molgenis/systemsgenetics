@@ -6,6 +6,7 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
@@ -194,49 +195,105 @@ class CTSBetaBinomialTest {
 
             
  
-            //CHECK WHAT THE version2 DOES in terms of loglik.
+            //CHECK WHAT THE version does in terms of loglik.
             CTSbetaBinomialAltLikelihoodVersion2 CTSbetaBinomAlt;
             CTSbetaBinomAlt = new CTSbetaBinomialAltLikelihoodVersion2(asRefArray, 
                                                     asAltArray,
                                                     dispArray,
                                                     cellPropArray
                                                     );
+            
+            // Going to make some initialGuesses, because sometimes 
+            // this falls into a local minimum with the MLE, when only the 
+            // null parameters are used as a starting point.
+            
+
+            double nonCTSprop;
+            nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
+
+            
+            ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
+
+            GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
+            GuessList.add(new InitialGuess(new double[] {0.25, 0.5      }));
+            GuessList.add(new InitialGuess(new double[] {0.75, 0.5       }));
+            GuessList.add(new InitialGuess(new double[] {0.5 , 0.5       }));
+            GuessList.add(new InitialGuess(new double[] {0.5 , 0.5       }));
+            GuessList.add(new InitialGuess(new double[] {1.0 , 1.0       }));
+            GuessList.add(new InitialGuess(new double[] {0.0 , 1.0       }));
+
+            
+            
+            
 
             simplex = new NelderMeadSimplex(2);
-            PointValuePair solutionAlt = optimizer.optimize(
-                                            new ObjectiveFunction(CTSbetaBinomAlt),
-                                            new MaxEval(500),
-                                            simplex,
-                                            GoalType.MINIMIZE,
-                                            new InitialGuess(new double[] {0.000, valueNull[0]  / (valueNull[0] + valueNull[1]) }), //Start with the loglik of the null.
-                                            new SearchInterval(0, 1)
-                                            );
+            
+            
+            
+            ArrayList<double[]> OptimizerResults = new ArrayList<double[]>();
+            Double[] OptimizedLogLik  = new Double[8];
+            
+            int i=0;
+            int lowestIndices = -1;
+            double lowestLogLik = 0;
+            
+            
+            for(InitialGuess IGuess : GuessList){
+            
+                PointValuePair solutionAlt = optimizer.optimize(
+                                        new ObjectiveFunction(CTSbetaBinomAlt),
+                                        new MaxEval(500),
+                                        simplex,
+                                        GoalType.MINIMIZE,
+                                        IGuess,
+                                        new SearchInterval(0, 1)
+                                        );
+                
+                
+                double[] valueAlt = solutionAlt.getPoint();
+               
+                OptimizerResults.add(valueAlt);
+                OptimizedLogLik[i] = CTSbetaBinomAlt.value(valueAlt);
+                
+                
+                //determine lowest loglik.
+                if(i ==0){
+                    lowestIndices = 0;
+                    lowestLogLik = OptimizedLogLik[i];
+                } else if(OptimizedLogLik[i] < lowestLogLik){
+                    lowestIndices = i;
+                    lowestLogLik  = OptimizedLogLik[i]; 
+                }
+                
+                if(GlobalVariables.verbosity >= 10){    
+                    System.out.println("\nAlt Loglik convergence of starting coordinates" + Arrays.toString(IGuess.getInitialGuess()));
+                    System.out.println("\tFinal parameters:     " + Arrays.toString(valueAlt));
+                    System.out.println("\tLogLik:               " + Double.toString(OptimizedLogLik[i]));
+                }
+                
+                i++;
+            }
+            
+            
+            //Now select the lowest LogLik.
+            
+            double[] bestParams = OptimizerResults.get(lowestIndices);
+            altLogLik = OptimizedLogLik[lowestIndices];
 
-            double[] valueAlt = solutionAlt.getPoint();
-
-
-            altLogLik  = CTSbetaBinomAlt.value(valueAlt);
-
-
-            altiterations = optimizer.getIterations();
-
-
-            binomRatioCellType = valueAlt[0];
-            binomRatioResidual = valueAlt[1];
+            binomRatioCellType = bestParams[0];
+            binomRatioResidual = bestParams[1];
 
 
             //chi squared statistic is determined based on both null and alt loglikelihoods.
-            chiSq = 2.0 * (nullLogLik - altLogLik);
+            chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
 
             //determine P value based on distribution
-            ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
-            pVal = 1 - distribution.cumulativeProbability(chiSq);
+            pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
 
             if(GlobalVariables.verbosity >= 10){
-                System.out.println("LogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
+                System.out.println("\nLogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
                 System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
                 System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
-                System.out.println("\tIterations to converge:        " + Integer.toString(altiterations) + "\n");
                 System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
                 System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
                 System.out.println("\tChisq statistic:               " + Double.toString(chiSq));

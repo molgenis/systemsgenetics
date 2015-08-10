@@ -48,11 +48,11 @@ public class CTSaltBinomialLikelihood implements Function {
             
             prop = pCellType * cellProp[i] + pResidual;
 
-            if(prop > 1 ){
-                prop = 1;
+            if(prop > 1){
+                prop=1.0;
             }
             if(prop < 0){
-                prop = 0;
+                prop=0.0; 
             }
             
             logLik += likelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);

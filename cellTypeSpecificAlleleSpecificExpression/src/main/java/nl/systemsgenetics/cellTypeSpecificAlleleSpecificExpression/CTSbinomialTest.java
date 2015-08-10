@@ -136,9 +136,12 @@ class CTSbinomialTest {
             // Just using the alternative likelihood of the binomial test here.
             // As out null loglikelihood.
 
-            CTSnullBinomialLikelihood CTSbinomNull = new CTSnullBinomialLikelihood(asRefArray, asAltArray, cellPropArray);             
+            
             
             try{
+                
+                CTSnullBinomialLikelihood CTSbinomNull = new CTSnullBinomialLikelihood(asRefArray, asAltArray, cellPropArray);             
+                
                 NelderMeadSimplex simplex;
                 simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.25, 0.25);
                 SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
@@ -215,12 +218,13 @@ class CTSbinomialTest {
                 
                 if(GlobalVariables.verbosity >= 1){
                     System.out.println("WARNING: Did not converge to a solution for " + snpName);
-                    System.out.println("         After 20,000 iterations.");
+                    System.out.println("         After" + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
                     System.out.println("         Continue-ing with the next.");
                 }
             
             }
             
+            // Add some extra values that will make sure that there could be some kind of non-convergence.
             testPerformed = true;
             
         }

@@ -70,7 +70,6 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
             
             if(fullProp > 1 || fullProp < 0){
                 return 100000;
-            
             }
             
             
