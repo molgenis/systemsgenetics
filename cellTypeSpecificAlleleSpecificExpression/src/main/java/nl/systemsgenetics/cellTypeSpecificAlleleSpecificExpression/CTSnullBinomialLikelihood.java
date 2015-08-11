@@ -39,8 +39,8 @@ public class CTSnullBinomialLikelihood implements Function {
             throw new RuntimeException("Function requires 1 inputs!");
         }
         
-        double pCellType = 0.0;
-        double pResidual = t[0] ;
+        double pCellType =  0.0;
+        double pResidual = t[0];
         
         double prop;
         
@@ -50,7 +50,7 @@ public class CTSnullBinomialLikelihood implements Function {
             
             // IS THIS CORRECT?
             
-            if(prop > 1){
+            if(prop >= 1){
                 prop=1.0;
             }
             if(prop < 0){

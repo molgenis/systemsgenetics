@@ -120,6 +120,7 @@ class CTSbinomialTest {
                 System.out.println("Num of hets: " + Integer.toString(numberOfHets));
                 System.out.println(het_individuals.get(0).getSnpName());
                 System.out.println(total_overlap);
+                System.out.println("Total reference:" + ref_total);
                 System.out.println("asRef:       " +  asRef.toString());
                 System.out.println("asAlt:       " +  asAlt.toString());
                 System.out.println("cellProp:    " +  cellProp.toString());
@@ -141,65 +142,118 @@ class CTSbinomialTest {
             try{
                 
                 CTSnullBinomialLikelihood CTSbinomNull = new CTSnullBinomialLikelihood(asRefArray, asAltArray, cellPropArray);             
+               
+                System.out.println(ref_total + "\t / " + total_overlap) ;
                 
-                NelderMeadSimplex simplex;
-                simplex = new NelderMeadSimplex(1, 1.0, 1.0, 2.0, 0.25, 0.25);
-                SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
-
-
-                PointValuePair solutionNull = optimizer.optimize(
-                                                new ObjectiveFunction(CTSbinomNull),
-                                                new MaxEval(GlobalVariables.maximumIterations),
-                                                simplex,
-                                                GoalType.MINIMIZE,
-                                                new InitialGuess(new double[] {1.0 * (ref_total / total_overlap)}),
-                                                new SearchInterval(0.0, 1.0)
-                                                );
-
-                double[] valueNull = solutionNull.getPoint();
-                nullLogLik = CTSbinomNull.value(valueNull);
+                double nullProp = ( (double)ref_total / (double)total_overlap);
+                
+                System.out.println(nullProp);
+                
+                double[] nullInput = { nullProp };
+                
+                nullLogLik = CTSbinomNull.value(nullInput);
 
                 if(GlobalVariables.verbosity >= 10){
-                    System.out.println("LogLik of NULL converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-                    System.out.println("\tResidual ratio:                   " + Double.toString(valueNull[0]));
-                    System.out.println("\tIterations to converge:           " + Integer.toString(optimizer.getIterations()) + "\n");
+                    System.out.println("LogLik of NULL");
+                    System.out.println("\tResidual ratio:                   " + Double.toString(nullInput[0]));
+                    System.out.println("\tnullLogLik:                       " + Double.toString(nullLogLik));
+
                 }
 
 
 
                 // Now do MLE of the alternative test 
-                // Probably more computationally intensive 
-                // than the previous test.
+                // more computationally intensive 
+                // than the previous one.
 
                 CTSaltBinomialLikelihood CTSbinom = new CTSaltBinomialLikelihood(asRefArray, asAltArray, cellPropArray);
-
+                
+                NelderMeadSimplex simplex;
                 simplex = new NelderMeadSimplex(2, 1.0, 1.0, 2.0, 0.25, 0.25);
+                SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); 
                 PointValuePair solutionAlt = optimizer.optimize(
                                                 new ObjectiveFunction(CTSbinom),
                                                 new MaxEval(GlobalVariables.maximumIterations),
                                                 simplex,
                                                 GoalType.MINIMIZE,
-                                                new InitialGuess(new double[] {0, valueNull[0]}), 
-                                                new SearchInterval(0.0, 2.0)
+                                                new InitialGuess(new double[] {0, nullInput[0]}), 
+                                                new SearchInterval(0.0, 1.0)
                                                 );
 
                 double[] valueAlt = solutionAlt.getPoint();
+                
+                
+                
+                
+                /*
+                    In simulations it was found that in about 30% of the cases
+                    A solution was not found, so we do it again if there 
+                */
+                
+                
+                if((optimizer.getIterations() <= 5) ){
+                    
+                    if(GlobalVariables.verbosity >= 10){
+                        
+                        System.out.println("\nfirst starting point was already in a minimum.");
+                        System.out.println("Trying with other starting values.");
+                    
+                    }
+                    
+                    ArrayList<double[]> StartingValueList = new ArrayList<double[]>();
+                    //These are the starting values to try
+                    StartingValueList.add(new double[] {0.5 , 0.0 });
+                    StartingValueList.add(new double[] {0.5 , 0.5 });
+                    StartingValueList.add(new double[] {0.0 , 0.0 });
+                    StartingValueList.add(new double[] {0.75, 0.0 });
+                    StartingValueList.add(new double[] {0.0 , 0.75});
+                    
+                    
+                    for(double[] startingValue :StartingValueList ){
+                        SimplexOptimizer newOptimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); 
+                        PointValuePair newSolutionAlt = newOptimizer.optimize(
+                                                        new ObjectiveFunction(CTSbinom),
+                                                        new MaxEval(GlobalVariables.maximumIterations),
+                                                        simplex,
+                                                        GoalType.MINIMIZE,
+                                                        new InitialGuess(startingValue), 
+                                                        new SearchInterval(0.0, 1.0)
+                                                        );
 
+                        double[] newValueAlt = newSolutionAlt.getPoint();
+
+
+                        if(CTSbinom.value(newValueAlt) <= CTSbinom.value(valueAlt)) {
+
+                            if(GlobalVariables.verbosity >= 10){
+                                System.out.println("New starting values are a better fit to the data");
+                                System.out.println("keeping results of the new starting values.\n");
+                            }
+                            //Asign the new values to the actual used ones.
+                            valueAlt = newValueAlt;
+                            optimizer = newOptimizer; 
+                            
+                            break;
+                        }
+                    }
+                }
+                    
+                
+                
                 altLogLik  = CTSbinom.value(valueAlt);
                 iterations = optimizer.getIterations();
 
-                MLEratioCellType = valueAlt[0];
+                MLEratioCellType = valueAlt[1];
                 MLEratioResidual = valueAlt[0];
 
 
 
 
                 //chi squared statistic is determined based on both null and alt loglikelihoods.
-                chiSq = 2.0 * (nullLogLik - altLogLik);
+                chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
 
                 //determine P value based on distribution
-                ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
-                pVal = 1 - distribution.cumulativeProbability(chiSq);
+                pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
                 
                 if(GlobalVariables.verbosity >= 10){
                     System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
@@ -218,7 +272,7 @@ class CTSbinomialTest {
                 
                 if(GlobalVariables.verbosity >= 1){
                     System.out.println("WARNING: Did not converge to a solution for " + snpName);
-                    System.out.println("         After" + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
+                    System.out.println("         After " + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
                     System.out.println("         Continue-ing with the next.");
                 }
             
