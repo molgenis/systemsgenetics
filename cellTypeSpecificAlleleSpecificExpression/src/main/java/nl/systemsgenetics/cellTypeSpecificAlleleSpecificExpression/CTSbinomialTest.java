@@ -223,9 +223,9 @@ class CTSbinomialTest {
                         double[] newValueAlt = newSolutionAlt.getPoint();
 
 
-                        if(CTSbinom.value(newValueAlt) <= CTSbinom.value(valueAlt)) {
+                        if(CTSbinom.value(newValueAlt) < CTSbinom.value(valueAlt)) {
 
-                            if(GlobalVariables.verbosity >= 10){
+                            if(GlobalVariables.verbosity >= 10 && newOptimizer.getIterations() >= 5 ){
                                 System.out.println("New starting values are a better fit to the data");
                                 System.out.println("keeping results of the new starting values.\n");
                             }

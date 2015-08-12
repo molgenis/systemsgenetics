@@ -65,11 +65,8 @@ class CTSBetaBinomialTest {
     double pVal;
     
     //precision
-    double alphaParamCellType;
+    
     double binomRatioCellType;
-    double betaParamCellType;
-    double alphaParamResidual;
-    double betaParamResidual;
     double binomRatioResidual;
     int    nulliterations;
     int    altiterations;
@@ -190,10 +187,6 @@ class CTSBetaBinomialTest {
                 System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
                 System.out.println("\tIterations to converge:    " + Integer.toString(nulliterations) + "\n");
             }
-            
-            
-
-            
  
             //CHECK WHAT THE version does in terms of loglik.
             CTSbetaBinomialAltLikelihoodVersion2 CTSbetaBinomAlt;
@@ -217,10 +210,6 @@ class CTSBetaBinomialTest {
             GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
             GuessList.add(new InitialGuess(new double[] {0.25, 0.5      }));
             GuessList.add(new InitialGuess(new double[] {0.75, 0.5       }));
-            GuessList.add(new InitialGuess(new double[] {0.5 , 0.5       }));
-            GuessList.add(new InitialGuess(new double[] {0.5 , 0.5       }));
-            GuessList.add(new InitialGuess(new double[] {1.0 , 1.0       }));
-            GuessList.add(new InitialGuess(new double[] {0.0 , 1.0       }));
 
             
             
@@ -265,7 +254,7 @@ class CTSBetaBinomialTest {
                     lowestLogLik  = OptimizedLogLik[i]; 
                 }
                 
-                if(GlobalVariables.verbosity >= 10){    
+                if(GlobalVariables.verbosity >= 100){    
                     System.out.println("\nAlt Loglik convergence of starting coordinates" + Arrays.toString(IGuess.getInitialGuess()));
                     System.out.println("\tFinal parameters:     " + Arrays.toString(valueAlt));
                     System.out.println("\tLogLik:               " + Double.toString(OptimizedLogLik[i]));
@@ -339,10 +328,9 @@ class CTSBetaBinomialTest {
             out += Double.toString(binomRatio) + "\t";
             out += Double.toString(nullLogLik) + "\t";
             out += Double.toString(altLogLik) + "\t";
-            out += Double.toString(alphaParamCellType) + "\t";
-            out += Double.toString(betaParamCellType) + "\t";
-            out += Double.toString(alphaParamResidual) + "\t";
-            out += Double.toString(betaParamResidual) + "\t";
+            out += Double.toString(binomRatioCellType) + "\t";
+            out += Double.toString(binomRatioResidual) + "\t";
+            
             
             
             if(outPutAllData){
@@ -382,7 +370,7 @@ class CTSBetaBinomialTest {
             //when no testing is done, will only output snp name and position, and NA.
             //Make sure this is still correct.
             
-            for(int i=0; i < 8; i++ ){
+            for(int i=0; i < 6; i++ ){
                 out += "NA\t";
             
             }

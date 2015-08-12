@@ -41,7 +41,6 @@ public class CTSaltBinomialLikelihood implements Function {
         double pCellType = t[0] ;
         double pResidual = t[1] ;
         
-        
         double prop;
         
         for(int i=0; i < asRef.length; i++ ){
