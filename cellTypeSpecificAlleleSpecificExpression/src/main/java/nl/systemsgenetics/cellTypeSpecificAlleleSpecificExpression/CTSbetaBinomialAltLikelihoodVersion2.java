@@ -46,10 +46,10 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
         double ResidualProp  = t[1];
         
         if(CellTypeProp > 1 || CellTypeProp < 0 ){
-            return 100000000;
+            return Double.MAX_VALUE;
         }
         if(ResidualProp > 1 || ResidualProp < 0 ){
-            return 100000000;
+            return Double.MAX_VALUE;
         }
 
         
@@ -69,7 +69,7 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
             double fullProp = CellTypeProp  * cellProp[i] + ResidualProp;
             
             if(fullProp > 1 || fullProp < 0){
-                return 100000;
+                return Double.MAX_VALUE;
             }
             
             

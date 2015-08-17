@@ -6,7 +6,6 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.util.ArrayList;
-import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
@@ -67,6 +66,8 @@ class CTSbinomialTest {
     //some settings
     boolean outPutAllData = false;
     boolean testPerformed = false;
+    boolean testConverged  = false;
+    
     
     public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
         
@@ -268,6 +269,8 @@ class CTSbinomialTest {
                     System.out.println("\n---- Finished SNP " + snpName);
                 }
                 
+                testConverged = true;
+                
             } catch(TooManyEvaluationsException e){
                 
                 if(GlobalVariables.verbosity >= 1){
@@ -295,7 +298,7 @@ class CTSbinomialTest {
         out += position + "\t";
         out += snpName + "\t";
         
-        if(testPerformed){
+        if(testPerformed && testConverged){
             out += numberOfHets + "\t";
 
             // lets have a look at how the decimals behave here, seems all right.

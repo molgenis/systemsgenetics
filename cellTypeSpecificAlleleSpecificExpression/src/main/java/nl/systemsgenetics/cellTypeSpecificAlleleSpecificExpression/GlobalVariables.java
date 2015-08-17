@@ -25,7 +25,7 @@ public class GlobalVariables {
     public static int verbosity = 10;
     
     
-    public static int maximumIterations = 10000;
+    public static int maximumIterations = 20000;
     
     public static double simplexThreshold  = 1e-8;
     

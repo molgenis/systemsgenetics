@@ -7,7 +7,7 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.apache.commons.math3.distribution.ChiSquaredDistribution;
+import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
 import org.apache.commons.math3.optim.PointValuePair;
@@ -48,6 +48,7 @@ class CTSBetaBinomialTest {
     
     //Output of the actual test.
     private boolean testPerformed = false;
+    private boolean testConverged = false;
     private final boolean outPutAllData = false;
     
     //Test statistics:
@@ -76,7 +77,6 @@ class CTSBetaBinomialTest {
     
     public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception {
     
-        boolean debug=true;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
@@ -155,142 +155,154 @@ class CTSBetaBinomialTest {
             
             
             
-            
-            BetaBinomAltLikelihood betaBinomNull;
-            betaBinomNull = new BetaBinomAltLikelihood(asRefArray, 
-                                                        asAltArray, 
-                                                        dispArray
+            try{
+                BetaBinomAltLikelihood betaBinomNull;
+                betaBinomNull = new BetaBinomAltLikelihood(asRefArray, 
+                                                            asAltArray, 
+                                                            dispArray
+                                                            );
+                NelderMeadSimplex simplex;
+                simplex = new NelderMeadSimplex(2);
+                SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
+                PointValuePair solutionNull = optimizer.optimize(
+                                                new ObjectiveFunction(betaBinomNull),
+                                                new MaxEval(GlobalVariables.maximumIterations),
+                                                simplex,
+                                                GoalType.MINIMIZE,
+                                                new InitialGuess(new double[] {0.5, 0.5}), 
+                                                new SearchInterval(-1000.0, 1000.0)
+                                                );
+
+                double[] valueNull = solutionNull.getPoint();
+
+                nullLogLik  = betaBinomNull.value(valueNull);
+                nulliterations = optimizer.getIterations();
+                NullAlphaParam = valueNull[0];
+                NullBetaParam = valueNull[1];
+                NullbinomRatio = valueNull[0] / (valueNull[0] + valueNull[1]);
+
+                if(GlobalVariables.verbosity >= 10){
+                    System.out.println("LogLik of Null converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
+                    System.out.println("\tNull Alpha parameter:      " + Double.toString(valueNull[0]));
+                    System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
+                    System.out.println("\tIterations to converge:    " + Integer.toString(nulliterations) + "\n");
+                }
+
+                //CHECK WHAT THE version does in terms of loglik.
+                CTSbetaBinomialAltLikelihoodVersion2 CTSbetaBinomAlt;
+                CTSbetaBinomAlt = new CTSbetaBinomialAltLikelihoodVersion2(asRefArray, 
+                                                        asAltArray,
+                                                        dispArray,
+                                                        cellPropArray
                                                         );
-            NelderMeadSimplex simplex;
-            simplex = new NelderMeadSimplex(2);
-            SimplexOptimizer optimizer = new SimplexOptimizer(GlobalVariables.simplexThreshold, GlobalVariables.simplexThreshold); //numbers are to which precision you want it to be done.
-            PointValuePair solutionNull = optimizer.optimize(
-                                            new ObjectiveFunction(betaBinomNull),
-                                            new MaxEval(GlobalVariables.maximumIterations),
+
+                // Going to make some initialGuesses, because sometimes 
+                // this falls into a local minimum with the MLE, when only the 
+                // null parameters are used as a starting point.
+
+
+                double nonCTSprop;
+                nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
+
+
+                ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
+
+                GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
+                GuessList.add(new InitialGuess(new double[] {0.25, 0.5      }));
+                GuessList.add(new InitialGuess(new double[] {0.75, 0.5       }));
+
+
+
+
+
+                simplex = new NelderMeadSimplex(2);
+
+
+
+                ArrayList<double[]> OptimizerResults = new ArrayList<double[]>();
+                Double[] OptimizedLogLik  = new Double[8];
+
+                int i=0;
+                int lowestIndices = -1;
+                double lowestLogLik = 0;
+
+
+                for(InitialGuess IGuess : GuessList){
+
+                    PointValuePair solutionAlt = optimizer.optimize(
+                                            new ObjectiveFunction(CTSbetaBinomAlt),
+                                            new MaxEval(500),
                                             simplex,
                                             GoalType.MINIMIZE,
-                                            new InitialGuess(new double[] {0.5, 0.5}), 
-                                            new SearchInterval(-1000.0, 1000.0)
+                                            IGuess,
+                                            new SearchInterval(0, 1)
                                             );
-            
-            double[] valueNull = solutionNull.getPoint();
-            
-            nullLogLik  = betaBinomNull.value(valueNull);
-            nulliterations = optimizer.getIterations();
-            NullAlphaParam = valueNull[0];
-            NullBetaParam = valueNull[1];
-            NullbinomRatio = valueNull[0] / (valueNull[0] + valueNull[1]);
-            
-            if(GlobalVariables.verbosity >= 10){
-                System.out.println("LogLik of Null converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
-                System.out.println("\tNull Alpha parameter:      " + Double.toString(valueNull[0]));
-                System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
-                System.out.println("\tIterations to converge:    " + Integer.toString(nulliterations) + "\n");
-            }
- 
-            //CHECK WHAT THE version does in terms of loglik.
-            CTSbetaBinomialAltLikelihoodVersion2 CTSbetaBinomAlt;
-            CTSbetaBinomAlt = new CTSbetaBinomialAltLikelihoodVersion2(asRefArray, 
-                                                    asAltArray,
-                                                    dispArray,
-                                                    cellPropArray
-                                                    );
-            
-            // Going to make some initialGuesses, because sometimes 
-            // this falls into a local minimum with the MLE, when only the 
-            // null parameters are used as a starting point.
-            
 
-            double nonCTSprop;
-            nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
 
-            
-            ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
+                    double[] valueAlt = solutionAlt.getPoint();
 
-            GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
-            GuessList.add(new InitialGuess(new double[] {0.25, 0.5      }));
-            GuessList.add(new InitialGuess(new double[] {0.75, 0.5       }));
+                    OptimizerResults.add(valueAlt);
+                    OptimizedLogLik[i] = CTSbetaBinomAlt.value(valueAlt);
 
-            
-            
-            
 
-            simplex = new NelderMeadSimplex(2);
-            
-            
-            
-            ArrayList<double[]> OptimizerResults = new ArrayList<double[]>();
-            Double[] OptimizedLogLik  = new Double[8];
-            
-            int i=0;
-            int lowestIndices = -1;
-            double lowestLogLik = 0;
-            
-            
-            for(InitialGuess IGuess : GuessList){
-            
-                PointValuePair solutionAlt = optimizer.optimize(
-                                        new ObjectiveFunction(CTSbetaBinomAlt),
-                                        new MaxEval(500),
-                                        simplex,
-                                        GoalType.MINIMIZE,
-                                        IGuess,
-                                        new SearchInterval(0, 1)
-                                        );
-                
-                
-                double[] valueAlt = solutionAlt.getPoint();
-               
-                OptimizerResults.add(valueAlt);
-                OptimizedLogLik[i] = CTSbetaBinomAlt.value(valueAlt);
-                
-                
-                //determine lowest loglik.
-                if(i ==0){
-                    lowestIndices = 0;
-                    lowestLogLik = OptimizedLogLik[i];
-                } else if(OptimizedLogLik[i] < lowestLogLik){
-                    lowestIndices = i;
-                    lowestLogLik  = OptimizedLogLik[i]; 
+                    //determine lowest loglik.
+                    if(i ==0){
+                        lowestIndices = 0;
+                        lowestLogLik = OptimizedLogLik[i];
+                    } else if(OptimizedLogLik[i] < lowestLogLik){
+                        lowestIndices = i;
+                        lowestLogLik  = OptimizedLogLik[i]; 
+                    }
+
+                    if(GlobalVariables.verbosity >= 100){    
+                        System.out.println("\nAlt Loglik convergence of starting coordinates" + Arrays.toString(IGuess.getInitialGuess()));
+                        System.out.println("\tFinal parameters:     " + Arrays.toString(valueAlt));
+                        System.out.println("\tLogLik:               " + Double.toString(OptimizedLogLik[i]));
+                    }
+
+                    i++;
+                }
+
+
+                //Now select the lowest LogLik.
+
+                double[] bestParams = OptimizerResults.get(lowestIndices);
+                altLogLik = OptimizedLogLik[lowestIndices];
+
+                binomRatioCellType = bestParams[0];
+                binomRatioResidual = bestParams[1];
+
+
+                //chi squared statistic is determined based on both null and alt loglikelihoods.
+                chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
+
+                //determine P value based on distribution
+                pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
+
+                if(GlobalVariables.verbosity >= 10){
+                    System.out.println("\nLogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
+                    System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
+                    System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
+                    System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
+                    System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
+                    System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
+                    System.out.println("\tP value:                       " + Double.toString(pVal));
+                    //TODO, I want to format this properly, but not necessary
+                    System.out.println("\n---- Finished SNP " + snpName);
                 }
                 
-                if(GlobalVariables.verbosity >= 100){    
-                    System.out.println("\nAlt Loglik convergence of starting coordinates" + Arrays.toString(IGuess.getInitialGuess()));
-                    System.out.println("\tFinal parameters:     " + Arrays.toString(valueAlt));
-                    System.out.println("\tLogLik:               " + Double.toString(OptimizedLogLik[i]));
-                }
+                 testConverged = true;
+           
+            } catch(TooManyEvaluationsException e){
                 
-                i++;
+                if(GlobalVariables.verbosity >= 1){
+                    System.out.println("WARNING: Did not converge to a solution for " + snpName);
+                    System.out.println("         After " + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
+                    System.out.println("         Continue-ing with the next.");
+                }
+            
             }
             
-            
-            //Now select the lowest LogLik.
-            
-            double[] bestParams = OptimizerResults.get(lowestIndices);
-            altLogLik = OptimizedLogLik[lowestIndices];
-
-            binomRatioCellType = bestParams[0];
-            binomRatioResidual = bestParams[1];
-
-
-            //chi squared statistic is determined based on both null and alt loglikelihoods.
-            chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
-
-            //determine P value based on distribution
-            pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
-
-            if(GlobalVariables.verbosity >= 10){
-                System.out.println("\nLogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
-                System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
-                System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
-                System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
-                System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
-                System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
-                System.out.println("\tP value:                       " + Double.toString(pVal));
-                //TODO, I want to format this properly, but not necessary
-                System.out.println("\n---- Finished SNP " + snpName);
-            }
- 
             
             
             //Finally test was done, so we say the test was performed.
@@ -318,7 +330,7 @@ class CTSBetaBinomialTest {
         out += position + "\t";
         out += snpName + "\t";
         
-        if(testPerformed){
+        if(testPerformed && testConverged){
             out += numberOfHets + "\t";
 
             // lets have a look at how the decimals behave here, seems all right.
