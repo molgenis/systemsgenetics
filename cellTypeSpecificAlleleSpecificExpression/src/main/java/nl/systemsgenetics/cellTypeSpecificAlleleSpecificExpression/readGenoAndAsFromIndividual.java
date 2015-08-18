@@ -137,10 +137,12 @@ public class readGenoAndAsFromIndividual {
        
         //Twice because my files have the .MERGED.sorted.bam suffix attached to them.
         String sample_name = FilenameUtils.getBaseName(FilenameUtils.getBaseName(FilenameUtils.getBaseName(loc_of_bam)));
+        
         if(GlobalVariables.verbosity >= 10){
             System.out.println("sample_name: " + sample_name);
             System.out.println("sample_map:  " + sample_map.toString());
         }
+        
         Object sample_idx = sample_map.get(sample_name);   
        
         if(sample_idx == null){
@@ -365,7 +367,10 @@ public class readGenoAndAsFromIndividual {
                     }
                     break;
                 case H:
-                    System.out.println("found H line in Cigar");
+                    if(GlobalVariables.verbosity >= 10){
+                        System.out.println("found H line in Cigar, skipping read");
+                    }
+                    
                     return('!');
                 case I:
                     idx_of_read += cigar.getLength();
