@@ -17,7 +17,7 @@ import org.jdom.IllegalDataException;
 public class IndividualSnpData {
     final String sampleName;
     final String snpName;
-    final String chromosome;
+    private final String chromosome;
     final String position;
     
     
@@ -31,16 +31,20 @@ public class IndividualSnpData {
     final String genotype;
     
     //These values are used to check if the thing has dispersion or cellprop
-    
     private boolean hasDispersion = false ;
-    private boolean hasCellCount = false;
+    private boolean hasCellProp   = false;
+    private boolean hasPhasing    = false;
+   
     
     //These values are optional.
     private double cellTypeProp;
     private double dispersion;
     
+    //phasing
+    private int firstAllelePhased;
+    private int secondAllelePhased;
     
-   public IndividualSnpData(String SAMPLENAME, String snpLine ){
+    public IndividualSnpData(String SAMPLENAME, String snpLine ){
        
        sampleName = SAMPLENAME;
        String[] values = snpLine.split("\t");
@@ -70,7 +74,7 @@ public class IndividualSnpData {
      */
     public void setCellTypeProp(double cellTypeProp) {
         this.cellTypeProp = cellTypeProp;
-        hasCellCount = true;
+        hasCellProp = true;
     }
    
     /**
@@ -81,6 +85,47 @@ public class IndividualSnpData {
         this.dispersion = dispersion;
         hasDispersion = true;
     }
+
+    public void setPhasing(int  first, int second ) {
+        //fill this up. should be zero for reference and 1 for alternative
+        //Should also be the same as the genotype.
+        
+        firstAllelePhased = first;
+        secondAllelePhased = second;
+        
+        //do some checks to make sure the data is correct:
+        
+        //make sure a homozygote phasing is not added to a heterozygote genotype
+        if((firstAllelePhased == secondAllelePhased) && (UtilityMethods.isGenoHeterozygote(genotype))){
+            System.out.println(genotype);
+            throw new IllegalDataException("phasing and genotype do not match: phasing does not contain a heterozygote.");
+        }
+        //make sure heterozygote phasing is not added to homozygte genotype
+        if((firstAllelePhased != secondAllelePhased) && !(UtilityMethods.isGenoHeterozygote(genotype))){
+            throw new IllegalDataException("phasing and genotype do not match: phasing contains a heterozygote.");
+        }
+        
+        //make sure the phasing homozygote matches the genotype
+        if((firstAllelePhased == secondAllelePhased)  &&  
+           (firstAllelePhased == 0) && 
+           (genotype.charAt(1) == alternative)
+            ){
+            throw new IllegalDataException("phasing and genotype do not match: phasing contains a homozygote reference, geno contains homo-alternative");
+        }
+        
+        //make sure the phasing homozygote matches the genotype
+        if((firstAllelePhased == secondAllelePhased)  &&  
+           (firstAllelePhased == 1) && 
+           (genotype.charAt(1) == reference)
+            ){
+            throw new IllegalDataException("phasing and genotype do not match: phasing contains a homozygote reference, geno contains homo-reference");
+        }
+        
+        
+        hasPhasing = true;
+    }
+    
+    
 
     //created automatically below.
 
@@ -158,11 +203,11 @@ public class IndividualSnpData {
      * @return the cellTypeProp
      * @throws java.lang.Exception
      */
-    public double getCellTypeProp() throws Exception {
-        if(hasCellCount){
+    public double getCellTypeProp() throws IllegalStateException {
+        if(hasCellProp){
             return cellTypeProp;
         }else{
-            throw new Exception("CellProp was not added in SNP data, you cannot retrieve it");
+            throw new IllegalStateException("CellProp was not added in SNP data, you cannot retrieve it");
         
         }
     }
@@ -173,11 +218,11 @@ public class IndividualSnpData {
      * @return the dispersion
      * @throws java.lang.Exception
      */
-    public double getDispersion() throws Exception {
+    public double getDispersion() throws IllegalStateException {
         if(hasDispersion){
             return dispersion;
         } else{
-            throw new Exception("Dispersion was not added in this SNP data, you cannot retrieve it");
+            throw new IllegalStateException("Dispersion was not added in this SNP data, you cannot retrieve it");
         }
     }
 
@@ -193,8 +238,31 @@ public class IndividualSnpData {
      * @return the hasCellCount
      */
     public boolean hasCellCount() {
-        return hasCellCount;
+        return hasCellProp;
     }
 
+
+    public int getPhasingFirst() {
+        
+        if(hasPhasing){
+            return firstAllelePhased;
+        }else{
+            throw new IllegalStateException("No phasing for SNP");
+        }
+    }
+    
+    
+    public int getPhasingSecond() {
+        
+        if(hasPhasing){
+            return secondAllelePhased;
+        }else{
+            throw new IllegalStateException("No phasing for SNP");
+        }
+    }
+
+    
+    
+    
 
 }

@@ -73,10 +73,9 @@ public class UtilityMethods {
             
             //assuming the genotype is formatted as: "[C, A]"
             
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
             
-            if(charOne != charTwo){
+            
+            if(isGenoHeterozygote(genotype)){
                 hets.add(sample);
             }       
         }
@@ -84,7 +83,11 @@ public class UtilityMethods {
         return hets;
     }
     
-    static void printFinalStats(){
+    static boolean isGenoHeterozygote(String genotype){
+        return (genotype.charAt(1) != genotype.charAt(4));
+    }
+    
+    static void printFinalTestStats(){
         if(GlobalVariables.verbosity >= 1){
             System.out.println("-------------------------------------------");
             System.out.println("Finished " + GlobalVariables.numberOfTestPerformed + " tests, now closing.");

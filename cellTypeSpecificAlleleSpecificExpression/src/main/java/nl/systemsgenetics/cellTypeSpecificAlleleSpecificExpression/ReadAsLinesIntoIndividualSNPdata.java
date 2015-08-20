@@ -80,7 +80,6 @@ public class ReadAsLinesIntoIndividualSNPdata {
             if(!refPosition.equals(iSnp.getPosition())){
                 throw new IllegalDataException("snp position was not the same across AS files");
             }
-            
         
         }
         

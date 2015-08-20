@@ -15,6 +15,7 @@ import org.apache.commons.math3.special.Beta;
  *
  * @author adriaan
  */
+
 public class likelihoodFunctions {
     
     static double BinomLogLik(double d, int asRef, int asAlt) {
@@ -49,8 +50,8 @@ public class likelihoodFunctions {
         double a;
         double b;
 
-        a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta))  + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-        b = Math.exp( (Math.log(beta) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+        a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+        b = Math.exp( (Math.log(beta)  - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
 
         double part1 = 0.0;
         part1 += Beta.logBeta(AS1 + a, AS2 + b);

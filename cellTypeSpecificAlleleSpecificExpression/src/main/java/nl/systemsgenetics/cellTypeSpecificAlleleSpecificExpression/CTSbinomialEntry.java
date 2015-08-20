@@ -83,7 +83,7 @@ class CTSbinomialEntry {
 
         out_writer.close();
 
-        UtilityMethods.printFinalStats();
+        UtilityMethods.printFinalTestStats();
     }
     
 }

@@ -51,7 +51,7 @@ public class BinomialEntry {
         
         out_writer.close();
 
-        UtilityMethods.printFinalStats();
+        UtilityMethods.printFinalTestStats();
 
     }
 

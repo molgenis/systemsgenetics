@@ -55,7 +55,8 @@ public class mainEntryPoint {
                                                  "\t2\tPerform a binomial test for ASE:             \tBINOMTEST\n" + 
                                                  "\t3\tEstimate per sample beta binomoverdispersion:\tBETABINOMTEST\n\n" +
                                                  "\t4\tCell type specific Binomial test:            \tCTSBINOMTEST\n" +
-                                                 "\t5\tCell type specific Beta Binomial test        \tCTSBETABINOMTEST\n"+
+                                                 "\t5\tCell type specific Beta Binomial test        \tCTSBETABINOMTEST\n " +
+                                                 "\t6\tPhased entry, currently used for testing     \tPHASED"+
                                                  "Please Run an option based on the number in the first column, or through the name in the third column."
                                                 )
 				.withLongOpt("action")
@@ -65,9 +66,11 @@ public class mainEntryPoint {
                 
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
-				.withDescription("Path to file in which to write output.\n "
+				.withDescription("location of file in which to write output.\n "
                                                + "When action is: ASREADS, this will be the output of as_file\n"
-                                               + "When action is: BINOMTEST or BETABINOMTEST, it will provide the test statistics per SNP.")                                                
+                                               + "When action other, it will provide the test statistics per SNP.\n"
+                                               + "When test contains dispersion estimatino, dispersion will be saved as: "
+                                               + "<output-no-extension>_dispersion.txt")                                                
 				.withLongOpt("output")
                                 .isRequired()
 				.create('O');
@@ -80,7 +83,7 @@ public class mainEntryPoint {
                 
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
-				.withDescription("Path to file where couplindg data is stored.\n "
+				.withDescription("location of file where couplindg data is stored.\n "
                                                + "Required when action is: ASREADS\n"
                                                + "Coupling data will have the individual name in the first column and \n"
                                                + "the associated sample bam file name (without path and extenstion)in the second column")                                                
@@ -100,7 +103,7 @@ public class mainEntryPoint {
                 
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
-				.withDescription("Path to bamfile from which to load data.\n "
+				.withDescription("Location of bamfile from which to load data.\n "
                                                + "Required when action is: ASREADS")                                                
 				.withLongOpt("bam_file")
 				.create('B');
@@ -108,7 +111,7 @@ public class mainEntryPoint {
                 
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
-				.withDescription("Path to a file containing paths from which to load as data created in .\n "
+				.withDescription("Location of  a file containing paths from which to load as data created in .\n "
                                                + "Required when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
 				.withLongOpt("as_locations")
 				.create('L');
@@ -145,7 +148,7 @@ public class mainEntryPoint {
                                                + "Standard setting is 1, minimum should be 0 but is not checked.\n"
                                                + "Used when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
 				.withLongOpt("minimum_heterozygotes")
-				.create("minimum_heterozygotes");
+				.create("minimum_hets");
 		OPTIONS.addOption(option);                
                 
                 
@@ -197,8 +200,8 @@ public class mainEntryPoint {
                 // Optional arguments that are not passed to the Entry constructors
                 // But are saved in the GlobalVariables class.
                 
-                if(commandLine.hasOption("minimum_heterozygotes")){
-                    GlobalVariables.minHets = Integer.parseInt(commandLine.getOptionValue("minimum_heterozygotes"));
+                if(commandLine.hasOption("minimum_hets")){
+                    GlobalVariables.minHets = Integer.parseInt(commandLine.getOptionValue("minimum_hets"));
                     //Check if this is bigger than 0, otherwise exit 
                     if(GlobalVariables.minHets <= 0){
                         throw new IllegalDataException("Minimum Number of hets cannot be smaller than one for AS testing\n"
@@ -330,6 +333,22 @@ public class mainEntryPoint {
                         */
                         
                         CTSbetaBinomialEntry a =  new CTSbetaBinomialEntry(asFile, phenoTypeLocation,  outputLocation);
+                    
+                    }else if(programAction.equals("PHASED") || programAction.equals("6")){
+                        
+                        if(commandLine.hasOption('L')){
+                            asFile = commandLine.getOptionValue('L');
+                        } else{
+                            throw new ParseException("Required command line input --as_location when --action is PHASEDANALYSIS");
+                        }
+                        if(commandLine.hasOption('C')){
+                            couplingLocation = commandLine.getOptionValue('C');
+                        } else{
+                            throw new ParseException("Required command line input --coupling_file when --action is PHASEDANALYSIS");
+                        }           
+                        
+                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation);
+                        
                         
                     }else{
                         throw new ParseException("Unable to determine what to do. Please specify a correct value to --Action");

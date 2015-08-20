@@ -9,6 +9,7 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import org.apache.commons.io.FilenameUtils;
 import org.jdom.IllegalDataException;
 
 /**
@@ -31,19 +32,31 @@ class CTSbetaBinomialEntry {
         //PART 2: determine the per sample overdispersion in the file.
         
         ArrayList<BetaBinomOverdispInSample>  dispersionParameters = new ArrayList<BetaBinomOverdispInSample>();
+
+        
+        
         
         for(String sampleName : allFiles){
            
             dispersionParameters.add(new BetaBinomOverdispInSample(sampleName));
         
-            /*
-             * TODO: determine some way to save the overdispersion sample.
-             *       But we could also do it everytime you do this, perhaps based 
-             *       on the relative time compared to the full calculation.
-             */
+
         
         }
         
+
+        // use this to save the dispersionvalues
+        
+        String dispersionOutput = FilenameUtils.getPath(outputLocation) + 
+                                  FilenameUtils.getBaseName(outputLocation) +
+                                  "_dispersionFile.txt";
+        
+        PrintWriter writer = new PrintWriter(dispersionOutput, "UTF-8");       
+        
+        //header for dispersion
+        writer.write("Filename\tdispersion");        
+        
+
         double[] dispersionVals = new double[dispersionParameters.size()];  
         int i = 0;     
         
@@ -56,10 +69,12 @@ class CTSbetaBinomialEntry {
                 System.out.println(sampleDispersion.getSampleName());
                 throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
             }
+            writer.printf("%s\t%.6f\n", sampleDispersion.getSampleName(), sampleDispersion.getOverdispersion()[0] );
             
             i++;
         }
         
+        writer.close();
         
         //PART 3: determine the cell proportions per sample, provided in the sample file.
         
@@ -126,7 +141,7 @@ class CTSbetaBinomialEntry {
         
         out_writer.close();
        
-        UtilityMethods.printFinalStats();
+        UtilityMethods.printFinalTestStats();
     
     }
     

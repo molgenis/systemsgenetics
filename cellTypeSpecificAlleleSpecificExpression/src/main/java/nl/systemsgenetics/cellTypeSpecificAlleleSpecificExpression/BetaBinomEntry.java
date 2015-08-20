@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import org.apache.commons.io.FilenameUtils;
 import org.jdom.IllegalDataException;
 
 /**
@@ -64,9 +65,23 @@ public class BetaBinomEntry {
         double[] dispersionVals = new double[dispersionParameters.size()];  
         int i = 0;     
         
+        
+        // use this to save the dispersionvalues
+        
+        String dispersionOutput = FilenameUtils.getPath(outputLocation) + 
+                                  FilenameUtils.getBaseName(outputLocation) +
+                                  "_dispersionFile.txt";
+        
+        PrintWriter writer = new PrintWriter(dispersionOutput, "UTF-8");       
+        
+        //header
+        writer.write("Filename\tdispersion");
+        
+        
+        
         for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
+        
             dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
-            
             
             //do a check to make sure ordering is correct.
             if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
@@ -74,9 +89,16 @@ public class BetaBinomEntry {
                 throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
             }
             
+            writer.printf("%s\t%.6f\n", sampleDispersion.getSampleName(), sampleDispersion.getOverdispersion()[0] );
+            
             i++;
         }
-                
+        
+        writer.close();
+        
+        
+        
+
                 
                 
         /*
@@ -117,7 +139,7 @@ public class BetaBinomEntry {
         }
         
         out_writer.close();
-        UtilityMethods.printFinalStats();
+        UtilityMethods.printFinalTestStats();
 
         
     }

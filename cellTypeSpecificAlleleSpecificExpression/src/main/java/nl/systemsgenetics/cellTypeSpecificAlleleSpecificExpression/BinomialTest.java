@@ -272,7 +272,5 @@ public class BinomialTest {
         return testPerformed;
     }
     
-    
-    
 }
 
