@@ -156,6 +156,7 @@ public class IndividualSnpData {
 
     /**
      * @return the cellTypeProp
+     * @throws java.lang.Exception
      */
     public double getCellTypeProp() throws Exception {
         if(hasCellCount){
@@ -170,6 +171,7 @@ public class IndividualSnpData {
 
     /**
      * @return the dispersion
+     * @throws java.lang.Exception
      */
     public double getDispersion() throws Exception {
         if(hasDispersion){
