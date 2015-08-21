@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import org.jdom.IllegalDataException;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -36,7 +37,7 @@ class PhasedEntry {
          * 5. determine log likelihood for test-snps. (with some deduplication, hopefully)
          */
 
-        // * 1. read all SNPs from AS files
+        // * 1. Read all SNPs from AS files
 
         ArrayList<String> allFiles = UtilityMethods.readFileIntoStringArrayList(asLocations);
 
@@ -60,19 +61,21 @@ class PhasedEntry {
             
         }
 
-        // 2. read phasing info for these snps
+        // 2. Read phasing info for these snps
         
         HashMap<String, ArrayList<IndividualSnpData>> phasedSnpHashMap;        
         phasedSnpHashMap = addPhasingToSNPHashMap(snpHashMap, couplingLoc);
         
-        System.out.println("Added phasing information to AS values of snps.");
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("Added phasing information to AS values of snps.");
+        }
         
-        // 3. load test regions and determine test snps.
+        // 3. Load test regions and determine test snps.
+        
+        ArrayList<GenomicRegion> allRegions;
+        allRegions = ReadGenomicRegions("media/fast/GENETICA/implementInJava/CEUASREADS/genomicRegions.txt");
         
         
-        
-        
-    
     }
 
     private HashMap<String, ArrayList<IndividualSnpData>> addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, String couplingLoc) throws IOException {
@@ -102,6 +105,8 @@ class PhasedEntry {
                     
                     if(tempCouple[0].equals(sampleNames[i])){
                        couplingMap.put(tempCouple[1], i);
+                       found =true;
+                       break;
                     }
                 }
                 
@@ -114,100 +119,107 @@ class PhasedEntry {
                 System.out.println(couplingMap.toString());
             }
             
+            HashMap<String, GeneticVariant> variantIdMap = genotypeData.getVariantIdMap();
+            Set<String> phasedKeySet = variantIdMap.keySet();
             
+            Set<String> genoKeySet = snpHashMap.keySet();
             
-            int variantsDone = 0;
-            for(String iSnp : snpHashMap.keySet()){
+            int SNPsDone = 0; 
+            
+            for(String iKey : phasedKeySet ){
                 
+                GeneticVariant thisVariant = variantIdMap.get(iKey);
                 
-                ArrayList<IndividualSnpData> thisSnpList  = snpHashMap.get(iSnp);
-                IndividualSnpData refSnp =  thisSnpList.get(0);
+                List<Boolean> SamplePhasing;
+                List<Alleles> Variants; 
                 
-                if(GlobalVariables.verbosity >= 100){
-                    System.out.println("Starting: "+ iSnp);
-                    System.out.println(refSnp.getPosition());
-                    System.out.println(refSnp.getChromosome());
-                    System.out.println(refSnp.getSampleName());
-                }
+                if(genoKeySet.contains(iKey)  && thisVariant.isSnp() && thisVariant.isBiallelic()){
+                    
+                    SamplePhasing = thisVariant.getSamplePhasing();
+                    Variants = thisVariant.getSampleVariants();
                 
-                Iterable<GeneticVariant> thisVariant = genotypeData.getVariantsByPos(refSnp.getChromosome(), Integer.parseInt(refSnp.getPosition()));
-                
-                
-                int howManyVariants = 0;
-                
-                List<Boolean> SamplePhasing = null;
-                List<Alleles>  Variants = null;
-                for(GeneticVariant iGen : thisVariant){
-                    //should be only one.
-                    if(!(iGen.getAllIds().get(0).equals(iSnp))){
+
+                    //make sure we have phasing data.
+                    if( SamplePhasing==null || Variants == null ){
+                        if(GlobalVariables.verbosity >= 10){
+                            System.out.println("Couldn't find snp: "+ iKey + " in genotyped data, continueing with the next.");
+                        }
+                        //no phasing so skip this snp
                         continue;
                     }
-                    
-                    howManyVariants++;
-                    SamplePhasing = iGen.getSamplePhasing();
-                    
-                    Variants = iGen.getSampleVariants();
-                    
-                    if(howManyVariants > 1){
-                        throw new IllegalDataException("Found more than one variant with the same name in phased data. This should not happen");
-                    }
-                }
-                
-                //make sure we have phasing data.
-                if( SamplePhasing==null || Variants == null ){
-                    if(GlobalVariables.verbosity >= 10){
-                        System.out.println("Couldn't find snp: "+ iSnp + " in phased data, continueing with the next.");
-                    }
-                    continue;
-                }
-                
-                //add phasing infotmation to the arraylist of SNPdata:
-                ArrayList<IndividualSnpData> newSnpData = new ArrayList<IndividualSnpData>();
-                
-                for(IndividualSnpData iAS : thisSnpList){
-                    int i = couplingMap.get(iAS.getSampleName());
 
-                    //make sure there is phasing data available:
-                    if(SamplePhasing.get(i)){
+                    //add phasing infotmation to the arraylist of SNPdata:
+                    ArrayList<IndividualSnpData> oldSnpData = snpHashMap.get(iKey);
+                    ArrayList<IndividualSnpData> newSnpData = new ArrayList<IndividualSnpData>();
+                    
+                    
+                    
+                    for(IndividualSnpData iAS : oldSnpData){
                         
-                        char Alt = iAS.getAlternative();
-                        
-                        Alleles thisAllele = Variants.get(i);
-                        char[] alleleChars = thisAllele.getAllelesAsChars();
-                        
-                        if(GlobalVariables.verbosity >= 100){
-                            System.out.println(Arrays.toString(alleleChars));
+                        int i = couplingMap.get(iAS.getSampleName());
+
+                        //make sure there is phasing data available:
+                        if(SamplePhasing.get(i)){
+
+                            char Alt = iAS.getAlternative();
+                            
+                            
+                            char[] alleleChars;
+                            alleleChars = Variants.get(i).getAllelesAsChars();
+
+
+                            if(GlobalVariables.verbosity >= 100){
+                                System.out.println(alleleChars);
+                            }
+
+                            //assuming the allele is reference
+                            int first = 0;
+                            int second = 0;
+
+                            if(alleleChars[0] == Alt){
+                                first = 1;
+                            }
+                            if(alleleChars[1] == Alt){
+                                second = 1;
+                            }
+
+                            iAS.setPhasing(first, second);
                         }
-                        
-                        //assuming the allele is reference
-                        int first = 0;
-                        int second = 0;
-                        
-                        if(alleleChars[0] == Alt){
-                            first = 1;
-                        }
-                        if(alleleChars[1] == Alt){
-                            second = 1;
-                        }
-                        
-                        iAS.setPhasing(first, second);
+                        newSnpData.add(iAS);
                     }
-                    newSnpData.add(iAS);
+                    
+                    //overwrite this into the snpHashMap
+                    snpHashMap.put(iKey, newSnpData);
+                    SNPsDone++;
+                    if(SNPsDone % 10000 == 0 && GlobalVariables.verbosity >= 10){System.out.println("Finished " + SNPsDone + " Snps");}
                 }
+               
                 
-                
-                
-                snpHashMap.put(iSnp, newSnpData);
-                
-                variantsDone++;
             }
             
-            
-            
-        
-        
-        
         return snpHashMap;
+    }
+
+    private ArrayList<GenomicRegion> ReadGenomicRegions(String regionsFile) throws IOException {
+        
+        ArrayList<String> stringArray = UtilityMethods.readFileIntoStringArrayList(regionsFile);
+        ArrayList<GenomicRegion> allRegions  = new ArrayList<GenomicRegion>();
+
+        for(String iString : stringArray){
+            String[] splitString = iString.split("\t");
+            GenomicRegion tempRegion = new GenomicRegion();
+            
+            tempRegion.setAnnotation(splitString[0]); 
+            tempRegion.setSequence(splitString[1]);
+            tempRegion.setStartPosition(Integer.parseInt(splitString[2]));
+            tempRegion.setStartPosition(Integer.parseInt(splitString[3])); 
+            
+            allRegions.add(tempRegion);
+            
+        }
+        
+        
+        return allRegions;
     }
     
     

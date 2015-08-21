@@ -30,6 +30,8 @@ import htsjdk.samtools.SamReaderFactory;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import org.apache.commons.io.FilenameUtils;
+import org.jdom.IllegalDataException;
+import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 
 
@@ -48,10 +50,10 @@ public class readGenoAndAsFromIndividual {
         if(GlobalVariables.verbosity >= 1){
             //Print ASREADS header
             System.out.println("---- Starting ASREADS for the following settings: ----");
-            System.out.println("\t input bam:       " +  loc_of_bam1);
-            System.out.println("\t genotype file:   " +  genotype_loc);
-            System.out.println("\t coupling file:   " +  coupling_location);
-            System.out.println("\t output location: " +  outputLocation);
+            System.out.println("\t input bam:         " +  loc_of_bam1);
+            System.out.println("\t genotype location: " +  genotype_loc);
+            System.out.println("\t coupling file:     " +  coupling_location);
+            System.out.println("\t output location:   " +  outputLocation);
             if(!snpLocation.equals("")){
                 System.out.println("\t snp Location:    " +  snpLocation);
             }else{
@@ -62,7 +64,7 @@ public class readGenoAndAsFromIndividual {
         }
         
         
-        String path_of_trityper = genotype_loc;
+        
 
         //parse command line arguments
         String loc_of_bam;
@@ -79,18 +81,50 @@ public class readGenoAndAsFromIndividual {
         }
         
         
-        RandomAccessGenotypeData dataset1;
-        //open tri typer dataset
-        try {
-            dataset1 = new TriTyperGenotypeData(new File(path_of_trityper));
-        } catch (IOException ex) {
-            System.err.println("Error reading dataset 1: " + path_of_trityper);
-            throw new IllegalArgumentException();
+        
+        RandomAccessGenotypeData TTdataSet;
+        VcfGenotypeData VCFdataSet;
+        HashMap<String, GeneticVariant> variantIdMap;
+        String[] individual_names;
+        
+        String tabixLoc = genotype_loc + ".tbi";
+        
+        //open vcf dataset
+        //based on extention and existance of both files. 
+        if(FilenameUtils.isExtension(genotype_loc, ".gz") && 
+           new File(tabixLoc).exists() &&
+           new File(genotype_loc).exists() 
+          ){
+            try {
+                VCFdataSet = new VcfGenotypeData(new File(genotype_loc), new File(tabixLoc), 0.99);
+                variantIdMap = VCFdataSet.getVariantIdMap();
+                individual_names = VCFdataSet.getSampleNames();
+            } catch (IOException ex) {
+                System.err.println("Error reading vcf dataset: " + genotype_loc);
+                throw new IllegalArgumentException();
+            }
+        
+        }else if(new File(genotype_loc + "/GenotypeMatrix.dat").exists() ) {
+            //assuming trityper dataset based on the genotype matrix
+            try {
+                TTdataSet = new TriTyperGenotypeData(new File(genotype_loc));
+                variantIdMap = TTdataSet.getVariantIdMap();
+                individual_names = TTdataSet.getSampleNames();
+            } catch (IOException ex) {
+                System.err.println("Error reading trityper dataset: " + genotype_loc);
+                throw new IllegalArgumentException();
+            }
+        
+        }else{
+            throw new IllegalDataException("could not find a Trityper or vcf file in the genotype location");
         }
         
         
+
+        
+        
         //get the variants in the variantIdMAP
-        HashMap<String, GeneticVariant> variantIdMap = dataset1.getVariantIdMap();
+       
         Set<String> snpNames = variantIdMap.keySet();
         
         ArrayList<String> SNPsToAnalyze;
@@ -120,10 +154,7 @@ public class readGenoAndAsFromIndividual {
             }
         }
         
-        
-        String[] individual_names;
-        individual_names = dataset1.getSampleNames();
-        
+       
         //String path = "/gcc/groups/lld/tmp01/projects/bamFiles/";
         //sample_map contains all the individuals that are in the sample file.
         HashMap sample_map = convert_individual_names(individual_names, coupling_location);
@@ -213,8 +244,6 @@ public class readGenoAndAsFromIndividual {
             }
         
         }
-        
-        dataset1.close();
         writer.close();
     }
     
@@ -442,6 +471,7 @@ public class readGenoAndAsFromIndividual {
                     curr_pos += cigar.getLength();
                     idx_of_read += cigar.getLength();
                     if(GlobalVariables.verbosity >= 100){
+                        
                         System.out.println("Found X in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));

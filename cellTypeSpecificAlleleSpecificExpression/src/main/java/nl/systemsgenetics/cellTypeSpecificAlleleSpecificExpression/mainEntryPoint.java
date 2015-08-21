@@ -69,7 +69,7 @@ public class mainEntryPoint {
 				.withDescription("location of file in which to write output.\n "
                                                + "When action is: ASREADS, this will be the output of as_file\n"
                                                + "When action other, it will provide the test statistics per SNP.\n"
-                                               + "When test contains dispersion estimatino, dispersion will be saved as: "
+                                               + "When test contains dispersion estimation, dispersion will be saved as: "
                                                + "<output-no-extension>_dispersion.txt")                                                
 				.withLongOpt("output")
                                 .isRequired()
@@ -83,7 +83,7 @@ public class mainEntryPoint {
                 
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
-				.withDescription("location of file where couplindg data is stored.\n "
+				.withDescription("location of file where coupling data is stored.\n "
                                                + "Required when action is: ASREADS\n"
                                                + "Coupling data will have the individual name in the first column and \n"
                                                + "the associated sample bam file name (without path and extenstion)in the second column")                                                
@@ -93,8 +93,8 @@ public class mainEntryPoint {
                 
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
-				.withDescription("Path to directory from which to load genotype data.\n"
-                                                + "Currently only trityper data is available"
+				.withDescription("Path to directory or location of file from which to load genotype data.\n"
+                                                + "Currently only tri typer and tabix indexed vcf data is available"
                                                 + "Required when action is: ASREADS")                                                
 				.withLongOpt("genotype_path")
 				.create('G');
