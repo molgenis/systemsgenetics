@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import java.util.ArrayList;
 import org.jdom.IllegalDataException;
 
 /**
@@ -17,7 +18,15 @@ public class GenomicRegion {
     private String sequence;
     private int startPosition = -1;
     private int endPosition = -1;
+    
+    private ArrayList<String> snpInRegions;
 
+    
+    public void addSnpToRegion(String snpName){
+        getSnpInRegions().add(snpName);
+    }
+    
+    
     /**
      * @return the sequence
      */
@@ -82,6 +91,20 @@ public class GenomicRegion {
      */
     public void setAnnotation(String annotation) {
         this.annotation = annotation;
+    }
+
+    /**
+     * @return the snpInRegions
+     */
+    public ArrayList<String> getSnpInRegions() {
+        return snpInRegions;
+    }
+
+    /**
+     * @param snpInRegions the snpInRegions to set
+     */
+    public void setSnpInRegions(ArrayList<String> snpInRegions) {
+        this.snpInRegions = snpInRegions;
     }
     
     

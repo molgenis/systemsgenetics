@@ -104,9 +104,8 @@ public class ASreadsTestNGTest {
         
         //Check md5sum of the output file.
         String md5sumResult = md5StringFromFile(outputLoc);
-
         
-        Assert.assertEquals("4b0fc0077637dacc9806da1574459cd9", md5sumResult);
+        Assert.assertEquals("2536ad0a2b3bd4e383a5fb0c60893b3f", md5sumResult);
     
     }
     

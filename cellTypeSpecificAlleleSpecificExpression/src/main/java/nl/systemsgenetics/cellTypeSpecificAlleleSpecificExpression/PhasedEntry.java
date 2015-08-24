@@ -37,17 +37,20 @@ class PhasedEntry {
          * 5. determine log likelihood for test-snps. (with some deduplication, hopefully)
          */
 
-        // * 1. Read all SNPs from AS files
+        
+        // 1. Read all SNPs from AS files
 
         ArrayList<String> allFiles = UtilityMethods.readFileIntoStringArrayList(asLocations);
 
 
         ReadAsLinesIntoIndividualSNPdata asReader = new ReadAsLinesIntoIndividualSNPdata(asLocations);
         
-        HashMap<String, ArrayList<IndividualSnpData>> snpHashMap = new HashMap<String, ArrayList<IndividualSnpData>>();
-        
+        HashMap<String, ArrayList<IndividualSnpData> > snpHashMap = new HashMap<String, ArrayList<IndividualSnpData>>();
+       
+        HashMap<String, String> posNameMap = new HashMap<String, String>();
         
         while (true) {
+            
             //read some stuff from the files.
             ArrayList<IndividualSnpData> tempSNPdata;
             tempSNPdata = asReader.getIndividualsFromNextLine();
@@ -56,40 +59,82 @@ class PhasedEntry {
             //I can safely assume all snps are the same per line, based on 
             //checks done in the getIndividualsFromNextLine.
 
+            String snpName  = tempSNPdata.get(0).getSnpName();
+            String chr = tempSNPdata.get(0).getChromosome();
+            String posString = tempSNPdata.get(0).getPosition();
+            
+            
+            posNameMap.put(chr + ":" + posString, snpName);
+            
             //take the SNP name and arraylist and put in the hashmap.
-            snpHashMap.put(tempSNPdata.get(0).getSnpName() , tempSNPdata);
+            snpHashMap.put(snpName, tempSNPdata);
             
         }
+        
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("all AS info Snps were read");
+        }
+        
+        // 2. Load test regions and determine the snps in the region.
+       
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("Starting the assignment of snps to regions.");
+        }
+        
+        
+        ArrayList<GenomicRegion> allRegions;
+        allRegions = ReadGenomicRegions("/media/fast/GENETICA/implementInJava/CEUASCOUNTS/genomicRegionsUnique.txt");
+        
+        //This should be a lot faster, but I don't want to optimize prematurely
+        
+        for(int i=0; i< allRegions.size(); i++){
+            GenomicRegion iRegion = allRegions.get(i);
+            ArrayList<String> snpsInRegion = new ArrayList<String>();
+            String sequence = iRegion.getSequence();
+            int start =iRegion.getStartPosition();
+            int end =iRegion.getEndPosition();
 
-        // 2. Read phasing info for these snps
+            for(String iSNP : posNameMap.keySet() ){
+                String[] posArray = iSNP.split(":");
+                String chr = posArray[0];
+                int pos = Integer.parseInt(posArray[1]);
+                String snpName = posNameMap.get(iSNP);
+                        
+                if(chr.equals(sequence) && start <= pos && end >= pos){
+                    snpsInRegion.add(snpName);
+                }
+            }
+            iRegion.setSnpInRegions(snpsInRegion);
+            if(i % 100 == 1 && GlobalVariables.verbosity >= 10) System.out.print(".");
+        }
+        
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("\nAll SNPs add to all regions.");
+        }
+        
+        // 3. Read phasing info for these snps
+            
+        
         
         HashMap<String, ArrayList<IndividualSnpData>> phasedSnpHashMap;        
-        phasedSnpHashMap = addPhasingToSNPHashMap(snpHashMap, couplingLoc);
-        
+        phasedSnpHashMap = addPhasingToSNPHashMap(snpHashMap, couplingLoc, allRegions);
+
         if(GlobalVariables.verbosity >= 10){
             System.out.println("Added phasing information to AS values of snps.");
         }
-        
-        // 3. Load test regions and determine test snps.
-        
-        ArrayList<GenomicRegion> allRegions;
-        allRegions = ReadGenomicRegions("media/fast/GENETICA/implementInJava/CEUASREADS/genomicRegions.txt");
-        
-        
     }
 
-    private HashMap<String, ArrayList<IndividualSnpData>> addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, String couplingLoc) throws IOException {
+    private HashMap<String, ArrayList<IndividualSnpData>> addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, String couplingLoc, ArrayList<GenomicRegion> genomicRegions) throws IOException {
             String vcfLoc;
             vcfLoc = "/media/fast/GENETICA/implementInJava/CEUGENOTYPES/special_vcf/" + 
                      "CEU.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz";
             
             String tabixLoc = vcfLoc + ".tbi";
             
-            VcfGenotypeData genotypeData = new VcfGenotypeData(new File(vcfLoc), new File(tabixLoc), 0.99);
+            VcfGenotypeData genotypeData = new VcfGenotypeData(new File(vcfLoc), new File(tabixLoc), GlobalVariables.variantProb);
             
 
             //make a Hashmap with the coupling information correct.
-            
             String[] sampleNames = genotypeData.getSampleNames();
             ArrayList<String> couplingList = UtilityMethods.readFileIntoStringArrayList(couplingLoc);
             
@@ -118,6 +163,8 @@ class PhasedEntry {
                 System.out.println("final coupling map:");
                 System.out.println(couplingMap.toString());
             }
+            
+            
             
             HashMap<String, GeneticVariant> variantIdMap = genotypeData.getVariantIdMap();
             Set<String> phasedKeySet = variantIdMap.keySet();

@@ -55,9 +55,9 @@ public class readGenoAndAsFromIndividual {
             System.out.println("\t coupling file:     " +  coupling_location);
             System.out.println("\t output location:   " +  outputLocation);
             if(!snpLocation.equals("")){
-                System.out.println("\t snp Location:    " +  snpLocation);
+                System.out.println("\t snp Location:        " +  snpLocation);
             }else{
-                System.out.println("\t snp Location:    " +  "NONE");
+                System.out.println("\t snp Location:         " +  "NONE");
             }
 
             System.out.println("------------------------------------------------------");
@@ -91,7 +91,7 @@ public class readGenoAndAsFromIndividual {
         
         //open vcf dataset
         //based on extention and existance of both files. 
-        if(FilenameUtils.isExtension(genotype_loc, ".gz") && 
+        if(FilenameUtils.isExtension(genotype_loc, "gz") && 
            new File(tabixLoc).exists() &&
            new File(genotype_loc).exists() 
           ){
@@ -226,12 +226,14 @@ public class readGenoAndAsFromIndividual {
                                                                         bam_file);
                  
                 
+                //commented out the phasing part.
                 
                 writer.println(chromosome + "\t" + position + "\t" + i_snp + "\t" + 
                                this_variant.getVariantAlleles().getAllelesAsChars()[0] + "\t" +
                                this_variant.getVariantAlleles().getAllelesAsChars()[1] + "\t" +
                                row_of_table + "\t" + 
-                               Arrays.toString(this_variant.getSampleVariants().get(sample_index).getAllelesAsChars()) 
+                               Arrays.toString(this_variant.getSampleVariants().get(sample_index).getAllelesAsChars()) //+ "\t" +
+                               //Boolean.toString(this_variant.getSamplePhasing().get(sample_index))
                             );
             }
          

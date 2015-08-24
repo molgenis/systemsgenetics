@@ -44,5 +44,7 @@ public class GlobalVariables {
     //I have some fully phased data and this is what wasp comes up with.
     public static double hetProb  = 1.0;
     public static double seqError = 0.0;
-
+    
+    //vcf minimum probability:
+    public static double variantProb = 0.99;
 }
