@@ -209,6 +209,9 @@ class PhasedEntry {
             
             HashMap<String, BinomialTest> storedBinomTests = new HashMap<String, BinomialTest>();
             HashMap<String, BetaBinomialTest> storedBetaBinomTests = new HashMap<String, BetaBinomialTest>();
+            
+            ///PLEASE NOTE, CELL TYPE SPECIFIC FUNCTIONALITY HAS NOT YET BEEN IMPLEMENTED.
+            
             HashMap<String, CTSbinomialTest> storedCTSBinomTests = new HashMap<String, CTSbinomialTest>();
             HashMap<String, CTSBetaBinomialTest> storedCTSBetaBinomTests = new HashMap<String, CTSBetaBinomialTest>();
           
@@ -335,23 +338,16 @@ class PhasedEntry {
             
             for(String thisTestName : storedBinomTests.keySet()){
                 
-                BinomialTest thisTest = storedBinomTests.get(thisTestName);
+                BinomialTest thisBinomTest = storedBinomTests.get(thisTestName);
+                BetaBinomialTest thisBetaBinomTest = storedBetaBinomTests.get(thisTestName);
                 
-                if(thisTest.isTestPerformed()){
-                    writerBinom.println(writeBinomialTestOutput(thisTest));
+                if(thisBinomTest.isTestPerformed()){
+                    writerBinom.println(writeBinomialTestOutput(thisBinomTest));
+                    writerBetaBinom.println(writeBetaBinomialTestOutput(thisBetaBinomTest));
                 }
                 
             }
             
-            for(String thisTestName : storedBetaBinomTests.keySet()){
-                
-                BetaBinomialTest thisTest = storedBetaBinomTests.get(thisTestName);
-                
-                if(thisTest.isTestPerformed()){
-                    writerBinom.println(writeBetaBinomialTestOutput(thisTest));
-                }
-            
-            }
             
         }
         
