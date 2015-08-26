@@ -80,7 +80,6 @@ class CTSbetaBinomialEntry {
         
         
         // filenames_file, is a file containing per line a filename, which to load.
-        String filenames_file = asLocations;
 
         /*
             Determine cell proportion per sample

@@ -49,15 +49,15 @@ public class readGenoAndAsFromIndividual {
         
         if(GlobalVariables.verbosity >= 1){
             //Print ASREADS header
-            System.out.println("---- Starting ASREADS for the following settings: ----");
-            System.out.println("\t input bam:         " +  loc_of_bam1);
-            System.out.println("\t genotype location: " +  genotype_loc);
-            System.out.println("\t coupling file:     " +  coupling_location);
-            System.out.println("\t output location:   " +  outputLocation);
+            System.out.println(    "---- Starting ASREADS for the following settings: ----");
+            System.out.println(    "\t input bam:         " +  loc_of_bam1);
+            System.out.println(    "\t genotype location: " +  genotype_loc);
+            System.out.println(    "\t coupling file:     " +  coupling_location);
+            System.out.println(    "\t output location:   " +  outputLocation);
             if(!snpLocation.equals("")){
-                System.out.println("\t snp Location:        " +  snpLocation);
+                System.out.println("\t snp Location:      " +  snpLocation);
             }else{
-                System.out.println("\t snp Location:         " +  "NONE");
+                System.out.println("\t snp Location:      " +  "NONE");
             }
 
             System.out.println("------------------------------------------------------");

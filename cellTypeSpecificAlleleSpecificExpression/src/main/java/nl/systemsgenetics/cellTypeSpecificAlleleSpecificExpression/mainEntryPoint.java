@@ -346,8 +346,12 @@ public class mainEntryPoint {
                         } else{
                             throw new ParseException("Required command line input --coupling_file when --action is PHASEDANALYSIS");
                         }           
-                        
-                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation);
+                        if(commandLine.hasOption('P')){
+                            phenoTypeLocation = commandLine.getOptionValue('P');
+                        } else{
+                            phenoTypeLocation = null;
+                        }
+                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation);
                         
                         
                     }else{

@@ -41,6 +41,7 @@ public class GlobalVariables {
     public static int minHets  = 1;
     
     
+    
     //I have some fully phased data and this is what wasp comes up with.
     public static double hetProb  = 1.0;
     public static double seqError = 0.0;

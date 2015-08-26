@@ -15,12 +15,22 @@ import java.util.ArrayList;
 public class BinomialTest {
 
     //SNP information
-    private final String snpName;
-    private final String chromosome;
-    private final String position;
+    private String snpName;
+    private String chromosome;
+    private String position;
 
+    
+    //sometimes multiple test snps have the same results.    
+    private boolean TestUsedInPhasing = false;
+    private ArrayList<String> additionalPositions = new ArrayList<String>();
+    private ArrayList<String> additionalNames = new ArrayList<String>(); 
+    
+    String RegionName;
+    int startOfRegion = -1;
+    int endOfRegion = -1;
+    
     //Information about the input data
-    private final int numberOfHets;
+    private int numberOfHets;
     
     //Names of individuals for easy reference
     
@@ -39,7 +49,10 @@ public class BinomialTest {
     private boolean testPerformed = false; 
     
     
-    private final boolean outPutAllData = false;
+    private boolean outPutAllData = false;
+    
+    
+    
     
     // This is the constructor, will receieve an arraylist of IndividualSnpData, 
     // will filter this for only heterozygotes and will proceed if there are reads.
@@ -91,6 +104,7 @@ public class BinomialTest {
                 System.out.println("asRef:          " +  asRef.toString());
                 System.out.println("asAlt:          " +  asAlt.toString());
             }
+            
             // There is data to perform the binomial test, perform it.       
             testStatistics = new BinomTest(asRef, asAlt);
             
@@ -108,8 +122,22 @@ public class BinomialTest {
         } else{
             // there is no data to do the binomial test,
             // Will not set variables.
-            // Don't know what to do here, should I initialize a BinomTestStatistic Object?.    
         }
+    }
+    
+    //constructor method didn't work, so doing it like this.
+    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion){
+        
+        BinomialTest t = new BinomialTest(all_individuals);
+        
+        
+        t.TestUsedInPhasing = true;
+        t.RegionName = thisRegion.getAnnotation();
+        t.startOfRegion = thisRegion.getStartPosition();
+        t.endOfRegion = thisRegion.getEndPosition();
+        
+        return t;
+    
     }
     
     private ArrayList<IndividualSnpData> isolateHeterozygotes(ArrayList<IndividualSnpData> all_individuals) {
@@ -270,6 +298,38 @@ public class BinomialTest {
      */
     public boolean isTestPerformed() {
         return testPerformed;
+    }
+    
+
+    /**
+     * @return the multipleTestSnps
+     */
+    public boolean hasMultipleTestSnps() {
+        return TestUsedInPhasing;
+    }
+
+    /**
+     * @return the additionalPositions
+     */
+    public ArrayList<String> getAdditionalPositions() {
+        return additionalPositions;
+    }
+
+    /**
+     * @return the additionalNames
+     */
+    public ArrayList<String> getAdditionalNames() {
+        return additionalNames;
+    }
+
+    public void addAdditionalSNP(String snpName, String snpPos){
+        additionalNames.add(snpName);
+        additionalPositions.add(snpPos);
+    
+    }
+
+    void setSnpName(String snpName1) {
+        snpName = snpName1 ;
     }
     
 }

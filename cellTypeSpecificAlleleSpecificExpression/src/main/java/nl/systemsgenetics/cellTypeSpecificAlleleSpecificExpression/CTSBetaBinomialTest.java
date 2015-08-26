@@ -208,7 +208,7 @@ class CTSBetaBinomialTest {
                 ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
 
                 GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
-                GuessList.add(new InitialGuess(new double[] {0.25, 0.5      }));
+                GuessList.add(new InitialGuess(new double[] {0.25, 0.5       }));
                 GuessList.add(new InitialGuess(new double[] {0.75, 0.5       }));
 
 

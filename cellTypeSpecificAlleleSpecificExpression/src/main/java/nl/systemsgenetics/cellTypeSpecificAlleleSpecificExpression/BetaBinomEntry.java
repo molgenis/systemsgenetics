@@ -58,7 +58,7 @@ public class BetaBinomEntry {
              *       But we could also do it everytime you do this, perhaps based 
              *       on the relative time compared to the full calculation.
              *       
-                    EDIT: seems to be about 5 seconds per individual, 
+                    EDIT: seems to be not too long (less than a minute) per individual, 
              *       so I'm fine with keeping it this way.
              */
         }

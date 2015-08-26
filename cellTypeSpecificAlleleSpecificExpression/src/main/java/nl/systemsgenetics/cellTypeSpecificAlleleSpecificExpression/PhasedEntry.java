@@ -7,16 +7,19 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import org.apache.commons.io.FilenameUtils;
 import org.jdom.IllegalDataException;
-import org.molgenis.genotype.Allele;
+
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+import umcg.genetica.containers.Pair;
 
 /**
  *
@@ -25,13 +28,13 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
 class PhasedEntry {
     
     
-    public PhasedEntry(String asLocations, String couplingLoc) throws IOException {
+    public PhasedEntry(String asLocations, String couplingLoc, String outputLocation, String cellPropLoc) throws IOException, Exception {
         /**
          * This method will perform a binomial test for some test region. 
          * later additional features will be add.
          * 
          * currently the flow of the program:
-         * 1. read all SNPs from AS files
+         * 1. read all SNPs from AS files and add overdispersion and cellprop to the files
          * 2. read phasing and assign alleles for these snps
          * 3. load test regions and determine test snps.
          * 5. determine log likelihood for test-snps. (with some deduplication, hopefully)
@@ -49,6 +52,39 @@ class PhasedEntry {
        
         HashMap<String, String> posNameMap = new HashMap<String, String>();
         
+        //first determine overdispersion values per SNP.
+        
+        ArrayList<BetaBinomOverdispInSample>  dispersionParameters = new ArrayList<BetaBinomOverdispInSample>();
+        
+        
+        String dispersionOutput = FilenameUtils.getFullPath(outputLocation) + 
+                                  FilenameUtils.getBaseName(outputLocation) +
+                                  "_dispersionFile.txt";
+        
+        PrintWriter dispersionWriter = new PrintWriter(dispersionOutput, "UTF-8");       
+        dispersionWriter.write("Filename\tdispersion");
+        int i=0;
+        
+        for(String asLoc : allFiles){
+            dispersionParameters.add(new BetaBinomOverdispInSample(asLoc));
+            dispersionWriter.printf("%s\t%.6f\n", dispersionParameters.get(i).getSampleName(), dispersionParameters.get(i).getOverdispersion()[0] );
+        }
+        
+        if(GlobalVariables.verbosity >= 10){
+            System.out.println("--------------------------------------------------");
+            System.out.println("Finished dispersion estimates for all individuals.");
+            System.out.println("--------------------------------------------------");        
+        }
+        
+        boolean hasCellProp = false;
+        ArrayList<String> phenoString = new ArrayList<String>();
+        if(cellPropLoc != null){
+            hasCellProp = true;
+            phenoString = UtilityMethods.readFileIntoStringArrayList(cellPropLoc);
+                    
+        }
+        
+        //second reading of the file.
         while (true) {
             
             //read some stuff from the files.
@@ -63,18 +99,33 @@ class PhasedEntry {
             String chr = tempSNPdata.get(0).getChromosome();
             String posString = tempSNPdata.get(0).getPosition();
             
+            //add dispersionValues to the SNPs:
+            for(int j= 0; j < tempSNPdata.size(); j++){
+            
+                if(!tempSNPdata.get(j).getSampleName().equals(dispersionParameters.get(j).getSampleName())){
+                    System.out.println(tempSNPdata.get(j).getSampleName());
+                    System.out.println(dispersionParameters.get(j).getSampleName());
+                    throw new IllegalDataException("the name of the individual in the dispersion data is not the same as the individual name in the SNP");
+                }
+                tempSNPdata.get(j).setDispersion(dispersionParameters.get(j).getOverdispersion()[0]);
+                
+                if(hasCellProp){
+                    tempSNPdata.get(j).setCellTypeProp(Double.parseDouble(phenoString.get(j)));
+                }
+            
+            }
             
             posNameMap.put(chr + ":" + posString, snpName);
             
             //take the SNP name and arraylist and put in the hashmap.
-            snpHashMap.put(snpName, tempSNPdata);
+            snpHashMap.put(chr + ":" + posString, tempSNPdata);
             
         }
         
         if(GlobalVariables.verbosity >= 10){
             System.out.println("all AS info Snps were read");
         }
-        
+      
         // 2. Load test regions and determine the snps in the region.
        
         if(GlobalVariables.verbosity >= 10){
@@ -85,166 +136,414 @@ class PhasedEntry {
         ArrayList<GenomicRegion> allRegions;
         allRegions = ReadGenomicRegions("/media/fast/GENETICA/implementInJava/CEUASCOUNTS/genomicRegionsUnique.txt");
         
-        //This should be a lot faster, but I don't want to optimize prematurely
-        
-        for(int i=0; i< allRegions.size(); i++){
-            GenomicRegion iRegion = allRegions.get(i);
-            ArrayList<String> snpsInRegion = new ArrayList<String>();
-            String sequence = iRegion.getSequence();
-            int start =iRegion.getStartPosition();
-            int end =iRegion.getEndPosition();
-
-            for(String iSNP : posNameMap.keySet() ){
-                String[] posArray = iSNP.split(":");
-                String chr = posArray[0];
-                int pos = Integer.parseInt(posArray[1]);
-                String snpName = posNameMap.get(iSNP);
-                        
-                if(chr.equals(sequence) && start <= pos && end >= pos){
-                    snpsInRegion.add(snpName);
-                }
-            }
-            iRegion.setSnpInRegions(snpsInRegion);
-            if(i % 100 == 1 && GlobalVariables.verbosity >= 10) System.out.print(".");
-        }
-        
-        if(GlobalVariables.verbosity >= 10){
-            System.out.println("\nAll SNPs add to all regions.");
-        }
-        
         // 3. Read phasing info for these snps
-            
-        
-        
-        HashMap<String, ArrayList<IndividualSnpData>> phasedSnpHashMap;        
-        phasedSnpHashMap = addPhasingToSNPHashMap(snpHashMap, couplingLoc, allRegions);
 
+        Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>> phasedPair;
+        phasedPair = addPhasingToSNPHashMap(snpHashMap, couplingLoc, allRegions);
+        
+        snpHashMap = phasedPair.getLeft();
+        allRegions = phasedPair.getRight();
+        
+        phasedPair = null;
+        
         if(GlobalVariables.verbosity >= 10){
             System.out.println("Added phasing information to AS values of snps.");
         }
-    }
-
-    private HashMap<String, ArrayList<IndividualSnpData>> addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, String couplingLoc, ArrayList<GenomicRegion> genomicRegions) throws IOException {
-            String vcfLoc;
-            vcfLoc = "/media/fast/GENETICA/implementInJava/CEUGENOTYPES/special_vcf/" + 
-                     "CEU.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz";
+        
+        
+        /**
+         * 4.  Start testing, per region.:
+         * 
+         * 4.1 Detemine the test snp in the region, this will be the reference value
+         * 4.2 Determine the heterozygotes for the test snp.
+         * 4.3 switch alt and ref values of the heterozygotes in the test region 
+         *      respective of the test snp. add the new list to a binomial test.
+         * 4.4 do the test in the BinomialTest.java and others in the future.
+         * 
+         * 
+        */
+        
+         //write output to these files.
+           
+        PrintWriter writerBinom = new PrintWriter(
+                                                  FilenameUtils.getFullPath(outputLocation) + 
+                                                  FilenameUtils.getBaseName(outputLocation) + 
+                                                  "_Binomial_results.txt"
+                                           , "UTF-8");
+        
+        PrintWriter writerBetaBinom = new PrintWriter(
+                                                    FilenameUtils.getFullPath(outputLocation) + 
+                                                    FilenameUtils.getBaseName(outputLocation) + 
+                                                    "_BetaBinomial_results.txt"
+                                                , "UTF-8");
+        
+        PrintWriter writerCTSBinom = new PrintWriter(
+                                                  FilenameUtils.getFullPath(outputLocation) + 
+                                                  FilenameUtils.getBaseName(outputLocation) + 
+                                                  "_CellTypeSpecificBinomial_results.txt"
+                                           , "UTF-8");
+        
+        PrintWriter writerCTSBetaBinom = new PrintWriter(
+                                                  FilenameUtils.getFullPath(outputLocation) + 
+                                                  FilenameUtils.getBaseName(outputLocation) + 
+                                                  "_CellTypeSpecificBetaBinomial_results.txt"
+                                           , "UTF-8");
+        
+        
+        for(GenomicRegion iRegion : allRegions){
             
-            String tabixLoc = vcfLoc + ".tbi";
+            // I may want to change this into all test SNPS needs to be implemented still.
+            // compared to all snps in the region.
             
-            VcfGenotypeData genotypeData = new VcfGenotypeData(new File(vcfLoc), new File(tabixLoc), GlobalVariables.variantProb);
             
-
-            //make a Hashmap with the coupling information correct.
-            String[] sampleNames = genotypeData.getSampleNames();
-            ArrayList<String> couplingList = UtilityMethods.readFileIntoStringArrayList(couplingLoc);
+            ArrayList<String> snpsInRegion = iRegion.getSnpInRegions();
             
-            HashMap<String, Integer> couplingMap = new HashMap<String, Integer>();
+            ArrayList<IndividualSnpData> allHetsInRegion = new ArrayList<IndividualSnpData>();
             
-            for(String iSample : couplingList){
-                
-                String[] tempCouple = iSample.split("\t");
-                boolean found = false;
-                
-                
-                for(int i=0; i < sampleNames.length; i++){
-                    
-                    if(tempCouple[0].equals(sampleNames[i])){
-                       couplingMap.put(tempCouple[1], i);
-                       found =true;
-                       break;
-                    }
-                }
-                
-                if(!found && GlobalVariables.verbosity >= 10){
-                    System.out.println("couldn't find individual " + tempCouple[0] + " in sampleNames, continueing with the next.");
-                }
+            //Don't want to do this in every iteration in the next loop, don't know if this is efficient. 
+            for( String regionSnp : snpsInRegion ){
+                allHetsInRegion.addAll(UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(regionSnp)));
             }
-            if(GlobalVariables.verbosity >= 100){
-                System.out.println("final coupling map:");
-                System.out.println(couplingMap.toString());
-            }
+            
+            HashSet<String> combinationsDone = new HashSet<String>();
+            
+            HashMap<String, BinomialTest> storedBinomTests = new HashMap<String, BinomialTest>();
+            HashMap<String, BetaBinomialTest> storedBetaBinomTests = new HashMap<String, BetaBinomialTest>();
+            HashMap<String, CTSbinomialTest> storedCTSBinomTests = new HashMap<String, CTSbinomialTest>();
+            HashMap<String, CTSBetaBinomialTest> storedCTSBetaBinomTests = new HashMap<String, CTSBetaBinomialTest>();
+          
             
             
-            
-            HashMap<String, GeneticVariant> variantIdMap = genotypeData.getVariantIdMap();
-            Set<String> phasedKeySet = variantIdMap.keySet();
-            
-            Set<String> genoKeySet = snpHashMap.keySet();
-            
-            int SNPsDone = 0; 
-            
-            for(String iKey : phasedKeySet ){
+            for( String testSnp : snpsInRegion ){
                 
-                GeneticVariant thisVariant = variantIdMap.get(iKey);
+                ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
                 
-                List<Boolean> SamplePhasing;
-                List<Alleles> Variants; 
-                
-                if(genoKeySet.contains(iKey)  && thisVariant.isSnp() && thisVariant.isBiallelic()){
-                    
-                    SamplePhasing = thisVariant.getSamplePhasing();
-                    Variants = thisVariant.getSampleVariants();
-                
-
-                    //make sure we have phasing data.
-                    if( SamplePhasing==null || Variants == null ){
-                        if(GlobalVariables.verbosity >= 10){
-                            System.out.println("Couldn't find snp: "+ iKey + " in genotyped data, continueing with the next.");
-                        }
-                        //no phasing so skip this snp
+                try{
+                    if(!hetTestSnps.get(0).hasPhasing()){
                         continue;
                     }
+                } catch(Exception e ){
+                    continue;
+                }
+                
+                StringBuilder inputIdA = new StringBuilder(); 
+                StringBuilder inputIdB = new StringBuilder(); 
 
-                    //add phasing infotmation to the arraylist of SNPdata:
-                    ArrayList<IndividualSnpData> oldSnpData = snpHashMap.get(iKey);
-                    ArrayList<IndividualSnpData> newSnpData = new ArrayList<IndividualSnpData>();
+                ArrayList<String> hetTestNames = new ArrayList<String>();
+                
+                for(IndividualSnpData hetSample : hetTestSnps){
+                    inputIdA.append(hetSample.sampleName);
+                    inputIdA.append(hetSample.getPhasingFirst());
                     
+                    inputIdB.append(hetSample.sampleName);
+                    inputIdB.append(hetSample.getPhasingSecond());
                     
+                    hetTestNames.add(hetSample.sampleName);
+                }
+                
+                String refStringA = inputIdA.toString();
+                String refStringB = inputIdB.toString();
+                
+                if(hetTestSnps.size() >= GlobalVariables.minHets){
+                
+                    //make sure I don't have to do two tests double.
+                    if(combinationsDone.contains(refStringA)){
+                       
+                       BinomialTest binomForAddition         = storedBinomTests.get(refStringA);
+                       BetaBinomialTest betaBinomForAddition = storedBetaBinomTests.get(refStringA);
+                       
+                       //there is duplication here to make sure it is stored under the correct name.
+                       if(binomForAddition == null){
+                       
+                           binomForAddition = storedBinomTests.get(refStringB);
+                           binomForAddition.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
+                           
+                           betaBinomForAddition = storedBetaBinomTests.get(refStringB);
+                           betaBinomForAddition.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
+                           
+                           storedBinomTests.put(refStringB, binomForAddition);
+                           storedBetaBinomTests.put(refStringB, betaBinomForAddition);
+                           
+                       } else {                       
+                           binomForAddition.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
+                           storedBinomTests.put(refStringA, binomForAddition);
+                           
+                           betaBinomForAddition.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
+                           storedBetaBinomTests.put(refStringA, betaBinomForAddition);
+                       }
+                       continue;
+                    }
+                
+                
+                    //TODO, make this so that already tested combinations are skipped
+                    // don't want to optimize prematurely.
+                
+                
+                
                     
-                    for(IndividualSnpData iAS : oldSnpData){
+                    ArrayList<IndividualSnpData> phasedSNPsForTest = new ArrayList<IndividualSnpData>();
+                    
+                    for(int j = 0 ; j < allHetsInRegion.size() ; j++){
+                        IndividualSnpData thisHet = allHetsInRegion.get(j);
                         
-                        int i = couplingMap.get(iAS.getSampleName());
-
-                        //make sure there is phasing data available:
-                        if(SamplePhasing.get(i)){
-
-                            char Alt = iAS.getAlternative();
-                            
-                            
-                            char[] alleleChars;
-                            alleleChars = Variants.get(i).getAllelesAsChars();
-
-
-                            if(GlobalVariables.verbosity >= 100){
-                                System.out.println(alleleChars);
-                            }
-
-                            //assuming the allele is reference
-                            int first = 0;
-                            int second = 0;
-
-                            if(alleleChars[0] == Alt){
-                                first = 1;
-                            }
-                            if(alleleChars[1] == Alt){
-                                second = 1;
-                            }
-
-                            iAS.setPhasing(first, second);
+                        String sampleName = thisHet.sampleName;
+                        
+                        if(!hetTestNames.contains(thisHet.sampleName) || !thisHet.hasPhasing()){
+                            continue;
                         }
-                        newSnpData.add(iAS);
+                        
+                        //this is the heterozygote to compare to.
+                        IndividualSnpData hetToCompareTo = hetTestSnps.get(hetTestNames.indexOf(sampleName));
+                        
+                        if(hetToCompareTo.getPhasingFirst() != thisHet.getPhasingFirst()){
+                            // because it is a heterozygote, we can assume that 
+                            // first is 0 and second is 1, or the other way around.
+                            // if the first in  this snp doesn't match the 
+                            // first in test, we will have to switch the ref, alt
+                            // alleles
+                            int temp = thisHet.refNum;
+                            thisHet.refNum = thisHet.altNum;
+                            thisHet.altNum = temp;
+                        }
+                        
+                        //now we may or may not have changed it, 
+                        // we add it to the tempHetsForTest
+                        phasedSNPsForTest.add(thisHet);
+                    
                     }
                     
-                    //overwrite this into the snpHashMap
-                    snpHashMap.put(iKey, newSnpData);
-                    SNPsDone++;
-                    if(SNPsDone % 10000 == 0 && GlobalVariables.verbosity >= 10){System.out.println("Finished " + SNPsDone + " Snps");}
+                    
+                    BinomialTest thisBinomTest;
+                    thisBinomTest = BinomialTest.phasedBinomialTest(phasedSNPsForTest, iRegion);
+                    thisBinomTest.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);                    
+                    storedBinomTests.put(refStringA, thisBinomTest);
+                    
+                    
+                    BetaBinomialTest thisBetaBinomTest;
+                    thisBetaBinomTest = BetaBinomialTest.phasedBetaBinomialTest(phasedSNPsForTest, iRegion);
+                    thisBetaBinomTest.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
+                    storedBetaBinomTests.put(refStringA, thisBetaBinomTest);
+                    
+
+                    //make sure we don't have to do the computationally intensive tests again.
+                    
+                    combinationsDone.add(refStringA);
+                    combinationsDone.add(refStringB);
+                    
                 }
-               
+            }
+            
+            for(String thisTestName : storedBinomTests.keySet()){
+                
+                BinomialTest thisTest = storedBinomTests.get(thisTestName);
+                
+                if(thisTest.isTestPerformed()){
+                    writerBinom.println(writeBinomialTestOutput(thisTest));
+                }
                 
             }
             
-        return snpHashMap;
+            for(String thisTestName : storedBetaBinomTests.keySet()){
+                
+                BetaBinomialTest thisTest = storedBetaBinomTests.get(thisTestName);
+                
+                if(thisTest.isTestPerformed()){
+                    writerBinom.println(writeBetaBinomialTestOutput(thisTest));
+                }
+            
+            }
+            
+        }
+        
+        writerBinom.close();
+        writerBetaBinom.close();
+        writerCTSBinom.close();
+        writerCTSBetaBinom.close();
+        
+    }
+
+    private Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>> 
+            addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, 
+                                   String couplingLoc, 
+                                   ArrayList<GenomicRegion> genomicRegions
+                               ) throws IOException {
+            
+        String vcfLoc;
+        vcfLoc = "/media/fast/GENETICA/implementInJava/CEUGENOTYPES/special_vcf/" + 
+                 "CEU.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz";
+
+        String tabixLoc = vcfLoc + ".tbi";
+
+        VcfGenotypeData genotypeData = new VcfGenotypeData(new File(vcfLoc), new File(tabixLoc), GlobalVariables.variantProb);
+
+
+        //make a Hashmap with the coupling information correct.
+        String[] sampleNames = genotypeData.getSampleNames();
+        ArrayList<String> couplingList = UtilityMethods.readFileIntoStringArrayList(couplingLoc);
+
+        HashMap<String, Integer> couplingMap = new HashMap<String, Integer>();
+
+        for(String iSample : couplingList){
+
+            String[] tempCouple = iSample.split("\t");
+            boolean found = false;
+
+
+            for(int i=0; i < sampleNames.length; i++){
+
+                if(tempCouple[0].equals(sampleNames[i])){
+                   couplingMap.put(tempCouple[1], i);
+                   found =true;
+                   break;
+                }
+            }
+
+            if(!found && GlobalVariables.verbosity >= 10){
+                System.out.println("couldn't find individual " + tempCouple[0] + " in sampleNames, continueing with the next.");
+            }
+        }
+        if(GlobalVariables.verbosity >= 100){
+            System.out.println("final coupling map:");
+            System.out.println(couplingMap.toString());
+        }
+
+        int snpsDone = 0;
+        for(int regionIndicator = 0; regionIndicator < genomicRegions.size(); regionIndicator++){
+            
+            GenomicRegion iRegion = genomicRegions.get(regionIndicator);
+            
+            Iterable<GeneticVariant> VariantsInRegion;
+            VariantsInRegion = genotypeData.getVariantsByRange(
+                                                iRegion.getSequence(),
+                                                iRegion.getStartPosition(),
+                                                iRegion.getEndPosition());
+            
+            ArrayList<String> snpsInThisRegion = new ArrayList<String>();
+            
+            for(GeneticVariant currentVariant : VariantsInRegion){
+                
+                if(GlobalVariables.verbosity >= 100){
+                    System.out.println("Starting " + currentVariant.getPrimaryVariantId());
+                }
+                
+                if(!(currentVariant.isSnp() && currentVariant.isBiallelic())){
+                    //not a valid variant
+                    if(GlobalVariables.verbosity >= 100){
+                        System.out.println("continueing because not a valid variant");
+                    }
+                    continue;
+                }
+                
+                String snpName = currentVariant.getPrimaryVariantId();
+                String chr = currentVariant.getSequenceName();
+                String posString =  Integer.toString(currentVariant.getStartPos());
+                
+                ArrayList<IndividualSnpData> oldSnpData = snpHashMap.get(chr + ":" + posString);
+                
+
+                
+ 
+                
+                if(oldSnpData == null){
+                    if(GlobalVariables.verbosity >= 100){
+                        System.out.println("Couldn't find SNP: " + snpName + " in AS reads, continueing with the next.");
+                    }
+                    continue;
+                }
+                
+                if(!oldSnpData.get(0).getSnpName().equals(snpName)){
+                    if(GlobalVariables.verbosity >= 10){
+                        System.out.println("Couldn't find SNP: " + snpName + "in the correct position: " + chr + ":" + "posString");
+                    }
+                    continue;
+                }
+                
+                snpsInThisRegion.add(chr + ":" + posString);
+
+                //If phasing is already add to this variant we may as well stop right here.
+                if(oldSnpData.get(0).hasPhasing()){
+                    //this assumes all individuals in oldSNPdata are phased at the same time.
+                    //currently this is the case, but if it changes it, it might break.
+                    continue;
+                }
+                
+                
+                ArrayList<IndividualSnpData> newSnpData = new ArrayList<IndividualSnpData>();
+                List<Boolean> SamplePhasing = currentVariant.getSamplePhasing();
+                List<Alleles> Variants = currentVariant.getSampleVariants();
+                
+                boolean passSNP = false;
+                
+                
+                for(IndividualSnpData iAS : oldSnpData){
+
+                    int i = couplingMap.get(iAS.getSampleName());
+                    
+                    IndividualSnpData referenceAS = iAS; 
+                    
+                    //make sure there is phasing data available:
+                    if(SamplePhasing.get(i)){
+
+                        char Alt = iAS.getAlternative();
+
+
+                        char[] alleleChars;
+                        alleleChars = Variants.get(i).getAllelesAsChars();
+
+
+                        if(GlobalVariables.verbosity >= 100){
+                            System.out.println(Arrays.toString(alleleChars));
+                        }
+
+                        //assuming the allele is reference
+                        int first = 0;
+                        int second = 0;
+
+                        if(alleleChars[0] == Alt){
+                            first = 1;
+                        }
+                        if(alleleChars[1] == Alt){
+                            second = 1;
+                        }
+                        try{
+                        iAS.setPhasing(first, second);
+                        } catch(Exception e){
+                            if(GlobalVariables.verbosity >= 10 && !passSNP){
+                            System.out.println("Did not set phasing for variant" + snpName + " phasing does not match genotype.");
+                            }
+                            passSNP = true;
+
+                        }
+                    }
+                    newSnpData.add(iAS);
+                }
+                
+                //something went wrong in the 
+                if(passSNP){
+                    newSnpData = oldSnpData;
+                }
+                
+                
+                //overwrite this into the snpHashMap
+                snpHashMap.put(chr + ":" + posString, newSnpData);
+                snpsDone++;
+            }
+            
+            iRegion.setSnpInRegions(snpsInThisRegion);
+            
+            genomicRegions.set(regionIndicator, iRegion);
+            
+            if(GlobalVariables.verbosity >= 10 && regionIndicator % 1000 == 0){
+                System.out.println("Finished adding phasing to " + Integer.toString(regionIndicator) + " regions, " + Integer.toString(snpsDone) + " snps.");
+            }
+        }
+        
+        //so I can output it easily
+        Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>> returnPair;
+        
+        returnPair = new Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>>(snpHashMap, genomicRegions);
+        
+        return returnPair;
     }
 
     private ArrayList<GenomicRegion> ReadGenomicRegions(String regionsFile) throws IOException {
@@ -259,17 +558,134 @@ class PhasedEntry {
             tempRegion.setAnnotation(splitString[0]); 
             tempRegion.setSequence(splitString[1]);
             tempRegion.setStartPosition(Integer.parseInt(splitString[2]));
-            tempRegion.setStartPosition(Integer.parseInt(splitString[3])); 
+            tempRegion.setEndPosition(Integer.parseInt(splitString[3])); 
             
             allRegions.add(tempRegion);
             
         }
         
-        
         return allRegions;
     }
     
+    public static String writeBinomialTestOutput(BinomialTest thisTest){
+        
+        StringBuilder outputString = new StringBuilder(); 
     
+        outputString.append(thisTest.getChromosome());
+        outputString.append("\t");
+        
+        
+        outputString.append(Integer.toString(thisTest.startOfRegion));
+        outputString.append("\t");
 
+        outputString.append(Integer.toString(thisTest.endOfRegion));
+        outputString.append("\t");
+        
+        outputString.append(thisTest.RegionName);
+        outputString.append("\t");
+        
+        outputString.append(Double.toString(thisTest.getTestStatistics().getpVal()));
+        outputString.append("\t");
+        
+        outputString.append(Double.toString(thisTest.getTestStatistics().getChiSq()));
+        outputString.append("\t");
+        
+        //number of hets in region
+        outputString.append(Integer.toString(thisTest.getHetSampleNames().size()));
+        outputString.append("\t");
+        
+        
+        int refSum = 0;
+        int altSum = 0;
+        for(int i : thisTest.getAsRef()) refSum += i;
+        for(int i : thisTest.getAsAlt()) altSum += i;
+
+        
+        outputString.append(Integer.toString(refSum));
+        outputString.append("\t");
+        
+        outputString.append(Integer.toString(altSum));
+        outputString.append("\t");
+        
+        ArrayList<String> allTestPositions = thisTest.getAdditionalPositions();
+        
+        for(String i : allTestPositions){
+            outputString.append(i);
+            outputString.append(";");
+        }
+        outputString.append("\t");
+        
+        ArrayList<String> allTestNames = thisTest.getAdditionalNames();
+        
+        for(String i : allTestNames){
+            outputString.append(i);
+            outputString.append(";");
+        }
+        outputString.append("\t");
+        
+        
+        return outputString.toString();
+    }
+
+    public static String writeBetaBinomialTestOutput(BetaBinomialTest thisTest){
+        
+        StringBuilder outputString = new StringBuilder(); 
+    
+        outputString.append(thisTest.getChromosome());
+        outputString.append("\t");
+        
+        
+        outputString.append(Integer.toString(thisTest.startOfRegion));
+        outputString.append("\t");
+
+        outputString.append(Integer.toString(thisTest.endOfRegion));
+        outputString.append("\t");
+        
+        outputString.append(thisTest.RegionName);
+        outputString.append("\t");
+        
+        outputString.append(Double.toString(thisTest.pVal));
+        outputString.append("\t");
+        
+        outputString.append(Double.toString(thisTest.chiSq));
+        outputString.append("\t");
+        
+        //number of hets in region
+        outputString.append(Integer.toString(thisTest.getHetSampleNames().size()));
+        outputString.append("\t");
+        
+        
+        int refSum = 0;
+        int altSum = 0;
+        for(int i : thisTest.getAsRef()) refSum += i;
+        for(int i : thisTest.getAsAlt()) altSum += i;
+
+        
+        outputString.append(Integer.toString(refSum));
+        outputString.append("\t");
+        
+        outputString.append(Integer.toString(altSum));
+        outputString.append("\t");
+        
+        ArrayList<String> allTestPositions = thisTest.getAdditionalPositions();
+        
+        for(String i : allTestPositions){
+            outputString.append(i);
+            outputString.append(";");
+        }
+        outputString.append("\t");
+        
+        ArrayList<String> allTestNames = thisTest.getAdditionalNames();
+        
+        for(String i : allTestNames){
+            outputString.append(i);
+            outputString.append(";");
+        }
+        outputString.append("\t");
+        
+        
+        return outputString.toString();
+    }
+    
 }
 

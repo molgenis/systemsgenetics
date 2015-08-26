@@ -20,6 +20,7 @@ import org.apache.commons.math3.optim.univariate.SearchInterval;
  *
  * @author adriaan
  */
+
 class BetaBinomialTest {
     
     //SNP information
@@ -29,6 +30,18 @@ class BetaBinomialTest {
 
     //Information about the input data
     private final int numberOfHets;
+    
+    //sometimes multiple test snps have the same results, this is done 
+    //deduplication purposes.
+    
+    boolean TestUsedInPhasing = false;
+    private ArrayList<String> additionalPositions = new ArrayList<String>();
+    private ArrayList<String> additionalNames = new ArrayList<String>(); 
+    
+    String RegionName;
+    int startOfRegion = -1;
+    int endOfRegion = -1;
+    
     
     //Names of individuals for easy reference
     
@@ -231,6 +244,22 @@ class BetaBinomialTest {
         }
     }
 
+    //constructor method didn't work, so doing it like this.
+    public static  BetaBinomialTest phasedBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion) throws Exception{
+        
+        BetaBinomialTest t = new BetaBinomialTest(all_individuals);
+        
+        
+        t.TestUsedInPhasing = true;
+        t.RegionName = thisRegion.getAnnotation();
+        t.startOfRegion = thisRegion.getStartPosition();
+        t.endOfRegion = thisRegion.getEndPosition();
+        
+        return t;
+    
+    }
+    
+    
 
     public String writeTestStatistics(boolean all_data) {
         
@@ -368,5 +397,32 @@ class BetaBinomialTest {
     public ArrayList<Integer> getAsNo() {
         return asNo;
     }
+    
+    /**
+     * @return the multipleTestSnps
+     */
+    public boolean hasMultipleTestSnps() {
+        return TestUsedInPhasing;
+    }
 
+    /**
+     * @return the additionalPositions
+     */
+    public ArrayList<String> getAdditionalPositions() {
+        return additionalPositions;
+    }
+
+    /**
+     * @return the additionalNames
+     */
+    public ArrayList<String> getAdditionalNames() {
+        return additionalNames;
+    }
+
+    public void addAdditionalSNP(String snpName, String snpPos){
+        additionalNames.add(snpName);
+        additionalPositions.add(snpPos);
+    
+    }
+    
 }

@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import java.util.ArrayList;
 import org.jdom.IllegalDataException;
 
 /**
@@ -17,16 +18,18 @@ import org.jdom.IllegalDataException;
 public class IndividualSnpData {
     final String sampleName;
     final String snpName;
-    private final String chromosome;
+    final String chromosome;
     final String position;
     
+    //this is used in phased tests. if there are additional positions with the 
+    //same result.
     
     final char   reference;
     final char   alternative;
     
-    final int    refNum;
-    final int    altNum;
-    final int    noNum;
+    int    refNum;
+    int    altNum;
+    int    noNum;
 
     final String genotype;
     
@@ -97,11 +100,12 @@ public class IndividualSnpData {
         
         //make sure a homozygote phasing is not added to a heterozygote genotype
         if((firstAllelePhased == secondAllelePhased) && (UtilityMethods.isGenoHeterozygote(genotype))){
-            System.out.println(genotype);
+          
             throw new IllegalDataException("phasing and genotype do not match: phasing does not contain a heterozygote.");
         }
         //make sure heterozygote phasing is not added to homozygte genotype
         if((firstAllelePhased != secondAllelePhased) && !(UtilityMethods.isGenoHeterozygote(genotype))){
+            
             throw new IllegalDataException("phasing and genotype do not match: phasing contains a heterozygote.");
         }
         
@@ -198,7 +202,14 @@ public class IndividualSnpData {
     public String getGenotype() {
         return genotype;
     }
-
+    
+    /**
+     * @return if the variant has phasing
+     */    
+    public boolean hasPhasing(){
+        return hasPhasing;
+    }
+    
     /**
      * @return the cellTypeProp
      * @throws java.lang.Exception
@@ -261,8 +272,5 @@ public class IndividualSnpData {
         }
     }
 
-    
-    
-    
 
 }
