@@ -9,7 +9,8 @@ package umcg.genetica.io.chrContacts;
  *
  * @author MaKKie_Admin
  */
-public class DesiredChrContact extends ChrContact{
+public class DesiredChrContact extends ChrContact {
+
     private final String snpName;
     private final String probeName;
     private boolean contact = false;
@@ -31,9 +32,7 @@ public class DesiredChrContact extends ChrContact{
     public void setNormalizedContactValue(double normalizedContactValue) {
         this.normalizedContactValue = normalizedContactValue;
     }
-    
 
-  
     public DesiredChrContact(int chrLocSmal, int chrLocLarge, double contactVal, String snpName, String probeName) {
         super(chrLocSmal, chrLocLarge, contactVal);
         this.snpName = snpName;
@@ -44,17 +43,21 @@ public class DesiredChrContact extends ChrContact{
         return snpName;
     }
 
-
     public String getProbeName() {
         return probeName;
-    }    
+    }
 
     public boolean hasContact() {
         return contact;
     }
 
-    public void setContact(){
+    public void setContact() {
         this.contact = true;
     }
-    
+
+    public DesiredChrContact clone() {
+        DesiredChrContact d = new DesiredChrContact(this.chrLocationSmaller, this.chrLocationLarger, this.contactValue, this.snpName, this.probeName);
+        return d;
+    }
+
 }

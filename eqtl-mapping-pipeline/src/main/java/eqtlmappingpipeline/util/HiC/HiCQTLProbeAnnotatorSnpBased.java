@@ -13,10 +13,8 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
@@ -35,19 +33,16 @@ class HiCQTLProbeAnnotatorSnpBased {
         String resolution = "1kb"; //5kb / 1kb
         String qualityCutOff = "E30"; //0 or E30
 //        String normMethod = null;
-        String normMethod = "null"; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
+        String normMethod = null; //null / "KRnorm" / "SQRTVCnorm" / "VCnorm"
         double minValueQuality = 0.0;
-        boolean permutationFile = true;
+        boolean permutationFile = false;
         String probeMap = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\Illumina450K_MQtlMappingFile_MJB.txt";
         String snpMap = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\SNPMappings\\SNPMappings.txt";
         System.out.println("Running");
-//        for (int i = 1; i < 11; ++i) {
-            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered.txt";
-//            String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\eQTLProbesFDR0.05-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-ProbeLevel.txt_LdQtlFilterd.txt";
-//        String QTLfile = "D:\\Werk\\UMCGundefinedUMCG\\Projects\\LL-DeepBBMRI_Methylation450K\\meQTLs\\trans-QTLs\\PermutedEQTLsPermutationRound57.head.txt";
 
-        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_AlternativePermutation_Probe_HiC_1kb_E30_annotated.txt";
-//            String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Cis_Pc22c_meQTLs\\HiC\\eQTLsFDR0.05-ProbeLevel_BsFiltered&Filtered_HiC_1kb_E30_annotated.txt";
+        String QTLfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\ArrayInQTLFormatForAnnot.txt";
+
+        String QTLoutfile = "D:\\WebFolders\\OwnCloud\\AeroFS\\RP3_BIOS_Methylation\\Annotations\\ArrayInQTLFormatForAnnot_ProbeBased_HiC_1kb_E30_annotated.txt";
 
         addAnnotationToQTLOutput(
                 QTLfile,
@@ -60,12 +55,11 @@ class HiCQTLProbeAnnotatorSnpBased {
                 probeMap,
                 snpMap,
                 QTLoutfile);
-//        }
 
     }
 
     private static void addAnnotationToQTLOutput(String in, String folderHighC, String resolution, String qualityCutOff, String normMethod, double minValue, boolean permutationFile, String probeMap, String snpMap, String out) throws IOException {
-        int[] chrLocations = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
+        int[] chrLocations = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22};
         HashMap<String, ArrayList<DesiredChrContact>> qtls = readInQtlProbeInformation(in, probeMap, snpMap, permutationFile, resolution);
 
         ProgressBar pb = new ProgressBar(qtls.size(), "Checking for contacts for: " + qtls.size() + " Chromosome combinations");
@@ -74,18 +68,22 @@ class HiCQTLProbeAnnotatorSnpBased {
 
         for (Entry<String, ArrayList<DesiredChrContact>> probeChr : qtls.entrySet()) {
             Collections.sort(probeChr.getValue());
-            for(int otherChr : chrLocations){
-                
+            ArrayList<DesiredChrContact> copy = new ArrayList<>();
+            for (DesiredChrContact d : probeChr.getValue()) {
+                copy.add(d.clone());
+            }
+
+            for (int otherChr : chrLocations) {
+
                 String ChrSmaller = probeChr.getKey();
                 String ChrLarger = String.valueOf(otherChr);
                 boolean probeIsSmaller = true;
-                
-                if(otherChr < Integer.parseInt(ChrSmaller)){
+
+                if (otherChr < Integer.parseInt(ChrSmaller)) {
                     ChrSmaller = String.valueOf(otherChr);
                     ChrLarger = probeChr.getKey();
                     probeIsSmaller = false;
                 }
-                
 
                 String baseName;
                 String fileToReads;
@@ -95,20 +93,24 @@ class HiCQTLProbeAnnotatorSnpBased {
                     baseName = folderHighC + "\\GM12878_combined_intrachromosomal\\" + resolution + "_resolution_intrachromosomal\\chr" + ChrSmaller + "\\MAPQG" + qualityCutOff;
                     fileToReads = baseName + "\\chr" + ChrSmaller + "_" + resolution + ".RAWobserved";
                     intra = true;
-    //                continue;
+                    //                continue;
                 } else {
                     baseName = folderHighC + "\\GM12878_combined_interchromosomal\\" + resolution + "_resolution_interchromosomal\\chr" + ChrSmaller + "_chr" + ChrLarger + "\\MAPQG" + qualityCutOff;
                     fileToReads = baseName + "\\chr" + ChrSmaller + "_" + ChrLarger + "_" + resolution + ".RAWobserved";
                 }
 
                 if (normMethod == null) {
-                    processRawContactInformation(fileToReads, minValue, probeChr.getValue(), intra, probeIsSmaller);
+                    if (intra) {
+                        processRawContactInformation(fileToReads, minValue, copy, intra, probeIsSmaller);
+                    } else {
+                        processRawContactInformation(fileToReads, minValue, probeChr.getValue(), intra, probeIsSmaller);
+                    }
                 } else {
                     throw new UnsupportedOperationException("Not supported yet.");
                 }
             }
-            
-            writeContactInformation(outWriter, probeChr.getValue());
+
+            writeContactInformation(outWriter, probeChr.getValue(), copy);
             pb.iterate();
         }
         pb.close();
@@ -139,13 +141,12 @@ class HiCQTLProbeAnnotatorSnpBased {
                 String[] parts = StringUtils.split(it.nextLine(), '\t');
 
                 int posChr1;
-                
-                if(probeIsSmaller){
+
+                if (probeIsSmaller) {
                     posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[0]);
                 } else {
                     posChr1 = org.apache.commons.lang.math.NumberUtils.createInteger(parts[1]);
                 }
-                
 
                 while (numberToBeMatched < contactsToCheck.size()) {
                     if (posChr1 < contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
@@ -153,7 +154,7 @@ class HiCQTLProbeAnnotatorSnpBased {
                     } else if (posChr1 == contactsToCheck.get(numberToBeMatched).getChrLocationSmaller()) {
                         double contact = org.apache.commons.lang.math.NumberUtils.createDouble(parts[2]);
                         if (contact >= minValue) {
-                            contactsToCheck.get(numberToBeMatched).setNormalizedContactValue(contactsToCheck.get(numberToBeMatched).getNormalizedContactValue()+1);
+                            contactsToCheck.get(numberToBeMatched).setNormalizedContactValue(contactsToCheck.get(numberToBeMatched).getNormalizedContactValue() + 1);
                         }
                         numberToBeMatched++;
 
@@ -167,7 +168,6 @@ class HiCQTLProbeAnnotatorSnpBased {
         }
 
     }
-
 
     private static HashMap<String, ArrayList<DesiredChrContact>> readInQtlProbeInformation(String in, String probeMap, String snpMap, boolean permutationFile, String resolution) {
         ArrayList<MinimalEQTL> qtls = null;
@@ -183,13 +183,13 @@ class HiCQTLProbeAnnotatorSnpBased {
         for (MinimalEQTL qtl : qtls) {
 
             int bin1 = qtl.getProbeChrPos() - (qtl.getProbeChrPos() % HiCQTLAnnotatorSnpBased.getNumericResolution(resolution));
-            String ChrSmaller= String.valueOf(qtl.getProbeChr());
+            String ChrSmaller = String.valueOf(qtl.getProbeChr());
 
             String key = ChrSmaller;
             if (!desiredContacts.containsKey(key)) {
                 desiredContacts.put(key, new ArrayList<DesiredChrContact>());
             }
-            if(!probes.contains(qtl.getProbe())){
+            if (!probes.contains(qtl.getProbe())) {
                 desiredContacts.get(key).add(new DesiredChrContact(bin1, 0, 0, null, qtl.getProbe()));
                 probes.add(qtl.getProbe());
             }
@@ -197,16 +197,21 @@ class HiCQTLProbeAnnotatorSnpBased {
         return desiredContacts;
     }
 
-    private static void writeContactInformation(TextFile outWriter, ArrayList<DesiredChrContact> value) throws IOException {
-        
-        for(DesiredChrContact d : value){
-            String contact = "-";
-            if(d.getNormalizedContactValue()>0){
-                contact = "contact";    
+    private static void writeContactInformation(TextFile outWriter, ArrayList<DesiredChrContact> valueIntraChr, ArrayList<DesiredChrContact> valueInterChr) throws IOException {
+        int i = 0;
+        for (DesiredChrContact d : valueIntraChr) {
+            String contactIntra = "-";
+            if (d.getNormalizedContactValue() > 0) {
+                contactIntra = "contact";
             }
-            outWriter.writeln(d.getProbeName() + "\t" + contact + "\t" + d.getNormalizedContactValue());
+            String contactInter = "-";
+            if (valueInterChr.get(i).getNormalizedContactValue() > 0) {
+                contactInter = "contact";
+            }
+            outWriter.writeln(d.getProbeName() + "\t" + contactIntra + "\t" + d.getNormalizedContactValue() + "\t" + contactInter + "\t" + valueInterChr.get(i).getNormalizedContactValue());
+            ++i;
         }
-        
+
     }
 
 }
