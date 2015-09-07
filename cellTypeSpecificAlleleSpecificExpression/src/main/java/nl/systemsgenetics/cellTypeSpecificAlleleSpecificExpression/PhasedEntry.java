@@ -28,7 +28,7 @@ import umcg.genetica.containers.Pair;
 class PhasedEntry {
     
     
-    public PhasedEntry(String asLocations, String couplingLoc, String outputLocation, String cellPropLoc) throws IOException, Exception {
+    public PhasedEntry(String asLocations, String couplingLoc, String outputLocation, String cellPropLoc, String phasingLocation) throws IOException, Exception {
         /**
          * This method will perform a binomial test for some test region. 
          * later additional features will be add.
@@ -139,7 +139,7 @@ class PhasedEntry {
         // 3. Read phasing info for these snps
 
         Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>> phasedPair;
-        phasedPair = addPhasingToSNPHashMap(snpHashMap, couplingLoc, allRegions);
+        phasedPair = addPhasingToSNPHashMap(snpHashMap, couplingLoc, allRegions, phasingLocation);
         
         snpHashMap = phasedPair.getLeft();
         allRegions = phasedPair.getRight();
@@ -361,12 +361,9 @@ class PhasedEntry {
     private Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>> 
             addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, 
                                    String couplingLoc, 
-                                   ArrayList<GenomicRegion> genomicRegions
+                                   ArrayList<GenomicRegion> genomicRegions,
+                                   String vcfLoc
                                ) throws IOException {
-            
-        String vcfLoc;
-        vcfLoc = "/media/fast/GENETICA/implementInJava/CEUGENOTYPES/special_vcf/" + 
-                 "CEU.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz";
 
         String tabixLoc = vcfLoc + ".tbi";
 

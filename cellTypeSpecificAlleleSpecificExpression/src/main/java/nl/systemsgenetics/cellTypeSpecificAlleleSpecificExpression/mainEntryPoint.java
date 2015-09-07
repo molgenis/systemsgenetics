@@ -51,12 +51,9 @@ public class mainEntryPoint {
 		option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Determine what to do in this program, currently the following options are available:\n"+
-                                                 "\t1\tDetermine Allele specific reads per SNP:     \tASREADS\n\n" +  
-                                                 "\t2\tPerform a binomial test for ASE:             \tBINOMTEST\n" + 
-                                                 "\t3\tEstimate per sample beta binomoverdispersion:\tBETABINOMTEST\n\n" +
-                                                 "\t4\tCell type specific Binomial test:            \tCTSBINOMTEST\n" +
-                                                 "\t5\tCell type specific Beta Binomial test        \tCTSBETABINOMTEST\n " +
-                                                 "\t6\tPhased entry, currently used for testing     \tPHASED"+
+                                                 "\t1\tDetermine Allele specific reads per SNP: ASREADS\n\n" +  
+                                                 "\t2\tASE test per SNP                         NonPhasedTest\n" + 
+                                                 "\t3\tBeta binomial based on phasing           PhasedTest\n\n" +
                                                  "Please Run an option based on the number in the first column, or through the name in the third column."
                                                 )
 				.withLongOpt("action")
@@ -260,41 +257,7 @@ public class mainEntryPoint {
                         readGenoAndAsFromIndividual(bamFile, genotypeLocation, couplingLocation, outputLocation, snpsLocation);
                         
                     
-                    }else if(programAction.equals("BINOMTEST") || programAction.equals("2")){
-                        //Do a binomial test
-                        
-                        //Read het location
-                        if(commandLine.hasOption('L')){
-                            asFile = commandLine.getOptionValue('L');
-                        } else{
-                            throw new ParseException("Required command line input --as_location when --action is BINOMTEST");
-                        }
-                        
-                        
-                        /*
-                            START BINOMIAL
-                        */
-                                
-                        BinomialEntry(asFile, outputLocation);
-                        
-                    }else if(programAction.equals("BETABINOMTEST") || programAction.equals("3")){
-                        //Determine Allele specific reads per individual
-                        
-                        if(commandLine.hasOption('L')){
-                            asFile = commandLine.getOptionValue('L');
-                        } else{
-                            throw new ParseException("Required command line input --as_location when --action is BETABINOMTEST");
-                        }
-                        
-                    
-                        /*
-                            START BETABINOMIAL
-                        */
-                        BetaBinomEntry  a = new BetaBinomEntry(asFile, outputLocation);
-                    
-                        
-                        
-                    }else if(programAction.equals("CTSBINOMTEST") || programAction.equals("4")){
+                    }else if(programAction.equals("NonPhasedTest") || programAction.equals("2")){
                         
 
                         if(commandLine.hasOption('L')){
@@ -305,7 +268,7 @@ public class mainEntryPoint {
                         if(commandLine.hasOption('P')){
                             phenoTypeLocation = commandLine.getOptionValue('P');
                         } else{
-                            throw new ParseException("Required command line input --pheno_file when --action is CTSBINOMTEST");
+                            phenoTypeLocation = null;
                         }
                         
                        
@@ -313,28 +276,9 @@ public class mainEntryPoint {
                             START BINOMIAL CELL TYPE SPECIFIC TEST
                         */
                         
-                        CTSbinomialEntry a =  new CTSbinomialEntry(asFile, phenoTypeLocation,  outputLocation);
+                        nonPhasedEntry a =  new nonPhasedEntry(asFile, phenoTypeLocation,  outputLocation);
                         
-                    }else if(programAction.equals("CTSBETABINOMTEST") || programAction.equals("5")){
-
-                        if(commandLine.hasOption('L')){
-                            asFile = commandLine.getOptionValue('L');
-                        } else{
-                            throw new ParseException("Required command line input --as_location when --action is CTSBETABINOMTEST");
-                        }
-                        if(commandLine.hasOption('P')){
-                            phenoTypeLocation = commandLine.getOptionValue('P');
-                        } else{
-                            throw new ParseException("Required command line input --pheno_file when --action is CTSBETABINOMTEST");
-                        }
-                  
-                        /*
-                            START BETA BINOMIAL CELL TYPE SPECIFIC TEST
-                        */
-                        
-                        CTSbetaBinomialEntry a =  new CTSbetaBinomialEntry(asFile, phenoTypeLocation,  outputLocation);
-                    
-                    }else if(programAction.equals("PHASED") || programAction.equals("6")){
+                    }else if(programAction.equals("PhasedTest") || programAction.equals("3")){
                         
                         if(commandLine.hasOption('L')){
                             asFile = commandLine.getOptionValue('L');
@@ -351,7 +295,13 @@ public class mainEntryPoint {
                         } else{
                             phenoTypeLocation = null;
                         }
-                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation);
+                        if(commandLine.hasOption('G')){
+                             genotypeLocation = commandLine.getOptionValue('G');
+                        } else {
+                            throw new ParseException("Required command line input --genotype_path when --action is PHASEDANALYSIS");
+                        }
+                        
+                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation);
                         
                         
                     }else{
