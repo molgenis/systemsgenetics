@@ -6,7 +6,6 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.text.NumberFormat;
-import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.BinomialEntry.BinomialEntry;
 import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.readGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;

@@ -119,7 +119,7 @@ class BetaBinomialTest {
         
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             // There is data to perform the binomial test, perform it.       
-            if(GlobalVariables.verbosity >= 10){
+            if(GlobalVariables.verbosity >= 100){
                 System.out.println();
                 System.out.println("---- Starting beta binomial LRT test estimate ----");
                 System.out.println("SNP name: " + snpName);
@@ -156,7 +156,7 @@ class BetaBinomialTest {
             nullLogLik = betaBinomNull.value(new double[] {0.5});
             
 
-            if(GlobalVariables.verbosity >= 10){
+            if(GlobalVariables.verbosity >= 100){
                 System.out.println("Starting Alt estimation");
             }
             
@@ -193,7 +193,7 @@ class BetaBinomialTest {
             pVal = 1 - distribution.cumulativeProbability(chiSq);
             
             if(GlobalVariables.verbosity >= 10){
-
+                System.out.println("\n--- Beta Binomial Test Statistics: ---");
                 System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
                 System.out.println("\tAlpha parameter:      " + Double.toString(valueAlt[0]));
                 System.out.println("\tBeta parameter:       " + Double.toString(valueAlt[1]));
@@ -202,8 +202,9 @@ class BetaBinomialTest {
                 System.out.println("\tAlt log likelihood:   " + Double.toString(altLogLik) + "\n");
                 System.out.println("\tChisq statistic:      " + Double.toString(chiSq));
                 System.out.println("\tP value:              " + Double.toString(pVal));
+                System.out.println("------------------------------------------");
                 //TODO, I want to format this properly, but not necessary
-                System.out.println("\n---- Finished SNP " + snpName);
+
             }
             
             testPerformed = true;

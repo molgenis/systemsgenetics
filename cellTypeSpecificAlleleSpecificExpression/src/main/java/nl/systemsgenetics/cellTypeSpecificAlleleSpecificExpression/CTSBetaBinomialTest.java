@@ -118,9 +118,9 @@ class CTSBetaBinomialTest {
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             // There is data to perform the binomial test, perform it.       
 
-            if(GlobalVariables.verbosity >= 10){
+            if(GlobalVariables.verbosity >= 100){
                 System.out.println();
-                System.out.println("---- Starting CTS beta binomial LRT test estimate ----");
+              
                 System.out.println("SNP name: " + snpName);
                 System.out.println("at: chr" + chromosome + ":" + position);
                 System.out.println("------------------------------------------------------");
@@ -181,7 +181,7 @@ class CTSBetaBinomialTest {
                 NullBetaParam = valueNull[1];
                 NullbinomRatio = valueNull[0] / (valueNull[0] + valueNull[1]);
 
-                if(GlobalVariables.verbosity >= 10){
+                if(GlobalVariables.verbosity >= 100){
                     System.out.println("LogLik of Null converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
                     System.out.println("\tNull Alpha parameter:      " + Double.toString(valueNull[0]));
                     System.out.println("\tNull Beta parameter:       " + Double.toString(valueNull[1]));
@@ -280,15 +280,17 @@ class CTSBetaBinomialTest {
                 pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
 
                 if(GlobalVariables.verbosity >= 10){
-                    System.out.println("\nLogLik of Alt (version2) converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
+                    System.out.println("\n--- Starting cell type specific beta binomial LRT test estimate ---");
+                    System.out.println("LogLik of converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
                     System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
                     System.out.println("\tResidual Binomial ratio:       " + Double.toString(binomRatioResidual) + "\n");
                     System.out.println("\tNull log likelihood:           " + Double.toString(nullLogLik));   
                     System.out.println("\tAlt log likelihood:            " + Double.toString(altLogLik) + "\n");
                     System.out.println("\tChisq statistic:               " + Double.toString(chiSq));
                     System.out.println("\tP value:                       " + Double.toString(pVal));
-                    //TODO, I want to format this properly, but not necessary
-                    System.out.println("\n---- Finished SNP " + snpName);
+                    System.out.println("-----------------------------------------------------------------------");
+
+                    
                 }
                 
                  testConverged = true;
@@ -296,7 +298,7 @@ class CTSBetaBinomialTest {
             } catch(TooManyEvaluationsException e){
                 
                 if(GlobalVariables.verbosity >= 1){
-                    System.out.println("WARNING: Did not converge to a solution for " + snpName);
+                    System.out.println("WARNING: Did not converge to a solution for SNP " + snpName + "in cell type specific beta binomial");
                     System.out.println("         After " + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
                     System.out.println("         Continue-ing with the next.");
                 }

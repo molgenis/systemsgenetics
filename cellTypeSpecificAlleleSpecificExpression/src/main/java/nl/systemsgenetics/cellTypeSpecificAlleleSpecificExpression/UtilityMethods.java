@@ -89,7 +89,7 @@ public class UtilityMethods {
     
     static void printFinalTestStats(){
         if(GlobalVariables.verbosity >= 1){
-            System.out.println("-------------------------------------------");
+            System.out.println("\n-------------------------------------------");
             System.out.println("Finished " + GlobalVariables.numberOfTestPerformed + " tests, now closing.");
             System.out.println("-------------------------------------------");
         }

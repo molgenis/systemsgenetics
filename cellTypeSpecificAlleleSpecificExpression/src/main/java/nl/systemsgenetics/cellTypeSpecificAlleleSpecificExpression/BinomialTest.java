@@ -94,26 +94,34 @@ public class BinomialTest {
         
         
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
-            if(GlobalVariables.verbosity >= 10){
 
-                System.out.println("debug:");
-                System.out.println("Number of hets: " + Integer.toString(numberOfHets));
-                System.out.println(het_individuals.get(0).getSnpName());
-                System.out.println(total_overlap);
-                
-                System.out.println("asRef:          " +  asRef.toString());
-                System.out.println("asAlt:          " +  asAlt.toString());
-            }
+            //Removed this because header is now done in the nonPhasedEntry and phasedEntry (to be done).
+
+//            if(GlobalVariables.verbosity >= 10){
+//
+//                System.out.println("debug:");
+//                System.out.println("Number of hets: " + Integer.toString(numberOfHets));
+//                System.out.println(het_individuals.get(0).getSnpName());
+//                System.out.println(total_overlap);
+//                
+//                System.out.println("asRef:          " +  asRef.toString());
+//                System.out.println("asAlt:          " +  asAlt.toString());
+//            }
             
             // There is data to perform the binomial test, perform it.       
             testStatistics = new BinomTest(asRef, asAlt);
             
             if(GlobalVariables.verbosity >= 10){
-                System.out.println("Test completed:");
-                System.out.println("\tNull logLik:  " + Double.toString(testStatistics.getNullLogLik()));
-                System.out.println("\tAlt logLik:   " + Double.toString(testStatistics.getAltLogLik()));
-                System.out.println("\tchi-sq:       " + Double.toString(testStatistics.getChiSq()));
-                System.out.println("\tP value:      " + Double.toString(testStatistics.getpVal()));
+                System.out.println("\n--- Binomial Test Statistics: ---");
+
+                System.out.println("\tNull logLik:   " + Double.toString(testStatistics.getNullLogLik()));
+                System.out.println("\tAlt logLik:    " + Double.toString(testStatistics.getAltLogLik()));
+                System.out.println();
+                System.out.println("\tObserved Prop: " + Double.toString(testStatistics.getBinomRatio()));
+                System.out.println();
+                System.out.println("\tchi-sq:        " + Double.toString(testStatistics.getChiSq()));
+                System.out.println("\tP value:       " + Double.toString(testStatistics.getpVal()));
+                System.out.println("--------------------------------");
             }
             
             //binomial_test perfomed, will now set test performed to true

@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import cern.colt.Arrays;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -40,24 +41,24 @@ public class nonPhasedEntry {
 
         // use this to save the dispersionvalues
         
-        String dispersionOutput = FilenameUtils.getPath(outputLocation) + 
+        String dispersionOutput = FilenameUtils.getFullPath(outputLocation) + 
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_dispersionFile.txt";
         
-        String binomialOutput  = FilenameUtils.getPath(outputLocation) + 
+        String binomialOutput  = FilenameUtils.getFullPath(outputLocation) + 
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_BinomialResults.txt";
         
-        String betaBinomialOutput = FilenameUtils.getPath(outputLocation) + 
+        String betaBinomialOutput = FilenameUtils.getFullPath(outputLocation) + 
                                     FilenameUtils.getBaseName(outputLocation) +
                                     "_BetaBinomialResults.txt";
         
         //for ease of use initializing here.
-        String CTSbinomialOutput  = FilenameUtils.getPath(outputLocation) + 
+        String CTSbinomialOutput  = FilenameUtils.getFullPath(outputLocation) + 
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_CTSBinomialResults.txt";
         
-        String CTSbetaBinomialOutput = FilenameUtils.getPath(outputLocation) + 
+        String CTSbetaBinomialOutput = FilenameUtils.getFullPath(outputLocation) + 
                                     FilenameUtils.getBaseName(outputLocation) +
                                     "_CTSBetaBinomialResults.txt";
         
@@ -139,7 +140,7 @@ public class nonPhasedEntry {
             allSnpData = asReader.getIndividualsFromNextLine();
             
             
-            //BREAKPOINT OF THE LOOP!!!
+            //BREAKPOINT OF THE LOOP.
             if(allSnpData.isEmpty()) break;
             
             
@@ -151,38 +152,120 @@ public class nonPhasedEntry {
             }
             
             
-            BinomialTest binomialResults = new BinomialTest(allSnpData);
-            BetaBinomialTest betaBinomialResults = new BetaBinomialTest(allSnpData);
-            
-            if(binomialResults.isTestPerformed()){
-            
-                binomWriter.println(binomialResults.writeTestStatistics(false));
-                betaBinomWriter.println(betaBinomialResults.writeTestStatistics(false));
-                
-                GlobalVariables.numberOfTestPerformed++;
-                
-            }
-            
-            
-
-            // add the cellProp to the snp and do the CTS tests.
+            // add the cellProp to the snp 
             if(phenoTypeLocation != null){
                 for(int j = 0; j < cellProp.length; j++){
                     allSnpData.get(j).setCellTypeProp(cellProp[j]);
                 }
-                //do the CTS beta binomial test:
-
-                CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData);
-                CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData);
-                
-                // Write the results to the out_file, assuming both of them were done.
-                if (CTSbetaBinomResults.isTestPerformed()) {
-                    
-                    CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
-                    CTSBetaBinomWriter.println(CTSbetaBinomResults.writeTestStatistics(true));
-                }
             }
+            
+            ArrayList<IndividualSnpData> het_individuals;
+            het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnpData);
+    
+            int numberOfHets = het_individuals.size();
+            int totalOverlap = 0;
+
+            //Data to determine If we're going to test:
+
+            ArrayList<Integer> asRef = new ArrayList<Integer>();
+            ArrayList<Integer> asAlt = new ArrayList<Integer>();
+            ArrayList<Double> HetDisp = new ArrayList<Double>();
+            ArrayList<Double> HetCellProp = new ArrayList<Double>();
+
         
+            for (IndividualSnpData temp_het : het_individuals) {
+                //Do nothing if there is no data in het_individuals
+
+                asRef.add(temp_het.getRefNum());
+                asAlt.add(temp_het.getAltNum());
+                
+                HetDisp.add(temp_het.getDispersion());
+                
+                if(phenoTypeLocation != null){
+                    HetCellProp.add(temp_het.getCellTypeProp());
+                }
+                
+                //this is used to check if we will continue with calculations.
+                totalOverlap += temp_het.getRefNum() + temp_het.getAltNum();
+
+            }
+            
+            //Print the header for the tests.
+            
+            if( (totalOverlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
+            
+                if(GlobalVariables.verbosity >= 10){
+                    System.out.println("\n--- STARTING AS TESTS FOR: ---");
+                    System.out.println("SNP name:      " + allSnpData.get(0).snpName);
+                    System.out.println("at: position   " + allSnpData.get(0).chromosome + ":" + allSnpData.get(0).position + "\n");
+                    System.out.println("Num of hets:      " + Integer.toString(numberOfHets));
+                    
+                    StringBuilder a = new StringBuilder();
+                    for(Integer num : asRef){
+                        a.append( String.format("% 7d ", num) );
+                    }
+                    
+                    System.out.println("asRef:      " +  a.toString() );
+                    
+                    a = new StringBuilder();
+                    for(Integer num : asAlt){
+                        a.append( String.format("% 7d ", num) );
+                    }
+                    System.out.println("asAlt:      " +  a.toString() );
+                    
+                    a = new StringBuilder();
+                    for(Double num : HetDisp){
+                        a.append( String.format("% 5.4f ", num) );
+                    }
+                    
+                    System.out.println("dispersion: " +   a.toString() );
+                    
+                    if(phenoTypeLocation != null){
+                         a = new StringBuilder();
+                        for(Double num : HetCellProp){
+                            a.append( String.format("% 5.4f ", num) );
+                        }
+                        
+                        System.out.println("cellProp:   " + a.toString() );
+                    }
+                }
+                
+                
+                BinomialTest binomialResults = new BinomialTest(allSnpData);
+                BetaBinomialTest betaBinomialResults = new BetaBinomialTest(allSnpData);
+
+                if(binomialResults.isTestPerformed()){
+
+                    binomWriter.println(binomialResults.writeTestStatistics(false));
+                    betaBinomWriter.println(betaBinomialResults.writeTestStatistics(false));
+
+                    GlobalVariables.numberOfTestPerformed++;
+
+                }
+                
+                
+                
+                // do the CTS tests if data is available.
+
+                if(phenoTypeLocation != null){
+                    //do the CTS beta binomial test:
+                    
+                    CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData);
+                    CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData);
+                    
+
+                    // Write the results to the out_file, assuming both of them were done.
+                    if (CTSbetaBinomResults.isTestPerformed()) {
+
+                       CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
+                       CTSBetaBinomWriter.println(CTSbetaBinomResults.writeTestStatistics(true));
+                         
+                    }
+                }
+                
+                
+                System.out.println("\n---- Finished SNP " + allSnpData.get(0).snpName);
+            }
         }
      
         binomWriter.close();

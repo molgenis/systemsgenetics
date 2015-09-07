@@ -10,6 +10,7 @@ import static java.lang.Math.log;
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.special.Beta;
+import org.jdom.IllegalDataException;
 
 /**
  *
@@ -102,7 +103,12 @@ public class likelihoodFunctions {
         if(chiSq == Double.POSITIVE_INFINITY){
             chiSq = Double.MAX_VALUE;
         }
-        
+        if(chiSq < 0){
+            if(chiSq < -0.1){
+                throw new IllegalDataException("ChiSq value is lower than 1.");
+            }
+            chiSq = 0.0;
+        }
         return chiSq;
     
     }

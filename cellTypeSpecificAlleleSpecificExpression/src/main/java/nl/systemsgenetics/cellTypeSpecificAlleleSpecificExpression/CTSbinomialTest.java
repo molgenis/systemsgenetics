@@ -112,21 +112,6 @@ class CTSbinomialTest {
         
         if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
             
-            if(GlobalVariables.verbosity >= 10){
-                System.out.println();
-                System.out.println("--- Starting cell type specific binomial LRT test estimate ---");
-                System.out.println("\tSNP name: " + snpName);
-                System.out.println("\tat: chr" + chromosome + ":" + position);
-                System.out.println("--------------------------------------------------------------");
-                System.out.println("Num of hets: " + Integer.toString(numberOfHets));
-                System.out.println(het_individuals.get(0).getSnpName());
-                System.out.println(total_overlap);
-                System.out.println("Total reference:" + ref_total);
-                System.out.println("asRef:       " +  asRef.toString());
-                System.out.println("asAlt:       " +  asAlt.toString());
-                System.out.println("cellProp:    " +  cellProp.toString());
-                System.out.println("Starting Null estimation");
-            }
             
             
             
@@ -144,17 +129,17 @@ class CTSbinomialTest {
                 
                 CTSnullBinomialLikelihood CTSbinomNull = new CTSnullBinomialLikelihood(asRefArray, asAltArray, cellPropArray);             
                
-                System.out.println(ref_total + "\t / " + total_overlap) ;
+            
                 
                 double nullProp = ( (double)ref_total / (double)total_overlap);
                 
-                System.out.println(nullProp);
+               
                 
                 double[] nullInput = { nullProp };
                 
                 nullLogLik = CTSbinomNull.value(nullInput);
 
-                if(GlobalVariables.verbosity >= 10){
+                if(GlobalVariables.verbosity >= 100){
                     System.out.println("LogLik of NULL");
                     System.out.println("\tResidual ratio:                   " + Double.toString(nullInput[0]));
                     System.out.println("\tnullLogLik:                       " + Double.toString(nullLogLik));
@@ -194,7 +179,7 @@ class CTSbinomialTest {
                 
                 if((optimizer.getIterations() <= 5) ){
                     
-                    if(GlobalVariables.verbosity >= 10){
+                    if(GlobalVariables.verbosity >= 100){
                         
                         System.out.println("\nfirst starting point was already in a minimum.");
                         System.out.println("Trying with other starting values.");
@@ -226,7 +211,7 @@ class CTSbinomialTest {
 
                         if(CTSbinom.value(newValueAlt) < CTSbinom.value(valueAlt)) {
 
-                            if(GlobalVariables.verbosity >= 10 && newOptimizer.getIterations() >= 5 ){
+                            if(GlobalVariables.verbosity >= 100 && newOptimizer.getIterations() >= 5 ){
                                 System.out.println("New starting values are a better fit to the data");
                                 System.out.println("keeping results of the new starting values.\n");
                             }
@@ -257,6 +242,8 @@ class CTSbinomialTest {
                 pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
                 
                 if(GlobalVariables.verbosity >= 10){
+                    System.out.println("\n--- Starting cell type specific binomial LRT test estimate ---");
+
                     System.out.println("LogLik of Alt converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold));
                     System.out.println("\tCelltype ratio:                   " + Double.toString(valueAlt[0]));
                     System.out.println("\tResidual ratio:                   " + Double.toString(valueAlt[1]));
@@ -265,8 +252,8 @@ class CTSbinomialTest {
                     System.out.println("\tAlt log likelihood:               " + Double.toString(altLogLik) + "\n");
                     System.out.println("\tChisq statistic:                  " + Double.toString(chiSq));
                     System.out.println("\tP value:                          " + Double.toString(pVal));
-                    //TODO, I want to format this properly, but not necessary
-                    System.out.println("\n---- Finished SNP " + snpName);
+                    System.out.println("--------------------------------------------------------------");
+                    
                 }
                 
                 testConverged = true;
@@ -274,9 +261,11 @@ class CTSbinomialTest {
             } catch(TooManyEvaluationsException e){
                 
                 if(GlobalVariables.verbosity >= 1){
-                    System.out.println("WARNING: Did not converge to a solution for " + snpName);
+                    System.out.println("WARNING: Did not converge to a solution for SNP: " + snpName + "in cell type specific beta binomial");
                     System.out.println("         After " + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
                     System.out.println("         Continue-ing with the next.");
+                    System.out.println("--------------------------------------------------------------");
+            
                 }
             
             }
