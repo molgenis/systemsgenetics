@@ -30,10 +30,10 @@ This module combines multiple ASfiles (Produced previously in the ASreads submod
 of samples, and determines the probability of allelic imbalance per SNP.
 This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
 
-1. Binomial LRT
-2. Beta binomial LRT
+- Binomial LRT
+- Beta binomial LRT
 
 When dealing with heterogeneous tissue, and cell proportions are available:
 
-3. Cell type specific Binomial LRT
-4. Cell type specicic beta binomial LRT
+- Cell type specific Binomial LRT
+- Cell type specicic beta binomial LRT
