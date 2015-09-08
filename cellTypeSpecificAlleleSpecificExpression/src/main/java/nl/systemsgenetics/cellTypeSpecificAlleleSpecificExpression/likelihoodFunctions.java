@@ -104,7 +104,10 @@ public class likelihoodFunctions {
             chiSq = Double.MAX_VALUE;
         }
         if(chiSq < 0){
-            if(chiSq < -0.1){
+            //sometimes the value is not really 0 but something in the order 10e-15,
+            //probably due to floating point errors.
+            //throws an exception if the negative value is far from 0
+            if(chiSq < -0.00001){
                 throw new IllegalDataException("ChiSq value is lower than 1.");
             }
             chiSq = 0.0;
