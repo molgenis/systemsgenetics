@@ -8,7 +8,7 @@ with heterogenous tissues.
 
 ### Internal workings
 
-The cell type specific allele specific expression module is separated into three sub-modules:
+The cell type specific (CTS) allele specific expression (ASE) module is separated into three sub-modules:
 
 1. ASreads
 2. ASEperSNP
@@ -26,8 +26,8 @@ quantification of allele specific expression.
 
 #####2. ASEperSNP
 
-This module combines multiple ASfiles (Produced previously in the ASreads submodule)
-of samples, and determines the probability of allelic imbalance per SNP.
+This sub module combines multiple ASfiles (Produced previously in the ASreads submodule)
+of samples, and determines the probability of allelic imbalance per **SNP**.
 This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
 
 - Binomial LRT
@@ -35,5 +35,21 @@ This module uses multiple methods of finding the allelic imbalance using a likel
 
 When dealing with heterogeneous tissue, and cell proportions are available:
 
-- Cell type specific Binomial LRT
-- Cell type specicic beta binomial LRT
+- CTS Binomial LRT
+- CTS beta binomial LRT
+
+Per SNP, a P value is determined. The P value is the probability of finding **no** ASE.
+Lower P values mean more evidence for ASE at this SNP.
+Usually the Beta Binomial (BB) test is better at correction for sample specific biasses,
+thus, the Results of the Beta Binomial should be given more weight.  
+
+
+#####2. ASEperRegion
+
+This sub module combines multiple ASfiles (Produced previously in the ASreads submodule)
+of samples, and determines the probability of allelic imbalance per genomic **region**.
+This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
+
+- Binomial LRT
+- Beta binomial LRT
+
