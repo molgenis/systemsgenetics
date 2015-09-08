@@ -32,6 +32,8 @@ This module uses multiple methods of finding the allelic imbalance using a likel
 
 1. Binomial LRT
 2. Beta binomial LRT
+
 When dealing with heterogeneous tissue, and cell proportions are available:
+
 3. Cell type specific Binomial LRT
 4. Cell type specicic beta binomial LRT
