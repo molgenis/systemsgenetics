@@ -50,9 +50,9 @@ public class mainEntryPoint {
 		option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Determine what to do in this program, currently the following options are available:\n"+
-                                                 "\t1\tDetermine Allele specific reads per SNP: ASREADS\n\n" +  
-                                                 "\t2\tASE test per SNP                         NonPhasedTest\n" + 
-                                                 "\t3\tBeta binomial based on phasing           PhasedTest\n\n" +
+                                                 "\t1\tDetermine Allele specific reads per SNP: ASreads\n\n" +  
+                                                 "\t2\tASE test per SNP                         ASEperSNP\n" + 
+                                                 "\t3\tBeta binomial based on phasing           ASEperRegion\n\n" +
                                                  "Please Run an option based on the number in the first column, or through the name in the third column."
                                                 )
 				.withLongOpt("action")
