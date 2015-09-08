@@ -41,10 +41,10 @@ When dealing with heterogeneous tissue, and cell proportions are available:
 Per SNP, a P value is determined. The P value is the probability of finding **no** ASE.
 Lower P values mean more evidence for ASE at this SNP.
 Usually the Beta Binomial (BB) test is better at correction for sample specific biasses,
-thus, the Results of the Beta Binomial should be given more weight.  
+thus, the results of the Beta Binomial should usually be considered to be more accurate. 
 
 
-#####2. ASEperRegion
+#####3. ASEperRegion
 
 This sub module combines multiple ASfiles (Produced previously in the ASreads submodule)
 of samples, and determines the probability of allelic imbalance per genomic **region**.
@@ -53,3 +53,18 @@ This module uses multiple methods of finding the allelic imbalance using a likel
 - Binomial LRT
 - Beta binomial LRT
 
+Per Region, and test SNP, a P-value is determined, in the same was as the ASEperSNP module.
+Currently this module is functional, but not yet sufficiently tested to ensure  
+a user obtains correct results. 
+
+
+## QuickStart: Binomial and Beta Binomial test
+
+This section will describe how to do the most simple analysis: non-CTS ASEperSNP, 
+in later sections, more options will be added to the analysis described here, 
+to make the analysis better. 
+
+
+#####Minimum of data required:
+
+To be continued.
