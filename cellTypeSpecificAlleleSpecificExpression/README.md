@@ -266,7 +266,7 @@ Please note that having two individuals in your analysis is usually not enough t
 **\Warning**
 
 
-## Additional features: Cell type specific Tests:
+## Additional features (1): Cell type specific tests:
 
 When your sequenced sample is a mixture of tissues (for instance when sequencing 
 blood samples), you may be interested in how allele specific expression is a 
@@ -294,15 +294,70 @@ java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-depen
     --minimum_hets 1 \
     --minimum_reads 10\
     --pheno_file Suzie-Peter-Phenotype.txt\
-    > PeterSuzieBinomialBetaBinomialOut.txt
+    > PeterSuzie_CTS_Out.txt
 ```
+
+Results of the Cell type specific effects can be found in the results from the standard out and from the output.
 
 **Warning**
 
-Only 2 samples is very little information for the detection of cell type specific 
-effects, even moreso than looking at ASE for itself..
+Only 2 samples is very little information for the detection of CTS
+effects, even more so than looking at non CTS ASE for itself.
 
 **\Warning**
+
+##Additional features(2): ASE per Region'
+
+**Warning**
+
+This module is still under development and only sparsely tested, only non CTS effects are currently supported.
+
+**\Warning**
+
+
+The ASEperRegion sub-module can be used to determine the ASE effects per region to 
+increase statistical power by combining multiple SNPs in the same transcript or 
+_region_ and comparing them to some _test SNP_, as shown in the following scheme below:
+
+```
+
+## Fictitious example of ASE per region:
+
+           -----------------------some genomic region-----------------------
+
+            test SNP        |///////////test region////////////|
+               X
+                                       region SNP #
+                                1        2        3        4
+
+Suzie:        Het              Het      Het      Het      Hom
+Allele 1:   ~~~T~~~~~~~~~~~~|___A________T________G________C___|~~~~~~~~~~~~
+
+Allele 2:   ~~~C~~~~~~~~~~~~|___G________A________A________C___|~~~~~~~~~~~~
+                                
+                                
+Peter:        Het              Het      Hom      Hom      Hom
+Allele 1:   ~~~C~~~~~~~~~~~~|___A________A________G________A___|~~~~~~~~~~~~
+
+Allele 2:   ~~~T~~~~~~~~~~~~|___G________A________G________A___|~~~~~~~~~~~~
+
+
+Walt:         Hom              Het      Hom      Het      Het
+Allele 1:   ~~~C~~~~~~~~~~~~|___A________A________A________C___|~~~~~~~~~~~~
+
+Allele 2:   ~~~C~~~~~~~~~~~~|___G________A________G________A___|~~~~~~~~~~~~
+
+
+Legend:
+
+Het: Hetererozygote                     Hom:        Homozygote                         
+X:   Position of the test SNP           [A,G,T,C]:  Base at SNP position
+"~": Non SNP in test region             "_":        SNP in test region
+
+```
+
+
+
 
 
 
