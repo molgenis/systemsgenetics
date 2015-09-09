@@ -65,7 +65,7 @@ in later sections, more options will be added to the analysis described here,
 to make the analysis better. 
 
 
-#####Minimum of data required:
+**Minimum of data required:**
 
 - A file with aligned sequence reads for multiple samples, and an index.
 - A genotype file containing at least the genotype information of the bam file.
@@ -95,8 +95,10 @@ Please index all the bam files that you want to use for analysis.
 **Preprocessing genotype files**
 
 The sub-module ASreads accepts two types of file formats:
+
 1. TriTyper
 2. VCF
+
 The TriTyper format is considerably faster to read than the VCF, therefore we will continue with the TriTyper format.
 Conversion of the genotype format into TriTyper can be done using the [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer)
 This guide refers to their wiki for the conversion of your genotype format into TriTyper format.
