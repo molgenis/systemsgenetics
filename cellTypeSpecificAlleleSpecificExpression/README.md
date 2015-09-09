@@ -26,7 +26,7 @@ quantification of allele specific expression.
 
 #####2. ASEperSNP
 
-This sub module combines multiple ASfiles (Produced previously in the ASreads submodule)
+This sub-module combines multiple ASfiles (Produced previously in the ASreads submodule)
 of samples, and determines the probability of allelic imbalance per **SNP**.
 This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
 
@@ -46,7 +46,7 @@ thus, the results of the Beta Binomial should usually be considered to be more a
 
 #####3. ASEperRegion
 
-This sub module combines multiple ASfiles (Produced previously in the ASreads submodule)
+This sub-module combines multiple ASfiles (Produced previously in the ASreads submodule)
 of samples, and determines the probability of allelic imbalance per genomic **region**.
 This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
 
@@ -58,7 +58,7 @@ Currently this module is functional, but not yet sufficiently tested to ensure
 a user obtains correct results. 
 
 
-## QuickStart: Binomial and Beta Binomial test
+##Start: Binomial and Beta Binomial test
 
 This section will describe how to do the most simple analysis: non-CTS ASEperSNP, 
 in later sections, more options will be added to the analysis described here, 
@@ -67,4 +67,47 @@ to make the analysis better.
 
 #####Minimum of data required:
 
-To be continued.
+- A file with aligned sequence reads for multiple samples, and an index.
+- A genotype file containing at least the genotype information of the bam file.
+- A coupling file that indicates which bam files belong to which genotypes.
+
+
+#####STEP 0: Preprocessing of data
+
+**preprocessing your sequence alignment files**
+
+This file will be used for the ASreads sub-module. It requires files to be in the 
+bam format, a binary form of the [sam](http://genome.sph.umich.edu/wiki/SAM) format. You may be able to convert your file 
+into the bam format using the program [samtools](https://github.com/samtools/samtools).
+
+
+When `sample.bam` is your bam file, you can provide it with an index by using samtools.
+you can then index the bam using:
+```
+samtools index sample.bam
+```
+A file named: `sample.bam.idx` will be add in the working directory, 
+this contains the index for the specific bam.
+Now the bam file can be used for reading by the ASreads sub-module.
+Please index all the bam files that you want to use for analysis.
+
+
+**Preprocessing genotype files**
+
+The sub-module ASreads accepts two types of file formats:
+1. TriTyper
+2. VCF
+The TriTyper format is considerably faster to read than the VCF, therefore we will continue with the TriTyper format.
+Conversion of the genotype format into TriTyper can be done using the [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer)
+This guide refers to their wiki for the conversion of your genotype format into TriTyper format.
+
+**Creating a coupling file**
+
+ 
+
+
+
+
+
+
+ 
