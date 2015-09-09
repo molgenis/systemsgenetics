@@ -200,12 +200,12 @@ Peter_ASreads_output.txt
 ```
 We will save this as `Suzie-Peter-ASFiles.txt`
 
-**<Important>**
+**Warning**
 
 Make sure you the ordering of the AS files is the same in all files specified in the above file. 
 Otherwise, the testing will not be done.
 
-**</Important>**
+**/Warning**
 
 Now head to your terminal and run the following command:
 
@@ -259,11 +259,11 @@ sort -n -k 6,6 PeterSuzieTests_BetaBinomialResults.txt | tail -n 5
 This concludes the basic usage section, preprocessing, isolating ASreads and 
 testing for ASE using a binomial and beta binomial were discussed.
 
-**<Warning>**
+**Warning**
 
 Please note that having two individuals in your analysis is usually not enough to provide you with correct estimates.
 
-**<\Warning>**
+**\Warning**
 
 
 ## Additional features: Cell type specific Tests:
@@ -297,12 +297,12 @@ java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-depen
     > PeterSuzieBinomialBetaBinomialOut.txt
 ```
 
-**<Warning>**
+**Warning**
 
 Only 2 samples is very little information for the detection of cell type specific 
 effects, even moreso than looking at ASE for itself..
 
-**<\Warning>**
+**\Warning**
 
 
 
