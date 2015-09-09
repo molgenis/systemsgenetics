@@ -82,5 +82,6 @@
 		<module>eqtl-functional-enrichment</module>
 		<module>GeneticRiskScoreCalculator</module>
 		<module>BinaryMetaAnalyzer</module>
+	 <module>cellTypeSpecificAlleleSpecificExpression</module>
 	</modules>
 </project>
