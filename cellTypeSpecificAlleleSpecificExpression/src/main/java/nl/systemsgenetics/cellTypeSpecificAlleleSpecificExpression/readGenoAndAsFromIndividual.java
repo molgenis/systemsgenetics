@@ -320,7 +320,7 @@ public class readGenoAndAsFromIndividual {
         }
         
         
-        //Fuck this line below. cost me a day to figure out the error.
+        //This line below cost me a day to figure out the error.
         all_reads_in_region.close();
         
         String string_for_output;

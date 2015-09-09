@@ -5,8 +5,15 @@ This module can be used for the detection of allele specific expression,
 with the novel option of including cell type specific effects when dealing 
 with heterogenous tissues.
 
+**Requirements:**
 
-### Internal workings
+This program requires java version 8, and was tested on ubuntu 14.04 LTS.
+OS X should also work.
+
+
+
+
+### Internal organisation
 
 The cell type specific (CTS) allele specific expression (ASE) module is separated into three sub-modules:
 
@@ -102,6 +109,8 @@ The sub-module ASreads accepts two types of file formats:
 The TriTyper format is considerably faster to read than the VCF, therefore we will continue with the TriTyper format.
 Conversion of the genotype format into TriTyper can be done using the [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer)
 This guide refers to their wiki for the conversion of your genotype format into TriTyper format.
+For example purposes, the genotype directory will be set to the following: `Suzie-Peter_Genotype/`
+
 
 **Creating a coupling file**
 The coupling file is used to match the sample data (bam file name) to the individual genotype data (name in the genotype file).
@@ -121,20 +130,44 @@ Suzie    Suzie-RNAseq1
 Peter    Peter-RNAseq1
 ```
 Please note that the spacing between is actually a tab character, not spaces.
-
+This file will be saved as: `suzie-peter_coupling.txt`
 For purposes of examples the guide will keep using the names Suzie and Peter for clarity.
 
-#####STEP 1: ASREADS
+#####STEP 1: ASreads
 
-After preprocessing the data into your 
+After preprocessing, ASread files can be created.
+ASread files provide information per Bi-allelic SNP (other variants are not supported) on where a read maps.
+Formatting is in tab delimited fashion with the following format per column:
 
+```
+1. Chromosome name
+2. Position on the chromosome
+3. Variant name (rs name)
+4. Reference base (based on the genotype file)
+5. Alternative base (based on the genotype file)
+6. Number of reads mapping to the reference base
+7. Number of reads mapping to the alternative base
+8. Number of reads mapping to neither the reference not alternative base.
+9. Genotype of the individual in a "[C, G]" formatting.s 
+```
 
+To create this file for individual _Suzie_, 
 
- 
+This is the first time we're going to use the program, please download it, currently 
+it is named as the following but this will probably change (TODO):
+`cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar`
 
+To create an AS file for suzie named: `Suzie-ASreads.txt`, we can run the following command in bash:
+```
 
+java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar \
+    -action ASreads \
+    -output Suzie-ASreads.txt \
+    -coupling_file suzie-peter_coupling.txt \
+    -genotype_location Suzie-Peter_Genotype/ \
+    -bam_file Suzie-RNAseq1.bam\
+    > suzie_ASreads_output.txt
 
+```
 
-
-
- 
+When this run has finished, we can do the other individuals (Peter in this case).

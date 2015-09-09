@@ -5,7 +5,6 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import cern.colt.Arrays;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;

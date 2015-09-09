@@ -24,6 +24,8 @@ import org.molgenis.genotype.GenotypeInfo;
  *
  * @author Adriaan van der Graaf
  */
+
+
 public class mainEntryPoint {
     /**
      * This is the entrypoint for cell type specific ASE,
@@ -92,7 +94,7 @@ public class mainEntryPoint {
 				.withDescription("Path to directory or location of file from which to load genotype data.\n"
                                                 + "Currently only tri typer and tabix indexed vcf data is available"
                                                 + "Required when action is: ASREADS")                                                
-				.withLongOpt("genotype_path")
+				.withLongOpt("genotype_location")
 				.create('G');
 		OPTIONS.addOption(option);
                 
@@ -218,7 +220,7 @@ public class mainEntryPoint {
                 if(commandLine.hasOption('A')){
                     String programAction = commandLine.getOptionValue('A').toUpperCase();
                     
-                    if(programAction.equals("ASREADS") || programAction.equals("1")){
+                    if(programAction.equals("ASreads") || programAction.equals("1")){
         
                         //Do the AS determination part of the program
                         
@@ -226,7 +228,7 @@ public class mainEntryPoint {
                         if(commandLine.hasOption('G')){
                              genotypeLocation = commandLine.getOptionValue('G');
                         } else {
-                            throw new ParseException("Required command line input --genotype_path when --action is ASREADS");
+                            throw new ParseException("Required command line input --genotype_location when --action is ASREADS");
                         }
                         
                         //Read binomTest arguments
@@ -256,13 +258,13 @@ public class mainEntryPoint {
                         readGenoAndAsFromIndividual(bamFile, genotypeLocation, couplingLocation, outputLocation, snpsLocation);
                         
                     
-                    }else if(programAction.equals("NonPhasedTest") || programAction.equals("2")){
+                    }else if(programAction.equals("ASEperSNP") || programAction.equals("2")){
                         
 
                         if(commandLine.hasOption('L')){
                             asFile = commandLine.getOptionValue('L');
                         } else{
-                            throw new ParseException("Required command line input --as_location when --action is CTSBINOMTEST");
+                            throw new ParseException("Required command line input --as_location when --action is ASEperSNP");
                         }
                         if(commandLine.hasOption('P')){
                             phenoTypeLocation = commandLine.getOptionValue('P');
@@ -277,7 +279,7 @@ public class mainEntryPoint {
                         
                         nonPhasedEntry a =  new nonPhasedEntry(asFile, phenoTypeLocation,  outputLocation);
                         
-                    }else if(programAction.equals("PhasedTest") || programAction.equals("3")){
+                    }else if(programAction.equals("ASEperRegion") || programAction.equals("3")){
                         
                         if(commandLine.hasOption('L')){
                             asFile = commandLine.getOptionValue('L');
@@ -297,7 +299,7 @@ public class mainEntryPoint {
                         if(commandLine.hasOption('G')){
                              genotypeLocation = commandLine.getOptionValue('G');
                         } else {
-                            throw new ParseException("Required command line input --genotype_path when --action is PHASEDANALYSIS");
+                            throw new ParseException("Required command line input --genotype_Location when --action is ASEperRegion");
                         }
                         
                        PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation);
