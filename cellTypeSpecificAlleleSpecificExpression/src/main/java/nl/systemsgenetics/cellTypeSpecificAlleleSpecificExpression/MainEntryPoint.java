@@ -298,12 +298,12 @@ public class MainEntryPoint {
                         if(commandLine.hasOption('L')){
                             asFile = commandLine.getOptionValue('L');
                         } else{
-                            throw new ParseException("Required command line input --as_location when --action is PHASEDANALYSIS");
+                            throw new ParseException("Required command line input --as_location when --action is ASEperRegion");
                         }
                         if(commandLine.hasOption('C')){
                             couplingLocation = commandLine.getOptionValue('C');
                         } else{
-                            throw new ParseException("Required command line input --coupling_file when --action is PHASEDANALYSIS");
+                            throw new ParseException("Required command line input --coupling_file when --action is ASEperRegion");
                         }           
                         if(commandLine.hasOption('P')){
                             phenoTypeLocation = commandLine.getOptionValue('P');

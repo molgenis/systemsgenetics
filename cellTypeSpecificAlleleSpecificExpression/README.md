@@ -314,18 +314,19 @@ This module is still under development and only sparsely tested, only non CTS ef
 
 **\Warning**
 
+###### Basic mechanism
 
 The ASEperRegion sub-module can be used to determine the ASE effects per region to 
 increase statistical power by combining multiple SNPs in the same transcript or 
-_region_ and comparing them to some _test SNP_, as shown in the following scheme below:
+_gene region_ and comparing them to some _test SNP_, as shown in the following scheme below:
 
 ```
 
 ## Fictitious example of ASE per region:
 
-           -----------------------some genomic region-----------------------
+           -----------------------Some genomic region-----------------------
 
-            test SNP        |///////////test region////////////|
+            Test SNP        |///////////Test region////////////|
                X
                                        region SNP #
                                 1        2        3        4
@@ -356,7 +357,39 @@ X:   Position of the test SNP           [A,G,T,C]:  Base at SNP position
 
 ```
 
+In this example, only individuals with heterozygous _test SNPs_ are used in
+the analysis. 
+Which means that only Suzie and Peter will have data that will be used, data from Walt will not be considered. 
+In this example the test SNP is a C/T polymorphism.
+All reads that overlap the _gene region_ on the allele _test SNP_ with genotype C are counted, and compared to
+all the reads from the _gene region_ on the allele with _test SNP_ with genotype T.
 
+For indicative purposes, reads overlapping _region SNP_ 1, 2 and 3 can be used 
+in Suzie, while _region SNP_ 1 is the only one that can be used in Peter, due to it being the only heterozygote in Peters _gene region_.
+It is very important to make sure the region is well defined as this can be a confounding factor, 
+where some gene may be a different gene or splice variant.   
+
+
+##### Required data:
+
+Required data for this sub-module is as follows (not yet final)
+
+
+- A file containing gene regions and test regions (at time of writing, the same)
+- Locations of AS files
+- Genotype information with phasing information per SNP. 
+- Coupling file for the phased genotypes and AS files.
+
+The genotype information should be phased information of at least some of the 
+SNPs in the test region.
+
+The coupling file is the same as in the Basic usage example.
+
+The AS reads file is also the same as in the Basic usage example.
+
+The regions file will specify the test regions.
+
+Currently only binomial and beta binomial work.
 
 
 
