@@ -3,8 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
+package nl.systemsgenetics.cell_type_specific_ase;
 
+import java.util.ArrayList;
+import org.apache.commons.math3.special.Beta;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -55,15 +57,34 @@ class BetaBinomAltLikelihood implements Function {
         for(int i=0; i < asRef.length; i++ ){
             
             double sigma = dispersion[i];
-
-            int AS1   = asRef[i];
-
-            int AS2   = asAlt[i];
+            double AS1   = asRef[i];
+            double AS2   = asAlt[i];
             
-            logLik +=  LikelihoodFunctions.BetaBinomLogLik(sigma, alpha, beta, AS1, AS2);
+            //Copied from WASP.
+            double hetp  = 0.980198;
+            double error = 0.005;
+                    
+            double a;
+            double b;
+
+            a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+            b = Math.exp( (Math.log(beta ) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
+
+            double part1 = 0.0;
+            part1 += Beta.logBeta(AS1 + a, AS2 + b);
+            part1 -= Beta.logBeta(a, b);
+            
+            // If we do not integrate heterozygote calling error or sequencing sequencing error,
+            // part1 can be returned in the loop.
+            // But now I want to make sure that I follow the WASP approach on the CEU data.
+            
+            double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
+            double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
+            
+            logLik +=  addlogs(Math.log(hetp) + part1, Math.log(1 - hetp) + addlogs(e1, e2));
         }
         
-        return logLik;
+        return -1.0 * logLik;
         
         
     }

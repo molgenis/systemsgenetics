@@ -42,7 +42,7 @@ class GenotypeHarmonizer {
 
     private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
     private static final String HEADER =
-              "  /---------------------------------------\\\n"
+            "  /---------------------------------------\\\n"
             + "  |          Genotype Harmonizer          |\n"
             + "  |                                       |\n"
             + "  |             Patrick Deelen            |\n"
@@ -50,7 +50,7 @@ class GenotypeHarmonizer {
             + "  |                                       |\n"
             + "  | Harm-Jan Westra, Joeri van der Velde, |\n"
             + "  |    Marc Jan Bonder, Erwin Winder,     |\n"
-            + "  |           Dennis Hendriksen           |\n"
+			+ "  |           Dennis Hendriksen           |\n"
             + "  |      Lude Franke, Morris Swertz       |\n"
             + "  |                                       |\n"
             + "  |     Genomics Coordication Center      |\n"

@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
+package nl.systemsgenetics.cell_type_specific_ase;
 
 
 import htsjdk.samtools.CigarElement;
@@ -30,8 +30,6 @@ import htsjdk.samtools.SamReaderFactory;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import org.apache.commons.io.FilenameUtils;
-import org.jdom.IllegalDataException;
-import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 
 
@@ -39,152 +37,72 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
  *
  * @author Adriaan van der Graaf
  */
-public class ReadGenoAndAsFromIndividual {
+public class readGenoAndAsFromIndividual {
     
-    public static void readGenoAndAsFromIndividual(String loc_of_bam1,
-                                                   String genotype_loc, 
-                                                   String coupling_location, 
-                                                   String outputLocation, 
-                                                   String snpLocation) throws IOException, Exception{
+    public static void readGenoAndAsFromIndividual(String loc_of_bam1) throws IOException, Exception{
         
-        if(GlobalVariables.verbosity >= 1){
-            //Print ASREADS header
-            System.out.println(    "---- Starting ASREADS for the following settings: ----");
-            System.out.println(    "\t input bam:         " +  loc_of_bam1);
-            System.out.println(    "\t genotype location: " +  genotype_loc);
-            System.out.println(    "\t coupling file:     " +  coupling_location);
-            System.out.println(    "\t output location:   " +  outputLocation);
-            if(!snpLocation.equals("")){
-                System.out.println("\t snp Location:      " +  snpLocation);
-            }else{
-                System.out.println("\t snp Location:      " +  "NONE");
-            }
+        //now do some other stuff.
+        
+        
+        String path_of_trityper = "/media/fast/GENETICA/implementInJava/CEUGENOTYPES/TriTyper/";
 
-            System.out.println("------------------------------------------------------");
-        }
         
         
-        
-
         //parse command line arguments
         String loc_of_bam;
-        loc_of_bam = loc_of_bam1;
+        loc_of_bam = loc_of_bam1; //"/media/fast/GENETICA/implementInJava/CEURNASEQ/ERR188047.MERGED.SORTED.bam";
         System.out.println("Location of bam file: ");
         System.out.println(loc_of_bam);
         
-        if (!new File(loc_of_bam).exists()){
-           throw new IllegalArgumentException("ERROR! Location of bam file is not an existing file. Exitting.");
+        if (!new File(loc_of_bam).exists())
+        {
+           System.out.println("Location of bam file is not an existing file. Exitting.");
+           return;
         }else{
-            if(GlobalVariables.verbosity >= 10){
-                System.out.println("Location of bam file is an existing file, will continue.");
-            }
-        }
-        
-        
-        
-        RandomAccessGenotypeData TTdataSet;
-        VcfGenotypeData VCFdataSet;
-        HashMap<String, GeneticVariant> variantIdMap;
-        String[] individual_names;
-        
-        String tabixLoc = genotype_loc + ".tbi";
-        
-        //open vcf dataset
-        //based on extention and existance of both files. 
-        if(FilenameUtils.isExtension(genotype_loc, "gz") && 
-           new File(tabixLoc).exists() &&
-           new File(genotype_loc).exists() 
-          ){
-            try {
-                VCFdataSet = new VcfGenotypeData(new File(genotype_loc), new File(tabixLoc), 0.99);
-                variantIdMap = VCFdataSet.getVariantIdMap();
-                individual_names = VCFdataSet.getSampleNames();
-            } catch (IOException ex) {
-                System.err.println("Error reading vcf dataset: " + genotype_loc);
-                throw new IllegalArgumentException();
-            }
-        
-        }else if(new File(genotype_loc + "/GenotypeMatrix.dat").exists() ) {
-            //assuming trityper dataset based on the genotype matrix
-            try {
-                TTdataSet = new TriTyperGenotypeData(new File(genotype_loc));
-                variantIdMap = TTdataSet.getVariantIdMap();
-                individual_names = TTdataSet.getSampleNames();
-            } catch (IOException ex) {
-                System.err.println("Error reading trityper dataset: " + genotype_loc);
-                throw new IllegalArgumentException();
-            }
-        
-        }else{
-            throw new IllegalDataException("could not find a Trityper or vcf file in the genotype location");
-        }
-        
-        
+            System.out.println("Location of bam file is an existing file, will continue.");
 
+        }
         
+        
+        RandomAccessGenotypeData dataset1;
+        //open tri typer dataset
+        try {
+            dataset1 = new TriTyperGenotypeData(new File(path_of_trityper));
+        } catch (IOException ex) {
+            System.err.println("Error reading dataset 1: " + path_of_trityper);
+            return;
+        }
         
         //get the variants in the variantIdMAP
-       
+        HashMap<String, GeneticVariant> variantIdMap = dataset1.getVariantIdMap();
         Set<String> snpNames = variantIdMap.keySet();
         
-        ArrayList<String> SNPsToAnalyze;
-        SNPsToAnalyze = new ArrayList<String>();
         
-        //If available, read the file with rs numbers.
-        if(!snpLocation.equals("")){
-            
-            ArrayList<String>  includeSNPs = UtilityMethods.readFileIntoStringArrayList(snpLocation);
-            
-            int snpsNotFound = 0;
-            
-            for(String snp_to_include : includeSNPs){
-                if(snpNames.contains(snp_to_include)){
-                    SNPsToAnalyze.add(snp_to_include);
-                }else{
-                    snpsNotFound++;
-                }
-            }
-            
-            if(GlobalVariables.verbosity >= 1){
-                System.out.println("WARNING: Did not find " + Integer.toString(snpsNotFound) + " out of " + Integer.toString(includeSNPs.size()) + " SNPs in the include file.");
-            }
-        }else{
-            for(String snp_to_include : snpNames){
-                SNPsToAnalyze.add(snp_to_include);
-            }
-        }
+        String[] individual_names;
+        individual_names = dataset1.getSampleNames();
         
-       
         //String path = "/gcc/groups/lld/tmp01/projects/bamFiles/";
         //sample_map contains all the individuals that are in the sample file.
-        HashMap sample_map = convert_individual_names(individual_names, coupling_location);
-        
-        if(GlobalVariables.verbosity >= 10){
+        HashMap sample_map = convert_individual_names(individual_names);
         System.out.println("Sample names were loaded.");
-        }
-        if(GlobalVariables.verbosity >= 100){
-            System.out.println(sample_map.toString());
-        }
+        //System.out.println(sample_map.toString());
+
        
-        //Twice because my files have the .MERGED.sorted.bam suffix attached to them.
+        //Twice beacuse my files have the .MERGED.sorted.bam suffix attached to them.
         String sample_name = FilenameUtils.getBaseName(FilenameUtils.getBaseName(FilenameUtils.getBaseName(loc_of_bam)));
+        System.out.println("sample_name: " + sample_name);
         
-        if(GlobalVariables.verbosity >= 10){
-            System.out.println("sample_name: " + sample_name);
-            System.out.println("sample_map:  " + sample_map.toString());
-        }
-        
+        //sample name used for testing: "AC1C40ACXX-5-14";
         Object sample_idx = sample_map.get(sample_name);   
        
         if(sample_idx == null){
-            throw new IllegalArgumentException("Couldn't find the filename in the sample names. Quitting.");
+            System.out.println("Couldn't find the filename in the sample names. Quitting.");
+            return;
         }
 
         int sample_index = Integer.parseInt(sample_idx.toString());
         
-        if(GlobalVariables.verbosity >= 10){
-            System.out.println("sample_index: " + sample_index);
-        }
+        System.out.println("sample_index: " + sample_index);
         
         //bam file path and filename
         String path_and_filename = loc_of_bam;
@@ -192,15 +110,18 @@ public class ReadGenoAndAsFromIndividual {
 
         SamReader bam_file = SamReaderFactory.makeDefault().open(sample_file);
 
-        if(GlobalVariables.verbosity >= 10){
-            System.out.println("Initialized for reading bam file");
-        }
         
-        PrintWriter writer = new PrintWriter(outputLocation, "UTF-8");
+        int number_of_samples;         
+        number_of_samples = Arrays.asList(sample_map).size();
+        
+        System.out.println("Initialized for reading bam file");
+        String output_dir = "/media/fast/GENETICA/implementInJava/CEUASCOUNTS/";
+        
+        PrintWriter writer = new PrintWriter(output_dir + sample_name + "snps_and_as_reads.txt", "UTF-8");
         
         
         int i = 0;
-        for(String i_snp : SNPsToAnalyze){
+        for(String i_snp : snpNames){
             
             //System.out.println(i_snp);
             
@@ -209,16 +130,12 @@ public class ReadGenoAndAsFromIndividual {
             String chromosome = this_variant.getSequenceName();
             String position = String.valueOf(this_variant.getStartPos());
             
-
+//            System.out.println("chromosome: " + chromosome + " pos: " + position);
             
-            // We only do analyses if we find a SNP and it is biallelic
-            // However this is trityper data, so if we use
-            // the allele count is used for the check of something. 
-            
-            
-            //DO NOT ENTER A SEPARATED GENOMIC DATASET OTHERWISE THIS WILL BREAK.
-            if(this_variant.isSnp() & this_variant.isBiallelic() ){
-
+            // We only do analyses if we find a SNP and it is biallelic      
+            if(this_variant.isSnp() & this_variant.isBiallelic()){
+//                System.out.println(this_variant.getAllIds());
+                                
                 String row_of_table = get_allele_specific_overlap_at_snp(this_variant, 
                                                                         sample_index,
                                                                         chromosome,
@@ -226,26 +143,28 @@ public class ReadGenoAndAsFromIndividual {
                                                                         bam_file);
                  
                 
-                //commented out the phasing part.
                 
                 writer.println(chromosome + "\t" + position + "\t" + i_snp + "\t" + 
                                this_variant.getVariantAlleles().getAllelesAsChars()[0] + "\t" +
                                this_variant.getVariantAlleles().getAllelesAsChars()[1] + "\t" +
                                row_of_table + "\t" + 
-                               Arrays.toString(this_variant.getSampleVariants().get(sample_index).getAllelesAsChars()) //+ "\t" +
-                               //Boolean.toString(this_variant.getSamplePhasing().get(sample_index))
+                               Arrays.toString(this_variant.getSampleVariants().get(sample_index).getAllelesAsChars()) 
                             );
             }
          
             i++;
-            
-            if((i % 10000 == 0) && (GlobalVariables.verbosity >= 10)){
-
+            if(i % 10000 == 0){
                 System.out.println("Finished " + Integer.toString(i) + " SNPs");
+                //only doing this a millon times to speed it up.
+                if(i == 1000000){
+                    break;
+                }
             
             }
         
         }
+        
+        dataset1.close();
         writer.close();
     }
     
@@ -320,7 +239,7 @@ public class ReadGenoAndAsFromIndividual {
         }
         
         
-        //This line below cost me a day to figure out the error.
+        //Fuck this line below. cost me a day to figure out the error.
         all_reads_in_region.close();
         
         String string_for_output;
@@ -344,8 +263,9 @@ public class ReadGenoAndAsFromIndividual {
         String read = sam_read.getReadString();
         int idx_of_read = 0;
         int idx_of_cigar = 0;
+        boolean debug = false;
         
-        if(GlobalVariables.verbosity >= 100){
+        if(debug){
             System.out.println("positions");
             System.out.println("curr_pos: " + Integer.toString(curr_pos));
             System.out.println("end_pos: " +  Integer.toString( end_pos));
@@ -359,7 +279,7 @@ public class ReadGenoAndAsFromIndividual {
             switch(cigar.getOperator()){
                 case D:
                     curr_pos += cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found D in cigar: ");
                         System.out.println("current_pos + " + Integer.toString(cigar.getLength()));
                         System.out.println("final curr_pos: " + Integer.toString(curr_pos));
@@ -368,7 +288,7 @@ public class ReadGenoAndAsFromIndividual {
                     break;
                 case EQ:
                     final_pos = curr_pos + cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found EQ in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
@@ -380,7 +300,7 @@ public class ReadGenoAndAsFromIndividual {
 
                     }
                     while(curr_pos < final_pos){
-                        if(GlobalVariables.verbosity >= 100){
+                        if(debug){
                             System.out.println("index is now:" + Integer.toString(idx_of_read));
                             System.out.println("ref pos is now:" + Integer.toString(curr_pos));
                             System.out.println("The base at this pos is:" + read.charAt(idx_of_read));
@@ -398,14 +318,11 @@ public class ReadGenoAndAsFromIndividual {
                     }
                     break;
                 case H:
-                    if(GlobalVariables.verbosity >= 10){
-                        System.out.println("found H line in Cigar, skipping read");
-                    }
-                    
+                    System.out.println("found H line in Cigar");
                     return('!');
                 case I:
                     idx_of_read += cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found I in cigar: ");
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
                         System.out.println("final idx_of_read: " + Integer.toString(idx_of_read));
@@ -414,7 +331,7 @@ public class ReadGenoAndAsFromIndividual {
                     break;
                 case M:    
                     final_pos = curr_pos + cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found M in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
@@ -426,7 +343,7 @@ public class ReadGenoAndAsFromIndividual {
 
                     }
                     while(curr_pos < final_pos){
-                        if(GlobalVariables.verbosity >= 100){
+                        if(debug){
                             System.out.println("index is now:" + Integer.toString(idx_of_read));
                             System.out.println("ref pos is now:" + Integer.toString(curr_pos));
                             System.out.println("The base at this pos is:" + read.charAt(idx_of_read));
@@ -444,7 +361,7 @@ public class ReadGenoAndAsFromIndividual {
                     break;
                 case N:
                     curr_pos += cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found N in cigar: ");
                         System.out.println("current_pos + " + Integer.toString(cigar.getLength()));
                         System.out.println("final curr_pos: " + Integer.toString(curr_pos));
@@ -453,7 +370,7 @@ public class ReadGenoAndAsFromIndividual {
                     break;
                 case P:
                     curr_pos += cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found P in cigar: ");
                         System.out.println("current_pos + " + Integer.toString(cigar.getLength()));
                         System.out.println("final curr_pos: " + Integer.toString(curr_pos));
@@ -462,7 +379,7 @@ public class ReadGenoAndAsFromIndividual {
                     break;
                 case S:
                     idx_of_read += cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
+                    if(debug){
                         System.out.println("Found S in cigar: ");
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
                         System.out.println("final idx_of_read: " + Integer.toString(idx_of_read));
@@ -472,8 +389,7 @@ public class ReadGenoAndAsFromIndividual {
                 case X:
                     curr_pos += cigar.getLength();
                     idx_of_read += cigar.getLength();
-                    if(GlobalVariables.verbosity >= 100){
-                        
+                    if(debug){
                         System.out.println("Found X in cigar: ");
                         System.out.println();
                         System.out.println("index_of_read + " + Integer.toString(cigar.getLength()));
@@ -495,7 +411,7 @@ public class ReadGenoAndAsFromIndividual {
             
         }
         //couldn't find anything, returning: '!'
-        if(GlobalVariables.verbosity >= 100){
+        if(debug){
             //System.out.println("### coulnd't find overlapping base in this read. ###");
         }
         return('!');
@@ -507,16 +423,13 @@ public class ReadGenoAndAsFromIndividual {
     /**
      *
      * @param individual_names
-     * @param coupling_location
      * @return
      * @throws FileNotFoundException
      * @throws IOException
-     * 
      */
-    
-    public static HashMap convert_individual_names(String[] individual_names, String coupling_location) throws FileNotFoundException, IOException{
+    public static HashMap convert_individual_names(String[] individual_names) throws FileNotFoundException, IOException{
         
-        String coupling_loc = coupling_location;
+        String coupling_loc = "/media/fast/GENETICA/implementInJava/CEUGENOTYPES/CEU_coupling_file.txt";
         
         //This will be filled while reading the file
         ArrayList<String> sample_names_in_file     = new ArrayList<String>();
@@ -546,33 +459,51 @@ public class ReadGenoAndAsFromIndividual {
             individual_names_in_file.add(i, curr_line[0]); 
             sample_names_in_file.add(i, curr_line[1]);
 
-            //print the individual al line for checking.
-            //System.out.println("line: " + " " + curr_line[0] +" " + curr_line[1] );
-            
         }
 
         // dispose all the resources after using them.
         fis.close();
         bis.close();
         dis.close();
-        
-        
-        
         i=0;
         for(String i_name : individual_names){
             int index = individual_names_in_file.indexOf(i_name);
-            
-            if(index >= 0){
-                //We find a name in the genotype folder in the individual names stuff.
-                ordered_sample_names.put(sample_names_in_file.get(index), i);
+            if(index < 0){
+                //System.out.println("When looking for \"" + i_name +"\" couln't find this in the coupling list."); // couldn't find this name in the following list:");
+                //System.out.println(individual_names_in_file.toString());
+                continue;
             }
-            i++;
             
+            ordered_sample_names.put(sample_names_in_file.get(index), i);
+            i++;
         }
         return(ordered_sample_names);
     
     }
-
+    
+// This was used when reading all bam_files at once, but the htsjdk did not allow for this.
+//
+//    private static ArrayList<SamReader> open_all_samfiles(File[] individual_files) throws Exception{
+//        //don't know if i need this.
+//        ArrayList<SamReader> all_bams = new ArrayList(); 
+//        int i = 0;
+//        
+//        for(File i_file : individual_files){
+//            
+//            try{
+//                all_bams.add();
+//            } catch(Exception ex ){
+//                System.err.println("Error in reading a file at: " + i_file.getAbsolutePath());
+//                System.err.println("Iterator at: " + String.valueOf(i));                
+//                System.err.println("Are you sure the bam files are correct?");
+//                throw ex;
+//            }
+//            i++;
+//        }
+//    
+//    
+//        return(all_bams);
+//    }
 }
 
 

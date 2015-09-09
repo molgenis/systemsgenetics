@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
+package nl.systemsgenetics.cell_type_specific_ase;
 
 import java.util.ArrayList;
 
@@ -15,22 +15,12 @@ import java.util.ArrayList;
 public class BinomialTest {
 
     //SNP information
-    private String snpName;
-    private String chromosome;
-    private String position;
+    private final String snpName;
+    private final String chromosome;
+    private final String position;
 
-    
-    //sometimes multiple test snps have the same results.    
-    private boolean TestUsedInPhasing = false;
-    private ArrayList<String> additionalPositions = new ArrayList<String>();
-    private ArrayList<String> additionalNames = new ArrayList<String>(); 
-    
-    String RegionName;
-    int startOfRegion = -1;
-    int endOfRegion = -1;
-    
     //Information about the input data
-    private int numberOfHets;
+    private final int numberOfHets;
     
     //Names of individuals for easy reference
     
@@ -49,10 +39,7 @@ public class BinomialTest {
     private boolean testPerformed = false; 
     
     
-    private boolean outPutAllData = false;
-    
-    
-    
+    private final boolean outPutAllData = false;
     
     // This is the constructor, will receieve an arraylist of IndividualSnpData, 
     // will filter this for only heterozygotes and will proceed if there are reads.
@@ -60,7 +47,7 @@ public class BinomialTest {
     // Calculate log likelihoods, and do a likelihood ratio test.
     
     public BinomialTest(ArrayList<IndividualSnpData> all_individuals){
-        
+        boolean debug = false;
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
@@ -93,59 +80,26 @@ public class BinomialTest {
         }
         
         
-        if((total_overlap >= GlobalVariables.minReads) && (numberOfHets >= GlobalVariables.minHets) ){
-
-            //Removed this because header is now done in the nonPhasedEntry and phasedEntry (to be done).
-
-//            if(GlobalVariables.verbosity >= 10){
-//
-//                System.out.println("debug:");
-//                System.out.println("Number of hets: " + Integer.toString(numberOfHets));
-//                System.out.println(het_individuals.get(0).getSnpName());
-//                System.out.println(total_overlap);
-//                
-//                System.out.println("asRef:          " +  asRef.toString());
-//                System.out.println("asAlt:          " +  asAlt.toString());
-//            }
-            
+        if(total_overlap > 5){
+            if(debug){
+                System.out.println("debug:");
+                System.out.println("Number of hets: " + Integer.toString(numberOfHets));
+                System.out.println(het_individuals.get(0).getSnpName());
+                System.out.println(total_overlap);
+                
+                System.out.println("asRef:" +  asRef.toString());
+                System.out.println("asAlt:" +  asAlt.toString());
+            }
             // There is data to perform the binomial test, perform it.       
             testStatistics = new BinomTest(asRef, asAlt);
-            
-            if(GlobalVariables.verbosity >= 10){
-                System.out.println("\n--- Binomial Test Statistics: ---");
-
-                System.out.println("\tNull logLik:   " + Double.toString(testStatistics.getNullLogLik()));
-                System.out.println("\tAlt logLik:    " + Double.toString(testStatistics.getAltLogLik()));
-                System.out.println();
-                System.out.println("\tObserved Prop: " + Double.toString(testStatistics.getBinomRatio()));
-                System.out.println();
-                System.out.println("\tchi-sq:        " + Double.toString(testStatistics.getChiSq()));
-                System.out.println("\tP value:       " + Double.toString(testStatistics.getpVal()));
-                System.out.println("--------------------------------");
-            }
-            
             //binomial_test perfomed, will now set test performed to true
             testPerformed = true;
             
         } else{
             // there is no data to do the binomial test,
             // Will not set variables.
+            // Don't know what to do here, should I initialize a BinomTestStatistic Object?.    
         }
-    }
-    
-    //constructor method didn't work, so doing it like this.
-    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion){
-        
-        BinomialTest t = new BinomialTest(all_individuals);
-        
-        
-        t.TestUsedInPhasing = true;
-        t.RegionName = thisRegion.getAnnotation();
-        t.startOfRegion = thisRegion.getStartPosition();
-        t.endOfRegion = thisRegion.getEndPosition();
-        
-        return t;
-    
     }
     
     private ArrayList<IndividualSnpData> isolateHeterozygotes(ArrayList<IndividualSnpData> all_individuals) {
@@ -308,37 +262,7 @@ public class BinomialTest {
         return testPerformed;
     }
     
-
-    /**
-     * @return the multipleTestSnps
-     */
-    public boolean hasMultipleTestSnps() {
-        return TestUsedInPhasing;
-    }
-
-    /**
-     * @return the additionalPositions
-     */
-    public ArrayList<String> getAdditionalPositions() {
-        return additionalPositions;
-    }
-
-    /**
-     * @return the additionalNames
-     */
-    public ArrayList<String> getAdditionalNames() {
-        return additionalNames;
-    }
-
-    public void addAdditionalSNP(String snpName, String snpPos){
-        additionalNames.add(snpName);
-        additionalPositions.add(snpPos);
     
-    }
-
-    void setSnpName(String snpName1) {
-        snpName = snpName1 ;
-    }
     
 }
 

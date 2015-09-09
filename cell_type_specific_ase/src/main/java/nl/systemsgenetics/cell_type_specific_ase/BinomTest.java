@@ -3,11 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+package nl.systemsgenetics.cell_type_specific_ase;
 
-package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
-
-
+import static java.lang.Math.log;
 import java.util.ArrayList;
+import org.apache.commons.math3.distribution.BinomialDistribution;
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 
 /**
  *
@@ -17,11 +18,11 @@ import java.util.ArrayList;
  */
 public class BinomTest {
     
-    private double pVal;
-    private double chiSq;
-    private double binomRatio;
-    private double nullLogLik;
-    private double altLogLik;
+    private final double pVal;
+    private final double chiSq;
+    private final double binomRatio;
+    private final double nullLogLik;
+    private final double altLogLik;
 
     
     public BinomTest(ArrayList<Integer> asRef, ArrayList<Integer> asAlt){
@@ -38,16 +39,6 @@ public class BinomTest {
             totalAlt += asAlt.get(i);
         }
         
-        int[] asRefArray = new int[asRef.size()];
-        int[] asAltArray = new int[asAlt.size()];
-        
-        for(int j =0; j< asRef.size(); j++){
-            
-            asRefArray[j] = asRef.get(j);
-            asAltArray[j] = asAlt.get(j);
-        
-        }
-        
         //binomial ratio is not determined using Maximum likelihoof algorithm, 
         //just by the actual proportion, can be proven for the binomial distribution
         if(totalRef !=0 ){
@@ -56,20 +47,33 @@ public class BinomTest {
             binomRatio = 0.0;
         }
         //Null is a ratio set to 0.5 as below.
-        nullLogLik = LikelihoodFunctions.BinomLogLik(0.5, asRefArray, asAltArray);
+        nullLogLik = BinomLogLik(0.5, asRef, asAlt);
         //Alt is a ratio based on the binomRatio.
-        altLogLik =  LikelihoodFunctions.BinomLogLik(binomRatio, asRefArray, asAltArray);
+        altLogLik =  BinomLogLik(binomRatio, asRef, asAlt);
         //chi squared statistic is determined based on both null and alt loglikelihoods.
-        chiSq = LikelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
-        
+        chiSq = -2.0 * (nullLogLik - altLogLik);
         
         //determine P value based on distribution
-
-        pVal = LikelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
+        ChiSquaredDistribution distribution = new ChiSquaredDistribution(1);
+        pVal = 1 - distribution.cumulativeProbability(chiSq);
     
     }
     
-
+    private double BinomLogLik(double d, ArrayList<Integer> asRef, ArrayList<Integer> asAlt) {
+        
+        double logLik = 0; 
+        
+        for(int i = 0; i < asRef.size(); i++){
+            
+            int total = asRef.get(i) + asAlt.get(i);
+            //determine likelihood here.
+            BinomialDistribution binomDist = new BinomialDistribution(total, d);
+            logLik += log(binomDist.probability(asRef.get(i)));
+        
+        }
+        
+        return logLik;
+    }
 
     /**
      * @return the pVal

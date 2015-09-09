@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
+package nl.systemsgenetics.cell_type_specific_ase;
 
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.ejml.simple.SimpleMatrix;
