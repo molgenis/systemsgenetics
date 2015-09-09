@@ -54,7 +54,7 @@ public class CTSaltBinomialLikelihood implements Function {
                 prop=0.0; 
             }
             
-            logLik += likelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);
+            logLik += LikelihoodFunctions.BinomLogLik(prop, asRef[i], asAlt[i]);
             
         }
         

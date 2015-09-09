@@ -39,7 +39,7 @@ import org.molgenis.genotype.vcf.VcfGenotypeData;
  *
  * @author Adriaan van der Graaf
  */
-public class readGenoAndAsFromIndividual {
+public class ReadGenoAndAsFromIndividual {
     
     public static void readGenoAndAsFromIndividual(String loc_of_bam1,
                                                    String genotype_loc, 

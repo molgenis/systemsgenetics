@@ -56,16 +56,16 @@ public class BinomTest {
             binomRatio = 0.0;
         }
         //Null is a ratio set to 0.5 as below.
-        nullLogLik = likelihoodFunctions.BinomLogLik(0.5, asRefArray, asAltArray);
+        nullLogLik = LikelihoodFunctions.BinomLogLik(0.5, asRefArray, asAltArray);
         //Alt is a ratio based on the binomRatio.
-        altLogLik =  likelihoodFunctions.BinomLogLik(binomRatio, asRefArray, asAltArray);
+        altLogLik =  LikelihoodFunctions.BinomLogLik(binomRatio, asRefArray, asAltArray);
         //chi squared statistic is determined based on both null and alt loglikelihoods.
-        chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
+        chiSq = LikelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
         
         
         //determine P value based on distribution
 
-        pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
+        pVal = LikelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
     
     }
     

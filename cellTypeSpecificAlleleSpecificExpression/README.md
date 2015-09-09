@@ -11,8 +11,6 @@ This program requires java version 8, and was tested on ubuntu 14.04 LTS.
 OS X should also work.
 
 
-
-
 ### Internal organisation
 
 The cell type specific (CTS) allele specific expression (ASE) module is separated into three sub-modules:
@@ -61,11 +59,14 @@ This module uses multiple methods of finding the allelic imbalance using a likel
 - Beta binomial LRT
 
 Per Region, and test SNP, a P-value is determined, in the same was as the ASEperSNP module.
+
+**WARNING**
+
 Currently this module is functional, but not yet sufficiently tested to ensure  
 a user obtains correct results. 
 
 
-##Start: Binomial and Beta Binomial test
+## Basic operation: Binomial and Beta Binomial test
 
 This section will describe how to do the most simple analysis: non-CTS ASEperSNP, 
 in later sections, more options will be added to the analysis described here, 
@@ -157,17 +158,104 @@ This is the first time we're going to use the program, please download it, curre
 it is named as the following but this will probably change (TODO):
 `cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar`
 
-To create an AS file for suzie named: `Suzie-ASreads.txt`, we can run the following command in bash:
+To create an AS file for suzie named: `Suzie-ASreads.txt`,**Check your output**
+ we can run the following command in bash:
 ```
-
 java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar \
-    -action ASreads \
-    -output Suzie-ASreads.txt \
-    -coupling_file suzie-peter_coupling.txt \
-    -genotype_location Suzie-Peter_Genotype/ \
-    -bam_file Suzie-RNAseq1.bam\
-    > suzie_ASreads_output.txt
-
+    --action ASreads \
+    --output Suzie-ASreads.txt \
+    --coupling_file suzie-peter_coupling.txt \
+    --genotype_location Suzie-Peter_Genotype/ \
+    --bam_file Suzie-RNAseq1.bam\
+    > Suzie_ASreads_output.txt
 ```
 
-When this run has finished, we can do the other individuals (Peter in this case).
+When this run has finished (takes quite some time, depending on the number of SNPs.), 
+We need to do the other individuals as well (Peter in the example case), 
+by changing the file which to output and the bam file for input.
+
+Now all individuals have an AS file, we can start the ASE testing.
+
+**Check your output**
+Based on the AS files, you can determine if your genotypes and coupling are correct.
+When you open the file and find high numbers that map to no allele and or hardly 
+any balance in the alleles, you could have some problems with incorrect coupling, 
+or incorrect genotyping.
+
+
+#####STEP 2: Testing for ASE at single SNPs.
+
+Before testing for ASE, one needs to specify the parameters for each test:
+These are:
+
+-Which ASfiles do you want to include
+-How many heterozygotes does a variant need to have before starting to test. default:1
+-How many reads must overlap a variant before starting to test. default:10
+
+Which ASfiles you need to include must be stored in a file with a file per line as such(in case of testing Suzie and Peter):
+```
+Suzie_ASreads_output.txt
+Peter_ASreads_output.txt
+```
+We will save this as `Suzie-Peter-ASFiles.txt`
+
+**Important**
+
+Make sure you the ordering of the AS files is the same in all files specified in the above file. 
+Otherwise, the testing will not be done.
+
+**/Important**
+
+Now head to your terminal and run the following command:
+
+```
+java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar \
+    --action ASEperSNP \
+    --output PeterSuzieTests
+    --as_locations Suzie-Peter-ASFiles.txt \
+    --minimum_hets 1 \
+    --minimum_reads 10\
+    > PeterSuzieBinomialBetaBinomialOut.txt
+```
+
+This command will run for some time depending on the number of SNPs and the number of individuals used for testing.
+
+The output in PeterSuzieBinomialBetaBinomialOut.txt will show, in a human readable 
+form, what tests are performed, their input and their output.
+
+The Specific testing output will be saved in a number of files with the test 
+type appended to the original output parameter, namely:
+`PeterSuzieTests_dispersionFile.txt, PeterSuzieTests_BinomialResults.txt and PeterSuzieTests_BetaBinomialResults.txt`
+These files show the resulting statistics for specific tests.
+
+When running Cell type specific tests (not shown in this example), 
+the output file will be saved as <output>_CTSBinomialResults.txt and 
+<output>_CTSBetaBinomialResults.txt, for the binomial and beta binomial cell type specific tests respectively.
+
+**Check your output**
+To get a feel for the data I suggest taking a look at what is piped through standard out (PeterSuzieBinomialBetaBinomialOut.txt in this example case)
+and you may be able to sort the Results files based on P-value or chi squared value.
+
+Currently, the overall structure of all results files is not yet specified correctly, 
+but the first 6 columns are the same throughout the ASEperSNP test:
+```
+1. Chromosome 
+2. Position on chromosome
+3. SNP name (rs number)
+4. Number of samples heterozygote for this SNP
+5. P value
+6. Chi squared value
+```
+
+In our example case, if you would like to see the 5 SNPs that are most likely 
+ASE SNPs in the beta binomial tests, you could sort based on the chi squared value, like 
+this in the terminal:
+
+```
+sort -n -k 6,6 PeterSuzieTests_BetaBinomialResults.txt | tail -n 5
+```
+
+
+
+
+

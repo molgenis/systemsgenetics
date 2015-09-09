@@ -236,10 +236,10 @@ class CTSbinomialTest {
 
 
                 //chi squared statistic is determined based on both null and alt loglikelihoods.
-                chiSq = likelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
+                chiSq = LikelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
 
                 //determine P value based on distribution
-                pVal = likelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
+                pVal = LikelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
                 
                 if(GlobalVariables.verbosity >= 10){
                     System.out.println("\n--- Starting cell type specific binomial LRT test estimate ---");

@@ -44,7 +44,7 @@ public class BetaBinomLikelihoodForOverdispersion  implements Function  {
         }
 
         
-        return likelihoodFunctions.BetaBinomLogLik(t[0], 0.5, 0.5, asRef, asAlt);
+        return LikelihoodFunctions.BetaBinomLogLik(t[0], 0.5, 0.5, asRef, asAlt);
     }
     
     @Override

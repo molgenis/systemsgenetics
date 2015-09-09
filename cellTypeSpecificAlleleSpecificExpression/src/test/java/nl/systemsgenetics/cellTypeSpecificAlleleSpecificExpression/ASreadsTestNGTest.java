@@ -100,7 +100,7 @@ public class ASreadsTestNGTest {
         String outputLoc = tmpOutputFolder + fileSep + "testASREADSoutput.txt";
         
         
-        mainEntryPoint.main("-A", "1", "-G", genotypeLoc, "-O", outputLoc, "-C", couplingLoc, "-B", bamLoc);
+        MainEntryPoint.main("-A", "1", "-G", genotypeLoc, "-O", outputLoc, "-C", couplingLoc, "-B", bamLoc);
         
         //Check md5sum of the output file.
         String md5sumResult = md5StringFromFile(outputLoc);
@@ -143,7 +143,7 @@ public class ASreadsTestNGTest {
         String outputLocUnedited = tmpOutputFolder + fileSep + "testBINOMIALoutput.txt";
         
         //do the stuff for the output location
-        mainEntryPoint.main("-A", "2", "-O",outputLocUnedited  ,"-L", asLocation, "--minimum_reads", "1", "--minimum_heterozygotes", "1");
+        MainEntryPoint.main("-A", "2", "-O",outputLocUnedited  ,"-L", asLocation, "--minimum_reads", "1", "--minimum_heterozygotes", "1");
         //cannot check this by md5sum because of floating point precision probably.
         //I will do this using unit tests, and not the whole program.
         

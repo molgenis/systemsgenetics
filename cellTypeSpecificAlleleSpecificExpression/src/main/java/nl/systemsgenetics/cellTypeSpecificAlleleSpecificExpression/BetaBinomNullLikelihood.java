@@ -57,7 +57,7 @@ class BetaBinomNullLikelihood implements Function {
 
             int AS2   = asAlt[i];
             
-            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, t[0], t[0], AS1, AS2);
+            logLik +=  LikelihoodFunctions.BetaBinomLogLik(sigma, t[0], t[0], AS1, AS2);
         }
         
         return logLik;

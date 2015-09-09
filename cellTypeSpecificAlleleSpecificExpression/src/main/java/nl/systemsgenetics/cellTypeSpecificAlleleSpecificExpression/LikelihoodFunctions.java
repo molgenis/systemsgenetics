@@ -17,7 +17,7 @@ import org.jdom.IllegalDataException;
  * @author adriaan
  */
 
-public class likelihoodFunctions {
+public class LikelihoodFunctions {
     
     static double BinomLogLik(double d, int asRef, int asAlt) {
         int total = asRef + asAlt;
@@ -31,8 +31,6 @@ public class likelihoodFunctions {
         double logLik = 0; 
         
         for(int i = 0; i < asRef.length; i++){
-            
-            int total = asRef[i]+ asAlt[i];
             //determine likelihood here.
            
             logLik += BinomLogLik(d, asRef[i], asAlt[i]);

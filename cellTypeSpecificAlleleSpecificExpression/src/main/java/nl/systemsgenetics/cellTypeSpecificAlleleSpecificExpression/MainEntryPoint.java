@@ -6,7 +6,7 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.text.NumberFormat;
-import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.readGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
+import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.ReadGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -26,7 +26,7 @@ import org.molgenis.genotype.GenotypeInfo;
  */
 
 
-public class mainEntryPoint {
+public class MainEntryPoint {
     /**
      * This is the entrypoint for cell type specific ASE,
      * This will provide the logic, based on what to do based on command line statements.
@@ -65,10 +65,13 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("location of file in which to write output.\n "
-                                               + "When action is: ASREADS, this will be the output of as_file\n"
-                                               + "When action other, it will provide the test statistics per SNP.\n"
-                                               + "When test contains dispersion estimation, dispersion will be saved as: "
-                                               + "<output-no-extension>_dispersion.txt")                                                
+                                               + "When action is: ASreads, this will be the output of as_file\n"
+                                               + "When action is ASEperRegion, it will provide the test statistics using the basefilename and adding an extension\n"
+                                               + "Dispersion will be saved as: <output>_dispersionFile.txt\n"
+                                               + "Binomial reults will be saved as: <output>_BinomialResults.txt\n"                                               
+                                               + "Beta binomial results will be saved as: <output>_BetaBinomialResults.txt\n"
+                                               + "CTS binomial results will be saved as: <output>_CTSBinomialResults.txt\n"
+                                               + "CTS beta binomial results will be saved as: <output>_CTSBetaBinomialResults.txt\n")
 				.withLongOpt("output")
                                 .isRequired()
 				.create('O');
@@ -82,9 +85,9 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("location of file where coupling data is stored.\n "
-                                               + "Required when action is: ASREADS\n"
-                                               + "Coupling data will have the individual name in the first column and \n"
-                                               + "the associated sample bam file name (without path and extenstion)in the second column")                                                
+                                               + "Required when action is: ASreads\n"
+                                               + "Coupling data will have the individual name in the first column and\n"
+                                               + "the associated sample bam file name (without path and extenstion) in the second column")                                                
 				.withLongOpt("coupling_file")
 				.create('C');
 		OPTIONS.addOption(option);
@@ -92,8 +95,8 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Path to directory or location of file from which to load genotype data.\n"
-                                                + "Currently only tri typer and tabix indexed vcf data is available"
-                                                + "Required when action is: ASREADS")                                                
+                                                + "Currently only TriTyper and tabix indexed vcf data is available"
+                                                + "Required when action is: ASreads")                                                
 				.withLongOpt("genotype_location")
 				.create('G');
 		OPTIONS.addOption(option);
@@ -102,7 +105,7 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Location of bamfile from which to load data.\n "
-                                               + "Required when action is: ASREADS")                                                
+                                               + "Required when action is: ASreads")                                                
 				.withLongOpt("bam_file")
 				.create('B');
 		OPTIONS.addOption(option);
@@ -110,7 +113,7 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Location of  a file containing paths from which to load as data created in .\n "
-                                               + "Required when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
+                                               + "Required when action is: ASEperSNP, ASEperRegion.")                                                
 				.withLongOpt("as_locations")
 				.create('L');
 		OPTIONS.addOption(option);                
@@ -119,21 +122,21 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Path to a file phenotype information from which cell proportions are loaded.\n "
-                                               + "Required when action is: CTSBINOMTEST,CTSBETABINOMTEST.")                                                
+                                               + "Required when you want Cell type specific results.")                                                
 				.withLongOpt("pheno_file")
 				.create('P');
 		OPTIONS.addOption(option);
                 
                 
                 /*
-                    fully optionally arguments
+                    fully optional arguments
                 */
                 
                 option = OptionBuilder.withArgName("String")
 				.hasArgs()
 				.withDescription("Location of a file containing a list of snp names (rs123456789 format)\n"
                                                + "Standard setting is none.\n"
-                                               + "Used when action is: ASREADS.")                                                
+                                               + "Used when action is: ASreads.")                                                
 				.withLongOpt("snp_list")
 				.create("snp_list");
 		OPTIONS.addOption(option);
@@ -143,7 +146,7 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("String")
 				.hasArgs()
 				.withDescription("Integer specifying how many heterozygotes should present before to run an AS test.\n"
-                                               + "Standard setting is 1, minimum should be 0 but is not checked.\n"
+                                               + "Default setting is 1, minimum should be 0 but is not checked.\n"
                                                + "Used when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
 				.withLongOpt("minimum_heterozygotes")
 				.create("minimum_hets");
@@ -153,7 +156,7 @@ public class mainEntryPoint {
                 option = OptionBuilder.withArgName("String")
 				.hasArgs()
 				.withDescription("Integer specifying how many reads should be overlapping before to run an AS test.\n"
-                                               + "Standard setting is 10, minimum should be 0 but is not checked.\n"
+                                               + "Default setting is 10, minimum should be 0 but is not checked.\n"
                                                + "Used when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
 				.withLongOpt("minimum_reads")
 				.create("minimum_reads");
@@ -169,7 +172,7 @@ public class mainEntryPoint {
         //Required Arguments
         String outputLocation = new String();
         
-        //ASREADS specific arguments
+        //ASreads specific arguments
         String bamFile = new String();
         String couplingLocation = new String();
         String genotypeLocation = new String();
@@ -228,20 +231,20 @@ public class mainEntryPoint {
                         if(commandLine.hasOption('G')){
                              genotypeLocation = commandLine.getOptionValue('G');
                         } else {
-                            throw new ParseException("Required command line input --genotype_location when --action is ASREADS");
+                            throw new ParseException("Required command line input --genotype_location when --action is ASreads");
                         }
                         
                         //Read binomTest arguments
                         if(commandLine.hasOption('C')){
                             couplingLocation = commandLine.getOptionValue('C');
                         } else{
-                            throw new ParseException("Required command line input --coupling_file when --action is ASREADS");
+                            throw new ParseException("Required command line input --coupling_file when --action is ASreads");
                         }                        
                          
                         if(commandLine.hasOption('B')){
                             bamFile = commandLine.getOptionValue('B');
                         } else{
-                            throw new ParseException("Required command line input --bam_file when --action is ASREADS");
+                            throw new ParseException("Required command line input --bam_file when --action is ASreads");
                         }         
                         if(commandLine.hasOption("snp_list")){
                             snpsLocation = commandLine.getOptionValue("snp_list");
@@ -277,7 +280,7 @@ public class mainEntryPoint {
                             START BINOMIAL CELL TYPE SPECIFIC TEST
                         */
                         
-                        nonPhasedEntry a =  new nonPhasedEntry(asFile, phenoTypeLocation,  outputLocation);
+                        NonPhasedEntry a =  new NonPhasedEntry(asFile, phenoTypeLocation,  outputLocation);
                         
                     }else if(programAction.equals("ASEperRegion") || programAction.equals("3")){
                         

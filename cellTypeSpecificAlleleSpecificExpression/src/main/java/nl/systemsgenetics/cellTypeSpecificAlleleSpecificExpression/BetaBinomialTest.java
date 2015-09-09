@@ -237,7 +237,7 @@ class BetaBinomialTest {
                               + String.format("%.15g", betaParam) + "," 
                               + Integer.toString( asRefArray[i]) + ","
                              + Integer.toString(asAltArray[i]) + ")" +
-                            ", " + Double.toString(likelihoodFunctions.BetaBinomLogLik(dispArray[i], alphaParam, betaParam, asRefArray[i], asAltArray[i])) + ");" ;
+                            ", " + Double.toString(LikelihoodFunctions.BetaBinomLogLik(dispArray[i], alphaParam, betaParam, asRefArray[i], asAltArray[i])) + ");" ;
                      System.out.println(command);
                 }
             }

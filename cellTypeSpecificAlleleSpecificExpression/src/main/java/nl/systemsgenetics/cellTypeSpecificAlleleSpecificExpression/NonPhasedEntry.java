@@ -15,10 +15,10 @@ import org.jdom.IllegalDataException;
  *
  * @author adriaan
  */
-public class nonPhasedEntry {
+public class NonPhasedEntry {
     
     
-    public nonPhasedEntry(String asLocations, String phenoTypeLocation, String outputLocation) throws IOException, Exception {
+    public NonPhasedEntry(String asLocations, String phenoTypeLocation, String outputLocation) throws IOException, Exception {
     
         //This is the entry used for non-phased tests.
         

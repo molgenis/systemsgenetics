@@ -60,7 +60,7 @@ class BetaBinomAltLikelihood implements Function {
 
             int AS2   = asAlt[i];
             
-            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, alpha, beta, AS1, AS2);
+            logLik +=  LikelihoodFunctions.BetaBinomLogLik(sigma, alpha, beta, AS1, AS2);
         }
         
         return logLik;

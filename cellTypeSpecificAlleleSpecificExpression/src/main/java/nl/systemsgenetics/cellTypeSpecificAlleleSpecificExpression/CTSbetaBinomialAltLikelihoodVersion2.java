@@ -105,7 +105,7 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
              * 
              */
             
-            logLik +=  likelihoodFunctions.BetaBinomLogLik(sigma, 1.0, (1.0 / fullProp) -1 , AS1, AS2);
+            logLik +=  LikelihoodFunctions.BetaBinomLogLik(sigma, 1.0, (1.0 / fullProp) -1 , AS1, AS2);
         }
         
         return logLik;
