@@ -81,12 +81,12 @@ bam format, a binary form of the [sam](http://genome.sph.umich.edu/wiki/SAM) for
 into the bam format using the program [samtools](https://github.com/samtools/samtools).
 
 
-When `sample.bam` is your bam file, you can provide it with an index by using samtools.
+When `Suzie-RNAseq1.bam` is your bam file, you can provide it with an index by using samtools.
 you can then index the bam using:
 ```
-samtools index sample.bam
+samtools index Suzie-RNAseq1.bam
 ```
-A file named: `sample.bam.idx` will be add in the working directory, 
+A file named: `Suzie-RNAseq1.bam.idx` will be add in the working directory, 
 this contains the index for the specific bam.
 Now the bam file can be used for reading by the ASreads sub-module.
 Please index all the bam files that you want to use for analysis.
@@ -104,6 +104,30 @@ Conversion of the genotype format into TriTyper can be done using the [Genotype 
 This guide refers to their wiki for the conversion of your genotype format into TriTyper format.
 
 **Creating a coupling file**
+The coupling file is used to match the sample data (bam file name) to the individual genotype data (name in the genotype file).
+A coupling file is a tab delimited file, with one individual - sample pair per line. 
+Individuals are in the first column (same name as in the genotype file), samples are in the second column (same name as the bam filenames, without the .bam extension).
+
+
+In the most simple case you would have one individual in the genotype file: _Suzie_, with the subsequent sample file _Suzie-RNAseq1.bam_
+```
+Suzie\tSuzie-RNAseq1
+```
+
+Adding an individual is as simple as adding a similar line to the file, for instance _Peter_ with the sample Peter-RNAseq1.bam
+Making the file the following:
+```
+Suzie\tSuzie-RNAseq1
+Peter\tPeter-RNAseq1
+```
+
+For purposes of examples the guide will keep using the names Suzie and Peter for clarity.
+
+#####STEP 1: ASREADS
+
+After preprocessing the data into your 
+
+
 
  
 
