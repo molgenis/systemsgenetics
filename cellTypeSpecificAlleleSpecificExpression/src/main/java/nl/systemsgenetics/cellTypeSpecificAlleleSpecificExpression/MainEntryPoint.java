@@ -122,7 +122,7 @@ public class MainEntryPoint {
                 option = OptionBuilder.withArgName("string")
 				.hasArgs()
 				.withDescription("Path to a file phenotype information from which cell proportions are loaded.\n "
-                                               + "Required when you want Cell type specific results.")                                                
+                                               + "Required when you want Cell type specific results in ASreads.")                                                
 				.withLongOpt("pheno_file")
 				.create('P');
 		OPTIONS.addOption(option);

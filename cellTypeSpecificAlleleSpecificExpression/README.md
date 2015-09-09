@@ -114,6 +114,7 @@ For example purposes, the genotype directory will be set to the following: `Suzi
 
 
 **Creating a coupling file**
+
 The coupling file is used to match the sample data (bam file name) to the individual genotype data (name in the genotype file).
 A coupling file is a tab delimited file, with one individual - sample pair per line. 
 Individuals are in the first column (same name as in the genotype file), samples are in the second column (same name as the bam filenames, without the .bam extension).
@@ -130,9 +131,9 @@ Making the file the following:
 Suzie    Suzie-RNAseq1
 Peter    Peter-RNAseq1
 ```
-Please note that the spacing between is actually a tab character, not spaces.
+Please note that the spacing between individual and sample needs to be a tab character (\t), not spaces.
 This file will be saved as: `suzie-peter_coupling.txt`
-For purposes of examples the guide will keep using the names Suzie and Peter for clarity.
+For example purposes, this guide will keep using the names Suzie and Peter for clarity.
 
 #####STEP 1: ASreads
 
@@ -199,12 +200,12 @@ Peter_ASreads_output.txt
 ```
 We will save this as `Suzie-Peter-ASFiles.txt`
 
-**Important**
+**<Important>**
 
 Make sure you the ordering of the AS files is the same in all files specified in the above file. 
 Otherwise, the testing will not be done.
 
-**/Important**
+**</Important>**
 
 Now head to your terminal and run the following command:
 
@@ -254,6 +255,54 @@ this in the terminal:
 ```
 sort -n -k 6,6 PeterSuzieTests_BetaBinomialResults.txt | tail -n 5
 ```
+
+This concludes the basic usage section, preprocessing, isolating ASreads and 
+testing for ASE using a binomial and beta binomial were discussed.
+
+**<Warning>**
+
+Please note that having two individuals in your analysis is usually not enough to provide you with correct estimates.
+
+**<\Warning>**
+
+
+## Additional features: Cell type specific Tests:
+
+When your sequenced sample is a mixture of tissues (for instance when sequencing 
+blood samples), you may be interested in how allele specific expression is a 
+factor in a specific tissue. For this purpose, a cell type specific testing 
+feature is available in this module that  will automatically produce results 
+when a phenotype file is available.
+
+
+A phenotype file is a file with some ratio per individual:
+```
+0.25
+0.43
+```
+Where the ordering of the file is the same ordering as the ordering of individuals in the `--as_locations` option.
+When integrating this phenotype file with the Suzie Peter example (see Step 2 in the basic usage), this will mean 
+that for some cell type, the proportion in the tissue is 0.25  (25%) in Suzie and 0.43 (43%) in Peter
+
+Saving this file as `Suzie-Peter-Phenotype.txt`, the command run will look like this:
+
+```
+java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar \
+    --action ASEperSNP \
+    --output PeterSuzieTests
+    --as_locations Suzie-Peter-ASFiles.txt \
+    --minimum_hets 1 \
+    --minimum_reads 10\
+    --pheno_file Suzie-Peter-Phenotype.txt\
+    > PeterSuzieBinomialBetaBinomialOut.txt
+```
+
+**<Warning>**
+
+Only 2 samples is very little information for the detection of cell type specific 
+effects, even moreso than looking at ASE for itself..
+
+**<\Warning>**
 
 
 
