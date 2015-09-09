@@ -111,15 +111,16 @@ Individuals are in the first column (same name as in the genotype file), samples
 
 In the most simple case you would have one individual in the genotype file: _Suzie_, with the subsequent sample file _Suzie-RNAseq1.bam_
 ```
-Suzie\tSuzie-RNAseq1
+Suzie    Suzie-RNAseq1
 ```
 
 Adding an individual is as simple as adding a similar line to the file, for instance _Peter_ with the sample Peter-RNAseq1.bam
 Making the file the following:
 ```
-Suzie\tSuzie-RNAseq1
-Peter\tPeter-RNAseq1
+Suzie    Suzie-RNAseq1
+Peter    Peter-RNAseq1
 ```
+Please note that the spacing between is actually a tab character, not spaces.
 
 For purposes of examples the guide will keep using the names Suzie and Peter for clarity.
 
