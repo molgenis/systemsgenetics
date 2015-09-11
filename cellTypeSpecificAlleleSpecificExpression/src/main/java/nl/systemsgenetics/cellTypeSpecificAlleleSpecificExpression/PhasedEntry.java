@@ -37,7 +37,7 @@ class PhasedEntry {
          * 1. read all SNPs from AS files and add overdispersion and cellprop to the files
          * 2. read phasing and assign alleles for these snps
          * 3. load test regions and determine test snps.
-         * 5. determine log likelihood for test-snps. (with some deduplication, hopefully)
+         * 5. determine log likelihood for test-snps. (with some deduplication)
          */
 
         
@@ -84,7 +84,7 @@ class PhasedEntry {
                     
         }
         
-        //second reading of the file.
+        //second reading of the ASfiles.
         while (true) {
             
             //read some stuff from the files.
@@ -200,7 +200,8 @@ class PhasedEntry {
             
             ArrayList<IndividualSnpData> allHetsInRegion = new ArrayList<IndividualSnpData>();
             
-            //Don't want to do this in every iteration in the next loop, don't know if this is efficient. 
+            //Don't want to do this in every iteration in the next loop.
+            
             for( String regionSnp : snpsInRegion ){
                 allHetsInRegion.addAll(UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(regionSnp)));
             }
@@ -395,6 +396,7 @@ class PhasedEntry {
                 System.out.println("couldn't find individual " + tempCouple[0] + " in sampleNames, continueing with the next.");
             }
         }
+        
         if(GlobalVariables.verbosity >= 100){
             System.out.println("final coupling map:");
             System.out.println(couplingMap.toString());
@@ -408,10 +410,10 @@ class PhasedEntry {
             Iterable<GeneticVariant> VariantsInRegion;
             VariantsInRegion = genotypeData.getVariantsByRange(
                                                 iRegion.getSequence(),
-                                                iRegion.getStartPosition(),
-                                                iRegion.getEndPosition());
+                                                iRegion.getTestStart(),
+                                                iRegion.getTestEnd());
             
-            ArrayList<String> snpsInThisRegion = new ArrayList<String>();
+            ArrayList<String> snpsInThisTestRegion = new ArrayList<String>();
             
             for(GeneticVariant currentVariant : VariantsInRegion){
                 
@@ -451,7 +453,7 @@ class PhasedEntry {
                     continue;
                 }
                 
-                snpsInThisRegion.add(chr + ":" + posString);
+                snpsInThisTestRegion.add(chr + ":" + posString);
 
                 //If phasing is already add to this variant we may as well stop right here.
                 if(oldSnpData.get(0).hasPhasing()){
@@ -479,7 +481,8 @@ class PhasedEntry {
 
                         char Alt = iAS.getAlternative();
 
-
+                        //Genotype IO used the phasing boolean, and the 
+                        //order of the allele characters for the phasing.
                         char[] alleleChars;
                         alleleChars = Variants.get(i).getAllelesAsChars();
 
@@ -488,7 +491,8 @@ class PhasedEntry {
                             System.out.println(Arrays.toString(alleleChars));
                         }
 
-                        //assuming the allele is reference
+                        //first assuming the allele is reference
+                        //if not the cse, then we change it.
                         int first = 0;
                         int second = 0;
 
@@ -498,11 +502,12 @@ class PhasedEntry {
                         if(alleleChars[1] == Alt){
                             second = 1;
                         }
+                        
                         try{
-                        iAS.setPhasing(first, second);
-                        } catch(Exception e){
+                            iAS.setPhasing(first, second);
+                        } catch(IllegalDataException e){
                             if(GlobalVariables.verbosity >= 10 && !passSNP){
-                            System.out.println("Did not set phasing for variant" + snpName + " phasing does not match genotype.");
+                                System.out.println("Did not set phasing for variant" + snpName + " phasing does not match genotype.");
                             }
                             passSNP = true;
 
@@ -511,7 +516,7 @@ class PhasedEntry {
                     newSnpData.add(iAS);
                 }
                 
-                //something went wrong in the 
+                //something went wrong in the SNP with phasing information and genotype from other data.
                 if(passSNP){
                     newSnpData = oldSnpData;
                 }
@@ -522,7 +527,7 @@ class PhasedEntry {
                 snpsDone++;
             }
             
-            iRegion.setSnpInRegions(snpsInThisRegion);
+            iRegion.setSnpInRegions(snpsInThisTestRegion);
             
             genomicRegions.set(regionIndicator, iRegion);
             
@@ -552,6 +557,22 @@ class PhasedEntry {
             tempRegion.setSequence(splitString[1]);
             tempRegion.setStartPosition(Integer.parseInt(splitString[2]));
             tempRegion.setEndPosition(Integer.parseInt(splitString[3])); 
+            
+            //Try to see if there are test regions specified.
+            try{
+                //set the test region to what is found in the file
+                tempRegion.setTestStart(Integer.parseInt(splitString[4]));
+                tempRegion.setTestEnd(Integer.parseInt(splitString[5]));
+                tempRegion.setHasTestRegion(true);
+                
+            } catch(IndexOutOfBoundsException e){
+                //set the test region to be the genomic region.
+                tempRegion.setTestStart(Integer.parseInt(splitString[2]));
+                tempRegion.setTestEnd(Integer.parseInt(splitString[3]));
+                
+                tempRegion.setHasTestRegion(false);    
+            }
+            
             
             allRegions.add(tempRegion);
             
