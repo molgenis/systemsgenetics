@@ -8,7 +8,7 @@ with heterogenous tissues.
 **Requirements:**
 
 This program requires java version 8, and was tested on ubuntu 14.04 LTS.
-OS X should also work.
+OS X based systems should also work.
 
 
 ### Internal organisation
@@ -21,9 +21,7 @@ The cell type specific (CTS) allele specific expression (ASE) module is separate
 
 #####1. ASreads
 
-This sub module is able to quantify the number sequencing reads that overlap an
-allele at heterozygous SNP sites, by integrating any quantitative sequencing 
-experiment (like RNA-seq or proseq) with genotype information.
+This sub-module is able to quantify the number sequencing reads that overlap an allele at heterozygous SNP sites, by integrating any quantitative sequencing experiment (like RNA-seq or proseq) with genotype information.
 
 The data created in this module can be used in the later modules for the 
 quantification of allele specific expression.    
@@ -31,8 +29,7 @@ quantification of allele specific expression.
 
 #####2. ASEperSNP
 
-This sub-module combines multiple ASfiles (Produced previously in the ASreads submodule)
-of samples, and determines the probability of allelic imbalance per **SNP**.
+This sub-module combines multiple ASfiles (Produced previously in the ASreads sub-module) of samples, and determines the probability of allelic imbalance per **SNP**.
 This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
 
 - Binomial LRT
@@ -45,14 +42,12 @@ When dealing with heterogeneous tissue, and cell proportions are available:
 
 Per SNP, a P value is determined. The P value is the probability of finding **no** ASE.
 Lower P values mean more evidence for ASE at this SNP.
-Usually the Beta Binomial (BB) test is better at correction for sample specific biasses,
-thus, the results of the Beta Binomial should usually be considered to be more accurate. 
+Usually the Beta Binomial (BB) test is better at correction for sample specific biases, thus, the results of the Beta Binomial should usually be considered to be more accurate. 
 
 
 #####3. ASEperRegion
 
-This sub-module combines multiple ASfiles (Produced previously in the ASreads submodule)
-of samples, and determines the probability of allelic imbalance per genomic **region**.
+This sub-module combines multiple ASfiles (Produced previously in the ASreads submodule) of samples, and determines the probability of allelic imbalance per genomic **region**.
 This module uses multiple methods of finding the allelic imbalance using a likelihood ratio test (LRT):
 
 - Binomial LRT
@@ -261,7 +256,7 @@ testing for ASE using a binomial and beta binomial were discussed.
 
 **Warning**
 
-Please note that having two individuals in your analysis is usually not enough to provide you with correct estimates.
+Please note that having two individuals in your analysis is usually not enough to provide you with robust estimates of ASE.
 
 **\Warning**
 
