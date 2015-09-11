@@ -8,7 +8,7 @@ with heterogenous tissues.
 **Requirements:**
 
 This program requires java version 8, and was tested on ubuntu 14.04 LTS.
-OS X based systems should also work.
+other Linux- and OS X based systems should also work.
 
 
 ### Internal organisation
@@ -64,8 +64,8 @@ a user obtains correct results.
 ## Basic operation: Binomial and Beta Binomial test
 
 This section will describe how to do the most simple analysis: non-CTS ASEperSNP, 
-in later sections, more options will be added to the analysis described here, 
-to make the analysis better. 
+in later sections, more options will be added to the analysis described here, to 
+be able to add extra functionality
 
 
 **Minimum of data required:**
@@ -85,7 +85,7 @@ into the bam format using the program [samtools](https://github.com/samtools/sam
 
 
 When `Suzie-RNAseq1.bam` is your bam file, you can provide it with an index by using samtools.
-you can then index the bam using:
+you can then index the bam using the following command in your terminal:
 ```
 samtools index Suzie-RNAseq1.bam
 ```
@@ -102,10 +102,10 @@ The sub-module ASreads accepts two types of file formats:
 1. TriTyper
 2. VCF
 
-The TriTyper format is considerably faster to read than the VCF, therefore we will continue with the TriTyper format.
+The TriTyper format is considerably faster to read than the VCF at this moment, therefore this guide will continue with the TriTyper format.
 Conversion of the genotype format into TriTyper can be done using the [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer)
 This guide refers to their wiki for the conversion of your genotype format into TriTyper format.
-For example purposes, the genotype directory will be set to the following: `Suzie-Peter_Genotype/`
+For example purposes, the directory containing TriTyper information will be set to the following: `Suzie-Peter_Genotype/`
 
 
 **Creating a coupling file**
@@ -127,14 +127,14 @@ Suzie    Suzie-RNAseq1
 Peter    Peter-RNAseq1
 ```
 Please note that the spacing between individual and sample needs to be a tab character (\t), not spaces.
-This file will be saved as: `suzie-peter_coupling.txt`
+This file can be saved as: `suzie-peter_coupling.txt`
 For example purposes, this guide will keep using the names Suzie and Peter for clarity.
 
 #####STEP 1: ASreads
 
 After preprocessing, ASread files can be created.
 ASread files provide information per Bi-allelic SNP (other variants are not supported) on where a read maps.
-Formatting is in tab delimited fashion with the following format per column:
+Formatting of ASfiles is in tab delimited fashion with the following data per column:
 
 ```
 1. Chromosome name
@@ -150,11 +150,11 @@ Formatting is in tab delimited fashion with the following format per column:
 
 To create this file for individual _Suzie_, 
 
-This is the first time we're going to use the program, please download it, currently 
+This is the first time we're going to use the program, please download or build it, currently 
 it is named as the following but this will probably change (TODO):
 `cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar`
 
-To create an AS file for suzie named: `Suzie-ASreads.txt`,**Check your output**
+To create an AS file for suzie named: `Suzie-ASreads.txt`,
  we can run the following command in bash:
 ```
 java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-dependencies.jar \
@@ -170,13 +170,13 @@ When this run has finished (takes quite some time, depending on the number of SN
 We need to do the other individuals as well (Peter in the example case), 
 by changing the file which to output and the bam file for input.
 
-Now all individuals have an AS file, we can start the ASE testing.
+Now all individuals in this example have an AS file, we can start the ASE testing.
 
 **Check your output**
 Based on the AS files, you can determine if your genotypes and coupling are correct.
-When you open the file and find high numbers that map to no allele and or hardly 
-any balance in the alleles, you could have some problems with incorrect coupling, 
-or incorrect genotyping.
+When you open an ASfile and find high numbers that map to no allele and or hardly 
+any balance in the alleles with heterozygotes, you could have some problems with 
+incorrect coupling, or incorrect genotyping.
 
 
 #####STEP 2: Testing for ASE at single SNPs.
@@ -229,11 +229,12 @@ the output file will be saved as <output>_CTSBinomialResults.txt and
 <output>_CTSBetaBinomialResults.txt, for the binomial and beta binomial cell type specific tests respectively.
 
 **Check your output**
-To get a feel for the data I suggest taking a look at what is piped through standard out (PeterSuzieBinomialBetaBinomialOut.txt in this example case)
+To get a feel for the data I suggest taking a look at what is piped through standard out (saved in PeterSuzieBinomialBetaBinomialOut.txt in this example case)
 and you may be able to sort the Results files based on P-value or chi squared value.
 
-Currently, the overall structure of all results files is not yet specified correctly, 
+Currently, the overall structure of results files is not yet the same everywhere, 
 but the first 6 columns are the same throughout the ASEperSNP test:
+
 ```
 1. Chromosome 
 2. Position on chromosome
@@ -277,7 +278,7 @@ A phenotype file is a file with some ratio per individual:
 ```
 Where the ordering of the file is the same ordering as the ordering of individuals in the `--as_locations` option.
 When integrating this phenotype file with the Suzie Peter example (see Step 2 in the basic usage), this will mean 
-that for some cell type, the proportion in the tissue is 0.25  (25%) in Suzie and 0.43 (43%) in Peter
+that for some cell type, the proportion of the celltype in the tissue is 0.25  (25%) in Suzie and 0.43 (43%) in Peter
 
 Saving this file as `Suzie-Peter-Phenotype.txt`, the command run will look like this:
 
@@ -294,6 +295,7 @@ java -jar cellTypeSpecificAlleleSpecificExpression-1.0.2-SNAPSHOT-jar-with-depen
 
 Results of the Cell type specific effects can be found in the results from the standard out and from the output.
 
+
 **Warning**
 
 Only 2 samples is very little information for the detection of CTS
@@ -301,7 +303,8 @@ effects, even more so than looking at non CTS ASE for itself.
 
 **\Warning**
 
-##Additional features(2): ASE per Region'
+
+##Additional features(2): ASE per Region
 
 **Warning**
 
@@ -316,12 +319,12 @@ increase statistical power by combining multiple SNPs in the same transcript or
 _gene region_ and comparing them to some _test SNP_, as shown in the following scheme below:
 
 ```
-
 ## Fictitious example of ASE per region:
 
-           -----------------------Some genomic region-----------------------
 
-            Test SNP        |///////////Test region////////////|
+           -----------------------Some test region--------------------------
+
+            Test SNP        |///////////gene region////////////|
                X
                                        region SNP #
                                 1        2        3        4
@@ -344,12 +347,11 @@ Allele 1:   ~~~C~~~~~~~~~~~~|___A________A________A________C___|~~~~~~~~~~~~
 Allele 2:   ~~~C~~~~~~~~~~~~|___G________A________G________A___|~~~~~~~~~~~~
 
 
-Legend:
+-------------------------------Legend:--------------------------------------
 
 Het: Hetererozygote                     Hom:        Homozygote                         
-X:   Position of the test SNP           [A,G,T,C]:  Base at SNP position
-"~": Non SNP in test region             "_":        SNP in test region
-
+"X": Position of the test SNP           [A,G,T,C]:  Base at SNP position
+"~": Non SNP in  region                 "_":        Non SNP in gene region
 ```
 
 In this example, only individuals with heterozygous _test SNPs_ are used in
