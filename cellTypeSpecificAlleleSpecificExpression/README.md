@@ -89,7 +89,7 @@ you can then index the bam using the following command in your terminal:
 ```
 samtools index Suzie-RNAseq1.bam
 ```
-A file named: `Suzie-RNAseq1.bam.idx` will be add in the working directory, 
+A file named: `Suzie-RNAseq1.bam.bai` will be add in the working directory, 
 this contains the index for the specific bam.
 Now the bam file can be used for reading by the ASreads sub-module.
 Please index all the bam files that you want to use for analysis.
