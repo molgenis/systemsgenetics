@@ -103,9 +103,15 @@ The sub-module ASreads accepts two types of file formats:
 2. VCF
 
 The TriTyper format is considerably faster to read than the VCF at this moment, therefore this guide will continue with the TriTyper format.
-Conversion of the genotype format into TriTyper can be done using the [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer)
+Conversion of the genotype format into TriTyper can be done using the [Genotype Harmonizer](https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer). 
 This guide refers to their wiki for the conversion of your genotype format into TriTyper format.
 For example purposes, the directory containing TriTyper information will be set to the following: `Suzie-Peter_Genotype/`
+
+```
+bgzip -c Suzie-RNAseq1.vcf > Suzie-RNAseq1.vcf.gz
+tabix -p vcf Suzie-RNAseq1.vcf.gz 
+sh GenotypeHarmoinzer.sh --input Suzie-RNAseq1.vcf.gz  --outputType TRITYPER --output Suzie-Peter_Genotype/
+```
 
 
 **Creating a coupling file**
