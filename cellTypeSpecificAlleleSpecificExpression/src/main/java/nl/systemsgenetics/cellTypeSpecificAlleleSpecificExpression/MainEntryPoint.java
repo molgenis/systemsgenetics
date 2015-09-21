@@ -128,6 +128,16 @@ public class MainEntryPoint {
 		OPTIONS.addOption(option);
                 
                 
+                option = OptionBuilder.withArgName("string")
+				.hasArgs()
+				.withDescription("Path to a file with genome regions. Tab delimited file, per column\n "
+                                               + "1. unique region name, 2. chromosome name, 3. start of gene region, 4. end of gene region"
+                                               + "Required when you want Cell type specific results in ASreads.")                                                
+				.withLongOpt("region_file")
+				.create('R');
+		OPTIONS.addOption(option);
+                
+                
                 /*
                     fully optional arguments
                 */
@@ -177,7 +187,7 @@ public class MainEntryPoint {
         String couplingLocation = new String();
         String genotypeLocation = new String();
         String snpsLocation = new String();
-        
+        String regionLocation = new String();
                 
         //BINOMTEST and BETABINOMTEST specific arguments
         String asFile = new String();
@@ -305,7 +315,13 @@ public class MainEntryPoint {
                             throw new ParseException("Required command line input --genotype_Location when --action is ASEperRegion");
                         }
                         
-                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation);
+                        if(commandLine.hasOption('R')){
+                             regionLocation = commandLine.getOptionValue('R');
+                        } else {
+                            throw new ParseException("Required command line input --region_file when --action is ASEperRegion");
+                        }
+                        
+                        PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation, regionLocation);
                         
                         
                     }else{

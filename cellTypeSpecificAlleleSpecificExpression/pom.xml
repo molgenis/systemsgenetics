@@ -15,7 +15,7 @@
                     <configuration>
                         <archive>
                             <manifest>
-                                <mainClass>nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.mainEntryPoint</mainClass>
+                                <mainClass>nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.MainEntryPoint</mainClass>
                             </manifest>
                         </archive>
                       <descriptorRefs>
@@ -85,4 +85,5 @@
         
     </dependencies>
     <name>cellTypeSpecificAlleleSpecificExpression</name>
+    <version>1.0.3_niekRequest</version>
 </project>

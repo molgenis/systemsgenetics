@@ -388,8 +388,31 @@ The regions file will specify the test regions.
 
 Currently only binomial and beta binomial work.
 
+```
+java -jar cellTypeSpecificAlleleSpecificExpression-1.0.3_niekRequest-jar-with-dependencies.jar  \
+    -A 3 \
+    -O testoutput \
+    -L SimulatedIndividuals.txt \
+    -C simulatedCoupling.txt -G simulatedVCF.vcf.gz \
+    -R simulatedGenomicRegions.txt
+```
 
 
+output is tab-delimited in the following format, per column:
 
-
+```
+1.  Chromosome or annotation
+2.  Start position of the defined region 
+3.  End position of the defined region
+4.  Name of the region
+5.  P value of the SNP
+6.  Chi squared value of the region
+7.  Number of heterozygotes that were tested.
+8.  Number of reads reference
+9.  Number of reads alternative
+8.  The Maximum likelihood derived AS proportion: ref / (ref + alt)
+10. The genotype of the first SNP, format: [<ref_base>, <alt_base>]
+11. The SNP positions that have the same phasing
+12. The SNP names that have the same phasing
+```
 

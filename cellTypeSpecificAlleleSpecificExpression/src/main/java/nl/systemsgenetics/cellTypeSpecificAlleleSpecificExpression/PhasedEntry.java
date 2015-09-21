@@ -28,7 +28,7 @@ import umcg.genetica.containers.Pair;
 class PhasedEntry {
     
     
-    public PhasedEntry(String asLocations, String couplingLoc, String outputLocation, String cellPropLoc, String phasingLocation) throws IOException, Exception {
+    public PhasedEntry(String asLocations, String couplingLoc, String outputLocation, String cellPropLoc, String phasingLocation, String regionLocation) throws IOException, Exception {
         /**
          * This method will perform a binomial test for some test region. 
          * later additional features will be add.
@@ -134,7 +134,9 @@ class PhasedEntry {
         
         
         ArrayList<GenomicRegion> allRegions;
-        allRegions = ReadGenomicRegions("/media/fast/GENETICA/implementInJava/CEUASCOUNTS/genomicRegionsUnique.txt");
+        allRegions = ReadGenomicRegions(regionLocation);
+        
+       
         
         // 3. Read phasing info for these snps
 
@@ -149,7 +151,6 @@ class PhasedEntry {
         if(GlobalVariables.verbosity >= 10){
             System.out.println("Added phasing information to AS values of snps.");
         }
-        
         
         /**
          * 4.  Start testing, per region.:
@@ -189,8 +190,14 @@ class PhasedEntry {
                                                   "_CellTypeSpecificBetaBinomial_results.txt"
                                            , "UTF-8");
         
+        //TEST:
+        
+        ArrayList<IndividualSnpData> test1   = snpHashMap.get("chr1:2");
+        
         
         for(GenomicRegion iRegion : allRegions){
+            
+            System.out.println(iRegion.getAnnotation());
             
             // I may want to change this into all test SNPS needs to be implemented still.
             // compared to all snps in the region.
@@ -202,9 +209,12 @@ class PhasedEntry {
             
             //Don't want to do this in every iteration in the next loop.
             
+            
             for( String regionSnp : snpsInRegion ){
                 allHetsInRegion.addAll(UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(regionSnp)));
             }
+            
+            
             
             HashSet<String> combinationsDone = new HashSet<String>();
             
@@ -220,10 +230,14 @@ class PhasedEntry {
             
             for( String testSnp : snpsInRegion ){
                 
+                System.out.println(testSnp);
+                
                 ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
                 
+                //Check if the snpp has phasing, but also see if there are heterozygous SNPs in the region.
                 try{
                     if(!hetTestSnps.get(0).hasPhasing()){
+                        System.out.println("\tno phasing");
                         continue;
                     }
                 } catch(Exception e ){
@@ -235,7 +249,9 @@ class PhasedEntry {
 
                 ArrayList<String> hetTestNames = new ArrayList<String>();
                 
+                System.out.println("hets:");
                 for(IndividualSnpData hetSample : hetTestSnps){
+                    System.out.println("\t" + hetSample.getSampleName());
                     inputIdA.append(hetSample.sampleName);
                     inputIdA.append(hetSample.getPhasingFirst());
                     
@@ -277,12 +293,6 @@ class PhasedEntry {
                        }
                        continue;
                     }
-                
-                
-                    //TODO, make this so that already tested combinations are skipped
-                    // don't want to optimize prematurely.
-                
-                
                 
                     
                     ArrayList<IndividualSnpData> phasedSNPsForTest = new ArrayList<IndividualSnpData>();
@@ -378,22 +388,19 @@ class PhasedEntry {
         HashMap<String, Integer> couplingMap = new HashMap<String, Integer>();
 
         for(String iSample : couplingList){
-
             String[] tempCouple = iSample.split("\t");
             boolean found = false;
-
-
             for(int i=0; i < sampleNames.length; i++){
-
                 if(tempCouple[0].equals(sampleNames[i])){
                    couplingMap.put(tempCouple[1], i);
-                   found =true;
+                   found = true;
                    break;
                 }
             }
 
             if(!found && GlobalVariables.verbosity >= 10){
-                System.out.println("couldn't find individual " + tempCouple[0] + " in sampleNames, continueing with the next.");
+                System.out.println("Couldn't find individual " + tempCouple[0] + " in sampleNames, continueing with the next.");
+                System.out.println(Arrays.toString(sampleNames));
             }
         }
         
@@ -410,7 +417,7 @@ class PhasedEntry {
             Iterable<GeneticVariant> VariantsInRegion;
             VariantsInRegion = genotypeData.getVariantsByRange(
                                                 iRegion.getSequence(),
-                                                iRegion.getTestStart(),
+                                                iRegion.getTestStart() - 1 , //minus one because bigger than.
                                                 iRegion.getTestEnd());
             
             ArrayList<String> snpsInThisTestRegion = new ArrayList<String>();
@@ -448,7 +455,8 @@ class PhasedEntry {
                 
                 if(!oldSnpData.get(0).getSnpName().equals(snpName)){
                     if(GlobalVariables.verbosity >= 10){
-                        System.out.println("Couldn't find SNP: " + snpName + "in the correct position: " + chr + ":" + "posString");
+                        System.out.println("Couldn't find SNP: " + snpName + " in the correct position: " + chr + ":" + posString);
+                        System.out.println(oldSnpData.get(0).getSnpName());
                     }
                     continue;
                 }
@@ -471,8 +479,10 @@ class PhasedEntry {
                 
                 
                 for(IndividualSnpData iAS : oldSnpData){
-
-                    int i = couplingMap.get(iAS.getSampleName());
+                    int i;
+                    
+                    i = couplingMap.get(iAS.getSampleName());
+                    
                     
                     IndividualSnpData referenceAS = iAS; 
                     
@@ -523,6 +533,8 @@ class PhasedEntry {
                 
                 
                 //overwrite this into the snpHashMap
+                
+                
                 snpHashMap.put(chr + ":" + posString, newSnpData);
                 snpsDone++;
             }
@@ -546,7 +558,7 @@ class PhasedEntry {
 
     private ArrayList<GenomicRegion> ReadGenomicRegions(String regionsFile) throws IOException {
         
-        ArrayList<String> stringArray = UtilityMethods.readFileIntoStringArrayList(regionsFile);
+        ArrayList<String> stringArray = UtilityMethods.readFileIntoStringArrayList(regionsFile);        
         ArrayList<GenomicRegion> allRegions  = new ArrayList<GenomicRegion>();
 
         for(String iString : stringArray){
@@ -598,10 +610,10 @@ class PhasedEntry {
         outputString.append(thisTest.RegionName);
         outputString.append("\t");
         
-        outputString.append(Double.toString(thisTest.getTestStatistics().getpVal()));
+        outputString.append(String.format("% .9f",thisTest.getTestStatistics().getpVal()));
         outputString.append("\t");
         
-        outputString.append(Double.toString(thisTest.getTestStatistics().getChiSq()));
+        outputString.append(String.format("% 9.3f",thisTest.getTestStatistics().getChiSq()));
         outputString.append("\t");
         
         //number of hets in region
@@ -620,6 +632,14 @@ class PhasedEntry {
         
         outputString.append(Integer.toString(altSum));
         outputString.append("\t");
+        
+        
+        outputString.append(String.format("% 4.4f",thisTest.binomRatio));
+        outputString.append("\t");
+
+        outputString.append(thisTest.getGenotype());
+        outputString.append("\t");
+        
         
         ArrayList<String> allTestPositions = thisTest.getAdditionalPositions();
         
@@ -658,10 +678,10 @@ class PhasedEntry {
         outputString.append(thisTest.RegionName);
         outputString.append("\t");
         
-        outputString.append(Double.toString(thisTest.pVal));
+        outputString.append(String.format("% .9f",thisTest.pVal));
         outputString.append("\t");
         
-        outputString.append(Double.toString(thisTest.chiSq));
+        outputString.append(String.format("% 9.3f", thisTest.chiSq));
         outputString.append("\t");
         
         //number of hets in region
@@ -671,6 +691,7 @@ class PhasedEntry {
         
         int refSum = 0;
         int altSum = 0;
+        
         for(int i : thisTest.getAsRef()) refSum += i;
         for(int i : thisTest.getAsAlt()) altSum += i;
 
@@ -680,6 +701,14 @@ class PhasedEntry {
         
         outputString.append(Integer.toString(altSum));
         outputString.append("\t");
+        
+        outputString.append(String.format("% 4.4f",thisTest.binomRatio));
+        outputString.append("\t");
+
+        outputString.append(thisTest.getGenotype());
+        outputString.append("\t");
+
+        
         
         ArrayList<String> allTestPositions = thisTest.getAdditionalPositions();
         

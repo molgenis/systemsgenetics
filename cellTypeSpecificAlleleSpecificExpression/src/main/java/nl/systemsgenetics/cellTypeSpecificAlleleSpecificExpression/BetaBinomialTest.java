@@ -27,7 +27,8 @@ class BetaBinomialTest {
     private final String snpName;
     private final String chromosome;
     private final String position;
-
+    private String genotype;
+    
     //Information about the input data
     private final int numberOfHets;
     
@@ -81,6 +82,7 @@ class BetaBinomialTest {
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
+        genotype = all_individuals.get(0).genotype;
         
         ArrayList<IndividualSnpData> het_individuals;
         het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
@@ -424,6 +426,13 @@ class BetaBinomialTest {
         additionalNames.add(snpName);
         additionalPositions.add(snpPos);
     
+    }
+
+    /**
+     * @return the genotype
+     */
+    public String getGenotype() {
+        return genotype;
     }
     
 }
