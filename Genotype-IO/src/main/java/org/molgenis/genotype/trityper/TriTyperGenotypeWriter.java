@@ -49,7 +49,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 		File snpMapFile = new File(folder, "SNPMappings.txt");
 		File individualFile = new File(folder, "Individuals.txt");
 		File phenotypeAnnotationFile = new File(folder, "PhenotypeInformation.txt");
-        File allelRecodingFile = new File(folder, "allelRecodingInformation.txt");
+        File allelRecodingFile = new File(folder, "AlleleRecodingInformation.txt");
 
 		writeSnps(snpFile, snpMapFile);
 		writeSamples(individualFile, phenotypeAnnotationFile);
@@ -71,13 +71,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
 //				continue;
 //			}
 
-			final GeneticVariantId snpId = variant.getVariantId();
-			final String snpName;
-			if(snpId.containsId()){
-				snpName = snpId.getPrimairyId();
-			} else {
-				snpName = variant.getSequenceName() + ':' + String.valueOf(variant.getStartPos());
-			}
+			final String snpName = createTriTyperVariantId(variant);
 			
 			snpFileWriter.append(snpName);
 			snpFileWriter.append('\n');
@@ -156,7 +150,7 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
                         a = sampleAlleles.get(0).isSnpAllele() && sampleAlleles.get(0) != Allele.ZERO ? (byte) sampleAlleles.get(0).getAlleleAsSnp() : 0;
                         b = sampleAlleles.get(1).isSnpAllele() && sampleAlleles.get(1) != Allele.ZERO ? (byte) sampleAlleles.get(1).getAlleleAsSnp() : 0;
                     } else {
-                        snpRecodingInfo.add(variant.getPrimaryVariantId()+"\t"+variant.getSequenceName()+"\t"+variant.getStartPos()+"\t"+variant.getVariantAlleles().get(0)+"\t"+variant.getVariantAlleles().get(1));
+                        snpRecodingInfo.add(createTriTyperVariantId(variant)+"\t"+variant.getSequenceName()+"\t"+variant.getStartPos()+"\t"+variant.getVariantAlleles().get(0)+"\t"+variant.getVariantAlleles().get(1));
                         
                         if(sampleAlleles.get(0).equals(variant.getVariantAlleles().get(0))){
                             a = (byte) 'A';
@@ -205,12 +199,29 @@ public class TriTyperGenotypeWriter implements GenotypeWriter {
         if(!snpRecodingInfo.isEmpty()){
             BufferedWriter allelRecodingFileWriter = new BufferedWriter(new FileWriter(allelRecodingFile));
             
-            allelRecodingFileWriter.write("Variant_ID\tchr\tpos\tAllel1\tAllel2\n");
+            allelRecodingFileWriter.write("Variant_ID\tChr\tPos\tAllele1\tAllele2\n");
             for(String s : snpRecodingInfo){
                 allelRecodingFileWriter.write(s+"\n");
             }
             
             allelRecodingFileWriter.close();
         }
+	}
+
+	private String createTriTyperVariantId(GeneticVariant variant) {
+		final GeneticVariantId snpId = variant.getVariantId();
+		String snpName;
+		if(snpId.containsId()){
+			snpName = snpId.getPrimairyId();
+		} else {
+			snpName = variant.getSequenceName() + ':' + String.valueOf(variant.getStartPos());
+			if(!variant.isSnp()){
+				for(Allele allele : variant.getVariantAlleles()){
+					snpName = snpName + "_" + allele.getAlleleAsString();
+				}
+				
+			}
+		}
+		return snpName;
 	}
 }
