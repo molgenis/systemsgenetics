@@ -98,6 +98,10 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("noNormalization");
         OPTIONS.addOption(OptionBuilder.create("nn"));
 
+        OptionBuilder.withDescription("Skip covariate normalization step. n must be 1");
+        OptionBuilder.withLongOpt("noCovNormalization");
+        OPTIONS.addOption(OptionBuilder.create("ncn"));
+
         OptionBuilder.withArgName("strings");
         OptionBuilder.hasArgs();
         OptionBuilder.withDescription("covariates to correct for using an interaction term before running the interaction analysis");
@@ -151,6 +155,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Number of threads");
         OptionBuilder.withLongOpt("threads");
         OPTIONS.addOption(OptionBuilder.create("nt"));
+
+        OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Z-score difference threshold for interpretation");
+        OptionBuilder.withLongOpt("threshold");
+        OPTIONS.addOption(OptionBuilder.create("thr"));
 		
 		OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
@@ -169,7 +179,7 @@ public class EQTLInteractionAnalyser {
         int maxNumCovariatesToRegress = 20;
         int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
-		final int startRoundCompareChi2;
+		final int startRoundCompareChi2, threshold;
 
         HashMap hashSamples;
 
@@ -180,6 +190,7 @@ public class EQTLInteractionAnalyser {
 		final File ensgAnnotationFile;
 		final File snpsToTestFile;
 		final boolean skipNormalization;
+        final boolean skipCovariateNormalization;
 		final boolean convertMatrix;
 		final String eqtlFileCovariates;
 		
@@ -199,10 +210,15 @@ public class EQTLInteractionAnalyser {
             if (commandLine.hasOption('n')) {
                 maxNumCovariatesToRegress = Integer.parseInt(commandLine.getOptionValue("n"));
             }
-			
+            if (commandLine.hasOption("thr")) {
+                threshold = Integer.parseInt(commandLine.getOptionValue("thr"));
+            }
+            else {
+                threshold = 3;
+            }
 			
 
-			interpret = commandLine.hasOption("t");
+			interpret = commandLine.hasOption("it");
 			chi2sumDiff = commandLine.hasOption("dif");
             permute = commandLine.hasOption("perm");
 			preproces = commandLine.hasOption("p");
@@ -266,6 +282,12 @@ public class EQTLInteractionAnalyser {
 				System.err.println("n must be one if normalization is turned off");
 				System.exit(-1);
 			}
+
+            skipCovariateNormalization = commandLine.hasOption("ncn");
+            if(skipCovariateNormalization && maxNumCovariatesToRegress != 1){
+                System.err.println("n must be one if covariate normalization is turned off");
+                System.exit(-1);
+            }
 			
 			if (commandLine.hasOption("is")){
                 File samplesToIncludeFile = new File(commandLine.getOptionValue("is"));
@@ -308,7 +330,7 @@ public class EQTLInteractionAnalyser {
             interactor.preprocessData();
 		} else if (interpret){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
-            interactor.interpretInteractionZScoreMatrix(maxNumCovariatesToRegress);
+            interactor.interpretInteractionZScoreMatrix(maxNumCovariatesToRegress, startRoundCompareChi2, threshold);
         }
         else if (chi2sumDiff){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
@@ -323,7 +345,7 @@ public class EQTLInteractionAnalyser {
 			new ExpressionDataset(inputDir).save(outputDir);
 		}
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, eqtlFileCovariates);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, skipCovariateNormalization, eqtlFileCovariates);
         }
     }
 
