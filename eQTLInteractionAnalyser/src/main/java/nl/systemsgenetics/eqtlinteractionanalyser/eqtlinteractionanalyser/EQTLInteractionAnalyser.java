@@ -98,6 +98,10 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withLongOpt("noNormalization");
         OPTIONS.addOption(OptionBuilder.create("nn"));
 
+        OptionBuilder.withDescription("Skip covariate normalization step. n must be 1");
+        OptionBuilder.withLongOpt("noCovNormalization");
+        OPTIONS.addOption(OptionBuilder.create("ncn"));
+
         OptionBuilder.withArgName("strings");
         OptionBuilder.hasArgs();
         OptionBuilder.withDescription("covariates to correct for using an interaction term before running the interaction analysis");
@@ -186,6 +190,7 @@ public class EQTLInteractionAnalyser {
 		final File ensgAnnotationFile;
 		final File snpsToTestFile;
 		final boolean skipNormalization;
+        final boolean skipCovariateNormalization;
 		final boolean convertMatrix;
 		final String eqtlFileCovariates;
 		
@@ -277,6 +282,12 @@ public class EQTLInteractionAnalyser {
 				System.err.println("n must be one if normalization is turned off");
 				System.exit(-1);
 			}
+
+            skipCovariateNormalization = commandLine.hasOption("ncn");
+            if(skipCovariateNormalization && maxNumCovariatesToRegress != 1){
+                System.err.println("n must be one if covariate normalization is turned off");
+                System.exit(-1);
+            }
 			
 			if (commandLine.hasOption("is")){
                 File samplesToIncludeFile = new File(commandLine.getOptionValue("is"));
@@ -334,7 +345,7 @@ public class EQTLInteractionAnalyser {
 			new ExpressionDataset(inputDir).save(outputDir);
 		}
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, eqtlFileCovariates);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, skipCovariateNormalization, eqtlFileCovariates);
         }
     }
 
