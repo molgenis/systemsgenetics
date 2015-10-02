@@ -28,6 +28,13 @@ public class BinomialTest {
     String RegionName;
     int startOfRegion = -1;
     int endOfRegion = -1;
+    int totalTestSNPs = -1;
+    
+    public int testRegionStart = -1;
+    public int testRegionEnd = -1;
+     
+    
+    
     
     //Information about the input data
     private int numberOfHets;
@@ -51,6 +58,7 @@ public class BinomialTest {
     
     
     private boolean outPutAllData = false;
+    
     
     
     
@@ -135,7 +143,7 @@ public class BinomialTest {
     }
     
     //constructor method didn't work, so doing it like this.
-    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion){
+    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion, int testSNPs){
         
         BinomialTest t = new BinomialTest(all_individuals);
         
@@ -144,6 +152,12 @@ public class BinomialTest {
         t.RegionName = thisRegion.getAnnotation();
         t.startOfRegion = thisRegion.getStartPosition();
         t.endOfRegion = thisRegion.getEndPosition();
+        
+        t.testRegionStart = thisRegion.getTestStart();
+        t.testRegionEnd   = thisRegion.getTestEnd();
+        
+        
+        t.totalTestSNPs = testSNPs;
         
         return t;
     
@@ -346,6 +360,13 @@ public class BinomialTest {
      */
     public String getGenotype() {
         return genotype;
+    }
+
+    /**
+     * @param genotype the genotype to set
+     */
+    public void setGenotype(String genotype) {
+        this.genotype = genotype;
     }
     
 }

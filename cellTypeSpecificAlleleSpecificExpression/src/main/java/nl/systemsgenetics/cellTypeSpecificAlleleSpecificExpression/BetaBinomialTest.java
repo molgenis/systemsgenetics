@@ -42,7 +42,12 @@ class BetaBinomialTest {
     String RegionName;
     int startOfRegion = -1;
     int endOfRegion = -1;
+        
+    public int testRegionStart = -1;
+    public int testRegionEnd = -1;
     
+    
+    int totalTestSNPs = -1;
     
     //Names of individuals for easy reference
     
@@ -75,6 +80,7 @@ class BetaBinomialTest {
     double chiSq;
     double pVal;
     
+
     
     public BetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
         boolean debug=true;
@@ -248,7 +254,7 @@ class BetaBinomialTest {
     }
 
     //constructor method didn't work, so doing it like this.
-    public static  BetaBinomialTest phasedBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion) throws Exception{
+    public static  BetaBinomialTest phasedBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion, int testSNPs) throws Exception{
         
         BetaBinomialTest t = new BetaBinomialTest(all_individuals);
         
@@ -257,6 +263,13 @@ class BetaBinomialTest {
         t.RegionName = thisRegion.getAnnotation();
         t.startOfRegion = thisRegion.getStartPosition();
         t.endOfRegion = thisRegion.getEndPosition();
+        
+        t.testRegionStart = thisRegion.getTestStart();
+        t.testRegionEnd   = thisRegion.getTestEnd();
+        
+        
+        t.totalTestSNPs = testSNPs;
+        
         
         return t;
     
@@ -433,6 +446,13 @@ class BetaBinomialTest {
      */
     public String getGenotype() {
         return genotype;
+    }
+
+    /**
+     * @param genotype the genotype to set
+     */
+    public void setGenotype(String genotype) {
+        this.genotype = genotype;
     }
     
 }

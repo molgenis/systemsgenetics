@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.commons.io.FilenameUtils;
 import org.jdom.IllegalDataException;
 
@@ -190,10 +191,6 @@ class PhasedEntry {
                                                   "_CellTypeSpecificBetaBinomial_results.txt"
                                            , "UTF-8");
         
-        //TEST:
-        
-        ArrayList<IndividualSnpData> test1   = snpHashMap.get("chr1:2");
-        
         
         for(GenomicRegion iRegion : allRegions){
             
@@ -222,15 +219,14 @@ class PhasedEntry {
             HashMap<String, BetaBinomialTest> storedBetaBinomTests = new HashMap<String, BetaBinomialTest>();
             
             ///PLEASE NOTE, CELL TYPE SPECIFIC FUNCTIONALITY HAS NOT YET BEEN IMPLEMENTED.
-            
+            //Plan is to use this in the future but keeping them in
             HashMap<String, CTSbinomialTest> storedCTSBinomTests = new HashMap<String, CTSbinomialTest>();
             HashMap<String, CTSBetaBinomialTest> storedCTSBetaBinomTests = new HashMap<String, CTSBetaBinomialTest>();
           
             
             
             for( String testSnp : snpsInRegion ){
-                
-                System.out.println(testSnp);
+
                 
                 ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
                 
@@ -249,9 +245,9 @@ class PhasedEntry {
 
                 ArrayList<String> hetTestNames = new ArrayList<String>();
                 
-                System.out.println("hets:");
+
                 for(IndividualSnpData hetSample : hetTestSnps){
-                    System.out.println("\t" + hetSample.getSampleName());
+                   
                     inputIdA.append(hetSample.sampleName);
                     inputIdA.append(hetSample.getPhasingFirst());
                     
@@ -291,16 +287,33 @@ class PhasedEntry {
                            betaBinomForAddition.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
                            storedBetaBinomTests.put(refStringA, betaBinomForAddition);
                        }
+                       
                        continue;
                     }
                 
                     
                     ArrayList<IndividualSnpData> phasedSNPsForTest = new ArrayList<IndividualSnpData>();
                     
+                    Set<String> uniqueGeneSNPnames = new HashSet<String>();
+                    
+                    // The following loop determines which SNPs will be used for
+                    // test data.
+                    
                     for(int j = 0 ; j < allHetsInRegion.size() ; j++){
+                        
+                        
                         IndividualSnpData thisHet = allHetsInRegion.get(j);
                         
+                        
+                        int snpPos  = Integer.parseInt(thisHet.position);
+                        
+                        //First check if the Heterozygote is in the test region
+                        if(snpPos < iRegion.getStartPosition() || snpPos > iRegion.getEndPosition()){
+                            continue;
+                        }
+                       
                         String sampleName = thisHet.sampleName;
+                        uniqueGeneSNPnames.add(thisHet.snpName);
                         
                         if(!hetTestNames.contains(thisHet.sampleName) || !thisHet.hasPhasing()){
                             continue;
@@ -320,22 +333,41 @@ class PhasedEntry {
                             thisHet.altNum = temp;
                         }
                         
-                        //now we may or may not have changed it, 
-                        // we add it to the tempHetsForTest
                         phasedSNPsForTest.add(thisHet);
                     
                     }
                     
                     
+                    if(GlobalVariables.verbosity >= 10){
+                        System.out.println("\n----------------------------------------");
+                        System.out.println("Testing Region:                " + iRegion.getAnnotation());
+                        System.out.println("With the following test SNP:   " + hetTestSnps.get(0).snpName);
+                        System.out.println("Using the following gene SNPs: ");
+                        int whatSNP = 0;
+                        System.out.print("\t[ ");
+                        for(String snpName : uniqueGeneSNPnames){
+                            System.out.print(snpName);
+                            if( (whatSNP % 4 == 3) && (whatSNP != uniqueGeneSNPnames.size() - 1) ) {
+                                System.out.print(",\n\t  ");
+                            }else if(whatSNP != uniqueGeneSNPnames.size() - 1){
+                                System.out.print(", ");
+                            }
+                            whatSNP += 1; 
+                        }
+                        System.out.println(" ]");
+                        System.out.println("----------------------------------------\n");
+                    }
                     BinomialTest thisBinomTest;
-                    thisBinomTest = BinomialTest.phasedBinomialTest(phasedSNPsForTest, iRegion);
+                    thisBinomTest = BinomialTest.phasedBinomialTest(phasedSNPsForTest, iRegion,hetTestSnps.size() );
                     thisBinomTest.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);                    
+                    thisBinomTest.setGenotype(hetTestSnps.get(0).genotype);
                     storedBinomTests.put(refStringA, thisBinomTest);
                     
                     
                     BetaBinomialTest thisBetaBinomTest;
-                    thisBetaBinomTest = BetaBinomialTest.phasedBetaBinomialTest(phasedSNPsForTest, iRegion);
+                    thisBetaBinomTest = BetaBinomialTest.phasedBetaBinomialTest(phasedSNPsForTest, iRegion, hetTestSnps.size());
                     thisBetaBinomTest.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);
+                    thisBetaBinomTest.setGenotype(hetTestSnps.get(0).genotype);
                     storedBetaBinomTests.put(refStringA, thisBetaBinomTest);
                     
 
@@ -362,6 +394,7 @@ class PhasedEntry {
             
         }
         
+        //close the files
         writerBinom.close();
         writerBetaBinom.close();
         writerCTSBinom.close();
@@ -369,6 +402,13 @@ class PhasedEntry {
         
     }
 
+    
+    
+    
+    
+    
+    
+    
     private Pair<HashMap<String, ArrayList<IndividualSnpData>>, ArrayList<GenomicRegion>> 
             addPhasingToSNPHashMap(HashMap<String, ArrayList<IndividualSnpData>> snpHashMap, 
                                    String couplingLoc, 
@@ -484,8 +524,6 @@ class PhasedEntry {
                     i = couplingMap.get(iAS.getSampleName());
                     
                     
-                    IndividualSnpData referenceAS = iAS; 
-                    
                     //make sure there is phasing data available:
                     if(SamplePhasing.get(i)){
 
@@ -581,7 +619,6 @@ class PhasedEntry {
                 //set the test region to be the genomic region.
                 tempRegion.setTestStart(Integer.parseInt(splitString[2]));
                 tempRegion.setTestEnd(Integer.parseInt(splitString[3]));
-                
                 tempRegion.setHasTestRegion(false);    
             }
             
@@ -600,12 +637,18 @@ class PhasedEntry {
         outputString.append(thisTest.getChromosome());
         outputString.append("\t");
         
-        
-        outputString.append(Integer.toString(thisTest.startOfRegion));
+        // The start and end of the test region
+        outputString.append(Integer.toString(thisTest.testRegionStart));
+        outputString.append("-");
+        outputString.append(Integer.toString(thisTest.testRegionEnd));
         outputString.append("\t");
-
+        
+        // The start and end will be in the same field seperated by a dash
+        outputString.append(Integer.toString(thisTest.startOfRegion));
+        outputString.append("-");
         outputString.append(Integer.toString(thisTest.endOfRegion));
         outputString.append("\t");
+        
         
         outputString.append(thisTest.RegionName);
         outputString.append("\t");
@@ -617,7 +660,7 @@ class PhasedEntry {
         outputString.append("\t");
         
         //number of hets in region
-        outputString.append(Integer.toString(thisTest.getHetSampleNames().size()));
+        outputString.append(Integer.toString(thisTest.totalTestSNPs));
         outputString.append("\t");
         
         
@@ -668,10 +711,15 @@ class PhasedEntry {
         outputString.append(thisTest.getChromosome());
         outputString.append("\t");
         
-        
-        outputString.append(Integer.toString(thisTest.startOfRegion));
+        // The start and end of the test region
+        outputString.append(Integer.toString(thisTest.testRegionStart));
+        outputString.append("-");
+        outputString.append(Integer.toString(thisTest.testRegionEnd));
         outputString.append("\t");
-
+        
+        // The start and end will be in the same field seperated by a dash
+        outputString.append(Integer.toString(thisTest.startOfRegion));
+        outputString.append("-");
         outputString.append(Integer.toString(thisTest.endOfRegion));
         outputString.append("\t");
         
@@ -685,7 +733,7 @@ class PhasedEntry {
         outputString.append("\t");
         
         //number of hets in region
-        outputString.append(Integer.toString(thisTest.getHetSampleNames().size()));
+        outputString.append(Integer.toString(thisTest.totalTestSNPs));
         outputString.append("\t");
         
         

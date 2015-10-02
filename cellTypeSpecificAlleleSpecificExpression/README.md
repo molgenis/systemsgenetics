@@ -306,12 +306,6 @@ effects, even more so than looking at non CTS ASE for itself.
 
 ##Additional features(2): ASE per Region
 
-**Warning**
-
-This module is still under development and only sparsely tested, only non CTS effects are currently supported.
-
-**\Warning**
-
 ###### Basic mechanism
 
 The ASEperRegion sub-module can be used to determine the ASE effects per region to 
@@ -369,16 +363,13 @@ where some gene may be a different gene or splice variant.
 
 ##### Required data:
 
-Required data for this sub-module is as follows (not yet final)
-
-
-- A file containing gene regions and test regions (at time of writing, the same)
+- A file containing gene regions and test regions
 - Locations of AS files
 - Genotype information with phasing information per SNP. 
 - Coupling file for the phased genotypes and AS files.
 
 The genotype information should be phased information of at least some of the 
-SNPs in the test region.
+SNPs in the test region, The phasing format.
 
 The coupling file is the same as in the Basic usage example.
 
@@ -411,7 +402,7 @@ output is tab-delimited in the following format, per column:
 8.  Number of reads reference
 9.  Number of reads alternative
 8.  The Maximum likelihood derived AS proportion: ref / (ref + alt)
-10. The genotype of the first SNP, format: [<ref_base>, <alt_base>]
+10. The SNP genotype, format: [<ref_base>, <alt_base>], for direction.
 11. The SNP positions that have the same phasing
 12. The SNP names that have the same phasing
 ```
