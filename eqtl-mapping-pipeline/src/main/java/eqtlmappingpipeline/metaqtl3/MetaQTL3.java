@@ -8,7 +8,7 @@ import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import umcg.genetica.math.stats.Descriptives;
@@ -807,7 +807,7 @@ public class MetaQTL3 {
                 expressionToGenotypeIds[d] = m_gg[d].getExpressionToGenotypeIdArray();
             }
 
-            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(100);
+            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(250);
             ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
                     m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
             resultthread.setName("ResultProcessorThread");

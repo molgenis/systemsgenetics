@@ -4,7 +4,7 @@
  */
 package eqtlmappingpipeline.binarymeta.util;
 
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;

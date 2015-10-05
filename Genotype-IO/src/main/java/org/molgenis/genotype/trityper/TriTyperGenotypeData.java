@@ -120,7 +120,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
-		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter, new File(location, "allelRecodingInformation.txt").exists() ? new File(location, "allelRecodingInformation.txt") : null);
+		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter, new File(location, "AlleleRecodingInformation.txt").exists() ? new File(location, "AlleleRecodingInformation.txt") : null);
 	}
 
 	public TriTyperGenotypeData(File genotypeDataFile, File imputedDosageDataFile, File snpFile, File snpMapFile, File individualFile, File phenotypeAnnotationFile, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, File allelRecoding) throws IOException {
@@ -345,6 +345,9 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		String line;
 		while ((line = snpFileReader.readLine()) != null) {
+			if(allSNPHash.contains(line)){
+				throw new GenotypeDataException("SNP found twice: " + line + ". All SNP ID's must be unique");
+			}
 			if (variantFilter == null || variantFilter.doesIdPassFilter(line)) {
 				allSNPHash.put(line, unfilteredSnpCount);
 			}
@@ -459,11 +462,17 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		try {
 			genotypeHandle.seek(indexLong);
 			if (genotypeHandle.read(buffer) != buffer.length) {
+				
+				LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+				
 				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 			}
 
 		} catch (IOException e) {
-			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
+			
+			LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+			
+			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")", e);
 		}
 
 		List<Alleles> alleles = new ArrayList<Alleles>(includedSamples.size());

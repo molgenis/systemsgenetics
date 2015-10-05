@@ -4,9 +4,9 @@
  */
 package umcg.genetica.graphics;
 
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfContentByte;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.PdfContentByte;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -48,8 +48,8 @@ public class ScatterPlot {
     private int fontheight;
     private OUTPUTFORMAT format;
     private String outfilename;
-    private com.lowagie.text.Document document = null;
-    private com.lowagie.text.pdf.PdfWriter writer = null;
+    private com.itextpdf.text.Document document = null;
+    private com.itextpdf.text.pdf.PdfWriter writer = null;
     private PdfContentByte cb;
     private int[] category;
     private Color[] colors;
@@ -141,13 +141,13 @@ public class ScatterPlot {
 
         if (format == OUTPUTFORMAT.PDF) {
             Rectangle rectangle = new Rectangle(graphWidth, graphHeight);
-            document = new com.lowagie.text.Document(rectangle);
+            document = new com.itextpdf.text.Document(rectangle);
 
             if (!outfilename.toLowerCase().endsWith(".pdf")) {
                 outfilename += ".pdf";
             }
             try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outfilename));
+                writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(outfilename));
 
             } catch (DocumentException e) {
                 e.printStackTrace();
@@ -158,7 +158,7 @@ public class ScatterPlot {
             cb = writer.getDirectContent();
             cb.saveState();
 
-//            com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+//            com.itextpdf.text.pdf.DefaultFontMapper fontMap = new com.itextpdf.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(graphWidth, graphHeight);
         } else {
             bi = new java.awt.image.BufferedImage(graphWidth, graphHeight, java.awt.image.BufferedImage.TYPE_INT_RGB);
