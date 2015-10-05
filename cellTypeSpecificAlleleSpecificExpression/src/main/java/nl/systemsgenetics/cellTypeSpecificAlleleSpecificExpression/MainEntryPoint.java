@@ -54,7 +54,7 @@ public class MainEntryPoint {
 				.withDescription("Determine what to do in this program, currently the following options are available:\n"+
                                                  "\t1\tDetermine Allele specific reads per SNP: ASreads\n\n" +  
                                                  "\t2\tASE test per SNP                         ASEperSNP\n" + 
-                                                 "\t3\tBeta binomial based on phasing           ASEperRegion\n\n" +
+                                                 "\t3\tASE test per region                      ASEperRegion\n\n" +
                                                  "Please Run an option based on the number in the first column, or through the name in the third column."
                                                 )
 				.withLongOpt("action")
@@ -128,6 +128,16 @@ public class MainEntryPoint {
 		OPTIONS.addOption(option);
                 
                 
+                option = OptionBuilder.withArgName("string")
+				.hasArgs()
+				.withDescription("Path to a file with genome regions. Tab delimited file, per column\n "
+                                               + "1. unique region name, 2. chromosome name, 3. start of gene region, 4. end of gene region"
+                                               + "Required when you want Cell type specific results in ASreads.")                                                
+				.withLongOpt("region_file")
+				.create('R');
+		OPTIONS.addOption(option);
+                
+                
                 /*
                     fully optional arguments
                 */
@@ -177,7 +187,7 @@ public class MainEntryPoint {
         String couplingLocation = new String();
         String genotypeLocation = new String();
         String snpsLocation = new String();
-        
+        String regionLocation = new String();
                 
         //BINOMTEST and BETABINOMTEST specific arguments
         String asFile = new String();
@@ -223,7 +233,7 @@ public class MainEntryPoint {
                 if(commandLine.hasOption('A')){
                     String programAction = commandLine.getOptionValue('A').toUpperCase();
                     
-                    if(programAction.equals("ASreads") || programAction.equals("1")){
+                    if(programAction.equals("ASREADS") || programAction.equals("1")){
         
                         //Do the AS determination part of the program
                         
@@ -261,7 +271,7 @@ public class MainEntryPoint {
                         readGenoAndAsFromIndividual(bamFile, genotypeLocation, couplingLocation, outputLocation, snpsLocation);
                         
                     
-                    }else if(programAction.equals("ASEperSNP") || programAction.equals("2")){
+                    }else if(programAction.equals("ASEPERSNP") || programAction.equals("2")){
                         
 
                         if(commandLine.hasOption('L')){
@@ -282,7 +292,7 @@ public class MainEntryPoint {
                         
                         NonPhasedEntry a =  new NonPhasedEntry(asFile, phenoTypeLocation,  outputLocation);
                         
-                    }else if(programAction.equals("ASEperRegion") || programAction.equals("3")){
+                    }else if(programAction.equals("ASEPERREGION") || programAction.equals("3")){
                         
                         if(commandLine.hasOption('L')){
                             asFile = commandLine.getOptionValue('L');
@@ -305,7 +315,13 @@ public class MainEntryPoint {
                             throw new ParseException("Required command line input --genotype_Location when --action is ASEperRegion");
                         }
                         
-                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation);
+                        if(commandLine.hasOption('R')){
+                             regionLocation = commandLine.getOptionValue('R');
+                        } else {
+                            throw new ParseException("Required command line input --region_file when --action is ASEperRegion");
+                        }
+                        
+                        PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation, regionLocation);
                         
                         
                     }else{

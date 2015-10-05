@@ -73,8 +73,6 @@ public class UtilityMethods {
             
             //assuming the genotype is formatted as: "[C, A]"
             
-            
-            
             if(isGenoHeterozygote(genotype)){
                 hets.add(sample);
             }       

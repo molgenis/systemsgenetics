@@ -18,7 +18,7 @@ public class BinomialTest {
     private String snpName;
     private String chromosome;
     private String position;
-
+    private String genotype;
     
     //sometimes multiple test snps have the same results.    
     private boolean TestUsedInPhasing = false;
@@ -28,6 +28,13 @@ public class BinomialTest {
     String RegionName;
     int startOfRegion = -1;
     int endOfRegion = -1;
+    int totalTestSNPs = -1;
+    
+    public int testRegionStart = -1;
+    public int testRegionEnd = -1;
+     
+    
+    
     
     //Information about the input data
     private int numberOfHets;
@@ -47,9 +54,11 @@ public class BinomialTest {
     
     private BinomTest testStatistics;
     private boolean testPerformed = false; 
+    double binomRatio;
     
     
     private boolean outPutAllData = false;
+    
     
     
     
@@ -65,7 +74,7 @@ public class BinomialTest {
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
-        
+        genotype = all_individuals.get(0).genotype;
         //Isolate heterozygotes:
         ArrayList<IndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
         
@@ -126,7 +135,7 @@ public class BinomialTest {
             
             //binomial_test perfomed, will now set test performed to true
             testPerformed = true;
-            
+            binomRatio = testStatistics.getBinomRatio();
         } else{
             // there is no data to do the binomial test,
             // Will not set variables.
@@ -134,7 +143,7 @@ public class BinomialTest {
     }
     
     //constructor method didn't work, so doing it like this.
-    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion){
+    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion, int testSNPs){
         
         BinomialTest t = new BinomialTest(all_individuals);
         
@@ -143,6 +152,12 @@ public class BinomialTest {
         t.RegionName = thisRegion.getAnnotation();
         t.startOfRegion = thisRegion.getStartPosition();
         t.endOfRegion = thisRegion.getEndPosition();
+        
+        t.testRegionStart = thisRegion.getTestStart();
+        t.testRegionEnd   = thisRegion.getTestEnd();
+        
+        
+        t.totalTestSNPs = testSNPs;
         
         return t;
     
@@ -338,6 +353,20 @@ public class BinomialTest {
 
     void setSnpName(String snpName1) {
         snpName = snpName1 ;
+    }
+
+    /**
+     * @return the genotype
+     */
+    public String getGenotype() {
+        return genotype;
+    }
+
+    /**
+     * @param genotype the genotype to set
+     */
+    public void setGenotype(String genotype) {
+        this.genotype = genotype;
     }
     
 }
