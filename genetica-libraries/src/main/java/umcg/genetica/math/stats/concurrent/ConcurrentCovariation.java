@@ -4,8 +4,6 @@
  */
 package umcg.genetica.math.stats.concurrent;
 
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
-import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
