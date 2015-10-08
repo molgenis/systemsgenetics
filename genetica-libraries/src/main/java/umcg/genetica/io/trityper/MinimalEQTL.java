@@ -22,7 +22,17 @@ public class MinimalEQTL {
 
     public MinimalEQTL() {
     }
-
+    
+    public MinimalEQTL(double pValue, String rsName, byte rsChr, int rsChrPos,  String probe, byte probeChr, int probeChrPos) {
+        this.pvalue = pValue;
+        this.rsName = rsName;
+        this.rsChr = rsChr;
+        this.rsChrPos = rsChrPos;
+        this.probe = probe;
+        this.probeChr = probeChr;
+        this.probeChrPos = probeChrPos;
+    }
+    
     public MinimalEQTL(EQTL e) {
         this.pvalue = e.getPvalue();
         this.rsName = e.getRsName();
@@ -31,7 +41,6 @@ public class MinimalEQTL {
         this.probe = e.getProbe();
         this.probeChr = e.getProbeChr();
         this.probeChrPos = e.getProbeChrPos();
-
     }
 
     /**
