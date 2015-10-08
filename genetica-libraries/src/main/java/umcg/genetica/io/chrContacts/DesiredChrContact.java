@@ -31,8 +31,6 @@ public class DesiredChrContact extends ChrContact{
     public void setNormalizedContactValue(double normalizedContactValue) {
         this.normalizedContactValue = normalizedContactValue;
     }
-    
-
   
     public DesiredChrContact(int chrLocSmal, int chrLocLarge, double contactVal, String snpName, String probeName) {
         super(chrLocSmal, chrLocLarge, contactVal);
