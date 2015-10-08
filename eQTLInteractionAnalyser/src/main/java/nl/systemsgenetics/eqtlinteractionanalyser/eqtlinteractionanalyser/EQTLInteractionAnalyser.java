@@ -6,14 +6,15 @@
 
 package nl.systemsgenetics.eqtlinteractionanalyser.eqtlinteractionanalyser;
 
-import java.io.File;
+import java.io.*;
+
 import org.apache.commons.cli.*;
 import umcg.genetica.io.text.TextFile;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 
 /**
  *
@@ -48,6 +49,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Path to the eQTL file to test for interactions");
         OptionBuilder.withLongOpt("eqtls");
         OPTIONS.addOption(OptionBuilder.create("e"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Path to the eQTL file to correct covariates");
+        OptionBuilder.withLongOpt("eqtlsCovariates");
+        OPTIONS.addOption(OptionBuilder.create("ec"));
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
@@ -82,6 +89,18 @@ public class EQTLInteractionAnalyser {
 		OptionBuilder.withDescription("Preprocess the data");
         OptionBuilder.withLongOpt("preprocess");
         OPTIONS.addOption(OptionBuilder.create("p"));
+		
+		OptionBuilder.withDescription("Convert matrix");
+        OptionBuilder.withLongOpt("convertMatrix");
+        OPTIONS.addOption(OptionBuilder.create("cm"));
+		
+		OptionBuilder.withDescription("Skip all normalization step. n must be 1");
+        OptionBuilder.withLongOpt("noNormalization");
+        OPTIONS.addOption(OptionBuilder.create("nn"));
+
+        OptionBuilder.withDescription("Skip covariate normalization step. n must be 1");
+        OptionBuilder.withLongOpt("noCovNormalization");
+        OPTIONS.addOption(OptionBuilder.create("ncn"));
 
         OptionBuilder.withArgName("strings");
         OptionBuilder.hasArgs();
@@ -94,8 +113,14 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Covariates to correct for without interaction term before running the interaction analysis");
         OptionBuilder.withLongOpt("cov2");
         OPTIONS.addOption(OptionBuilder.create("c2"));
-		
-		OptionBuilder.withArgName("strings");
+
+        OptionBuilder.withArgName("strings");
+        OptionBuilder.hasArgs();
+        OptionBuilder.withDescription("Covariates to correct for without interaction term before running the interaction analysis");
+        OptionBuilder.withLongOpt("cohorts");
+        OPTIONS.addOption(OptionBuilder.create("ch"));
+
+        OptionBuilder.withArgName("strings");
         OptionBuilder.hasArgs();
         OptionBuilder.withDescription("Covariates to to test in interaction analysis. Optional, all are tested if not used");
         OptionBuilder.withLongOpt("covTest");
@@ -130,6 +155,18 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("Number of threads");
         OptionBuilder.withLongOpt("threads");
         OPTIONS.addOption(OptionBuilder.create("nt"));
+
+        OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Z-score difference threshold for interpretation");
+        OptionBuilder.withLongOpt("threshold");
+        OPTIONS.addOption(OptionBuilder.create("thr"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("SNPs to test");
+        OptionBuilder.withLongOpt("snpsToTest");
+        OPTIONS.addOption(OptionBuilder.create("snps"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -142,13 +179,21 @@ public class EQTLInteractionAnalyser {
         int maxNumCovariatesToRegress = 20;
         int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
-		final int startRoundCompareChi2;
-        
+		final int startRoundCompareChi2, threshold;
+
+        HashMap hashSamples;
+
         final String[] covariates;
 		final String[] covariates2;
+        final String[] cohorts;
 		final String[] covariatesToTest;
-		final File samplesToInculudeFile;
 		final File ensgAnnotationFile;
+		final File snpsToTestFile;
+		final boolean skipNormalization;
+        final boolean skipCovariateNormalization;
+		final boolean convertMatrix;
+		final String eqtlFileCovariates;
+		
         try {
             final CommandLine commandLine = new PosixParser().parse(OPTIONS, args, false);
 
@@ -158,16 +203,26 @@ public class EQTLInteractionAnalyser {
             if (commandLine.hasOption('e')) {
                 eqtlFile = commandLine.getOptionValue("e");
             }
+			
+			
+            eqtlFileCovariates = commandLine.getOptionValue("ec", null);
+            
             if (commandLine.hasOption('n')) {
                 maxNumCovariatesToRegress = Integer.parseInt(commandLine.getOptionValue("n"));
             }
-			
+            if (commandLine.hasOption("thr")) {
+                threshold = Integer.parseInt(commandLine.getOptionValue("thr"));
+            }
+            else {
+                threshold = 3;
+            }
 			
 
-			interpret = commandLine.hasOption("t");
+			interpret = commandLine.hasOption("it");
 			chi2sumDiff = commandLine.hasOption("dif");
             permute = commandLine.hasOption("perm");
 			preproces = commandLine.hasOption("p");
+			convertMatrix = commandLine.hasOption("cm");
 			
 			if (commandLine.hasOption('s')) {
                 startRoundCompareChi2 = Integer.parseInt(commandLine.getOptionValue("s"));
@@ -180,7 +235,7 @@ public class EQTLInteractionAnalyser {
              if (commandLine.hasOption('a')) {
                 annotationFile = commandLine.getOptionValue("a");
             }
-
+ 
             if (commandLine.hasOption("cf")) {
                 TextFile covFile = new TextFile(commandLine.getOptionValue("cf"), false);
                 covariates = covFile.readAsArray();
@@ -197,7 +252,13 @@ public class EQTLInteractionAnalyser {
             } else {
 				covariates2 = new String[0];
 			}
-			
+
+            if (commandLine.hasOption("ch")){
+                cohorts = commandLine.getOptionValues("ch");
+            } else {
+                cohorts = null;
+            }
+
 			if (commandLine.hasOption("ct")){
                 covariatesToTest = commandLine.getOptionValues("ct");
             } else {
@@ -210,10 +271,37 @@ public class EQTLInteractionAnalyser {
 				snpsToSwapFile = null;
 			}
 			
-			if (commandLine.hasOption("is")){
-                samplesToInculudeFile = new File(commandLine.getOptionValue("is"));
+			if (commandLine.hasOption("snps")){
+                snpsToTestFile = new File(commandLine.getOptionValue("snps"));
             } else {
-				samplesToInculudeFile = null;
+				snpsToTestFile = null;
+			}
+			
+			skipNormalization = commandLine.hasOption("nn");
+			if(skipNormalization && maxNumCovariatesToRegress != 1){
+				System.err.println("n must be one if normalization is turned off");
+				System.exit(-1);
+			}
+
+            skipCovariateNormalization = commandLine.hasOption("ncn");
+            if(skipCovariateNormalization && maxNumCovariatesToRegress != 1){
+                System.err.println("n must be one if covariate normalization is turned off");
+                System.exit(-1);
+            }
+			
+			if (commandLine.hasOption("is")){
+                File samplesToIncludeFile = new File(commandLine.getOptionValue("is"));
+                System.out.println("Samples to include file: " + samplesToIncludeFile.getAbsolutePath());
+                hashSamples = new HashMap();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(samplesToIncludeFile), "UTF-8"));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    hashSamples.put(line, null);
+                    hashSamples.put(line + "_exp", null);
+                    hashSamples.put(line + "_dosage", null);
+                }
+            } else {
+                hashSamples = null;
 			}
 			
 			
@@ -242,14 +330,22 @@ public class EQTLInteractionAnalyser {
             interactor.preprocessData();
 		} else if (interpret){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
-            interactor.interpretInteractionZScoreMatrix(maxNumCovariatesToRegress);
+            interactor.interpretInteractionZScoreMatrix(maxNumCovariatesToRegress, startRoundCompareChi2, threshold);
         }
         else if (chi2sumDiff){
             TestEQTLDatasetForInteractions interactor = new TestEQTLDatasetForInteractions(inputDir, outputDir);
             interactor.findChi2SumDifferences(maxNumCovariatesToRegress, startRoundCompareChi2, ensgAnnotationFile);
-        }
+        } else if (convertMatrix){
+			System.out.println("input file: " + inputDir);
+			System.out.println("output file: " + outputDir);
+			if(inputDir.equals(outputDir)){
+				System.err.println("input == output");
+				System.exit(1);
+			}
+			new ExpressionDataset(inputDir).save(outputDir);
+		}
         else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, samplesToInculudeFile, numThreads);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, skipCovariateNormalization, eqtlFileCovariates);
         }
     }
 

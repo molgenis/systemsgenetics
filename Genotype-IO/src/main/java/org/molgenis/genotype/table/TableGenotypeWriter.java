@@ -42,8 +42,13 @@ public class TableGenotypeWriter implements GenotypeWriter {
 
 			for (GeneticVariant variant : genotypeData) {
 
-				dosageWriter.append(variant.getPrimaryVariantId());
-				genotypeWriter.append(variant.getPrimaryVariantId());
+				String variantId = variant.getPrimaryVariantId();
+				if(variantId == null){
+					variantId = variant.getSequenceName() + ":" + variant.getStartPos();
+				}
+								
+				dosageWriter.append(variantId);
+				genotypeWriter.append(variantId);
 
 				for (float dosage : variant.getSampleDosages()) {
 					dosageWriter.append('\t');
