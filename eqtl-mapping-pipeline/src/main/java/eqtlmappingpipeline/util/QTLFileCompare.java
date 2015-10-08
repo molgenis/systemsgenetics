@@ -148,10 +148,11 @@ public class QTLFileCompare {
 
                             if (splitGeneNames) {
                                 for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
-
-                                    hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
-                                    hashUniqueProbes.add(data[4]);
-                                    hashUniqueGenes.add(gene);
+                                    if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
+                                        hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
+                                        hashUniqueProbes.add(data[4]);
+                                        hashUniqueGenes.add(gene);
+                                    }
 
                                 }
                             } else {
