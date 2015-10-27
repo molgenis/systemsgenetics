@@ -361,7 +361,7 @@ public class DoPcoa {
         System.out.println("Calculating PCs");
         System.out.println("Initializing PCA matrix");
         
-        DenseMatrix scoreMatrix = new DenseMatrix(dataset.rows(), dataset.rows());
+        DenseMatrix scoreMatrix = new DenseMatrix(dataset.rows(), dataset.columns());
         eigenVectorsMatrix.mult(new DenseMatrix((dataset.getMatrix().toArray())), scoreMatrix);
         
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(MatrixTools.toDenseDoubleMatrix(scoreMatrix).viewPart(0, 0, dataset.rows(), nrOfPCsToCalculate), dataset.getHashRows(), tmpNameBuffer); 
