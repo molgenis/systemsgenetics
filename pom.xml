@@ -72,7 +72,6 @@
 			</plugin>
 		</plugins>
 	</reporting>
-
 	<modules>
 		<module>genetica-libraries</module>
 		<module>imputation-tool</module>
@@ -82,6 +81,7 @@
 		<module>eqtl-functional-enrichment</module>
 		<module>GeneticRiskScoreCalculator</module>
 		<module>BinaryMetaAnalyzer</module>
-    <module>eQTLInteractionAnalyser</module>
+		<module>eQTLInteractionAnalyser</module>
+		<module>javaPoCA</module>
   </modules>
 </project>
