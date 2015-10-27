@@ -35,7 +35,7 @@ public class ConcurrentCityBlockTask implements Callable<Pair<Integer, double[]>
             double r = Descriptives.cityBlockDistance(xarr, yarr);
             results[i] = r;
         }
-        results[x] = 1;
+        results[x] = 0;
         return new Pair<Integer, double[]>(x, results);
     }
 }

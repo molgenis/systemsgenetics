@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
-import umcg.genetica.math.stats.Descriptives;
 
 /**
  *
