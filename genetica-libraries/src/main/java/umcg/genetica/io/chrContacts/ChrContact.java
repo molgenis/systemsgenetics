@@ -9,20 +9,20 @@ package umcg.genetica.io.chrContacts;
  *
  * @author MaKKie_Admin
  */
-public class InterChrContact implements Comparable<InterChrContact> {
+public class ChrContact implements Comparable<ChrContact> {
 
     final int chrLocationSmaller;
     final int chrLocationLarger;
     final double contactValue;
 
-    public InterChrContact(int chrLocSmal, int chrLocLarge, double contactVal) {
+    public ChrContact(int chrLocSmal, int chrLocLarge, double contactVal) {
         this.chrLocationLarger = chrLocLarge;
         this.chrLocationSmaller = chrLocSmal;
         this.contactValue = contactVal;
     }
 
     @Override
-    public int compareTo(InterChrContact other) {
+    public int compareTo(ChrContact other) {
         if (other.getChrLocationSmaller() > this.chrLocationSmaller) {
             return -1;
         } else if (other.getChrLocationSmaller() < this.chrLocationSmaller) {

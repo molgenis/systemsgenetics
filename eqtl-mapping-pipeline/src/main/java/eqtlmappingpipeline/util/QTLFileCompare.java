@@ -148,10 +148,11 @@ public class QTLFileCompare {
 
                             if (splitGeneNames) {
                                 for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
-
-                                    hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
-                                    hashUniqueProbes.add(data[4]);
-                                    hashUniqueGenes.add(gene);
+                                    if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
+                                        hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
+                                        hashUniqueProbes.add(data[4]);
+                                        hashUniqueGenes.add(gene);
+                                    }
 
                                 }
                             } else {
@@ -476,7 +477,17 @@ public class QTLFileCompare {
 
                             } else {
                                 // write to output
-                                identicalOut.writeln(identifier);
+                                
+                                String identicalEQTL;
+
+                                if (matchOnGeneName) {
+                                    identicalEQTL = data[1] + "\t" + data[16];
+
+                                } else {
+                                    identicalEQTL = data[1] + "\t" + data[4];
+                                }
+                                
+                                identicalOut.writeln(identicalEQTL + '\t' + alleles + '\t' + alleleAssessed + '\t' + zScore + '\t' + alleles2 + '\t' + alleleAssessed2 + '\t' + zScore2);
                                 nreQTLsIdenticalDirection++;
                                 if (alleles.length() > 2 && !alleles.equals("A/T") && !alleles.equals("T/A") && !alleles.equals("C/G") && !alleles.equals("G/C")) {
                                     //                                int posX = 500 + (int) Math.round(zScore * 10);
