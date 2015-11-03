@@ -33,11 +33,18 @@ import umcg.genetica.math.stats.concurrent.*;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.NotConvergedException;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import umcg.genetica.util.RankIntArray;
 /**
  *
  * @author MarcJan
  */
 public class DoPcoa {
+    
+    private static final RankingAlgorithm RANKER_TIE = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.SEQUENTIAL);
     
     private static final String HEADER =
             "  /---------------------------------------\\\n"
@@ -190,9 +197,9 @@ public class DoPcoa {
                
         try {
             DoubleMatrixDataset<String, String> t = new DoubleMatrixDataset<>(matrix, inputData.getHashCols(), inputData.getHashCols());
-            if(matrixType.equals(MatrixType.COVARIATION)){
+            if(matrixType.equals(MatrixType.CORRELATION)){
                 t.save(prefix + ".CorrelationMatrix.txt.gz");
-            } else if(matrixType.equals(MatrixType.CORRELATION)){
+            } else if(matrixType.equals(MatrixType.COVARIATION)){
                 t.save(prefix + ".CovariationMatrix.txt.gz");
             } else if(matrixType.equals(MatrixType.BRAYCURTIS)){
                 t.save(prefix + ".BrayCurtisMatrix.txt.gz");
@@ -269,7 +276,7 @@ public class DoPcoa {
         
         DoubleMatrix1D eigenValues = eig.getRealEigenvalues();
 
-        TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.W);
+        TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues_pc.txt.gz", TextFile.W);
         out.writeln("PCA\tEigenValue\tExplained variance\tTotal variance");
 
         double cumExpVarPCA = 0;
@@ -290,8 +297,8 @@ public class DoPcoa {
         DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<>( (DenseDoubleMatrix2D) eigenValueMatrix.viewColumnFlip().viewPart(0, 0, dataset.columns(), nrOfPCsToCalculate), dataset.getHashCols(), tmpNameBuffer);
         eig = null;
 
-//        datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectors.txt.gz");
-        datasetEV.saveDice(expressionFile + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
+        datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectors_pc.txt.gz");
+//        datasetEV.saveDice(expressionFile + ".PCAOverSamplesEigenvectorsTransposed_pc.txt.gz");
 
         System.out.println("Calculating PCs");
         System.out.println("Initializing PCA matrix");
@@ -338,31 +345,52 @@ public class DoPcoa {
 
         double cumExpVarPCA = 0;
 
-        double eigenValueSum = eigenValues.zSum();
+        DenseMatrix eigenVectorsMatrix = evd.getRightEigenvectors();
         
+        
+        //Fix sorting of eigenValues
+        double[] eigenValuesRanked = RANKER_TIE.rank(eigenValues.toArray());
+        
+        DenseDoubleMatrix1D rankedeigenValues = new DenseDoubleMatrix1D((int)eigenValues.size());
+        DenseMatrix rankedeigenVectorsMatrix = new DenseMatrix(eigenVectorsMatrix.numRows(), eigenVectorsMatrix.numColumns());
+        
+        //Rows are the samples, cols are the eigenvectors
+        for(int i = 0 ; i<eigenValuesRanked.length; i++){
+            int correctColumn = eigenValuesRanked.length-((int) eigenValuesRanked[i]);
+            for(int r = 0 ; r<eigenVectorsMatrix.numRows(); r++){
+                rankedeigenVectorsMatrix.set(r, correctColumn, eigenVectorsMatrix.get(r,i));
+            }
+            rankedeigenValues.setQuick(correctColumn, eigenValues.get(i));
+        }
+        
+        eigenValues = rankedeigenValues;
+        eigenVectorsMatrix = rankedeigenVectorsMatrix;
+        // End fix sort.
+        
+        double eigenValueSum = eigenValues.zSum();
         LinkedHashMap<String, Integer> tmpNameBuffer = new LinkedHashMap<>();
         for (int pca = 0; pca < nrOfPCsToCalculate; pca++) {
-            double expVarPCA = eigenValues.getQuick((int) eigenValues.size() - 1 - pca) / eigenValueSum;
+            double expVarPCA = eigenValues.getQuick(pca) / eigenValueSum;
             int pcaNr = pca + 1;
             cumExpVarPCA += expVarPCA;
-            out.write(pcaNr + "\t" + eigenValues.getQuick((int) eigenValues.size() - 1 - pca) + "\t" + expVarPCA + "\t" + cumExpVarPCA + "\n");
+            out.write(pcaNr + "\t" + eigenValues.getQuick(pca) + "\t" + expVarPCA + "\t" + cumExpVarPCA + "\n");
             tmpNameBuffer.put("Comp" + String.valueOf(pcaNr), pca);
         }
         out.close();
         
-        DenseMatrix eigenVectorsMatrix = evd.getRightEigenvectors();
-        
-        DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<>(MatrixTools.toDenseDoubleMatrix(eigenVectorsMatrix).viewColumnFlip().viewPart(0, 0, dataset.columns(), nrOfPCsToCalculate), dataset.getHashCols(), tmpNameBuffer);
+        DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<>(MatrixTools.toDenseDoubleMatrix(eigenVectorsMatrix).viewPart(0, 0, dataset.columns(), nrOfPCsToCalculate), dataset.getHashCols(), tmpNameBuffer);
         evd = null;
 
-//        datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectors.txt.gz");
-        datasetEV.saveDice(expressionFile + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
+        datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectors.txt.gz");
+
+//        datasetEV.saveDice(expressionFile + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
         datasetEV = null;
         System.out.println("Calculating PCs");
         System.out.println("Initializing PCA matrix");
         
         DenseMatrix scoreMatrix = new DenseMatrix(dataset.rows(), dataset.columns());
-        eigenVectorsMatrix.mult(new DenseMatrix((dataset.getMatrix().toArray())), scoreMatrix);
+        
+        new DenseMatrix((dataset.getMatrix().toArray())).mult(eigenVectorsMatrix.transpose(), scoreMatrix);
         
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(MatrixTools.toDenseDoubleMatrix(scoreMatrix).viewPart(0, 0, dataset.rows(), nrOfPCsToCalculate), dataset.getHashRows(), tmpNameBuffer); 
         System.out.println("Saving PCA scores: " + expressionFile + ".PCAOverSamplesPrincipalComponents.txt.gz");
@@ -483,5 +511,6 @@ public class DoPcoa {
             return false;
         }
     }
+
 }
    
