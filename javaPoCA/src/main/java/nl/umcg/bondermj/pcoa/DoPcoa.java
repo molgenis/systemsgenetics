@@ -8,7 +8,8 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
-import cern.colt.matrix.tdouble.algo.decomposition.FastSymetricDenseDoubleEigenvalueDecomposition;
+//import cern.colt.matrix.tdouble.algo.decomposition.FastSymetricDenseDoubleEigenvalueDecomposition;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
@@ -269,7 +270,7 @@ public class DoPcoa {
         String expressionFile = fileNamePrefix;
         System.out.println("- Performing PCA over matrix of size: " + CorMatrix.columns() + "x" + CorMatrix.rows());
         
-        FastSymetricDenseDoubleEigenvalueDecomposition eig = new FastSymetricDenseDoubleEigenvalueDecomposition(CorMatrix);
+        DenseDoubleEigenvalueDecomposition eig = new DenseDoubleEigenvalueDecomposition(CorMatrix);
 
         //System.out.println(dataset.columns());
         System.out.println("- Number of components to be written: " +nrOfPCsToCalculate);
