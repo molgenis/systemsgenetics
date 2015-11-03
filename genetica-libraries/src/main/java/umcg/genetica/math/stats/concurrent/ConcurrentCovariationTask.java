@@ -32,12 +32,12 @@ public class ConcurrentCovariationTask implements Callable<Pair<Integer, double[
         
         double[] results = new double[matrix1.length];
         double[] xarr = matrix1[x];
-        for (int i = x+1; i < matrix1.length; i++) {
+        for (int i = x; i < matrix1.length; i++) {
             double[] yarr = matrix1[i];
             double r = Correlation.covariate(meanOfSamples[x], meanOfSamples[i], xarr, yarr);
             results[i] = r;
         }
-        results[x] = 1;
+//        results[x] = 1;
         return new Pair<Integer, double[]>(x, results);
     }
 }
