@@ -83,5 +83,6 @@
 		<module>BinaryMetaAnalyzer</module>
 		<module>eQTLInteractionAnalyser</module>
 		<module>javaPoCA</module>
-  </modules>
+                <module>cellTypeSpecificAlleleSpecificExpression</module>
+        </modules>
 </project>
