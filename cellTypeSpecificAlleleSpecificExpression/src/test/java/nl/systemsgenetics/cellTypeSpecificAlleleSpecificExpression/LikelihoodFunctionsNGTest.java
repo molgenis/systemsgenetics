@@ -6,7 +6,6 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import static java.lang.Math.abs;
-import java.util.ArrayList;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 
@@ -34,7 +33,7 @@ public class LikelihoodFunctionsNGTest {
         Assert.assertEquals(testValue1.compareTo(0.6931471805599453), 0);
         
         Double testValue2 = LikelihoodFunctions.BinomLogLik(1, 100, 0);
-        Assert.assertEquals(testValue2, -0.0);
+        Assert.assertEquals(testValue2, 0.0);
         
         Double testValue3 = LikelihoodFunctions.BinomLogLik(1, 100, 1);
         Assert.assertEquals(testValue3, Double.POSITIVE_INFINITY);
