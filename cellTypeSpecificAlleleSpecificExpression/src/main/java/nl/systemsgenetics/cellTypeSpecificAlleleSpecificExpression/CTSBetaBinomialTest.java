@@ -16,6 +16,7 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 import org.apache.commons.math3.optim.univariate.SearchInterval;
+import org.jdom.IllegalDataException;
 
 /**
  *
@@ -277,8 +278,10 @@ class CTSBetaBinomialTest {
                 chiSq = LikelihoodFunctions.ChiSqFromLogLik(nullLogLik, altLogLik);
 
                 //determine P value based on distribution
+
                 pVal = LikelihoodFunctions.determinePvalFrom1DFchiSq(chiSq);
 
+                
                 if(GlobalVariables.verbosity >= 10){
                     System.out.println("\n--- Starting cell type specific beta binomial LRT test estimate ---");
                     System.out.println("LogLik of converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
