@@ -71,6 +71,8 @@ class PhasedEntry {
             dispersionWriter.printf("%s\t%.6f\n", dispersionParameters.get(i).getSampleName(), dispersionParameters.get(i).getOverdispersion()[0] );
         }
         
+        dispersionWriter.close();
+        
         if(GlobalVariables.verbosity >= 10){
             System.out.println("--------------------------------------------------");
             System.out.println("Finished dispersion estimates for all individuals.");
