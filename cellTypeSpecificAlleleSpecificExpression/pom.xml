@@ -27,12 +27,6 @@
         </dependency>
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
-            <artifactId>cell_type_specific_ase</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>nl.systemsgenetics</groupId>
             <artifactId>eqtl-functional-enrichment</artifactId>
             <version>0.0.3-SNAPSHOT</version>
             <type>jar</type>
