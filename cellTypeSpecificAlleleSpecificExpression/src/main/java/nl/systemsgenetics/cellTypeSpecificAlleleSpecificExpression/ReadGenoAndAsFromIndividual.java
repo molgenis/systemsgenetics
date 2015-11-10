@@ -280,10 +280,6 @@ public class ReadGenoAndAsFromIndividual {
         // by the  getSampleNames() method. 
         // Otherwise the data will be nicely permuted, and I will have to convert some stuff.
         
-        int i=0;
-
-        String temp_string;
-        
         int position_of_snp = Integer.parseInt(position);                       
         
         SAMRecordIterator all_reads_in_region;
