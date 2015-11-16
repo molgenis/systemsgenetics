@@ -103,10 +103,17 @@ public class NonPhasedEntry {
 
             for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
                 dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
-
+                
+               
+                    
+                
                 //do a check to make sure ordering is correct. especially important when adding a dispersion file.
                 if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
+                    System.out.println("dispersion sample name");
                     System.out.println(sampleDispersion.getSampleName());
+                    System.out.println("AS file name.");
+                    System.out.println(allFiles.get(i));
+                    
                     throw new IllegalDataException("ERROR! ordering is not correct for filenames for overdispersion");
                 }
                 i++;
@@ -137,6 +144,9 @@ public class NonPhasedEntry {
             cellProp = new double[phenoString.size()];
             for(String samplePheno : phenoString){
                 cellProp[i] = Double.parseDouble(samplePheno);
+                if(cellProp[i] > 1 || cellProp[i] < 0){
+                    throw new IllegalDataException("The phenotype file contains values that are parsed as higher than one (1) or lower than zero (0)");
+                }
                 i++;
             }
         }
