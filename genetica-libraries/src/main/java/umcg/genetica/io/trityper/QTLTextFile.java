@@ -322,7 +322,7 @@ public class QTLTextFile extends TextFile {
                 }
             }
 
-            if (fdrpresent && !elems[21].equals(nullStr)) {
+            if (fdrpresent && elems.length > 21 &&!elems[21].equals(nullStr)) {
                 try {
                     e.setFDR(Double.parseDouble(elems[21]));
                 } catch (java.lang.NumberFormatException ex) {
