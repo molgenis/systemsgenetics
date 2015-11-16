@@ -182,6 +182,18 @@ public class MainEntryPoint {
 		OPTIONS.addOption(option);                
                 
                 
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("The amount of verbosity required, standard is 10. "
+                                        + "anything higher may be used for debugging."
+                                        + "Will be parsed as an integer, but will mostly use values in the power of ten: 1, 10, 100, 1000"
+                                        + "Anything higher than 10 should be used for debugging.")                                           
+				.withLongOpt("verbosity")
+				.create('V');
+		OPTIONS.addOption(option);
+                
+                
+                
                 
 
 	}
@@ -205,6 +217,9 @@ public class MainEntryPoint {
         String phenoTypeLocation = new String();
         String dispersionLocation = new String();
         
+        
+        
+        
         try {
             CommandLineParser parser = new PosixParser();
             final CommandLine commandLine = parser.parse(OPTIONS, args, true);
@@ -220,6 +235,21 @@ public class MainEntryPoint {
                 
                 // Optional arguments that are not passed to the Entry constructors
                 // But are saved in the GlobalVariables class.
+                
+                 if(commandLine.hasOption("verbosity")){ 
+                    try{
+                        GlobalVariables.verbosity = Integer.parseInt(commandLine.getOptionValue("verbosity"));
+                        //Check if this is bigger than 0, otherwise exit 
+                        if(GlobalVariables.verbosity <= 0){
+                            throw new IllegalDataException("verbosity should not be negative");
+                        }
+                    }catch(Exception e){
+                        System.err.println("verbosity should be parsable as an int, continueing with verbosity at 10");
+                    }
+                    
+                    
+                    
+                }
                 
                 if(commandLine.hasOption("minimum_hets")){
                     GlobalVariables.minHets = Integer.parseInt(commandLine.getOptionValue("minimum_hets"));
