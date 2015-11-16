@@ -107,11 +107,15 @@ public class NonPhasedEntry {
                 //do a check to make sure ordering is correct. especially important when adding a dispersion file.
                 if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
                     System.out.println(sampleDispersion.getSampleName());
-                    throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
+                    throw new IllegalDataException("ERROR! ordering is not correct for filenames for overdispersion");
                 }
                 i++;
             }
-        
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("-------------------------");
+                System.out.println("Using dispersion data from a previously entered file");
+                System.out.println("-------------------------");
+            }
         }
 
 

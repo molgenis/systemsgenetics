@@ -94,6 +94,11 @@ class PhasedEntry {
                 dispersionParameters.add(fillerForDispersion);
                 
             }
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("-------------------------");
+                System.out.println("Using dispersion data from a previously entered file");
+                System.out.println("-------------------------");
+            }
         
         }
 
