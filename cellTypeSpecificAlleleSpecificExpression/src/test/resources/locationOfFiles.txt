@@ -1,0 +1,8 @@
+asFolder/ERR188022snps_and_as_reads.txt
+asFolder/ERR188024snps_and_as_reads.txt
+asFolder/ERR188027snps_and_as_reads.txt
+asFolder/ERR188032snps_and_as_reads.txt
+asFolder/ERR188047snps_and_as_reads.txt
+asFolder/ERR188048snps_and_as_reads.txt
+asFolder/ERR188049snps_and_as_reads.txt
+asFolder/ERR188228snps_and_as_reads.txt

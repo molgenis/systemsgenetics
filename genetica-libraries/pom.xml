@@ -24,6 +24,11 @@
 		</plugins>
 	</build>
 	<dependencies>
+        <dependency>
+            <groupId>com.googlecode.matrix-toolkits-java</groupId>
+            <artifactId>mtj</artifactId>
+            <version>1.0.2</version>
+        </dependency>
 		<dependency>
 			<groupId>commons-primitives</groupId>
 			<artifactId>commons-primitives</artifactId>

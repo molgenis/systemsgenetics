@@ -126,8 +126,6 @@ public class QTLmeQTLCompare {
         System.out.println("Performing comparison of eQTLs and meQTLs");
         double filterOnFDR = fdrCutt; //Do we want to use another FDR measure? When set to -1 this is not used at all.
 
-        HashSet<String> hashExcludeEQTLs = new HashSet<String>();   //We can exclude some eQTLs from the analysis. If requested, put the entire eQTL string in this HashMap for each eQTL. Does not work in combination with mathcing based on chr and pos
-        HashSet<String> hashConfineAnalysisToSubsetOfProbes = new HashSet<String>(); //We can confine the analysis to only a subset of probes. If requested put the probe name in this HapMap
         HashSet<String> hashTestedSNPsThatPassedQC = null; //We can confine the analysis to only those eQTLs for which the SNP has been successfully passed QC, otherwise sometimes unfair comparisons are made. If requested, put the SNP name in this HashMap
 
         //Load the eQTM File
@@ -138,26 +136,26 @@ public class QTLmeQTLCompare {
         for (Iterator<EQTL> eQtlIt = eQTLsTextFile.getEQtlIterator(); eQtlIt.hasNext();) {
             EQTL eQtm = eQtlIt.next();
             String eQtmKey = eQtm.getRsName();
-            
-            if(!eQtm.getAlleleAssessed().equals("C")){
+
+            if (!eQtm.getAlleleAssessed().equals("C")) {
                 eQtm.setAlleleAssessed("C");
-                eQtm.setZscore(eQtm.getZscore()*-1);
-                
+                eQtm.setZscore(eQtm.getZscore() * -1);
+
                 Double[] zscores = eQtm.getDatasetZScores();
                 Double[] correlation = eQtm.getCorrelations();
-                for(int i=0; i<eQtm.getDatasets().length; ++i){
-                    zscores[i] *=-1;
-                    correlation[i] *=-1;
+                for (int i = 0; i < eQtm.getDatasets().length; ++i) {
+                    zscores[i] *= -1;
+                    correlation[i] *= -1;
                 }
                 eQtm.setDatasetZScores(zscores);
                 eQtm.setCorrelations(correlation);
-                
+
             }
 
             ArrayList<EQTL> posEqtls = eQtmInfo.get(eQtmKey);
 
             if (posEqtls == null) {
-                posEqtls = new ArrayList<EQTL>(1);
+                posEqtls = new ArrayList<>(1);
                 posEqtls.add(eQtm);
                 eQtmInfo.put(eQtmKey, posEqtls);
             } else if (!topeffect) {
@@ -168,9 +166,9 @@ public class QTLmeQTLCompare {
         System.out.println("eQTMs read in: " + eQtmInfo.size());
 
         //Now load the eQTLs for file 1:
-        THashMap<String, String[]> hashEQTLs = new THashMap<String, String[]>();
-        THashSet<String> hashUniqueProbes = new THashSet<String>();
-        THashSet<String> hashUniqueGenes = new THashSet<String>();
+        THashMap<String, String[]> hashEQTLs = new THashMap<>();
+        THashSet<String> hashUniqueProbes = new THashSet<>();
+        THashSet<String> hashUniqueGenes = new THashSet<>();
 
         TextFile in = new TextFile(eQTL, TextFile.R);
         in.readLine();
@@ -182,38 +180,32 @@ public class QTLmeQTLCompare {
 
         while (data != null) {
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
-                if (hashConfineAnalysisToSubsetOfProbes.isEmpty() || hashConfineAnalysisToSubsetOfProbes.contains(data[4])) {
-                    if (matchOnGeneName) {
-                        if (data[16].length() > 1) {
+                if (matchOnGeneName) {
+                    if (data[16].length() > 1) {
 
-                            if (splitGeneNames) {
-                                for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
+                        if (splitGeneNames) {
+                            for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
 
-                                    hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
-                                    hashUniqueProbes.add(data[4]);
-                                    hashUniqueGenes.add(gene);
-
-                                }
-                            } else {
-
-                                if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
-                                    hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16], data);
-                                    hashUniqueProbes.add(data[4]);
-                                    hashUniqueGenes.add(data[16]);
-                                    //log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]); 
-                                }
+                                hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
+                                hashUniqueProbes.add(data[4]);
+                                hashUniqueGenes.add(gene);
 
                             }
+                        } else {
 
-                        }
-                    } else {
-                        if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[4])) {
-                            hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4], data);
+                            hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16], data);
                             hashUniqueProbes.add(data[4]);
                             hashUniqueGenes.add(data[16]);
-                            //	log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4]); 
+                            //log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]); 
+
                         }
+
                     }
+                } else {
+                    hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4], data);
+                    hashUniqueProbes.add(data[4]);
+                    hashUniqueGenes.add(data[16]);
+                    //	log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4]); 
                 }
                 data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
             }
@@ -233,7 +225,6 @@ public class QTLmeQTLCompare {
 //        int x1 = width - margin;
 //        int y0 = margin;
 //        int y1 = height - margin;
-
         ZScorePlot zs = new ZScorePlot();
         String zsOutFileName = outputFile + "-ZScoreComparison.pdf";
         zs.init(2, new String[]{"eQTLs", "meQTLs"}, true, zsOutFileName);
@@ -256,7 +247,6 @@ public class QTLmeQTLCompare {
 
         //Vector holding all opposite allelic effects:
 //        LinkedHashSet<String> vecOppositeEQTLs = new LinkedHashSet<String>();
-
         //Now process file 2:
         in = new TextFile(meQTL, TextFile.R);
         in.readLine();
@@ -267,9 +257,9 @@ public class QTLmeQTLCompare {
         TextFile disconcordantOut = new TextFile(outputFile + "-OppositeEQTLs.txt", TextFile.W);
         TextFile log = new TextFile(outputFile + "-eQTL-meQTL-ComparisonLog.txt", TextFile.W);
         TextFile log2 = new TextFile(outputFile + "-eQTM-missingnessLog.txt", TextFile.W);
-        
+
         THashSet<String> identifiersUsed = new THashSet<String>();
-        
+
         while ((data = in.readLineElemsReturnReference(SPLIT_ON_TAB)) != null) {
 
             if (filterOnFDR == -1 || Double.parseDouble(data[18]) <= filterOnFDR) {
@@ -280,9 +270,9 @@ public class QTLmeQTLCompare {
                 }
 
                 String orgDataFour = data[4];
-                
+
                 for (int i = 0; i < eQtmInfo.get(orgDataFour).size(); ++i) {
-                    if(topeffect && i>0){
+                    if (topeffect && i > 0) {
                         break;
                     }
                     data[16] = eQtmInfo.get(orgDataFour).get(i).getProbeHUGO();
@@ -295,41 +285,35 @@ public class QTLmeQTLCompare {
                         }
                     }
 
-                    if (hashConfineAnalysisToSubsetOfProbes.isEmpty() || hashConfineAnalysisToSubsetOfProbes.contains(data[4])) {
-                        if (matchOnGeneName) {
-                            if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
-                                if (data[16].length() > 1) {
+                    if (matchOnGeneName) {
+                        if (data[16].length() > 1) {
 
-                                    if (splitGeneNames) {
-                                        for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
+                            if (splitGeneNames) {
+                                for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
 
-                                            hashUniqueProbes2.add(data[4]);
-                                            hashUniqueGenes2.add(gene);
-                                            if (!hashEQTLs2.contains((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene)) {
-                                                hashEQTLs2.add((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene);
-                                                counterFile2++;
-                                            }
-
-                                        }
-                                    } else {
-
-                                        hashUniqueProbes2.add(data[4]);
-                                        hashUniqueGenes2.add(data[16]);
-                                        if (!hashEQTLs2.contains((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16])) {
-                                            hashEQTLs2.add((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]);
-                                            counterFile2++;
-                                        }
+                                    hashUniqueProbes2.add(data[4]);
+                                    hashUniqueGenes2.add(gene);
+                                    if (!hashEQTLs2.contains((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene)) {
+                                        hashEQTLs2.add((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene);
+                                        counterFile2++;
                                     }
+
                                 }
-                            }
-                        } else {
-                            if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[4])) {
-                                //hashEQTLs2.put(data[1] + "\t" + data[4], str);
+                            } else {
+
                                 hashUniqueProbes2.add(data[4]);
                                 hashUniqueGenes2.add(data[16]);
-                                counterFile2++;
+                                if (!hashEQTLs2.contains((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16])) {
+                                    hashEQTLs2.add((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]);
+                                    counterFile2++;
+                                }
                             }
                         }
+                    } else {
+                        //hashEQTLs2.put(data[1] + "\t" + data[4], str);
+                        hashUniqueProbes2.add(data[4]);
+                        hashUniqueGenes2.add(data[16]);
+                        counterFile2++;
                     }
                     String[] QTL = null;
                     String identifier = null;
@@ -339,28 +323,22 @@ public class QTLmeQTLCompare {
                             if (splitGeneNames) {
                                 //NB Plotting and processing of all QTLs here is not okay!
                                 for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
-                                    if (!hashExcludeEQTLs.contains(data[1] + "\t" + gene)) {
-                                        identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene;
-                                        if (hashEQTLs.containsKey(identifier)) {
-                                            QTL = hashEQTLs.get(identifier);
-                                        }
-                                    }
-                                }
-                            } else {
-                                if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
-                                    identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16];
+                                    identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene;
                                     if (hashEQTLs.containsKey(identifier)) {
                                         QTL = hashEQTLs.get(identifier);
                                     }
                                 }
+                            } else {
+                                identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16];
+                                if (hashEQTLs.containsKey(identifier)) {
+                                    QTL = hashEQTLs.get(identifier);
+                                }
                             }
                         }
                     } else {
-                        if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[4])) {
-                            identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4];
-                            if (hashEQTLs.containsKey(identifier)) {
-                                QTL = hashEQTLs.get(identifier);
-                            }
+                        identifier = (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4];
+                        if (hashEQTLs.containsKey(identifier)) {
+                            QTL = hashEQTLs.get(identifier);
                         }
                     }
 
@@ -536,7 +514,7 @@ public class QTLmeQTLCompare {
                                     vecY.add(zScore2);
                                 }
                             }
-                            
+
                         }
                     }
                 }
@@ -546,12 +524,12 @@ public class QTLmeQTLCompare {
         disconcordantOut.close();
         in.close();
         log2.close();
-        
+
         log.write("\n/// Writing missing QTLs observed in original file but not in the new file ////\n\n");
-        for(Entry<String, String[]> QTL : hashEQTLs.entrySet()){
-            if(!identifiersUsed.contains(QTL.getKey())){
+        for (Entry<String, String[]> QTL : hashEQTLs.entrySet()) {
+            if (!identifiersUsed.contains(QTL.getKey())) {
                 //The eQTL, present in file 1 is not present in file 2:
-                
+
                 //if (Double.parseDouble(QTL.getValue()[0]) < 1E-4) {
                 if (hashTestedSNPsThatPassedQC == null || hashTestedSNPsThatPassedQC.contains(data[1])) {
                     log.write("eQTL Present In Original file But Not In New File:\t" + QTL.getKey() + "\t" + QTL.getValue()[0] + "\t" + QTL.getValue()[2] + "\t" + QTL.getValue()[3] + "\t" + QTL.getValue()[16] + "\n");
@@ -563,10 +541,10 @@ public class QTLmeQTLCompare {
                 zs.draw(zScore, null, 0, 1);
             }
         }
-        
+
         log.close();
         zs.write(zsOutFileName);
-        
+
         double[] valsX = vecX.toArray();
         double[] valsY = vecY.toArray();
 
