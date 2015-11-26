@@ -61,7 +61,13 @@ public class NonPhasedEntry {
                                     FilenameUtils.getBaseName(outputLocation) +
                                     "_BetaBinomialResults.txt";
         
+        
         //for ease of use initializing here.
+        String CTSlinearRegressionOutput  = FilenameUtils.getFullPath(outputLocation) + 
+                                  FilenameUtils.getBaseName(outputLocation) +
+                                  "_CTSLinearRegressionResults.txt";
+        
+        
         String CTSbinomialOutput  = FilenameUtils.getFullPath(outputLocation) + 
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_CTSBinomialResults.txt";
@@ -163,8 +169,9 @@ public class NonPhasedEntry {
         //CTS stuff.
         PrintWriter CTSBinomWriter = null; 
         PrintWriter CTSBetaBinomWriter = null;
-        
+        PrintWriter CTSlinearRegressionWriter = null;
         if(phenoTypeLocation != null){
+            CTSlinearRegressionWriter = new PrintWriter(CTSlinearRegressionOutput, "UTF-8");
             CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
             CTSBetaBinomWriter = new PrintWriter(CTSbetaBinomialOutput, "UTF-8");
         }
@@ -290,13 +297,15 @@ public class NonPhasedEntry {
                 if(phenoTypeLocation != null){
                     //do the CTS beta binomial test:
                     
+                    CTSlinearRegression CTSlinearRegressionResults = new CTSlinearRegression(allSnpData);
                     CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData);
                     CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData);
                     
 
                     // Write the results to the out_file, assuming both of them were done.
                     if (CTSbetaBinomResults.isTestPerformed()) {
-
+                        
+                       CTSlinearRegressionWriter.println(CTSlinearRegressionResults.writeTestStatistics(true));
                        CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
                        CTSBetaBinomWriter.println(CTSbetaBinomResults.writeTestStatistics(true));
                          
