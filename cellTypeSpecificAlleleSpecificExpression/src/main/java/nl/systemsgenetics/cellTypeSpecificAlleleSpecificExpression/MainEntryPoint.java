@@ -5,6 +5,8 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.ReadGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
@@ -192,6 +194,14 @@ public class MainEntryPoint {
 				.create('V');
 		OPTIONS.addOption(option);
                 
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("Plotting directory. "
+                                        + "Will output for every test a plot in this director. "
+                                        + "Be warned, may take quite some space")                                           
+				.withLongOpt("plot_directory")
+				.create("plot_directory");
+		OPTIONS.addOption(option);
                 
                 
                 
@@ -236,7 +246,7 @@ public class MainEntryPoint {
                 // Optional arguments that are not passed to the Entry constructors
                 // But are saved in the GlobalVariables class.
                 
-                 if(commandLine.hasOption("verbosity")){ 
+                if(commandLine.hasOption("verbosity")){ 
                     try{
                         GlobalVariables.verbosity = Integer.parseInt(commandLine.getOptionValue("verbosity"));
                         //Check if this is bigger than 0, otherwise exit 
@@ -245,10 +255,7 @@ public class MainEntryPoint {
                         }
                     }catch(Exception e){
                         System.err.println("verbosity should be parsable as an int, continueing with verbosity at 10");
-                    }
-                    
-                    
-                    
+                    }    
                 }
                 
                 if(commandLine.hasOption("minimum_hets")){
@@ -267,6 +274,13 @@ public class MainEntryPoint {
                     if(GlobalVariables.minReads <= 0){
                         throw new IllegalDataException("Minimum Number of reads cannot be smaller than one for AS testing\n"
                                          + "Exitting");
+                    }
+                }
+                
+                if(commandLine.hasOption("plot_directory")){
+                    GlobalVariables.plotDir = commandLine.getOptionValue("plot_directory");
+                    if(!Files.isDirectory(Paths.get(GlobalVariables.plotDir))){
+                        throw new IllegalDataException("The plotting directory needs to be an existing directory.");
                     }
                 }
                 

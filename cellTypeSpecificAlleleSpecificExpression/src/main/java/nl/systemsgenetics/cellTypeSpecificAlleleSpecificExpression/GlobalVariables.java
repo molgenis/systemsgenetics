@@ -50,6 +50,7 @@ public class GlobalVariables {
     public static double variantProb = 0.99;
     
     //Make scatter plots
-    public static boolean plotScatter = true;
+    public static String plotDir = "";
+    
     
 }

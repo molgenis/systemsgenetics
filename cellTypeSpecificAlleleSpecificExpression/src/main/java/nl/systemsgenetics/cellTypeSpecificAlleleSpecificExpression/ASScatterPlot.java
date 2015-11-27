@@ -18,11 +18,14 @@ package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import javax.xml.bind.helpers.AbstractMarshallerImpl;
 
 
 /**
@@ -40,49 +43,143 @@ public class ASScatterPlot {
     private int drawHeight;
     private Color color;
     private Font font;
-
-    public ASScatterPlot( ) {
-        init(1000, 1000);
+    private FontMetrics fontmetrics ;
+    
+    private int xStart;
+    private int xEnd;
+    private int yStart;
+    private int yEnd;
+    
+    private int xLength;
+    private int yLength;
+    
+    private double[] margins = {0.2, 0.1, 0.15, 0.15};
+    
+    public ASScatterPlot(int size ) {
+        init(size, size);
     }
 
     protected void init(int width, int height) {
         
+        
         graphHeight = height;
         graphWidth = width;
-
+        
+        //margins in the following order: top, right, bottom, left
+        
+        
+        int  xTickLength = (int) (0.015 * ((double) graphWidth)); // ratio of tick length compared to canvas size
+        int  yTickLength = (int) (0.015 * ((double) graphHeight));
+        
         bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
         g2d = bi.createGraphics();
 
         color = new Color(255, 255, 255);
         font = new Font("Georgia", Font.PLAIN, 10);
-
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g2d.setColor(color);
         g2d.fillRect(0, 0, graphWidth, graphHeight);
-        g2d.draw(new Line2D.Double(((double) graphWidth / 2), 0, ((double) graphWidth / 2), graphHeight));
+        
+        
+        
+        fontmetrics = g2d.getFontMetrics();
+        
+        color = new Color(0,0,0);
+        g2d.setColor(color);
+        
+        //definePlotBoundary
+        xStart = (int)Math.floor( ((double) graphWidth) *  margins[3] ) ;
+        xEnd =  (int)Math.floor(((double) graphWidth) *  (1 - margins[1]) );
+        yStart = (int)Math.floor( ((double) graphHeight) *  (1 - margins[2]));
+        yEnd = (int)Math.floor( ((double) graphHeight) *  margins[0]) ;
+        
+        //drawAxis
+        g2d.draw(new Line2D.Double(xStart, yStart, xStart,yEnd));
+        g2d.draw(new Line2D.Double(xStart, yStart, xEnd, yStart));
+        
+        xLength = xEnd - xStart;
+        yLength = yStart - yEnd;
+        //draw ticks and a value at every 0.1 interval
+        for(int i = 0; i< 11;i++){
+            //
+            int xPos = xStart + (int) (( (double) xLength )* ( ((double) i) / 10) );  
+            g2d.draw(new Line2D.Double(xPos, yStart , xPos, (yStart + yTickLength)));
+            drawStringInMiddlePosition(String.format("%1.1f",(double) i / 10), xPos  , yStart + 3 * yTickLength);
+            
+            int yPos = yStart - (int) (( (double) yLength )* ( ((double) i) / 10) );  
+            g2d.draw(new Line2D.Double(xStart, yPos , (xStart - xTickLength), yPos));
+            drawStringInMiddlePosition(String.format("%1.1f",(double) i / 10), xStart - 3 * xTickLength, yPos );
+            
+        }
+        
+        //draw grid lines and a value at every 0.2 interval
+        color = new Color(0, 0, 0, 30);
+        g2d.setColor(color);
+        
+        for(int i = 0; i < 11 ;i++){
+            
+            int xPos = xStart + (int) (( (double) xLength )* ( ((double) i) / 10) );  
+            g2d.draw(new Line2D.Double(xPos, yStart , xPos, yEnd));
+            
+            int yPos = yStart - (int) (( (double) yLength )* ( ((double) i) / 10) );  
+            g2d.draw(new Line2D.Double(xStart, yPos , xEnd, yPos));
+
+            
+        }
+        
         color = new Color(0, 0, 0);
         g2d.setColor(color);
+        
+       
+        //print the x- axis
+       
+        drawStringInMiddlePosition("ASratio", xStart + (int) (( (double) xLength ) / 2) , yStart + (int)Math.floor((double) graphHeight * ( margins[2] / 2.0) ) );
+        
+        //print the y-axis, rotation and all
+        AffineTransform orig = g2d.getTransform();
+        g2d.rotate(-Math.PI * 0.5);
+        drawStringInMiddlePosition("Phenotype proportion", -xStart - (int) (( (double) xLength ) / 2), yEnd - (int)Math.floor((double) graphWidth * ( margins[3] ) ));
+        
+        g2d.setTransform(orig);
     }
 
+    //take the middle of the string and plot it at this exact position
+    private void drawStringInMiddlePosition(String text, int x, int y){
+        
+        int widthOfString = fontmetrics.stringWidth(text); 
+        int heightOfString = fontmetrics.getAscent();
+        
+        int xNew = (int) Math.floor( ((double) x ) - ((double) widthOfString) / 2.0 );
+        int yNew = (int) Math.floor( ((double) y ) + ((double) heightOfString) / 2.0 );
+        g2d.drawString(text, xNew, yNew);
+    
+    }
+    
+    
+    
     void plot(int x, int y) {
     }
 
     // x == correlation
     // y == r2 score
     public void plot(double x, double y) {
-
-        double xpos = ((double) graphWidth ) + (((double) graphWidth ) * x);
-        double ypos = graphHeight - (graphHeight * y);
-        int ixpos = (int) Math.floor(xpos);
-        int iypos = (int) Math.floor(ypos);
-        g2d.fillRect(ixpos - 1, iypos + 1, 2, 2);
+        color = new Color(0,0,0, 150);
+        g2d.setColor(color);
+        
+        int xPos = xStart + (int) Math.floor(((double) x) * ((double) xLength) );
+        int yPos = yStart - (int) Math.floor(((double) y) * ((double) yLength) );
+        
+        g2d.fillRect(xPos , yPos , 4, 4);
         
     }
 
     public void draw(String outputFile) {
-
+        
+        //print the title, currently just the file name:
+        drawStringInMiddlePosition(outputFile, xStart + (int) (( (double) xLength ) / 2) , yEnd - (int)Math.floor((double) graphHeight * ( margins[0] / 2.0) ) );
+        
         try {
             javax.imageio.ImageIO.write(bi, "png", new File(outputFile));
         } catch (Exception e) {

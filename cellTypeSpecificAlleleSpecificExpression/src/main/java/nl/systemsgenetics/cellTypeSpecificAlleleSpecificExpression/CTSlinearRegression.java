@@ -103,8 +103,8 @@ class CTSlinearRegression {
             
             ASScatterPlot plotThis = null;
             
-            if(GlobalVariables.plotScatter){
-                plotThis = new ASScatterPlot();
+            if(!GlobalVariables.plotDir.equals("")){
+                plotThis = new ASScatterPlot(400);
             }
             
             
@@ -115,12 +115,14 @@ class CTSlinearRegression {
                 Double phenoRatio =  cellProp.get(i);
                 thisRegression.addData(phenoRatio, asRatio);
                 
-                if(GlobalVariables.plotScatter){
+                if(!GlobalVariables.plotDir.equals("")){
                     plotThis.plot(asRatio, phenoRatio);
                 }
             }
             
-            plotThis.draw("testPlot.png");
+            if(!GlobalVariables.plotDir.equals("")){
+                plotThis.draw(GlobalVariables.plotDir + "/" + snpName +  "_ASratio_Pheno_Plot.png");
+            } 
             
             slope = thisRegression.getSlope();
             intercept  = thisRegression.getIntercept();
