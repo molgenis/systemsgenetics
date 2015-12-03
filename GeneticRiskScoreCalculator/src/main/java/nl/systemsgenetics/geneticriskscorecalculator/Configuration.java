@@ -23,6 +23,9 @@ public class Configuration {
 	private final RandomAccessGenotypeDataReaderFormats inputDataType;
 	private final File outputFile;
 	private final File risksnpsFile;
+        private final String onlyCount;
+        private final double inclusionThreshold;
+        
 	static {
 
 		LOGGER = Logger.getLogger(Configuration.class);
@@ -66,8 +69,19 @@ public class Configuration {
 		OptionBuilder.withDescription("The output file with risk scores");
 		OptionBuilder.withLongOpt("output");
 		OPTIONS.addOption(OptionBuilder.create("o"));
-                
 
+		OptionBuilder.withArgName("count");
+		OptionBuilder.hasArgs();                
+		OptionBuilder.withDescription("Only count risk alleles");
+		OptionBuilder.withLongOpt("count");
+		OPTIONS.addOption(OptionBuilder.create("c"));
+                
+		OptionBuilder.withArgName("threshold");
+		OptionBuilder.hasArgs();                
+		OptionBuilder.isRequired();
+                OptionBuilder.withDescription("P value threshold for SNP inclusion");
+		OptionBuilder.withLongOpt("thres");
+		OPTIONS.addOption(OptionBuilder.create("t"));
 
 	}
 
@@ -95,7 +109,8 @@ public class Configuration {
 			
 		outputFile = new File(commandLine.getOptionValue('o'));
 		risksnpsFile = new File(commandLine.getOptionValue('r'));
-		
+		onlyCount = commandLine.getOptionValue('c');		
+		inclusionThreshold = Double.valueOf(commandLine.getOptionValue('t'));		
 	}
 
 	public void printOptions() {
@@ -142,4 +157,11 @@ public class Configuration {
 	public File getOutputFile() {
 		return outputFile;
 	}	
+
+	public String getOnlyCount() {
+		return onlyCount;
+	}
+	public double getInclusionThreshold() {
+		return inclusionThreshold;
+	}
 }
