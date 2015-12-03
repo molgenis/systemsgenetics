@@ -4,9 +4,6 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
-import eqtlmappingpipeline.metaqtl3.containers.Result;
-import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
-import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**

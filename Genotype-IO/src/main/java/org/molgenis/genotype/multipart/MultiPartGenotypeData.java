@@ -1,6 +1,5 @@
 package org.molgenis.genotype.multipart;
 
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
+import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
@@ -170,6 +170,39 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		return new MultiPartGenotypeData(genotypeDataSets);
 
 	}
+	
+	public static MultiPartGenotypeData createFromGenFolder(File genFolder, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException,
+			IncompatibleMultiPartGenotypeDataException
+	{
+
+		Set<RandomAccessGenotypeData> genotypeDataSets = new LinkedHashSet<RandomAccessGenotypeData>();
+
+		if (!genFolder.isDirectory())
+		{
+			throw new IOException("This is not a directory: " + genFolder.getAbsolutePath());
+		}
+
+		for (File file : genFolder.listFiles())
+		{
+			if (file.isDirectory())
+			{
+				continue;
+			}
+			File sampleFile = new File(file.getAbsolutePath() + ".sample");
+			if (sampleFile.exists())
+			{
+				//LOGGER.debug("Adding to multipart data: " + file.getAbsolutePath());
+				genotypeDataSets.add(new GenGenotypeData(file, sampleFile, cacheSize, minimumPosteriorProbabilityToCall));
+			} 
+		}
+		
+		if(genotypeDataSets.isEmpty()){
+			throw new GenotypeDataException("Did not detect any gen files at: " + genFolder.getAbsolutePath());
+		}
+
+		return new MultiPartGenotypeData(genotypeDataSets);
+
+	}
 
 	@Override
 	public List<String> getSeqNames()
@@ -285,7 +318,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		}
 		else
 		{
-			return null;
+			return Collections.emptyList();
 		}
 	}
 

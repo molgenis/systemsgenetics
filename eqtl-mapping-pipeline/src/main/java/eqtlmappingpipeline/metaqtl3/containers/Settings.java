@@ -6,6 +6,7 @@ package eqtlmappingpipeline.metaqtl3.containers;
 
 import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
+import gnu.trove.set.hash.THashSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public String strConfineSNPProbe;
     public boolean provideFoldChangeData = false;
     public boolean provideBetasAndStandardErrors = true;
-    public boolean equalRankForTies = false;
+    public boolean equalRankForTies = true;
     public boolean createQQPlot = true;
     public boolean createDotPlot = true;
     public boolean metaAnalyseInteractionTerms = false;
@@ -216,7 +217,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (useIdenticalRanksForTies != null) {
             equalRankForTies = useIdenticalRanksForTies;
         } else {
-            equalRankForTies = false;
+            equalRankForTies = true;
         }
 
         /*
@@ -332,6 +333,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
                 createDotPlot = false;
             } else if (fdrtype.equals("probe")) {
                 fdrType = FDRMethod.PROBELEVEL;
+                createDotPlot = false;
+            } else if (fdrtype.equals("snp")) {
+                fdrType = FDRMethod.SNPLEVEL;
                 createDotPlot = false;
             } else if (fdrtype.equals("snpprobe") || fdrtype.equals("full")) {
                 fdrType = FDRMethod.FULL;
@@ -530,7 +534,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (confineProbe != null && confineProbe.trim().length() > 0 && Gpio.exists(confineProbe)) {
             strConfineProbe = confineProbe;
             TextFile in = new TextFile(confineProbe, TextFile.R);
-            tsProbesConfine = new HashSet<String>();
+            tsProbesConfine = new THashSet<String>();
             String[] data = in.readAsArray();
             for (String d : data) {
                 d = d.trim();

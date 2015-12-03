@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import static org.molgenis.genotype.GenotypeData.BOOL_INCLUDE_SAMPLE;
@@ -78,12 +79,16 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final SampleFilter sampleFilter;
 	private int unfilteredSnpCount;
 	private final GeneticVariantMeta geneticVariantMeta;
+    
+    private final File alleleRecodeFile;
+    private final HashMap<String, Allele[]> allelRecodingInfo;
+    
 	/**
 	 * These are the samples as visible to the outside. if sample filter is used
 	 * then a subset of all samples in dataset otherwise ref to all samples
 	 * arraylist.
 	 */
-	private ArrayList<Sample> includedSamples;
+	private List<Sample> includedSamples;
 	/**
 	 * These are samples present in the dataset. If sample filters are used then
 	 * the it could be that there are fewer samples returned
@@ -115,10 +120,10 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	}
 
 	public TriTyperGenotypeData(File location, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
-		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter);
+		this(new File(location, "GenotypeMatrix.dat"), new File(location, "ImputedDosageMatrix.dat").exists() ? new File(location, "ImputedDosageMatrix.dat") : null, new File(location, "SNPs.txt.gz").exists() ? new File(location, "SNPs.txt.gz") : new File(location, "SNPs.txt"), new File(location, "SNPMappings.txt.gz").exists() ? new File(location, "SNPMappings.txt.gz") : new File(location, "SNPMappings.txt"), new File(location, "Individuals.txt.gz").exists() ? new File(location, "Individuals.txt.gz") : new File(location, "Individuals.txt"), new File(location, "PhenotypeInformation.txt.gz").exists() ? new File(location, "PhenotypeInformation.txt.gz") : new File(location, "PhenotypeInformation.txt"), cacheSize, variantFilter, sampleFilter, new File(location, "AlleleRecodingInformation.txt").exists() ? new File(location, "AlleleRecodingInformation.txt") : null);
 	}
 
-	public TriTyperGenotypeData(File genotypeDataFile, File imputedDosageDataFile, File snpFile, File snpMapFile, File individualFile, File phenotypeAnnotationFile, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
+	public TriTyperGenotypeData(File genotypeDataFile, File imputedDosageDataFile, File snpFile, File snpMapFile, File individualFile, File phenotypeAnnotationFile, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, File allelRecoding) throws IOException {
 
 		this.variantFilter = variantFilter;
 		this.sampleFilter = sampleFilter;
@@ -161,7 +166,27 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		if (!this.phenotypeAnnotationFile.exists()) {
 			throw new GenotypeDataException("PhenotypeInformation.txt or PhenotypeInformation.txt.gz at:" + this.phenotypeAnnotationFile.getAbsolutePath());
 		}
+        
+        this.alleleRecodeFile = allelRecoding;
+        if (this.alleleRecodeFile != null && this.alleleRecodeFile.exists()) {
+            
+            BufferedReader recodeReader = new BufferedReader(new FileReader(this.alleleRecodeFile));
+            String line = recodeReader.readLine();
+            this.allelRecodingInfo = new HashMap<String, Allele[]>();
+            
+            while ((line = recodeReader.readLine()) != null) {
+                String lineParts[] = StringUtils.split(line, '\t');
+                Allele[] recode = new Allele[2];
+                recode[0] = Allele.create(lineParts[3]);
+                recode[1] = Allele.create(lineParts[4]);
+                allelRecodingInfo.put(lineParts[0], recode);
+            }
+            recodeReader.close();
 
+        } else {
+            this.allelRecodingInfo = null;
+        }
+        
 		// create file handles //
 		if (imputedDosageDataFile != null) {
 			dosageHandle = new RandomAccessFile(imputedDosageDataFile, "r");
@@ -188,8 +213,6 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		snps = snpsFactory.createRange();
 
 		checkFileSize();
-
-
 
 	}
 
@@ -290,6 +313,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		} else {
 			includedSamples = samples;
 		}
+                includedSamples = Collections.unmodifiableList(includedSamples);
 
 		LOG.info("Loaded " + includedSamples.size() + " out of " + samples.size() + " samples.");
 
@@ -321,6 +345,9 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 		String line;
 		while ((line = snpFileReader.readLine()) != null) {
+			if(allSNPHash.contains(line)){
+				throw new GenotypeDataException("SNP found twice: " + line + ". All SNP ID's must be unique");
+			}
 			if (variantFilter == null || variantFilter.doesIdPassFilter(line)) {
 				allSNPHash.put(line, unfilteredSnpCount);
 			}
@@ -435,11 +462,17 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		try {
 			genotypeHandle.seek(indexLong);
 			if (genotypeHandle.read(buffer) != buffer.length) {
+				
+				LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+				
 				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
 			}
 
 		} catch (IOException e) {
-			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
+			
+			LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+			
+			throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")", e);
 		}
 
 		List<Alleles> alleles = new ArrayList<Alleles>(includedSamples.size());
@@ -451,7 +484,27 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 				alleles.add(a);
 			}
 		}
-
+        
+        if(alleleRecodeFile != null && allelRecodingInfo!=null){
+            if(allelRecodingInfo.containsKey(variant.getPrimaryVariantId())){
+                Allele[] recodingInfo = allelRecodingInfo.get(variant.getPrimaryVariantId());
+                
+                for(int i=0; i<alleles.size(); i++){
+                    Allele[] originalAllels = new Allele[2];
+                    for(int j=0; j<alleles.get(i).getAlleleCount(); j++){
+                        if(alleles.get(i).getAlleles().get(j) == Allele.A){
+                            originalAllels[j]=recodingInfo[0];
+                        } else {
+                            originalAllels[j]=recodingInfo[1];
+                        }
+                    }
+                    
+                    alleles.set(i, Alleles.createAlleles(originalAllels[0],originalAllels[1]));
+                }
+            }
+        }
+        
+        
 		return alleles;
 	}
 

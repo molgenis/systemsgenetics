@@ -246,6 +246,41 @@ public class MatrixHandling {
 
         dataset.setHashRows(newRowNames);
     }
+
+    public static DoubleMatrixDataset<String, String> MergeMatrixWithNonOverlappingColNames(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
+        HashSet<String> colNames = new HashSet<String>();
+        HashSet<String> rowNames = new HashSet<String>();
+        
+        colNames.addAll(m1.getColObjects());
+        colNames.addAll(m2.getColObjects());
+        
+        rowNames.addAll(m1.getRowObjects());
+        rowNames.addAll(m2.getRowObjects());
+        
+        DoubleMatrixDataset<String, String> mergedMatrix = new DoubleMatrixDataset<String, String>(rowNames, colNames);
+        
+        for(String colsM1 : m1.getColObjects() ){
+            int originalColId = m1.getHashCols().get(colsM1);
+            int newColId = mergedMatrix.getHashCols().get(colsM1);
+            for(String rowsM1 : m1.getRowObjects()){
+                int originalRowId = m1.getHashRows().get(rowsM1);
+                int newRowId = mergedMatrix.getHashRows().get(rowsM1);
+                mergedMatrix.matrix.setQuick(newRowId, newColId, m1.matrix.getQuick(originalRowId, originalColId));
+            }
+        }
+        
+        for(String colsM2 : m2.getColObjects() ){
+            int originalColId = m2.getHashCols().get(colsM2);
+            int newColId = mergedMatrix.getHashCols().get(colsM2);
+            for(String rowsM2 : m2.getRowObjects()){
+                int originalRowId = m2.getHashRows().get(rowsM2);
+                int newRowId = mergedMatrix.getHashRows().get(rowsM2);
+                mergedMatrix.matrix.setQuick(newRowId, newColId, m2.matrix.getQuick(originalRowId, originalColId));
+            }
+        }
+        
+        return mergedMatrix;
+    }
     
     /**
      * Remove rows without correct mapping known on forehand

@@ -35,9 +35,9 @@ class CalculationThread extends Thread {
     private int m_numProbes;
     private int m_numDatasets;
     private final int[][] m_expressionToGenotypeIds;
-    private final double[][] probeVariance;
-    private final double[][] probeMean;
-    private final String[][] probeName;
+//    private final double[][] probeVariance;
+//    private final double[][] probeMean;
+//    private final String[][] probeName;
     private final LinkedBlockingQueue<WorkPackage> m_workpackage_queue;
     private final LinkedBlockingQueue<WorkPackage> m_result_queue;
     int testsPerformed = 0;
@@ -60,7 +60,6 @@ class CalculationThread extends Thread {
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
     private static DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
-//    private RConnection rConnection;
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
             DoubleMatrixDataset<String, String>[] covariates,
@@ -81,14 +80,15 @@ class CalculationThread extends Thread {
         m_numProbes = m_probeTranslation.columns();
         m_numDatasets = m_probeTranslation.rows();
         m_expressionToGenotypeIds = expressionToGenotypeIds;
-        probeVariance = new double[m_numDatasets][0];
-        probeMean = new double[m_numDatasets][0];
-        probeName = new String[m_numDatasets][0];
-        for (int d = 0; d < m_numDatasets; d++) {
-            probeVariance[d] = expressiondata[d].getProbeVariance();
-            probeMean[d] = expressiondata[d].getProbeMean();
-            probeName[d] = expressiondata[d].getProbes();
-        }
+        
+//        probeVariance = new double[m_numDatasets][0];
+//        probeMean = new double[m_numDatasets][0];
+//        probeName = new String[m_numDatasets][0];
+//        for (int d = 0; d < m_numDatasets; d++) {
+//            probeVariance[d] = expressiondata[d].getProbeVariance();
+//            probeMean[d] = expressiondata[d].getProbeMean();
+//            probeName[d] = expressiondata[d].getProbes();
+//        }
 
         m_covariates = covariates;
 
@@ -106,28 +106,9 @@ class CalculationThread extends Thread {
         } else if (!m_cis && m_trans) {
             transOnly = true;
         }
-//        else if (m_cis && m_trans) {
-//            cisTrans = true;
-//        }
 
         m_eQTLPlotter = plotter;
         m_pvaluePlotThreshold = settings.plotOutputPValueCutOff;
-
-//        if (covariates != null) {
-//            try {
-//                rConnection = new RConnection();
-//                REXP x = rConnection.eval("R.version.string");
-//                System.out.println("Thread made R Connection: " + x.asString());
-////                rConnection.voidEval("install.packages('sandwich')");
-//                rConnection.voidEval("library(sandwich)");
-//            } catch (RserveException ex) {
-//                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-//                rConnection = null;
-//            } catch (REXPMismatchException ex) {
-//                Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-//                rConnection = null;
-//            }
-//        }
     }
 
     @Override
@@ -352,7 +333,7 @@ class CalculationThread extends Thread {
         // now push the results in the queue..
         try {
             wp.setNumTested(testsPerformed);
-            m_result_queue.put(wp);
+            throwResult(wp);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -360,6 +341,8 @@ class CalculationThread extends Thread {
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
+    
+    
     protected static void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r, WorkPackage wp, boolean metaAnalyseModelCorrelationYHat, boolean metaAnalyseInteractionTerms, boolean determinefoldchange) {
         final double[] y;
         double[][] covariates = covariateRawData;
@@ -491,56 +474,6 @@ class CalculationThread extends Thread {
                 r.se[d][p] = seInteraction;
                 r.beta[d][p] = betaInteraction;
                 
-//                if (rConnection != null) {
-//                    try {
-//                        if (rConnection.isConnected()) {
-//                            rConnection.assign("y", y);
-//                            rConnection.assign("x", x);
-//                            rConnection.assign("z", covariates[0]);
-//                            rConnection.voidEval("interaction <- x*z");
-//                            rConnection.voidEval("m <- lm(y ~ x + z + interaction)");
-//                            rConnection.voidEval("modelsummary <- summary(m)");
-//                            double betaInteractionR = rConnection.eval("modelsummary$coefficients[4,1]").asDouble();
-//                            rConnection.voidEval("m2 <- sqrt(diag(vcovHC(m, type = 'HC0')))");
-//                            double seInteractionRCorrected = rConnection.eval("as.numeric(m2[4])").asDouble();
-//                            double tInteraction = betaInteractionR / seInteractionRCorrected;
-//                            double pValueInteraction = 1;
-//                            double zScoreInteraction = 0;
-//                            DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
-//                            StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
-//                            if (tInteraction < 0) {
-//                                pValueInteraction = tDistColt.cdf(tInteraction);
-//                                if (pValueInteraction < 2.0E-323) {
-//                                    pValueInteraction = 2.0E-323;
-//                                }
-//                                zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-//                            } else {
-//                                pValueInteraction = tDistColt.cdf(-tInteraction);
-//                                if (pValueInteraction < 2.0E-323) {
-//                                    pValueInteraction = 2.0E-323;
-//                                }
-//                                zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-//                            }
-//                            randomNumberGenerator.zscores[d][p] = zScoreInteraction;
-//                            randomNumberGenerator.correlations[d][p] = betaInteractionR;
-//
-//                            //                            int dfresiduals = rConnection.eval("m$df.residual").asInteger();
-////                            double[] coeff = rConnection.eval("m$coefficients").asDoubles();  // intercept: 0, x: 1, z: 2, zx: 3
-////                            double fstat = rConnection.eval("as.numeric(modelsummary$fstatistic['value'])").asDouble();
-////                            double fstatdf = rConnection.eval("as.numeric(modelsummary$fstatistic['numdf'])").asDouble();
-////                            double fstatdferr = rConnection.eval("as.numeric(modelsummary$fstatistic['dendf'])").asDouble();
-////                            double rsquared = rConnection.eval("as.numeric(modelsummary$r.squared)").asDouble();
-////                            double seInteractionR = rConnection.eval("modelsummary$coefficients[4,2]").asDouble();
-//                        } else {
-//                            System.err.println("ERROR: R is not connected.");
-//                        }
-//                    } catch (REngineException ex) {
-//                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-//                    } catch (REXPMismatchException ex) {
-//                        Logger.getLogger(CalculationThread.class.getName()).log(Level.SEVERE, null, ex);
-//                    }
-//                }
-
             } else {
                 double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
                 double r2 = regressionFullWithInteraction.calculateRSquared();
@@ -895,4 +828,8 @@ class CalculationThread extends Thread {
 //        }
 //        randomNumberGenerator.deflatedZScores = inflatedZScores;
 //    }
+
+    private void throwResult(WorkPackage wp) throws InterruptedException {
+        m_result_queue.put(wp);
+    }
 }

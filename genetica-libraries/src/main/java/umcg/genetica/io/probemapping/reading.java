@@ -4,6 +4,8 @@
  */
 package umcg.genetica.io.probemapping;
 
+import gnu.trove.map.hash.THashMap;
+import java.awt.TextField;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,6 +23,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
+import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
@@ -396,11 +399,11 @@ public class reading {
      * @param sizeMap
      * @return 
      */
-    public static HashMap<String, HashMap<String, String>> readAnnotationFile(String annotationFile, int storingId, int sizeMap) {
-        HashMap<String, HashMap<String, String>> probeInfo = new HashMap<String, HashMap<String, String>>((int) Math.ceil(sizeMap / 0.75));
+    public static THashMap<String, THashMap<String, String>> readAnnotationFile(String annotationFile, int storingId, int sizeMap) {
+        THashMap<String, THashMap<String, String>> probeInfo = new THashMap<String, THashMap<String, String>>((int) Math.ceil(sizeMap / 0.75));
         int entryId = 0;
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
+            TextFile in = new TextFile(annotationFile, TextFile.R);
             String str = "";
 
             str = in.readLine();
@@ -409,7 +412,7 @@ public class reading {
 
             while ((str = in.readLine()) != null) {
                 String[] strParts = SPLIT_ON_TAB.split(str);
-                HashMap<String, String> t = new HashMap<String, String>((int) Math.ceil(header.length / 0.75));
+                THashMap<String, String> t = new THashMap<String, String>((int) Math.ceil(header.length / 0.75));
                 for (int i = 0; i < strParts.length; ++i) {
                     if (i != storingId) {
                         t.put(header[i], strParts[i]);
@@ -419,7 +422,7 @@ public class reading {
                     probeInfo.put(String.valueOf(entryId), t);
                     entryId++;
                 } else if (storingId == -2) {
-                    probeInfo.put(strParts[0]+"-"+strParts[1]+"-"+strParts[22], t);
+                    probeInfo.put(strParts[0]+"-"+strParts[1]+"-"+strParts[28], t);
                     entryId++;
                 }else {
                     probeInfo.put(strParts[storingId], t);
@@ -583,7 +586,7 @@ public class reading {
         HashMap<String, String> probeInfo = new HashMap<String, String>((int) Math.ceil(sizeMap / 0.75));
 
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(new File(annotationFile)), ENCODING), 8096);
+            TextFile in = new TextFile(annotationFile, TextFile.R);
             String str = "";
 
             while ((str = in.readLine()) != null) {
@@ -595,9 +598,11 @@ public class reading {
                     HashMap<String, String> tmpHash = new HashMap<String, String>();
                     for (String tmp : strParts2) {
                         tmp = tmp.replaceAll("\"", "");
+//                        System.out.println(tmp);
                         String[] tmpPart = SPLIT_ON_SPACE.split(tmp);
-
-                        tmpHash.put(tmpPart[0], tmpPart[1]);
+                        if(tmpPart.length==2){
+                            tmpHash.put(tmpPart[0], tmpPart[1]);
+                        }
                     }
 
                     String tmp = tmpHash.get("gene_id");

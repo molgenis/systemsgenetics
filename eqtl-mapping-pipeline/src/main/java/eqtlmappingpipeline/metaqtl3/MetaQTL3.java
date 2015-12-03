@@ -8,7 +8,7 @@ import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import umcg.genetica.math.stats.Descriptives;
@@ -55,7 +55,6 @@ public class MetaQTL3 {
     protected WorkPackage[] m_workPackages;
     private boolean dataHasCovariates;
     private Pair<List<String>, List<List<String>>> pathwayDefinitions;
-    private int initialMaxNrMostSignificantEQTLs;
 
     public MetaQTL3() {
     }
@@ -158,7 +157,6 @@ public class MetaQTL3 {
             m_settings.createBinaryOutputFiles = binout;
             if (maxNrResults != null && maxNrResults > 0) {
                 m_settings.maxNrMostSignificantEQTLs = maxNrResults;
-
             }
 
             m_settings.createDotPlot = !skipdotplot;
@@ -181,7 +179,6 @@ public class MetaQTL3 {
             System.out.println("ERROR: No input specified");
             System.exit(0);
         }
-        initialMaxNrMostSignificantEQTLs = m_settings.maxNrMostSignificantEQTLs;
 
         // initialize dataset
         if (!m_settings.cisAnalysis && !m_settings.transAnalysis) {
@@ -615,7 +612,7 @@ public class MetaQTL3 {
             String mappingOutput = "";
             for (int d = 0; d < m_gg.length; d++) {
                 Integer probeId = m_gg[d].getExpressionData().getProbeToId().get(probe);
-                if (probeId != null) {
+                if (probeId != -9) {
                     presence++;
                     if (chr == null) {
                         chr = m_gg[d].getExpressionData().getChr()[probeId];
@@ -720,12 +717,11 @@ public class MetaQTL3 {
             String probe = m_probeList[p];
             for (int d = 0; d < m_gg.length; d++) {
                 Integer tmp = m_gg[d].getExpressionData().getProbeToId().get(probe);
-                if (tmp == null) {
+                if (tmp == -9) {
                     m_probeTranslationTable.setQuick(d, p, -9);
                 } else {
                     m_probeTranslationTable.setQuick(d, p, tmp);
                 }
-
             }
         }
 
@@ -811,7 +807,7 @@ public class MetaQTL3 {
                 expressionToGenotypeIds[d] = m_gg[d].getExpressionToGenotypeIdArray();
             }
 
-            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(100);
+            LinkedBlockingQueue<WorkPackage> resultQueue = new LinkedBlockingQueue<WorkPackage>(250);
             ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
                     m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
             resultthread.setName("ResultProcessorThread");
@@ -926,7 +922,6 @@ public class MetaQTL3 {
     }
 
     protected long determineSNPProbeCombinations() throws IOException {
-        m_settings.maxNrMostSignificantEQTLs = initialMaxNrMostSignificantEQTLs;
         String loc = m_settings.outputReportsDir + "excludedSNPsBySNPProbeCombinationFilter.txt.gz";
         TextFile excludedSNPs = new TextFile(loc, TextFile.W);
         long maxNrTestsToPerform = 0;

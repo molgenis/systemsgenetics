@@ -7,13 +7,23 @@ package umcg.genetica.util;
 import cern.colt.GenericSorting;
 import java.util.HashSet;
 import org.apache.commons.collections.primitives.ArrayDoubleList;
+import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
 import cern.colt.function.tint.IntComparator;
 import cern.colt.Swapper;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 
 /**
  *
  * @author harmjan
  */
+
+//Please use the math3 natural ranker, especialy in tie resolving it is much faster!
+//Note we can also chose to make this depend on natural ranker and do some more speed tweaks, no NaN strategy and only one tie fixer.
+//Also make it directly 0 based in this case!
+
+@Deprecated
 public class RankArray {
 //    public static double[] rank(double[] x){
 //        umcg.genetica.util.Rank rank = new umcg.genetica.util.Rank(x, 0d);
@@ -38,7 +48,8 @@ public class RankArray {
 //        }
 //        return dranks;
 //    }
-
+    private static final RankingAlgorithm COV_RANKER_TIE = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
+    private static final RankingAlgorithm COV_RANKER = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.SEQUENTIAL);
     public double[] xdouble = null;
     public int[] ydouble = null;
     public Swapper swapperdouble = null;
@@ -93,24 +104,16 @@ public class RankArray {
     }
 
     public double[] rank(double[] x, boolean giveTiesSameRank) {
-        
-        this.xdouble = x.clone();
-        ydouble = new int[x.length];
-        for (int v = 0; v < x.length; v++) {
-            ydouble[v] = v;
-        }
-        GenericSorting.quickSort(0, x.length, compdouble, swapperdouble);
-        double[] rank = new double[x.length];
-        for (int v = 0; v < x.length; v++) {
-            rank[ydouble[v]] = v;
-        }
-        
+        double[] rank = null;
         if (!giveTiesSameRank) {
-            return rank;
+            rank = COV_RANKER.rank(x);
         } else {
-            fixTiesDouble(rank, x);
-            return rank;
+            rank = COV_RANKER_TIE.rank(x);
         }
+        for (int v = 0; v < rank.length; v++) {
+                rank[v] = rank[v]-1;
+            }
+            return rank;
     }
 
     public float[] rank(float[] x, boolean giveTiesSameRank) {
@@ -133,43 +136,43 @@ public class RankArray {
         }
     }
 
-    private void fixTiesDouble(double[] rank, double[] x) {
-        HashSet<Double> fixedValues = new HashSet<Double>();
-        
-        for(int i=0; i<x.length;++i){
-            for(int j=i+1; j<x.length;++j){
-                if(x[i] == x[j] && !fixedValues.contains(x[i])){
-                    replaceRankDouble(x[i], i, j, rank, x);
-                    fixedValues.add(x[i]);
-                    break;
-                }
-            }
-        }
-        
-    }
-    
-    private void replaceRankDouble(double d, int i, int j, double[] rank, double[] x) {
-        ArrayDoubleList t = new ArrayDoubleList();
-        
-        t.add(rank[i]);
-        t.add(rank[j]);
-        
-        for(int k = j+1; k < x.length; k++){
-            if(x[k]==d){
-                t.add(rank[k]);
-            }
-        }
-        double newRank = JSci.maths.ArrayMath.mean(t.toArray());
-        
-        rank[i] = newRank;
-        rank[j] = newRank;
-        
-        for(int k = j+1; k < x.length; k++){
-            if(x[k]==d){
-                rank[k] = newRank;
-            }
-        }
-    }
+//    private void fixTiesDouble(double[] rank, double[] x) {
+//        HashSet<Double> fixedValues = new HashSet<Double>();
+//        
+//        for(int i=0; i<x.length;++i){
+//            for(int j=i+1; j<x.length;++j){
+//                if(x[i] == x[j] && !fixedValues.contains(x[i])){
+//                    replaceRankDouble(x[i], i, j, rank, x);
+//                    fixedValues.add(x[i]);
+//                    break;
+//                }
+//            }
+//        }
+//        
+//    }
+//    
+//    private void replaceRankDouble(double d, int i, int j, double[] rank, double[] x) {
+//        ArrayDoubleList t = new ArrayDoubleList();
+//        
+//        t.add(rank[i]);
+//        t.add(rank[j]);
+//        
+//        for(int k = j+1; k < x.length; k++){
+//            if(x[k]==d){
+//                t.add(rank[k]);
+//            }
+//        }
+//        double newRank = JSci.maths.ArrayMath.mean(t.toArray());
+//        
+//        rank[i] = newRank;
+//        rank[j] = newRank;
+//        
+//        for(int k = j+1; k < x.length; k++){
+//            if(x[k]==d){
+//                rank[k] = newRank;
+//            }
+//        }
+//    }
     
     private void fixTiesFloat(float[] rank, float[] x) {
         HashSet<Float> fixedValues = new HashSet<Float>();

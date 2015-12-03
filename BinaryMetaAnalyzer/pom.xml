@@ -4,22 +4,19 @@
     <parent>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>systemsgenetics</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.2-SNAPSHOT</version>
     </parent>
     <artifactId>BinaryMetaAnalyzer</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    
-    
+    <version>1.0.7-SNAPSHOT</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>genetica-libraries</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
+            <version>1.0.7-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <name>BinaryMetaAnalyzer</name>
-    
     <build>
         <plugins>
             <plugin>
@@ -45,8 +42,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            
         </plugins>
     </build>
 </project>

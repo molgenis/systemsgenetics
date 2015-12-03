@@ -4,7 +4,9 @@
  */
 package umcg.genetica.io.bin;
 
+import com.mastfrog.util.streams.HashingOutputStream;
 import java.io.*;
+import java.security.NoSuchAlgorithmException;
 
 /**
  *
@@ -18,6 +20,7 @@ public class BinaryFile {
     protected final DataInputStream is;
     protected final String loc;
     protected final boolean writeable;
+    private final HashingOutputStream osh;
 
     public BinaryFile(String loc, boolean mode) throws IOException {
         if (loc.trim().length() == 0) {
@@ -27,14 +30,20 @@ public class BinaryFile {
         this.loc = loc;
 
         if (writeable) {
-            is = null;
-            os = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(loc)));
+            try {
+                is = null;
+                osh = new HashingOutputStream("md5", new FileOutputStream(loc));
+                os = new DataOutputStream(new BufferedOutputStream(osh, 32 * 1024));
+            } catch (NoSuchAlgorithmException ex) {
+                throw new RuntimeException(ex);
+            }
         } else {
             is = new DataInputStream(new BufferedInputStream(new FileInputStream(loc)));
             os = null;
+            osh = null;
         }
     }
-    
+
     public BinaryFile(String loc, boolean mode, int buffersize) throws IOException {
         if (loc.trim().length() == 0) {
             throw new IOException("Could not find file: no file specified");
@@ -43,11 +52,17 @@ public class BinaryFile {
         this.loc = loc;
 
         if (writeable) {
-            is = null;
-            os = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(loc), buffersize));
+            try {
+                is = null;
+                osh = new HashingOutputStream("md5", new FileOutputStream(loc));
+                os = new DataOutputStream(new BufferedOutputStream(osh, buffersize));
+            } catch (NoSuchAlgorithmException ex) {
+                throw new RuntimeException(ex);
+            }
         } else {
             is = new DataInputStream(new BufferedInputStream(new FileInputStream(loc), buffersize));
             os = null;
+            osh = null;
         }
     }
 
@@ -179,5 +194,13 @@ public class BinaryFile {
 
     public void write(int b) throws IOException {
         os.write(b);
+    }
+
+    public byte[] getWrittenHash() throws IOException {
+        if (writeable) {
+            return osh.getDigest();
+        } else {
+            return null;
+        }
     }
 }

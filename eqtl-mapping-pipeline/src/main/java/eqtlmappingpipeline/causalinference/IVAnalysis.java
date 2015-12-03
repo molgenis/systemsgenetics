@@ -102,6 +102,8 @@ public class IVAnalysis {
             if (out == null || out.trim().length() == 0) {
                 System.err.println("ERROR: you did not specify an output directory.");
                 settingsOk = false;
+            } else if (!out.endsWith("/")) {
+                out += "/";
             }
 
             if (!settingsOk) {
@@ -120,8 +122,8 @@ public class IVAnalysis {
             s.genotypeToExpressionCoupling = gte;
             s.cisAnalysis = true;
             s.transAnalysis = true;
-            
-            if(parametric){
+
+            if (parametric) {
                 System.out.println("Running parametric analysis.");
                 m_settings.performParametricAnalysis = true;
             }
@@ -142,13 +144,10 @@ public class IVAnalysis {
             m_settings.cisAnalysis = true;
             m_settings.transAnalysis = true;
             m_settings.nrPermutationsFDR = perm;
-            if (!out.endsWith("/")) {
-                out += "/";
-            }
+
             if (!Gpio.exists(out)) {
                 Gpio.createDir(out);
             }
-
 
             m_settings.outputReportsDir = out;
             m_settings.createTEXTOutputFiles = true;
@@ -204,7 +203,7 @@ public class IVAnalysis {
             int[] indWGA = m_gg[d].getExpressionToGenotypeIdArray();
 
             for (int perm = 0; perm < m_settings.nrPermutationsFDR + 1; perm++) {
-                String outfile = null;
+                String outfile;
                 if (perm == 0) {
                     outfile = outDir + m_gg[d].getSettings().name + "_IVAnalysis-RealData.txt";
                 } else {
@@ -240,7 +239,7 @@ public class IVAnalysis {
                     Integer cisProbeId = m_gg[d].getExpressionData().getProbeToId().get(cisprobe);
                     Integer transProbeId = m_gg[d].getExpressionData().getProbeToId().get(transprobe);
 
-                    if (snpId == -9 || cisProbeId == null || transProbeId == null) {
+                    if (snpId == -9 || cisProbeId == -9 || transProbeId == -9) {
 //                        out.writeln(snp + "\t" + snpId + "\t" + cisprobe + "\t" + cisProbeId + "\t" + null + "\t" + transprobe + "\t" + transProbeId + "\t" + null + "\t" + null + "\t" + null + "\t" + null + "\t" + null + "\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA");
                     } else {
 
@@ -382,7 +381,6 @@ public class IVAnalysis {
                                 + "\t" + result[2]);
                         snpObj.clearGenotypes();
                     }
-
 
                     if (it.hasNext()) {
                         next = it.next();

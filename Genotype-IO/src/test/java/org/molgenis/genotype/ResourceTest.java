@@ -158,5 +158,10 @@ public class ResourceTest
 	protected File getTest3Sample() throws URISyntaxException
 	{
 		return getTestResourceFile("/test3.sample");
-	}	
+	}
+    
+    protected File getTest10Gen() throws URISyntaxException
+	{
+		return getTestResourceFile("/test10.gen");
+	}
 }

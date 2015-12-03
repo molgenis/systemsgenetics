@@ -164,18 +164,18 @@ public class EQTLPlotter {
 
         Graphics2D g2d = null;
         BufferedImage bi = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfContentByte cb = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
         if (outputPlotsFileType == FILE_TYPE_PNG) {
             bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
             g2d = bi.createGraphics();
         } else {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
             
             try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(file));
+                writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(file));
                 document.open();
                 cb = writer.getDirectContent();
                 cb.saveState();
@@ -227,7 +227,7 @@ public class EQTLPlotter {
             TriTyperGeneticalGenomicsDataset currentDataset = m_gg[d];
             SNP currentSNP = snps[d];
             Integer probe = currentDataset.getExpressionData().getProbeToId().get(probeName);
-            if (currentSNP != null && probe != null) {
+            if (currentSNP != null && probe != -9) {
 
                 //Define x-axis data:
 
@@ -564,7 +564,7 @@ public class EQTLPlotter {
                         String hweString = df2.format(currentSNP.getHWEP());
                         g2d.drawString("- HWE P-Value: " + hweString, margin + d * 200, 120);
                     } else {
-                        if (currentDataset.getExpressionData().getProbeToId().get(probeName) != null) {
+                        if (currentDataset.getExpressionData().getProbeToId().get(probeName) != -9) {
                             if (m_cisOnly) {
                                 g2d.setColor(red);
                                 g2d.drawString("Cis-probe maps too far away.", margin + d * 200, 90);
@@ -572,7 +572,7 @@ public class EQTLPlotter {
                                 g2d.drawString("mappings in the various datasets!", margin + d * 200, 110);
                                 g2d.setColor(red);
                             } else {
-                                if (currentDataset.getExpressionData().getProbeToId().get(probeName) != null) {
+                                if (currentDataset.getExpressionData().getProbeToId().get(probeName) != -9) {
                                     g2d.setColor(red);
                                     g2d.drawString("Unknown why not included!", margin + d * 200, 90);
                                     g2d.drawString("This suggests a bug.", margin + d * 200, 100);
@@ -582,7 +582,7 @@ public class EQTLPlotter {
                         }
                     }
                     //Expression probe is not present in this dataset:
-                    if (currentDataset.getExpressionData().getProbeToId().get(probeName) == null) {
+                    if (currentDataset.getExpressionData().getProbeToId().get(probeName) == -9) {
                         if (currentSNP.passesQC()) {
                             g2d.drawString("Probe not present.", margin + d * 200, 90);
                         } else {

@@ -4,8 +4,8 @@
  */
 package eqtlmappingpipeline.binarymeta.meta.graphics;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.pdf.PdfContentByte;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.pdf.PdfContentByte;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -37,7 +37,7 @@ public class ZScorePlot {
     private String outfilename = "";
     private Document document;
     private PdfContentByte cb;
-    private com.lowagie.text.pdf.PdfWriter writer;
+    private com.itextpdf.text.pdf.PdfWriter writer;
 
     public void init(int numdatasets, String[] datasets, boolean pdf, String filename) {
 
@@ -58,11 +58,11 @@ public class ZScorePlot {
         height = (plotsize * numDatasets) + ((numdatasets + 1) * spacer) - (plotsize + spacer);
 
         if (pdfOutput) {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
             writer = null;
             try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
+                writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
                 document.open();
                 cb = writer.getDirectContent();
                 cb.saveState();

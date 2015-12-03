@@ -5,10 +5,12 @@
 package org.molgenis.genotype.trityper;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Map.Entry;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeWriter;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -19,7 +21,6 @@ import org.molgenis.genotype.util.GenotypeDataCompareTool;
 import static org.testng.Assert.*;
 
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -47,7 +48,7 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 				System.out.println("Removing tmp dir and files");
 				for (File file : tmpOutputFolder.listFiles()) {
 					System.out.println(" - Deleting: " + file.getAbsolutePath());
-				//	file.delete();
+					file.delete();
 				}
 				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
 				tmpOutputFolder.delete();
@@ -55,7 +56,6 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		});
 
 		tmpOutputFolder.mkdir();
-
 
 		System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
 		
@@ -89,25 +89,25 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 
 		int numSamples = trityper.getSamples().size();
 
-		GeneticVariant variant = original.getSnpVariantByPos("1", 1);
+		GeneticVariant variant = trityper.getSnpVariantByPos("1", 1);
 		GeneticVariant originalVariant = original.getSnpVariantByPos("1", 1);
 
 		float[] dosageValues = variant.getSampleDosages();
 		float[] originalDosageValues = originalVariant.getSampleDosages();
 
-		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
 
 
-		variant = original.getSnpVariantByPos("22", 14432918);
+		variant = trityper.getSnpVariantByPos("22", 14432918);
 		originalVariant = original.getSnpVariantByPos("22", 14432918);
 
 		dosageValues = variant.getSampleDosages();
 		originalDosageValues = originalVariant.getSampleDosages();
 
-		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
 		for(int i = 0; i < numSamples; i++){
 			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
 		}
@@ -124,11 +124,64 @@ public class TriTyperGenotypeWriterTest extends ResourceTest{
 		
 		assertEquals(dosages[0], originalDosageValues[0], 0.00001);
 		assertEquals(dosages[1], originalDosageValues[5], 0.00001);
+        
+	}
+    
+    @Test
+    public void writeTriTyperDosage2() throws Exception{
+
+		RandomAccessGenotypeData original = new GenGenotypeData(getTest10Gen(), getTest2Sample());
+
+		GenotypeWriter writer = new TriTyperGenotypeWriter(original);
+
+		writer.write(tmpOutputFolder.getAbsolutePath());
+
+		RandomAccessGenotypeData trityper = new TriTyperGenotypeData(tmpOutputFolder);
+
+		int numSamples = trityper.getSamples().size();
+
+		GeneticVariant variant = trityper.getSnpVariantByPos("1", 1);
+		GeneticVariant originalVariant = original.getSnpVariantByPos("1", 1);
+
+		float[] dosageValues = variant.getSampleDosages();
+		float[] originalDosageValues = originalVariant.getSampleDosages();
+
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+		for(int i = 0; i < numSamples; i++){
+			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
+		}
+        
+		variant = trityper.getSnpVariantByPos("22", 14432918);
+		originalVariant = original.getSnpVariantByPos("22", 14432918);
+
+		dosageValues = variant.getSampleDosages();
+		originalDosageValues = originalVariant.getSampleDosages();
+
+//		System.out.print("\n" + variant.getSequenceName() + ":" + variant.getStartPos());
+		for(int i = 0; i < numSamples; i++){
+			assertEquals(dosageValues[i], originalDosageValues[i], 0.01);
+		}
 		
-		
-		
-		
-		
-		
+//        System.out.println("\nTest allels");
+        
+        assertEquals(trityper.getVariantIdMap().keySet(), original.getVariantIdMap().keySet());
+        
+        assertEquals(trityper.getSamples().size(), original.getSamples().size(), "Different number of samples in the files to compare.");
+        
+        for(int i = 0; i < trityper.getSamples().size(); ++i){
+//            System.out.println(trityper.getSamples().get(i).getId()+"\t"+original.getSamples().get(i).getId());
+            assertTrue(trityper.getSamples().get(i).getId().equals(original.getSamples().get(i).getId()), "Different ordering in the sample files." );
+        }
+        
+        for(Entry<String, GeneticVariant> variantTT : trityper.getVariantIdMap().entrySet()){
+            originalVariant = original.getVariantIdMap().get(variantTT.getKey());
+            
+            ArrayList<Alleles> originalAllelList = new ArrayList<Alleles>(originalVariant.getSampleVariants());
+            ArrayList<Alleles> newAllelList = new ArrayList<Alleles>(variantTT.getValue().getSampleVariants());
+        
+            assertEquals(newAllelList, originalAllelList);
+        }
+
+        
 	}
 }

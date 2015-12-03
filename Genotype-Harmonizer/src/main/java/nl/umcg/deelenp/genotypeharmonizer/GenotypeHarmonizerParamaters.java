@@ -282,7 +282,7 @@ public class GenotypeHarmonizerParamaters {
 
 		try {
 			if (commandLine.hasOption('I')) {
-				inputType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('I').toUpperCase());
+				inputType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('I').toUpperCase());
 			} else {
 				if (inputBasePaths[0].endsWith(".vcf")) {
 					throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
@@ -303,7 +303,7 @@ public class GenotypeHarmonizerParamaters {
 
 			try {
 				if (commandLine.hasOption('R')) {
-					refType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue('R').toUpperCase());
+					refType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
 				} else {
 					if (refBasePath.endsWith(".vcf")) {
 						throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");

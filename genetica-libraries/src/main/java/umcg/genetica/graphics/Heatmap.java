@@ -5,8 +5,8 @@
 package umcg.genetica.graphics;
 
 import JSci.maths.ArrayMath;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Rectangle;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Rectangle;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -62,18 +62,18 @@ public class Heatmap {
         }
         // set up Graphics2D depending on required format using iText in case PDF
         Graphics2D g2d = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
-        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
         BufferedImage bi = null;
         if (output == Output.PDF) {
             Rectangle rectangle = new Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
-            writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
+            document = new com.itextpdf.text.Document(rectangle);
+            writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
 
             document.open();
             cb = writer.getDirectContent();
-            //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            //com.itextpdf.text.pdf.DefaultFontMapper fontMap = new com.itextpdf.text.pdf.DefaultFontMapper();
             cb.saveState();
             g2d = cb.createGraphics(width, height);
         } else {
@@ -203,19 +203,19 @@ public class Heatmap {
 
         // set up Graphics2D depending on required format using iText in case PDF
         Graphics2D g2d = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
-        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
         BufferedImage bi = null;
         if (output == Output.PDF) {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
-            writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
+            writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
 
             document.open();
             cb = writer.getDirectContent();
             cb.saveState();
-            //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            //com.itextpdf.text.pdf.DefaultFontMapper fontMap = new com.itextpdf.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
             bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -358,7 +358,7 @@ public class Heatmap {
     }
 
     private Rectangle getScaleGradient(int width, int height) {
-        com.lowagie.text.Rectangle r = new com.lowagie.text.Rectangle(width, height);
+        com.itextpdf.text.Rectangle r = new com.itextpdf.text.Rectangle(width, height);
         return r;
 
     }

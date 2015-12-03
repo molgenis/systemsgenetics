@@ -92,7 +92,7 @@ public class BinaryResultSNPSummary {
             byte[] alleles = new byte[2];
             s = new BinaryResultSNP();
             s.setId(in.readInt());
-            s.setName(in.readUTF());
+            s.setName(in.readUTF().intern());
             s.setChr(in.readByte());
             s.setChrpos(in.readInt());
             s.setHwe(in.readDouble());

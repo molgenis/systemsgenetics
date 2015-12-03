@@ -1,7 +1,6 @@
 package nl.umcg.deelenp.genotypeharmonizer;
 
 import static JSci.maths.ArrayMath.covariance;
-import static JSci.maths.ArrayMath.variance;
 import com.google.common.collect.Lists;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -44,7 +43,7 @@ public class Aligner {
 	 * @return
 	 * @throws LdCalculatorException
 	 */
-	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException {
+	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException, GenotypeAlignmentException {
 
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
@@ -78,6 +77,12 @@ public class Aligner {
 			}
 
 			if (!studyVariant.isMapped()) {
+				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "No mapping");
+				studyVariant.exclude();
+				continue studyVariants;
+			}
+
+			if (studyVariant.getStartPos() == 0) {
 				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "No mapping");
 				studyVariant.exclude();
 				continue studyVariants;
@@ -170,23 +175,23 @@ public class Aligner {
 
 			//If we get here we have found a variant is our reference data on the same position with comparable alleles.
 
-			//We have to exclude maf of zero otherwise we cannot do LD calculation
-			if (!(studyVariant.getMinorAlleleFrequency() > 0)) {
-				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "MAF of 0 in study data");
-				studyVariant.exclude();
-				continue studyVariants;
-			}
+//			//We have to exclude maf of zero otherwise we cannot do LD calculation
+//			if (!(studyVariant.getMinorAlleleFrequency() > 0)) {
+//				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "MAF of 0 in study data");
+//				studyVariant.exclude();
+//				continue studyVariants;
+//			}
+//
+//			//We have to exclude maf of zero otherwise we can not do LD calculation
+//			if (!(refVariant.getMinorAlleleFrequency() > 0)) {
+//				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "MAF of 0 in reference data");
+//				studyVariant.exclude();
+//				continue studyVariants;
+//			}
 
-			//We have to exclude maf of zero otherwise we can not do LD calculation
-			if (!(refVariant.getMinorAlleleFrequency() > 0)) {
-				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "MAF of 0 in reference data");
-				studyVariant.exclude();
-				continue studyVariants;
-			}
 
 
-
-			if (updateId && !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId())) {
+			if (updateId && refVariant.getPrimaryVariantId() != null && (studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
 				snpUpdateWriter.append(studyVariant.getSequenceName());
 				snpUpdateWriter.append('\t');
 				snpUpdateWriter.append(String.valueOf(studyVariant.getStartPos()));
@@ -233,12 +238,16 @@ public class Aligner {
 			snpUpdateWriter.close();
 		}
 
+		if (iterationCounter == 0) {
+			throw new GenotypeAlignmentException("No variants where found in the input genotype data. Please check your variant filter options");
+		}
+
 		LOGGER.info("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 		System.out.println("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 
 		if (studyVariantList.isEmpty()) {
-			System.out.println("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
-			LOGGER.warn("WARNING, zero of the input variants found in reference set. Are both datasets the same genome build? Did you use --forceChr?");
+			snpLogWriter.close();
+			throw new GenotypeAlignmentException("Zero of the input variants found in reference set. Are both datasets the same genome build? Perhapse you need use --forceChr.");
 		}
 
 		int removedSnpsBasedOnLdCheck = 0;
@@ -273,7 +282,7 @@ public class Aligner {
 				if (!studyVariant.isAtOrGcSnp()) {
 
 					//Correlate the haps with both these snps between study and ref
-					correlationResults hapCor = correlateHaplotypes(minLdToIncludeAlign,
+					CorrelationResults hapCor = correlateHaplotypes(minLdToIncludeAlign,
 							flankSnpsToConsider, studyVariantList, refVariantList,
 							variantIndex, studyVariant, refVariant);
 
@@ -335,7 +344,7 @@ public class Aligner {
 				++GcAtSnpsEncountered;
 
 				//Correlate the haps with both these snps between study and ref
-				correlationResults hapCor = correlateHaplotypes(minLdToIncludeAlign,
+				CorrelationResults hapCor = correlateHaplotypes(minLdToIncludeAlign,
 						flankSnpsToConsider, studyVariantList, refVariantList,
 						variantIndex, studyVariant, refVariant);
 
@@ -386,7 +395,7 @@ public class Aligner {
 						//Ld pattern should be okay now. but we are going to do the extra check
 
 						//Correlate the haps with both these snps between study and ref
-						correlationResults hapCorSwapped = correlateHaplotypes(minLdToIncludeAlign,
+						CorrelationResults hapCorSwapped = correlateHaplotypes(minLdToIncludeAlign,
 								flankSnpsToConsider, studyVariantList, refVariantList,
 								variantIndex, studyVariant, refVariant);
 
@@ -435,7 +444,7 @@ public class Aligner {
 
 	}
 
-	private correlationResults correlateHaplotypes(double minLdToIncludeAlignBase,
+	private CorrelationResults correlateHaplotypes(double minLdToIncludeAlignBase,
 			int flankSnpsToConsider,
 			ArrayList<ModifiableGeneticVariant> studyVariantList,
 			ArrayList<GeneticVariant> refVariantList, int variantIndex,
@@ -478,36 +487,12 @@ public class Aligner {
 				ldStudy = LdCalculator.calculateLd(snpStudyVariant, otherSnpStudyVariant);
 				ldRef = LdCalculator.calculateLd(refVariant, otherRefVariant);
 			} catch (LdCalculatorException e) {
-				LOGGER.warn("Error in LD calculation, skipping this comparison when comparing haplotype structure. Following error occurred: " + e.getMessage());
+				LOGGER.debug("Error in LD calculation, skipping this comparison when comparing haplotype structure. Following error occurred: " + e.getMessage());
 				continue;
 			}
 
-//			if(snpStudyVariant.getPrimaryVariantId().equals("rs1001945")){
-//				LOGGER.debug(" * Other variant: " + otherSnpStudyVariant.getPrimaryVariantId() + 
-//					"\nstudy alleles: " + otherSnpStudyVariant.getVariantAlleles() + " ref alleles: " + otherRefVariant.getVariantAlleles() + "\n"
-//					+ "maf study: " + otherSnpStudyVariant.getMinorAlleleFrequency() + "(" + otherSnpStudyVariant.getMinorAllele() + ") maf ref: " + otherRefVariant.getMinorAlleleFrequency() + "(" + otherRefVariant.getMinorAllele() + ")\n" + 
-//					"LD study, R2: " + ldStudy.getR2() + " D': " + ldStudy.getDPrime() + "\n" +
-//					"LD ref, R2: " + ldRef.getR2() + " D': " + ldRef.getDPrime() + "\n");
-//			
-//				
-//				StringBuilder s = new StringBuilder();
-//				for(byte b : snpStudyVariant.getSampleCalledDosages()){
-//					s.append(b);
-//				}
-//				LOGGER.debug(s);
-//
-//				s = new StringBuilder();
-//				for(byte b : otherSnpStudyVariant.getSampleCalledDosages()){
-//					s.append(b);
-//				}
-//				LOGGER.debug(s);
-//
-//				
-//				
-//			
-//			}
 			//only use SNPs with min R2 in both study as ref
-			if (ldStudy.getR2() >= minLdToIncludeAlignBase && ldRef.getR2() >= minLdToIncludeAlignBase) {
+			if ( !Double.isNaN(ldStudy.getR2()) && !Double.isNaN(ldRef.getR2()) && ldStudy.getR2() >= minLdToIncludeAlignBase && ldRef.getR2() >= minLdToIncludeAlignBase) {
 
 				//Put in tree map to sort haplotypes. This can differ in the case of different reference allele
 				TreeMap<String, Double> studyHapFreq = new TreeMap<String, Double>(ldStudy.getHaplotypesFreq());
@@ -532,14 +517,14 @@ public class Aligner {
 						++posCor;
 					}
 
-				} 
+				}
 
 
 			}
 
 		}
 
-		return new correlationResults(posCor, negCor);
+		return new CorrelationResults(posCor, negCor);
 	}
 
 	private double[] createDoubleArrayFromCollection(
@@ -557,12 +542,12 @@ public class Aligner {
 		return array;
 	}
 
-	private static class correlationResults {
+	private static class CorrelationResults {
 
 		private final int posCor;
 		private final int negCor;
 
-		public correlationResults(int posCor, int negCor) {
+		public CorrelationResults(int posCor, int negCor) {
 			super();
 			this.posCor = posCor;
 			this.negCor = negCor;

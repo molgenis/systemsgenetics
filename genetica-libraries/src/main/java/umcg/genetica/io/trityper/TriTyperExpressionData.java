@@ -5,12 +5,14 @@
 package umcg.genetica.io.trityper;
 
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.THashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import org.apache.commons.collections.primitives.ArrayIntList;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -23,21 +25,22 @@ import umcg.genetica.util.RankArray;
  * @author harmjan // rows: individuals cols: probes
  */
 public class TriTyperExpressionData {
-
+    
+    //Potentialy we can use TObjectIntMaps
     private int[] chrStart;
     private int[] chrStop;
     private byte[] chr;
     private String[] annotation;
     private double[][] matrix;
     private String[] individuals;
-    private THashMap<String, Integer> individualNameToId;
+    private TObjectIntHashMap<String> individualNameToId;
     private String[] probes;
-    private THashMap<String, Integer> probeNameToId;
-    private THashMap<String, ArrayList<Integer>> annotationToProbeId;
+    private TObjectIntHashMap<String> probeNameToId;
+    private THashMap<String, ArrayIntList> annotationToProbeId;
     private THashSet<String> includeIndividuals;
     private boolean confineToProbesThatMapToAnyChromosome;
     private Integer confineToProbesMappingOnChromosome;
-    private HashSet<String> probesConfine;
+    private THashSet<String> probesConfine;
     private double[] probeOriginalMean;
     private double[] probeOriginalVariance;
     private double[] probeMean;
@@ -70,14 +73,14 @@ public class TriTyperExpressionData {
     /**
      * @return the rowNameToId
      */
-    public THashMap<String, Integer> getRowNameToId() {
+    public TObjectIntHashMap<String> getRowNameToId() {
         return individualNameToId;
     }
 
     /**
      * @param rowNameToId the rowNameToId to set
      */
-    public void setRowNameToId(THashMap<String, Integer> rowNameToId) {
+    public void setRowNameToId(TObjectIntHashMap<String> rowNameToId) {
         this.individualNameToId = rowNameToId;
     }
 
@@ -98,14 +101,14 @@ public class TriTyperExpressionData {
     /**
      * @return the colNameToId
      */
-    public THashMap<String, Integer> getColNameToId() {
+    public TObjectIntHashMap<String> getColNameToId() {
         return probeNameToId;
     }
 
     /**
      * @param colNameToId the colNameToId to set
      */
-    public void setColNameToId(THashMap<String, Integer> colNameToId) {
+    public void setColNameToId(TObjectIntHashMap<String> colNameToId) {
         this.probeNameToId = colNameToId;
     }
 
@@ -135,7 +138,7 @@ public class TriTyperExpressionData {
         this.confineToProbesMappingOnChromosome = chr;
     }
 
-    public void confineToProbes(HashSet<String> probes) {
+    public void confineToProbes(THashSet<String> probes) {
         this.probesConfine = probes;
     }
 
@@ -197,7 +200,7 @@ public class TriTyperExpressionData {
 
             while (anelems != null) {
                 if (anelems.length >= 6 && (!filterplatform || (filterplatform && anelems[0].equals(m_platform)))) {
-                    String probe = new String(anelems[1].getBytes("UTF-8")).intern();
+                    String probe = new String(anelems[1]).intern();
                     Byte bchr = ChrAnnotation.parseChr(anelems[3]);
 
                     Integer ichrStart = -1;
@@ -229,7 +232,7 @@ public class TriTyperExpressionData {
         }
 
         int numIndsIncluded = 0;
-        THashMap<String, Integer> indToId = new THashMap<String, Integer>();
+        TObjectIntHashMap<String> indToId = new TObjectIntHashMap<String>(elems.length, 1f, -9);
         boolean[] includeCol = new boolean[elems.length];
         for (int pos = offset; pos < elems.length; pos++) {
             if (includeIndividuals == null || includeIndividuals.contains(elems[pos])) {
@@ -261,7 +264,7 @@ public class TriTyperExpressionData {
         ArrayList<float[]> tmpRaw = new ArrayList<float[]>();
         ArrayList<String> tmpAnnotation = new ArrayList<String>();
 
-        annotationToProbeId = new THashMap<String, ArrayList<Integer>>();
+        annotationToProbeId = new THashMap<String, ArrayIntList>();
         int probeNr = 0;
         elems = in.readLineElemsReturnReference(TextFile.tab);
 
@@ -372,9 +375,9 @@ public class TriTyperExpressionData {
                     tmpChrEnd.add(probeChrEnd);
 
                     if (annotstr != null && annotstr.length() > 0) {
-                        ArrayList<Integer> annotationToProbe = annotationToProbeId.get(new String(elems[7].getBytes("UTF-8")));
+                        ArrayIntList annotationToProbe = annotationToProbeId.get(new String(elems[7].getBytes("UTF-8")));
                         if (annotationToProbe == null) {
-                            annotationToProbe = new ArrayList<Integer>();
+                            annotationToProbe = new ArrayIntList();
                         }
 
                         annotationToProbe.add(probeNr);
@@ -407,7 +410,7 @@ public class TriTyperExpressionData {
                     }
                 } else if (printreason) {
 					probesExcluded++;
-                    System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
+                    //System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
                 }
             }
 
@@ -458,7 +461,7 @@ public class TriTyperExpressionData {
         this.probes = new String[probeNr];
         this.matrix = new double[probeNr][numIndsIncluded];
 
-        probeNameToId = new THashMap<String, Integer>();
+        probeNameToId = new TObjectIntHashMap<String>(probeNr, 1f, -9);
 
         for (int i = 0; i < probeNr; i++) {
             probes[i] = tmpProbe.get(i);
@@ -540,7 +543,7 @@ public class TriTyperExpressionData {
 
             matrix = new double[nrPathwaysToUse][0];
             probes = new String[nrPathwaysToUse];
-            probeNameToId = new THashMap<String, Integer>();
+            probeNameToId = new TObjectIntHashMap<String>(nrPathwaysToUse, 1f, -9);
             probeMean = new double[nrPathwaysToUse];
             probeVariance = new double[nrPathwaysToUse];
             probeOriginalMean = new double[nrPathwaysToUse];
@@ -644,11 +647,11 @@ public class TriTyperExpressionData {
         return probes;
     }
 
-    public THashMap<String, Integer> getIndividualToId() {
+    public TObjectIntHashMap<String> getIndividualToId() {
         return individualNameToId;
     }
 
-    public THashMap<String, Integer> getProbeToId() {
+    public TObjectIntHashMap<String> getProbeToId() {
         return probeNameToId;
     }
 
@@ -742,7 +745,7 @@ public class TriTyperExpressionData {
 
     public void pruneAndReorderSamples(List<String> colObjects) {
         double[][] newMatrix = new double[matrix.length][colObjects.size()];
-        THashMap<String, Integer> indToInd = new THashMap<String, Integer>();
+        TObjectIntHashMap<String> indToInd = new TObjectIntHashMap<String>(colObjects.size(), 1f, -9);
         for (int i = 0; i < colObjects.size(); i++) {
             String ind = colObjects.get(i);
             indToInd.put(ind, i);
@@ -750,7 +753,7 @@ public class TriTyperExpressionData {
 
         for (int i = 0; i < individuals.length; i++) {
             Integer newId = indToInd.get(individuals[i]);
-            if (newId != null) {
+            if (newId != -9) {
                 for (int row = 0; row < matrix.length; row++) {
                     newMatrix[row][newId] = matrix[row][i];
                 }

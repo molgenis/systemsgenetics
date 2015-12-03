@@ -88,7 +88,7 @@ public class TriTyperToDosageConverter {
 
 	for (String s : requestedSNPs) {
 	    if (availableSNPs.contains(s)) {
-		snpsToExport.add(ds.getSnpToSNPId().get(s));
+            snpsToExport.add(ds.getSnpToSNPId().get(s));
 	    }
 	}
 

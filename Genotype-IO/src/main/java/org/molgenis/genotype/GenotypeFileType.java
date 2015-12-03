@@ -20,6 +20,7 @@ public enum GenotypeFileType {
 	SAMPLE(Pattern.compile(".*\\.sample$", Pattern.CASE_INSENSITIVE), ".sample", "Oxford sample"),
 	VCF(Pattern.compile(".*\\.vcf\\.gz$", Pattern.CASE_INSENSITIVE), ".vcf.gz", "gzipped vcf"),
 	VCF_FOLDER(null, "", "folder with gzipped vcf"),
+	GEN_FOLDER(null, "", "folder with oxford gen files"),
 	TRITYPER_GENOTYPE(Pattern.compile(".*GenotypeMatrix.dat$", Pattern.CASE_INSENSITIVE), "GenotypeMatrix.dat", "Trityper GenotypeMatrix.dat"),//Do not change prefix, it is also used as default file name
 	TRITYPER_DOSAGE(Pattern.compile(".*ImputedDosageMatrix.dat$", Pattern.CASE_INSENSITIVE), "ImputedDosageMatrix.dat", "Trityper ImputedDosageMatrix.dat"),//Do not change prefix, it is also used as default file name
 	TRITYPER_SNPS(Pattern.compile(".*SNPs.txt(\\.gz)?$", Pattern.CASE_INSENSITIVE), "SNPs.txt", "Trityper SNPs.txt"),//Do not change prefix, it is also used as default file name
