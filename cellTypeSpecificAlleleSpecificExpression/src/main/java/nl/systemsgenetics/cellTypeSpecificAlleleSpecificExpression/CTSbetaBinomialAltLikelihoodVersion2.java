@@ -45,7 +45,7 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
         double CellTypeProp = t[0];
         double ResidualProp  = t[1];
         
-        if(CellTypeProp > 1 || CellTypeProp < 0 ){
+        if(CellTypeProp > 1 || CellTypeProp < -1 ){
             return Double.MAX_VALUE;
         }
         if(ResidualProp > 1 || ResidualProp < 0 ){
@@ -61,10 +61,6 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
         
         for(int i=0; i < asRef.length; i++ ){
             
-            
-            //JUST SOMETHING I'm Trying!! VERY MUCH SOMETHING NOT FINAL!!
-            //MATH IS PROPABLY NOT CORRECT.
-            //NEED TO CHECK.
             
             double fullProp = CellTypeProp  * cellProp[i] + ResidualProp;
             
