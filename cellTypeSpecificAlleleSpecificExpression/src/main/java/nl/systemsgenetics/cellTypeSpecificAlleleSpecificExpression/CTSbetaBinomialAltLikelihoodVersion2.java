@@ -41,7 +41,7 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
             throw new RuntimeException("Function requires 2 inputs!");
         }
         
-        //Make sure the value is always positive
+        //Make sure the value is within bounds
         double CellTypeProp = t[0];
         double ResidualProp  = t[1];
         
