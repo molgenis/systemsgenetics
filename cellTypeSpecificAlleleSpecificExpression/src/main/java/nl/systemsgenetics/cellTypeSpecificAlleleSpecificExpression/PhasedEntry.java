@@ -208,12 +208,17 @@ class PhasedEntry {
                                                   "_Binomial_results.txt"
                                            , "UTF-8");
         
+        writerBinom.println(writeASEheader());
+        
         PrintWriter writerBetaBinom = new PrintWriter(
                                                     FilenameUtils.getFullPath(outputLocation) + 
                                                     FilenameUtils.getBaseName(outputLocation) + 
                                                     "_BetaBinomial_results.txt"
                                                 , "UTF-8");
         
+        writerBetaBinom.println(writeASEheader());
+        
+        //no header add, because not implemented yet.
         PrintWriter writerCTSBinom = new PrintWriter(
                                                   FilenameUtils.getFullPath(outputLocation) + 
                                                   FilenameUtils.getBaseName(outputLocation) + 
@@ -665,6 +670,25 @@ class PhasedEntry {
         return allRegions;
     }
     
+    public static String writeASEheader(){
+        return "chr\t"
+                + "<testStart>-"
+                + "<testEnd>\t"
+                + "<regionStart>-"
+                + "<regionEnd>\t"
+                + "regionName\t"
+                + "pVal\t"
+                + "chiSq\t"
+                + "hetSNPs\t"
+                + "refSum\t"
+                + "altSum\t"
+                + "binomRatio\t"
+                + "genotype\t"
+                + "allSNPpos\t"
+                + "allSNPnames";
+    
+    }
+    
     public static String writeBinomialTestOutput(BinomialTest thisTest){
         
         StringBuilder outputString = new StringBuilder(); 
@@ -738,7 +762,7 @@ class PhasedEntry {
         
         return outputString.toString();
     }
-
+    
     public static String writeBetaBinomialTestOutput(BetaBinomialTest thisTest){
         
         StringBuilder outputString = new StringBuilder(); 
