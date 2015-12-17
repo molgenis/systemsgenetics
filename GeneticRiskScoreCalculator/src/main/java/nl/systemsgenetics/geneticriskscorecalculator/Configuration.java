@@ -24,6 +24,7 @@ public class Configuration {
 	private final File outputFile;
 	private final File risksnpsFile;
         private final String onlyCount;
+        private final String harmonizedData;
         private final double inclusionThreshold;
         
 	static {
@@ -83,6 +84,12 @@ public class Configuration {
 		OptionBuilder.withLongOpt("thres");
 		OPTIONS.addOption(OptionBuilder.create("t"));
 
+		OptionBuilder.withArgName("harmonized");
+		OptionBuilder.hasArgs();                
+                OptionBuilder.withDescription("Genotype data and risk alleles are on same strand");
+		OptionBuilder.withLongOpt("harmo");
+		OPTIONS.addOption(OptionBuilder.create("h"));                
+                
 	}
 
 	public Configuration(String... args) throws ParseException {
@@ -109,7 +116,8 @@ public class Configuration {
 			
 		outputFile = new File(commandLine.getOptionValue('o'));
 		risksnpsFile = new File(commandLine.getOptionValue('r'));
-		onlyCount = commandLine.getOptionValue('c');		
+		onlyCount = commandLine.getOptionValue('c');	
+                harmonizedData = commandLine.getOptionValue('h');
 		inclusionThreshold = Double.valueOf(commandLine.getOptionValue('t'));		
 	}
 
@@ -161,7 +169,11 @@ public class Configuration {
 	public String getOnlyCount() {
 		return onlyCount;
 	}
-	public double getInclusionThreshold() {
+	public String getHarmonizedData() {
+		return harmonizedData;
+	}
+        public double getInclusionThreshold() {
 		return inclusionThreshold;
 	}
+
 }

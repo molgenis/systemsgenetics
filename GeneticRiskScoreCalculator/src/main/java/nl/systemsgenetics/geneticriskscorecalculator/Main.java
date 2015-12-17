@@ -135,7 +135,9 @@ public class Main {
         }
         
         final String onlyCount = configuration.getOnlyCount();
+        final String harmonizedData = configuration.getHarmonizedData();
         final double inclusionThreshold = configuration.getInclusionThreshold();
+        
 
 
 
@@ -154,10 +156,7 @@ public class Main {
         RiskScoreMatrix riskScoreMatrix = new RiskScoreMatrix(inputGenotypes.getSampleNames(), phenotypes);
         
         for (GeneticRiskScoreCalculator calculator : geneticRiskScoreCalculators) {
-            TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes, onlyCount, inclusionThreshold);
-            System.out.println("First risk score:" + riskScores.get("LLDeep_1094"));
-            System.out.println("Secnd risk score:" + riskScores.get("LLDeep_0727"));
-
+            TObjectDoubleHashMap<String> riskScores = calculator.calculateRiskScores(inputGenotypes, onlyCount, harmonizedData, inclusionThreshold);
             index = 0;
             for (String sample : inputGenotypes.getSampleNames()) {
                 riskScoreMatrix.setRiskScore(sample, calculator.getPhenotype(), riskScores.get(sample));

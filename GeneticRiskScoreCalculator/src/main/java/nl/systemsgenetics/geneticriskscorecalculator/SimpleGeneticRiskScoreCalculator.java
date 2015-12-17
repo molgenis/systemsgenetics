@@ -32,7 +32,7 @@ public class SimpleGeneticRiskScoreCalculator implements GeneticRiskScoreCalcula
 
     // sum and scale betas, 1 or 2 per individual = no. of risk alleles per ind
     @Override
-    public TObjectDoubleHashMap<String> calculateRiskScores(RandomAccessGenotypeData genotypeData, String onlyCount, double inclusionThreshold) {
+    public TObjectDoubleHashMap<String> calculateRiskScores(RandomAccessGenotypeData genotypeData, String onlyCount, String harmonizedData, double inclusionThreshold) {
         int index;
         int useDosages = 1;
         TObjectDoubleHashMap<String> scores = new TObjectDoubleHashMap<String>(genotypeData.getSampleNames().length); // size of the hashmap
@@ -52,8 +52,19 @@ public class SimpleGeneticRiskScoreCalculator implements GeneticRiskScoreCalcula
             intOnlyCount = 1;
             System.out.println("onlyCount is not null: we only count risk alleles ");
         }
-        System.out.println("inclusion threshold is:  " + inclusionThreshold);
 
+        int intHarmonizedData = 0;
+        if (harmonizedData == null) {
+            System.out.println("harmonizedData is null: we don't assume harmonized data");
+        } else {
+            intHarmonizedData = 1;
+            System.out.println("harmonizedData is not null: we assume harmonized data");
+        }
+        System.out.println("risk snp inclusion threshold is:  " + inclusionThreshold);
+        
+        String complementriskallele = "K";
+        
+        
         double maxRisk = 0;
         System.out.println("-----------------------------------------------");
         System.out.println("Processing: " + phenotype);
@@ -108,98 +119,78 @@ public class SimpleGeneticRiskScoreCalculator implements GeneticRiskScoreCalcula
                         usedriskallele = otherallele.get(index);
 
                     }
-                // reverse risk allele if not found in data (on other strand)
-                    //if (!snpVariantByPos.getVariantAlleles().isAtOrGcSnp()) {
-                    //    if (!originalriskallele.equals(snpVariantByPos.getVariantAlleles().get(0).toString())) {
-                    //        if (!originalriskallele.equals(snpVariantByPos.getVariantAlleles().get(1).toString())) {
 
-                //            if (originalriskallele.equals("C")) {
-                    //                usedriskallele = "G";
-                    //            }
-                    //            if (originalriskallele.equals("G")) {
-                    //                usedriskallele = "C";
-                    //            }
-                    //            if (originalriskallele.equals("A")) {
-                    //                usedriskallele = "T";
-                    //            }
-                    //            if (originalriskallele.equals("T")) {
-                    //                usedriskallele = "A";
-                    //            }
-                    //        }
-                    //    }
-                    //}
                     System.out.print(myids.get(0) + " ORIGRISKALLELE " + originalriskallele + " ");
                     System.out.print(" USEDRISKALLELE " + usedriskallele + " ");
 
-                //System.out.print("alleles size: " + alleles.size());
+                    //System.out.print("alleles size: " + alleles.size());
                     //System.out.print("dosages size: " + dosages.length);
-                    if (useDosages == 0) {
-                        // probably not needed anymore. for hard genotypes dosages can also be used (0,1,2)
-                        // if needed, update to usedriskallele instead of riskallele
-                        int index2 = 0;
-                        //loop over all alleles (individuals) for this snp
-                            
-                        for (Alleles allele : alleles) {
-                            if (index2 < 20) {
-                                System.out.print(allele.toString() + " ");  // only alleles
-                            }
 
-                            // add beta to score max. two times per individual
-                            if (snpVariantByPos.getVariantAlleles().isAtOrGcSnp() == false && (riskallele.get(index).equals(allele.getAllelesAsString().get(0)))) {
-                                score.set(index2, score.get(index2) + currentOrorbeta);
-                            }
-                            if (snpVariantByPos.getVariantAlleles().isAtOrGcSnp() == false && (riskallele.get(index).equals(allele.getAllelesAsString().get(1)))) {
-                                score.set(index2, score.get(index2) + currentOrorbeta);
-                            }
-                            index2++;
-                        }
-                    }
+                    // do not use the SNP if intHarmonized == 0 AND it is a GC/AT snp
+                    // that means, do this if intHarmonzed == 1 OR GC/AT is false
 
-                    // float[] dosages = snpVariantByPos.getSampleDosages();
-                    if (useDosages == 1) {
-                        int index2 = 0;
+                    if (intHarmonizedData==1 | snpVariantByPos.getVariantAlleles().isAtOrGcSnp()==false) {
+                        int index2;
 
                         for (index2 = 0; index2 < alleles.size(); index2++) {
                             if (index2 < 20) {
                                 System.out.print(" -- allele " + alleles.get(index2).getAllelesAsString() + "__" + alleles.get(index2).getAllelesAsString().get(0) + "__" + alleles.get(index2).getAllelesAsString().get(1));
                                 System.out.print(" dosage: " + dosages[index2]);
                             }
-//                        if (snpVariantByPos.getVariantAlleles().isAtOrGcSnp() == false && (riskallele.get(index).equals(allele.getAllelesAsString().get(0)) || riskallele.get(index).equals(allele.getAllelesAsString().get(1)))) {
-//                            score.set(index2, score.get(index2) + 1);
-//                        }
-                            // if usedallele is equal to first allele, add dosage to score
-                            // if usedallele is equal to seond allele, add 2-dosage to score
 
-                        // this is without GC AT snps and counting the dosage
-                        //if (snpVariantByPos.getVariantAlleles().isAtOrGcSnp() == false && usedriskallele.equals(alleles.get(index2).getAllelesAsString().get(0)) ) {
-                            //    score.set(index2, score.get(index2) + dosages[index2]);
-                            //}
-                            //if (snpVariantByPos.getVariantAlleles().isAtOrGcSnp() == false && usedriskallele.equals(alleles.get(index2).getAllelesAsString().get(1)) ) {
-                            //    score.set(index2, score.get(index2) + 2 - dosages[index2]);
-                            //}               
-                        // this is for all snps, and if beta is negative, we take the other allele as risk allele and use abs(beta), and counting the beta's
-                            // dosage geeft al nul of 1 of 2 voor het risk allel
-                            // dus 2 chromosomen worden al gecheckt.
-                            // als je het otherallele als risk allel neemt omdat beta negatief moet je 2-dosage nemen
-                        // het eerste allel is niet altijd het minor allel
-                            // dosage wordt altijd gegeven voor het eerste allel
-                            // als je de dosage van "C" wilt weten moet je checken of "C" het eerste allel is, dan dosage nemen
-                            // of of "C" het tweede allel is, dan 2-dosage nemen
                             if (intOnlyCount == 0) {
 
                                 // used risk allel is gelijk aan FIRST allel, neem dosage
                                 if (usedriskallele.equals(snpVariantByPos.getVariantAlleles().get(0).toString())) {
                                     score.set(index2, score.get(index2) + dosages[index2] * Math.abs(ororbeta.get(index)));
                                     if (index2 < 20) {
-                                        System.out.print(" added " + dosages[index2] * Math.abs(ororbeta.get(index)) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        System.out.print(" added (first allele, orig strand) " + dosages[index2] * Math.abs(ororbeta.get(index)) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
                                     }
                                 }
+
+                                // needed if risk allel is reported as second allele, we are still looking at the same strand
                                 // used risk allel is gelijk aan SECOND allel, neem 2-dosage
                                 if (usedriskallele.equals(snpVariantByPos.getVariantAlleles().get(1).toString())) {
                                     score.set(index2, score.get(index2) + (2 - dosages[index2]) * Math.abs(ororbeta.get(index)));
                                     if (index2 < 20) {
-                                        System.out.print(" added " + (2 - dosages[index2]) * Math.abs(ororbeta.get(index)) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        System.out.print(" added (second allele, orig strand) " + (2 - dosages[index2]) * Math.abs(ororbeta.get(index)) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
                                     }
+                                }
+
+                                // now we will look at the other strand 
+                                // to do so we keep the genotype the same and take the reverse of the risk allele
+                                // only do if intHarmonizedData==0
+                                if (intHarmonizedData == 0) {
+                                    if (usedriskallele.equals("C")) {
+                                        complementriskallele = "G";
+                                    }
+                                    if (usedriskallele.equals("G")) {
+                                        complementriskallele = "C";
+                                    }
+                                    if (usedriskallele.equals("A")) {
+                                        complementriskallele = "T";
+                                    }
+                                    if (usedriskallele.equals("T")) {
+                                        complementriskallele = "A";
+                                    }
+
+                                    // used risk allel is gelijk aan FIRST allel, neem dosage
+                                    if (complementriskallele.equals(snpVariantByPos.getVariantAlleles().get(0).toString())) {
+                                        score.set(index2, score.get(index2) + dosages[index2] * Math.abs(ororbeta.get(index)));
+                                        if (index2 < 20) {
+                                            System.out.print(" added (first allele, other strand) " + dosages[index2] * Math.abs(ororbeta.get(index)) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        }
+                                    }
+
+                                    // needed if risk allel is reported as second allele, we are still looking at the same strand
+                                    // used risk allel is gelijk aan SECOND allel, neem 2-dosage
+                                    if (complementriskallele.equals(snpVariantByPos.getVariantAlleles().get(1).toString())) {
+                                        score.set(index2, score.get(index2) + (2 - dosages[index2]) * Math.abs(ororbeta.get(index)));
+                                        if (index2 < 20) {
+                                            System.out.print(" added (second allele,other strand) " + (2 - dosages[index2]) * Math.abs(ororbeta.get(index)) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        }
+                                    }
+
                                 }
 
                             } else { // here only count risk alleles
@@ -208,20 +199,55 @@ public class SimpleGeneticRiskScoreCalculator implements GeneticRiskScoreCalcula
                                 if (usedriskallele.equals(snpVariantByPos.getVariantAlleles().get(0).toString())) {
                                     score.set(index2, score.get(index2) + dosages[index2]);
                                     if (index2 < 20) {
-                                        System.out.print(" added " + dosages[index2] + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        System.out.print(" added (first allele, orig strand) " + dosages[index2] + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
                                     }
                                 }
+
                                 // used risk allel is gelijk aan SECOND allel, neem 2-dosage
                                 if (usedriskallele.equals(snpVariantByPos.getVariantAlleles().get(1).toString())) {
                                     score.set(index2, score.get(index2) + (2 - dosages[index2]));
                                     if (index2 < 20) {
-                                        System.out.print(" added " + (2 - dosages[index2]) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        System.out.print(" added (second allele, orig strand) " + (2 - dosages[index2]) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
                                     }
                                 }
 
-                            }
+                                // only do if intHarmonizedData==0
+                                if (intHarmonizedData == 0) {
 
+                                    if (usedriskallele.equals("C")) {
+                                        complementriskallele = "G";
+                                    }
+                                    if (usedriskallele.equals("G")) {
+                                        complementriskallele = "C";
+                                    }
+                                    if (usedriskallele.equals("A")) {
+                                        complementriskallele = "T";
+                                    }
+                                    if (usedriskallele.equals("T")) {
+                                        complementriskallele = "A";
+                                    }
+
+                                    // used risk allel is gelijk aan FIRST allel, neem dosage
+                                    if (complementriskallele.equals(snpVariantByPos.getVariantAlleles().get(0).toString())) {
+                                        score.set(index2, score.get(index2) + dosages[index2]);
+                                        if (index2 < 20) {
+                                            System.out.print(" added (first allele, other strand) " + dosages[index2] + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        }
+                                    }
+
+                                    // used risk allel is gelijk aan SECOND allel, neem 2-dosage
+                                    if (complementriskallele.equals(snpVariantByPos.getVariantAlleles().get(1).toString())) {
+                                        score.set(index2, score.get(index2) + (2 - dosages[index2]));
+                                        if (index2 < 20) {
+                                            System.out.print(" added (second allele, other strand) " + (2 - dosages[index2]) + "**" + alleles.get(index2).getAllelesAsString().get(0) + "**");
+                                        }
+                                    }
+
+                                }
+                            }
                         }
+                    } else {
+                        System.out.print("      SNP excluded because non-harmonized data and SNP is a GC/AT snp");                       
                     }
                 // if genotype data is present, add two times beta to max risk
 
@@ -239,7 +265,7 @@ public class SimpleGeneticRiskScoreCalculator implements GeneticRiskScoreCalcula
             System.out.println();
         }
 
-        System.out.println("MAX RISK: " + maxRisk);
+        //System.out.println("MAX RISK: " + maxRisk);
         System.out.println("IN CALCULATOR FIRST SCORE: " + score.get(0));
         System.out.println("IN CALCULATOR SECND SCORE: " + score.get(1));
 
