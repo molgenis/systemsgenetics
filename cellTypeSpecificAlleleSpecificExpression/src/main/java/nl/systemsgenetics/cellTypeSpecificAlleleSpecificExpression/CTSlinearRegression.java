@@ -150,6 +150,10 @@ class CTSlinearRegression {
         
     }
     
+    public static String writeHeader(){
+       String header = "chr\tpos\tsnpName\tnumHets\tpVal\tslope\tintercept\tstdErrorSlope\tstdErrorIntercept";
+       return header;
+    } 
     
     
     public String writeTestStatistics(boolean output_all_data){

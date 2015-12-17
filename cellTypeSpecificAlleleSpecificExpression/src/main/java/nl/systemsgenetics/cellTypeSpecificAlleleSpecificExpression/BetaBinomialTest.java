@@ -276,6 +276,11 @@ class BetaBinomialTest {
     }
     
     
+    public static String writeHeader(){
+       String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tbinomRatio\tnullLogLik\taltLogLik\talphaParam\tbetaParam";
+       return header;
+    } 
+    
 
     public String writeTestStatistics(boolean all_data) {
         
@@ -299,36 +304,7 @@ class BetaBinomialTest {
             out += Double.toString(alphaParam) + "\t";
             out += Double.toString(betaParam);
             
-            if(outPutAllData){
-                String samples_string="";
-                String ref_string="";
-                String alt_string="";                
-                String no_string="";
-                String disp_string="";
-                
-                for(int i=0; i < hetSampleNames.size(); i++){
-                    
-                    //samples_string += hetSampleNames.get(i) + ";";
-                    ref_string += Integer.toString(asRef.get(i)) + ";";
-                    alt_string += Integer.toString(asAlt.get(i)) + ";";
-                    no_string += Integer.toString(asNo.get(i)) + ";";
-                    disp_string += Double.toString(dispersion.get(i)) + ";";
-                }
-                
-                //remove last delimiter
-                //samples_string = samples_string.substring(0, samples_string.length()-1);
-                ref_string = ref_string.substring(0, ref_string.length()-1);
-                alt_string = alt_string.substring(0, alt_string.length()-1);
-                no_string = no_string.substring(0, no_string.length()-1);
-                disp_string = disp_string.substring(0, disp_string.length()-1);
-                
-                //out += "\t" + samples_string + "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-                out += "\t" + ref_string + "\t" + alt_string + "\t" + no_string  + "\t" + disp_string;
-
-
-            }
-
-
+            
         } else {
             //when no testing is done, will only output snp name and position, and NA.
             //Make sure this is still correct.
@@ -337,12 +313,7 @@ class BetaBinomialTest {
                 out += "NA\t";
             
             }
-            if(outPutAllData){
-                for(int i=0; i < 5; i++ ){
-                    out += "NA\t";
 
-                }
-            }
             out += "NA";
         
         }
