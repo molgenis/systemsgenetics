@@ -148,7 +148,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		}
 
 		final VcfReader vcfReader = new VcfReader(inputStream);
-		return new Iterator<GeneticVariant>() {
+        Iterator<GeneticVariant> iterator = new Iterator<GeneticVariant>() {
 			private final Iterator<VcfRecord> it = vcfReader.iterator();
 
 			@Override
@@ -176,6 +176,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 				it.remove();
 			}
 		};
+        iterator.hasNext();//needed to properly initiate
+        return iterator;
 	}
 
 	@Override

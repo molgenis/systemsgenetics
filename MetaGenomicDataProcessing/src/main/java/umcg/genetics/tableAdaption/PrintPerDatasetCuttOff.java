@@ -24,11 +24,17 @@ public class PrintPerDatasetCuttOff {
 
     public static void main(String[] args) {
         
-        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
+//        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
+//        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+//        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
+        
+        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\GFD_LLD_500Fg_IBS_IBD_pathways_selected.tsv.QuantileNormalized.ProbesCentered.txt";
         String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
-        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
-        int cutOffNumber = 50;
-        int minPercentage = 20;
+        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\";
+        
+        
+        int cutOffNumber = 10;
+        int minPercentage = 5;
         boolean percentage = true;
         boolean takeCuttOffAndPercentage = true;
         
@@ -92,7 +98,7 @@ public class PrintPerDatasetCuttOff {
             relevantBugMatrix =  selectToppresentBugs(relevantBugMatrix,cutOffNumber, minPercentage, percentage, takeCuttOffAndPercentage);
 
             try {
-                relevantBugMatrix.save(outputFolder+"matrix_"+dataset.getKey()+"_CuttOfNumber_"+cutOffNumber+"_incPercentage20.tsv");
+                relevantBugMatrix.save(outputFolder+"matrix_"+dataset.getKey()+"_CuttOfNumber_"+cutOffNumber+"_incPercentage"+minPercentage+".tsv");
             } catch (IOException ex) {
                 Logger.getLogger(PrintPerDatasetCuttOff.class.getName()).log(Level.SEVERE, null, ex);
             }
