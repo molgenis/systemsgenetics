@@ -9,7 +9,7 @@ import org.molgenis.genotype.RandomAccessGenotypeData;
  */
 public interface GeneticRiskScoreCalculator {
 
-	TObjectDoubleHashMap<String> calculateRiskScores(RandomAccessGenotypeData genotypeData);
+	TObjectDoubleHashMap<String> calculateRiskScores(RandomAccessGenotypeData genotypeData, String onlyCount, String harmonizedData, double inclusionThreshold);
 
 	TObjectDoubleHashMap<String> calculateRiskScores(RandomAccessGenotypeData genotypeData, PhenotypeData phenotypeData);
 	

@@ -29,7 +29,13 @@ import umcg.genetica.containers.Pair;
 class PhasedEntry {
     
     
-    public PhasedEntry(String asLocations, String couplingLoc, String outputLocation, String cellPropLoc, String phasingLocation, String regionLocation) throws IOException, Exception {
+    public PhasedEntry(String asLocations, 
+                       String couplingLoc, 
+                       String outputLocation, 
+                       String cellPropLoc,
+                       String dispersionLocation,
+                       String phasingLocation, 
+                       String regionLocation) throws IOException, Exception {
         /**
          * This method will perform a binomial test for some test region. 
          * later additional features will be add.
@@ -38,7 +44,7 @@ class PhasedEntry {
          * 1. read all SNPs from AS files and add overdispersion and cellprop to the files
          * 2. read phasing and assign alleles for these snps
          * 3. load test regions and determine test snps.
-         * 5. determine log likelihood for test-snps. (with some deduplication)
+         * 5. determine log likelihood for test-snps. (with some deduplication to speed up the process.)
          */
 
         
@@ -62,23 +68,49 @@ class PhasedEntry {
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_dispersionFile.txt";
         
-        PrintWriter dispersionWriter = new PrintWriter(dispersionOutput, "UTF-8");       
-        dispersionWriter.write("Filename\tdispersion");
         int i=0;
         
-        for(String asLoc : allFiles){
-            dispersionParameters.add(new BetaBinomOverdispInSample(asLoc));
-            dispersionWriter.printf("%s\t%.6f\n", dispersionParameters.get(i).getSampleName(), dispersionParameters.get(i).getOverdispersion()[0] );
+        if(dispersionLocation == null){
+            PrintWriter dispersionWriter = new PrintWriter(dispersionOutput, "UTF-8");       
+            dispersionWriter.write("Filename\tdispersion");
+        
+            for(String asLoc : allFiles){
+                dispersionParameters.add(new BetaBinomOverdispInSample(asLoc));
+                dispersionWriter.printf("%s\t%.6f\n", dispersionParameters.get(i).getSampleName(), dispersionParameters.get(i).getOverdispersion()[0] );
+            }
+
+            dispersionWriter.close();
+        } else {
+            ArrayList<String> DispersionLines = UtilityMethods.readFileIntoStringArrayList(dispersionLocation);
+            //remove first Dispersion
+            DispersionLines.remove(0);
+            for(String Line : DispersionLines){
+                String sampleName = Line.split("\t")[0];
+                double[] dispersion;
+                dispersion = new double[] { Double.parseDouble(Line.split("\t")[1]) };
+
+                //the file is later checked for correctness in when writing the values back.
+                BetaBinomOverdispInSample fillerForDispersion = new BetaBinomOverdispInSample(sampleName, dispersion);
+                dispersionParameters.add(fillerForDispersion);
+                
+            }
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("-------------------------");
+                System.out.println("Using dispersion data from a previously entered file");
+                System.out.println("-------------------------");
+            }
+        
         }
-        
-        dispersionWriter.close();
-        
+
+
+
+
         if(GlobalVariables.verbosity >= 10){
             System.out.println("--------------------------------------------------");
             System.out.println("Finished dispersion estimates for all individuals.");
             System.out.println("--------------------------------------------------");        
         }
-        
+
         boolean hasCellProp = false;
         ArrayList<String> phenoString = new ArrayList<String>();
         if(cellPropLoc != null){
@@ -129,12 +161,13 @@ class PhasedEntry {
             System.out.println("all AS info Snps were read");
         }
       
+        
+        
         // 2. Load test regions and determine the snps in the region.
        
         if(GlobalVariables.verbosity >= 10){
             System.out.println("Starting the assignment of snps to regions.");
         }
-        
         
         ArrayList<GenomicRegion> allRegions;
         allRegions = ReadGenomicRegions(regionLocation);
