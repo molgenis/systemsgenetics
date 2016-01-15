@@ -17,7 +17,6 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.MatrixHandling;
 
 /**
- *
  * @author MarcJan
  */
 public class PrintPerDatasetCuttOff {
@@ -28,10 +27,14 @@ public class PrintPerDatasetCuttOff {
 //        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
 //        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
         
-        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\GFD_LLD_500Fg_IBS_IBD_pathways_selected.tsv.QuantileNormalized.ProbesCentered.txt";
-        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
-        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\";
+//        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\GFD_LLD_500Fg_IBS_IBD_pathways_selected.tsv.QuantileNormalized.ProbesCentered.txt";
+//        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+//        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\";
         
+        
+        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\AllMGS_KO50000.tsv.QuantileNormalized.txt.gz";
+        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\PerCohort_KO50000\\";
         
         int cutOffNumber = 10;
         int minPercentage = 5;
