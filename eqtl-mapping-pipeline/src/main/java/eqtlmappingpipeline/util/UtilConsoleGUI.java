@@ -31,7 +31,7 @@ public class UtilConsoleGUI {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
         SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
-        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS
+        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE
     };
     MODE run;
 
@@ -118,6 +118,9 @@ public class UtilConsoleGUI {
             } else if (arg.equals("--fdr")) {
                 region = val;
                 run = MODE.FDR;
+            } else if (arg.equals("--fdrprobe")) {
+                region = val;
+                run = MODE.FDRPROBE;
             } else if (arg.equals("--dotplot")) {
                 region = val;
                 run = MODE.DOTPLOT;
@@ -348,6 +351,20 @@ public class UtilConsoleGUI {
                                     e.printStackTrace();
                                     System.exit(1);
                                 }
+                            }
+                        }
+
+                        break;
+                    case FDRPROBE:
+                        if (in == null || threshold == null || nreqtls == null || perm == 0) {
+                            System.out.println("To use --fdrprobe, please use --in, --threshold, and --perm and --nreqtls");
+                            printUsage();
+                        } else {
+                            try {
+                                ProbeSpecificFDR.calculateFDR(in, perm, nreqtls, threshold, false, null, null, createLargeFdrFile);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                System.exit(1);
                             }
                         }
 
