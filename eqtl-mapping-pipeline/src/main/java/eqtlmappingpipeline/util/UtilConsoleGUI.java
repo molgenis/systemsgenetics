@@ -79,6 +79,7 @@ public class UtilConsoleGUI {
         String snpprobeselectionlist = null;
         boolean createQQPlot = true;
         boolean createLargeFdrFile = true;
+        boolean stringentFDR = false;
 
         String sources = null;
         String keyValuePairs = null;
@@ -171,6 +172,8 @@ public class UtilConsoleGUI {
                 } else if (val.equals("snp")) {
                     FdrMethod = FDRMethod.SNPLEVEL;
                 }
+            } else if (args[i].equals("--stringentFDR")) {
+                stringentFDR = true;
             } else if (arg.equals("--snps")) {
                 snpfile = val;
             } else if (arg.equals("--probes")) {
@@ -356,12 +359,13 @@ public class UtilConsoleGUI {
 
                         break;
                     case FDRPROBE:
-                        if (in == null || threshold == null || nreqtls == null || perm == 0) {
-                            System.out.println("To use --fdrprobe, please use --in, --threshold, and --perm and --nreqtls");
+                        if (in == null || threshold == null || perm == 0) {
+                            System.out.println("To use --fdrprobe, please use --in, --threshold, and --perm");
+                            System.out.println("Optional: --stringentFDR");
                             printUsage();
                         } else {
                             try {
-                                ProbeSpecificFDR.calculateFDR(in, perm, nreqtls, threshold, false, null, null, createLargeFdrFile);
+                                ProbeSpecificFDR.calculateFDR(in, perm, threshold, false, stringentFDR, createLargeFdrFile);
                             } catch (IOException e) {
                                 e.printStackTrace();
                                 System.exit(1);

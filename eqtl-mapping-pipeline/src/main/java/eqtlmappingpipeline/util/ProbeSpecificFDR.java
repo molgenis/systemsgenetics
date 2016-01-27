@@ -9,6 +9,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -28,14 +29,15 @@ public class ProbeSpecificFDR {
      *
      * @param eQTLTextFileLoc the location where the eQTL text files are stored
      * @param nrPermutationsFDR number of permutations performed
-     * @param maxNrMostSignificantEQTLs maximum number of eQTLs to output
      * @param fdrcutoff the FDR cutoff
      * @param createQQPlot create a QQ plot after performing FDR calculations
      * @param outputDir set an alternate directory for output
      * @param permutationDir set an alternate directory for permutation files
      * @throws IOException
      */
-    public static void calculateFDR(String eQTLTextFileLoc, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, boolean createQQPlot, String outputDir, String permutationDir, boolean createLargeFdrFiles) throws IOException {
+    
+    
+    public static void calculateFDR(String eQTLTextFileLoc, int nrPermutationsFDR, double fdrcutoff, boolean createQQPlot, boolean onlyUseStrongestEffectPerProbe, boolean createLargeFdrFiles) throws IOException {
 
         if (eQTLTextFileLoc == null || eQTLTextFileLoc.length() == 0) {
             throw new IllegalArgumentException("File containing real effects is not specified.");
@@ -43,22 +45,15 @@ public class ProbeSpecificFDR {
         if (nrPermutationsFDR < 1) {
             throw new IllegalArgumentException("Need at least one permutation to determine FDR");
         }
-        if (maxNrMostSignificantEQTLs < 1) {
-            throw new IllegalArgumentException("Need at least a single effect to perform FDR estimation");
-        }
         if (fdrcutoff < 0 || fdrcutoff > 1) {
             throw new IllegalArgumentException("FDR threshold should be between 0.0 and 1.0! (Specified: " + fdrcutoff + ")");
         }
 
         //Load permuted data:
 //        // load values for each permutation round:
-        if (permutationDir == null) {
-            permutationDir = eQTLTextFileLoc;
-        }
-
-        if (outputDir == null) {
-            outputDir = eQTLTextFileLoc;
-        }
+        
+        String  permutationDir = eQTLTextFileLoc;
+        String outputDir = eQTLTextFileLoc;
 
         String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + 1 + ".txt.gz";
         TextFile tf = new TextFile(fileString, TextFile.R);
@@ -69,21 +64,51 @@ public class ProbeSpecificFDR {
 
         System.out.println(nrColsInPermutedFiles + " columns in permuted QTL file.");
         // new permutationfile format requires different column layout...
-        runFDR(eQTLTextFileLoc, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff, outputDir, permutationDir, createQQPlot, createLargeFdrFiles);
+        if(onlyUseStrongestEffectPerProbe){
+            runFdrBasedOnStrongestEffect(eQTLTextFileLoc, nrPermutationsFDR, fdrcutoff, outputDir, permutationDir, createLargeFdrFiles);
+        } else {
+            runFdr(eQTLTextFileLoc, nrPermutationsFDR, fdrcutoff, outputDir, permutationDir, createLargeFdrFiles);
+        }
 
     }
 
-    private static void runFDR(String baseDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, String outputDir, String permutationDir, boolean createQQPlot, boolean createLargeFdrFiles) throws IOException {
-        //Load permuted data:
-        // load values for each permutation round:
+    private static void runFdr(String baseDir, int nrPermutationsFDR, double fdrcutoff, String outputDir, String permutationDir, boolean createLargeFdrFiles) throws IOException {
+        //Grabing important Probe names//
+        System.out.println("Reading in relevant bacteria labels.");
+        String fileString = baseDir + "/eQTLs.txt.gz";
+        if (!Gpio.exists(fileString)) {
+            System.out.println("Could not find file: " + fileString + " trying un-GZipped file....");
+            fileString = baseDir + "/eQTLs.txt";
+        }
+        if (!Gpio.exists(fileString)) {
+            System.out.println("Could not the real eQTL file");
+            System.exit(0);
+        }
+
+        TextFile realEQTLs = new TextFile(fileString, TextFile.R);
+        HashSet<String> relevantKeys = new HashSet<String>();
+        realEQTLs.readLine();
+
+        String str = realEQTLs.readLine();
+        while (str != null) {
+            String[] data = Strings.tab.split(str);
+//            System.out.println(data[4]);
+            relevantKeys.add(data[4]);
+            str = realEQTLs.readLine();
+        }
+        realEQTLs.close();
+        ///
+        
 
         HashMap<String, TDoubleIntHashMap> permutedPvalues = new HashMap<String, TDoubleIntHashMap>();
-
+        
+        //Load permuted data:
+        // load values for each permutation round:
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
         System.out.println("Reading permuted files");
-
+                
         for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
-            String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
+            fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
             System.out.println(fileString);
             // read the permuted eqtl output
             TextFile gz = new TextFile(fileString, TextFile.R);
@@ -108,7 +133,9 @@ public class ProbeSpecificFDR {
                     genecol = col;
                 }
             }
-
+            
+            
+            
             //PValue  SNP     Probe   Gene
             if (snpcol == -1 || pvalcol == -1 || probecol == -1 && genecol == -1) {
                 System.out.println("Column not found in permutation file: " + fileString);
@@ -119,27 +146,65 @@ public class ProbeSpecificFDR {
             }
 
             String[] data = gz.readLineElemsReturnReference(TextFile.tab);
-
+            //Is this necessary?
+            double lastObservedP = 0.0d;
+            TObjectIntHashMap<String> observedIds = new TObjectIntHashMap<String>();
+            //
+            
             while (data != null) {
                 if (data.length != 0) {
                     String fdrId = data[probecol];
                     double permutedP = Double.parseDouble(data[0]);
-
-                    if (!permutedPvalues.containsKey(fdrId)) {
-                        permutedPvalues.put(fdrId, new TDoubleIntHashMap(10000, 0.5f));
-                    }
+                    lastObservedP = permutedP;
+                    
 //                    System.out.println(fdrId);
-
-                    if (permutedPvalues.get(fdrId).containsKey(permutedP)) {
+                    if(relevantKeys.contains(fdrId)){
+                        if (!permutedPvalues.containsKey(fdrId)) {
+                            permutedPvalues.put(fdrId, new TDoubleIntHashMap(10000, 0.5f));
+                        }
+                        if (!permutedPvalues.get(fdrId).containsKey(permutedP)) {
+                            permutedPvalues.get(fdrId).put(permutedP, 0);
+                        } 
                         permutedPvalues.get(fdrId).increment(permutedP);
-                    } else {
-                        permutedPvalues.get(fdrId).put(permutedP, 1);
                     }
-                    data = gz.readLineElemsReturnReference(TextFile.tab);
+                    if (!observedIds.containsKey(fdrId)) {
+                        observedIds.put(fdrId, 0);
+                    } 
+                    observedIds.increment(fdrId);
                 }
+                data = gz.readLineElemsReturnReference(TextFile.tab);
             }
             gz.close();
-
+            
+            //Is this necessary?
+            //Here we make sure that all (relevant) bacteria get information and that their is equal number of p-values added.
+            int maxStoredPvalues = 0;
+            for(String key : observedIds.keySet()){
+                if(observedIds.get(key)>maxStoredPvalues){
+                    maxStoredPvalues = observedIds.get(key);
+                }
+            }
+            
+            for(String key : relevantKeys){
+                if(observedIds.containsKey(key)){
+                    if(observedIds.get(key)<maxStoredPvalues){
+                        for(int i = observedIds.get(key); i < maxStoredPvalues; ++i ){
+                            if (!permutedPvalues.get(key).containsKey(lastObservedP)) {
+                                permutedPvalues.get(key).put(lastObservedP, 0);
+                            } 
+                            permutedPvalues.get(key).increment(lastObservedP);
+                        }
+                    }
+                } else {
+                    for(int i = 0; i < maxStoredPvalues; ++i ){
+                        if (!permutedPvalues.get(key).containsKey(lastObservedP)) {
+                            permutedPvalues.get(key).put(lastObservedP, 0);
+                        } 
+                        permutedPvalues.get(key).increment(lastObservedP);
+                    }
+                }
+            }
+            //
         }
 
         HashMap<String, Pair<double[], double[]>> informationPerProbe = new HashMap<String, Pair<double[], double[]>>();
@@ -169,7 +234,7 @@ public class ProbeSpecificFDR {
             outputDir = baseDir;
         }
 
-        String fileSuffix = "";
+        String fileSuffix = "-ProbeSpecific";
 
         String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt";
         String outFileNameAll = outputDir + "/eQTLsFDR" + fileSuffix + ".txt.gz";
@@ -180,17 +245,11 @@ public class ProbeSpecificFDR {
         if (createLargeFdrFiles) {
             outputWriterAll = new TextFile(outFileNameAll, TextFile.W);
         }
-        String fileString = baseDir + "/eQTLs.txt.gz";
-        if (!Gpio.exists(fileString)) {
-            System.out.println("Could not find file: " + fileString + " trying un-GZipped file....");
-            fileString = baseDir + "/eQTLs.txt";
-        }
-        if (!Gpio.exists(fileString)) {
-            System.out.println("Could not find file: " + fileString);
-            System.exit(0);
-        }
 
-        TextFile realEQTLs = new TextFile(fileString, TextFile.R);
+        // REAL DATA PROCESSING
+        
+        fileString = baseDir + "/eQTLs.txt.gz";
+        realEQTLs = new TextFile(fileString, TextFile.R);
 
         String header = realEQTLs.readLine();
 
@@ -202,9 +261,7 @@ public class ProbeSpecificFDR {
         outputWriterSignificant.append(header);
         outputWriterSignificant.append("\tFDR\n");
 
-        String str = realEQTLs.readLine();
-
-// REAL DATA PROCESSING
+        str = realEQTLs.readLine();
 
         double lastEqtlPvalue = 0;
 
@@ -289,6 +346,253 @@ public class ProbeSpecificFDR {
 //            }
 //
     }
+    
+    
+    private static void runFdrBasedOnStrongestEffect(String baseDir, int nrPermutationsFDR, double fdrcutoff, String outputDir, String permutationDir, boolean createLargeFdrFiles) throws IOException {
+        //Grabing important Probe names//
+        System.out.println("Reading in relevant bacteria labels.");
+        String fileString = baseDir + "/eQTLs.txt.gz";
+        if (!Gpio.exists(fileString)) {
+            System.out.println("Could not find file: " + fileString + " trying un-GZipped file....");
+            fileString = baseDir + "/eQTLs.txt";
+        }
+        if (!Gpio.exists(fileString)) {
+            System.out.println("Could not the real eQTL file");
+            System.exit(0);
+        }
+
+        TextFile realEQTLs = new TextFile(fileString, TextFile.R);
+        HashSet<String> relevantKeys = new HashSet<String>();
+        realEQTLs.readLine();
+
+        String str = realEQTLs.readLine();
+        while (str != null) {
+            String[] data = Strings.tab.split(str);
+            relevantKeys.add(data[4]);
+            str = realEQTLs.readLine();
+        }
+        realEQTLs.close();
+        ///
+        
+
+        HashMap<String, TDoubleIntHashMap> permutedPvalues = new HashMap<String, TDoubleIntHashMap>();
+        //Load permuted data:
+        // load values for each permutation round:
+//        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
+        System.out.println("Reading permuted files");
+                
+        for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
+            fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
+            System.out.println(fileString);
+            // read the permuted eqtl output
+            TextFile gz = new TextFile(fileString, TextFile.R);
+
+            String[] header = gz.readLineElems(TextFile.tab);
+            int snpcol = -1;
+            int pvalcol = -1;
+            int probecol = -1;
+            int genecol = -1;
+
+            for (int col = 0; col < header.length; col++) {
+                if (header[col].equals("PValue")) {
+                    pvalcol = col;
+                }
+                if (header[col].equals("SNP")) {
+                    snpcol = col;
+                }
+                if (header[col].equals("Probe")) {
+                    probecol = col;
+                }
+                if (header[col].equals("Gene")) {
+                    genecol = col;
+                }
+            }
+            
+            
+            
+            //PValue  SNP     Probe   Gene
+            if (snpcol == -1 || pvalcol == -1 || probecol == -1 && genecol == -1) {
+                System.out.println("Column not found in permutation file: " + fileString);
+                System.out.println("PValue: " + pvalcol);
+                System.out.println("SNP: " + snpcol);
+                System.out.println("Probe: " + probecol);
+                System.out.println("Gene: " + genecol);
+            }
+
+            String[] data = gz.readLineElemsReturnReference(TextFile.tab);
+            //Is this necessary?
+            double lastObservedP = 0.0d;
+            HashSet<String> observedIds = new HashSet<String>();
+            //
+            
+            while (data != null) {
+                if (data.length != 0) {
+                    String fdrId = data[probecol];
+                    double permutedP = Double.parseDouble(data[0]);
+                    lastObservedP = permutedP;
+//                    System.out.println(fdrId);
+                    if(relevantKeys.contains(fdrId) && !observedIds.contains(fdrId)){
+                        observedIds.add(fdrId);
+                        if (!permutedPvalues.containsKey(fdrId)) {
+                            permutedPvalues.put(fdrId, new TDoubleIntHashMap(10000, 0.5f));
+                        }
+                        if (!permutedPvalues.get(fdrId).containsKey(permutedP)) {
+                            permutedPvalues.get(fdrId).put(permutedP, 0);
+                        } 
+                        permutedPvalues.get(fdrId).increment(permutedP);
+                    }
+                }
+                data = gz.readLineElemsReturnReference(TextFile.tab);
+            }
+            gz.close();
+            
+            //If we have not observed the bacteria add the highest observed P-value.
+            for(String key : relevantKeys){
+                if(!observedIds.contains(key)){
+                    if (!permutedPvalues.get(key).containsKey(lastObservedP)) {
+                        permutedPvalues.get(key).put(lastObservedP, 1);
+                    } else {
+                        permutedPvalues.get(key).increment(lastObservedP);
+                    }
+                }
+            }
+            //
+        }
+
+        HashMap<String, Pair<double[], double[]>> informationPerProbe = new HashMap<String, Pair<double[], double[]>>();
+
+        double averageUniquqPerm = 0;
+        for (Entry<String,TDoubleIntHashMap>  e : permutedPvalues.entrySet()) {
+
+            double[] uniquePermutedPvalues = e.getValue().keys();
+            Arrays.sort(uniquePermutedPvalues);
+
+            double[] uniquePermutedPvaluesCounts = new double[uniquePermutedPvalues.length];
+
+            long cummulativeCount = 0;
+            double nrPermutationsFDRd = (double) nrPermutationsFDR;
+            for (int i = 0; i < uniquePermutedPvalues.length; ++i) {
+                cummulativeCount += e.getValue().get(uniquePermutedPvalues[i]);
+                uniquePermutedPvaluesCounts[i] = cummulativeCount / nrPermutationsFDRd;
+            }
+            informationPerProbe.put(e.getKey(), new Pair<double[], double[]>(uniquePermutedPvalues, uniquePermutedPvaluesCounts));
+            averageUniquqPerm += uniquePermutedPvalues.length;
+        }
+        
+        System.out.println("Average number of unique permutation p-values: " + averageUniquqPerm / permutedPvalues.size());
+        permutedPvalues = null;
+
+        if (outputDir == null) {
+            outputDir = baseDir;
+        }
+
+        String fileSuffix = "-StringentProbeSpecific";
+
+        String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt";
+        String outFileNameAll = outputDir + "/eQTLsFDR" + fileSuffix + ".txt.gz";
+
+        TextFile outputWriterSignificant = new TextFile(outFileName, TextFile.W);
+
+        TextFile outputWriterAll = null;
+        if (createLargeFdrFiles) {
+            outputWriterAll = new TextFile(outFileNameAll, TextFile.W);
+        }
+
+        // REAL DATA PROCESSING
+        
+        fileString = baseDir + "/eQTLs.txt.gz";
+        realEQTLs = new TextFile(fileString, TextFile.R);
+
+        String header = realEQTLs.readLine();
+
+        if (createLargeFdrFiles) {
+            outputWriterAll.append(header);
+            outputWriterAll.append("\tFDR\n");
+        }
+
+        outputWriterSignificant.append(header);
+        outputWriterSignificant.append("\tFDR\n");
+
+        str = realEQTLs.readLine();
+
+        double lastEqtlPvalue = 0;
+
+        int nrSignificantEQTLs = 0;
+
+        TObjectIntHashMap<String> probeSpecificItr = new TObjectIntHashMap<String>();
+
+        while (str != null) {
+            String[] data = Strings.tab.split(str);
+            String probeId = data[4];
+            double eQtlPvalue = Double.parseDouble(data[0]);
+            
+            
+            if (lastEqtlPvalue > eQtlPvalue) {
+                System.err.println("Sorted P-Value list is not perfectly sorted!!!!");
+                System.exit(-1);
+            }
+            lastEqtlPvalue = eQtlPvalue;
+
+            //This needs to be now per Probe. Not per all probes. So there is no way to use smart tricks. Needs to change!
+            //Left : uniquePermutedPvalues
+            //Right : uniquePermutedPvaluesCounts
+            double fdr = 0;
+            int relevantLocation = 0;
+
+            if (eQtlPvalue >= informationPerProbe.get(probeId).getLeft()[relevantLocation]) {
+
+                while (informationPerProbe.get(probeId).getLeft()[relevantLocation+1] <= eQtlPvalue && relevantLocation < informationPerProbe.get(probeId).getRight().length - 2) {
+                    ++relevantLocation;
+                }
+                
+                fdr = informationPerProbe.get(probeId).getRight()[relevantLocation];
+
+                if (fdr > 1) {
+                    fdr = 1;
+                }
+            }
+
+            StringBuilder currentString = new StringBuilder();
+            currentString.append(str).append('\t').append(String.valueOf(fdr)).append('\n');
+
+            if (createLargeFdrFiles) {
+                outputWriterAll.append(currentString.toString());
+            }
+
+            if (fdr <= fdrcutoff) {
+
+                outputWriterSignificant.append(currentString.toString());
+                ++nrSignificantEQTLs;
+
+            }
+
+            str = realEQTLs.readLine();
+        }
+
+        realEQTLs.close();
+        outputWriterSignificant.close();
+
+        if (createLargeFdrFiles) {
+            outputWriterAll.close();
+        }
+
+        //System.out.println("");
+        System.out.println("Number of significant eQTLs:\t" + nrSignificantEQTLs);
+
+//        if (createQQPlot) {
+//            System.out.println("Creating QQ plot. This might take a while...");
+//            String fileName = baseDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + "-QQPlot.pdf";
+//            if (maxNrMostSignificantEQTLs > pValueRealData.size()) {
+//                createQQPlots(permutationDir, nrPermutationsFDR, pValueRealData.size(), fdrcutoff, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+//            } else if (maxNrMostSignificantEQTLs > 100000) {
+//                System.out.println("Only taking the top 100,000 for QQplot creation.");
+//                createQQPlots(permutationDir, nrPermutationsFDR, 100000, fdrcutoff, m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+//            } else {
+//                createQQPlots(permutationDir, nrPermutationsFDR, maxNrMostSignificantEQTLs, fdrcutoff,  m, pValueRealData.toArray(), significantPvalue, nrSignificantEQTLs, fileName);
+//            }
+//
+    }
+    
 
 //
 //    private static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs, double fdrcutoff, FDRMethod m, double[] pValueRealData, ArrayList<Boolean> significantPvalue, int nrSignificantEQTLs, String fileName) throws IOException {
