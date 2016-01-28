@@ -483,6 +483,7 @@ public class UtilConsoleGUI {
         System.out.println("--getsnpsinregion\t\tGet SNPs in a certain region: chr positionA positionB: Y:12000-13000 would get all SNPs on chr Y between 12000 and 13000 bp\n"
                 + "--getsnpsinproberegion\t\tGet SNPs in a certain set of probes (specify with --probes)\n"
                 + "--fdr\t\t\t\tCalculated FDR.\n"
+                + "--fdrprobe\t\t\t\tCalculated FDR per probe.\n"
                 + "--getmaf\t\t\tGets maf for snp\n"
                 + "--merge\t\t\t\tMerges two datasets\n"
                 + "--snpstats\t\t\tGets HWE, MAF, and CR for all SNPs\n"
