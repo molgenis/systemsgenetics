@@ -76,7 +76,7 @@ class CTSbinomialTest {
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
         
-       ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+       ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
         
         
         numberOfHets = het_individuals.size();

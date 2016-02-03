@@ -213,7 +213,7 @@ public class NonPhasedEntry {
             }
             
             ArrayList<IndividualSnpData> het_individuals;
-            het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnpData);
+            het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(allSnpData);
     
             int numberOfHets = het_individuals.size();
             int totalOverlap = 0;
@@ -295,7 +295,6 @@ public class NonPhasedEntry {
                     GlobalVariables.numberOfTestPerformed++;
 
                 }
-                
                 
                 
                 // do the CTS tests if data is available.

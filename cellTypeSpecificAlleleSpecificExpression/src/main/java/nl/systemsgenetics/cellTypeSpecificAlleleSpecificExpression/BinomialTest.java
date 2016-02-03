@@ -76,7 +76,7 @@ public class BinomialTest {
         position = all_individuals.get(0).getPosition();
         genotype = all_individuals.get(0).genotype;
         //Isolate heterozygotes:
-        ArrayList<IndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
         
         numberOfHets = het_individuals.size();
         
@@ -161,29 +161,7 @@ public class BinomialTest {
         
         return t;
     
-    }
-    
-    private ArrayList<IndividualSnpData> isolateHeterozygotes(ArrayList<IndividualSnpData> all_individuals) {
-        
-        ArrayList<IndividualSnpData> hets;
-        hets = new ArrayList<IndividualSnpData>();
-        
-        for(IndividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
-    }
+    } 
     
    public static String writeHeader(){
        String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tbinomRatio\tnullLogLik\taltLogLik";

@@ -248,7 +248,7 @@ class PhasedEntry {
             
             
             for( String regionSnp : snpsInRegion ){
-                allHetsInRegion.addAll(UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(regionSnp)));
+                allHetsInRegion.addAll(UtilityMethods.isolateOnlyHeterozygotesFromIndividualSnpData(snpHashMap.get(regionSnp)));
             }
             
             
@@ -268,7 +268,7 @@ class PhasedEntry {
             for( String testSnp : snpsInRegion ){
 
                 
-                ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
+                ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
                 
                 //Check if the snpp has phasing, but also see if there are heterozygous SNPs in the region.
                 try{

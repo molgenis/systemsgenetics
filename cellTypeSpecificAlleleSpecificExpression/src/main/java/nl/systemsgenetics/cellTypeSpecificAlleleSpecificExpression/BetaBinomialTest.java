@@ -91,7 +91,7 @@ class BetaBinomialTest {
         genotype = all_individuals.get(0).genotype;
         
         ArrayList<IndividualSnpData> het_individuals;
-        het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+        het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
     
         numberOfHets = het_individuals.size();
         

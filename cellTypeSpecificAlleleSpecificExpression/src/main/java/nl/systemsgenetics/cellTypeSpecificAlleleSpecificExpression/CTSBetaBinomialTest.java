@@ -84,7 +84,7 @@ class CTSBetaBinomialTest {
         position = all_individuals.get(0).getPosition();
         
         //isolate heterozygote individuals.
-        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
     
         numberOfHets = het_individuals.size();
         

@@ -32,12 +32,6 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>BinaryMetaAnalyzer</artifactId>
-            <version>1.0.7-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
             <groupId>com.googlecode.efficient-java-matrix-library</groupId>
             <artifactId>main</artifactId>
             <version>0.26-SNAPSHOT</version>

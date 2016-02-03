@@ -62,7 +62,38 @@ public class UtilityMethods {
         return all_individuals;
     }
     
-    static ArrayList<IndividualSnpData> isolateHeterozygotesFromIndividualSnpData(ArrayList<IndividualSnpData> all_individuals) {
+    //This 'function' will look for heterozygotes that also have enough reads to start testing
+    static ArrayList<IndividualSnpData> isolateValidHeterozygotesFromIndividualSnpData(ArrayList<IndividualSnpData> all_individuals) {
+        
+        ArrayList<IndividualSnpData> hets;
+        hets = new ArrayList<IndividualSnpData>();
+        
+        for(IndividualSnpData sample : all_individuals){
+            
+            String genotype = sample.getGenotype();
+            
+            double thisHetReadProp = (double)sample.getRefNum()  / ((double)sample.getRefNum() + (double)sample.getAltNum());
+            
+            boolean validReads = false;
+            if(     thisHetReadProp < (1 - GlobalVariables.minHetReads) 
+                    &&
+                    thisHetReadProp > (GlobalVariables.minHetReads))
+            {
+                validReads = true;
+            }
+            
+            //assuming the genotype is formatted as: "[C, A]"
+            if(isGenoHeterozygote(genotype) && validReads){
+                hets.add(sample);
+            }       
+        }
+        
+        return hets;
+    }
+    
+    
+    //This 'function' will only look for heterozygote snps for phased entry
+    static ArrayList<IndividualSnpData> isolateOnlyHeterozygotesFromIndividualSnpData(ArrayList<IndividualSnpData> all_individuals) {
         
         ArrayList<IndividualSnpData> hets;
         hets = new ArrayList<IndividualSnpData>();
