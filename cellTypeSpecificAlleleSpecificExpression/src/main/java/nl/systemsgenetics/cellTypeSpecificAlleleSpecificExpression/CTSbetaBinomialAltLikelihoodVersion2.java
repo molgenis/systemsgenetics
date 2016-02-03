@@ -20,6 +20,7 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
     private Double[]  cellProp;
     
     public CTSbetaBinomialAltLikelihoodVersion2(Integer[] asRef1, Integer[] asAlt1, Double[] dispersion1, Double[] cellProp1){
+        
         asRef = asRef1;
         asAlt = asAlt1;
         dispersion = dispersion1;

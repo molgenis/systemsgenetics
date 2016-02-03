@@ -53,7 +53,7 @@ public class BetaBinomOverdispInSample {
         fr.close();
         
         ArrayList<IndividualSnpData> hets;
-        hets = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnps);
+        hets = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(allSnps);
         
         int numOfHets = hets.size();
        
