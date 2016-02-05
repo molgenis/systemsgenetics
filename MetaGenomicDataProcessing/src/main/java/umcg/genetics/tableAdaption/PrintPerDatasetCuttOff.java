@@ -23,23 +23,24 @@ public class PrintPerDatasetCuttOff {
 
     public static void main(String[] args) {
         
-//        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
-//        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
-//        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
+        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
+        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
         
 //        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\GFD_LLD_500Fg_IBS_IBD_pathways_selected.tsv.QuantileNormalized.ProbesCentered.txt";
 //        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
 //        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\";
         
         
-        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\AllMGS_KO50000.tsv.QuantileNormalized.txt.gz";
-        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
-        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\PerCohort_KO50000\\";
+//        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\AllMGS_KO50000.tsv.QuantileNormalized.txt.gz";
+//        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+//        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\PerCohort_KO50000\\";
         
         int cutOffNumber = 10;
-        int minPercentage = 5;
+        int minPercentage = 75;
         boolean percentage = true;
         boolean takeCuttOffAndPercentage = true;
+        boolean removeStrainInformation = true;
         
         //Read information from gtm
         HashMap<String, HashSet<String>> InformationPerCohort = readGTMInformation(gtmFolder);
@@ -52,7 +53,7 @@ public class PrintPerDatasetCuttOff {
         }
         
         //Write matrix with direct filtering on X number of bugs in the individual cohort.
-        writeTablesToFile(InformationPerCohort, bugMatrix, cutOffNumber, minPercentage, percentage, takeCuttOffAndPercentage, outputFolder);
+        writeTablesToFile(InformationPerCohort, bugMatrix, cutOffNumber, minPercentage, percentage, takeCuttOffAndPercentage, removeStrainInformation, outputFolder);
         
     }
 
@@ -91,14 +92,14 @@ public class PrintPerDatasetCuttOff {
         return relevantSamples;
     }
     
-    private static void writeTablesToFile(HashMap<String, HashSet<String>> InformationPerCohort, DoubleMatrixDataset<String, String> bugMatrix, int cutOffNumber, int minPercentage, boolean percentage, boolean takeCuttOffAndPercentage, String outputFolder) {
+    private static void writeTablesToFile(HashMap<String, HashSet<String>> InformationPerCohort, DoubleMatrixDataset<String, String> bugMatrix, int cutOffNumber, int minPercentage, boolean percentage, boolean takeCuttOffAndPercentage, boolean removeStrainInformation, String outputFolder) {
         
         for(Entry<String, HashSet<String>> dataset : InformationPerCohort.entrySet()){
             // select samples of interest
             DoubleMatrixDataset<String, String> relevantBugMatrix = MatrixHandling.CreatSubsetBasedOnColumns(bugMatrix, dataset.getValue(), false);
 
             //Select bugs present in at least cutOffNumer
-            relevantBugMatrix =  selectToppresentBugs(relevantBugMatrix,cutOffNumber, minPercentage, percentage, takeCuttOffAndPercentage);
+            relevantBugMatrix =  selectToppresentBugs(relevantBugMatrix,cutOffNumber, minPercentage, percentage, takeCuttOffAndPercentage, removeStrainInformation);
 
             try {
                 relevantBugMatrix.save(outputFolder+"matrix_"+dataset.getKey()+"_CuttOfNumber_"+cutOffNumber+"_incPercentage"+minPercentage+".tsv");
@@ -108,22 +109,24 @@ public class PrintPerDatasetCuttOff {
         }
     }
 
-    private static DoubleMatrixDataset<String, String> selectToppresentBugs(DoubleMatrixDataset<String, String> relevantBugMatrix, int cutOffNumber, int minPercentage, boolean percentage, boolean takeCuttOffAndPercentage) {
+    private static DoubleMatrixDataset<String, String> selectToppresentBugs(DoubleMatrixDataset<String, String> relevantBugMatrix, int cutOffNumber, int minPercentage, boolean percentage, boolean takeCuttOffAndPercentage, boolean removeStrainInformation) {
         HashSet<String> interestingColumns = new HashSet<String>();
         double nrSamples = relevantBugMatrix.columns();
         for(int r = 0; r < relevantBugMatrix.rows(); r++){
-            int nonZeroCols = 0;
-            for(int c = 0; c < relevantBugMatrix.columns(); c++){
-                if(relevantBugMatrix.getMatrix().getQuick(r, c)>0){
-                    nonZeroCols++;
+            if(!(removeStrainInformation && relevantBugMatrix.getRowObjects().get(r).contains("|t__"))){
+                int nonZeroCols = 0;
+                for(int c = 0; c < relevantBugMatrix.columns(); c++){
+                    if(relevantBugMatrix.getMatrix().getQuick(r, c)>0){
+                        nonZeroCols++;
+                    }
                 }
-            }
-            if(!percentage && nonZeroCols>=cutOffNumber){
-                interestingColumns.add(relevantBugMatrix.getRowObjects().get(r));
-            } else if(takeCuttOffAndPercentage && ((nonZeroCols/nrSamples)*100)>=minPercentage && nonZeroCols>=cutOffNumber){
-                interestingColumns.add(relevantBugMatrix.getRowObjects().get(r));
-            } else if(percentage && ((nonZeroCols/nrSamples)*100)>=minPercentage && nonZeroCols>=cutOffNumber){
-                interestingColumns.add(relevantBugMatrix.getRowObjects().get(r));
+                if(!percentage && nonZeroCols>=cutOffNumber){
+                    interestingColumns.add(relevantBugMatrix.getRowObjects().get(r));
+                } else if(takeCuttOffAndPercentage && ((nonZeroCols/nrSamples)*100)>=minPercentage && nonZeroCols>=cutOffNumber){
+                    interestingColumns.add(relevantBugMatrix.getRowObjects().get(r));
+                } else if(percentage && ((nonZeroCols/nrSamples)*100)>=minPercentage && nonZeroCols>=cutOffNumber){
+                    interestingColumns.add(relevantBugMatrix.getRowObjects().get(r));
+                }
             }
         }
         return MatrixHandling.CreatSubsetBasedOnRows(relevantBugMatrix, interestingColumns, false);
