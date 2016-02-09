@@ -22,12 +22,16 @@ import umcg.genetica.io.text.TextFile;
 public class WriteFastaOfInterestRegion {
     
         public static void main(String[] args) {
-            String referenceFasta = args[0];
-            String fileWithPositions = args[1];
-            String outputFile = args[2];
+//            String referenceFasta = args[0];
+//            String fileWithPositions = args[1];
+//            String outputFile = args[2];
+
+            String referenceFasta = "D:\\UMCG\\ProbeMapping\\human_g1k_v37.fasta";
+            String fileWithPositions = "D:\\UMCG\\ProbeMapping\\Info\\V71_2\\GFT\\meta-exons_v71_cut_sorted_22-05-14.gtf";
+            String outputFile = "D:\\UMCG\\ProbeMapping\\Test.txt";
             
             ReferenceGenomeFasta refGen = null;
-            HashMap<String, Triple<String ,Integer, Integer>> interestStrings = null;
+            HashMap<String, HashMap<String, Triple<String ,Integer, Integer>>> interestStrings = null;
             try {
                 refGen = new ReferenceGenomeFasta(new File(referenceFasta));
             } catch (Exception ex) {
@@ -46,21 +50,29 @@ public class WriteFastaOfInterestRegion {
             
         }
 
-    private static HashMap<String, Triple<String ,Integer, Integer>> readFileWithPositions(String fileWithPositions) throws IOException {
-        HashMap<String, Triple<String ,Integer, Integer>> positions = new HashMap<>();
+    private static HashMap<String, HashMap<String, Triple<String ,Integer, Integer>>> readFileWithPositions(String fileWithPositions) throws IOException {
+        HashMap<String, HashMap<String, Triple<String ,Integer, Integer>>> chromosomalProbeInformation = new HashMap<>();
         TextFile gffFileReader = new TextFile(fileWithPositions, TextFile.R);
         
+        int counter = 0;
         String str;
         while((str=gffFileReader.readLine())!=null){
             String[] parts = str.split("\t");
+//            System.out.println(str);
             
+            if(!chromosomalProbeInformation.containsKey(parts[0])){
+                chromosomalProbeInformation.put(parts[0], new HashMap<String, Triple<String ,Integer, Integer>>());
+            }
+            
+            chromosomalProbeInformation.get(parts[0]).put(parts[8], new Triple<String ,Integer, Integer>(parts[6], Integer.parseInt(parts[3]), Integer.parseInt(parts[4])));
+            counter++;
         }
-        
+        System.out.println("Number of entries read in: "+counter);
         gffFileReader.close();
-        return positions; 
+        return chromosomalProbeInformation; 
     }
 
-    private static void writeFastas(ReferenceGenomeFasta refGen, HashMap<String, Triple<String ,Integer, Integer>> interestStrings, String outputFile) {
+    private static void writeFastas(ReferenceGenomeFasta refGen, HashMap<String, HashMap<String, Triple<String ,Integer, Integer>>> interestStrings, String outputFile) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
