@@ -206,7 +206,10 @@ public class ProbeSpecificFDR {
             }
             //
         }
-
+        
+        // Need to add the max P-value's for the other parts. So every bug has the same number of P-value's.
+        // Maximal number of P-values available for a Bacteria.
+        
         HashMap<String, Pair<double[], double[]>> informationPerProbe = new HashMap<String, Pair<double[], double[]>>();
 
         double averageUniquqPerm = 0;
