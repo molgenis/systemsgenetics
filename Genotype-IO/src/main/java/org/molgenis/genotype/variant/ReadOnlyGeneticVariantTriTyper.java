@@ -84,7 +84,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
     @Override
     public Allele getRefAllele() {
-        return null;
+        return this.getVariantAlleles().get(0);
     }
 
     @Override
