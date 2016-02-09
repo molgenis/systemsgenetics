@@ -84,5 +84,6 @@
 		<module>eQTLInteractionAnalyser</module>
 		<module>javaPoCA</module>
                 <module>cellTypeSpecificAlleleSpecificExpression</module>
-        </modules>
+    <module>MetaGenomicDataProcessing</module>
+  </modules>
 </project>

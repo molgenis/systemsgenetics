@@ -29,7 +29,6 @@ public class FDR {
 //    public static String permutationDir = null;
 //    public static String outputDir = null;
     public enum FDRMethod {
-
         PROBELEVEL, SNPLEVEL, GENELEVEL, FULL, ALL
     };
 

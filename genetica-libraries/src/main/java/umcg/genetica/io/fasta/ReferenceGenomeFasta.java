@@ -85,7 +85,7 @@ public class ReferenceGenomeFasta {
 
 				String chr = headerChrMatcher.group(1);
 
-				if (!chrIncludeFilter.contains(chr)) {
+				if ( !chrIncludeFilter.contains(chr)) {
 					skip = true;
 					continue;
 				}
@@ -127,6 +127,64 @@ public class ReferenceGenomeFasta {
 
 	}
 
+    public ReferenceGenomeFasta(File fastaFile) throws IOException, Exception {
+
+		chromosomes = new LinkedHashMap<String, LargeByteArray>(32);
+
+		BufferedReader fasteReader = new BufferedReader(new FileReader(fastaFile));
+
+		String line;
+		LargeByteArray currentSeq = null;
+		long pos = 0;
+
+		while ((line = fasteReader.readLine()) != null) {
+
+			if(line.length() == 0){
+				continue;
+			}
+			
+			if (line.charAt(0) == '>') {
+
+//				System.out.println("Previous chr bases read: " + pos);
+
+				Matcher headerChrMatcher = FASTA_HEADER_CHR_PATTERN.matcher(line);
+
+				if (!headerChrMatcher.find()) {
+					throw new Exception("Error parsing reference genome fasta header: " + line);
+				}
+
+				String chr = headerChrMatcher.group(1);
+
+				Matcher headerMatcher = FASTA_HEADER_PATTERN.matcher(line);
+
+				if (!headerMatcher.matches()) {
+					throw new Exception("Error parsing reference genome fasta header: " + line);
+				}
+//				System.out.println("----");
+//				System.out.println(line);
+
+
+				long lenght = Long.parseLong(headerMatcher.group(2));
+
+				if(chr.equals("Y") && lenght == 59034049){
+					lenght = 59373566;
+				}
+				
+//				System.out.println(chr + " " + lenght);
+				pos = 0;
+				currentSeq = new LargeByteArray(lenght);
+				chromosomes.put(chr, currentSeq);
+
+//				System.out.println(currentSeq.getSize());
+
+
+			}
+
+		}
+
+	}
+    
+    
 	public char getNucleotide(String chr, long pos) throws Exception {
 		LargeByteArray chrNucleotides = chromosomes.get(chr);
 		if (chrNucleotides == null) {
@@ -138,6 +196,26 @@ public class ReferenceGenomeFasta {
 		}
 
 		return (char) chrNucleotides.getQuick(pos - 1);
+	}
+    
+    public StringBuilder getNucleotides(String chr, long posStart, long posStop) throws Exception {
+		LargeByteArray chrNucleotides = chromosomes.get(chr);
+        
+		if (chrNucleotides == null) {
+			throw new Exception("Chr " + chr + " not found in reference fasta");
+		}
+
+		if (posStart > chrNucleotides.getSize() || posStop > chrNucleotides.getSize()) {
+			throw new Exception("Chr " + chr + " is shorter than < " + posStart +" or "+posStop);
+		}
+        
+        StringBuilder nucleotides = new StringBuilder();
+        
+        for(long i = posStart-1; i < posStop; i++){
+            nucleotides.append(chrNucleotides.getQuick(i));
+        }
+        
+		return nucleotides;
 	}
 
 	public Set<String> getChromosomes() {
