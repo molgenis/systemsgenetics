@@ -36,11 +36,11 @@ public class PrintPerDatasetCuttOff {
 //        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
 //        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\PerCohort_KO50000\\";
         
-        int cutOffNumber = 10;
-        int minPercentage = 75;
-        boolean percentage = true;
-        boolean takeCuttOffAndPercentage = true;
-        boolean removeStrainInformation = true;
+        int cutOffNumber = 5;
+        int minPercentage = 0;
+        boolean percentage = false;
+        boolean takeCuttOffAndPercentage = false;
+        boolean removeStrainInformation = false;
         
         //Read information from gtm
         HashMap<String, HashSet<String>> InformationPerCohort = readGTMInformation(gtmFolder);
