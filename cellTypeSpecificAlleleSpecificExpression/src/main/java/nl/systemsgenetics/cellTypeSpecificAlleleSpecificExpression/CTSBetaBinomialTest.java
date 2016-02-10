@@ -16,7 +16,6 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 import org.apache.commons.math3.optim.univariate.SearchInterval;
-import org.jdom.IllegalDataException;
 
 /**
  *
@@ -303,7 +302,7 @@ class CTSBetaBinomialTest {
                 if(GlobalVariables.verbosity >= 1){
                     System.out.println("WARNING: Did not converge to a solution for SNP " + snpName + "in cell type specific beta binomial");
                     System.out.println("         After " + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
-                    System.out.println("         Continue-ing with the next.");
+                    System.out.println("         Continue-ing with the next SNP");
                 }
             
             }

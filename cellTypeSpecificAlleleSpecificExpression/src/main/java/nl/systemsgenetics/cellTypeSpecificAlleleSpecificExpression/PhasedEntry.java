@@ -36,12 +36,13 @@ class PhasedEntry {
                        String dispersionLocation,
                        String phasingLocation, 
                        String regionLocation) throws IOException, Exception {
+       
         /**
-         * This method will perform a binomial test for some test region. 
+         * This method will perform a (beta) binomial test for some test region. 
          * later additional features will be add.
          * 
          * currently the flow of the program:
-         * 1. read all SNPs from AS files and add overdispersion and cellprop to the files
+         * 1. read all SNPs from AS files and add overdispersion and cellprop to the sampless
          * 2. read phasing and assign alleles for these snps
          * 3. load test regions and determine test snps.
          * 5. determine log likelihood for test-snps. (with some deduplication to speed up the process.)
@@ -51,7 +52,6 @@ class PhasedEntry {
         // 1. Read all SNPs from AS files
 
         ArrayList<String> allFiles = UtilityMethods.readFileIntoStringArrayList(asLocations);
-
 
         ReadAsLinesIntoIndividualSNPdata asReader = new ReadAsLinesIntoIndividualSNPdata(asLocations);
         
@@ -72,7 +72,7 @@ class PhasedEntry {
         
         if(dispersionLocation == null){
             PrintWriter dispersionWriter = new PrintWriter(dispersionOutput, "UTF-8");       
-            dispersionWriter.write("Filename\tdispersion");
+            dispersionWriter.write("Filename\tdispersion\n");
         
             for(String asLoc : allFiles){
                 dispersionParameters.add(new BetaBinomOverdispInSample(asLoc));
@@ -89,7 +89,7 @@ class PhasedEntry {
                 double[] dispersion;
                 dispersion = new double[] { Double.parseDouble(Line.split("\t")[1]) };
 
-                //the file is later checked for correctness in when writing the values back.
+                //the file is later checked for correctness in when writing the values into individual SNP data.
                 BetaBinomOverdispInSample fillerForDispersion = new BetaBinomOverdispInSample(sampleName, dispersion);
                 dispersionParameters.add(fillerForDispersion);
                 
@@ -377,6 +377,10 @@ class PhasedEntry {
                     
                     }
                     
+                    //Make sure we have heterozygous SNPs in the gene region.ww
+                    if(phasedSNPsForTest.isEmpty()){
+                        continue;
+                    }
                     
                     if(GlobalVariables.verbosity >= 10){
                         System.out.println("\n----------------------------------------");
@@ -397,6 +401,8 @@ class PhasedEntry {
                         System.out.println(" ]");
                         System.out.println("----------------------------------------\n");
                     }
+                    
+                    
                     BinomialTest thisBinomTest;
                     thisBinomTest = BinomialTest.phasedBinomialTest(phasedSNPsForTest, iRegion,hetTestSnps.size() );
                     thisBinomTest.addAdditionalSNP(hetTestSnps.get(0).snpName, hetTestSnps.get(0).position);                    
@@ -412,7 +418,6 @@ class PhasedEntry {
                     
 
                     //make sure we don't have to do the computationally intensive tests again.
-                    
                     combinationsDone.add(refStringA);
                     combinationsDone.add(refStringB);
                     
@@ -559,10 +564,21 @@ class PhasedEntry {
                 
                 
                 for(IndividualSnpData iAS : oldSnpData){
-                    int i;
+                    int i = -1;
                     
-                    i = couplingMap.get(iAS.getSampleName());
-                    
+                    try{
+                        i = couplingMap.get(iAS.getSampleName());
+                    }
+                    catch(NullPointerException e){
+                        System.out.println("Found a null pointer exception.");
+                        System.out.println("couplingMap");
+                        System.out.println(couplingMap.toString());
+                        System.out.println("iAS sample Name");
+                        System.out.println(iAS.getSampleName());
+                        System.out.println("The values in the couplingMap should be exactly the same as the file names.");
+                        System.out.println("Make sure the sample name is the same as in the coupling file.");
+                        System.exit(2);
+                    }
                     
                     //make sure there is phasing data available:
                     if(SamplePhasing.get(i)){
@@ -598,7 +614,6 @@ class PhasedEntry {
                                 System.out.println("Did not set phasing for variant" + snpName + " phasing does not match genotype.");
                             }
                             passSNP = true;
-
                         }
                     }
                     newSnpData.add(iAS);

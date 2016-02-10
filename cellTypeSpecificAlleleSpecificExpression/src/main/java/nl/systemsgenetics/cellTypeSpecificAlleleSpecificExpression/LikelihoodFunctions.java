@@ -52,15 +52,16 @@ public class LikelihoodFunctions {
         b = (beta)  /(alpha + beta) *  (1.0 / Math.pow(sigma, 2) - 1.0);
         
         
-        
         double part1 = 0.0;
         part1 += Beta.logBeta(AS1 + a, AS2 + b);
         part1 -= Beta.logBeta(a, b);
+        
         
         if(GlobalVariables.hetProb == 1.0){
             return -1.0 * part1;
         }
         
+        //Below is unused in our case. hetProb is always 1.0
         double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
         double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
         

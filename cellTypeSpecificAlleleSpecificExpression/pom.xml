@@ -26,12 +26,6 @@
             <version>1.129</version>
         </dependency>
         <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>eqtl-functional-enrichment</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
             <groupId>com.googlecode.efficient-java-matrix-library</groupId>
             <artifactId>main</artifactId>
             <version>0.26-SNAPSHOT</version>
@@ -55,8 +49,18 @@
             <artifactId>commons-math3</artifactId>
             <version>3.5</version>
         </dependency>
-
-        
+        <dependency>
+            <groupId>jdom</groupId>
+            <artifactId>jdom</artifactId>
+            <version>1.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>nl.systemsgenetics</groupId>
+            <artifactId>genetica-libraries</artifactId>
+            <version>1.0.7-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 
 
