@@ -302,71 +302,28 @@ public class MatrixHandling {
      * should be removed
      */
     public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnRows(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> rowNames, boolean removeRows) {
+        LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>();
         
-        int newSize = 0;
-        HashSet<String> removeList = new HashSet<String>();
-        
-        if(removeRows){
-            for (String t : dataset.getRowObjects()) {
-                if (!rowNames.contains(t)) {
-                    newSize++;
-                } else {
-                    removeList.add(t);
-                }
-            }
-            if(removeList.isEmpty()){
-                return(dataset);
-            }
-        } else {
-            for (String t : dataset.getRowObjects()) {
-                if (rowNames.contains(t)) {
-                    newSize++;
-                } else {
-                    removeList.add(t);
-                }
-            }
-            if(newSize == dataset.rows()){
-                return(dataset);
+        int newCounter = 0;
+        for (String t : dataset.getRowObjects()) {
+            if(removeRows && !rowNames.contains(t)){
+                rowMap.put(t, newCounter);
+                newCounter++;
+            } else if(!removeRows && rowNames.contains(t)){
+                rowMap.put(t, newCounter);
+                newCounter++;
             }
         }
         
-        DoubleMatrix2D matrix;
-        if ((dataset.columns() * (long)newSize) < (Integer.MAX_VALUE - 2)) {
-            matrix = new DenseDoubleMatrix2D(newSize, dataset.columns());
-        } else{
-            matrix = new DenseLargeDoubleMatrix2D(newSize, dataset.columns());
-        }
-        
-        int probeId = -1;
-        ArrayList<String> rowObj = dataset.getRowObjects();
-
-        if(removeRows){
-            for (int p = 0; p < dataset.rows(); ++p) {
-                if (!(rowNames.contains(rowObj.get(p)))) {
-                    probeId++;
-                    for (int s = 0; s < dataset.columns(); ++s) {
-                        matrix.setQuick(probeId, s, dataset.getMatrix().getQuick(p, s));
-                    }
-                }
-            }
-        } else {
-            for (int p = 0; p < dataset.rows(); ++p) {
-                if ((rowNames.contains(rowObj.get(p)))) {
-                    probeId++;
-                    for (int s = 0; s < dataset.columns(); ++s) {
-                        matrix.setQuick(probeId, s, dataset.getMatrix().getQuick(p, s));
-                    }
-                }
+        DoubleMatrixDataset<String, String> matrix = new DoubleMatrixDataset<String, String>(rowMap, dataset.getHashCols());
+        for (int p = 0; p < matrix.rows(); ++p) {
+            int originalRowNumer = dataset.getHashRows().get(matrix.getRowObjects().get(p));
+            for (int s = 0; s < matrix.columns(); ++s) {
+                matrix.getMatrix().setQuick(p, s, dataset.getMatrix().getQuick(originalRowNumer, s));
             }
         }
 
-        for (String r : removeList) {
-            dataset.hashRows.remove(r);
-        }
-
-        fixLinkedHashes(dataset.hashRows);
-        
-        return new DoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
+        return matrix;
     }
 
     /**
@@ -400,69 +357,28 @@ public class MatrixHandling {
      * @param remove, if true col ids in colNames are removed if false colNames are selected others are removed.
      */
     public static DoubleMatrixDataset<String, String> CreatSubsetBasedOnColumns(umcg.genetica.math.matrix2.DoubleMatrixDataset<String, String> dataset, HashSet<String> colNames, boolean remove) {
-        int newSize = 0;
-        HashSet<String> removeList = new HashSet<String>();
+        LinkedHashMap<String, Integer> columnMap = new LinkedHashMap<String, Integer>();
         
-        if(remove){
-            for (String t : dataset.getColObjects()) {
-                if (!colNames.contains(t)) {
-                    newSize++;
-                } else {
-                    removeList.add(t);
-                }   
-            }
-            if(removeList.isEmpty()){
-                return(dataset);
-            }
-        } else {
-            for (String t : dataset.getColObjects()) {
-                if (colNames.contains(t)) {
-                    newSize++;
-                } else {
-                    removeList.add(t);
-                }
-            }
-            if(newSize == dataset.columns()){
-                return(dataset);
+        int newCounter = 0;
+        for (String t : dataset.getColObjects()) {
+            if(remove && !colNames.contains(t)){
+                columnMap.put(t, newCounter);
+                newCounter++;
+            } else if(!remove && colNames.contains(t)){
+                columnMap.put(t, newCounter);
+                newCounter++;
             }
         }
         
-        DoubleMatrix2D matrix;
-        if ((dataset.rows() * (long)newSize) < (Integer.MAX_VALUE - 2)) {
-            matrix = new DenseDoubleMatrix2D(dataset.rows(), newSize);
-        } else {
-             matrix = new DenseLargeDoubleMatrix2D(dataset.rows(), newSize);
-        }
-        
-        int sampleId = -1;
-
-        ArrayList<String> colObj = dataset.getColObjects();
-        if(remove){
-            for (int s = 0; s < dataset.columns(); ++s) {
-                if (!(colNames.contains(colObj.get(s)))) {
-                    sampleId++;
-                    for (int p = 0; p < dataset.rows(); ++p) {
-                        matrix.setQuick(p, sampleId, dataset.getMatrix().getQuick(p, s));
-                    }
-                }
+        DoubleMatrixDataset<String, String> matrix = new DoubleMatrixDataset<String, String>(dataset.getHashRows(), columnMap);
+        for (int s = 0; s < matrix.columns(); ++s) {
+            int originalSampleNumer = dataset.getHashCols().get(matrix.getColObjects().get(s));
+            for (int p = 0; p < matrix.rows(); ++p) {
+                matrix.getMatrix().setQuick(p, s, dataset.getMatrix().getQuick(p, originalSampleNumer));
             }
-        } else {
-            for (int s = 0; s < dataset.columns(); ++s) {
-                if ((colNames.contains(colObj.get(s)))) {
-                    sampleId++;
-                    for (int p = 0; p < dataset.rows(); ++p) {
-                        matrix.setQuick(p, sampleId, dataset.getMatrix().getQuick(p, s));
-                    }
-                }
-            }
-        }
-        for (String r : removeList) {
-            dataset.hashCols.remove(r);
         }
 
-        fixLinkedHashes(dataset.hashCols);
-        
-        return new DoubleMatrixDataset<String, String>(matrix, dataset.hashRows, dataset.hashCols);
+        return matrix;
     }
     
     public static void RenameCols(umcg.genetica.math.matrix2.DoubleMatrixDataset<?, String> dataset, HashMap<String, String> newNames) {

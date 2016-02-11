@@ -5,6 +5,7 @@
 package umcg.genetica.io.trityper;
 
 import java.util.ArrayList;
+import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 /**
  *
@@ -19,8 +20,22 @@ public class MinimalEQTL {
     private String probe;
     private byte probeChr;
     private int probeChrPos;
+    private double zScore = -9;
+    private char assesedAllele = ' ';
 
     public MinimalEQTL() {
+    }
+    
+    public MinimalEQTL(String[] eQTLrowInformation) {
+        this.pvalue = Double.parseDouble(eQTLrowInformation[0]);
+        this.rsName = eQTLrowInformation[1];
+        this.rsChr = ChrAnnotation.parseChr(eQTLrowInformation[2]);
+        this.rsChrPos = Integer.parseInt(eQTLrowInformation[3]);
+        this.probe = eQTLrowInformation[4];
+        this.probeChr = ChrAnnotation.parseChr(eQTLrowInformation[5]);
+        this.probeChrPos = Integer.parseInt(eQTLrowInformation[6]);
+        this.zScore = Double.parseDouble(eQTLrowInformation[10]);
+        this.assesedAllele = eQTLrowInformation[9].charAt(0);
     }
     
     public MinimalEQTL(double pValue, String rsName, byte rsChr, int rsChrPos,  String probe, byte probeChr, int probeChrPos) {
@@ -144,6 +159,24 @@ public class MinimalEQTL {
     public Double getPvalueAbs() {
         return Math.abs(pvalue);
     }
+
+    public double getzScore() {
+        return zScore;
+    }
+
+    public void setzScore(double zScore) {
+        this.zScore = zScore;
+    }
+
+    public char getAssesedAllele() {
+        return assesedAllele;
+    }
+
+    public void setAssesedAllele(char assesedAllele) {
+        this.assesedAllele = assesedAllele;
+    }
+    
+    
 
     public static ArrayList<MinimalEQTL> convertArray(ArrayList<EQTL> qtlBuffer) {
         ArrayList<MinimalEQTL> minimalQtlBuffer = new ArrayList<>();
