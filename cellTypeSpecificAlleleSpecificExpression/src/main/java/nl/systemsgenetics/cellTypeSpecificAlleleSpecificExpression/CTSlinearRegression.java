@@ -69,7 +69,7 @@ class CTSlinearRegression {
         position = all_individuals.get(0).getPosition();
         
         //isolate heterozygotes
-        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
         numberOfHets = het_individuals.size();
         
                 hetSampleNames = new ArrayList<String>();
@@ -110,8 +110,13 @@ class CTSlinearRegression {
             
             SimpleRegression thisRegression = new SimpleRegression();
             for(int i=0; i< asRef.size(); i++ ){
-                
-                Double asRatio = ((double)asRef.get(i)) / ((double)(asRef.get(i) + asAlt.get(i)));
+                Double asRatio;
+                //do this check, otherwise the denominator will be zero.
+                if(asRef.get(i) != 0){
+                    asRatio = ((double)asRef.get(i)) / ((double)(asRef.get(i) + asAlt.get(i)));
+                }else{
+                    asRatio = 0.0;
+                }
                 Double phenoRatio =  cellProp.get(i);
                 thisRegression.addData(phenoRatio, asRatio);
                 
@@ -150,6 +155,10 @@ class CTSlinearRegression {
         
     }
     
+    public static String writeHeader(){
+       String header = "chr\tpos\tsnpName\tnumHets\tpVal\tslope\tintercept\tstdErrorSlope\tstdErrorIntercept";
+       return header;
+    } 
     
     
     public String writeTestStatistics(boolean output_all_data){

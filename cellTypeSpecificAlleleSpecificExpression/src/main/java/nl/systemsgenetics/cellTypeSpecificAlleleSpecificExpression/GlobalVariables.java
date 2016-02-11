@@ -39,7 +39,9 @@ public class GlobalVariables {
     //TESTING SPECIFIC PARAMETERS
     public static int minReads = 1;
     public static int minHets  = 1;
-    
+
+    public static double minHetReads = 0.0; 
+            
     
     
     //I have some fully phased data and this is what wasp comes up with.
