@@ -16,7 +16,6 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 import org.apache.commons.math3.optim.univariate.SearchInterval;
-import org.jdom.IllegalDataException;
 
 /**
  *
@@ -58,7 +57,7 @@ class CTSBetaBinomialTest {
     int iterations;
     double alphaParam;
     double betaParam;
-    double binomRatio;
+    
     
     //likelihood of data:
     double nullLogLik;
@@ -84,7 +83,7 @@ class CTSBetaBinomialTest {
         position = all_individuals.get(0).getPosition();
         
         //isolate heterozygote individuals.
-        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
     
         numberOfHets = het_individuals.size();
         
@@ -209,8 +208,10 @@ class CTSBetaBinomialTest {
                 ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
 
                 GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
+                GuessList.add(new InitialGuess(new double[] {0.01, 0.2       }));
+                GuessList.add(new InitialGuess(new double[] {-0.01, 0.7       }));
                 GuessList.add(new InitialGuess(new double[] {0.25, 0.5       }));
-                GuessList.add(new InitialGuess(new double[] {0.75, 0.5       }));
+                
 
 
 
@@ -303,7 +304,7 @@ class CTSBetaBinomialTest {
                 if(GlobalVariables.verbosity >= 1){
                     System.out.println("WARNING: Did not converge to a solution for SNP " + snpName + "in cell type specific beta binomial");
                     System.out.println("         After " + Integer.toString(GlobalVariables.maximumIterations) +   " iterations.");
-                    System.out.println("         Continue-ing with the next.");
+                    System.out.println("         Continue-ing with the next SNP");
                 }
             
             }
@@ -327,6 +328,11 @@ class CTSBetaBinomialTest {
         return testPerformed;
     }
 
+    public static String writeHeader(){
+        String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tcellTypeRatio\tresidualRatio\tnullLogLik\taltLogLik";
+        return header;
+    }
+    
     String writeTestStatistics(boolean all_data) {
         String out = "";
         
@@ -342,46 +348,10 @@ class CTSBetaBinomialTest {
             // otherwise i think I have to do something with printf or something.
             out += Double.toString(pVal) + "\t";
             out += Double.toString(chiSq) + "\t";
-            out += Double.toString(binomRatio) + "\t";
-            out += Double.toString(nullLogLik) + "\t";
-            out += Double.toString(altLogLik) + "\t";
             out += Double.toString(binomRatioCellType) + "\t";
             out += Double.toString(binomRatioResidual) + "\t";
-            
-            
-            
-            if(outPutAllData){
-                String samples_string="";
-                String ref_string="";
-                String alt_string="";                
-                String no_string="";
-                String disp_string="";
-                String cellProp_string="";
-
-                for(int i=0; i < hetSampleNames.size(); i++){
-                    
-                    //samples_string += hetSampleNames.get(i) + ";";
-                    ref_string += Integer.toString(asRef.get(i)) + ";";
-                    alt_string += Integer.toString(asAlt.get(i)) + ";";
-                    no_string += Integer.toString(asNo.get(i)) + ";";
-                    disp_string += Double.toString(dispersion.get(i)) + ";";
-                    cellProp_string += Double.toString(cellProp.get(i)) + ";";
-                }
-                
-                //remove last delimiter
-                //samples_string = samples_string.substring(0, samples_string.length()-1);
-                ref_string = ref_string.substring(0, ref_string.length()-1);
-                alt_string = alt_string.substring(0, alt_string.length()-1);
-                no_string = no_string.substring(0, no_string.length()-1);
-                disp_string = disp_string.substring(0, disp_string.length()-1);
-                cellProp_string = cellProp_string.substring(0, cellProp_string.length()-1);
-                
-                //out += "\t" + samples_string + "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-                out += "\t" + ref_string + "\t" + alt_string + "\t" + no_string  + "\t" + disp_string + "\t" + cellProp_string;
-
-
-            }
-
+            out += Double.toString(nullLogLik) + "\t";
+            out += Double.toString(altLogLik);
 
         } else {
             //when no testing is done, will only output snp name and position, and NA.
@@ -391,12 +361,7 @@ class CTSBetaBinomialTest {
                 out += "NA\t";
             
             }
-            if(outPutAllData){
-                for(int i=0; i < 6; i++ ){
-                    out += "NA\t";
-
-                }
-            }
+          
             out += "NA";
         
         }

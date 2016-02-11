@@ -173,6 +173,18 @@ public class MainEntryPoint {
 				.withLongOpt("minimum_reads")
 				.create("minimum_reads");
 		OPTIONS.addOption(option);                
+
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("Integer specifying the minimum percentge of reads that overlaps both alleles"
+                                               + "before running an AS test.\n"
+                                               + "Default setting is 0, maximum is 50.\n"
+                                               + "Used when action is: ASEperSNP and ASEperRegion")                                                
+				.withLongOpt("minimum_het_reads")
+				.create("minimum_het_reads");
+		OPTIONS.addOption(option);                
+
+
                 
                 option = OptionBuilder.withArgName("String")
 				.hasArgs()
@@ -276,6 +288,23 @@ public class MainEntryPoint {
                                          + "Exitting");
                     }
                 }
+
+                if(commandLine.hasOption("minimum_het_reads")){
+                    GlobalVariables.minHetReads = (double)Integer.parseInt(commandLine.getOptionValue("minimum_het_reads")) / 100.0;
+                    //Check if this is bigger than 0, otherwise exit 
+                    
+                    
+                    if(GlobalVariables.minHets < 0){
+                        throw new IllegalDataException("Minimum Number of het reads percentage cannot be smaller than one for AS testing\n"
+                                         + "Exitting");
+                    }
+                    if(GlobalVariables.minHets > 50){
+                        throw new IllegalDataException("Minimum Number of het reads percentage cannot be bigger than 50 (%) AS testing\n"
+                                         + "Exitting");
+                    }
+                    
+                }
+
                 
                 if(commandLine.hasOption("plot_directory")){
                     GlobalVariables.plotDir = commandLine.getOptionValue("plot_directory");

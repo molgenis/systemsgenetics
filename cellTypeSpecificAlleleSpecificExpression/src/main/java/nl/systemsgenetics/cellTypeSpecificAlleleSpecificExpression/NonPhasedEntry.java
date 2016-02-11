@@ -89,7 +89,7 @@ public class NonPhasedEntry {
             writer = new PrintWriter(dispersionOutput, "UTF-8");       
 
             //header for dispersion
-            writer.write("Filename\tdispersion");
+            writer.write("Filename\tdispersion\n");
 
             for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
                 dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
@@ -159,21 +159,27 @@ public class NonPhasedEntry {
         
         //PART 4. Read the as files one line at a time.
         
-        //Will create three types of 
-        
+        //Will create a file and write a header
         PrintWriter binomWriter = new PrintWriter(binomialOutput, "UTF8");
+        binomWriter.println(BinomialTest.writeHeader());
+        
         PrintWriter betaBinomWriter = new PrintWriter(betaBinomialOutput, "UTF8");
-
+        betaBinomWriter.println(BetaBinomialTest.writeHeader());
         
         
-        //CTS stuff.
+        //CTS files if available.
         PrintWriter CTSBinomWriter = null; 
         PrintWriter CTSBetaBinomWriter = null;
         PrintWriter CTSlinearRegressionWriter = null;
         if(phenoTypeLocation != null){
             CTSlinearRegressionWriter = new PrintWriter(CTSlinearRegressionOutput, "UTF-8");
+            CTSlinearRegressionWriter.println(CTSlinearRegression.writeHeader());
+            
             CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
+            CTSBinomWriter.println(CTSbinomialTest.writeHeader());
+            
             CTSBetaBinomWriter = new PrintWriter(CTSbetaBinomialOutput, "UTF-8");
+            CTSBetaBinomWriter.println(CTSBetaBinomialTest.writeHeader());
         }
         
         
@@ -207,7 +213,7 @@ public class NonPhasedEntry {
             }
             
             ArrayList<IndividualSnpData> het_individuals;
-            het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnpData);
+            het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(allSnpData);
     
             int numberOfHets = het_individuals.size();
             int totalOverlap = 0;
@@ -289,7 +295,6 @@ public class NonPhasedEntry {
                     GlobalVariables.numberOfTestPerformed++;
 
                 }
-                
                 
                 
                 // do the CTS tests if data is available.
