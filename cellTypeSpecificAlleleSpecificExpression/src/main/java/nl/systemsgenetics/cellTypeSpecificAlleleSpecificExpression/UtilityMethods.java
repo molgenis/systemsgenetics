@@ -75,9 +75,9 @@ public class UtilityMethods {
             double thisHetReadProp = (double)sample.getRefNum()  / ((double)sample.getRefNum() + (double)sample.getAltNum());
             
             boolean validReads = false;
-            if(     thisHetReadProp < (1 - GlobalVariables.minHetReads) 
+            if(     thisHetReadProp <= (1 - GlobalVariables.minHetReads) 
                     &&
-                    thisHetReadProp > (GlobalVariables.minHetReads))
+                    thisHetReadProp >= (GlobalVariables.minHetReads))
             {
                 validReads = true;
             }

@@ -207,10 +207,11 @@ class CTSBetaBinomialTest {
 
                 ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
 
-                GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
-                GuessList.add(new InitialGuess(new double[] {0.01, 0.2       }));
+                GuessList.add(new InitialGuess(new double[] {0.0  , nonCTSprop}));
+                GuessList.add(new InitialGuess(new double[] {0.01 , 0.2       }));
+                GuessList.add(new InitialGuess(new double[] {0.5  , 0.1       }));
                 GuessList.add(new InitialGuess(new double[] {-0.01, 0.7       }));
-                GuessList.add(new InitialGuess(new double[] {0.25, 0.5       }));
+                GuessList.add(new InitialGuess(new double[] {0.25 , 0.5       }));
                 
 
 
@@ -284,6 +285,7 @@ class CTSBetaBinomialTest {
 
                 
                 if(GlobalVariables.verbosity >= 10){
+                    
                     System.out.println("\n--- Starting cell type specific beta binomial LRT test estimate ---");
                     System.out.println("LogLik of converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
                     System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
@@ -294,7 +296,6 @@ class CTSBetaBinomialTest {
                     System.out.println("\tP value:                       " + Double.toString(pVal));
                     System.out.println("-----------------------------------------------------------------------");
 
-                    
                 }
                 
                  testConverged = true;

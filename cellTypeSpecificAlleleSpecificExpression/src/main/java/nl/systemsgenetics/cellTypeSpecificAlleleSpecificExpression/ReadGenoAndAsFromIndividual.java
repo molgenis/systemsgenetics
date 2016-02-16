@@ -282,6 +282,14 @@ public class ReadGenoAndAsFromIndividual {
         
         int position_of_snp = Integer.parseInt(position);                       
         
+        //Check to make sure the variant position is not 0.
+        if(position_of_snp <= 0){
+            System.out.println("A SNP was read with a position lower than 1. This is illegal");
+            System.out.println("Please adapt your genotype files by removing SNPs with these illegal positions");
+            System.out.println("\tchr: " + chromosome + " pos: " + position);
+            throw new IllegalDataException("Variant Position was less than 1");
+        }
+        
         SAMRecordIterator all_reads_in_region;
         all_reads_in_region = bam_file.queryOverlapping(chromosome, position_of_snp, position_of_snp);
         
@@ -296,7 +304,7 @@ public class ReadGenoAndAsFromIndividual {
             
             
             Character base_in_read = get_base_at_position(read_in_region, pos_int);
-           //System.out.println("base_in_read: " + base_in_read);
+            System.out.println("base_in_read: " + base_in_read);
             
             
             
