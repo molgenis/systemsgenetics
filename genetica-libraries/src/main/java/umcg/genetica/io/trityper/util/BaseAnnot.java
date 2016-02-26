@@ -150,7 +150,7 @@ public class BaseAnnot {
         for (int i = 0; i < longstr.length(); i++) {
             buffer.append(getComplement("" + longstr.charAt(i)));
         }
-        return null;
+        return buffer.toString();
     }
 
     public static String getComplement(String x) {
