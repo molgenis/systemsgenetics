@@ -20,8 +20,8 @@ public class PrintDatasetPerEntry {
 
     public static void main(String[] args) {
         
-        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\LLD_500Fg_IBS_pathways_selected.QuantileNormalized.txt";
-        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerEntry\\";
+        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Kegg_Genes\\LLD_geneFamilies_KeggTable_KO.tsv.QuantileNormalized.txt";
+        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Kegg_Genes\\PerEntry\\";
 
 //        String inputTable = "E:\\OnlineFolders\\BitSync\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
 //        String outputFolder = "E:\\OnlineFolders\\BitSync\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerEntry\\";
