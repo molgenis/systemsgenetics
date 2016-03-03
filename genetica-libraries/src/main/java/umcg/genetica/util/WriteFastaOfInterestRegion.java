@@ -65,7 +65,7 @@ public class WriteFastaOfInterestRegion {
         String str;
         while ((str = gffFileReader.readLine()) != null) {
             String[] parts = str.split("\t");
-            System.out.println(str);
+//            System.out.println(str);
 
             if (!chromosomalProbeInformation.containsKey(parts[0])) {
                 chromosomalProbeInformation.put(parts[0], new HashMap<String, Triple<String, Integer, Integer>>());
