@@ -40,7 +40,6 @@ public class Deconvolution {
 		 * table> For all three rows are samples and columns are SNPs
 		 * 
 		 */
-
 		// begin command line option parsing
 		Options options = new Options();
 		Option help = new Option("help", "print this message");
@@ -86,7 +85,6 @@ public class Deconvolution {
 		// End of command line option parsing
 
 
-		System.out.printf("Start reading cellcount file...\n");
 		// the cell type names are the first row of cellcount file, extract for
 		// later printing
 		String cellCountFile =  cmdLine.getOptionValue("cellcount");
@@ -95,7 +93,6 @@ public class Deconvolution {
 		celltypes.removeAll(Arrays.asList("", null));
 		cellcountIterator.close();
 		List<List<String>> cellcountTable = readTabDelimitedColumns(cellCountFile);
-		System.out.printf("Done\n");
 		String outfilePath = cmdLine.getOptionValue("o");
 
 
@@ -190,6 +187,44 @@ public class Deconvolution {
 		System.out.printf("Output written to %s", outfilePath);
 	}
 
+	public static double calculateSumOfSquares(double[] y, double[][] model, Boolean intercept){
+		OLSMultipleLinearRegression regr = new OLSMultipleLinearRegression();
+		regr.setNoIntercept(intercept);
+		regr.newSampleData(y, model);
+		double sumOfSquares = regr.calculateResidualSumOfSquares();
+		return (sumOfSquares);
+	}
+	
+
+	public static double anova(double sumOfSquaresModelA, double sumOfSquaresModelB, int degreesOfFreedomA, int degreesOfFreedomB){
+		/** From Joris Meys: http://stackoverflow.com/a/35458157/651779
+		 * 1. calculate MSE for the largest model by dividing the Residual Sum of Squares (RSS) by the degrees of freedom (df)
+		 * 2. calculate the MSEdifference by substracting the RSS of both models (result is "Sum of Sq." in the R table), substracting the df for both models (result is "Df" in the R table), and divide these numbers.
+		 * 3. Divide 2 by 1 and you have the F value
+		 * 4.calculate the p-value using the F value in 3 and for df the df-difference in the numerator and df of the largest model in the denominator.
+		 * For more info: http://www.bodowinter.com/tutorial/bw_anova_general.pdf
+		 **/
+		// Within-group Variance
+		double meanSquareError = sumOfSquaresModelB / degreesOfFreedomB; 
+		int degreesOfFreedomDifference = Math.abs(degreesOfFreedomB - degreesOfFreedomA);
+		// Between-group Variance
+		double meanSquareErrorDiff = Math.abs((sumOfSquaresModelB - sumOfSquaresModelA) / (degreesOfFreedomDifference));
+
+		/** F = Between-group Variance / Within-group Variance <- high value if variance between the models is high, and
+		 * 														  variance within the models is low **/
+		double Fval = meanSquareErrorDiff / meanSquareError;
+		/**Make an F distribution with degrees of freedom as parameter. If full model and 
+		 * ctModel have the same number of samples, difference in df is 1 and degreesOfFreedomB
+		 * are all the terms of the ctModel (so neut% + eos% + ... + neut% * GT + eos% * GT
+		 * With 4 cell types and 1891 samples the dfs are 1 and 1883, giving the below distribution
+		 * http://keisan.casio.com/exec/system/1180573186
+		 * **/
+		FDistribution Fdist = new FDistribution(degreesOfFreedomDifference, degreesOfFreedomB);
+		/**Calculate 1 - the probability of observing a lower Fvalue**/
+		double pval = 1 - Fdist.cumulative(Fval);
+		return(pval);
+	}
+	
 	public static List<Double> deconvolution(double[] expressionVector, double[] genotypeVector,
 			List<List<String>> cellcountTable) throws Exception {
 		/*
@@ -225,21 +260,16 @@ public class Deconvolution {
 				fullModel[j][numberOfCelltypes + i] = celltype_perc * genotypeVector[j];
 			}
 		}
-		/*************SUM OF SQUARES - FULL MODEL*****************/
-		OLSMultipleLinearRegression regr = new OLSMultipleLinearRegression();
-		regr.setNoIntercept(true);
+		/**SUM OF SQUARES - FULL MODEL**/
+		double sumOfSquaresA = calculateSumOfSquares(expressionVector, fullModel, true);
+
 		int expressionLength = expressionVector.length;
 		int fullModelLength = fullModel.length;
 		if (expressionLength != fullModelLength){
 			throw new Exception("expression vector and fullModel have different number of samples.\nexpression: "+expressionLength+"\nfullModel: "+fullModelLength);
 		}
-		regr.newSampleData(expressionVector, fullModel);
-		/********************************************************/
-		//System.out.println(fullModel);
-		double SSR1 = regr.calculateResidualSumOfSquares();
-		int df1 = expressionVector.length - (fullModel[0].length + 1);
+		int degreesOfFreedomA = expressionVector.length - (fullModel[0].length + 1);
 		// df = n - number of coefficients, including intercept
-		// ctModel [genotype][celltype] - for models see comment at top
 		double[][] ctModel = new double[numberOfSamples][(numberOfCelltypes * 2) - 1];
 		List<Double> pvalues = new ArrayList<Double>();
 		// should be in same loop as fullModel but couldn't get the
@@ -265,24 +295,11 @@ public class Deconvolution {
 				// reset genotypeCounter
 				genotypeCounter = numberOfCelltypes;
 			}
-			/*************SUM OF SQUARES - CELLTYPE MODEL*****************/
-			regr.setNoIntercept(true);
-			regr.newSampleData(expressionVector, ctModel);
-			double SSR2 = regr.calculateResidualSumOfSquares();
-			int df2 = expressionVector.length - (ctModel[0].length + 1);
-			/*************************************************************/
+			/**SUM OF SQUARES - CELLTYPE MODEL**/
+			double sumOfSquaresB = calculateSumOfSquares(expressionVector, ctModel, true);
+			int degreesOfFreedomB = expressionVector.length - (ctModel[0].length + 1);
 			/*******ANOVA COMPARE FULL MODEL TO CELLTYPE MODEL************/
-			double MSE = SSR2 / df2; // You need the biggest model here!
-			// sum of squares
-			double MSEdiff = Math.abs((SSR2 - SSR1) / (df2 - df1));
-			int dfdiff = Math.abs(df2 - df1);
-
-			double Fval = MSEdiff / MSE;
-			FDistribution Fdist = new FDistribution(dfdiff, df2);
-			double pval = 1 - Fdist.cumulative(Fval);
-			/********************************************************/
-			// Do the anova test here, calculate the full model sum of squares only once
-			//System.out.println(pval);
+			double pval = anova(sumOfSquaresA, sumOfSquaresB, degreesOfFreedomA, degreesOfFreedomB);
 			pvalues.add(pval);
 		}
 		return pvalues;
