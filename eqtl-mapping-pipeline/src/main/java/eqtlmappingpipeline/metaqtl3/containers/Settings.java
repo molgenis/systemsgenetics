@@ -78,7 +78,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public String strConfineSNPProbe;
     public boolean provideFoldChangeData = false;
     public boolean provideBetasAndStandardErrors = true;
-    public boolean equalRankForTies = false;
+    public boolean equalRankForTies = true;
     public boolean createQQPlot = true;
     public boolean createDotPlot = true;
     public boolean metaAnalyseInteractionTerms = false;
@@ -217,7 +217,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (useIdenticalRanksForTies != null) {
             equalRankForTies = useIdenticalRanksForTies;
         } else {
-            equalRankForTies = false;
+            equalRankForTies = true;
         }
 
         /*

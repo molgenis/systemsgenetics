@@ -105,9 +105,7 @@ public class BinaryMicrobePcaAnalysis {
         loadProbeAnnotation();
 
         for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
-            finalEQTLs = new QTL[bufferSize];
-            locationToStoreResult = 0;
-            bufferHasOverFlown = false;
+            clearResultsBuffer();
             maxSavedPvalue = -Double.MAX_VALUE;
             // create dataset objects
             System.out.println("Running permutation " + permutation);
@@ -115,7 +113,7 @@ public class BinaryMicrobePcaAnalysis {
 
             System.out.println("Loading datasets");
             for (int d = 0; d < datasets.length; d++) {
-                datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d), settings.getDatasetPrefix().get(d), permutation, settings.getDatasetannotations().get(d), probeAnnotation);
+                datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d), settings.getDatasetnames().get(d), settings.getDatasetPrefix().get(d), permutation, settings.getDatasetannotations().get(d), probeAnnotation);
             }
             System.out.println("Loaded " + datasets.length + " datasets");
 
@@ -224,7 +222,7 @@ public class BinaryMicrobePcaAnalysis {
                     for (int probe = 0; probe < traitList.length; probe++) {
                         double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
                         double tScore = ZScores.zScoreToCorrelation(metaAnalysisZ, totalSampleSize);
-                        summedRsquare += tScore*tScore;
+                        summedRsquare += tScore * tScore;
                     }
                     double newMetaZ = Correlation.convertCorrelationToZScore(totalSampleSize, Math.sqrt(summedRsquare));
                     double newMetaAnalysisP = Descriptives.convertZscoreToPvalue(newMetaZ);
@@ -244,10 +242,10 @@ public class BinaryMicrobePcaAnalysis {
                         double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
                         for (int i = 0; i < finalZScores[probe].length; i++) {
                             double tScore = ZScores.zScoreToCorrelation(finalZScores[probe][i], sampleSizes[i]);
-                            summedPerDataSet[i] += tScore*tScore;
+                            summedPerDataSet[i] += tScore * tScore;
                         }
                         double tScore = ZScores.zScoreToCorrelation(metaAnalysisZ, totalSampleSize);
-                        summedRsquare += tScore*tScore;
+                        summedRsquare += tScore * tScore;
                     }
 
                     for (int i = 0; i < summedPerDataSet.length; i++) {
@@ -261,7 +259,7 @@ public class BinaryMicrobePcaAnalysis {
                         MetaQTL4MetaTrait t = new MetaQTL4MetaTrait(21, "Microbe_Components", "-", -1, -1, "", traitList[0].getPlatformIds());
                         QTL q = new QTL(newMetaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), newMetaZ, BaseAnnot.toByteArray(alleles), summedPerDataSet, sampleSizes); // sort buffer if needed.
                         addEQTL(q);
-                    }  else {
+                    } else {
                         System.out.println("Error in procedure.");
                     }
                 }
@@ -545,5 +543,12 @@ public class BinaryMicrobePcaAnalysis {
 
         System.out.println(
                 "Done.");
+    }
+
+    private void clearResultsBuffer() {
+        Arrays.fill(finalEQTLs, null);
+        bufferHasOverFlown = false;
+        locationToStoreResult = 0;
+        maxSavedPvalue = -Double.MAX_VALUE;
     }
 }

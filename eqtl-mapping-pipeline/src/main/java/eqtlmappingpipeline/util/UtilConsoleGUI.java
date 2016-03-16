@@ -31,7 +31,7 @@ public class UtilConsoleGUI {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
         SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
-        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS
+        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE
     };
     MODE run;
 
@@ -79,6 +79,7 @@ public class UtilConsoleGUI {
         String snpprobeselectionlist = null;
         boolean createQQPlot = true;
         boolean createLargeFdrFile = true;
+        boolean stringentFDR = false;
 
         String sources = null;
         String keyValuePairs = null;
@@ -118,6 +119,9 @@ public class UtilConsoleGUI {
             } else if (arg.equals("--fdr")) {
                 region = val;
                 run = MODE.FDR;
+            } else if (arg.equals("--fdrprobe")) {
+                region = val;
+                run = MODE.FDRPROBE;
             } else if (arg.equals("--dotplot")) {
                 region = val;
                 run = MODE.DOTPLOT;
@@ -168,6 +172,8 @@ public class UtilConsoleGUI {
                 } else if (val.equals("snp")) {
                     FdrMethod = FDRMethod.SNPLEVEL;
                 }
+            } else if (args[i].equals("--stringentFDR")) {
+                stringentFDR = true;
             } else if (arg.equals("--snps")) {
                 snpfile = val;
             } else if (arg.equals("--probes")) {
@@ -352,6 +358,21 @@ public class UtilConsoleGUI {
                         }
 
                         break;
+                    case FDRPROBE:
+                        if (in == null || threshold == null || perm == 0) {
+                            System.out.println("To use --fdrprobe, please use --in, --threshold, and --perm");
+                            System.out.println("Optional: --stringentFDR");
+                            printUsage();
+                        } else {
+                            try {
+                                ProbeSpecificFDR.calculateFDR(in, perm, threshold, false, stringentFDR, createLargeFdrFile);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                System.exit(1);
+                            }
+                        }
+
+                        break;
 
                     case META:
                         if (in == null || out == null) {
@@ -462,6 +483,7 @@ public class UtilConsoleGUI {
         System.out.println("--getsnpsinregion\t\tGet SNPs in a certain region: chr positionA positionB: Y:12000-13000 would get all SNPs on chr Y between 12000 and 13000 bp\n"
                 + "--getsnpsinproberegion\t\tGet SNPs in a certain set of probes (specify with --probes)\n"
                 + "--fdr\t\t\t\tCalculated FDR.\n"
+                + "--fdrprobe\t\t\t\tCalculated FDR per probe.\n"
                 + "--getmaf\t\t\tGets maf for snp\n"
                 + "--merge\t\t\t\tMerges two datasets\n"
                 + "--snpstats\t\t\tGets HWE, MAF, and CR for all SNPs\n"

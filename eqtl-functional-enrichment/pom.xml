@@ -1,20 +1,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>eqtl-functional-enrichment</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
-	<name>eqtl-functional-enrichment</name>
-	<packaging>jar</packaging>
 	<parent>
 		<groupId>nl.systemsgenetics</groupId>
 		<artifactId>systemsgenetics</artifactId>
-		<version>1.0.1-SNAPSHOT</version>
+		<version>1.0.2-SNAPSHOT</version>
 	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>eqtl-functional-enrichment</artifactId>
+	<version>0.0.3-SNAPSHOT</version>
+	<name>eqtl-functional-enrichment</name>
+	<packaging>jar</packaging>
 	<dependencies>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>Genotype-IO</artifactId>
-			<version>1.0.1-SNAPSHOT</version>
+			<version>1.0.1</version>
 		</dependency> 		
 		<dependency>
 			<groupId>${project.groupId}</groupId>

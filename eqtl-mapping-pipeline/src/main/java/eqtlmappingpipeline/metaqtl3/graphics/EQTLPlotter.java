@@ -158,24 +158,24 @@ public class EQTLPlotter {
             logPValueString = "0" + logPValueString;
         }
 
-        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_").replace(";", "_") + ".pdf";
+        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_").replace(";", "_").replace("|", "").replace("__","_") + ".pdf";
 //        fileName = m_outputDir + "" + logPValueString + "-" + snpName + "-" + probeName + ".pdf";
         File file = new File(fileName);
 
         Graphics2D g2d = null;
         BufferedImage bi = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfContentByte cb = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
         if (outputPlotsFileType == FILE_TYPE_PNG) {
             bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
             g2d = bi.createGraphics();
         } else {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
             
             try {
-                writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(file));
+                writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(file));
                 document.open();
                 cb = writer.getDirectContent();
                 cb.saveState();

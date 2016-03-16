@@ -143,7 +143,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
                 continue;
             }
 
-			bimFileWriter.append(variant.getSequenceName());
+			bimFileWriter.append(FormatPlinkChr.formatChr(variant.getSequenceName()));
             bimFileWriter.append(SEPARATOR);
             bimFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
             bimFileWriter.append(SEPARATOR);

@@ -34,10 +34,10 @@ public class ZScores {
         }
         double weightedZ = 0;
         double sampleSizeSum = 0;
-        int nrNans = 0;
+//        int nrNans = 0;
         for (int j = 0; j < zScores.length; j++) {
             if (!Float.isNaN(zScores[j])) {
-                nrNans++;
+//                nrNans++;
                 weightedZ += Math.sqrt(sampleSizes[j]) * zScores[j];
                 sampleSizeSum += sampleSizes[j];
             }
@@ -147,6 +147,20 @@ public class ZScores {
         }
         
         return Probability.normalInverse(p);
+    }
+    
+    /**
+     *
+     * Returns the absolute Z-score for a given p-value using a normal
+     * distribution.
+     *
+     * @param p p-value
+     * @return absolute Z-score
+     */
+    public static double pToZTwoTailed(double p) {
+        
+        p = p/2;
+        return pToZ(p);
     }
 
     /**

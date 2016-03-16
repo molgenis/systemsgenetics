@@ -121,7 +121,7 @@ public class Descriptives {
     
     /**
      * Simultainiusly calculates mean for two double[] of the same lengths
-     * Warning: Does not check if the lenght is identical!
+     * Warning: Does not check if the length is identical!
      * 
      * @param v
      * @param w
@@ -172,5 +172,25 @@ public class Descriptives {
             sum += Math.abs(d);
         }
         return sum;
+    }
+    
+    
+    public static double cityBlockDistance(double[] v, double[] w) {
+        double summedDistance = 0;
+        for (int i = 0 ; i < v.length; ++i) {
+            summedDistance += Math.abs(v[i]-w[i]);
+        }
+        return summedDistance;
+    }
+    
+    public static double BrayCurtisDistance(double[] v, double[] w) {
+        double summedDistance = 0;
+        double sum = 0;
+        for (int i = 0 ; i < v.length; ++i) {
+            summedDistance += Math.abs(v[i]-w[i]);
+            sum += v[i];
+            sum += w[i];
+        }
+        return (summedDistance/sum);
     }
 }

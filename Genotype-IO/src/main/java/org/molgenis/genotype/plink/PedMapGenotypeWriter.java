@@ -76,7 +76,7 @@ public class PedMapGenotypeWriter implements GenotypeWriter {
 				continue;
 			}
 
-			mapFileWriter.append(variant.getSequenceName());
+			mapFileWriter.append(FormatPlinkChr.formatChr(variant.getSequenceName()));
 			mapFileWriter.append(SEPARATOR);
 			mapFileWriter.append(variant.getPrimaryVariantId() == null ? variant.getSequenceName() + ":" + variant.getStartPos() : variant.getPrimaryVariantId());
 			mapFileWriter.append(SEPARATOR);

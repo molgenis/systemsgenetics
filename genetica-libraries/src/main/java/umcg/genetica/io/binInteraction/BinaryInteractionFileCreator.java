@@ -399,7 +399,10 @@ public class BinaryInteractionFileCreator {
 		sortedIndices = true;
 	}
 
-	public void setDescription(String description) {
+	public void setDescription(String description) throws BinaryInteractionFileException {
+		if (created) {
+			throw new BinaryInteractionFileException("You already created this file.");
+		}
 		this.description = description;
 	}
 

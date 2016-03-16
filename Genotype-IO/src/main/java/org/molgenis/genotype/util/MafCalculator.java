@@ -11,7 +11,7 @@ public class MafCalculator {
 
 	public static MafResult calculateMaf(Alleles alleles, Allele reference, List<Alleles> samplesAlleles) {
 
-		if (alleles.getAlleles().isEmpty()) {
+		if (alleles.getAlleles().isEmpty() || alleles.getAlleles().size()==1) {
 			return new MafResult(Allele.ZERO, 0);
 		}
 

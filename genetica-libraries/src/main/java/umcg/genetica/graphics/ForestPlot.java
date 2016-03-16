@@ -4,7 +4,7 @@
  */
 package umcg.genetica.graphics;
 
-import com.lowagie.text.DocumentException;
+import com.itextpdf.text.DocumentException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -85,8 +85,8 @@ public class ForestPlot {
         Locale.setDefault(Locale.US);
         // set up Graphics2D depending on required format using iText in case PDF
         Graphics2D g2d = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.pdf.PdfWriter writer = null;
+        com.itextpdf.text.Document document = null;
+        com.itextpdf.text.pdf.PdfWriter writer = null;
         BufferedImage bi = null;
         int width = 1;
         int height = 1;
@@ -130,16 +130,16 @@ public class ForestPlot {
         height = (yAxisNames.length * textpadding) + (2 * textpadding) + (fontheight * yAxisNames.length) + (topMargin * 2) + geneNameMargin + fontheight + topMargin;
         System.out.println(height);
         // initialize plot
-        com.lowagie.text.pdf.PdfContentByte cb = null;
+        com.itextpdf.text.pdf.PdfContentByte cb = null;
         if (output == ForestPlot.Output.PDF) {
-            com.lowagie.text.Rectangle rectangle = new com.lowagie.text.Rectangle(width, height);
-            document = new com.lowagie.text.Document(rectangle);
-            writer = com.lowagie.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
+            com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
+            document = new com.itextpdf.text.Document(rectangle);
+            writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(filename));
 
             document.open();
             cb = writer.getDirectContent();
             cb.saveState();
-            //com.lowagie.text.pdf.DefaultFontMapper fontMap = new com.lowagie.text.pdf.DefaultFontMapper();
+            //com.itextpdf.text.pdf.DefaultFontMapper fontMap = new com.itextpdf.text.pdf.DefaultFontMapper();
             g2d = cb.createGraphics(width, height);
         } else {
             bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);

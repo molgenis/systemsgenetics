@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
-import org.bouncycastle.util.Arrays;
+//import org.bouncycastle.util.Arrays;
 import umcg.genetica.genomicboundaries.GenomicBoundaries;
 import umcg.genetica.graphics.ViolinBoxPlot;
 import umcg.genetica.io.text.TextFile;

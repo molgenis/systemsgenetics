@@ -82,8 +82,8 @@ public class Main {
                 try {
 
                     MetaAnalyze m2 = new MetaAnalyze();
-                    m2.init(settings, texttoreplace, replacetextwith);
-                    m2.analyze();
+                     m2.init(settings, texttoreplace, replacetextwith);
+                     m2.analyze();
 
 //                    System.gc();
 //                    System.gc();

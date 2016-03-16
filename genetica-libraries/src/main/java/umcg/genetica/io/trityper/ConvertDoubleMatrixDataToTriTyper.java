@@ -25,10 +25,10 @@ public class ConvertDoubleMatrixDataToTriTyper {
 
     public static void main(String[] args) throws IOException {
 
-        String mappingFile = args[0];
-        String dataMatrix = args[1];
-        String outputFolder = args[2];
-        String option1 = args[3];
+        String dataMatrix = "D:\\UMCG\\Projects\\LL-DeepMGS\\RiskScores\\RawRiskScoresLLD.txt";
+        String outputFolder = "D:\\UMCG\\Projects\\LL-DeepMGS\\RiskScores\\RawRiskScoresLLD\\";
+        String mappingFile = "D:\\UMCG\\Projects\\LL-DeepMGS\\RiskScores\\RawRiskScores_MappingFile.txt";
+        String option1 = "";
 
         if (!(new File(outputFolder).exists())) {
             Gpio.createDir(outputFolder);
@@ -66,10 +66,10 @@ public class ConvertDoubleMatrixDataToTriTyper {
 //            if(args.length > 3 && args[3].equals("scale")){
 //                ConvertBetaAndMvalues.transformMToBetavalue(dataset.getMatrix());
 //            }
-            if (args[3].equals("rank")) {
-                rankRows(dataset.getMatrix());
+            if (option1.equals("rank")) {
+                dataset.setMatrix(rankRows(dataset.getMatrix()));
             }
-            rescaleValue(dataset.getMatrix(), null);
+            dataset.setMatrix(rescaleValue(dataset.getMatrix(), 200.0d));
 
             try {
                 System.out.println("\nWriting SNPs.txt to file:");
@@ -109,6 +109,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
 
             for (int snp = 0; snp < nrSNPs; snp++) {
                 DoubleMatrix1D snpRow = dataset.getMatrix().viewRow(snp);
+                
                 byte[] allele1 = new byte[nrSamples];
                 byte[] allele2 = new byte[nrSamples];
                 byte[] dosageValues = new byte[nrSamples];
@@ -135,7 +136,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
         System.out.println("Finished.");
     }
 
-    public static void rescaleValue(DoubleMatrix2D matrix, Double multiplier) {
+    public static DoubleMatrix2D rescaleValue(DoubleMatrix2D matrix, Double multiplier) {
         if (multiplier != null) {
             for (int p = 0; p < matrix.rows(); p++) {
                 double min = matrix.viewRow(p).getMinLocation()[0];
@@ -153,10 +154,10 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 }
             }
         }
-
+        return matrix;
     }
 
-    private static void rankRows(DoubleMatrix2D matrix) {
+    private static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
         RankArray rda = new RankArray();
         for (int p = 0; p < matrix.rows(); p++) {
             double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), false);
@@ -164,6 +165,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 matrix.setQuick(p, s, rankedValues[s]);
             }
         }
+        return matrix;
     }
 
 }

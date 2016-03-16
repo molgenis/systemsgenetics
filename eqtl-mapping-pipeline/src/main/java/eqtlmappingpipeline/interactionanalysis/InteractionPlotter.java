@@ -171,7 +171,11 @@ public class InteractionPlotter {
 
                 for (int q = startCovariate; q < endCovariate; q++) {
                     System.out.println("Plotting: " + snp + "\t" + covariateData.rowObjects.get(q) + "\t" + probe);
-                    System.out.println("Individual\tAllele1\tAllele2\tGenotype\tGenotypeFlipped\tCovariate\tExpression");
+                    
+                    
+                    TextFile interactionOut = new TextFile(outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".txt", TextFile.W);
+                    interactionOut.writeln("Individual\tAllele1\tAllele2\tGenotype\tGenotypeFlipped\tCovariate\tExpression");
+                    
                     byte[] alleles1 = snpObj.getAllele1();
                     byte[] alleles2 = snpObj.getAllele2();
                     byte[] genotypes = snpObj.getGenotypes();
@@ -198,7 +202,7 @@ public class InteractionPlotter {
                                         + "\t" + genotypeflipped
                                         + "\t" + covariateData.rawData[q][genotypeToCovariate[i]]
                                         + "\t" + expressionData.rawData[probeId][genotypeToExpression[i]];
-                                System.out.println(output);
+                                interactionOut.writeln(output);
 
                                 genotypeArr.add(genotypes[i]);
 
@@ -208,7 +212,10 @@ public class InteractionPlotter {
                             }
 
                         }
+                        
                     }
+                    interactionOut.close();
+                    
                     System.out.println("");
                     //Fill arrays with data in order to be able to perform the ordinary least squares analysis:
                     double[] olsY = new double[nrCalled]; //Ordinary least squares: Our gene expression
@@ -241,55 +248,54 @@ public class InteractionPlotter {
 
                     regressionFullWithInteraction.newSampleData(olsY, olsXFullWithInteraction);
 
-					try{
-						double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
-						double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
+                    try {
+                        double rss2 = regressionFullWithInteraction.calculateResidualSumOfSquares();
+                        double[] regressionParameters = regressionFullWithInteraction.estimateRegressionParameters();
 
-						double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
+                        double[] regressionStandardErrors = regressionFullWithInteraction.estimateRegressionParametersStandardErrors();
 
+                        double betaInteraction = regressionParameters[3];
+                        double seInteraction = regressionStandardErrors[3];
+                        double tInteraction = betaInteraction / seInteraction;
+                        double pValueInteraction = 1;
+                        double zScoreInteraction = 0;
 
-						double betaInteraction = regressionParameters[3];
-						double seInteraction = regressionStandardErrors[3];
-						double tInteraction = betaInteraction / seInteraction;
-						double pValueInteraction = 1;
-						double zScoreInteraction = 0;
+                        if (fDist == null) {
+                            fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
+                            randomEngine = new cern.jet.random.tdouble.engine.DRand();
+                            tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
+                        }
 
-						if (fDist == null) {
-							fDist = new org.apache.commons.math3.distribution.FDistribution((int) (3 - 2), (int) (olsY.length - 3));
-							randomEngine = new cern.jet.random.tdouble.engine.DRand();
-							tDistColt = new cern.jet.random.tdouble.StudentT(olsY.length - 4, randomEngine);
-						}
+                        if (tInteraction < 0) {
+                            pValueInteraction = tDistColt.cdf(tInteraction);
+                            if (pValueInteraction < 2.0E-323) {
+                                pValueInteraction = 2.0E-323;
+                            }
+                            zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+                        } else {
+                            pValueInteraction = tDistColt.cdf(-tInteraction);
+                            if (pValueInteraction < 2.0E-323) {
+                                pValueInteraction = 2.0E-323;
+                            }
 
-						if (tInteraction < 0) {
-							pValueInteraction = tDistColt.cdf(tInteraction);
-							if (pValueInteraction < 2.0E-323) {
-								pValueInteraction = 2.0E-323;
-							}
-							zScoreInteraction = cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-						} else {
-							pValueInteraction = tDistColt.cdf(-tInteraction);
-							if (pValueInteraction < 2.0E-323) {
-								pValueInteraction = 2.0E-323;
-							}
+                            zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
+                        }
+                        pValueInteraction *= 2;
+                        String pvalFormatted = "";
+                        if (pValueInteraction >= 0.001) {
+                            pvalFormatted = decFormat.format(pValueInteraction);
+                        } else {
+                            pvalFormatted = decFormatSmall.format(pValueInteraction);
+                        }
+                        ScatterPlot scatterPlot = new ScatterPlot(500, 500, dataCov, dataExp, dataGen, genotypeDescriptions, colorarray, ScatterPlot.OUTPUTFORMAT.PDF,
+                                "Interaction between SNP " + snp + ", probe " + probe + " and covariate " + covariateData.rowObjects.get(q),
+                                "Z: " + decFormat.format(zScoreInteraction) + " Pvalue: " + pvalFormatted + " n: " + nrCalled,
+                                outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".pdf", false);
 
-							zScoreInteraction = -cern.jet.stat.tdouble.Probability.normalInverse(pValueInteraction);
-						}
-						pValueInteraction *= 2;
-						String pvalFormatted = "";
-						if (pValueInteraction >= 0.001) {
-							pvalFormatted = decFormat.format(pValueInteraction);
-						} else {
-							pvalFormatted = decFormatSmall.format(pValueInteraction);
-						}
-						ScatterPlot scatterPlot = new ScatterPlot(500, 500, dataCov, dataExp, dataGen, genotypeDescriptions, colorarray, ScatterPlot.OUTPUTFORMAT.PDF,
-								"Interaction between SNP " + snp + ", probe " + probe + " and covariate " + covariateData.rowObjects.get(q),
-								"Z: " + decFormat.format(zScoreInteraction) + " Pvalue: " + pvalFormatted + " n: " + nrCalled,
-								outdir + snp + "-" + probe + "-" + covariateData.rowObjects.get(q) + ".pdf", false);
-
-					} catch(SingularMatrixException ex ){
-						ex.printStackTrace();
-						System.out.println("\tMatrix is singular, skipping\n");
-					}
+                    } catch (SingularMatrixException ex) {
+                        ex.printStackTrace();
+                        System.out.println("\tMatrix is singular, skipping\n");
+                    }
                 }
 
                 snpObj.clearGenotypes();
