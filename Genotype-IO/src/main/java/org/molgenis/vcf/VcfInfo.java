@@ -106,10 +106,14 @@ public class VcfInfo {
 					}
 					List<Integer> valList = new ArrayList<Integer>(valTokens.length);
 					for (String valToken : valTokens) {
-						try {
-							valList.add(Integer.valueOf(valToken));
-						} catch (NumberFormatException ex) {
-							throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+						if (valToken.equals(".")) {
+							valList.add(null);
+						} else {
+							try {
+								valList.add(Integer.valueOf(valToken));
+							} catch (NumberFormatException ex) {
+								throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+							}
 						}
 					}
 					return valList;
