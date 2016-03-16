@@ -75,7 +75,7 @@ public class VcfInfo {
 					}
 					List<Float> valList = new ArrayList<Float>(valTokens.length);
 					for (String valToken : valTokens) {
-						if (valToken.equalsIgnoreCase("nan") || valToken.equalsIgnoreCase("Na")) {
+						if (valToken.equalsIgnoreCase("nan") || valToken.equalsIgnoreCase("Na") || valToken.equals(".")) {
 							valList.add(Float.NaN);
 						} else {
 							try {
