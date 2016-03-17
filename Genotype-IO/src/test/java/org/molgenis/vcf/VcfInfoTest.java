@@ -84,8 +84,8 @@ public class VcfInfoTest
 		when(metaInfo.getType()).thenReturn(Type.INTEGER);
 		when(metaInfo.getNumber()).thenReturn("3");
 		when(vcfMeta.getInfoMeta("key")).thenReturn(metaInfo);
-		VcfInfo vcfInfo = new VcfInfo(vcfMeta, "key", "1,2,3");
-		assertEquals(vcfInfo.getVal(), Arrays.asList(1, 2, 3));
+		VcfInfo vcfInfo = new VcfInfo(vcfMeta, "key", "1,2,3,.");
+		assertEquals(vcfInfo.getVal(), Arrays.asList(1, 2, 3, null));
 	}
 	
 	@Test
@@ -117,10 +117,10 @@ public class VcfInfoTest
 		VcfMeta vcfMeta = mock(VcfMeta.class);
 		VcfMetaInfo metaInfo = mock(VcfMetaInfo.class);
 		when(metaInfo.getType()).thenReturn(Type.FLOAT);
-		when(metaInfo.getNumber()).thenReturn("3");
+		when(metaInfo.getNumber()).thenReturn("4");
 		when(vcfMeta.getInfoMeta("key")).thenReturn(metaInfo);
-		VcfInfo vcfInfo = new VcfInfo(vcfMeta, "key", "1.23,4.56,7.89");
-		assertEquals(vcfInfo.getVal(), Arrays.asList(Float.valueOf(1.23f), Float.valueOf(4.56f), Float.valueOf(7.89f)));
+		VcfInfo vcfInfo = new VcfInfo(vcfMeta, "key", "1.23,4.56,7.89,.,na,NaN,Na");
+		assertEquals(vcfInfo.getVal(), Arrays.asList(Float.valueOf(1.23f), Float.valueOf(4.56f), Float.valueOf(7.89f), null, Float.NaN, Float.NaN, Float.NaN));
 	}
 	
 	@Test
