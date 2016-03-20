@@ -5,10 +5,10 @@
 	<parent>
 		<groupId>nl.systemsgenetics</groupId>
 		<artifactId>systemsgenetics</artifactId>
-		<version>1.0.2</version>
+		<version>1.0.3-SNAPSHOT</version>
 	</parent>
 	<artifactId>eQTLInteractionAnalyser</artifactId>
-	<version>1.1</version>
+	<version>1.2-SNAPSHOT</version>
 	<name>eQTLInteractionAnalyser</name>
 	<url>http://maven.apache.org</url>
 	<properties>
@@ -44,7 +44,7 @@
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>genetica-libraries</artifactId>
-			<version>1.0.7</version>
+			<version>1.0.8-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.opencsv</groupId>
