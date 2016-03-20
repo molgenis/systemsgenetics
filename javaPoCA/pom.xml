@@ -7,7 +7,7 @@
         <version>1.0.2</version>
     </parent>
     <artifactId>javaPCoA</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.4</version>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
-            <version>1.0.7-SNAPSHOT</version>
+            <version>1.0.7</version>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.parallelcolt</groupId>

@@ -7,13 +7,13 @@
         <version>1.0.2</version>
     </parent>
     <artifactId>BinaryMetaAnalyzer</artifactId>
-    <version>1.0.7-SNAPSHOT</version>
+    <version>1.0.7</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>genetica-libraries</artifactId>
-            <version>1.0.7-SNAPSHOT</version>
+            <version>1.0.7</version>
         </dependency>
     </dependencies>
     <name>BinaryMetaAnalyzer</name>

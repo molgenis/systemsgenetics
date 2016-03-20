@@ -7,7 +7,7 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>eqtl-functional-enrichment</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.3</version>
 	<name>eqtl-functional-enrichment</name>
 	<packaging>jar</packaging>
 	<dependencies>
