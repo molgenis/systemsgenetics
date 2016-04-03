@@ -5,11 +5,9 @@
   <parent>
     <groupId>nl.systemsgenetics</groupId>
     <artifactId>systemsgenetics</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
   </parent>
-  <groupId>nl.systemsgenetics</groupId>
   <artifactId>MetaGenomicDataProcessing</artifactId>
-  <version>1.0.2-SNAPSHOT</version>
   <name>MetaGenomicDataProcessing</name>
   <url>http://maven.apache.org</url>
   <properties>
@@ -19,7 +17,7 @@
     <dependency>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>genetica-libraries</artifactId>
-        <version>1.0.7-SNAPSHOT</version>
+        <version>1.0.8-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

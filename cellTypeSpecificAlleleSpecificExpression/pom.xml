@@ -4,7 +4,7 @@
     <parent>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>systemsgenetics</artifactId>
-        <version>1.0.2-SNAPSHOT</version>
+        <version>1.0.3-SNAPSHOT</version>
     </parent>
     
     <name>(Covariate Specific) Allele Specific Expression</name>
@@ -17,25 +17,13 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>Genotype-IO</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
+            <version>1.0.4-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.github.samtools</groupId>
             <artifactId>htsjdk</artifactId>
             <version>1.129</version>
-        </dependency>
-        <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>eqtl-functional-enrichment</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>BinaryMetaAnalyzer</artifactId>
-            <version>1.0.7-SNAPSHOT</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.googlecode.efficient-java-matrix-library</groupId>
@@ -61,8 +49,18 @@
             <artifactId>commons-math3</artifactId>
             <version>3.5</version>
         </dependency>
-
-        
+        <dependency>
+            <groupId>jdom</groupId>
+            <artifactId>jdom</artifactId>
+            <version>1.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>nl.systemsgenetics</groupId>
+            <artifactId>genetica-libraries</artifactId>
+            <version>1.0.8-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 
 

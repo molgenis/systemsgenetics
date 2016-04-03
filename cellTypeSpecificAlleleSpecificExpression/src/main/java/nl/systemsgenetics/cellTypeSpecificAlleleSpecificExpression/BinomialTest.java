@@ -76,7 +76,7 @@ public class BinomialTest {
         position = all_individuals.get(0).getPosition();
         genotype = all_individuals.get(0).genotype;
         //Isolate heterozygotes:
-        ArrayList<IndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
         
         numberOfHets = het_individuals.size();
         
@@ -161,30 +161,13 @@ public class BinomialTest {
         
         return t;
     
-    }
+    } 
     
-    private ArrayList<IndividualSnpData> isolateHeterozygotes(ArrayList<IndividualSnpData> all_individuals) {
-        
-        ArrayList<IndividualSnpData> hets;
-        hets = new ArrayList<IndividualSnpData>();
-        
-        for(IndividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
-    }
-
+   public static String writeHeader(){
+       String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tbinomRatio\tnullLogLik\taltLogLik";
+       return header;
+   } 
+    
    public String writeTestStatistics(boolean outPutAllData){
         
         String out = "";
@@ -205,32 +188,7 @@ public class BinomialTest {
             out += Double.toString(testStatistics.getNullLogLik()) + "\t";
             out += Double.toString(testStatistics.getAltLogLik());
 
-            if(outPutAllData){
-                
-                String samples_string="";
-                String ref_string="";
-                String alt_string="";
-                String no_string="";
-
-                for(int i=0; i < hetSampleNames.size(); i++){
-                    
-                    //samples_string += hetSampleNames.get(i) + ";";
-                    ref_string += Integer.toString(asRef.get(i)) + ";";
-                    alt_string += Integer.toString(asAlt.get(i)) + ";";
-                    no_string += Integer.toString(asNo.get(i)) + ";";
-                }
-                
-                //remove last delimiter
-                //samples_string = samples_string.substring(0, samples_string.length()-1);
-                ref_string = ref_string.substring(0, ref_string.length()-1);
-                alt_string = alt_string.substring(0, alt_string.length()-1);
-                no_string = no_string.substring(0, no_string.length()-1);
-                
-                //out += "\t" + samples_string + "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-                out += "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-
-
-            }
+            
 
 
         } else {
@@ -239,12 +197,7 @@ public class BinomialTest {
                 out += "NA\t";
             
             }
-            if(outPutAllData){
-                for(int i=0; i < 4; i++ ){
-                    out += "NA\t";
-
-                }
-            }
+            
             out += "NA";
         
         }

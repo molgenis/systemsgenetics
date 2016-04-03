@@ -75,7 +75,11 @@ public class VcfInfo {
 					}
 					List<Float> valList = new ArrayList<Float>(valTokens.length);
 					for (String valToken : valTokens) {
-						if (valToken.equalsIgnoreCase("nan") || valToken.equalsIgnoreCase("Na")) {
+						if(valToken.equals("."))
+						{
+							valList.add(null);
+						}
+						else if (valToken.equalsIgnoreCase("nan") || valToken.equalsIgnoreCase("Na")) {
 							valList.add(Float.NaN);
 						} else {
 							try {
@@ -106,10 +110,14 @@ public class VcfInfo {
 					}
 					List<Integer> valList = new ArrayList<Integer>(valTokens.length);
 					for (String valToken : valTokens) {
-						try {
-							valList.add(Integer.valueOf(valToken));
-						} catch (NumberFormatException ex) {
-							throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+						if (valToken.equals(".")) {
+							valList.add(null);
+						} else {
+							try {
+								valList.add(Integer.valueOf(valToken));
+							} catch (NumberFormatException ex) {
+								throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+							}
 						}
 					}
 					return valList;
