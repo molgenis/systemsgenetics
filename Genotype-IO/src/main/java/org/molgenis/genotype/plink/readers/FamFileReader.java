@@ -33,6 +33,10 @@ public class FamFileReader {
     private static final Pattern SEPARATOR_PATTERN = Pattern.compile("[ \\t]+");
     private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(FamFileReader.class);
 
+    public static ArrayList<Sample> readFamFile(String famFilePath) throws FileNotFoundException, IOException {
+        return readFamFile(new File(famFilePath));
+    }
+    
     public static ArrayList<Sample> readFamFile(File famFile) throws FileNotFoundException, IOException {
 
         ArrayList<Sample> samples = new ArrayList<Sample>();
