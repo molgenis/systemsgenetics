@@ -84,6 +84,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 		assertEquals(variant.getPrimaryVariantId(), "rs4908464");
 		assertEquals(variant.getStartPos(), 7569187);
 		assertEquals(variant.getRefAllele().getAlleleAsString(), "G");
+		assertEquals(variant.getAlternativeAlleles(), Alleles.createAlleles(Allele.C));
 		assertEquals(variant.getSequenceName(), "2");
 		assertEquals(variant.isSnp(), true);
 

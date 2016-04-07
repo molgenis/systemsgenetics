@@ -86,6 +86,11 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	}
 
 	@Override
+	public Alleles getAlternativeAlleles() {
+		return original.getAlternativeAlleles();
+	}
+
+	@Override
 	public List<Alleles> getSampleVariants() {
 
 
