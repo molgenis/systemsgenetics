@@ -78,6 +78,12 @@ public class ReadOnlyGeneticVariantTest
 	{
 		assertNull(testInstance.getRefAllele());
 	}
+	
+	@Test
+	public void getAlternativeAlleles()
+	{
+		assertEquals(testInstance.getAlternativeAlleles(), Alleles.createBasedOnChars('A', 'C'));
+	}
 
 	@Test
 	public void getSequenceName()
