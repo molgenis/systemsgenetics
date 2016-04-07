@@ -145,7 +145,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 
 		GeneticVariant variant = variants.get(0);
 		assertNotNull(variant.getAnnotationValues());
-		assertEquals(variant.getAnnotationValues().size(), 7);
+		assertEquals(variant.getAnnotationValues().size(), 8);//8 because of filter field
 
 		Object annotationValue = variant.getAnnotationValues().get("NS");
 		assertNotNull(annotationValue);
@@ -166,6 +166,9 @@ public class VcfGenotypeDataTest extends ResourceTest
 		List<String> strings = (List<String>) annotationValue;
 		assertEquals(strings.size(), 1);
 		assertEquals(strings.get(0), "INT");
+		
+		assertEquals(variant.getAnnotationValues().get("VCF_Filter"), "flt");
+
 	}
 
 	@Test
