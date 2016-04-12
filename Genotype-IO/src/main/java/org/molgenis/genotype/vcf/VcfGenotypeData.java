@@ -616,6 +616,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 		for (VcfInfo vcfInfo : vcfRecord.getInformation()) {
 			annotationMap.put(vcfInfo.getKey(), vcfInfo.getVal());
 		}
+		annotationMap.put("VCF_Filter", vcfRecord.getFilterStatus());
 
 		Alleles alleles;
 		if (altAlleles == null || altAlleles.isEmpty()) {

@@ -1,5 +1,6 @@
 package org.molgenis.genotype.modifiable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -72,6 +73,13 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 		} else {
 			return originalVariant.getVariantAlleles();
 		}
+	}
+
+	@Override
+	public Alleles getAlternativeAlleles() {
+		ArrayList<Allele> altAlleles = new ArrayList<>(this.getVariantAlleles().getAlleles());
+		altAlleles.remove(this.getRefAllele());
+		return Alleles.createAlleles(altAlleles);
 	}
 
 	@Override
