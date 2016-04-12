@@ -23,9 +23,9 @@ public class PrintPerDatasetCuttOff {
 
     public static void main(String[] args) {
         
-//        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
-//        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
-//        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
+        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
+        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\DataPerCohort\\";
 
         
 //        String inputTable = "E:\\OnlineFolders\\BitSync\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
@@ -37,9 +37,9 @@ public class PrintPerDatasetCuttOff {
 //        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
 //        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\DataPerCohort\\";
         
-        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\IBSc_Correction\\CorrectedMGSPathwayData_IBSc_3Factors.tsv";
-        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
-        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\IBSc_Correction\\";
+//        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\IBSc_Correction\\CorrectedMGSPathwayData_IBSc_3Factors.tsv";
+//        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
+//        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Pathways\\IBSc_Correction\\";
         
 //        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GO_Grouping\\AllMGS_KO50000.tsv.QuantileNormalized.txt.gz";
 //        String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";
