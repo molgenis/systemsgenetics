@@ -34,7 +34,7 @@ import umcg.genetica.io.regulomedb.RegulomeDbFiles;
 import umcg.genetica.io.regulomedb.RegulomeDbSupportingData;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.math.stats.FisherExactTest;
 import umcg.genetica.math.stats.WilcoxonMannWhitney;
 import umcg.genetica.math.stats.ZScores;
@@ -183,7 +183,7 @@ public class TranscriptionFactorEnrichmentV2 {
 	 * =========================================================================
 	 */
 	public EQTL[] readEQtlData(String eqtlFileLocation) throws IOException{
-		eQTLTextFile eqtlData = new eQTLTextFile(eqtlFileLocation, false);
+		QTLTextFile eqtlData = new QTLTextFile(eqtlFileLocation, false);
 		return eqtlData.read();
 	}
 	

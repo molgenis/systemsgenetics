@@ -5,7 +5,6 @@
  */
 package nl.systemsgenetics.eqtlannotation;
 
-import Heterogeneity.TestQtlForHeterogeneity;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,7 +73,7 @@ public class EncodeMultipleTfbsOverlap {
             peakData = readMultipleTfbsInformation(inputFolderTfbsData);
 
         } catch (IOException ex) {
-            Logger.getLogger(TestQtlForHeterogeneity.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(EncodeMultipleTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         try {
@@ -94,7 +93,7 @@ public class EncodeMultipleTfbsOverlap {
             }
             outWriter.close();
         } catch (IOException ex) {
-            Logger.getLogger(TestQtlForHeterogeneity.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(EncodeMultipleTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
