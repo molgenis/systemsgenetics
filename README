@@ -1,0 +1,5 @@
+Deconvolution
+
+To run:
+
+    java -jar deconvolution.jar -o decovolution.txt -c deconvolution/tests/resources/counts.txt -e deconvolution/tests/resources/expTable_Corrected_addMean_n500.txt -g deconvolution/tests/resources/dsgTable_testing_n500.txt
