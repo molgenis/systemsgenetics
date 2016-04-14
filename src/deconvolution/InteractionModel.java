@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InteractionModel {
-	private List<String> celltypes = new ArrayList<String>();
+	private List<String> independentVariables = new ArrayList<String>();
 	private double[][] observedValues;
 	private double[] expressionValues;
 	private Boolean noIntercept;
@@ -20,27 +20,40 @@ public class InteractionModel {
 	    this.observedValues = observedValues;
 	  }
 	
-	public double[][] GetObservedValues(){
+	public double[][] GetObservedValues() throws IllegalAccessException{
+		if(this.observedValues == null){
+			throw new IllegalAccessException("observedValues not set for this model");
+		}
 	    return(this.observedValues);
 	  }
 	
-	public void AddCelltype(String celltype){
-	    this.celltypes.add(celltype);
+	public void AddIndependentVariable(String independentVariables){
+	    this.independentVariables.add(independentVariables);
 	  }
 	
-	public void SetCelltypes(List<String> celltypes){
-	    this.celltypes = celltypes;
+	public void AddIndependentVariable(int index, String independentVariables){
+	    this.independentVariables.add(index, independentVariables);
 	  }
 	
-	public List<String> GetCelltypes(){
-	    return(this.celltypes);
+	public void SetIndependentVariable(List<String> independentVariables){
+	    this.independentVariables = independentVariables;
+	  }
+	
+	public List<String> GetIndependentVariables() throws IllegalAccessException{
+		if(this.independentVariables == null){
+			throw new IllegalAccessException("celltypes not set for this model");
+		}
+	    return(this.independentVariables);
 	  }
 	
 	public void SetExpressionValues(double[] expressionValues){
 	    this.expressionValues = expressionValues;
 	  }
 	
-	public double[] GetExpessionValues(){
+	public double[] GetExpessionValues() throws IllegalAccessException{
+		if(this.expressionValues == null){
+			throw new IllegalAccessException("expressionValues not set for this model");
+		}
 	    return(this.expressionValues);
 	  }
 	
@@ -48,7 +61,10 @@ public class InteractionModel {
 	    this.noIntercept = noIntercept;
 	  }
 	
-	public Boolean GetNoIntercept(){
+	public Boolean GetNoIntercept() throws IllegalAccessException{
+		if(this.noIntercept == null){
+			throw new IllegalAccessException("noIntercept not set for this model");
+		}
 	    return(this.noIntercept);
 	  }
 
@@ -56,7 +72,10 @@ public class InteractionModel {
 	    this.qtlName = qtlName;
 	  }
 	
-	public String GetQtlName(){
+	public String GetQtlName() throws IllegalAccessException{
+		if(this.qtlName == null){
+			throw new IllegalAccessException("QTL name not set for this model");
+		}
 	    return(this.qtlName);
 	  }
 	
@@ -64,7 +83,10 @@ public class InteractionModel {
 	    this.modelName = modelName;
 	  }
 	
-	public String GetModelName(){
+	public String GetModelName() throws IllegalAccessException{
+		if(this.modelName == null){
+			throw new IllegalAccessException("modelName name not set for this model");
+		}
 	    return(this.modelName);
 	  }
 		

@@ -70,6 +70,12 @@ public class Deconvolution {
 		}
 		final Boolean roundDosageFinal = roundDosage;
 		final int minimumSamplesPerGenotypeFinal  = minimumSamplesPerGenotype;
+		
+		Boolean plotBetaTimesVariables = false; 
+		if (cmdLine.hasOption("plot_beta_times_variables")) {
+			plotBetaTimesVariables = true;
+		}
+		final Boolean plotBetaTimesVariablesFinal = plotBetaTimesVariables;
 		// End of command line option parsing
 
 		// the cell type names are the first row of cellcount file, extract for
@@ -118,7 +124,7 @@ public class Deconvolution {
 
 
 			if(threads <= 1){
-				deconvolutionResults.add(deconvolution(expressionStringVector, genotypeStringVector, cellcountTable, roundDosageFinal, true, minimumSamplesPerGenotypeFinal));
+				deconvolutionResults.add(deconvolution(expressionStringVector, genotypeStringVector, cellcountTable, roundDosageFinal, plotBetaTimesVariablesFinal, minimumSamplesPerGenotypeFinal));
 				// System.out.printf("\n");
 			}
 			else{qtlList.add(new Qtl(expressionStringVector, genotypeStringVector, cellcountTable));}
@@ -130,7 +136,7 @@ public class Deconvolution {
 					new Parallel.Operation<Qtl>() {
 				public void perform(Qtl param) {
 					try {
-						deconvolutionResults.add(deconvolution(param, roundDosageFinal, true, minimumSamplesPerGenotypeFinal));
+						deconvolutionResults.add(deconvolution(param, roundDosageFinal, plotBetaTimesVariablesFinal, minimumSamplesPerGenotypeFinal));
 						//for (int j = 0; j < pvalues.size(); j++) {
 						// System.out.printf("%f\t", pvalues.get(j));
 					} catch (Exception e) {
@@ -139,7 +145,6 @@ public class Deconvolution {
 				};
 			});
 		}
-
 		output.add("\t"+toString(deconvolutionResults.get(0).GetCelltypes()));
 		for(DeconvolutionResult deconResult : deconvolutionResults){
 			String results = "";
@@ -238,7 +243,7 @@ public class Deconvolution {
 		return(deconResultsPermutation);
 	}
 
-	public static double calculateSumOfSquares(InteractionModel model, Boolean plotBetaTimesVariables) throws IOException {
+	public static double calculateSumOfSquares(InteractionModel model, Boolean plotBetaTimesVariables) throws IOException, IllegalAccessException {
 		/*
 		 * Calculate the sum of squares given a y expression vector with y ~
 		 * model. If no_intercept == true, remove the intercept (equivalent to y
@@ -471,18 +476,8 @@ public class Deconvolution {
 				observedValuesFullModel = new double[numberOfSamples][numberOfTerms+1];
 			}
 			int genotypeCounter = numberOfCelltypes;
-
 			for (int j = 0; j <= numberOfSamples-1; j++) {
 				for (int i = 0; i < numberOfCelltypes; i++) {
-					// in first loop over samples add the celltypes
-					if (j == 0){
-						if (m == 0){
-							fullModel.AddCelltype(cellcountTable.get(i).get(0));
-						}
-						if(i != m){
-							ctModel.AddCelltype(cellcountTable.get(i).get(0));
-						}
-					}
 					// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
 					// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
 					// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
@@ -490,11 +485,17 @@ public class Deconvolution {
 					// j+1 because j==0 is header
 					double celltype_perc = Double.parseDouble(cellcountTable.get(i).get(j+1));
 					observedValues[j][i] = celltype_perc;
+					if(j == 0){
+						// add the celltype name at position i so that it gets in front of the celltype:GT, but once
+						ctModel.AddIndependentVariable(i, cellcountTable.get(i).get(0));
+					}
 					// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
 					if (i != m) {
 						try {
-							// Add the interaction term of celltype:genotype
-							
+							if(j == 0){
+								// Add the interaction term of celltype:genotype
+								ctModel.AddIndependentVariable(cellcountTable.get(i).get(0)+":GT");
+							}
 							observedValues[j][genotypeCounter] = celltype_perc * genotypeVector[j];
 						} catch (ArrayIndexOutOfBoundsException error) {
 							throw new Exception(
@@ -506,6 +507,12 @@ public class Deconvolution {
 					if (m == 0){
 						observedValuesFullModel[j][i] = celltype_perc;
 						try {
+							if(j == 0){
+							// add the celltype name at position i so that it gets in front of the celltype:GT
+							fullModel.AddIndependentVariable(i, cellcountTable.get(i).get(0));
+							fullModel.AddIndependentVariable(cellcountTable.get(i).get(0)+":GT");
+							celltypes.add(cellcountTable.get(i).get(0));
+							}
 							// Add the interaction term of celltype:genotype
 							observedValuesFullModel[j][numberOfCelltypes + i] = celltype_perc * genotypeVector[j];
 						} catch (ArrayIndexOutOfBoundsException error) {
@@ -525,11 +532,13 @@ public class Deconvolution {
 				fullModel.SetObservedValues(observedValuesFullModel);
 				fullModel.SetModelName("full model");
 				fullModel.SetNoIntercept(noIntercept);
+				fullModel.SetQtlName(qtlName);
 				sumOfSquaresFullModel = calculateSumOfSquares(fullModel, plotBetaTimesVariables);
 				degreesOfFreedomFullModel = expressionVector.length - (observedValuesFullModel[0].length + 1);
 			}
 			ctModel.SetObservedValues(observedValues);
 			ctModel.SetNoIntercept(noIntercept);
+			ctModel.SetQtlName(qtlName);
 			/** SUM OF SQUARES - CELLTYPE MODEL **/
 			ctModel.SetModelName("ctModel_"+ Integer.toString(m));
 			double sumOfSquaresCtModel = calculateSumOfSquares(ctModel, plotBetaTimesVariables);
@@ -630,7 +639,10 @@ public class Deconvolution {
 				.argName("file").build();
 		Option minimum_samples_per_genotype = Option.builder("m").required(false).hasArg().longOpt("minimum_sample_per_genotype").desc("The minimum amount of samples need for each genotype of a QTL for the QTL to be included in the results")
 				.argName("file").build();
-
+		Option plotBetaTimesVariables = Option.builder("b").required(false).hasArg().longOpt("plot_beta_times_variables").desc("Plot the B1*X1, B2*X2 etc values if the sum of Bx*CELLTYPEz+By*CELLTYPEz:GT < 0")
+				.argName("file").build();
+		
+		options.addOption(plotBetaTimesVariables);
 		options.addOption(help);
 		options.addOption(permute);
 		options.addOption(threads);
@@ -647,9 +659,45 @@ public class Deconvolution {
 		if (cmdLine.hasOption("help")) {
 			formatter.printHelp("deconvolution", options, true);
 		}
+		printArgumentValues(cmdLine);
 		return (cmdLine);
 	}
 
+	public static void printArgumentValues(CommandLine cmdLine){
+		System.out.println("******DECONVOLUTION******");
+		System.out.printf("Expression file: %s\n", cmdLine.getOptionValue("expression"));
+		System.out.printf("Genotype file: %s\n", cmdLine.getOptionValue("genotype"));
+		System.out.printf("Cellcount file: %s\n", cmdLine.getOptionValue("cellcount"));
+		String minimum_samples_per_genotype = "0";
+		if (cmdLine.hasOption("minimum_samples_per_genotype")){
+			minimum_samples_per_genotype = cmdLine.getOptionValue("minimum_samples_per_genotype");
+		}
+		System.out.printf("Minimum sample per genotype: %s\n", minimum_samples_per_genotype);
+		if (cmdLine.hasOption("permute")) {
+			System.out.printf("Permute: %s\n", "True");
+		}
+		else{
+			System.out.printf("Permute: %s\n", "False");
+		}
+		int threads = 0;
+		if (cmdLine.hasOption("threads")) {
+			threads = Integer.parseInt(cmdLine.getOptionValue("threads"));
+		}
+		System.out.printf("Threads: %s\n", threads);
+		if (cmdLine.hasOption("roundDosage")) {
+			System.out.printf("Round dosage: %s\n", "True");
+		}
+		else{
+			System.out.printf("Round dosage: %s\n", "False");
+		}
+		if (cmdLine.hasOption("plot_beta_times_variables")) {
+			System.out.printf("Plot beta: %s\n", "True");
+		}
+		else{
+			System.out.printf("Plot beta: %s\n", "False");
+		}
+	}
+	
 	public static <T> String toString(List<T> celltypes)
 	{
 		/* Turn list into tab separated string*/

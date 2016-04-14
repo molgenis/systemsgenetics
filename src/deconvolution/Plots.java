@@ -3,6 +3,7 @@ package deconvolution;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -21,13 +22,12 @@ import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.statistics.HistogramType;
 
 public class Plots {
-	public static void boxPlot(OLSMultipleLinearRegression regr, InteractionModel model, String filename) throws IOException{
+	public static void boxPlot(OLSMultipleLinearRegression regr, InteractionModel model, String filename) throws IOException, IllegalAccessException{
 		/* Make a boxplot of the beta * values of linear regression model
 		 * 
 		 */
 		DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
 		int x = 0;
-		int celltypeNumber = 0;
 		// loop through each parameter (b0,b1,b2,b3 etc... <- b0 not there when intersect is removed)
 		for (Double parameter : regr.estimateRegressionParameters()){
 			List<Double> betaTimesValue = new ArrayList<Double>();
@@ -35,26 +35,20 @@ public class Plots {
 				// log modulus transformation, so that negative numbers are preserved
 				Boolean negative = false;
 				double value = model.GetObservedValues()[i][x]*parameter;
+				// check if original value is negative
 				if(value < 0){
 					negative = true;
 				}
 				double logValue = Math.log10(Math.abs(value)+1);
 				if (negative){
+					// if original value was negative, put sign b ack
 					logValue *= -1;
 				}
 				betaTimesValue.add(logValue);
-
 			}
-			String timesGenotype = "";
-			if(x+1 > model.GetCelltypes().size()){
-				celltypeNumber = x - model.GetCelltypes().size();
-				timesGenotype = ":GT";
-			}
-				dataset.add(betaTimesValue,"B"+Integer.toString(x+1)+" * "+ model.GetCelltypes().get(celltypeNumber) + timesGenotype, "Parameter * explanatory variables");
-				celltypeNumber++;
+				dataset.add(betaTimesValue,"B"+Integer.toString(x+1)+" * "+ model.GetIndependentVariables().get(x), "Parameter * explanatory variables");
 				x++;
 		}
-		
 		final CategoryAxis xAxis = new CategoryAxis("Explanatory variable");
         final NumberAxis yAxis = new NumberAxis("Log10 Modulus");
         yAxis.setAutoRangeIncludesZero(false);

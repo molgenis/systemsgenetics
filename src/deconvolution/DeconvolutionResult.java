@@ -24,11 +24,17 @@ public class DeconvolutionResult {
 		this.qtlName = qtlName;
 	}
 
-	public String GetQtlName(){
+	public String GetQtlName() throws IllegalAccessException{
+		if(this.qtlName == null){
+			throw new IllegalAccessException("celltypes not set for this model");
+		}
 		return(this.qtlName);
 	}
 	
-	public List<String> GetCelltypes(){
+	public List<String> GetCelltypes() throws IllegalAccessException{
+		if(this.celltypes == null){
+			throw new IllegalAccessException("celltypes not set for this model");
+		}
 		return(this.celltypes);
 	}
 	
@@ -36,7 +42,10 @@ public class DeconvolutionResult {
 		this.pvalues = pvalues;
 	}
 
-	public List<Double> GetPvalues(){
+	public List<Double> GetPvalues() throws IllegalAccessException{
+		if(this.pvalues == null){
+			throw new IllegalAccessException("pvalues not set for this model");
+		}
 		return(this.pvalues);
 	}
 
