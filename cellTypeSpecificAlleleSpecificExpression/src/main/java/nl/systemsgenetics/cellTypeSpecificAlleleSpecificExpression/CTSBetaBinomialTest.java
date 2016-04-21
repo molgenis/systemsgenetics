@@ -75,7 +75,7 @@ class CTSBetaBinomialTest {
     double NullBetaParam;
     double NullbinomRatio;
     
-    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception {
+    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, CTSlinearRegression CTSlinearRegressionResults) throws Exception {
     
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
@@ -170,7 +170,7 @@ class CTSBetaBinomialTest {
                                                 simplex,
                                                 GoalType.MINIMIZE,
                                                 new InitialGuess(new double[] {0.5, 0.5}), 
-                                                new SearchInterval(-1000.0, 1000.0)
+                                                new SearchInterval(0, 1.0)
                                                 );
 
                 double[] valueNull = solutionNull.getPoint();
@@ -201,21 +201,13 @@ class CTSBetaBinomialTest {
                 // null parameters are used as a starting point.
 
 
-                double nonCTSprop;
-                nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
+                double nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
 
 
                 ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
 
                 GuessList.add(new InitialGuess(new double[] {0.0  , nonCTSprop}));
-                GuessList.add(new InitialGuess(new double[] {0.01 , 0.2       }));
-                GuessList.add(new InitialGuess(new double[] {0.5  , 0.1       }));
-                GuessList.add(new InitialGuess(new double[] {-0.01, 0.7       }));
-                GuessList.add(new InitialGuess(new double[] {0.25 , 0.5       }));
-                
-
-
-
+                GuessList.add(new InitialGuess(new double[] {CTSlinearRegressionResults.slope , CTSlinearRegressionResults.intercept}));
 
 
                 simplex = new NelderMeadSimplex(2);
@@ -312,7 +304,7 @@ class CTSBetaBinomialTest {
             
             
             
-            //Finally test was done, so we say the test was performed.
+            //Finally test was done, so we say the test was performed.;
             testPerformed = true;
             
         }

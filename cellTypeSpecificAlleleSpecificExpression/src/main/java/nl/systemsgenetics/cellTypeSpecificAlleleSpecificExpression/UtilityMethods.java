@@ -72,15 +72,7 @@ public class UtilityMethods {
             
             String genotype = sample.getGenotype();
             
-            double thisHetReadProp = (double)sample.getRefNum()  / ((double)sample.getRefNum() + (double)sample.getAltNum());
-            
-            boolean validReads = false;
-            if(     thisHetReadProp <= (1 - GlobalVariables.minHetReads) 
-                    &&
-                    thisHetReadProp >= (GlobalVariables.minHetReads))
-            {
-                validReads = true;
-            }
+            boolean validReads = valid_heterozygote(sample);
             
             //assuming the genotype is formatted as: "[C, A]"
             if(isGenoHeterozygote(genotype) && validReads){
@@ -89,6 +81,11 @@ public class UtilityMethods {
         }
         
         return hets;
+    }
+    
+    static boolean valid_heterozygote(IndividualSnpData sample){            
+        double thisHetReadProp = (double)sample.getRefNum()  / ((double)sample.getRefNum() + (double)sample.getAltNum());
+        return ((thisHetReadProp <= (1 - GlobalVariables.minHetReads)) && (thisHetReadProp >= (GlobalVariables.minHetReads)));
     }
     
     
