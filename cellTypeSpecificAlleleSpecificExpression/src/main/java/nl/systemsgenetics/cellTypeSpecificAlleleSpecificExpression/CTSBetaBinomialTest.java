@@ -209,7 +209,6 @@ class CTSBetaBinomialTest {
                 GuessList.add(new InitialGuess(new double[] {0.0  , nonCTSprop}));
                 GuessList.add(new InitialGuess(new double[] {CTSlinearRegressionResults.slope , CTSlinearRegressionResults.intercept}));
 
-
                 simplex = new NelderMeadSimplex(2);
 
 
