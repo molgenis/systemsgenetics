@@ -114,7 +114,8 @@ public class ReadAsLinesIntoIndividualSNPdata {
         for (File i_file : all_files) {
 
             FileReader tempReader = new FileReader(i_file);
-            BufferedReader tempBuff = new BufferedReader(tempReader);
+            //I tried to change buffersize, but this did not seem to work well for optimization purposes
+            BufferedReader tempBuff = new BufferedReader(tempReader); 
             fileList.add(tempBuff);
 
         }

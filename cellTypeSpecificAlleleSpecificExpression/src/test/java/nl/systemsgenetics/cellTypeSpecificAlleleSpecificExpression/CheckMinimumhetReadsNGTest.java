@@ -89,7 +89,7 @@ public class CheckMinimumhetReadsNGTest {
         BinomialTest checkBinomial = new BinomialTest(snpData);
         
         Assert.assertEquals(checkBinomial.getChromosome(),"0");
-        Assert.assertEquals(checkBinomial.binomRatio,0.8478260869565217);
+        Assert.assertEquals(checkBinomial.binomRatio,0.8571428571428571);
 
     }
     
@@ -105,7 +105,7 @@ public class CheckMinimumhetReadsNGTest {
         //please note, this is NOT the same as the binom ratio of the binomial test, as this is 
         // calculated as the alphaParam / (alphaParam + betaParam)
         // in the BetaBinomialTest.java
-        Assert.assertEquals(checkBetaBinomial.binomRatio,0.809043011174426);
+        Assert.assertEquals(checkBetaBinomial.binomRatio,0.8181818181818182);
 
     }
     

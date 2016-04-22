@@ -75,7 +75,7 @@ class CTSBetaBinomialTest {
     double NullBetaParam;
     double NullbinomRatio;
     
-    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception {
+    public CTSBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, CTSlinearRegression CTSlinearRegressionResults) throws Exception {
     
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
@@ -170,7 +170,7 @@ class CTSBetaBinomialTest {
                                                 simplex,
                                                 GoalType.MINIMIZE,
                                                 new InitialGuess(new double[] {0.5, 0.5}), 
-                                                new SearchInterval(-1000.0, 1000.0)
+                                                new SearchInterval(0, 1.0)
                                                 );
 
                 double[] valueNull = solutionNull.getPoint();
@@ -201,21 +201,15 @@ class CTSBetaBinomialTest {
                 // null parameters are used as a starting point.
 
 
-                double nonCTSprop;
-                nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
+                double nonCTSprop = valueNull[0]  / (valueNull[0] + valueNull[1]);
 
 
                 ArrayList<InitialGuess> GuessList = new ArrayList<InitialGuess>();
 
-                GuessList.add(new InitialGuess(new double[] {0.0 , nonCTSprop}));
-                GuessList.add(new InitialGuess(new double[] {0.01, 0.2       }));
-                GuessList.add(new InitialGuess(new double[] {-0.01, 0.7       }));
-                GuessList.add(new InitialGuess(new double[] {0.25, 0.5       }));
-                
-
-
-
-
+                GuessList.add(new InitialGuess(new double[] {0.0  , nonCTSprop}));
+                GuessList.add(new InitialGuess(new double[] {CTSlinearRegressionResults.slope , CTSlinearRegressionResults.intercept}));
+                GuessList.add(new InitialGuess(new double[] {0.2  , 0.5}));
+                GuessList.add(new InitialGuess(new double[] {-0.2 , 0.5}));
 
                 simplex = new NelderMeadSimplex(2);
 
@@ -262,7 +256,16 @@ class CTSBetaBinomialTest {
                         System.out.println("\tLogLik:               " + Double.toString(OptimizedLogLik[i]));
                     }
 
+                    //only do the last 2 guesses when the celltype ratio is not zero.
+                    //This is an accuracy improvement because sometimes a local minimum is found at celtype is 0.0
+                    //But it is very unlikely that this happens.
+                    if(i >= 2 && valueAlt[0] != 0.0){
+                        break;
+                    }
+                    
+                    
                     i++;
+                    
                 }
 
 
@@ -284,6 +287,7 @@ class CTSBetaBinomialTest {
 
                 
                 if(GlobalVariables.verbosity >= 10){
+                    
                     System.out.println("\n--- Starting cell type specific beta binomial LRT test estimate ---");
                     System.out.println("LogLik of converged to a threshold of " + Double.toString(GlobalVariables.simplexThreshold) + "\n");
                     System.out.println("\tCellType Binomial ratio:       " + Double.toString(binomRatioCellType) + "\n");
@@ -294,7 +298,6 @@ class CTSBetaBinomialTest {
                     System.out.println("\tP value:                       " + Double.toString(pVal));
                     System.out.println("-----------------------------------------------------------------------");
 
-                    
                 }
                 
                  testConverged = true;
@@ -311,7 +314,7 @@ class CTSBetaBinomialTest {
             
             
             
-            //Finally test was done, so we say the test was performed.
+            //Finally test was done, so we say the test was performed.;
             testPerformed = true;
             
         }

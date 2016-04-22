@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import com.google.common.collect.Iterables;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -80,6 +81,11 @@ class PhasedEntry {
             }
 
             dispersionWriter.close();
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("--------------------------------------------------");
+                System.out.println("Finished dispersion estimates for all individuals.");
+                System.out.println("--------------------------------------------------");        
+            }
         } else {
             ArrayList<String> DispersionLines = UtilityMethods.readFileIntoStringArrayList(dispersionLocation);
             //remove first Dispersion
@@ -100,15 +106,6 @@ class PhasedEntry {
                 System.out.println("-------------------------");
             }
         
-        }
-
-
-
-
-        if(GlobalVariables.verbosity >= 10){
-            System.out.println("--------------------------------------------------");
-            System.out.println("Finished dispersion estimates for all individuals.");
-            System.out.println("--------------------------------------------------");        
         }
 
         boolean hasCellProp = false;
@@ -182,10 +179,12 @@ class PhasedEntry {
         snpHashMap = phasedPair.getLeft();
         allRegions = phasedPair.getRight();
         
-        phasedPair = null;
         
         if(GlobalVariables.verbosity >= 10){
             System.out.println("Added phasing information to AS values of snps.");
+            if(allRegions.size() == 0){
+                System.out.println("No regions to found. exiting");
+            }
         }
         
         /**
@@ -234,12 +233,12 @@ class PhasedEntry {
         
         for(GenomicRegion iRegion : allRegions){
             
-            System.out.println(iRegion.getAnnotation());
-            
+            if(GlobalVariables.verbosity > 10){
+                System.out.println(iRegion.getAnnotation());
+            }
             // I may want to change this into all test SNPS needs to be implemented still.
             // compared to all snps in the region.
-            
-            
+
             ArrayList<String> snpsInRegion = iRegion.getSnpInRegions();
             
             ArrayList<IndividualSnpData> allHetsInRegion = new ArrayList<IndividualSnpData>();
@@ -258,7 +257,7 @@ class PhasedEntry {
             HashMap<String, BinomialTest> storedBinomTests = new HashMap<String, BinomialTest>();
             HashMap<String, BetaBinomialTest> storedBetaBinomTests = new HashMap<String, BetaBinomialTest>();
             
-            ///PLEASE NOTE, CELL TYPE SPECIFIC FUNCTIONALITY HAS NOT YET BEEN IMPLEMENTED.
+            ///PLEASE NOTE, COVARIATE SPECIFIC FUNCTIONALITY HAS NOT YET BEEN IMPLEMENTED.
             //Plan is to use this in the future but keeping them in
             HashMap<String, CTSbinomialTest> storedCTSBinomTests = new HashMap<String, CTSbinomialTest>();
             HashMap<String, CTSBetaBinomialTest> storedCTSBetaBinomTests = new HashMap<String, CTSBetaBinomialTest>();
@@ -268,7 +267,7 @@ class PhasedEntry {
             for( String testSnp : snpsInRegion ){
 
                 
-                ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
+                ArrayList<IndividualSnpData> hetTestSnps =  UtilityMethods.isolateOnlyHeterozygotesFromIndividualSnpData(snpHashMap.get(testSnp));
                 
                 //Check if the snpp has phasing, but also see if there are heterozygous SNPs in the region.
                 try{
@@ -347,8 +346,10 @@ class PhasedEntry {
                         
                         int snpPos  = Integer.parseInt(thisHet.position);
                         
-                        //First check if the Heterozygote is in the test region
-                        if(snpPos < iRegion.getStartPosition() || snpPos > iRegion.getEndPosition()){
+                        //First check if the Heterozygote is in the test region and if it has enough reads.
+                        if((snpPos < iRegion.getStartPosition() || 
+                            snpPos > iRegion.getEndPosition()) 
+                            || !UtilityMethods.valid_heterozygote(thisHet)){
                             continue;
                         }
                        
@@ -499,13 +500,27 @@ class PhasedEntry {
             
             GenomicRegion iRegion = genomicRegions.get(regionIndicator);
             
-            Iterable<GeneticVariant> VariantsInRegion;
-            VariantsInRegion = genotypeData.getVariantsByRange(
+            Iterable<GeneticVariant> VariantsInTestRegion;
+            VariantsInTestRegion = genotypeData.getVariantsByRange(
                                                 iRegion.getSequence(),
                                                 iRegion.getTestStart() - 1 , //minus one because bigger than.
                                                 iRegion.getTestEnd());
             
+            Iterable<GeneticVariant> VariantsInGeneRegion = null;
+           
+            if(iRegion.HasTestRegion()){
+                VariantsInGeneRegion = genotypeData.getVariantsByRange(
+                                                    iRegion.getSequence(),
+                                                    iRegion.getStartPosition() - 1 , //minus one because bigger than.
+                                                    iRegion.getEndPosition());
+            }
+            
+            Iterable<GeneticVariant> VariantsInRegion;
+            VariantsInRegion = Iterables.concat(VariantsInTestRegion, VariantsInGeneRegion);
+            
             ArrayList<String> snpsInThisTestRegion = new ArrayList<String>();
+            
+            HashSet<String> snpsAdded = new HashSet<String>();
             
             for(GeneticVariant currentVariant : VariantsInRegion){
                 
@@ -520,6 +535,18 @@ class PhasedEntry {
                     }
                     continue;
                 }
+                
+                
+                if(currentVariant.getAllIds().isEmpty()){
+                    continue;
+                }
+                //make sure there is no overlap between gene and testing variant.
+                if(snpsAdded.contains(currentVariant.getAllIds().get(0))){
+                   continue;
+                } else{
+                    snpsAdded.add(currentVariant.getAllIds().get(0));
+                }
+                
                 
                 String snpName = currentVariant.getPrimaryVariantId();
                 String chr = currentVariant.getSequenceName();
@@ -658,8 +685,16 @@ class PhasedEntry {
             String[] splitString = iString.split("\t");
             GenomicRegion tempRegion = new GenomicRegion();
             
-            tempRegion.setAnnotation(splitString[0]); 
-            tempRegion.setSequence(splitString[1]);
+            //the line is incorrect, will proceed with a warning.
+            try{
+                tempRegion.setAnnotation(splitString[0]); 
+                tempRegion.setSequence(splitString[1]);
+            } catch(ArrayIndexOutOfBoundsException e){
+
+                System.out.println("The following line was not parsable as a valid region. Continueing with the regions parsed up untill now.");
+                System.out.println(iString);
+                return allRegions;
+            }
             tempRegion.setStartPosition(Integer.parseInt(splitString[2]));
             tempRegion.setEndPosition(Integer.parseInt(splitString[3])); 
             
