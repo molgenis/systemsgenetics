@@ -208,6 +208,8 @@ class CTSBetaBinomialTest {
 
                 GuessList.add(new InitialGuess(new double[] {0.0  , nonCTSprop}));
                 GuessList.add(new InitialGuess(new double[] {CTSlinearRegressionResults.slope , CTSlinearRegressionResults.intercept}));
+                GuessList.add(new InitialGuess(new double[] {0.2  , 0.5}));
+                GuessList.add(new InitialGuess(new double[] {-0.2 , 0.5}));
 
                 simplex = new NelderMeadSimplex(2);
 
@@ -254,7 +256,14 @@ class CTSBetaBinomialTest {
                         System.out.println("\tLogLik:               " + Double.toString(OptimizedLogLik[i]));
                     }
 
+                    //only do the last 2 guesses when the celltype ratio is not zero.
+                    if(i >= 2 && valueAlt[0] != 0.0){
+                        break;
+                    }
+                    
+                    
                     i++;
+                    
                 }
 
 
