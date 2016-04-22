@@ -51,8 +51,8 @@ class CTSlinearRegression {
     private final boolean outPutAllData = false;
     
     Double pValue;
-    Double slope;
-    Double intercept;
+    Double slope = 0.0;
+    Double intercept = 0.0;
     
     
     Double stdErrorSlope;
@@ -112,14 +112,15 @@ class CTSlinearRegression {
             for(int i=0; i< asRef.size(); i++ ){
                 Double asRatio;
                 //do this check, otherwise the denominator will be zero.
+                
                 if(asRef.get(i) != 0){
                     asRatio = ((double)asRef.get(i)) / ((double)(asRef.get(i) + asAlt.get(i)));
                 }else{
                     asRatio = 0.0;
                 }
+                
                 Double phenoRatio =  cellProp.get(i);
                 thisRegression.addData(phenoRatio, asRatio);
-                
                 if(!GlobalVariables.plotDir.equals("")){
                     plotThis.plot(asRatio, phenoRatio);
                 }

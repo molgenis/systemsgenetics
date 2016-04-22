@@ -69,7 +69,7 @@ class CTSbinomialTest {
     boolean testConverged  = false;
     
     
-    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
+    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals, CTSlinearRegression CTSlinearRegressionResults) throws Exception{
         
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
@@ -188,11 +188,13 @@ class CTSbinomialTest {
                     
                     ArrayList<double[]> StartingValueList = new ArrayList<double[]>();
                     //These are the starting values to try
-                    StartingValueList.add(new double[] {0.5 , 0.0 });
-                    StartingValueList.add(new double[] {0.5 , 0.5 });
-                    StartingValueList.add(new double[] {0.0 , 0.0 });
-                    StartingValueList.add(new double[] {0.75, 0.0 });
-                    StartingValueList.add(new double[] {0.0 , 0.75});
+                    
+                StartingValueList.add(new double[] {0.0  , nullProp});
+                StartingValueList.add(new double[] {CTSlinearRegressionResults.slope , CTSlinearRegressionResults.intercept});
+
+//                StartingValueList.add(new InitialGuess(new double[] {0.5  , 0.1       }));
+//                StartingValueList.add(new InitialGuess(new double[] {-0.01, 0.7       }));
+//                StartingValueList.add(new InitialGuess(new double[] {0.25 , 0.5       }));
                     
                     
                     for(double[] startingValue :StartingValueList ){

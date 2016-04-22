@@ -168,16 +168,17 @@ public class NonPhasedEntry {
         
         
         //CTS files if available.
-        PrintWriter CTSBinomWriter = null; 
+        //CTS binomial was prone to FP, and a performance sink, therefore commented here.
+//        PrintWriter CTSBinomWriter = null; 
         PrintWriter CTSBetaBinomWriter = null;
         PrintWriter CTSlinearRegressionWriter = null;
         if(phenoTypeLocation != null){
             CTSlinearRegressionWriter = new PrintWriter(CTSlinearRegressionOutput, "UTF-8");
             CTSlinearRegressionWriter.println(CTSlinearRegression.writeHeader());
             
-            CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
-            CTSBinomWriter.println(CTSbinomialTest.writeHeader());
-            
+//            CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
+//            CTSBinomWriter.println(CTSbinomialTest.writeHeader());
+   
             CTSBetaBinomWriter = new PrintWriter(CTSbetaBinomialOutput, "UTF-8");
             CTSBetaBinomWriter.println(CTSBetaBinomialTest.writeHeader());
         }
@@ -303,15 +304,17 @@ public class NonPhasedEntry {
                     //do the CTS beta binomial test:
                     
                     CTSlinearRegression CTSlinearRegressionResults = new CTSlinearRegression(allSnpData);
-                    CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData);
-                    CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData);
+                    
+                    //the binomial test was removed because it was really slow, took about 70% of processing time, and was very false positive prone
+                    //CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData, CTSlinearRegressionResults);
+                    CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData, CTSlinearRegressionResults);
                     
 
                     // Write the results to the out_file, assuming both of them were done.
                     if (CTSbetaBinomResults.isTestPerformed()) {
                         
                        CTSlinearRegressionWriter.println(CTSlinearRegressionResults.writeTestStatistics(true));
-                       CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
+                       //CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
                        CTSBetaBinomWriter.println(CTSbetaBinomResults.writeTestStatistics(true));
                          
                     }
@@ -327,7 +330,7 @@ public class NonPhasedEntry {
         
         
         if(phenoTypeLocation != null){    
-            CTSBinomWriter.close();
+            //CTSBinomWriter.close();
             CTSBetaBinomWriter.close();
         }
         
