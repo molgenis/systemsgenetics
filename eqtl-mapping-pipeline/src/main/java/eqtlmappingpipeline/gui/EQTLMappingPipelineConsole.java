@@ -25,6 +25,7 @@ import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
+import eqtlmappingpipeline.util.ModuleEqtlGeuvadisReplication;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.QTLFileCompare;
 import eqtlmappingpipeline.util.QTLmeQTLCompare;
@@ -137,6 +138,9 @@ public class EQTLMappingPipelineConsole {
 				return;
 			} else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("moduleReplication")) {
+				ModuleEqtlGeuvadisReplication.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
 			} else if (mode.equals("aseSnpEff")) {
 				AnnotateAseWithSnpEffVcf.annotateAseWithSnpEffVcf(args[2], args[3], args[4]);
