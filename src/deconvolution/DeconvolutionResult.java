@@ -8,7 +8,6 @@ public class DeconvolutionResult {
 	private List<String> celltypes;
 	private String qtlName;
 	private List<Double> pvalues;
-	private DeconvolutionResult(){};
 	Map<String, Double> pvaluePerCelltype = new HashMap<String, Double>();
 
 	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues){
@@ -32,6 +31,9 @@ public class DeconvolutionResult {
 	}
 	
 	public List<String> GetCelltypes() throws IllegalAccessException{
+		/* 
+		 * Get a list of all the celltypes given as input
+		 */
 		if(this.celltypes == null){
 			throw new IllegalAccessException("celltypes not set for this model");
 		}

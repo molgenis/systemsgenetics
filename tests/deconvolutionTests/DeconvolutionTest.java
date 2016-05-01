@@ -3,7 +3,6 @@ package deconvolutionTests;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,8 +12,7 @@ import org.apache.commons.io.LineIterator;
 import org.junit.Before;
 import org.junit.Test;
 import deconvolution.Deconvolution;
-import deconvolution.DeconvolutionResult;
-import deconvolution.PermutationResult;
+import deconvolution.InteractionModel;
 
 public class DeconvolutionTest {
 	private double [] y;
@@ -33,11 +31,21 @@ public class DeconvolutionTest {
 		y = new double[] {-0.48812477, 0.33458213, -0.52754476, -0.79863471, -0.68544309, -0.12970239, 0.02355622, -0.31890850, 0.34725819,  0.08108851};
 		x = new double[][] {{1,0}, {0,0}, {1,0}, {2,1}, {0,1}, {0,0}, {1,0}, {0,0}, {1,0}, {0,0}};
 		xb = new double[][] {{1,0,0}, {0,0,0}, {1,0,0}, {2,1,2}, {0,1,0}, {0,0,0}, {1,0,0}, {0,0,0}, {1,0,0}, {0,0,0}};
-		sumOfSquaresA = Deconvolution.calculateSumOfSquares(y, x, false);
-		sumOfSquaresB = Deconvolution.calculateSumOfSquares(y, xb, false);
-		sumOfSquaresNoInterceptA = Deconvolution.calculateSumOfSquares(y, x, true);
-		sumOfSquaresNoInterceptB = Deconvolution.calculateSumOfSquares(y, xb, true);
-		
+		InteractionModel noInteraction = new InteractionModel();
+		noInteraction.SetExpressionValues(y);
+		noInteraction.SetObservedValues(x);
+		InteractionModel interaction = new InteractionModel();
+		interaction.SetExpressionValues(y);
+		interaction.SetObservedValues(xb);
+		try {
+			sumOfSquaresA = Deconvolution.calculateSumOfSquaresOLS(noInteraction, false);
+		sumOfSquaresB = Deconvolution.calculateSumOfSquaresOLS(interaction, false);
+		sumOfSquaresNoInterceptA = Deconvolution.calculateSumOfSquaresOLS(noInteraction, true);
+		sumOfSquaresNoInterceptB = Deconvolution.calculateSumOfSquaresOLS(interaction, true);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 		degreesOfFreedomA = y.length - (x[0].length + 1);
 		degreesOfFreedomB = y.length - (xb[0].length + 1);
     }
@@ -104,7 +112,8 @@ public class DeconvolutionTest {
 		cellcountIterator.close();
 		expressionIterator.next();
 		genotypeIterator.next();
-		PermutationResult permutation_result = Deconvolution.permutationTest("tests/resources/expTable_Corrected_addMean_head.txt", "tests/resources/dsgTable_testing_head.txt", cellcountTable, 10, 1, true);
+		//PermutationResult permutation_result = Deconvolution.permutationTest("tests/resources/expTable_Corrected_addMean_head.txt", "tests/resources/dsgTable_testing_head.txt", cellcountTable, 10, 1, true);
 		/* TODO: write tests on permutation_result */
+		fail("Not yet implemented");
 	}
 }
