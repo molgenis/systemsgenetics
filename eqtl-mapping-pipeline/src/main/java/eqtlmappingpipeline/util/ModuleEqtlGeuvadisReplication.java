@@ -12,6 +12,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.NavigableMap;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -99,6 +100,20 @@ public class ModuleEqtlGeuvadisReplication {
 		OptionBuilder.withLongOpt("interactions");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create('i'));
+		
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("LD cutoff");
+		OptionBuilder.withLongOpt("ld");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("ld"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("window");
+		OptionBuilder.withLongOpt("window");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("w"));
 
 	}
 
@@ -132,10 +147,19 @@ public class ModuleEqtlGeuvadisReplication {
 		final String replicationQtlFilePath = commandLine.getOptionValue("e");
 		final String interactionQtlFilePath = commandLine.getOptionValue("i");
 		final String outputFilePath = commandLine.getOptionValue("o");
+		final double ldCutoff = Double.parseDouble(commandLine.getOptionValue("ld"));
+		final int window = Integer.parseInt(commandLine.getOptionValue("w"));
+		
+		System.out.println("Genotype: " + Arrays.toString(genotypesBasePaths));
+		System.out.println("Interaction file: " + interactionQtlFilePath);
+		System.out.println("Replication file: " + replicationQtlFilePath);
+		System.out.println("Output: " + outputFilePath);
+		System.out.println("LD: " + ldCutoff);
+		System.out.println("Window: " + window);
 
 		try {
 			if (commandLine.hasOption("G")) {
-				genotypeDataType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue("I1").toUpperCase());
+				genotypeDataType = RandomAccessGenotypeDataReaderFormats.valueOf(commandLine.getOptionValue("G").toUpperCase());
 			} else {
 				if (genotypesBasePaths[0].endsWith(".vcf")) {
 					System.err.println("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
@@ -145,7 +169,7 @@ public class ModuleEqtlGeuvadisReplication {
 				try {
 					genotypeDataType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypesBasePaths[0]);
 				} catch (GenotypeDataException e) {
-					System.err.println("Unable to determine input 1 type based on specified path. Please specify --input1Type");
+					System.err.println("Unable to determine input 1 type based on specified path. Please specify -G");
 					System.exit(1);
 					return;
 				}
@@ -181,19 +205,14 @@ public class ModuleEqtlGeuvadisReplication {
 
 		ChrPosTreeMap<EQTL> replicationQtls = new QTLTextFile(replicationQtlFilePath, false).readQtlsAsTreeMap();
 
-		final int window = 250000;
-		final double ldCutoff = 0.8;
-
 		int interactionSnpNotInGenotypeData = 0;
 		int noReplicationQtlsInWindow = 0;
 		int noReplicationQtlsInLd = 0;
 		int multipleReplicationQtlsInLd = 0;
 		int replicationTopSnpNotInGenotypeData = 0;
 
-		ArrayList<EQTL> replicationQtlsInLd = new ArrayList<>();
-
-		final CSVWriter outputWriter = new CSVWriter(new FileWriter(new File(outputFilePath + ".r2")), '\t', '\0');
-		final String[] outputLine = new String[6];
+		final CSVWriter outputWriter = new CSVWriter(new FileWriter(new File(outputFilePath)), '\t', '\0');
+		final String[] outputLine = new String[11];
 		int c = 0;
 		outputLine[c++] = "Chr";
 		outputLine[c++] = "Pos";
@@ -201,9 +220,14 @@ public class ModuleEqtlGeuvadisReplication {
 		outputLine[c++] = "Gene";
 		outputLine[c++] = "Module";
 		outputLine[c++] = "ReplicationZ";
+		outputLine[c++] = "DiscoveryAlleleAssessed";
+		outputLine[c++] = "ReplicationAlleleAssessed";
+		outputLine[c++] = "bestLd";
+		outputLine[c++] = "bestLd_dist";
+		outputLine[c++] = "nextLd";
 		outputWriter.writeNext(outputLine);
 
-		CSVReader interactionQtlReader = new CSVReader(new FileReader(interactionQtlFilePath));
+		CSVReader interactionQtlReader = new CSVReader(new FileReader(interactionQtlFilePath),'\t');
 		interactionQtlReader.readNext();//skip header
 		String[] interactionQtlLine;
 		while ((interactionQtlLine = interactionQtlReader.readNext()) != null) {
@@ -212,7 +236,8 @@ public class ModuleEqtlGeuvadisReplication {
 			String chr = interactionQtlLine[2];
 			int pos = Integer.parseInt(interactionQtlLine[3]);
 			String gene = interactionQtlLine[4];
-			int module = Integer.parseInt(interactionQtlLine[12]);
+			String alleleAssessed = interactionQtlLine[9];
+			String module = interactionQtlLine[12];
 
 			GeneticVariant interactionQtlVariant = genotypeData.getSnpVariantByPos(chr, pos);
 
@@ -224,44 +249,46 @@ public class ModuleEqtlGeuvadisReplication {
 
 			NavigableMap<Integer, EQTL> potentionalReplicationQtls = replicationQtls.getChrRange(chr, pos - window, true, pos + window, true);
 
-			if (potentionalReplicationQtls.isEmpty()) {
-				++noReplicationQtlsInWindow;
-			}
-
-			replicationQtlsInLd.clear();
+			EQTL bestMatch = null;
+			double bestMatchLd = Double.NaN;
+			double nextBestLd = Double.NaN;
+			
+			
 
 			for (EQTL potentialReplicationQtl : potentionalReplicationQtls.values()) {
 				GeneticVariant potentialReplicationQtlVariant = genotypeData.getSnpVariantByPos(potentialReplicationQtl.getRsChr().toString(), potentialReplicationQtl.getRsChrPos());
 
 				if (potentialReplicationQtlVariant == null) {
+					System.err.println("Not found: " + potentialReplicationQtl.getRsChr().toString() + ":" + potentialReplicationQtl.getRsChrPos());
 					++replicationTopSnpNotInGenotypeData;
+					continue;
 				}
-
-				if (interactionQtlVariant.calculateLd(potentialReplicationQtlVariant).getR2() >= ldCutoff) {
-					replicationQtlsInLd.add(potentialReplicationQtl);
-				}
-
+				
+				double ld = interactionQtlVariant.calculateLd(potentialReplicationQtlVariant).getR2();
+				
+				if(bestMatch == null){
+					bestMatch = potentialReplicationQtl;
+					bestMatchLd = ld;
+				} else if (ld > bestMatchLd){
+					bestMatch = potentialReplicationQtl;
+					nextBestLd = bestMatchLd;
+					bestMatchLd = ld;
+				}				
+				
 			}
-
-			if (replicationQtlsInLd.size() > 1) {
-				++multipleReplicationQtlsInLd;
-				continue;
-			}
-
-			if (replicationQtlsInLd.isEmpty()) {
-				++noReplicationQtlsInLd;
-				continue;
-			}
-
-			EQTL replicationQtlInLd = replicationQtlsInLd.get(0); 
 			
 			c = 0;
 			outputLine[c++] = chr;
 			outputLine[c++] = String.valueOf(pos);
 			outputLine[c++] = snp;
 			outputLine[c++] = gene;
-			outputLine[c++] = String.valueOf(module);
-			outputLine[c++] = String.valueOf(replicationQtlInLd.getZscore());
+			outputLine[c++] = module;
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(bestMatch.getZscore());
+			outputLine[c++] = alleleAssessed;
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(bestMatch.getAlleleAssessed());
+			outputLine[c++] = String.valueOf(bestMatchLd);
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(Math.abs(pos - bestMatch.getRsChrPos()));
+			outputLine[c++] = String.valueOf(nextBestLd);
 			outputWriter.writeNext(outputLine);
 
 		}
