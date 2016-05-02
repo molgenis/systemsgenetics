@@ -7,6 +7,7 @@ package umcg.genetica.io.trityper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Pattern;
 import umcg.genetica.collections.ChrPosTreeMap;
 import umcg.genetica.io.text.TextFile;
@@ -154,13 +155,20 @@ public class QTLTextFile extends TextFile {
 		return new EQtlIterator();
 	}
 
-	public ChrPosTreeMap<EQTL> readQtlsAsTreeMap() throws IOException {
+	public ChrPosTreeMap<ArrayList<EQTL>> readQtlsAsTreeMap() throws IOException {
 		
-		ChrPosTreeMap<EQTL> qtlTreeMap = new ChrPosTreeMap<>();
+		ChrPosTreeMap<ArrayList<EQTL>> qtlTreeMap = new ChrPosTreeMap<>();
 		
 		for (Iterator<EQTL> eqtlIterator = this.getEQtlIterator(); eqtlIterator.hasNext();) {
 			EQTL qtl = eqtlIterator.next();
-			qtlTreeMap.put(qtl.getRsChr().toString(), qtl.getRsChrPos(), qtl);
+			
+			ArrayList<EQTL> thisPosQtls = qtlTreeMap.get(qtl.getRsChr().toString(), qtl.getRsChrPos());
+			if(thisPosQtls == null){
+				thisPosQtls = new ArrayList<>(1);
+				qtlTreeMap.put(qtl.getRsChr().toString(), qtl.getRsChrPos(), thisPosQtls);
+			}
+			thisPosQtls.add(qtl);
+			
 		}
 		
 		return qtlTreeMap;

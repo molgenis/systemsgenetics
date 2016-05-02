@@ -13,6 +13,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.NavigableMap;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -21,6 +23,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeInfo;
@@ -28,6 +31,7 @@ import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
@@ -100,14 +104,14 @@ public class ModuleEqtlGeuvadisReplication {
 		OptionBuilder.withLongOpt("interactions");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create('i'));
-		
+
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("LD cutoff");
 		OptionBuilder.withLongOpt("ld");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("ld"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("window");
@@ -149,7 +153,7 @@ public class ModuleEqtlGeuvadisReplication {
 		final String outputFilePath = commandLine.getOptionValue("o");
 		final double ldCutoff = Double.parseDouble(commandLine.getOptionValue("ld"));
 		final int window = Integer.parseInt(commandLine.getOptionValue("w"));
-		
+
 		System.out.println("Genotype: " + Arrays.toString(genotypesBasePaths));
 		System.out.println("Interaction file: " + interactionQtlFilePath);
 		System.out.println("Replication file: " + replicationQtlFilePath);
@@ -203,7 +207,7 @@ public class ModuleEqtlGeuvadisReplication {
 			return;
 		}
 
-		ChrPosTreeMap<EQTL> replicationQtls = new QTLTextFile(replicationQtlFilePath, false).readQtlsAsTreeMap();
+		ChrPosTreeMap<ArrayList<EQTL>> replicationQtls = new QTLTextFile(replicationQtlFilePath, false).readQtlsAsTreeMap();
 
 		int interactionSnpNotInGenotypeData = 0;
 		int noReplicationQtlsInWindow = 0;
@@ -212,14 +216,17 @@ public class ModuleEqtlGeuvadisReplication {
 		int replicationTopSnpNotInGenotypeData = 0;
 
 		final CSVWriter outputWriter = new CSVWriter(new FileWriter(new File(outputFilePath)), '\t', '\0');
-		final String[] outputLine = new String[11];
+		final String[] outputLine = new String[14];
 		int c = 0;
 		outputLine[c++] = "Chr";
 		outputLine[c++] = "Pos";
 		outputLine[c++] = "SNP";
 		outputLine[c++] = "Gene";
 		outputLine[c++] = "Module";
+		outputLine[c++] = "DiscoveryZ";
 		outputLine[c++] = "ReplicationZ";
+		outputLine[c++] = "DiscoveryZCorrected";
+		outputLine[c++] = "ReplicationZCorrected";
 		outputLine[c++] = "DiscoveryAlleleAssessed";
 		outputLine[c++] = "ReplicationAlleleAssessed";
 		outputLine[c++] = "bestLd";
@@ -227,7 +234,9 @@ public class ModuleEqtlGeuvadisReplication {
 		outputLine[c++] = "nextLd";
 		outputWriter.writeNext(outputLine);
 
-		CSVReader interactionQtlReader = new CSVReader(new FileReader(interactionQtlFilePath),'\t');
+		HashSet<String> notFound = new HashSet<>();
+
+		CSVReader interactionQtlReader = new CSVReader(new FileReader(interactionQtlFilePath), '\t');
 		interactionQtlReader.readNext();//skip header
 		String[] interactionQtlLine;
 		while ((interactionQtlLine = interactionQtlReader.readNext()) != null) {
@@ -238,6 +247,7 @@ public class ModuleEqtlGeuvadisReplication {
 			String gene = interactionQtlLine[4];
 			String alleleAssessed = interactionQtlLine[9];
 			String module = interactionQtlLine[12];
+			double discoveryZ = Double.parseDouble(interactionQtlLine[10]);
 
 			GeneticVariant interactionQtlVariant = genotypeData.getSnpVariantByPos(chr, pos);
 
@@ -247,53 +257,126 @@ public class ModuleEqtlGeuvadisReplication {
 				continue;
 			}
 
-			NavigableMap<Integer, EQTL> potentionalReplicationQtls = replicationQtls.getChrRange(chr, pos - window, true, pos + window, true);
-
 			EQTL bestMatch = null;
-			double bestMatchLd = Double.NaN;
-			double nextBestLd = Double.NaN;
-			
-			
+			double bestMatchR2 = Double.NaN;
+			Ld bestMatchLd = null;
+			double nextBestR2 = Double.NaN;
 
-			for (EQTL potentialReplicationQtl : potentionalReplicationQtls.values()) {
-				GeneticVariant potentialReplicationQtlVariant = genotypeData.getSnpVariantByPos(potentialReplicationQtl.getRsChr().toString(), potentialReplicationQtl.getRsChrPos());
+			ArrayList<EQTL> sameSnpQtls = replicationQtls.get(chr, pos);
 
-				if (potentialReplicationQtlVariant == null) {
-					System.err.println("Not found: " + potentialReplicationQtl.getRsChr().toString() + ":" + potentialReplicationQtl.getRsChrPos());
-					++replicationTopSnpNotInGenotypeData;
-					continue;
+			if (sameSnpQtls != null) {
+				for (EQTL sameSnpQtl : sameSnpQtls) {
+					if (sameSnpQtl.getProbe().equals(gene)) {
+						bestMatch = sameSnpQtl;
+						bestMatchR2 = 1;
+					}
 				}
-				
-				double ld = interactionQtlVariant.calculateLd(potentialReplicationQtlVariant).getR2();
-				
-				if(bestMatch == null){
-					bestMatch = potentialReplicationQtl;
-					bestMatchLd = ld;
-				} else if (ld > bestMatchLd){
-					bestMatch = potentialReplicationQtl;
-					nextBestLd = bestMatchLd;
-					bestMatchLd = ld;
-				}				
+			}
+
+			NavigableMap<Integer, ArrayList<EQTL>> potentionalReplicationQtls = replicationQtls.getChrRange(chr, pos - window, true, pos + window, true);
+
+			for (ArrayList<EQTL> potentialReplicationQtls : potentionalReplicationQtls.values()) {
+
+				for (EQTL potentialReplicationQtl : potentialReplicationQtls) {
+
+					if (!potentialReplicationQtl.getProbe().equals(gene)) {
+						continue;
+					}
+
+					GeneticVariant potentialReplicationQtlVariant = genotypeData.getSnpVariantByPos(potentialReplicationQtl.getRsChr().toString(), potentialReplicationQtl.getRsChrPos());
+
+					if (potentialReplicationQtlVariant == null) {
+						notFound.add(potentialReplicationQtl.getRsChr().toString() + ":" + potentialReplicationQtl.getRsChrPos());
+						++replicationTopSnpNotInGenotypeData;
+						continue;
+					}
+
+					Ld ld = interactionQtlVariant.calculateLd(potentialReplicationQtlVariant);
+					double r2 = ld.getR2();
+
+					if (r2 > 1) {
+						r2 = 1;
+					}
+
+					if (bestMatch == null) {
+						bestMatch = potentialReplicationQtl;
+						bestMatchR2 = r2;
+						bestMatchLd = ld;
+					} else if (r2 > bestMatchR2) {
+						bestMatch = potentialReplicationQtl;
+						nextBestR2 = bestMatchR2;
+						bestMatchR2 = r2;
+						bestMatchLd = ld;
+					}
+
+				}
+			}
+			
+			double replicationZ = Double.NaN;
+			double replicationZCorrected = Double.NaN;
+			double discoveryZCorrected = Double.NaN;
+			
+			String replicationAlleleAssessed = null;
+			
+			if(bestMatch != null){
+				replicationZ = bestMatch.getZscore();
+				replicationAlleleAssessed = bestMatch.getAlleleAssessed();
+							
+				if(pos != bestMatch.getRsChrPos()){
+					
+					String commonHap = null;
+					double commonHapFreq = -1;
+					for(Map.Entry<String, Double> hapFreq : bestMatchLd.getHaplotypesFreq().entrySet()){
+						
+						double f = hapFreq.getValue();
+						
+						if(f > commonHapFreq){
+							commonHapFreq = f;
+							commonHap = hapFreq.getKey();
+						}
+						
+					}
+					
+					String[] commonHapAlleles = StringUtils.split(commonHap, '/');
+					
+					discoveryZCorrected = commonHapAlleles[0].equals(alleleAssessed) ? discoveryZ : discoveryZ * -1;
+					replicationZCorrected = commonHapAlleles[1].equals(replicationAlleleAssessed) ? replicationZ : replicationZ * -1;
+					
+				} else {
+					
+					discoveryZCorrected = discoveryZ;
+					replicationZCorrected = alleleAssessed.equals(replicationAlleleAssessed) ? replicationZ : replicationZ * -1;
+					
+				}
 				
 			}
 			
+			
+
 			c = 0;
 			outputLine[c++] = chr;
 			outputLine[c++] = String.valueOf(pos);
 			outputLine[c++] = snp;
 			outputLine[c++] = gene;
 			outputLine[c++] = module;
-			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(bestMatch.getZscore());
+			outputLine[c++] = String.valueOf(discoveryZ);
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(replicationZ);
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(discoveryZCorrected);
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(replicationZCorrected);
 			outputLine[c++] = alleleAssessed;
 			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(bestMatch.getAlleleAssessed());
-			outputLine[c++] = String.valueOf(bestMatchLd);
+			outputLine[c++] = String.valueOf(bestMatchR2);
 			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(Math.abs(pos - bestMatch.getRsChrPos()));
-			outputLine[c++] = String.valueOf(nextBestLd);
+			outputLine[c++] = String.valueOf(nextBestR2);
 			outputWriter.writeNext(outputLine);
 
 		}
-		
+
 		outputWriter.close();
+
+		for (String e : notFound) {
+			System.err.println("Not found: " + e);
+		}
 
 		System.out.println("interactionSnpNotInGenotypeData: " + interactionSnpNotInGenotypeData);
 		System.out.println("noReplicationQtlsInWindow: " + noReplicationQtlsInWindow);
