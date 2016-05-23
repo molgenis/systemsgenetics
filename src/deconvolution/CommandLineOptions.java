@@ -21,10 +21,13 @@ public class CommandLineOptions {
 	private Boolean forceNormalCellcount = false;
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
-	private Boolean plot_beta_times_variables = false;
 	private Boolean allDosages = false;
 	private Boolean plotBetas = false;
 	private String normalizationType = "normalizeAddMean";
+	private Boolean filterSamples = false;
+	private Boolean removeConstraintViolatingSamples = false;
+	private Boolean writeCoefficients = false;
+	private Boolean onlyOutputSignificant = false;
 	public void parseCommandLine(String[] args) throws ParseException {
 		/*
 		 * Standard command line parsing.
@@ -37,38 +40,49 @@ public class CommandLineOptions {
 		 */
 		Options options = new Options();
 		Option help = new Option("help", "print this message");
-		Option roundDosage = Option.builder("r").required(false).longOpt("round_dosage")
-				.desc("Round the dosage to the closest int").build();
-		Option permute = Option.builder("p").required(false).longOpt("permute").hasArg()
-				.desc("Do permutations. Uses more than usual memory.").build();
-		Option numberOfThreads = Option.builder("t").required(false).longOpt("threads").hasArg()
-				.desc("Number of threads to use.").build();
-		Option outfile = Option.builder("of").required(false).hasArg().longOpt("outfile").desc("Outfile name of deconvolution results (will be written in outfolder)")
+		Option allDosages = Option.builder("ad").required(false).hasArg().longOpt("all_dosages")
+				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
+		Option plotBetaTimesVariables = Option.builder("b").required(false).hasArg().longOpt("plot_betas")
+				.desc("Plot the B1*X1, B2*X2 etc values if the sum of Bx*CELLTYPEz+By*CELLTYPEz:GT < 0").build();
+		Option cellcount = Option.builder("c").required(true).hasArg().longOpt("cellcount").desc("Cellcount file name")
 				.argName("file").build();
-		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
-				.argName("path").build();
 		Option expression = Option.builder("e").required(true).hasArg().longOpt("expression")
 				.desc("Expression file name").argName("file").build();
+		Option filterSamplesOption =  Option.builder("f").required(false).longOpt("filter_samples")
+				.desc("If set, remove samples that are filtered out because of -m or -ad. By default p-values of these are set to 333.0").build();
 		Option genotype = Option.builder("g").required(true).hasArg().longOpt("genotype").desc("Genotype file name")
-				.argName("file").build();
-		Option cellcount = Option.builder("c").required(true).hasArg().longOpt("cellcount").desc("Cellcount file name")
 				.argName("file").build();
 		Option minimum_samples_per_genotype = Option.builder("m").required(false).hasArg().longOpt("minimum_samples_per_genotype")
 				.desc("The minimum amount of samples need for each genotype of a QTL for the QTL to be included in the results")
 				.build();
-		Option plotBetaTimesVariables = Option.builder("b").required(false).hasArg().longOpt("plot_betas")
-				.desc("Plot the B1*X1, B2*X2 etc values if the sum of Bx*CELLTYPEz+By*CELLTYPEz:GT < 0").build();
-		Option forceNormalExpression = Option.builder("ne").required(false).hasArg().longOpt("force_normal_expression")
-				.desc("Force normal on the expression data").build();
 		Option normalizationType = Option.builder("n").required(false).hasArg().longOpt("normalization_type")
 				.desc("Type to normalization to use when normalizing expression data (Default: normalizeAddMean)").build();
 		Option forceNormalCellcount = Option.builder("nc").required(false).hasArg().longOpt("force_normal_cellcount")
 				.desc("Force normal on the expression data").build();
-		Option allDosages = Option.builder("ad").required(false).hasArg().longOpt("all_dosages")
-				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
+		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
+				.desc("Force normal on the expression data").build();
+		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
+				.argName("path").build();
+		Option outfile = Option.builder("of").required(false).hasArg().longOpt("outfile").desc("Outfile name of deconvolution results (will be written in outfolder)")
+				.argName("file").build();
+		Option writeCoefficientsOption = Option.builder("oc").required(false).longOpt("output_coefficients").desc("Write the coefficients and coefficient standard error to deconvolution out file")
+				.argName("file").build();
+		Option permute = Option.builder("p").required(false).longOpt("permute").hasArg()
+				.desc("Do permutations. Uses more than usual memory.").build();
 		Option permuteType = Option.builder("pt").required(false).hasArg().longOpt("permutation_type")
 				.desc("Type to permute on, either genotype or expression (Default: genotype)").build();
-		
+		Option roundDosage = Option.builder("r").required(false).longOpt("round_dosage")
+				.desc("Round the dosage to the closest int").build();
+		Option removeConstraintSamples = Option.builder("rc").required(false).longOpt("remove_constraint_violating_samples")
+				.desc("Remove samples that violate the non-negative beta constraint").build();
+		Option onlyOutputSignificantOption = Option.builder("s").required(false).longOpt("output_significant_only")
+				.desc("Only output results that are significant in at least one celltype.").build();
+		Option numberOfThreads = Option.builder("t").required(false).longOpt("threads").hasArg()
+				.desc("Number of threads to use.").build();
+		options.addOption(onlyOutputSignificantOption);
+		options.addOption(writeCoefficientsOption);
+		options.addOption(removeConstraintSamples);
+		options.addOption(filterSamplesOption);
 		options.addOption(normalizationType);
 		options.addOption(plotBetaTimesVariables);
 		options.addOption(help);
@@ -97,10 +111,19 @@ public class CommandLineOptions {
 	}
 	
 	private void parseOptions(CommandLine cmdLine){
+		if(cmdLine.hasOption("output_significant_only")){
+			onlyOutputSignificant = true;
+		}
+		if(cmdLine.hasOption("output_coefficients")){
+			writeCoefficients = true;
+		}
+		if(cmdLine.hasOption("remove_constraint_violating_samples")){
+			removeConstraintViolatingSamples = true;
+		}
 		permutationType = "genotype";
 		if(cmdLine.hasOption("permutation_type")){
 			permutationType = cmdLine.getOptionValue("permutation_type");
-			if(!(permutationType.equals("genotye") || permutationType.equals("expression"))){
+			if(!(permutationType.equals("genotype") || permutationType.equals("expression"))){
 				throw new IllegalArgumentException("permutation_type should be genotype or expression, not "+cmdLine.getOptionValue("permutation_type"));
 			}
 		}
@@ -147,6 +170,12 @@ public class CommandLineOptions {
 			outfile = cmdLine.getOptionValue("outfile");
 		}
 		outfolder = cmdLine.getOptionValue("outfolder");
+		if (cmdLine.hasOption("normalization_type")){
+			normalizationType = cmdLine.getOptionValue("normalization_type");
+		}
+		if (cmdLine.hasOption("filter_samples")){
+			filterSamples = true;
+		}
 	}
 	
 
@@ -162,15 +191,16 @@ public class CommandLineOptions {
 			System.out.printf("Permutation type (-pt): %s\n", permutationType);
 		}
 		System.out.printf("Threads (-t): %d\n", numberOfThreads);
-		System.out.printf("Plot beta (-b): %s\n", plot_beta_times_variables);
 		System.out.printf("Plot beta x variables (-b): %s\n", plotBetas);
 		System.out.printf("Normalize expression (-ne): %s\n", forceNormalExpression);
-		System.out.printf("Normalization type (-nt): %s\n", normalizationType);
+		System.out.printf("Normalization type (-n): %s\n", normalizationType);
 		System.out.printf("Normalize cellcounts (-ne): %s\n", forceNormalCellcount);
 		System.out.printf("Round dosage (-r): %s\n", roundDosage);
 		System.out.printf("All dosages (-ad): %s\n", allDosages);
 		System.out.printf("Minimum samples per genotype (-m): %s\n", minimumSamplesPerGenotype);
-		
+		System.out.printf("Filter samples from output (-f): %s\n", filterSamples);
+		System.out.printf("Remove constraint violating samples (-rc): %s\n", removeConstraintViolatingSamples);
+		System.out.printf("Write the coefficients to outfile (-oc): %s\n", writeCoefficients);
 		System.out.println("=================================================");
 	}
 	public String getExpressionFile(){
@@ -220,6 +250,18 @@ public class CommandLineOptions {
 	}
 	public void setOutfolder(String newOutfolder){
 		outfolder = newOutfolder;
+	}
+	public Boolean getFilterSamples(){
+		return(filterSamples);
+	}
+	public Boolean getRemoveConstraintViolatingSamples(){
+		return(removeConstraintViolatingSamples);
+	}
+	public Boolean getWriteCoefficients(){
+		return(writeCoefficients);
+	}
+	public Boolean getOnlyOutputSignificant(){
+		return(onlyOutputSignificant);
 	}
 }
 

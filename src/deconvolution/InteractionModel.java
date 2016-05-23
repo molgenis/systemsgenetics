@@ -13,6 +13,8 @@ public class InteractionModel {
 	private String qtlName;
 	private String modelName;
 	private List<String> celltypes = new ArrayList<String>();
+	private double[] estimatedRegressionParameters;
+	private double[] estimateRegressionParametersStandardErrors;
 	public InteractionModel(){};
 
 	public void SetObservedValues( double[][] observedValues){
@@ -112,11 +114,11 @@ public class InteractionModel {
 	    this.noIntercept = noIntercept;
 	  }
 	
-	public void AddCelltype(String celltype) throws IllegalAccessException{
+	public void SetCelltypes(List<String> celltypes) throws IllegalAccessException{
 		/* 
 		 * Get a list of all the celltypes given as input
 		 */
-		this.celltypes.add(celltype);
+		this.celltypes = celltypes;
 	}
 	
 	public List<String> GetCelltypes() throws IllegalAccessException{
@@ -161,4 +163,30 @@ public class InteractionModel {
 	    return(this.modelName);
 	  }
 		
+	public void SetEstimateRegressionParametersStandardErrors(double[] estimateRegressionParametersStandardErrors){
+		this.estimateRegressionParametersStandardErrors = estimateRegressionParametersStandardErrors;
+	}
+	public double[] GetEstimateRegressionParametersStandardErrors() throws IllegalAccessException{
+		if(this.estimateRegressionParametersStandardErrors == null){
+			throw new IllegalAccessException("estimateRegressionParametersStandardErrors not set for this model");
+		}
+		return(this.estimateRegressionParametersStandardErrors);
+	}
+	
+	public void SetEstimateRegressionParameters(double[] estimatedRegressionParameters){
+		this.estimatedRegressionParameters = estimatedRegressionParameters;
+	}
+	public double[] GetEstimateRegressionParameters() throws IllegalAccessException{
+		if(this.estimatedRegressionParameters == null){
+			throw new IllegalAccessException("estimatedRegressionParameters not set for this model");
+		}
+		return(this.estimatedRegressionParameters);
+	}
+	
+	public void emptyObservedValues(){
+		observedValues = null;
+	}
+	public void emptyExpressionValues(){
+		expressionValues = null;
+	}
 }
