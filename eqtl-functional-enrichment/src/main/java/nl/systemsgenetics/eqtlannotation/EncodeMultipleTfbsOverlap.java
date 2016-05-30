@@ -29,17 +29,20 @@ public class EncodeMultipleTfbsOverlap {
 
     public static void main(String[] args) {
 //        String inputFile = "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRoundX.head.extended.txt";
-//        String outputFile = "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRoundX.head.extended.txtall_probeWindow.txt";
+//        String outputFile = "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\Permutations\\PermutedEQTLsPermutationRoundX.head.extended.txtall_probeWindow_Test.txt";
+        String inputFile = "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\eQTLsFDR0.05-ProbeLevel_Filtered.txt";
+        String outputFile = "D:\\OnlineFolders\\AeroFS\\RP3_BIOS_Methylation\\meQTLs\\Trans_Pc22c_CisMeQTLc_meQTLs\\RegressedOut_CisEffects_New\\TFBS\\Test.txt";
         
-        String inputFile = "E:\\LL+RS+CODAM+LLS_eqtls_genes_allLevels_18122014_LD_99_TF_input.txt";
-        String outputFile = "E:\\LL+RS+CODAM+LLS_eqtls_genes_allLevels_18122014_LD_99_TF_input_all.txt";
+//        String inputFile = "E:\\LL+RS+CODAM+LLS_eqtls_genes_allLevels_18122014_LD_99_TF_input.txt";
+//        String outputFile = "E:\\LL+RS+CODAM+LLS_eqtls_genes_allLevels_18122014_LD_99_TF_input_all.txt";
         
         
         String snpToCheck = "";
-        String inputFolderTfbsData = "E:\\OnlineFolders\\BitSync\\UMCG\\Data\\ENCODE_TFBS\\";
+//        String inputFolderTfbsData = "E:\\OnlineFolders\\BitSync\\UMCG\\Data\\ENCODE_TFBS\\";
+        String inputFolderTfbsData = "D:\\UMCG\\Data\\ENCODE_TFBS\\";
         int window = 1;
         
-        boolean perm = true;
+        boolean perm = false;
         
         LinkedHashMap<String,HashMap<String, ArrayList<EncodeNarrowPeak>>> peakData = null;
 
