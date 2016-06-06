@@ -117,7 +117,7 @@ public class MetaQTL3ConsoleGUI {
                 try {
                     maf = Double.parseDouble(val);
                 } catch (NumberFormatException e) {
-                    System.out.println("Please supply an integer for --perm");
+                    System.out.println("Please supply an integer for --maf");
                 }
             } else if (arg.equals(
                     "--threads")) {
