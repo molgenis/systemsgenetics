@@ -46,7 +46,7 @@ class PhasedEntry {
          * 1. read all SNPs from AS files and add overdispersion and cellprop to the sampless
          * 2. read phasing and assign alleles for these snps
          * 3. load test regions and determine test snps.
-         * 5. determine log likelihood for test-snps. (with some deduplication to speed up the process.)
+         * 4. determine log likelihood for test-snps. (with some deduplication to speed up the process.)
          */
 
         
@@ -88,7 +88,7 @@ class PhasedEntry {
             }
         } else {
             ArrayList<String> DispersionLines = UtilityMethods.readFileIntoStringArrayList(dispersionLocation);
-            //remove first Dispersion
+            //remove header line.
             DispersionLines.remove(0);
             for(String Line : DispersionLines){
                 String sampleName = Line.split("\t")[0];
@@ -107,11 +107,13 @@ class PhasedEntry {
             }
         
         }
-
-        boolean hasCellProp = false;
+        
+        
+        //See if a phenotype file is there.
+        boolean hasPhenoValue = false;
         ArrayList<String> phenoString = new ArrayList<String>();
         if(cellPropLoc != null){
-            hasCellProp = true;
+            hasPhenoValue = true;
             phenoString = UtilityMethods.readFileIntoStringArrayList(cellPropLoc);
                     
         }
@@ -122,13 +124,15 @@ class PhasedEntry {
             //read some stuff from the files.
             ArrayList<IndividualSnpData> tempSNPdata;
             tempSNPdata = asReader.getIndividualsFromNextLine();
+            
+            //No more individuals in the 
             if(tempSNPdata.isEmpty()) break;
             
-            //I can safely assume all snps are the same per line, based on 
-            //checks done in the getIndividualsFromNextLine.
+            //I'm, assuming, hopefully safely that all snps are the same 
+            //per line, based on checks done in the getIndividualsFromNextLine.
 
-            String snpName  = tempSNPdata.get(0).getSnpName();
-            String chr = tempSNPdata.get(0).getChromosome();
+            String snpName   = tempSNPdata.get(0).getSnpName();
+            String chr       = tempSNPdata.get(0).getChromosome();
             String posString = tempSNPdata.get(0).getPosition();
             
             //add dispersionValues to the SNPs:
@@ -141,7 +145,7 @@ class PhasedEntry {
                 }
                 tempSNPdata.get(j).setDispersion(dispersionParameters.get(j).getOverdispersion()[0]);
                 
-                if(hasCellProp){
+                if(hasPhenoValue){
                     tempSNPdata.get(j).setCellTypeProp(Double.parseDouble(phenoString.get(j)));
                 }
             
@@ -485,7 +489,7 @@ class PhasedEntry {
             }
 
             if(!found && GlobalVariables.verbosity >= 10){
-                System.out.println("Couldn't find individual " + tempCouple[0] + " in sampleNames, continueing with the next.");
+                System.out.println("Couldn't find individual " + tempCouple[0] + " in sampleNames of VCF, continueing with the next.");
                 System.out.println(Arrays.toString(sampleNames));
             }
         }
@@ -495,28 +499,35 @@ class PhasedEntry {
             System.out.println(couplingMap.toString());
         }
 
+        // iterate over all regions, and 
         int snpsDone = 0;
         for(int regionIndicator = 0; regionIndicator < genomicRegions.size(); regionIndicator++){
             
             GenomicRegion iRegion = genomicRegions.get(regionIndicator);
             
             Iterable<GeneticVariant> VariantsInTestRegion;
+
             VariantsInTestRegion = genotypeData.getVariantsByRange(
                                                 iRegion.getSequence(),
                                                 iRegion.getTestStart() - 1 , //minus one because bigger than.
                                                 iRegion.getTestEnd());
             
-            Iterable<GeneticVariant> VariantsInGeneRegion = null;
-           
+            Iterable<GeneticVariant> VariantsInGeneRegion;
+            Iterable<GeneticVariant> VariantsInRegion;
+            
             if(iRegion.HasTestRegion()){
                 VariantsInGeneRegion = genotypeData.getVariantsByRange(
                                                     iRegion.getSequence(),
                                                     iRegion.getStartPosition() - 1 , //minus one because bigger than.
                                                     iRegion.getEndPosition());
+                
+                VariantsInRegion = Iterables.concat(VariantsInTestRegion, VariantsInGeneRegion);
+            }else{
+                VariantsInRegion = VariantsInTestRegion;
             }
             
-            Iterable<GeneticVariant> VariantsInRegion;
-            VariantsInRegion = Iterables.concat(VariantsInTestRegion, VariantsInGeneRegion);
+            
+           
             
             ArrayList<String> snpsInThisTestRegion = new ArrayList<String>();
             
@@ -531,20 +542,26 @@ class PhasedEntry {
                 if(!(currentVariant.isSnp() && currentVariant.isBiallelic())){
                     //not a valid variant
                     if(GlobalVariables.verbosity >= 100){
-                        System.out.println("continueing because not a valid variant");
+                        System.out.println("continueing because not a valid variant (not biallelic or not a SNP)");
                     }
                     continue;
                 }
                 
+                //12 June 2016, this part will be rewritten to be dependent 
+                //on the position of a snp, not on the variant Id.
                 
-                if(currentVariant.getAllIds().isEmpty()){
-                    continue;
-                }
+                //Commenting this out at the moment, probably not necessary.
+//                if(currentVariant.getAllIds().isEmpty()){
+//                    continue;
+//                }
+                
+                
                 //make sure there is no overlap between gene and testing variant.
-                if(snpsAdded.contains(currentVariant.getAllIds().get(0))){
+                //Now based on (start) position of the variant.
+                if(snpsAdded.contains(currentVariant.getSequenceName() + ":"  + Integer.toString(currentVariant.getStartPos()))){
                    continue;
                 } else{
-                    snpsAdded.add(currentVariant.getAllIds().get(0));
+                    snpsAdded.add(currentVariant.getSequenceName() + ":"  + Integer.toString(currentVariant.getStartPos()));
                 }
                 
                 
@@ -565,8 +582,10 @@ class PhasedEntry {
                     continue;
                 }
                 
-                if(!oldSnpData.get(0).getSnpName().equals(snpName)){
+                if(!(oldSnpData.get(0).chromosome + ":" + oldSnpData.get(0).position).equals(chr + ":" + posString)){
                     if(GlobalVariables.verbosity >= 10){
+                        System.out.println(oldSnpData.get(0).chromosome + ":" + oldSnpData.get(0).position);
+                        
                         System.out.println("Couldn't find SNP: " + snpName + " in the correct position: " + chr + ":" + posString);
                         System.out.println(oldSnpData.get(0).getSnpName());
                     }
@@ -591,6 +610,7 @@ class PhasedEntry {
                 
                 
                 for(IndividualSnpData iAS : oldSnpData){
+                    
                     int i = -1;
                     
                     try{
@@ -623,7 +643,7 @@ class PhasedEntry {
                         }
 
                         //first assuming the allele is reference
-                        //if not the cse, then we change it.
+                        //if not the case, then we change it.
                         int first = 0;
                         int second = 0;
 

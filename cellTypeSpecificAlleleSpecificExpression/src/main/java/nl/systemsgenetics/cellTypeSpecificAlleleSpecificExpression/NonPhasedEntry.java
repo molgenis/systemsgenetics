@@ -169,7 +169,7 @@ public class NonPhasedEntry {
         
         //CTS files if available.
         //CTS binomial was prone to FP, and a performance sink, therefore commented here.
-//        PrintWriter CTSBinomWriter = null; 
+        //PrintWriter CTSBinomWriter = null; 
         PrintWriter CTSBetaBinomWriter = null;
         PrintWriter CTSlinearRegressionWriter = null;
         if(phenoTypeLocation != null){
@@ -178,7 +178,7 @@ public class NonPhasedEntry {
             
 //            CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
 //            CTSBinomWriter.println(CTSbinomialTest.writeHeader());
-   
+  
             CTSBetaBinomWriter = new PrintWriter(CTSbetaBinomialOutput, "UTF-8");
             CTSBetaBinomWriter.println(CTSBetaBinomialTest.writeHeader());
         }
@@ -306,7 +306,7 @@ public class NonPhasedEntry {
                     CTSlinearRegression CTSlinearRegressionResults = new CTSlinearRegression(allSnpData);
                     
                     //the binomial test was removed because it was really slow, took about 70% of processing time, and was very false positive prone
-                    //CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData, CTSlinearRegressionResults);
+//                    CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData, CTSlinearRegressionResults);
                     CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData, CTSlinearRegressionResults);
                     
 
@@ -314,7 +314,7 @@ public class NonPhasedEntry {
                     if (CTSbetaBinomResults.isTestPerformed()) {
                         
                        CTSlinearRegressionWriter.println(CTSlinearRegressionResults.writeTestStatistics(true));
-                       //CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
+//                       CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
                        CTSBetaBinomWriter.println(CTSbetaBinomResults.writeTestStatistics(true));
                          
                     }

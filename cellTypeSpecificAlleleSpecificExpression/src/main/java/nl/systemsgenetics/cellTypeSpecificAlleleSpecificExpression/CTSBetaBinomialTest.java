@@ -259,11 +259,9 @@ class CTSBetaBinomialTest {
                     //only do the last 2 guesses when the celltype ratio is not zero.
                     //This is an accuracy improvement because sometimes a local minimum is found at celtype is 0.0
                     //But it is very unlikely that this happens.
-                    if(i >= 2 && valueAlt[0] != 0.0){
+                    if((i >= 2) && (valueAlt[0] != 0.0)){
                         break;
                     }
-                    
-                    
                     i++;
                     
                 }
