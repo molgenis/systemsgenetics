@@ -290,14 +290,17 @@ class PhasedEntry {
                 
 
                 for(IndividualSnpData hetSample : hetTestSnps){
-                   
-                    inputIdA.append(hetSample.sampleName);
-                    inputIdA.append(hetSample.getPhasingFirst());
                     
-                    inputIdB.append(hetSample.sampleName);
-                    inputIdB.append(hetSample.getPhasingSecond());
+                    if(hetSample.hasPhasing()){
+                        inputIdA.append(hetSample.sampleName);
+                        inputIdA.append(hetSample.getPhasingFirst());
+
+                        inputIdB.append(hetSample.sampleName);
+                        inputIdB.append(hetSample.getPhasingSecond());
+
+                        hetTestNames.add(hetSample.sampleName);
+                    }
                     
-                    hetTestNames.add(hetSample.sampleName);
                 }
                 
                 String refStringA = inputIdA.toString();
@@ -352,8 +355,9 @@ class PhasedEntry {
                         
                         //First check if the Heterozygote is in the test region and if it has enough reads.
                         if((snpPos < iRegion.getStartPosition() || 
-                            snpPos > iRegion.getEndPosition()) 
-                            || !UtilityMethods.valid_heterozygote(thisHet)){
+                            snpPos > iRegion.getEndPosition())  ||
+                            !(thisHet.hasPhasing())             ||
+                            !UtilityMethods.valid_heterozygote(thisHet)){
                             continue;
                         }
                        
@@ -366,6 +370,7 @@ class PhasedEntry {
                         
                         //this is the heterozygote to compare to.
                         IndividualSnpData hetToCompareTo = hetTestSnps.get(hetTestNames.indexOf(sampleName));
+                        if(!hetToCompareTo.hasPhasing()) continue;
                         
                         if(hetToCompareTo.getPhasingFirst() != thisHet.getPhasingFirst()){
                             // because it is a heterozygote, we can assume that 
