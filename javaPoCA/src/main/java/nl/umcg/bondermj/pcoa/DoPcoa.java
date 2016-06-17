@@ -38,7 +38,6 @@ import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
-import umcg.genetica.util.RankIntArray;
 /**
  *
  * @author MarcJan
@@ -49,7 +48,7 @@ public class DoPcoa {
     
     private static final String HEADER =
             "  /---------------------------------------\\\n"
-            + "  |              Parallel PCA             |\n"
+            + "  |              Parallel PCoA            |\n"
             + "  |                                       |\n"
             + "  |             Marc Jan Bonder           |\n"
             + "  |            bondermj@gmail.com         |\n"
@@ -127,6 +126,7 @@ public class DoPcoa {
 
         DoubleMatrixDataset<String, String> inputData;
         
+        System.out.println("Reading the input data ....\n");
         try {
             inputData = DoubleMatrixDataset.loadDoubleData(fileIn);
         } catch (IOException ex) {
@@ -136,6 +136,7 @@ public class DoPcoa {
             Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
             throw new IOException("Problem reading data.");
         }
+        System.out.println("\n done");
         
         if (overRows) {
             inputData = inputData.viewDice();
@@ -177,40 +178,54 @@ public class DoPcoa {
 
         DoubleMatrix2D matrix; 
 
-        System.out.print("Calculating correlation matrix:");
-        
-
-        if(matrixType.equals(MatrixType.COVARIATION)){
-            ConcurrentCovariation c = new ConcurrentCovariation(usable);
-            matrix = c.pairwiseCovariationDoubleMatrix(inputData.getMatrix().viewDice().toArray());
-        } else if(matrixType.equals(MatrixType.CORRELATION)){
-            ConcurrentCorrelation c = new ConcurrentCorrelation(usable);
-            matrix = c.pairwiseCorrelationDoubleMatrix(inputData.getMatrix().viewDice().toArray());
-        } else if(matrixType.equals(MatrixType.BRAYCURTIS)){
-            ConcurrentBrayCurtis c = new ConcurrentBrayCurtis(usable);
-            matrix = c.pairwiseBrayCurtisDoubleMatrix(inputData.getMatrix().viewDice().toArray());
-        } else {
-            ConcurrentCityBlock c = new ConcurrentCityBlock(usable);
-            matrix = c.pairwiseCityBlockDoubleMatrix(inputData.getMatrix().viewDice().toArray());
+        switch (matrixType) {
+            case COVARIATION:
+                {
+                    ConcurrentCovariation c = new ConcurrentCovariation(usable);
+                    matrix = c.pairwiseCovariationDoubleMatrix(inputData.getMatrix().viewDice().toArray());
+                    break;
+                }
+            case CORRELATION:
+                {
+                    ConcurrentCorrelation c = new ConcurrentCorrelation(usable);
+                    matrix = c.pairwiseCorrelationDoubleMatrix(inputData.getMatrix().viewDice().toArray());
+                    break;
+                }
+            case BRAYCURTIS:
+                {
+                    ConcurrentBrayCurtis c = new ConcurrentBrayCurtis(usable);
+                    matrix = c.pairwiseBrayCurtisDoubleMatrix(inputData.getMatrix().viewDice().toArray());
+                    break;
+                }
+            default:
+                {
+                    ConcurrentCityBlock c = new ConcurrentCityBlock(usable);
+                    matrix = c.pairwiseCityBlockDoubleMatrix(inputData.getMatrix().viewDice().toArray());
+                    break;
+                }
         }
 
         System.out.println("done");
-               
+        DoubleMatrixDataset<String, String> t = new DoubleMatrixDataset<>(matrix, inputData.getHashCols(), inputData.getHashCols());   
         try {
-            DoubleMatrixDataset<String, String> t = new DoubleMatrixDataset<>(matrix, inputData.getHashCols(), inputData.getHashCols());
-            if(matrixType.equals(MatrixType.CORRELATION)){
-                t.save(prefix + ".CorrelationMatrix.txt.gz");
-            } else if(matrixType.equals(MatrixType.COVARIATION)){
-                t.save(prefix + ".CovariationMatrix.txt.gz");
-            } else if(matrixType.equals(MatrixType.BRAYCURTIS)){
-                t.save(prefix + ".BrayCurtisMatrix.txt.gz");
-            } else {
-                t.save(prefix + ".CityBlockMatrix.txt.gz");
+            switch (matrixType) {
+                case CORRELATION:
+                    t.save(prefix + ".CorrelationMatrix.txt.gz");
+                    break;
+                case COVARIATION:
+                    t.save(prefix + ".CovariationMatrix.txt.gz");
+                    break;
+                case BRAYCURTIS:
+                    t.save(prefix + ".BrayCurtisMatrix.txt.gz");
+                    break;
+                default:
+                    t.save(prefix + ".CityBlockMatrix.txt.gz");
+                    break;
             }
         } catch (IOException ex) {
             System.out.println("Failed to write correlation matrix");
         }
-
+        t = null;
         try {
             if(packageToUse.equals(PackageToUse.COLT)){
                 calculateColtPCA(inputData, matrix, prefix, nrComponents);
