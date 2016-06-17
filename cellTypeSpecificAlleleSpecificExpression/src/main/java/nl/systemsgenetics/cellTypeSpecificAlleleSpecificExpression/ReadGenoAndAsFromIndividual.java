@@ -7,7 +7,12 @@
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.CigarElement;
+
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -15,23 +20,21 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.io.PrintWriter;
 
 import java.util.HashMap;
-
 import java.util.Set;
+import java.util.ArrayList;
+
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import org.apache.commons.io.FilenameUtils;
-import org.jdom.IllegalDataException;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+
+import org.apache.commons.io.FilenameUtils;
+
+import org.jdom.IllegalDataException;
 
 
 
@@ -47,7 +50,7 @@ public class ReadGenoAndAsFromIndividual {
                                                    String outputLocation, 
                                                    String snpLocation) throws IOException, Exception{
         
-        if(GlobalVariables.verbosity >= 1){
+        if(GlobalVariables.verbosity >= 10){
             //Print ASREADS header
             System.out.println(    "---- Starting ASREADS for the following settings: ----");
             System.out.println(    "\t input bam:         " +  loc_of_bam1);
@@ -132,11 +135,8 @@ public class ReadGenoAndAsFromIndividual {
         
         //If available, read the file with rs numbers.
         if(!snpLocation.equals("")){
-            
             ArrayList<String>  includeSNPs = UtilityMethods.readFileIntoStringArrayList(snpLocation);
-            
             int snpsNotFound = 0;
-            
             for(String snp_to_include : includeSNPs){
                 if(snpNames.contains(snp_to_include)){
                     SNPsToAnalyze.add(snp_to_include);
@@ -190,13 +190,17 @@ public class ReadGenoAndAsFromIndividual {
         String path_and_filename = loc_of_bam;
         File sample_file = new File(path_and_filename);
 
+        PrintWriter writer = new PrintWriter(outputLocation, "UTF-8");
         SamReader bam_file = SamReaderFactory.makeDefault().open(sample_file);
 
         if(GlobalVariables.verbosity >= 10){
             System.out.println("Initialized for reading bam file");
         }
         
-        PrintWriter writer = new PrintWriter(outputLocation, "UTF-8");
+        
+        
+        
+        
         
         
         int i = 0;
@@ -216,7 +220,6 @@ public class ReadGenoAndAsFromIndividual {
             // the allele count is used for the check of something. 
             
             
-            //DO NOT ENTER A SEPARATED GENOMIC DATASET OTHERWISE THIS WILL BREAK.
             if(this_variant.isSnp() & this_variant.isBiallelic() ){
 
                 String row_of_table = get_allele_specific_overlap_at_snp(this_variant, 
