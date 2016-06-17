@@ -77,9 +77,9 @@ public class QTL implements Comparable<QTL> {
             if (Math.abs(zscore) == Math.abs(o.zscore)) {
                 returnval = 0;
             } else if (Math.abs(zscore) > Math.abs(o.zscore)) {
-                returnval = 1;
-            } else {
                 returnval = -1;
+            } else {
+                returnval = 1;
             }
         } else if (pvalue > o.pvalue) {
             returnval = 1;
