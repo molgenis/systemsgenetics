@@ -19,9 +19,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
@@ -33,6 +37,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 
 import org.jdom.IllegalDataException;
 
@@ -70,12 +75,12 @@ public class ReadGenoAndAsFromIndividual {
         
 
         //parse command line arguments
-        String loc_of_bam;
-        loc_of_bam = loc_of_bam1;
+        String LocOfBam;
+        LocOfBam = loc_of_bam1;
         System.out.println("Location of bam file: ");
-        System.out.println(loc_of_bam);
+        System.out.println(LocOfBam);
         
-        if (!new File(loc_of_bam).exists()){
+        if (!new File(LocOfBam).exists()){
            throw new IllegalArgumentException("ERROR! Location of bam file is not an existing file. Exitting.");
         }else{
             if(GlobalVariables.verbosity >= 10){
@@ -153,7 +158,7 @@ public class ReadGenoAndAsFromIndividual {
                 SNPsToAnalyze.add(snp_to_include);
             }
         }
-        
+        int totalSnps = SNPsToAnalyze.size();
        
         //String path = "/gcc/groups/lld/tmp01/projects/bamFiles/";
         //sample_map contains all the individuals that are in the sample file.
@@ -167,7 +172,7 @@ public class ReadGenoAndAsFromIndividual {
         }
        
         //Twice because my files have the .MERGED.sorted.bam suffix attached to them.
-        String sample_name = FilenameUtils.getBaseName(FilenameUtils.getBaseName(FilenameUtils.getBaseName(loc_of_bam)));
+        String sample_name = FilenameUtils.getBaseName(FilenameUtils.getBaseName(FilenameUtils.getBaseName(LocOfBam)));
         
         if(GlobalVariables.verbosity >= 10){
             System.out.println("sample_name: " + sample_name);
@@ -187,8 +192,7 @@ public class ReadGenoAndAsFromIndividual {
         }
         
         //bam file path and filename
-        String path_and_filename = loc_of_bam;
-        File sample_file = new File(path_and_filename);
+        File sample_file = new File(LocOfBam);
 
         PrintWriter writer = new PrintWriter(outputLocation, "UTF-8");
         SamReader bam_file = SamReaderFactory.makeDefault().open(sample_file);
@@ -198,21 +202,25 @@ public class ReadGenoAndAsFromIndividual {
         }
         
         
+
+        InputStream IndexInputStream = new FileInputStream(LocOfBam+ ".bai");
+        byte[] indexFileByteArray = IOUtils.toByteArray(IndexInputStream);
+        FindBamTranscribedRegions checkRegion;
+        checkRegion = new FindBamTranscribedRegions(indexFileByteArray);
+ 
         
-        
-        
-        
-        
+        //iterate over all snps
         int i = 0;
         for(String i_snp : SNPsToAnalyze){
             
-            //System.out.println(i_snp);
             
-            GeneticVariant this_variant = variantIdMap.get(i_snp);
             
-            String chromosome = this_variant.getSequenceName();
-            String position = String.valueOf(this_variant.getStartPos());
+            GeneticVariant thisVariant = variantIdMap.get(i_snp);
             
+            
+            String chromosome = thisVariant.getSequenceName();
+            String position = String.valueOf(thisVariant.getStartPos());
+          
 
             
             // We only do analyses if we find a SNP and it is biallelic
@@ -220,35 +228,53 @@ public class ReadGenoAndAsFromIndividual {
             // the allele count is used for the check of something. 
             
             
-            if(this_variant.isSnp() & this_variant.isBiallelic() ){
-
-                String row_of_table = get_allele_specific_overlap_at_snp(this_variant, 
-                                                                        sample_index,
-                                                                        chromosome,
-                                                                        position,
-                                                                        bam_file);
-                 
+            if(thisVariant.isSnp() & thisVariant.isBiallelic() ){
                 
-                //commented out the phasing part.
-                
-                writer.println(chromosome + "\t" + position + "\t" + i_snp + "\t" + 
-                               this_variant.getVariantAlleles().getAllelesAsChars()[0] + "\t" +
-                               this_variant.getVariantAlleles().getAllelesAsChars()[1] + "\t" +
-                               row_of_table + "\t" + 
-                               Arrays.toString(this_variant.getSampleVariants().get(sample_index).getAllelesAsChars()) //+ "\t" +
+                  
+                if(!checkRegion.bamHasOverlap(Integer.parseInt(chromosome), thisVariant.getStartPos())){
+                    
+                    writer.println(chromosome + "\t" + position + "\t" + i_snp + "\t" + 
+                               thisVariant.getVariantAlleles().getAllelesAsChars()[0] + "\t" +
+                               thisVariant.getVariantAlleles().getAllelesAsChars()[1] + "\t" +
+                               "0\t0\t0" + "\t" + 
+                               Arrays.toString(thisVariant.getSampleVariants().get(sample_index).getAllelesAsChars()) //+ "\t" +
                                //Boolean.toString(this_variant.getSamplePhasing().get(sample_index))
                             );
+
+                }else{
+                
+                
+                    String row_of_table = get_allele_specific_overlap_at_snp(thisVariant, 
+                                                                            sample_index,
+                                                                            chromosome,
+                                                                            position,
+                                                                            bam_file);
+
+
+                    //commented out the phasing part.
+
+                    writer.println(chromosome + "\t" + position + "\t" + i_snp + "\t" + 
+                                   thisVariant.getVariantAlleles().getAllelesAsChars()[0] + "\t" +
+                                   thisVariant.getVariantAlleles().getAllelesAsChars()[1] + "\t" +
+                                   row_of_table + "\t" + 
+                                   Arrays.toString(thisVariant.getSampleVariants().get(sample_index).getAllelesAsChars()) //+ "\t" +
+                                   //Boolean.toString(this_variant.getSamplePhasing().get(sample_index))
+                                );
+                }
             }
          
             i++;
             
             if((i % 10000 == 0) && (GlobalVariables.verbosity >= 10)){
 
-                System.out.println("Finished " + Integer.toString(i) + " SNPs");
+                System.out.printf("Finished %d (%3.1f %%) SNPs\r", i, (double)i / (double)totalSnps * 100.0 );
             
             }
-        
         }
+        
+        System.out.println("Finished ASreads for: " + loc_of_bam1);
+        System.out.println("Output is located in: " + outputLocation);
+        
         writer.close();
     }
     
@@ -313,13 +339,10 @@ public class ReadGenoAndAsFromIndividual {
             
             SAMRecord read_in_region = all_reads_in_region.next();
             
-            
             Character base_in_read = get_base_at_position(read_in_region, pos_int);
             if(GlobalVariables.verbosity >= 100){
                 System.out.println("base_in_read: " + base_in_read);
             }
-            
-            
             
             if( base_in_read == ref_allele.charAt(0) ){
                 ref_overlap++;            
@@ -329,12 +352,8 @@ public class ReadGenoAndAsFromIndividual {
                 continue;
             }else{
                 no__overlap++;
-            
             }
-            
-            
         }
-        
         
         //This line below cost me a day to figure out the error.
         all_reads_in_region.close();
