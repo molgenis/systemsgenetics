@@ -208,7 +208,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
         return matrix;
     }
 
-    private static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
+    public static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
         RankArray rda = new RankArray();
         for (int p = 0; p < matrix.rows(); p++) {
             double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), false);
