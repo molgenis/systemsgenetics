@@ -68,8 +68,7 @@ class CalculateSimpleGeneticRiskScore {
                             //Get the original entries back, so we are sure we dont need to do to many look ups.
                             if (excludeList.size() > 0) {
                                 for (int snp = 0; snp < nrSNPsThisChr; snp++) {
-                                    RiskEntry riskE = valueE2.get(snp);
-                                    if (excludeList.contains(riskE.getRsName())) {
+                                    if (excludeList.contains(valueE2.get(snp).getRsName())) {
                                         excludeSNPs[snp] = true;
                                     }
                                 }
@@ -119,8 +118,6 @@ class CalculateSimpleGeneticRiskScore {
 
                                     nrSNPs++;
 
-                                    //Test here all snp entries around the test snp, selected same number of snps as window size in bases.
-                                    //So we ware almost sure that we test al relevant entries, not all positions have SNPs so this should be save. Actual distance is calculated in the if statement below.
                                     for (int t = snp + 1; t < nrSNPsThisChr; t++) {
                                         if (!excludeSNPs[t]) {
                                             RiskEntry riskE2 = valueE2.get(t);
@@ -197,8 +194,7 @@ class CalculateSimpleGeneticRiskScore {
                             //Get the original entries back, so we are sure we dont need to do to many look ups.
                             if (excludeList.size() > 0) {
                                 for (int snp = 0; snp < nrSNPsThisChr; snp++) {
-                                    RiskEntry riskE = valueE2.get(snp);
-                                    if (excludeList.contains(riskE.getRsName())) {
+                                    if (excludeList.contains(valueE2.get(snp).getRsName())) {
                                         excludeSNPs[snp] = true;
                                     }
                                 }
@@ -280,8 +276,6 @@ class CalculateSimpleGeneticRiskScore {
 
                                     nrSNPs++;
 
-                                    //Test here all snp entries around the test snp, selected same number of snps as window size in bases.
-                                    //So we ware almost sure that we test al relevant entries, not all positions have SNPs so this should be save. Actual distance is calculated in the if statement below.
                                     for (int t = snp + 1; t < nrSNPsThisChr; t++) {
                                         if (!excludeSNPs[t]) {
                                             RiskEntry riskE2 = valueE2.get(t);
@@ -291,7 +285,6 @@ class CalculateSimpleGeneticRiskScore {
                                                     Ld ld = var1.calculateLd(var2);
                                                     if (ld.getR2() >= rSquare) {
                                                         excludeSNPs[t] = true;
-                                                        excludeList.add(riskE.getRsName());
                                                     }
                                                 } catch (LdCalculatorException ex) {
                                                     Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
