@@ -209,9 +209,10 @@ public class ConvertDoubleMatrixDataToTriTyper {
     }
 
     public static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
+        
         RankArray rda = new RankArray();
         for (int p = 0; p < matrix.rows(); p++) {
-            double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), false);
+            double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), true);
             for (int s = 0; s < matrix.columns(); s++) {
                 matrix.setQuick(p, s, rankedValues[s]);
             }

@@ -6,7 +6,6 @@
 package nl.systemsgenetics.simplegeneticriskscorecalculator;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -14,7 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,11 +32,9 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper;
-import static umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.rescaleValue;
 import umcg.genetica.io.trityper.WGAFileMatrixGenotype;
 import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
-import umcg.genetica.util.RankArray;
 
 /**
  *
@@ -56,8 +53,8 @@ public class Main {
         Option GenotypeIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data").withLongOpt("GenotypeLocation").create("gi");
         Option InFolder = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the folder with genetic risk score information").withLongOpt("input").create("i");
         Option rSquared = OptionBuilder.withArgName("double").hasArg().withDescription("R2 for pruning").withLongOpt("rSquared").create("r");
-        Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclussion, semicolon separated").withLongOpt("pValue").create("p");
-        Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning").withLongOpt("wSize").create("w");
+        Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclussion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
+        Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, optional give two window-sizes (colon separated), will do a two step window approach.").withLongOpt("wSize").create("w");
         options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize);
 
         String genotypePath = null;
@@ -65,7 +62,7 @@ public class Main {
         String riskFolder = null;
         File outputFolder = null;
         double rSquare = 1.0d;
-        double windowSize = 0.0d;
+        double[] windowSize = null;
         double[] pValThres = null;
 
         CommandLine cmd;
@@ -115,7 +112,12 @@ public class Main {
             }
             if (cmd.hasOption("wSize") || cmd.hasOption("w")) {
                 // initialise the member variable
-                windowSize = Double.parseDouble(cmd.getOptionValue("wSize"));
+                String[] tempThres = cmd.getOptionValue("wSize").split(":");
+                windowSize = new double[tempThres.length];
+                for (int i = 0; i < tempThres.length; i++) {
+                    windowSize[i] = Double.parseDouble(tempThres[i]);
+                }
+
             } else {
                 System.out.println("Missing necesarray information");
                 formatter.printHelp("ant", options);
@@ -123,10 +125,10 @@ public class Main {
             }
             if (cmd.hasOption("pValue") || cmd.hasOption("p")) {
                 // initialise the member variable
-                String[] tmpPValThres = cmd.getOptionValue("pValue").split(":");
-                pValThres = new double[tmpPValThres.length];
-                for (int i = 0; i < tmpPValThres.length; i++) {
-                    pValThres[i] = Double.parseDouble(tmpPValThres[i]);
+                String[] tempThres = cmd.getOptionValue("pValue").split(":");
+                pValThres = new double[tempThres.length];
+                for (int i = 0; i < tempThres.length; i++) {
+                    pValThres[i] = Double.parseDouble(tempThres[i]);
                 }
             } else {
                 System.out.println("Missing necesarray information");
@@ -143,17 +145,26 @@ public class Main {
                 Gpio.createDir(outputFolder.getAbsolutePath());
             }
             RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 10000, null, null);
-            HashMap<String, HashMap<String, ArrayList<RiskEntry>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres);
-            DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize);
-            writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
+            HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres);
+            if(windowSize.length==1){
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0]);
+                writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
+            } else if(windowSize.length==2){
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize);
+                writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
+            } else {
+                System.out.println("More than two window-sizes is not supported.");
+                System.exit(0);
+            }
+            
         } catch (IOException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
 
-    private static HashMap<String, HashMap<String, ArrayList<RiskEntry>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold) {
-        HashMap<String, HashMap<String, ArrayList<RiskEntry>>> risks = new HashMap<String, HashMap<String, ArrayList<RiskEntry>>>();
+    private static HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold) {
+        HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> risks = new HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>>();
 
         File riskFileFolder = new File(riskFolder);
         File[] riskFiles = riskFileFolder.listFiles();
@@ -164,7 +175,18 @@ public class Main {
                 TextFile readFiles = new TextFile(f.getAbsolutePath(), TextFile.R);
 
                 System.out.println(f.getName());
-
+                for (double p : pValueThreshold) {
+                    String name = f.getName();
+                    String name2= "_P" + p;
+                    if (!risks.containsKey(name)) {
+                        risks.put(name, new LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>());
+                    }
+                    if (!risks.get(name).containsKey(name2)) {
+                        risks.get(name).put(name2, new HashMap<String, ArrayList<RiskEntry>>());
+                    }
+                }
+                
+                
                 String s = readFiles.readLine();
                 while ((s = readFiles.readLine()) != null) {
                     String[] parts = TAB_PATTERN.split(s);
@@ -175,14 +197,13 @@ public class Main {
                         double currentP = Double.parseDouble(parts[3]);
                         for (double p : pValueThreshold) {
                             if (currentP <= p) {
-                                String name = f.getName() + "_P" + p;
-                                if (!risks.containsKey(name)) {
-                                    risks.put(name, new HashMap<String, ArrayList<RiskEntry>>());
+                                String name = f.getName();
+                                String name2= "_P" + p;
+
+                                if (!risks.get(name).get(name2).containsKey(snpObject.getSequenceName())) {
+                                    risks.get(name).get(name2).put(snpObject.getSequenceName(), new ArrayList<RiskEntry>());
                                 }
-                                if (!risks.get(name).containsKey(snpObject.getSequenceName())) {
-                                    risks.get(name).put(snpObject.getSequenceName(), new ArrayList<RiskEntry>());
-                                }
-                                risks.get(name).get(snpObject.getSequenceName()).add(new RiskEntry(parts[0], snpObject.getSequenceName(), snpObject.getStartPos(), parts[1], parts[2], currentP));
+                                risks.get(name).get(name2).get(snpObject.getSequenceName()).add(new RiskEntry(parts[0], snpObject.getSequenceName(), snpObject.getStartPos(), parts[1], parts[2], currentP));
                             }
                         }
                     }
@@ -194,13 +215,17 @@ public class Main {
 
         }
         
-        for(Entry<String, HashMap<String, ArrayList<RiskEntry>>> e : risks.entrySet()){
-            int entries = 0;
-            for(Entry<String, ArrayList<RiskEntry>> e2 : e.getValue().entrySet()){
-                Collections.sort(e2.getValue());
-                entries += e2.getValue().size();
+        for(Entry<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> e : risks.entrySet()){
+            
+            for(Entry<String,HashMap<String, ArrayList<RiskEntry>>> e2 : e.getValue().entrySet()){
+                int entries = 0;
+                for(Entry<String, ArrayList<RiskEntry>> e3 : e2.getValue().entrySet()){
+                    Collections.sort(e3.getValue());
+                    entries += e3.getValue().size();
+                }
+                System.out.println(e.getKey()+e2.getKey()+" has: "+entries+" entries");
             }
-            System.out.println(e.getKey()+" has: "+entries+" entries");
+            
         }
         
         
@@ -208,6 +233,7 @@ public class Main {
     }
 
     private static void writeMatrixToFile(DoubleMatrixDataset<String, String> geneticRiskScoreMatrix, File outputFolder) throws IOException {
+        
         String outputF = outputFolder+File.separator+"TT";
         if (!(new File(outputF).exists())) {
             Gpio.createDir(outputF);
@@ -218,7 +244,7 @@ public class Main {
         
             System.exit(0);
         }
-
+        geneticRiskScoreMatrix.save(outputF +File.separator+"rawScoreMatrix.txt");
         try {
             System.out.println("Writing SNPMappings.txt & SNPs.txt to file:");
             
