@@ -196,7 +196,7 @@ public class Main {
 //                        System.out.print(snpObject.getSequenceName() + "\t" + snpObject.getStartPos() + "\n");
                         double currentP = Double.parseDouble(parts[3]);
                         for (double p : pValueThreshold) {
-                            if (currentP <= p) {
+                            if (currentP < p) {
                                 String name = f.getName();
                                 String name2= "_P" + p;
 
