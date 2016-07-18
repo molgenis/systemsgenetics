@@ -56,9 +56,9 @@ class RiskEntry implements Comparable<RiskEntry>  {
         if(this.pValue<o.getpValue()){
             return -1;
         } else if (this.pValue == o.getpValue()) {
-            if(Math.abs(this.or)>Math.abs(o.getpValue())){
+            if(Math.abs(this.or)>Math.abs(o.getOr())){
                 return -1;
-            } else if (Math.abs(this.or) == Math.abs(o.getpValue())) {
+            } else if (Math.abs(this.or) == Math.abs(o.getOr())) {
                 return 0;
             } else {
                 return 1;
