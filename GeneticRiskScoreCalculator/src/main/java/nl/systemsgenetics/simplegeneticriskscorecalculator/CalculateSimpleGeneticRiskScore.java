@@ -58,7 +58,6 @@ class CalculateSimpleGeneticRiskScore {
                             if(!chrExcludeList.containsKey(chrOrder[counter])){
                                 chrExcludeList.put(chrOrder[counter], new HashSet<String>());
                             }
-
                             HashSet<String> excludeList = chrExcludeList.get(chrOrder[counter]);
                             ArrayList<RiskEntry> valueE2 = riskScorePheno2.getValue().get(chrOrder[counter]);
 
@@ -73,6 +72,7 @@ class CalculateSimpleGeneticRiskScore {
                                     }
                                 }
                             }
+                            
                             //Actual scoring.
                             for (int snp = 0; snp < nrSNPsThisChr; snp++) {
                                 if (!excludeSNPs[snp]) {
@@ -125,14 +125,14 @@ class CalculateSimpleGeneticRiskScore {
                                                 GeneticVariant var2 = genotypeData.getSnpVariantByPos(riskE2.getChr(), riskE2.getPos());
                                                 if (var2.getCallRate() < 0.75) {
                                                     excludeSNPs[t] = true;
-                                                    excludeList.add(riskE.getRsName());
+                                                    excludeList.add(riskE2.getRsName());
                                                     continue;
                                                 }
                                                 try {
                                                     Ld ld = var1.calculateLd(var2);
                                                     if (ld.getR2() >= rSquare) {
                                                         excludeSNPs[t] = true;
-                                                        excludeList.add(riskE.getRsName());
+                                                        excludeList.add(riskE2.getRsName());
                                                     }
                                                 } catch (LdCalculatorException ex) {
                                                     Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
@@ -219,14 +219,14 @@ class CalculateSimpleGeneticRiskScore {
                                                 GeneticVariant var2 = genotypeData.getSnpVariantByPos(riskE2.getChr(), riskE2.getPos());
                                                 if (var2.getCallRate() < 0.75) {
                                                     excludeSNPs[t] = true;
-                                                    excludeList.add(riskE.getRsName());
+                                                    excludeList.add(riskE2.getRsName());
                                                     continue;
                                                 }
                                                 try {
                                                     Ld ld = var1.calculateLd(var2);
                                                     if (ld.getR2() >= rSquare) {
                                                         excludeSNPs[t] = true;
-                                                        excludeList.add(riskE.getRsName());
+                                                        excludeList.add(riskE2.getRsName());
                                                     }
                                                 } catch (LdCalculatorException ex) {
                                                     Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
