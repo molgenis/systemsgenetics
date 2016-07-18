@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,9 +25,9 @@ public class RoadMapCHmm {
     static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     
     public static void main(String[] args) {
-        String inputFile = "F:\\eQTL\\eQTLs_with_significant_modules.txt";
-        String outputFile = "F:\\eQTL\\eQTLs_with_significant_modules_Annotated_S15_Blood.txt";
-        String inputFolderTfbsData = "F:\\eQTL\\15S\\blood.mnemonics.bedFiles\\";
+        String inputFile = "D:\\T\\eQTL\\eQTLs_with_significant_modules.txt";
+        String outputFile = "D:\\T\\eQTL\\eQTLs_with_significant_modules_Annotated_S25_Blood";
+        String inputFolderTfbsData = "D:\\T\\eQTL\\25S\\blood.mnemonics.bedFiles\\";
         
         HashMap<String, LinkedHashMap<String, ArrayList<ChmmState>>>  peakData = null;
 
@@ -41,7 +42,8 @@ public class RoadMapCHmm {
             Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        writeContacts(qtlSnps, peakData, outputFile);
+//        writeContacts(qtlSnps, peakData, outputFile);
+        writeContacts2(qtlSnps, peakData, outputFile);
 
     }
     
@@ -117,6 +119,18 @@ public class RoadMapCHmm {
         }
     }
 
+    private static int determineContact(long pos, ArrayList<ChmmState> peakData) {
+        
+        for(ChmmState peak : peakData){
+            if(peak.getStop()>= pos && peak.getStart()<= pos){
+                return 1;
+            } else if(peak.getStop()> pos && peak.getStart()> pos){
+                break;
+            }
+        }
+        return 0;
+    }
+    
     private static void writeContacts(ArrayList<SNP> qtlSnps, HashMap<String, LinkedHashMap<String, ArrayList<ChmmState>>> peakData, String outputFile) {
         try {
             TextFile outWriter = new TextFile(outputFile, TextFile.W);
@@ -147,5 +161,109 @@ public class RoadMapCHmm {
         }
     }
 
+    private static void writeContacts2(ArrayList<SNP> qtlSnps, HashMap<String, LinkedHashMap<String, ArrayList<ChmmState>>> peakData, String outputFile) {
+        HashMap<String,HashMap<String, HashMap<String, Integer>>> perChmmInformation = new HashMap<>();
+        //chmm state // tissue //module // count.
+        HashMap<String, HashMap<String, Integer>> BackGroundInformation = new HashMap<>();
+        
+        for (SNP s : qtlSnps) {
+            for(Entry<String, ArrayList<ChmmState>> data : peakData.get("chr"+s.getChr()).entrySet()){
+//                System.out.println(data.getKey());
+                int overlap = determineContact(s.getPosition(), data.getValue());
+                
+                String[] parts = data.getKey().split("-");
+                String chmm = parts[0];
+                chmm = chmm.replace("/", "_");
+                String tissue = parts[1].split("_")[0];
+                
+                if(!BackGroundInformation.containsKey(tissue)){
+                    BackGroundInformation.put(tissue, new HashMap<String, Integer>());
+                }
+                
+                if(!perChmmInformation.containsKey(chmm)){
+                    perChmmInformation.put(chmm, new HashMap<String, HashMap<String, Integer>>());
+                }
+                for(int i = 0; i<s.getModuleAssociation().length; ++i){
+                    String Module = String.valueOf(s.getModuleAssociation()[i]);
+                    if(!BackGroundInformation.get(tissue).containsKey(Module)){
+                        BackGroundInformation.get(tissue).put(Module, 0);
+                    }
+                    BackGroundInformation.get(tissue).put(Module,(BackGroundInformation.get(tissue).get(Module)+overlap));
+                    
+                    if(!perChmmInformation.get(chmm).containsKey(tissue)){
+                        perChmmInformation.get(chmm).put(tissue, new HashMap<String, Integer>());
+                    }
+                    if(!perChmmInformation.get(chmm).get(tissue).containsKey(Module)){
+                        perChmmInformation.get(chmm).get(tissue).put(Module, 0);
+                    }
+                    perChmmInformation.get(chmm).get(tissue).put(Module, (perChmmInformation.get(chmm).get(tissue).get(Module)+overlap));
+                }
+            }
+        }
+
+        String[] modules = {"0","1","2","3","4","5","6","7","8","9","10"};
+        try{
+            LinkedHashSet<String> keys = new LinkedHashSet<>();
+            for(Entry<String, HashMap<String,Integer>> e :BackGroundInformation.entrySet()){
+                keys.addAll(e.getValue().keySet());
+            }
+            
+            TextFile outWriter = new TextFile(outputFile+"_Background.txt", TextFile.W);
+            StringBuilder s = new StringBuilder();
+            s.append("Tissue");
+            
+            for(String k : modules){
+                s.append("\t").append(k);
+            }
+            outWriter.writeln(s.toString());
+            
+            for(Entry<String, HashMap<String,Integer>> e :BackGroundInformation.entrySet()){
+                s = new StringBuilder();
+                s.append(e.getKey());
+                for(String k : modules){
+                    if(e.getValue().containsKey(k)){
+                        s.append('\t').append(e.getValue().get(k));
+                    } else {
+                        s.append('\t').append(0);
+                    }
+                }
+                outWriter.writeln(s.toString());
+            }
+            outWriter.close();
+        } catch (IOException ex) {
+            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        try{
+            //chmm state //module // tissue // count.
+            for(Entry<String,HashMap<String, HashMap<String, Integer>>> e: perChmmInformation.entrySet()){
+                TextFile outWriter = new TextFile(outputFile+"_"+e.getKey()+".txt", TextFile.W);
+                
+                StringBuilder s = new StringBuilder();
+                s.append("Tissue");
+
+                for(String k : modules){
+                    s.append("\t").append(k);
+                }
+                outWriter.writeln(s.toString());
+
+                for(Entry<String, HashMap<String,Integer>> f :e.getValue().entrySet()){
+                    s = new StringBuilder();
+                    s.append(f.getKey());
+                    for(String k : modules){
+                        if(f.getValue().containsKey(k)){
+                            s.append('\t').append(f.getValue().get(k));
+                        } else {
+                            s.append('\t').append(0);
+                        }
+                    }
+                    outWriter.writeln(s.toString());
+                }
+                outWriter.close();
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
 }
