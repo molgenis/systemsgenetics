@@ -17,6 +17,7 @@ import org.apache.commons.configuration.XMLConfiguration;
 public class BinaryMetaAnalysisSettings {
 
     private int nrPermutations = 10;
+    private int startPermutations = 00;
     private boolean useAbsoluteZscore = false;
     private int finalEQTLBufferMaxLength = 1000000;
     private int nrOfBins = 100;
@@ -55,6 +56,7 @@ public class BinaryMetaAnalysisSettings {
             config = new XMLConfiguration(settings);
 
             nrPermutations = config.getInt("defaults.permutations", 0);
+            startPermutations = config.getInt("defaults.startpermutation", 0);
             snpAnnotationFile = config.getString("defaults.snpannotation");
             useAbsoluteZscore = config.getBoolean("defaults.absolutezscore", false);
             finalEQTLBufferMaxLength = config.getInt("defaults.finalnreqtls", 100000);
@@ -133,6 +135,14 @@ public class BinaryMetaAnalysisSettings {
         } catch (ConfigurationException e) {
             e.printStackTrace();
         }
+    }
+
+    public int getStartPermutations() {
+        return startPermutations;
+    }
+
+    public void setStartPermutations(int startPermutations) {
+        this.startPermutations = startPermutations;
     }
 
     public boolean isConfineSNPs() {

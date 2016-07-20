@@ -11,6 +11,13 @@ import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.util.RankArray;
@@ -21,17 +28,61 @@ import umcg.genetica.util.RankArray;
  */
 public class ConvertDoubleMatrixDataToTriTyper {
 
-    private static Pattern SPLIT_ON_TAB = Pattern.compile("\t");
+    private static final Pattern SPLIT_ON_TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws IOException {
+        
+        CommandLineParser parser = new GnuParser();
+        Options options = new Options();
 
-        String dataMatrix = "D:\\UMCG\\Projects\\LL-DeepMGS\\RiskScores\\RawRiskScoresLLD.txt";
-        String outputFolder = "D:\\UMCG\\Projects\\LL-DeepMGS\\RiskScores\\RawRiskScoresLLD\\";
-        String mappingFile = "D:\\UMCG\\Projects\\LL-DeepMGS\\RiskScores\\RawRiskScores_MappingFile.txt";
-        String option1 = "";
+        Option datMatrix = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the input file. Needs to be a tab seperated file with samples on the columns and traits on the rows.").withLongOpt("dataMatrix").create("d");
+        Option mapFile = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the mapping file describing the chromosomal locations of the traits.").withLongOpt("mappingFile").create("m");
+        Option folderOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location and name of the output TriTyper folder.").withLongOpt("OutputFile").create("o");
+        Option fasta = OptionBuilder.withArgName("boolean").withDescription("If set first rank the input data, before scaling.").create("r");
+        options.addOption(folderOut).addOption(datMatrix).addOption(mapFile).addOption(fasta);
+
+        String dataMatrix = null;
+        String outputFolder = null;
+        String mappingFile = null;
+        boolean rank = false;
+        CommandLine cmd;
+        try {
+            cmd = parser.parse(options, args);
+            HelpFormatter formatter = new HelpFormatter();
+
+            if (cmd.hasOption("OutputFile") || cmd.hasOption("o")) {
+                // initialise the member variable
+                outputFolder = cmd.getOptionValue("OutputFile");
+            } else {
+                System.out.println("Missing necesarray information");
+                formatter.printHelp("ant", options);
+                System.exit(0);
+            }
+            if (cmd.hasOption("dataMatrix") || cmd.hasOption("d")) {
+                // initialise the member variable
+                dataMatrix = cmd.getOptionValue("dataMatrix");
+            } else {
+                System.out.println("Missing necesarray information");
+                formatter.printHelp("ant", options);
+                System.exit(0);
+            }
+            
+            if (cmd.hasOption("mappingFile") || cmd.hasOption("m")) {
+                // initialise the member variable
+                mappingFile = cmd.getOptionValue("mappingFile");
+            }
+            rank = cmd.hasOption("r");
+
+        } catch (org.apache.commons.cli.ParseException ex) {
+            Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
 
         if (!(new File(outputFolder).exists())) {
             Gpio.createDir(outputFolder);
+        } else if(!(new File(outputFolder).isDirectory())) {
+            System.out.println("Error file is already there but not a directory!");
+            System.exit(0);
         }
 
         HashSet<String> hashCpGSites = new HashSet<String>();
@@ -53,6 +104,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
         } catch (Exception e) {
             System.out.println("Error:\t" + e.getMessage());
             e.printStackTrace();
+            System.exit(0);
         }
 
         DoubleMatrixDataset<String, String> dataset = null;
@@ -63,10 +115,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
             System.exit(0);
         }
         if (dataset != null && !dataset.getHashCols().isEmpty() && !dataset.getHashRows().isEmpty()) {
-//            if(args.length > 3 && args[3].equals("scale")){
-//                ConvertBetaAndMvalues.transformMToBetavalue(dataset.getMatrix());
-//            }
-            if (option1.equals("rank")) {
+            if (rank) {
                 dataset.setMatrix(rankRows(dataset.getMatrix()));
             }
             dataset.setMatrix(rescaleValue(dataset.getMatrix(), 200.0d));
@@ -81,6 +130,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
             } catch (Exception e) {
                 System.out.println("Error:\t" + e.getMessage());
                 e.printStackTrace();
+                System.exit(0);
             }
 
             try {
@@ -96,6 +146,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
             } catch (Exception e) {
                 System.out.println("Error:\t" + e.getMessage());
                 e.printStackTrace();
+                System.exit(0);
             }
 
             int nrSNPs = dataset.rows();
@@ -157,10 +208,11 @@ public class ConvertDoubleMatrixDataToTriTyper {
         return matrix;
     }
 
-    private static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
+    public static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
+        
         RankArray rda = new RankArray();
         for (int p = 0; p < matrix.rows(); p++) {
-            double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), false);
+            double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), true);
             for (int s = 0; s < matrix.columns(); s++) {
                 matrix.setQuick(p, s, rankedValues[s]);
             }

@@ -792,7 +792,10 @@ public class Normalizer {
 //            System.out.println("Covariates loaded from: " + covariatesToRemove + ", but the number of samples does not correspond! " + numSamples + " in covariates file, " + dataset.colObjects.size() + " in dataset...");
 //            System.out.println("Please note that missing samples will be removed from your eventual corrected --in file.");
 //        }
-
+        if(!isTransposed && ctr<=numRows+2 || isTransposed && ctr<=numCols+2){
+            System.err.println("Less samples present than minimaly required for the normalization, (minimaly covariats+3 samples needed).");
+            System.exit(0);
+        }
 		if (ctr < dataset.colObjects.size()) {
 			System.err.println("Covariates loaded from: " + covariatesToRemove + ", but not all samples present in covariates file! " + ctr + " present in covariates file, out of " + dataset.colObjects.size() + " in dataset...");
 			System.out.println("Your dataset will be adjusted accordingly.");

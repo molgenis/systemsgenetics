@@ -28,7 +28,7 @@ import umcg.genetica.genomicboundaries.GenomicBoundaries;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.math.stats.FisherExactTest;
 
 /**
@@ -89,7 +89,7 @@ public class eQtlsInRepeatData {
 	 * =========================================================================
 	 */
 	public EQTL[] readEQtlData(String eqtlFileLocation) throws IOException{
-		eQTLTextFile eqtlData = new eQTLTextFile(eqtlFileLocation, false);
+		QTLTextFile eqtlData = new QTLTextFile(eqtlFileLocation, false);
 		return eqtlData.read();
 	}
 	

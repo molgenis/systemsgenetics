@@ -14,12 +14,12 @@
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>Genotype-IO</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.5-SNAPSHOT</version>
 		</dependency> 		
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>genetica-libraries</artifactId>
-			<version>1.0.2</version>
+			<version>1.0.8-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>
@@ -51,6 +51,8 @@
 				<version>2.3.2</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
+				 <source>1.7</source>
+				 <target>1.7</target>
 				</configuration>
 			</plugin>
 			<plugin>

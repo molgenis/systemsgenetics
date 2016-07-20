@@ -8,7 +8,7 @@
         <version>1.0.3-SNAPSHOT</version>
     </parent>
     <artifactId>GeneticRiskScoreCalculator</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.9-SNAPSHOT</version>
     <name>Genetic Risk Score Calculator</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>Genotype-IO</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.5-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
-            <version>1.0.5</version>
+            <version>1.0.8-SNAPSHOT</version>
         </dependency>
     </dependencies>
 	
@@ -91,7 +91,7 @@
                             -->
                             <classpathPrefix>lib/</classpathPrefix>
                             <!-- Specifies the main class of the application -->
-                            <mainClass>nl.systemsgenetics.geneticriskscorecalculator.Main</mainClass>
+                            <mainClass>nl.systemsgenetics.simplegeneticriskscorecalculator.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

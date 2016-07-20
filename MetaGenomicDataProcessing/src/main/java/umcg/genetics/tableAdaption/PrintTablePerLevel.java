@@ -22,7 +22,8 @@ public class PrintTablePerLevel {
 //        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Kraken\\TB_SA_Candida_kraken.merged.noEukaryot.Filtered.normalized.tsv";
 //        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Metaphlan\\CountBased\\Merged_metaphlan_2.2_results_LLD_TB_SA_Candida_reads_cleaned.cladeNorm.normalized.tsv";
 //        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Metaphlan\\CountBased\\Merged_metaphlan_2.2_results_LLD_TB_SA_Candida_reads_cleaned.normalized.tsv";
-        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\phenotypes\\LLD_metaphlan_2.2_results_AsinNorm.ProbesWithZeroVarianceRemoved.CovariatesRemoved.txt";
+//        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\phenotypes\\LLD_metaphlan_2.2_results_AsinNorm.ProbesWithZeroVarianceRemoved.CovariatesRemoved.txt";
+        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results2.txt";
         boolean kraken = false;
 
         DoubleMatrixDataset<String, String> metaphlanMatrix = null;

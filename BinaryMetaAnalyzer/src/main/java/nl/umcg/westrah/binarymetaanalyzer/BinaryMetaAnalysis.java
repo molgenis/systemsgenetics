@@ -110,7 +110,7 @@ public class BinaryMetaAnalysis {
             System.exit(-1);
         }
 
-        for (int permutation = 0; permutation < settings.getNrPermutations() + 1; permutation++) {
+        for (int permutation = settings.getStartPermutations(); permutation <= settings.getNrPermutations(); permutation++) {
             clearResultsBuffer();
 
             // create dataset objects
