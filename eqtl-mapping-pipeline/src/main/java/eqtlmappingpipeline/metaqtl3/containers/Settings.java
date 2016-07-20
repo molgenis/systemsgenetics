@@ -592,9 +592,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             }
         } catch (Exception e) {
         }
-        regressOutEQTLEffectsSaveOutput = false;
+        regressOutEQTLEffectsSaveOutput = true;
         try {
-            regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput", false);
+            regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput", true);
         } catch (Exception e) {
         }
 
