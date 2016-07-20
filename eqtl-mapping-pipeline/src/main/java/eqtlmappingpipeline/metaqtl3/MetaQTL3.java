@@ -133,7 +133,7 @@ public class MetaQTL3 {
             if(maf!=null && maf>0.0d && maf <1.0d){
                 m_settings.snpQCMAFThreshold = maf;
             }
-            if(hwe!=null && hwe>0.0d && hwe <1.0d){
+            if(hwe!=null && hwe>=0.0d && hwe <=1.0d){
                 m_settings.snpQCHWEThreshold = hwe;
             }
             
