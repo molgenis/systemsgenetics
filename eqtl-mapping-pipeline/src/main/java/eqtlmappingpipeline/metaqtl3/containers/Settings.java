@@ -65,7 +65,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean confineProbesToProbesPresentInAllDatasets;
     public ArrayList<TriTyperGeneticalGenomicsDatasetSettings> datasetSettings;
     public String regressOutEQTLEffectFileName;
-    public boolean regressOutEQTLEffectsSaveOutput;
+    public boolean regressOutEQTLEffectsSaveOutput = true;
     public double snpQCCallRateThreshold = 0.95;
     public double snpQCHWEThreshold = 0.0001;
     public double snpQCMAFThreshold = 0.01;
