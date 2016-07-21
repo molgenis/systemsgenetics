@@ -83,6 +83,7 @@ public class Normalizer {
             //Check if samples are correclty loaded.
             boolean breakAfterCheck = false;
             if(s!=null){
+                outputFileNamePrefix = outputFileNamePrefix + ".SampleSelection";
                 HashSet<String> tmpNames = new HashSet<String>();
                 tmpNames.addAll(dataset.colObjects);
                 tmpNames.addAll(s);
@@ -98,16 +99,17 @@ public class Normalizer {
                 }
                 if(!missingNames.isEmpty()){
                     System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
-                    System.err.println(missingNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                    System.err.println(missingNames.toString()+"\n");
                     breakAfterCheck = true;
                 } else if(!extraNames.isEmpty()){
                     System.err.println("\nMatrix contains unwanted columns, please check filtering list.");
-                    System.err.println(extraNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                    System.err.println(extraNames.toString()+"\n");
                     breakAfterCheck = true;
                 }
             }
             //Check if probes are correclty loaded.
             if(p!=null){
+                outputFileNamePrefix = outputFileNamePrefix + ".ProbeSelection";
                 HashSet<String> tmpNames = new HashSet<String>();
                 tmpNames.addAll(dataset.rowObjects);
                 tmpNames.addAll(p);
@@ -123,11 +125,11 @@ public class Normalizer {
                 }
                 if(!missingNames.isEmpty()){
                     System.err.println("\nMatrix does not contains desired rows, please check filtering list.");
-                    System.err.println(missingNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                    System.err.println(missingNames.toString()+"\n");
                     breakAfterCheck = true;
                 } else if(!extraNames.isEmpty()){
                     System.err.println("\nMatrix contains unwanted rows, please check filtering list.");
-                    System.err.println(extraNames.toString().replaceAll("[", "").replaceAll("]", "")+"\n");
+                    System.err.println(extraNames.toString()+"\n");
                     breakAfterCheck = true;
                 }
             }
@@ -136,7 +138,6 @@ public class Normalizer {
                 System.exit(-1);
             }
             
-            outputFileNamePrefix = outputFileNamePrefix + ".SampleSelection";
             dataset.save(outputFileNamePrefix + ".txt.gz");
         } else {
             dataset = new DoubleMatrixDataset<String, String>(expressionFile);

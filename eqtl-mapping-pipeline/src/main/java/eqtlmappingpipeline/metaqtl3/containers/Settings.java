@@ -41,7 +41,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     // Analysis settings
     public boolean performParametricAnalysis = false;                          // Perform parametric analysis
     public boolean useAbsoluteZScorePValue = false;                            // Use absolute Z-score? (required for finding opposite allelic effects)
-    public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;              // Midpoint distance for declaring an eQTL effect CIS
+    public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 1000000;              // Midpoint distance for declaring an eQTL effect CIS
     public int maxNrMostSignificantEQTLs = 500000;                             // Max number of results stored in memory
     public boolean performParametricAnalysisGetAccuratePValueEstimates;        // Use an accurate estimation of the P-values
     public Integer nrThreads;                                                  // Use this number of threads
@@ -65,10 +65,10 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     public boolean confineProbesToProbesPresentInAllDatasets;
     public ArrayList<TriTyperGeneticalGenomicsDatasetSettings> datasetSettings;
     public String regressOutEQTLEffectFileName;
-    public boolean regressOutEQTLEffectsSaveOutput;
+    public boolean regressOutEQTLEffectsSaveOutput = true;
     public double snpQCCallRateThreshold = 0.95;
     public double snpQCHWEThreshold = 0.0001;
-    public double snpQCMAFThreshold = 0.05;
+    public double snpQCMAFThreshold = 0.01;
     public Byte confineToProbesThatMapToChromosome;
     public boolean createBinaryOutputFiles;
     public boolean createTEXTOutputFiles;
@@ -138,13 +138,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         }
 
         try {
-            MAF = config.getDouble("defaults.qc.snpqcmafthreshold");
+            MAF = config.getDouble("defaults.qc.snpqcmafthreshold", null);
         } catch (Exception e) {
+            MAF=null;
         }
         if (MAF != null) {
             snpQCMAFThreshold = MAF;
-        } else {
-            snpQCMAFThreshold = 0.05;
         }
 
         // analysis settings
@@ -187,11 +186,11 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         try {
             cisDist = config.getInteger("defaults.analysis.cisanalysisprobedistance", null);
         } catch (Exception e) {
+            cisDist = null;
         }
+        
         if (cisDist != null) {
             ciseQTLAnalysMaxSNPProbeMidPointDistance = cisDist;
-        } else {
-            ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;
         }
 
         try {
@@ -593,9 +592,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
             }
         } catch (Exception e) {
         }
-        regressOutEQTLEffectsSaveOutput = false;
+        regressOutEQTLEffectsSaveOutput = true;
         try {
-            regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput", false);
+            regressOutEQTLEffectsSaveOutput = config.getBoolean("defaults.analysis.regressOutEQTLEffectsSaveOutput", true);
         } catch (Exception e) {
         }
 
