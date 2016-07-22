@@ -55,7 +55,8 @@ public class Main {
         Option rSquared = OptionBuilder.withArgName("double").hasArg().withDescription("R2 for pruning").withLongOpt("rSquared").create("r");
         Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclussion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
         Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, optional give two window-sizes (colon separated), will do a two step window approach.").withLongOpt("wSize").create("w");
-        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize);
+        Option debug = OptionBuilder.withArgName("boolean").hasArg().withDescription("Switch on debugging.").withLongOpt("debug").create("d");
+        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debug);
 
         String genotypePath = null;
         String genotypeType = null;
@@ -64,6 +65,7 @@ public class Main {
         double rSquare = 1.0d;
         double[] windowSize = null;
         double[] pValThres = null;
+        boolean debugMode = false;
 
         CommandLine cmd;
         try {
@@ -135,6 +137,7 @@ public class Main {
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
+            debugMode = cmd.hasOption("d");
 
         } catch (ParseException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -144,13 +147,13 @@ public class Main {
             if (!(outputFolder.exists())) {
                 Gpio.createDir(outputFolder.getAbsolutePath());
             }
-            RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 10000, null, null);
+            RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 750000, null, null);
             HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres);
             if(windowSize.length==1){
-                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0]);
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
             } else if(windowSize.length==2){
-                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize);
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize, debugMode);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
             } else {
                 System.out.println("More than two window-sizes is not supported.");
@@ -223,7 +226,7 @@ public class Main {
                     Collections.sort(e3.getValue());
                     entries += e3.getValue().size();
                 }
-                System.out.println(e.getKey()+e2.getKey()+" has: "+entries+" entries");
+//                System.out.println(e.getKey()+e2.getKey()+" has: "+entries+" entries");
             }
             
         }

@@ -19,6 +19,7 @@ import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -30,7 +31,7 @@ class CalculateSimpleGeneticRiskScore {
 
     private static final String[] chrOrder = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"};
 
-    static DoubleMatrixDataset<String, String> calculate(RandomAccessGenotypeData genotypeData, HashMap<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double windowSize) {
+    static DoubleMatrixDataset<String, String> calculate(RandomAccessGenotypeData genotypeData, HashMap<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double windowSize, boolean debugMode) {
         ArrayList<String> keys = new ArrayList<String>();
         for (Entry<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
             for (Entry<String, HashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
@@ -40,25 +41,28 @@ class CalculateSimpleGeneticRiskScore {
 
         DoubleMatrixDataset<String, String> scores = new DoubleMatrixDataset<String, String>(keys, Arrays.asList(genotypeData.getSampleNames()));
 
-        for (Entry<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
-            HashMap<String, HashSet<String>> chrExcludeList = new HashMap<String, HashSet<String>>();
-            try {
+        ProgressBar p = new ProgressBar(risks.size() * chrOrder.length);
+
+        for (int counter = 0; counter < chrOrder.length; counter++) {
+            for (Entry<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
+                HashSet<String> excludeList = new HashSet<String>();
                 for (Entry<String, HashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
                     String NameOfEntry = riskScorePheno.getKey() + riskScorePheno2.getKey();
                     int rowNr = scores.getHashRows().get(NameOfEntry);
-                    System.out.println(NameOfEntry);
-                    TextFile out = new TextFile(outputFolder + File.separator + NameOfEntry + ".log", TextFile.W);
+                    try {
+                        TextFile out = null;
+                        if (debugMode) {
+                            System.out.println(NameOfEntry);
 
-                    out.write("SNPs used for GRS calculation:\n");
-                    int nrSNPs = 0;
-                    for (int counter = 0; counter < chrOrder.length; counter++) {
+                            out = new TextFile(outputFolder + File.separator + NameOfEntry + "Chr" + chrOrder[counter] + ".log", TextFile.W);
+
+                            out.write("SNPs used for GRS calculation:\n");
+                        }
+                        int nrSNPs = 0;
+
 //                        System.out.println("Processing chromosome:\t" + chrOrder[counter]);
-
                         if (riskScorePheno2.getValue().containsKey(chrOrder[counter])) {
-                            if(!chrExcludeList.containsKey(chrOrder[counter])){
-                                chrExcludeList.put(chrOrder[counter], new HashSet<String>());
-                            }
-                            HashSet<String> excludeList = chrExcludeList.get(chrOrder[counter]);
+
                             ArrayList<RiskEntry> valueE2 = riskScorePheno2.getValue().get(chrOrder[counter]);
 
                             int nrSNPsThisChr = valueE2.size();
@@ -72,7 +76,7 @@ class CalculateSimpleGeneticRiskScore {
                                     }
                                 }
                             }
-                            
+
                             //Actual scoring.
                             for (int snp = 0; snp < nrSNPsThisChr; snp++) {
                                 if (!excludeSNPs[snp]) {
@@ -85,9 +89,11 @@ class CalculateSimpleGeneticRiskScore {
                                         excludeList.add(riskE.getRsName());
                                         continue;
                                     }
-
-                                    out.write(riskE.InfoToString() + "\n");
-
+                                    
+                                    if (debugMode) {
+                                        out.write(riskE.InfoToString() + "\n");
+                                    }
+                                    
                                     double or = riskE.getOr();
                                     int direction = -1;
                                     if (!(riskE.getAllele().equals(var1.getRefAllele().toString()) || riskE.getAllele().equals(var1.getRefAllele().getComplement().toString()))) {
@@ -143,21 +149,23 @@ class CalculateSimpleGeneticRiskScore {
                                 }
                             }
                         }
-
+                        if (debugMode) {
+                            out.write("Total SNPs used: " + nrSNPs);
+                            out.close();
+                        }
+                    } catch (IOException ex) {
+                        Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    out.write("Total SNPs used: " + nrSNPs);
-                    out.close();
                 }
-
-            } catch (IOException ex) {
-                Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                p.iterate();
             }
         }
+        p.close();
 
         return scores;
     }
 
-    static DoubleMatrixDataset<String, String> calculateTwoStages(RandomAccessGenotypeData genotypeData, HashMap<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double[] windowSize) {
+    static DoubleMatrixDataset<String, String> calculateTwoStages(RandomAccessGenotypeData genotypeData, HashMap<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double[] windowSize, boolean debugMode) {
         ArrayList<String> keys = new ArrayList<String>();
         for (Entry<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
             for (Entry<String, HashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
@@ -166,26 +174,29 @@ class CalculateSimpleGeneticRiskScore {
         }
 
         DoubleMatrixDataset<String, String> scores = new DoubleMatrixDataset<String, String>(keys, Arrays.asList(genotypeData.getSampleNames()));
+        ProgressBar p = new ProgressBar(risks.size() * chrOrder.length);
 
-        for (Entry<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
-            HashMap<String, HashSet<String>> chrExcludeList = new HashMap<String, HashSet<String>>();
-            for (Entry<String, HashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
-                try {
-                    String NameOfEntry = riskScorePheno.getKey() + riskScorePheno2.getKey();
-                    int rowNr = scores.getHashRows().get(NameOfEntry);
-                    System.out.println(NameOfEntry);
-                    TextFile out = new TextFile(outputFolder + File.separator + NameOfEntry + ".log", TextFile.W);
+        for (int counter = 0; counter < chrOrder.length; counter++) {
+            for (Entry<String, LinkedHashMap<String, HashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
+                HashSet<String> excludeList = new HashSet<String>();
+                for (Entry<String, HashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
+                    try {
+                        String NameOfEntry = riskScorePheno.getKey() + riskScorePheno2.getKey();
+                        int rowNr = scores.getHashRows().get(NameOfEntry);
 
-                    out.write("SNPs used for GRS calculation:\n");
-                    int nrSNPs = 0;
-                    for (int counter = 0; counter < chrOrder.length; counter++) {
+                        TextFile out = null;
+                        if (debugMode) {
+                            System.out.println(NameOfEntry);
+
+                            out = new TextFile(outputFolder + File.separator + NameOfEntry + "Chr" + chrOrder[counter] + ".log", TextFile.W);
+
+                            out.write("SNPs used for GRS calculation:\n");
+                        }
+
+                        int nrSNPs = 0;
+
 //                        System.out.println("Processing chromosome:\t" + chrOrder[counter]);
                         if (riskScorePheno2.getValue().containsKey(chrOrder[counter])) {
-                            if(!chrExcludeList.containsKey(chrOrder[counter])){
-                                chrExcludeList.put(chrOrder[counter], new HashSet<String>());
-                            }
-
-                            HashSet<String> excludeList = chrExcludeList.get(chrOrder[counter]);
                             ArrayList<RiskEntry> valueE2 = riskScorePheno2.getValue().get(chrOrder[counter]);
 
                             int nrSNPsThisChr = valueE2.size();
@@ -236,16 +247,16 @@ class CalculateSimpleGeneticRiskScore {
                                     }
                                 }
                             }
-                            
+
                             //Loop 2, Actual scoring.
                             for (int snp = 0; snp < nrSNPsThisChr; snp++) {
                                 if (!excludeSNPs[snp]) {
                                     RiskEntry riskE = valueE2.get(snp);
                                     //System.out.println(snpID + "\t" + c + "\t" + chrPos + "\t" + object.doubleValue);
                                     GeneticVariant var1 = genotypeData.getSnpVariantByPos(riskE.getChr(), riskE.getPos());
-                                    
-                                    out.write(riskE.InfoToString() + "\n");
-
+                                    if (debugMode) {
+                                        out.write(riskE.InfoToString() + "\n");
+                                    }
                                     double or = riskE.getOr();
                                     int direction = -1;
                                     if (!(riskE.getAllele().equals(var1.getRefAllele().toString()) || riskE.getAllele().equals(var1.getRefAllele().getComplement().toString()))) {
@@ -295,17 +306,18 @@ class CalculateSimpleGeneticRiskScore {
                                 }
                             }
                         }
-
+                        if (debugMode) {
+                            out.write("Total SNPs used: " + nrSNPs);
+                            out.close();
+                        }
+                    } catch (IOException ex) {
+                        Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    out.write("Total SNPs used: " + nrSNPs);
-                    out.close();
-                } catch (IOException ex) {
-                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
+                p.iterate();
             }
         }
-
+        p.close();
         return scores;
     }
 
