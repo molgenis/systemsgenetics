@@ -38,13 +38,15 @@ public class ConvertDoubleMatrixDataToTriTyper {
         Option datMatrix = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the input file. Needs to be a tab seperated file with samples on the columns and traits on the rows.").withLongOpt("dataMatrix").create("d");
         Option mapFile = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the mapping file describing the chromosomal locations of the traits.").withLongOpt("mappingFile").create("m");
         Option folderOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location and name of the output TriTyper folder.").withLongOpt("OutputFile").create("o");
-        Option fasta = OptionBuilder.withArgName("boolean").withDescription("If set first rank the input data, before scaling.").create("r");
-        options.addOption(folderOut).addOption(datMatrix).addOption(mapFile).addOption(fasta);
+        Option ranking = OptionBuilder.withArgName("boolean").withDescription("If set first rank the input data, before scaling.").create("r");
+        Option removeNan = OptionBuilder.withArgName("boolean").withDescription("If set first remove full non-numeric rows.").create("R");
+        options.addOption(folderOut).addOption(datMatrix).addOption(mapFile).addOption(ranking).addOption(removeNan);
 
         String dataMatrix = null;
         String outputFolder = null;
         String mappingFile = null;
         boolean rank = false;
+        boolean removeNanRow = false;
         CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
@@ -72,6 +74,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 mappingFile = cmd.getOptionValue("mappingFile");
             }
             rank = cmd.hasOption("r");
+            removeNanRow = cmd.hasOption("R");
 
         } catch (org.apache.commons.cli.ParseException ex) {
             Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
@@ -114,6 +117,10 @@ public class ConvertDoubleMatrixDataToTriTyper {
             Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
             System.exit(0);
         }
+        
+        
+        
+        
         if (dataset != null && !dataset.getHashCols().isEmpty() && !dataset.getHashRows().isEmpty()) {
             if (rank) {
                 dataset.setMatrix(rankRows(dataset.getMatrix()));
