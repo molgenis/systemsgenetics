@@ -45,21 +45,6 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
         //Make sure the value is within bounds
         double CellTypeProp = t[0];
         double ResidualProp  = t[1];
-
-//        These bounds were previously used, but I'm unsure about how to work them.
-//        if(CellTypeProp > 1 || CellTypeProp < -1 ){
-//            return Double.MAX_VALUE;
-//        }
-//        if(ResidualProp > 1 || ResidualProp < 0 ){
-//            return Double.MAX_VALUE;
-//        }
-
-        
-        // Just some check to make sure everythign is good, but the math is not
-        // right at the moment, so I need to check if I can change it.
-      
-        
-        
         
         for(int i=0; i < asRef.length; i++ ){
             

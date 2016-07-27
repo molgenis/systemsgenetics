@@ -84,7 +84,7 @@ public class LinearModelTestNGTest {
         GlobalVariables.minHetReads = 0.1;
         CTSlinearRegression checkRegression = new CTSlinearRegression(snpData);
         
-        Assert.assertEquals(checkRegression.pValue, 0.9043909846148326);
+        Assert.assertEquals(checkRegression.pValue, 0.5691407703693421);
 
     }
     

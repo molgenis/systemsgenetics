@@ -282,11 +282,27 @@ public class ReadGenoAndAsFromIndividual {
         
         int position_of_snp = Integer.parseInt(position);                       
         
-        SAMRecordIterator all_reads_in_region;
-        all_reads_in_region = bam_file.queryOverlapping(chromosome, position_of_snp, position_of_snp);
+        //Check to make sure the variant position is not 0.
+        if(position_of_snp <= 0){
+            System.out.println("A SNP was read with a position lower than 1. This is illegal");
+            System.out.println("Please adapt your genotype files by removing SNPs with these illegal positions");
+            System.out.println("\tchr: " + chromosome + " pos: " + position);
+            throw new IllegalDataException("Variant Position was less than 1");
+        }
         
-        // Right now assuming the above iterator provides me with reads.
-        // Otherwise, I don't know.
+        SAMRecordIterator all_reads_in_region;
+        try{
+            all_reads_in_region = bam_file.queryOverlapping(chromosome, position_of_snp, position_of_snp);
+        } catch(IllegalArgumentException e){
+            System.out.println("Found an error when trying the following input:");
+            System.out.println("chr:\t"+chromosome);
+            System.out.println("pos:\t"+ position);
+            System.out.println("If these values look correct, please make sure your bam file is sorted AND indexed by samtools.");
+            System.out.println("If the problem persists, perhaps the chromosome (or sequence) are not the same in the genotype or bam file");
+            all_reads_in_region = null;
+            System.exit(0);
+            
+        }
         
         String bases = "";
         
@@ -296,8 +312,9 @@ public class ReadGenoAndAsFromIndividual {
             
             
             Character base_in_read = get_base_at_position(read_in_region, pos_int);
-           //System.out.println("base_in_read: " + base_in_read);
-            
+            if(GlobalVariables.verbosity >= 100){
+                System.out.println("base_in_read: " + base_in_read);
+            }
             
             
             
