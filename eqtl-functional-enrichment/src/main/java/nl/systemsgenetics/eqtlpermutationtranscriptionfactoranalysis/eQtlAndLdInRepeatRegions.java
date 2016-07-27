@@ -30,7 +30,7 @@ import umcg.genetica.genomicboundaries.GenomicBoundaries;
 import umcg.genetica.genomicboundaries.GenomicBoundary;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
-import umcg.genetica.io.trityper.eQTLTextFile;
+import umcg.genetica.io.trityper.QTLTextFile;
 
 /**
  *
@@ -108,7 +108,7 @@ public class eQtlAndLdInRepeatRegions {
 	 * Just read the eQTL data.
 	 */
 	public EQTL[] readEQtlData(String eQtlFileLocation) throws IOException{
-		eQTLTextFile eqtlData = new eQTLTextFile(eQtlFileLocation, false);
+		QTLTextFile eqtlData = new QTLTextFile(eQtlFileLocation, false);
 		return eqtlData.read();
 	}
 	

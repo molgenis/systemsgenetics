@@ -141,7 +141,7 @@ public class EQTLRegression {
             for (int p = 0; p < probes.length; p++) {
 
                 ArrayList<EQTL> covariatesForThisProbe = hashProbesCovariates.get(probes[p]);
-
+    
                 if (covariatesForThisProbe != null) {
                     ArrayList<EQTL> eventualListOfEQTLs = new ArrayList<EQTL>();
                     ArrayList<SNP> snpsForProbe = new ArrayList<SNP>();
@@ -162,17 +162,17 @@ public class EQTLRegression {
                                 if (ggSNPLoaders[d].hasDosageInformation()) {
                                     ggSNPLoaders[d].loadDosage(currentSNP);
                                 }
-
+                                
                                 if (currentSNP.passesQC()) {
                                     int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
                                     double[] x = currentSNP.selectGenotypes(indWGA);
                                     double meanX = JSci.maths.ArrayMath.mean(x);
                                     double varianceX = JSci.maths.ArrayMath.variance(x);
-                                    for (int i = 0; i < x.length; i++) {
-                                        x[i] -= meanX;
-                                    }
-
-                                    if (varianceX != 0) {
+                                    
+                                    if (varianceX != 0 && currentDataset.getTotalGGSamples()==x.length) {
+                                        for (int i = 0; i < x.length; i++) {
+                                            x[i] -= meanX;
+                                        }
                                         eventualListOfEQTLs.add(e);
                                         snpsForProbe.add(currentSNP);
                                         xs.add(x);
