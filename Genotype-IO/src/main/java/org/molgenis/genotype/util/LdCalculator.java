@@ -163,10 +163,10 @@ public class LdCalculator
 		String variant2Ref = variant2.getVariantAlleles().get(0).getAlleleAsString();
 
 		LinkedHashMap<String, Double> haplotypesFreq = new LinkedHashMap<String, Double>(4);
-		haplotypesFreq.put(variant1Alt + variant2Alt, h11);
-		haplotypesFreq.put(variant1Alt + variant2Ref, h12);
-		haplotypesFreq.put(variant1Ref + variant2Alt, h21);
-		haplotypesFreq.put(variant1Ref + variant2Ref, h22);
+		haplotypesFreq.put(variant1Alt + "/" + variant2Alt, h11);
+		haplotypesFreq.put(variant1Alt + "/"  + variant2Ref, h12);
+		haplotypesFreq.put(variant1Ref + "/"  + variant2Alt, h21);
+		haplotypesFreq.put(variant1Ref + "/"  + variant2Ref, h22);
 
 		return new Ld(variant1, variant2, rSquared, dPrime, haplotypesFreq);
 
