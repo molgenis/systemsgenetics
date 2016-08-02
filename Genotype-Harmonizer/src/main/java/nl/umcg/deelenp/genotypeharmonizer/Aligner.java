@@ -191,7 +191,10 @@ public class Aligner {
 
 
 
-			if (updateId && refVariant.getPrimaryVariantId() != null && (studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
+			if (
+                    updateId && 
+                    !(refVariant.getPrimaryVariantId() == null && studyVariant.getPrimaryVariantId() == null) && 
+                    (refVariant.getPrimaryVariantId() == null || studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
 				snpUpdateWriter.append(studyVariant.getSequenceName());
 				snpUpdateWriter.append('\t');
 				snpUpdateWriter.append(String.valueOf(studyVariant.getStartPos()));
