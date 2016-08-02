@@ -166,6 +166,12 @@ public class EQTLInteractionAnalyser {
         OptionBuilder.withDescription("SNPs to test");
         OptionBuilder.withLongOpt("snpsToTest");
         OPTIONS.addOption(OptionBuilder.create("snps"));
+
+        OptionBuilder.withArgName("int");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Number of PCs to correct for");
+        OptionBuilder.withLongOpt("numpc");
+        OPTIONS.addOption(OptionBuilder.create("pc"));
     }
 
     public static void main(String[] args) throws IOException, Exception {
@@ -176,6 +182,7 @@ public class EQTLInteractionAnalyser {
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
         final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
+        int numPCsToRegress = 25;
         int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
         final int startRoundCompareChi2, threshold;
@@ -309,6 +316,9 @@ public class EQTLInteractionAnalyser {
             } else {
                 numThreads = Runtime.getRuntime().availableProcessors();
             }
+            if (commandLine.hasOption("pc")) {
+                numPCsToRegress = Integer.parseInt(commandLine.getOptionValue("pc"));
+            }
 
         } catch (ParseException ex) {
             System.err.println("Invalid command line arguments: ");
@@ -337,7 +347,7 @@ public class EQTLInteractionAnalyser {
             }
             new ExpressionDataset(inputDir).save(outputDir);
         } else {
-            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, skipCovariateNormalization, eqtlFileCovariates);
+            new TestEQTLDatasetForInteractions(inputDir, outputDir, eqtlFile, maxNumCovariatesToRegress, annotationFile, covariates, covariates2, snpsToSwapFile, permute, covariatesToTest, hashSamples, numThreads, cohorts, snpsToTestFile, skipNormalization, skipCovariateNormalization, eqtlFileCovariates, numPCsToRegress);
         }
     }
 
