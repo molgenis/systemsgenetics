@@ -56,10 +56,10 @@ public class ModuleEqtlNeutrophilReplication {
 	private static final Options OPTIONS;
 	private static Logger LOGGER;
 
-	private static final int REPLICATION_SNP_CHR_COL = 1;
-	private static final int REPLICATION_SNP_POS_COL = 2;
-	private static final int REPLICATION_GENE_COL = 0;
-	private static final int REPLICATION_BETA_COL = 3;
+	private static final int REPLICATION_SNP_CHR_COL = 26;
+	private static final int REPLICATION_SNP_POS_COL = 27;
+	private static final int REPLICATION_GENE_COL = 30;
+	private static final int REPLICATION_BETA_COL = 13;
 
 	static {
 

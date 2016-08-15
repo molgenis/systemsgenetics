@@ -26,6 +26,7 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.Allele;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeInfo;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -59,18 +60,20 @@ public class ModuleEqtWestraReplication {
 	private static Logger LOGGER;
 	private static final int[] EXTRA_COL_FROM_REPLICATION;
 
-	private static final int REPLICATION_SNP_CHR_COL = 15;
-	private static final int REPLICATION_SNP_POS_COL = 16;
+	private static final int REPLICATION_SNP_CHR_COL = 16;
+	private static final int REPLICATION_SNP_POS_COL = 17;
 	private static final int REPLICATION_GENE_COL = 2;
-	private static final int REPLICATION_BETA_COL = 22;
-	private static final int REPLICATION_ALLELES_COL = 20;
+	private static final int REPLICATION_BETA_COL = 23;
+	private static final int REPLICATION_ALLELES_COL = 21;
+	private static final int REPLICATION_ALLELE_ASSESSED_COL = 22;
 
 	static {
 
-		EXTRA_COL_FROM_REPLICATION = new int[11];
-		for (int i = 3; i <= 13; ++i) {
+		EXTRA_COL_FROM_REPLICATION = new int[13];
+		for (int i = 3; i <= 14; ++i) {
 			EXTRA_COL_FROM_REPLICATION[i - 3] = i;
 		}
+		EXTRA_COL_FROM_REPLICATION[12] = 0;
 
 		LOGGER = Logger.getLogger(GenotypeInfo.class);
 
@@ -232,8 +235,25 @@ public class ModuleEqtWestraReplication {
 				if (variant == null) {
 					continue;
 				}
+				
+				Alleles variantAlleles = variant.getVariantAlleles();
+				String[] replicationAllelesString = StringUtils.split(replicationLine[REPLICATION_ALLELES_COL], '/');
+				
+				
+				Alleles replicationAlleles = Alleles.createBasedOnString(replicationAllelesString[0], replicationAllelesString[1]);
+				Allele assessedAlleleReplication = Allele.create(replicationLine[REPLICATION_ALLELE_ASSESSED_COL]);
+				
+				boolean isAmbigous = replicationAlleles.isAtOrGcSnp();
+				
+				if(!variantAlleles.equals(replicationAlleles)){
+					if(variantAlleles.equals(replicationAlleles.getComplement())){
+						assessedAlleleReplication = assessedAlleleReplication.getComplement();
+					} else {
+						continue;
+					}
+				} 
 
-				ReplicationQtl replicationQtl = new ReplicationQtl(replicationLine[REPLICATION_SNP_CHR_COL], Integer.parseInt(replicationLine[REPLICATION_SNP_POS_COL]), replicationLine[REPLICATION_GENE_COL], Double.parseDouble(replicationLine[REPLICATION_BETA_COL]), variant.getAlternativeAlleles().get(0).getAlleleAsString(), replicationLine);
+				ReplicationQtl replicationQtl = new ReplicationQtl(replicationLine[REPLICATION_SNP_CHR_COL], Integer.parseInt(replicationLine[REPLICATION_SNP_POS_COL]), replicationLine[REPLICATION_GENE_COL], Double.parseDouble(replicationLine[REPLICATION_BETA_COL]), assessedAlleleReplication.getAlleleAsString(), replicationLine, isAmbigous);
 				ArrayList<ReplicationQtl> posReplicationQtls = replicationQtls.get(replicationQtl.getChr(), replicationQtl.getPos());
 				if (posReplicationQtls == null) {
 					posReplicationQtls = new ArrayList<>();
@@ -254,7 +274,7 @@ public class ModuleEqtWestraReplication {
 		int replicationTopSnpNotInGenotypeData = 0;
 
 		final CSVWriter outputWriter = new CSVWriter(new FileWriter(new File(outputFilePath)), '\t', '\0');
-		final String[] outputLine = new String[14 + EXTRA_COL_FROM_REPLICATION.length];
+		final String[] outputLine = new String[15 + EXTRA_COL_FROM_REPLICATION.length];
 		int c = 0;
 		outputLine[c++] = "Chr";
 		outputLine[c++] = "Pos";
@@ -270,6 +290,7 @@ public class ModuleEqtWestraReplication {
 		outputLine[c++] = "bestLd";
 		outputLine[c++] = "bestLd_dist";
 		outputLine[c++] = "nextLd";
+		outputLine[c++] = "replicationAmbigous";
 		for (int i = 0; i < EXTRA_COL_FROM_REPLICATION.length; ++i) {
 			outputLine[c++] = replicationHeader[EXTRA_COL_FROM_REPLICATION[i]];
 		}
@@ -410,6 +431,7 @@ public class ModuleEqtWestraReplication {
 			outputLine[c++] = String.valueOf(bestMatchR2);
 			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(Math.abs(pos - bestMatch.getPos()));
 			outputLine[c++] = String.valueOf(nextBestR2);
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(bestMatch.isIsAmbigous());
 
 			if (bestMatch == null) {
 				for (int i = 0; i < EXTRA_COL_FROM_REPLICATION.length; ++i) {
@@ -447,14 +469,16 @@ public class ModuleEqtWestraReplication {
 		private final double beta;
 		private final String assessedAllele;
 		private final String[] line;
+		private final boolean isAmbigous;
 
-		public ReplicationQtl(String chr, int pos, String gene, double beta, String assessedAllele, String[] line) {
+		public ReplicationQtl(String chr, int pos, String gene, double beta, String assessedAllele, String[] line, boolean isAmbigous) {
 			this.chr = chr;
 			this.pos = pos;
 			this.gene = gene;
 			this.beta = beta;
 			this.assessedAllele = assessedAllele;
 			this.line = line;
+			this.isAmbigous = isAmbigous;
 		}
 
 		public String getAssessedAllele() {
@@ -479,6 +503,10 @@ public class ModuleEqtWestraReplication {
 
 		public String[] getLine() {
 			return line;
+		}
+
+		public boolean isIsAmbigous() {
+			return isAmbigous;
 		}
 
 	}
