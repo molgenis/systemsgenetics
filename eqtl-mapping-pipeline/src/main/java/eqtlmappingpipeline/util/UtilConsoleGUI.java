@@ -72,7 +72,7 @@ public class UtilConsoleGUI {
         Double cr = 0.95;
         Double hwep = 0.001;
         Integer dist = 1000000;
-
+        Integer threads = 1;
         Integer minnrdatasets = null;
         Integer minnrsamples = null;
 
@@ -178,6 +178,8 @@ public class UtilConsoleGUI {
                 snpfile = val;
             } else if (arg.equals("--probes")) {
                 probefile = val;
+            } else if (arg.equals("--threads")) {
+                threads = Integer.parseInt(val);
             } else if (arg.equals("--perm")) {
                 perm = Integer.parseInt(val);
             } else if (arg.equals("--nreqtls")) {
@@ -419,7 +421,7 @@ public class UtilConsoleGUI {
                                 PCAOptimum p = new PCAOptimum();
 //            public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
 
-                                p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
+                                p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, threads);
                                 File file = new File(inexp);
 
                                 p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
