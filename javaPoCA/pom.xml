@@ -7,7 +7,7 @@
         <version>1.0.3-SNAPSHOT</version>
     </parent>
     <artifactId>javaPCoA</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.0.7-SNAPSHOT</version>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>

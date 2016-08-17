@@ -106,7 +106,7 @@ public class DoPcoa {
         String prefix = fileIn.replace(".txt", "");
         prefix = prefix.replace(".gz", "");
 
-//To fix later
+//To add later?
 //        String componentsToSkip = null;
 //        boolean regresOutPcs = false;
 //        int maxNrToRegres = -1;
@@ -120,9 +120,6 @@ public class DoPcoa {
         }
         ConcurrencyUtils.setNumberOfThreads(usable);
 
-        boolean center = paramaters.isCenter();
-        boolean scale = paramaters.isScale();
-
         DoubleMatrixDataset<String, String> inputData;
 
         System.out.println("Reading the input data ....\n");
@@ -135,43 +132,29 @@ public class DoPcoa {
             Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
             throw new IOException("Problem reading data.");
         }
-        System.out.println("\n done");
+      
 
         if (overRows) {
             inputData = inputData.viewDice();
-            System.out.println("\nConducting PCA over rows\n");
+            System.out.println("\nConducting Analysis over rows\n");
         } else {
-            System.out.println("\nConducting PCA over columns\n");
+            System.out.println("\nConducting Analysis over columns\n");
         }
 
 //        if ((inputData.columns() * (long) inputData.columns()) > (Integer.MAX_VALUE - 2)) {
 //            throw new Exception("Matrix has to many columns for PCA");
 //        }
-        if (center && scale) {
+        
+        if(paramaters.isRank()){
+            MatrixTools.rankColumns(inputData.getMatrix());
+        }
+        
+        if (paramaters.isCenter() && paramaters.isScale()) {
             MatrixTools.centerAndScaleColum(inputData.getMatrix());
-        } else if (scale) {
+        } else if (paramaters.isScale()) {
             MatrixTools.scaleColum(inputData.getMatrix());
-        } else if (center) {
+        } else if (paramaters.isCenter()) {
             MatrixTools.centerColum(inputData.getMatrix());
-        }
-
-        Integer nrComponents;
-        if (isInteger(nrComp)) {
-            nrComponents = Integer.parseInt(nrComp);
-        } else if (nrComp.equals("all")) {
-            nrComponents = inputData.columns();
-        } else {
-            nrComponents = inputData.columns();
-        }
-
-        if (nrComponents < 1) {
-            System.out.println("Warning: Number of PCs to calculate should be at least 1");
-            System.out.println("Reset nrComp to all");
-            nrComponents = inputData.columns();
-        } else if (nrComponents > inputData.columns()) {
-            System.out.println("Warning: Number of PCs to calculate is larger dan dim of matrix");
-            System.out.println("Reset nrComp to all");
-            nrComponents = inputData.columns();
         }
 
         DoubleMatrix2D matrix = null;
@@ -293,6 +276,25 @@ public class DoPcoa {
         if (matrix == null) {
             System.out.println("Failed to read or make distance matrix");
             System.exit(0);
+        }
+        
+        Integer nrComponents;
+        if (isInteger(nrComp)) {
+            nrComponents = Integer.parseInt(nrComp);
+        } else if (nrComp.equals("all")) {
+            nrComponents = inputData.columns();
+        } else {
+            nrComponents = inputData.columns();
+        }
+
+        if (nrComponents < 1) {
+            System.out.println("Warning: Number of PCs to calculate should be at least 1");
+            System.out.println("Reset nrComp to all");
+            nrComponents = inputData.columns();
+        } else if (nrComponents > inputData.columns()) {
+            System.out.println("Warning: Number of PCs to calculate is larger dan dim of matrix");
+            System.out.println("Reset nrComp to all");
+            nrComponents = inputData.columns();
         }
 
         try {
