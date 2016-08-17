@@ -184,7 +184,7 @@ public class Normalizer {
 	NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
 
     
-    public String calculatePcaOnly(String expressionFile) throws IOException{
+    public Pair<String,String> calculatePcaOnly(String expressionFile) throws IOException{
         String outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
 		
 		String parentDir = Gpio.getParentDir(expressionFile);
@@ -206,7 +206,7 @@ public class Normalizer {
         ConcurrentCorrelation c = new ConcurrentCorrelation(2);
         double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
         calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
-        return(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
+        return new Pair<String,String>(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz",outputFileNamePrefix + ".PCAOverSamplesPrincipalComponents.txt.gz");
     }
     
     
@@ -608,7 +608,7 @@ public class Normalizer {
 
 	}
 
-	public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String parentDir, String expressionFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
+	public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String parentDir, String expressionFile, String nextInExp, String nextInExp2, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
 		System.out.println("Will write output to: " + parentDir);
 		String[] files = Gpio.getListOfFiles(parentDir);
 		String startExpressionFileName = expressionFile;
@@ -632,31 +632,8 @@ public class Normalizer {
 			minimalFilename = newMinimal.toString();
 		}
 
-		for (String file : files) {
-//            if (file.length() < minimalFilename.length() && file.contains(expressionFileNameElems[0])) {
-//                minimalFilename = file;
-//            } else 
-			if (file.toLowerCase().contains("pcaoversampleseigenvectors.")) {
-				eigenvectorFile = parentDir + "" + file;
-			} else if (file.toLowerCase().contains("pcaoversamplesprincipalcomponents")) {
-				principalComponentsFile = parentDir + "" + file;
-			}
-		}
-
-		boolean fileFound = true;
-		if (eigenvectorFile == null) {
-			System.err.println("Could not find file containing 'PCAOverSamplesEigenvectors' in directory: " + parentDir);
-			fileFound = false;
-		}
-
-		if (eigenvectorFile == null) {
-			System.err.println("Could not find file containing 'PCAOverSamplesPrincipalComponents' in directory: " + parentDir);
-			fileFound = false;
-		}
-
-		if (!fileFound) {
-			System.exit(0);
-		}
+                eigenvectorFile = nextInExp;
+                principalComponentsFile = nextInExp2;
 
 		System.out.println("Detected core file name to be: " + minimalFilename);
 
