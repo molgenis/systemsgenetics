@@ -25,6 +25,7 @@ import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
+import eqtlmappingpipeline.util.ModuleEqtWestraReplication;
 import eqtlmappingpipeline.util.ModuleEqtlGeuvadisReplication;
 import eqtlmappingpipeline.util.ModuleEqtlNeutrophilReplication;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
@@ -145,6 +146,9 @@ public class EQTLMappingPipelineConsole {
 				return;
 			} else if (mode.equals("moduleNeutrophilReplication")) {
 				ModuleEqtlNeutrophilReplication.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("moduleestralReplication")) {
+				ModuleEqtWestraReplication.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
 			} else if (mode.equals("aseSnpEff")) {
 				AnnotateAseWithSnpEffVcf.annotateAseWithSnpEffVcf(args[2], args[3], args[4]);
