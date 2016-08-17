@@ -183,6 +183,34 @@ public class Normalizer {
 
 	NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
 
+    
+    public String calculatePcaOnly(String expressionFile) throws IOException{
+        String outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
+		
+		String parentDir = Gpio.getParentDir(expressionFile);
+		String expressionFileName = Gpio.getFileName(expressionFile);
+		if (parentDir == null) {
+			parentDir = "";
+		}
+
+		if (expressionFileName.contains(".txt.gz")) {
+			expressionFileName = expressionFileName.replaceAll(".txt.gz", "");
+		} else {
+			expressionFileName = expressionFileName.replaceAll(".txt", "");
+		}
+        
+        DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
+        
+		String outputFileNamePrefix = outdir + expressionFileName;
+        
+        ConcurrentCorrelation c = new ConcurrentCorrelation(2);
+        double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
+        calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
+        return(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
+    }
+    
+    
+    
 	public double[] forceNormal(double[] data) {
 		double[] rankedValues = ranking.rank(data);
 		for (int s = 0; s < data.length; s++) {

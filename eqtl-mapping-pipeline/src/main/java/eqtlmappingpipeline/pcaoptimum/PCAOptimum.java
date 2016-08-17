@@ -463,28 +463,11 @@ public class PCAOptimum extends MetaQTL3 {
         }
 
         parentDir += Gpio.getFileSeparator();
-        String[] files = Gpio.getListOfFiles(parentDir);
-        String pcaOverSampleEigenVectorsTransposedFile = null;
+        Normalizer n = new Normalizer();
+        String nextInExp = n.calculatePcaOnly(origInExp);
         
-        boolean desiredMaxThresholdExict = false;
-        
-        for (String file : files) {
-            if (file.toLowerCase().contains("pcaoversampleseigenvectorstransposed")) {
-                pcaOverSampleEigenVectorsTransposedFile = parentDir + "" + file;
-            }
-            if (file.toLowerCase().contains(max+"PCAsOverSamplesRemoved.txt.gz")){
-                desiredMaxThresholdExict = true;
-            }
-        }
-
-        if (pcaOverSampleEigenVectorsTransposedFile == null) {
-            System.out.println("Error! Could not find pcaOverSampleEigenVectorsTransposedFile");
-            System.exit(0);
-        }
-
         // ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.PCAOverSamplesEigenvectorsTransposed
 
-        String nextInExp = pcaOverSampleEigenVectorsTransposedFile;
         performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
         cleanup();
 
@@ -510,16 +493,7 @@ public class PCAOptimum extends MetaQTL3 {
 //        System.out.println("Repeating PCA analysis, without removal of genetically controlled PCs");
         System.out.println("These PCs are under genetic control: " + Strings.concat(geneticEigenVectors.toArray(new Integer[0]), Strings.comma));
         System.out.println();
-        if (geneticEigenVectors.size() > 0) {
-            Normalizer n = new Normalizer();
-            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
-        } else if(!desiredMaxThresholdExict){
-            Normalizer n = new Normalizer();
-            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
-        }else {
-            System.out.println("No PCA vectors seem to be genetically associated.");
-            System.exit(0);
-        }
+        n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
 
     }
     
