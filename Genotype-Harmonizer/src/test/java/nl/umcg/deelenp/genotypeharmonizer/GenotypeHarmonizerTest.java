@@ -487,7 +487,7 @@ public class GenotypeHarmonizerTest {
 
         GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "GEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test8");
 
-        GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test8", "--inputType", "GEN", "-O", "Gen", "--update-id", "-u", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test8b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
+        GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test8", "--inputType", "GEN", "-O", "Gen", "--update-id", "-ura", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test8b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
 
         System.out.println("Alignement complete now going to check using the real forward data");
 

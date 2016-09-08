@@ -191,8 +191,8 @@ public class GenotypeHarmonizerParamaters {
         
         option = OptionBuilder.withArgName("boolean")
 				.withDescription("Match reference allele to harmonizing panel")
-				.withLongOpt("update-reference")
-				.create("ur");
+				.withLongOpt("update-reference-allele")
+				.create("ura");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("boolean")
@@ -351,7 +351,7 @@ public class GenotypeHarmonizerParamaters {
 
 		debugMode = commandLine.hasOption('d');
 		updateId = commandLine.hasOption("id");
-        matchRefAllele = commandLine.hasOption("ur");
+        matchRefAllele = commandLine.hasOption("ura");
 
 		try {
 			minSnpsToAlignOn = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_MIN_VARIANTS_TO_ALIGN_ON;
