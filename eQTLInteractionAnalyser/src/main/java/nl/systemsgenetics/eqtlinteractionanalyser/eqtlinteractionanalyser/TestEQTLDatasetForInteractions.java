@@ -165,7 +165,7 @@ public class TestEQTLDatasetForInteractions {
 
 	private void initGenotypes(boolean permute, HashMap hashSamples, String[] cohorts) {
 
-		datasetGenotypes = new ExpressionDataset(inputDir + "/bigTableLude.txt.Genotypes.binary", '\t', null, hashSamples);
+		datasetGenotypes = new ExpressionDataset(inputDir + "/Genotypes.binary", '\t', null, hashSamples);
 
 		if (permute) {
 			System.out.println("WARNING: PERMUTING GENOTYPE DATA!!!!");
@@ -467,8 +467,8 @@ public class TestEQTLDatasetForInteractions {
 			covariatesToLoad = null;
 		}
 
-		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/bigTableLude.txt.Expression.binary", '\t', null, hashSamples);
-		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', covariatesToLoad, hashSamples);
+		ExpressionDataset datasetExpression = new ExpressionDataset(inputDir + "/Expression.binary", '\t', null, hashSamples);
+		ExpressionDataset datasetCovariates = new ExpressionDataset(inputDir + "/Covariates.binary", '\t', covariatesToLoad, hashSamples);
 
 		org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression regression = new org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression();
 		int nrSamples = datasetGenotypes.nrSamples;
@@ -479,7 +479,7 @@ public class TestEQTLDatasetForInteractions {
 			correctExpressionData(covsToCorrect2, datasetGenotypes, datasetCovariates, datasetExpression, nrCompsToCorrectFor);
 		}
 
-		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/covariateTableLude.txt.Covariates.binary", '\t', covariatesToLoad, hashSamples);
+		ExpressionDataset datasetCovariatesPCAForceNormal = new ExpressionDataset(inputDir + "/Covariates.binary", '\t', covariatesToLoad, hashSamples);
 
 		if (!skipNormalization && !skipCovariateNormalization) {
 			correctCovariateDataPCA(covsToCorrect2, covsToCorrect, datasetGenotypes, datasetCovariatesPCAForceNormal, nrCompsToCorrectFor);

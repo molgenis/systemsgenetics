@@ -56,7 +56,7 @@ public class PerformInteractionAnalysisPermutationTask implements Callable<Doubl
 			}
 			
 			double corrPvalue = correlateCovariateWithGenotype(snp);
-			if (corrPvalue > corrPvalueThreshold) { // don't compute the interaction if the covariate expression is affected by theis SNP
+			if (corrPvalue > corrPvalueThreshold) { // don't compute the interaction if the covariate expression is affected by this SNP
 				try {
 
 					double[][] valsX = new double[nrSamples][3];

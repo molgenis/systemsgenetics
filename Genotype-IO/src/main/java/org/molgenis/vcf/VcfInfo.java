@@ -85,7 +85,7 @@ public class VcfInfo {
 							try {
 								valList.add(Float.valueOf(valToken));
 							} catch (NumberFormatException ex) {
-								throw new GenotypeDataException("Error parsing VCF info column value: " + valToken + " is not a float");
+								throw new GenotypeDataException("Error parsing VCF info column value: " + valToken + " is not a float in field: " + key);
 							}
 						}
 
@@ -98,7 +98,7 @@ public class VcfInfo {
 						try {
 							return Float.valueOf(val);
 						} catch (NumberFormatException ex) {
-							throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a float");
+							throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a float in field: " + key);
 						}
 					}
 				}
@@ -116,7 +116,7 @@ public class VcfInfo {
 							try {
 								valList.add(Integer.valueOf(valToken));
 							} catch (NumberFormatException ex) {
-								throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+								throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int in field: " + key);
 							}
 						}
 					}
@@ -126,7 +126,7 @@ public class VcfInfo {
 					try {
 						return Integer.valueOf(val);
 					} catch (NumberFormatException ex) {
-						throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int");
+						throw new GenotypeDataException("Error parsing VCF info column value: " + val + " is not a int in field: " + key);
 					}
 
 				}
@@ -141,7 +141,7 @@ public class VcfInfo {
 					return val;
 				}
 			default:
-				throw new GenotypeDataException("unknown vcf info type [" + vcfMetaInfo.getType() + "]");
+				throw new GenotypeDataException("unknown vcf info type [" + vcfMetaInfo.getType() + "] in field: " + key);
 		}
 	}
 
