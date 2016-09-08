@@ -7,6 +7,10 @@ package umcg.genetica.math.matrix2;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import no.uib.cipr.matrix.DenseMatrix;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.math.stats.Descriptives;
 
@@ -126,5 +130,16 @@ public class MatrixTools {
         }
         
         return matrix2D;
+    }
+
+    public static void rankColumns(DoubleMatrix2D matrix) {
+        RankingAlgorithm COV_RANKER_TIE = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
+        
+        for (int c = 0; c < matrix.columns(); c++) {
+            double[] rank = COV_RANKER_TIE.rank(matrix.viewColumn(c).toArray());
+            for (int r = 0; r < matrix.rows(); r++) {
+                matrix.set(r, c, (rank[r]));
+            }
+        }
     }
 }

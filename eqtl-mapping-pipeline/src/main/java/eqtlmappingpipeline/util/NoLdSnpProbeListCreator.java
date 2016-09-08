@@ -227,7 +227,7 @@ public class NoLdSnpProbeListCreator {
                 probeStopPos = Integer.parseInt(elements[2]);
                 probeName = elements[3];
                 
-            } else if(probeFile.getName().endsWith(".txt")){
+            } else if(probeFile.getName().endsWith(".txt") || probeFile.getName().endsWith(".tsv")){
                 if(lineNr==1){
                     line = reader.readLine();
                     elements = StringUtils.splitPreserveAllTokens(line, '\t');

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import umcg.genetica.console.ConsoleGUIElems;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
@@ -463,29 +464,12 @@ public class PCAOptimum extends MetaQTL3 {
         }
 
         parentDir += Gpio.getFileSeparator();
-        String[] files = Gpio.getListOfFiles(parentDir);
-        String pcaOverSampleEigenVectorsTransposedFile = null;
+        Normalizer n = new Normalizer();
+        Pair<String,String> nextInExp = n.calculatePcaOnly(origInExp);
         
-        boolean desiredMaxThresholdExict = false;
-        
-        for (String file : files) {
-            if (file.toLowerCase().contains("pcaoversampleseigenvectorstransposed")) {
-                pcaOverSampleEigenVectorsTransposedFile = parentDir + "" + file;
-            }
-            if (file.toLowerCase().contains(max+"PCAsOverSamplesRemoved.txt.gz")){
-                desiredMaxThresholdExict = true;
-            }
-        }
-
-        if (pcaOverSampleEigenVectorsTransposedFile == null) {
-            System.out.println("Error! Could not find pcaOverSampleEigenVectorsTransposedFile");
-            System.exit(0);
-        }
-
         // ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.PCAOverSamplesEigenvectorsTransposed
 
-        String nextInExp = pcaOverSampleEigenVectorsTransposedFile;
-        performeQTLMapping(true, true, nextInExp, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
+        performeQTLMapping(true, true, nextInExp.getLeft(), out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
         cleanup();
 
         QTLTextFile etf = new QTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt", QTLTextFile.R);
@@ -510,16 +494,7 @@ public class PCAOptimum extends MetaQTL3 {
 //        System.out.println("Repeating PCA analysis, without removal of genetically controlled PCs");
         System.out.println("These PCs are under genetic control: " + Strings.concat(geneticEigenVectors.toArray(new Integer[0]), Strings.comma));
         System.out.println();
-        if (geneticEigenVectors.size() > 0) {
-            Normalizer n = new Normalizer();
-            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
-        } else if(!desiredMaxThresholdExict){
-            Normalizer n = new Normalizer();
-            n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, max, stepSize);
-        }else {
-            System.out.println("No PCA vectors seem to be genetically associated.");
-            System.exit(0);
-        }
+        n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, nextInExp.getLeft(), nextInExp.getRight(), max, stepSize);
 
     }
     
