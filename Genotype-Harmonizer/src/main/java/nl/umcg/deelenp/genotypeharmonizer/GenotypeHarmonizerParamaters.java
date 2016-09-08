@@ -34,6 +34,7 @@ public class GenotypeHarmonizerParamaters {
 	private final GenotypedDataWriterFormats outputType;
 	private final boolean debugMode;
 	private final boolean updateId;
+    private final boolean matchRefAllele;
 	private final int minSnpsToAlignOn;
 	private final int flankSnpsToConsider;
 	private final double minLdToIncludeAlign;
@@ -186,6 +187,12 @@ public class GenotypeHarmonizerParamaters {
 				.withDescription("Update variants IDs of study data to match reference data")
 				.withLongOpt("update-id")
 				.create("id");
+		OPTIONS.addOption(option);
+        
+        option = OptionBuilder.withArgName("boolean")
+				.withDescription("Match reference allele to harmonizing panel")
+				.withLongOpt("update-allele")
+				.create("u");
 		OPTIONS.addOption(option);
 
 		option = OptionBuilder.withArgName("boolean")
@@ -344,6 +351,7 @@ public class GenotypeHarmonizerParamaters {
 
 		debugMode = commandLine.hasOption('d');
 		updateId = commandLine.hasOption("id");
+        matchRefAllele = commandLine.hasOption("u");
 
 		try {
 			minSnpsToAlignOn = commandLine.hasOption('m') ? Integer.parseInt(commandLine.getOptionValue('m')) : DEFAULT_MIN_VARIANTS_TO_ALIGN_ON;
@@ -459,6 +467,8 @@ public class GenotypeHarmonizerParamaters {
             LOGGER.info("Maximum MAF of variants to use minor allele as backup for alignment: " + maxMafForMafAlignment);
             System.out.println(" - Update study IDs: " + (updateId ? "yes" : "no"));
             LOGGER.info("Update study variant IDs: " + (updateId ? "yes" : "no"));
+            System.out.println(" - Match study reference alleles: " + (matchRefAllele ? "yes" : "no"));
+            LOGGER.info("Match study reference alleles: " + (matchRefAllele ? "yes" : "no"));
             System.out.println(" - Keep variants not in reference data: " + (keep ? "yes" : "no"));
             LOGGER.info("Keep variants not in reference data: " + (keep ? "yes" : "no"));
         } else {
@@ -630,4 +640,8 @@ public class GenotypeHarmonizerParamaters {
 	public double getMinMachR2() {
 		return minMachR2;
 	}
+    
+    public boolean getMatchRefAllele(){
+        return matchRefAllele;
+    }
 }

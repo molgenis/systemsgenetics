@@ -23,7 +23,7 @@ public class EQTLInteractionAnalyser {
 
     private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static final Date currentDataTime = new Date();
-    private static final Options OPTIONS;
+    protected static final Options OPTIONS;
 
     static {
 
@@ -342,7 +342,7 @@ public class EQTLInteractionAnalyser {
             System.out.println("input file: " + inputDir);
             System.out.println("output file: " + outputDir);
             if (inputDir.equals(outputDir)) {
-                System.err.println("input == output");
+                System.err.println("Error, input == output");
                 System.exit(1);
             }
             new ExpressionDataset(inputDir).save(outputDir);

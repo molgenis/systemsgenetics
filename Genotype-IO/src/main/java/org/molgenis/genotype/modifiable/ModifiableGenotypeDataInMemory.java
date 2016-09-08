@@ -32,6 +32,7 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 	private final HashMap<GeneticVariant, Alleles> allelesUpdate;
 	private final HashMap<GeneticVariant, SampleVariantsProvider> variantProviderUpdates;
 	private final HashSet<ModifiableGeneticVariant> filteredOutVariants;
+	private final HashSet<GeneticVariant> swappedVariants;
 
 	private final HashMap<SampleVariantsProvider, SampleVariantsProvider> swappingSampleVariantProviders;
 
@@ -45,6 +46,7 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 		this.variantProviderUpdates = new HashMap<GeneticVariant, SampleVariantsProvider>();
 		this.swappingSampleVariantProviders = new HashMap<SampleVariantsProvider, SampleVariantsProvider>();
 		this.filteredOutVariants = new HashSet<ModifiableGeneticVariant>();
+		this.swappedVariants = new HashSet<>();
 	}
 
 	@Override
@@ -185,7 +187,15 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 	@Override
 	public synchronized void swapGeneticVariant(ModifiableGeneticVariant geneticVariant)
 	{
+		
 		GeneticVariant originalGeneticVariant = geneticVariant.getOriginalVariant();
+		
+		if(swappedVariants.contains(originalGeneticVariant)){
+			throw new GenotypeDataException("Cannot swap same variant twice");
+		}
+		
+		swappedVariants.add(originalGeneticVariant);
+		
 		Alleles variantAlleles = getUpdatedAlleles(geneticVariant);
 		if (variantAlleles == null)
 		{
@@ -367,6 +377,11 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 	@Override
 	public boolean isOnlyContaingSaveProbabilityGenotypes() {
 		return sourceGenotypeData.isOnlyContaingSaveProbabilityGenotypes();
+	}
+	
+	@Override
+	public boolean isSwapped(GeneticVariant geneticVariant){
+		return swappedVariants.contains(geneticVariant);
 	}
 
 }

@@ -166,13 +166,16 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
 				.get(0) : originalVariant.getRefAllele();
 
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+		
 		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
-
+		
+		
 		if (refUsedForOriginalDosage == refShouldBeUsed) {
 			return dosageByProvider;
-		} else if (refUsedForOriginalDosage == refShouldBeUsed.getComplement()) {
-			return dosageByProvider;
-		} else {
+		}  else {
 
 			// Here we have to do the swap of the dosage to match the new ref.
 			// (org - 2 ) * 1
@@ -184,7 +187,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 				// 1 -> -1 -> 1
 				// 1.5 -> -1.5 -> 0.5
 				// 2 -> -2 -> 0
-				newDosage[i] = (dosageByProvider[i] * -1) + 2;
+				newDosage[i] = dosageByProvider[i] == -1 ? -1 : (dosageByProvider[i] * -1) + 2;
 			}
 			return newDosage;
 		}
@@ -199,15 +202,17 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
 				.get(0) : originalVariant.getRefAllele();
 
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+		
+
 		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
 
 		// System.out.println("Ref used: " + refUsedForOriginalDosage +
 		// " should be: " + refShouldBeUsed);
 
 		if (refUsedForOriginalDosage == refShouldBeUsed) {
-			return dosageByProvider;
-		} else if (refUsedForOriginalDosage == refShouldBeUsed.getComplement()) {
-			// System.out.println("do nothing is complement");
 			return dosageByProvider;
 		} else {
 
@@ -221,7 +226,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 				// 1 -> -1 -> 1
 				// 1.5 -> -1.5 -> 0.5
 				// 2 -> -2 -> 0
-				newDosage[i] = (byte) ((dosageByProvider[i] * -1) + 2);
+				newDosage[i] = (byte) (dosageByProvider[i] == -1 ? -1 : (dosageByProvider[i] * -1) + 2);
 			}
 			return newDosage;
 		}
@@ -233,12 +238,18 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
 		float[][] probByProvider = getSampleVariantsProvider().getSampleProbilities(originalVariant);
 
-		Allele originalAAllele = originalVariant.getVariantAlleles().get(0);
-		Allele newAAllele = getVariantAlleles().get(0);
+		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
+				.get(0) : originalVariant.getRefAllele();
 
-		if (originalAAllele == newAAllele) {
-			return probByProvider;
-		} else if (originalAAllele == newAAllele.getComplement()) {
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+		
+
+		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
+		
+		
+		if (refUsedForOriginalDosage == refShouldBeUsed) {
 			return probByProvider;
 		} else {
 
@@ -247,7 +258,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 			for (int i = 0; i < probByProvider.length; ++i) {
 
 				for (int j = 0; j < 3; ++j) {
-					probs[i][2 - j] = probs[i][j];
+					probs[i][2 - j] = probByProvider[i][j];
 				}
 
 			}

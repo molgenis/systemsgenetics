@@ -25,6 +25,8 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.Allele;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypeInfo;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -33,6 +35,7 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
+import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
 
@@ -40,7 +43,7 @@ import umcg.genetica.collections.ChrPosTreeMap;
  *
  * @author patri
  */
-public class ModuleEqtlNeutrophilReplication {
+public class ModuleEqtWestraReplication {
 
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
@@ -55,13 +58,22 @@ public class ModuleEqtlNeutrophilReplication {
 			+ "  \\---------------------------------------/";
 	private static final Options OPTIONS;
 	private static Logger LOGGER;
+	private static final int[] EXTRA_COL_FROM_REPLICATION;
 
-	private static final int REPLICATION_SNP_CHR_COL = 26;
-	private static final int REPLICATION_SNP_POS_COL = 27;
-	private static final int REPLICATION_GENE_COL = 30;
-	private static final int REPLICATION_BETA_COL = 13;
+	private static final int REPLICATION_SNP_CHR_COL = 16;
+	private static final int REPLICATION_SNP_POS_COL = 17;
+	private static final int REPLICATION_GENE_COL = 2;
+	private static final int REPLICATION_BETA_COL = 23;
+	private static final int REPLICATION_ALLELES_COL = 21;
+	private static final int REPLICATION_ALLELE_ASSESSED_COL = 22;
 
 	static {
+
+		EXTRA_COL_FROM_REPLICATION = new int[13];
+		for (int i = 3; i <= 14; ++i) {
+			EXTRA_COL_FROM_REPLICATION[i - 3] = i;
+		}
+		EXTRA_COL_FROM_REPLICATION[12] = 0;
 
 		LOGGER = Logger.getLogger(GenotypeInfo.class);
 
@@ -213,7 +225,7 @@ public class ModuleEqtlNeutrophilReplication {
 		ChrPosTreeMap<ArrayList<ReplicationQtl>> replicationQtls = new ChrPosTreeMap<>();
 
 		CSVReader replicationQtlReader = new CSVReader(new FileReader(replicationQtlFilePath), '\t');
-		replicationQtlReader.readNext();//skip header
+		String[] replicationHeader = replicationQtlReader.readNext();
 		String[] replicationLine;
 		while ((replicationLine = replicationQtlReader.readNext()) != null) {
 
@@ -223,8 +235,25 @@ public class ModuleEqtlNeutrophilReplication {
 				if (variant == null) {
 					continue;
 				}
+				
+				Alleles variantAlleles = variant.getVariantAlleles();
+				String[] replicationAllelesString = StringUtils.split(replicationLine[REPLICATION_ALLELES_COL], '/');
+				
+				
+				Alleles replicationAlleles = Alleles.createBasedOnString(replicationAllelesString[0], replicationAllelesString[1]);
+				Allele assessedAlleleReplication = Allele.create(replicationLine[REPLICATION_ALLELE_ASSESSED_COL]);
+				
+				boolean isAmbigous = replicationAlleles.isAtOrGcSnp();
+				
+				if(!variantAlleles.equals(replicationAlleles)){
+					if(variantAlleles.equals(replicationAlleles.getComplement())){
+						assessedAlleleReplication = assessedAlleleReplication.getComplement();
+					} else {
+						continue;
+					}
+				} 
 
-				ReplicationQtl replicationQtl = new ReplicationQtl(replicationLine[REPLICATION_SNP_CHR_COL], Integer.parseInt(replicationLine[REPLICATION_SNP_POS_COL]), replicationLine[REPLICATION_GENE_COL], Double.parseDouble(replicationLine[REPLICATION_BETA_COL]), variant.getAlternativeAlleles().get(0).getAlleleAsString());
+				ReplicationQtl replicationQtl = new ReplicationQtl(replicationLine[REPLICATION_SNP_CHR_COL], Integer.parseInt(replicationLine[REPLICATION_SNP_POS_COL]), replicationLine[REPLICATION_GENE_COL], Double.parseDouble(replicationLine[REPLICATION_BETA_COL]), assessedAlleleReplication.getAlleleAsString(), replicationLine, isAmbigous);
 				ArrayList<ReplicationQtl> posReplicationQtls = replicationQtls.get(replicationQtl.getChr(), replicationQtl.getPos());
 				if (posReplicationQtls == null) {
 					posReplicationQtls = new ArrayList<>();
@@ -245,7 +274,7 @@ public class ModuleEqtlNeutrophilReplication {
 		int replicationTopSnpNotInGenotypeData = 0;
 
 		final CSVWriter outputWriter = new CSVWriter(new FileWriter(new File(outputFilePath)), '\t', '\0');
-		final String[] outputLine = new String[14];
+		final String[] outputLine = new String[15 + EXTRA_COL_FROM_REPLICATION.length];
 		int c = 0;
 		outputLine[c++] = "Chr";
 		outputLine[c++] = "Pos";
@@ -261,6 +290,10 @@ public class ModuleEqtlNeutrophilReplication {
 		outputLine[c++] = "bestLd";
 		outputLine[c++] = "bestLd_dist";
 		outputLine[c++] = "nextLd";
+		outputLine[c++] = "replicationAmbigous";
+		for (int i = 0; i < EXTRA_COL_FROM_REPLICATION.length; ++i) {
+			outputLine[c++] = replicationHeader[EXTRA_COL_FROM_REPLICATION[i]];
+		}
 		outputWriter.writeNext(outputLine);
 
 		HashSet<String> notFound = new HashSet<>();
@@ -368,6 +401,8 @@ public class ModuleEqtlNeutrophilReplication {
 
 					String[] commonHapAlleles = StringUtils.split(commonHap, '/');
 
+					
+			
 					discoveryZCorrected = commonHapAlleles[0].equals(alleleAssessed) ? discoveryZ : discoveryZ * -1;
 					replicationZCorrected = commonHapAlleles[1].equals(replicationAlleleAssessed) ? replicationZ : replicationZ * -1;
 
@@ -375,6 +410,7 @@ public class ModuleEqtlNeutrophilReplication {
 
 					discoveryZCorrected = discoveryZ;
 					replicationZCorrected = alleleAssessed.equals(replicationAlleleAssessed) ? replicationZ : replicationZ * -1;
+					//replicationZCorrected = alleleAssessed.equals(replicationAlleleAssessed) || alleleAssessed.equals(String.valueOf(Utils.getComplementNucleotide(replicationAlleleAssessed.charAt(0)))) ? replicationZ : replicationZ * -1;
 
 				}
 
@@ -395,6 +431,18 @@ public class ModuleEqtlNeutrophilReplication {
 			outputLine[c++] = String.valueOf(bestMatchR2);
 			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(Math.abs(pos - bestMatch.getPos()));
 			outputLine[c++] = String.valueOf(nextBestR2);
+			outputLine[c++] = bestMatch == null ? "NA" : String.valueOf(bestMatch.isIsAmbigous());
+
+			if (bestMatch == null) {
+				for (int i = 0; i < EXTRA_COL_FROM_REPLICATION.length; ++i) {
+					outputLine[c++] = "NA";
+				}
+			} else {
+				for (int i = 0; i < EXTRA_COL_FROM_REPLICATION.length; ++i) {
+					outputLine[c++] = bestMatch.getLine()[EXTRA_COL_FROM_REPLICATION[i]];
+				}
+			}
+
 			outputWriter.writeNext(outputLine);
 
 		}
@@ -420,13 +468,17 @@ public class ModuleEqtlNeutrophilReplication {
 		private final String gene;
 		private final double beta;
 		private final String assessedAllele;
+		private final String[] line;
+		private final boolean isAmbigous;
 
-		public ReplicationQtl(String chr, int pos, String gene, double beta, String assessedAllele) {
+		public ReplicationQtl(String chr, int pos, String gene, double beta, String assessedAllele, String[] line, boolean isAmbigous) {
 			this.chr = chr;
 			this.pos = pos;
 			this.gene = gene;
 			this.beta = beta;
 			this.assessedAllele = assessedAllele;
+			this.line = line;
+			this.isAmbigous = isAmbigous;
 		}
 
 		public String getAssessedAllele() {
@@ -447,6 +499,14 @@ public class ModuleEqtlNeutrophilReplication {
 
 		public double getBeta() {
 			return beta;
+		}
+
+		public String[] getLine() {
+			return line;
+		}
+
+		public boolean isIsAmbigous() {
+			return isAmbigous;
 		}
 
 	}
