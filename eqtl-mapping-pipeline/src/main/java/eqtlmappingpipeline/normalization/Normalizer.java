@@ -622,14 +622,7 @@ public class Normalizer {
 		String principalComponentsFile = null;
 
 		if (minimalFilename.contains("PCAsOverSamplesRemoved")) {
-			StringBuilder newMinimal = new StringBuilder();
-			newMinimal.append(expressionFileNameElems[0]);
-			for (int i = 1; i < expressionFileNameElems.length; ++i) {
-				if (!expressionFileNameElems[i].contains("PCAsOverSamplesRemoved")) {
-					newMinimal.append(".").append(expressionFileNameElems[i]);
-				}
-			}
-			minimalFilename = newMinimal.toString();
+                    System.out.println("Warning, it seems like this data is already normalized for PCA's over sampels.");
 		}
 
                 eigenvectorFile = nextInExp;
