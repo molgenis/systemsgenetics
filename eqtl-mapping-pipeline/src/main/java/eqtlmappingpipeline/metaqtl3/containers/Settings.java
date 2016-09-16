@@ -42,7 +42,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
     // Analysis settings
     public boolean performParametricAnalysis = false;                          // Perform parametric analysis
     public boolean useAbsoluteZScorePValue = false;                            // Use absolute Z-score? (required for finding opposite allelic effects)
-    public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 1000000;              // Midpoint distance for declaring an eQTL effect CIS
+    public int ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;              // Midpoint distance for declaring an eQTL effect CIS
     public int maxNrMostSignificantEQTLs = 500000;                             // Max number of results stored in memory
     public boolean performParametricAnalysisGetAccuratePValueEstimates;        // Use an accurate estimation of the P-values
     public Integer nrThreads;                                                  // Use this number of threads
@@ -192,7 +192,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
         if (cisDist != null) {
             ciseQTLAnalysMaxSNPProbeMidPointDistance = cisDist;
         } else {
-            ciseQTLAnalysMaxSNPProbeMidPointDistance = 1000000;
+            ciseQTLAnalysMaxSNPProbeMidPointDistance = 250000;
         }
 
         try {
