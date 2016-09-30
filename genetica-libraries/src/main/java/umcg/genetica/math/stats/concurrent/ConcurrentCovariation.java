@@ -4,7 +4,9 @@
  */
 package umcg.genetica.math.stats.concurrent;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -74,7 +76,7 @@ public class ConcurrentCovariation {
     }
     
     
-    public DenseDoubleMatrix2D pairwiseCovariationDoubleMatrix(double[][] in) {
+    public DoubleMatrix2D pairwiseCovariationDoubleMatrix(double[][] in) {
         ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
         CompletionService<Pair<Integer, double[]>> pool = new ExecutorCompletionService<Pair<Integer, double[]>>(threadPool);
         double meanOfSamples[] = new double[in.length];
@@ -89,8 +91,14 @@ public class ConcurrentCovariation {
         }
 
         int returned = 0;
-
-        DenseDoubleMatrix2D covariationMatrix = new DenseDoubleMatrix2D(in.length, in.length);
+        
+        DoubleMatrix2D covariationMatrix;
+        if((in.length * (long) in.length) > (Integer.MAX_VALUE - 2)){
+            covariationMatrix = new DenseLargeDoubleMatrix2D(in.length, in.length);
+        } else {
+            covariationMatrix = new DenseDoubleMatrix2D(in.length, in.length);
+        } 
+        
         ProgressBar pb = new ProgressBar(in.length, "Calculation of covariation matrix: " + in.length + " x " + in.length);
         while (returned < in.length) {
             try {

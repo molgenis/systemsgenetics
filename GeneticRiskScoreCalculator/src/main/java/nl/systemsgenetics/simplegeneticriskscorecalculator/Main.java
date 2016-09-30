@@ -49,12 +49,12 @@ public class Main {
         Options options = new Options();
 
         Option FileOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location (folder) for the output.").withLongOpt("OutputFolder").create("o");
-        Option GenotypeTypeIn = OptionBuilder.withArgName("type").hasArg().withDescription("Type of refference data.").withLongOpt("GenotypeType").create("gt");
-        Option GenotypeIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data").withLongOpt("GenotypeLocation").create("gi");
-        Option InFolder = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the folder with genetic risk score information").withLongOpt("input").create("i");
-        Option rSquared = OptionBuilder.withArgName("double").hasArg().withDescription("R2 for pruning").withLongOpt("rSquared").create("r");
-        Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclussion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
-        Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, optional give two window-sizes (colon separated), will do a two step window approach.").withLongOpt("wSize").create("w");
+        Option GenotypeTypeIn = OptionBuilder.withArgName("type").hasArg().withDescription("Type of reference data.").withLongOpt("GenotypeType").create("gt");
+        Option GenotypeIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data.").withLongOpt("GenotypeLocation").create("gi");
+        Option InFolder = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the folder with genetic risk score information.").withLongOpt("input").create("i");
+        Option rSquared = OptionBuilder.withArgName("double").hasArg().withDescription("R2 for pruning.").withLongOpt("rSquared").create("r");
+        Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclusion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
+        Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, if given two window-sizes (colon separated), a two step window approach is used.").withLongOpt("wSize").create("w");
         Option debug = OptionBuilder.withArgName("boolean").hasArg().withDescription("Switch on debugging.").withLongOpt("debug").create("d");
         options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debug);
 
@@ -76,7 +76,7 @@ public class Main {
                 // initialise the member variable
                 outputFolder = new File(cmd.getOptionValue("OutputFolder"));
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -84,7 +84,7 @@ public class Main {
                 // initialise the member variable
                 genotypePath = cmd.getOptionValue("GenotypeLocation");
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -92,7 +92,7 @@ public class Main {
                 // initialise the member variable
                 genotypeType = cmd.getOptionValue("GenotypeType");
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -100,7 +100,7 @@ public class Main {
                 // initialise the member variable
                 riskFolder = cmd.getOptionValue("input");
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -108,7 +108,7 @@ public class Main {
                 // initialise the member variable
                 rSquare = Double.parseDouble(cmd.getOptionValue("rSquared"));
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -121,7 +121,7 @@ public class Main {
                 }
 
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -133,7 +133,7 @@ public class Main {
                     pValThres[i] = Double.parseDouble(tempThres[i]);
                 }
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -170,6 +170,11 @@ public class Main {
         HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> risks = new HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>>();
 
         File riskFileFolder = new File(riskFolder);
+        if(!riskFileFolder.exists()){
+            System.out.println("Warning: input risk folder does not exists:\n");
+            System.out.println(riskFileFolder);
+            System.exit(-1);
+        }
         File[] riskFiles = riskFileFolder.listFiles();
 
         for (File f : riskFiles) {
