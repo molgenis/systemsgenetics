@@ -135,15 +135,11 @@ class CalculateSimpleGeneticRiskScore {
                                                     excludeList.add(riskE2.getRsName());
                                                     continue;
                                                 }
-                                                try {
-                                                    Ld ld = var1.calculateLd(var2);
-                                                    if (ld.getR2() >= rSquare) {
-                                                        excludeSNPs[t] = true;
-                                                        excludeList.add(riskE2.getRsName());
-                                                    }
-                                                } catch (LdCalculatorException ex) {
-                                                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                                                if (calculateFastLd(var1, var2) >= rSquare) {
+                                                    excludeSNPs[t] = true;
+                                                    excludeList.add(riskE2.getRsName());
                                                 }
+
                                             }
                                         }
                                     }
@@ -237,14 +233,9 @@ class CalculateSimpleGeneticRiskScore {
                                                     excludeList.add(riskE2.getRsName());
                                                     continue;
                                                 }
-                                                try {
-                                                    Ld ld = var1.calculateLd(var2);
-                                                    if (ld.getR2() >= rSquare) {
-                                                        excludeSNPs[t] = true;
-                                                        excludeList.add(riskE2.getRsName());
-                                                    }
-                                                } catch (LdCalculatorException ex) {
-                                                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                                                if (calculateFastLd(var1, var2) >= rSquare) {
+                                                    excludeSNPs[t] = true;
+                                                    excludeList.add(riskE2.getRsName());
                                                 }
                                             }
                                         }
@@ -296,13 +287,8 @@ class CalculateSimpleGeneticRiskScore {
                                             RiskEntry riskE2 = valueE2.get(t);
                                             if (Math.abs(riskE2.getPos() - riskE.getPos()) <= windowSize[1]) {
                                                 GeneticVariant var2 = genotypeData.getSnpVariantByPos(riskE2.getChr(), riskE2.getPos());
-                                                try {
-                                                    Ld ld = var1.calculateLd(var2);
-                                                    if (ld.getR2() >= rSquare) {
-                                                        excludeSNPs[t] = true;
-                                                    }
-                                                } catch (LdCalculatorException ex) {
-                                                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                                                if (calculateFastLd(var1, var2) >= rSquare) {
+                                                    excludeSNPs[t] = true;
                                                 }
                                             }
                                         }
@@ -324,5 +310,95 @@ class CalculateSimpleGeneticRiskScore {
         p.close();
         return scores;
     }
+    
+    
+    /**
+	 * LD calculator. Based on implementation of Harm-Jan Westra and Lude
+	 * Franke.
+	 * 
+	 * @param variant1
+	 *            bi-allelic genetic variant
+	 * @param variant2
+	 *            bi-allelic genetic variant
+	 * @return LD information
+	 */
+    
+	public static double calculateFastLd(GeneticVariant variant1, GeneticVariant variant2) 	{
+
+        if (variant1.getAlleleCount() != 2 || variant2.getAlleleCount() != 2)	{
+			throw new UnsupportedOperationException("Ld calculator currently only supports biallelic variants");
+		}
+        
+		final byte[] variant1Genotypes = variant1.getSampleCalledDosages();
+		final byte[] variant2Genotypes = variant2.getSampleCalledDosages();
+
+		// matrix with all combinations between variant 1 genotypes and variant
+		// 2 genotypes
+		double[][] genotypesFreq = new double[3][3];
+
+		double calledGenoypes = 0;
+
+		for (int ind = 0; ind < variant1Genotypes.length; ++ind){
+			byte genotypeVariant1 = variant1Genotypes[ind];
+			byte genotypeVariant2 = variant2Genotypes[ind];
+			if (genotypeVariant1 != -1 && genotypeVariant2 != -1){
+				genotypesFreq[genotypeVariant1][genotypeVariant2]++;
+				++calledGenoypes;
+			}
+		}
+
+		for (int x = 0; x < 3; x++)	{
+			for (int y = 0; y < 3; y++)	{
+				genotypesFreq[x][y] /= calledGenoypes;
+			}
+		}
+
+		// Determine allele freq of variants:
+		double[][] alleleFreq = new double[2][2];
+		// Variant 1:
+		alleleFreq[0][0] = (genotypesFreq[0][0] + genotypesFreq[0][1] + genotypesFreq[0][2])
+				+ (genotypesFreq[1][0] + genotypesFreq[1][1] + genotypesFreq[1][2]) / 2d;
+		alleleFreq[0][1] = (genotypesFreq[2][0] + genotypesFreq[2][1] + genotypesFreq[2][2])
+				+ (genotypesFreq[1][0] + genotypesFreq[1][1] + genotypesFreq[1][2]) / 2d;
+		// Variant 2:
+		alleleFreq[1][0] = (genotypesFreq[0][0] + genotypesFreq[1][0] + genotypesFreq[2][0])
+				+ (genotypesFreq[0][1] + genotypesFreq[1][1] + genotypesFreq[2][1]) / 2d;
+		alleleFreq[1][1] = (genotypesFreq[0][2] + genotypesFreq[1][2] + genotypesFreq[2][2])
+				+ (genotypesFreq[0][1] + genotypesFreq[1][1] + genotypesFreq[2][1]) / 2d;
+
+		// Precalculate triangles of non-double heterozygote:
+		double[][] genotypesTriangleFreq = new double[2][2];
+		genotypesTriangleFreq[0][0] = 2d * genotypesFreq[0][0] + genotypesFreq[1][0] + genotypesFreq[0][1];
+		genotypesTriangleFreq[1][0] = 2d * genotypesFreq[2][0] + genotypesFreq[1][0] + genotypesFreq[2][1];
+		genotypesTriangleFreq[0][1] = 2d * genotypesFreq[0][2] + genotypesFreq[1][2] + genotypesFreq[0][1];
+		genotypesTriangleFreq[1][1] = 2d * genotypesFreq[2][2] + genotypesFreq[1][2] + genotypesFreq[2][1];
+
+		// Calculate expected genotypes, assuming equilibrium, take this as
+		// start:
+		double h11 = alleleFreq[0][0] * alleleFreq[1][0];
+        double s1 = h11 * alleleFreq[0][1] * alleleFreq[1][1];
+        double s2 = alleleFreq[0][0] * alleleFreq[1][1] * alleleFreq[0][1] * alleleFreq[1][0];
+        double denom = (s1+s2);
+        
+		// Calculate the frequency of the two double heterozygotes:
+		double x12y12 = (s1 / denom) * genotypesFreq[1][1];
+		double x12y21 = (s2 / denom) * genotypesFreq[1][1];
+
+		// Perform iterations using EM algorithm:
+		for (int itr = 0; itr < 25; itr++){
+			h11 = ((x12y12 + genotypesTriangleFreq[0][0]) / 2);
+            
+            s1 = h11 * ((x12y21 + genotypesTriangleFreq[0][1]) / 2);
+            s2 = ((x12y21 + genotypesTriangleFreq[1][0]) / 2) * ((x12y12 + genotypesTriangleFreq[1][1]) / 2);
+            denom = s1+s2;
+            
+			x12y12 = (s1 / denom) * genotypesFreq[1][1];
+			x12y21 = (s2 / denom) * genotypesFreq[1][1];
+		}
+
+		double d = h11 - (alleleFreq[0][0] * alleleFreq[1][0]);
+
+        return (d * d / (alleleFreq[0][0] * alleleFreq[0][1] * alleleFreq[1][0] * alleleFreq[1][1]));
+	}
 
 }
