@@ -46,14 +46,62 @@ public class LdCalculatorTest extends ResourceTest
 
 		Ld ld = LdCalculator.calculateLd(testInstance, testInstance);
 
-		assertEquals(ld.getR2(), 1, 0.1);
-		assertEquals(ld.getDPrime(), 1, 0.1);
+		assertEquals(ld.getR2(), 1, 0.0001);
+		assertEquals(ld.getDPrime(), 1, 0.0001);
 
 		ArrayList<Double> hapFreqExpect = new ArrayList<Double>(Arrays.asList(0.4d, 0.0d, 0.0d, 0.6d));
 		ArrayList<String> haps = new ArrayList<String>(Arrays.asList("C/C", "C/A", "A/C", "A/A"));
 
 		assertEquals(ld.getHaplotypesFreq().keySet(), haps);
 		assertEqualsDoubleCollection(ld.getHaplotypesFreq().values(), hapFreqExpect, 0.0001);
+        
+        ArrayList<Alleles> sampleAlleles2 = new ArrayList<Alleles>();
+		sampleAlleles2.add(Alleles.createBasedOnChars('C', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('A', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('C', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('A', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('A', 'A'));
+		SampleVariantsProvider sampleAllelesProvider2 = new DummySampleVariantsProvider(sampleAlleles2);
+
+		variantMeta = mock(GeneticVariantMeta.class);
+		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp(variantMeta , "rs2", 2, "chr1", sampleAllelesProvider2, 'A','C');
+        
+        Ld ld2 = LdCalculator.calculateLd(testInstance, testInstance2);
+
+		assertEquals(ld2.getR2(), 0.444444444, 0.0001);
+        
+
+	}
+    
+    @Test
+	public void calculateLd6() throws LdCalculatorException
+	{
+
+		ArrayList<Alleles> sampleAlleles = new ArrayList<Alleles>();
+		sampleAlleles.add(Alleles.createBasedOnChars('A', 'C'));
+		sampleAlleles.add(Alleles.createBasedOnChars('A', 'C'));
+		sampleAlleles.add(Alleles.createBasedOnChars('C', 'C'));
+		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
+		sampleAlleles.add(Alleles.createBasedOnChars('A', 'A'));
+		SampleVariantsProvider sampleAllelesProvider = new DummySampleVariantsProvider(sampleAlleles);
+
+		variantMeta = mock(GeneticVariantMeta.class);
+		GeneticVariant testInstance = ReadOnlyGeneticVariant.createSnp(variantMeta , "rs1", 1, "chr1", sampleAllelesProvider, 'A','C');
+        
+		assertEquals(LdCalculator.calculateRsquare(testInstance, testInstance, null), 1, 0.0001);
+        
+        
+        ArrayList<Alleles> sampleAlleles2 = new ArrayList<Alleles>();
+		sampleAlleles2.add(Alleles.createBasedOnChars('C', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('A', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('C', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('A', 'C'));
+		sampleAlleles2.add(Alleles.createBasedOnChars('A', 'A'));
+		SampleVariantsProvider sampleAllelesProvider2 = new DummySampleVariantsProvider(sampleAlleles2);
+
+		variantMeta = mock(GeneticVariantMeta.class);
+		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp(variantMeta , "rs2", 2, "chr1", sampleAllelesProvider2, 'A','C');
+        assertEquals(LdCalculator.calculateRsquare(testInstance, testInstance2, null), 0.444444444, 0.0001);
 
 	}
 
