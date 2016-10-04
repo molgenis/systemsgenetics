@@ -15,8 +15,6 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.util.Ld;
-import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.text.TextFile;
