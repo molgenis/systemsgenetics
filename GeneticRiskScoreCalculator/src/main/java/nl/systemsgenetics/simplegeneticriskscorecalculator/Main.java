@@ -6,14 +6,13 @@
 package nl.systemsgenetics.simplegeneticriskscorecalculator;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import gnu.trove.map.hash.THashMap;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -148,12 +147,12 @@ public class Main {
                 Gpio.createDir(outputFolder.getAbsolutePath());
             }
             RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 750000, null, null);
-            HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres);
+            THashMap<String, THashMap<String,THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres);
             if(windowSize.length==1){
-                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode);
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode, pValThres);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
             } else if(windowSize.length==2){
-                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize, debugMode);
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize, debugMode, pValThres);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
             } else {
                 System.out.println("More than two window-sizes is not supported.");
@@ -166,8 +165,8 @@ public class Main {
 
     }
 
-    private static HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold) {
-        HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> risks = new HashMap<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>>();
+    private static THashMap<String, THashMap<String,THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold) {
+        THashMap<String, THashMap<String,THashMap<String, ArrayList<RiskEntry>>>> risks = new THashMap<String, THashMap<String,THashMap<String, ArrayList<RiskEntry>>>>();
 
         File riskFileFolder = new File(riskFolder);
         if(!riskFileFolder.exists()){
@@ -187,10 +186,10 @@ public class Main {
                     String name = f.getName();
                     String name2= "_P" + p;
                     if (!risks.containsKey(name)) {
-                        risks.put(name, new LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>());
+                        risks.put(name, new THashMap<String,THashMap<String, ArrayList<RiskEntry>>>());
                     }
                     if (!risks.get(name).containsKey(name2)) {
-                        risks.get(name).put(name2, new HashMap<String, ArrayList<RiskEntry>>());
+                        risks.get(name).put(name2, new THashMap<String, ArrayList<RiskEntry>>());
                     }
                 }
                 
@@ -211,7 +210,8 @@ public class Main {
                                 if (!risks.get(name).get(name2).containsKey(snpObject.getSequenceName())) {
                                     risks.get(name).get(name2).put(snpObject.getSequenceName(), new ArrayList<RiskEntry>());
                                 }
-                                risks.get(name).get(name2).get(snpObject.getSequenceName()).add(new RiskEntry(parts[0], snpObject.getSequenceName(), snpObject.getStartPos(), parts[1], parts[2], currentP));
+                                
+                                risks.get(name).get(name2).get(snpObject.getSequenceName()).add(new RiskEntry(parts[0], snpObject.getSequenceName(), snpObject.getStartPos(), parts[1].charAt(0), parts[2], currentP));
                             }
                         }
                     }
@@ -223,9 +223,9 @@ public class Main {
 
         }
         
-        for(Entry<String, LinkedHashMap<String,HashMap<String, ArrayList<RiskEntry>>>> e : risks.entrySet()){
+        for(Entry<String, THashMap<String,THashMap<String, ArrayList<RiskEntry>>>> e : risks.entrySet()){
             
-            for(Entry<String,HashMap<String, ArrayList<RiskEntry>>> e2 : e.getValue().entrySet()){
+            for(Entry<String,THashMap<String, ArrayList<RiskEntry>>> e2 : e.getValue().entrySet()){
                 int entries = 0;
                 for(Entry<String, ArrayList<RiskEntry>> e3 : e2.getValue().entrySet()){
                     Collections.sort(e3.getValue());

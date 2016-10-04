@@ -13,18 +13,32 @@ class RiskEntry implements Comparable<RiskEntry>  {
     private final String rsName;
     private final double or;
     private final int pos;
-    private final String chr;
-    private final String allele;
+    private final int chr;
+    private final char allele;
     private final double pValue;
-    
 
-    RiskEntry(String rsName, String chr, int pos, String allele, String or, double pValue) {
+    RiskEntry(String rsName, int chr, int pos, char allele, String or, double pValue) {
         this.rsName = rsName;
         this.chr = chr;
         this.pos = pos;
         this.allele = allele;
         this.pValue = pValue;
         this.or = Double.parseDouble(or);
+    }
+    
+    RiskEntry(String rsName, String chr, int pos, char allele, String or, double pValue) {
+        this.rsName = rsName;
+        this.pos = pos;
+        this.allele = allele;
+        this.pValue = pValue;
+        this.or = Double.parseDouble(or);
+        if(chr.equals("X")){
+            this.chr = 23;
+        } else if(chr.equals("Y")){
+            this.chr = 24;
+        } else {
+            this.chr=Integer.parseInt(chr);
+        }
     }
 
     public String getRsName() {
@@ -40,10 +54,10 @@ class RiskEntry implements Comparable<RiskEntry>  {
     }
 
     public String getChr() {
-        return chr;
+        return String.valueOf(chr);
     }
 
-    public String getAllele() {
+    public char getAllele() {
         return allele;
     }
 
