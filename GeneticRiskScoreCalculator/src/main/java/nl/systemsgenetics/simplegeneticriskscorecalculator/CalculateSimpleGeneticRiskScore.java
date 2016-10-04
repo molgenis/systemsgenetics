@@ -45,7 +45,6 @@ class CalculateSimpleGeneticRiskScore {
         for (int counter = 0; counter < chrOrder.length; counter++) {
             for (Entry<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
                 HashSet<String> excludeList = new HashSet<String>();
-//Here we need to change the loop.
                 for (double pVal : pValueThreshold){
                     String key = "_P" + pVal;
                     THashMap<String, ArrayList<RiskEntry>> riskScorePheno2 = riskScorePheno.getValue().get(key);
