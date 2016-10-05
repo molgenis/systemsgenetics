@@ -21,7 +21,6 @@ public class BinaryMetaAnalysisSettings {
     private boolean useAbsoluteZscore = false;
     private int finalEQTLBufferMaxLength = 1000000;
     private int nrOfBins = 100;
-    private double fdrthreshold = 0.05;
     private boolean includeSNPsWithoutProperMapping = true;
     private boolean includeProbesWithoutProperMapping = true;
     private boolean cis = true;
@@ -60,7 +59,6 @@ public class BinaryMetaAnalysisSettings {
             snpAnnotationFile = config.getString("defaults.snpannotation");
             useAbsoluteZscore = config.getBoolean("defaults.absolutezscore", false);
             finalEQTLBufferMaxLength = config.getInt("defaults.finalnreqtls", 100000);
-            fdrthreshold = config.getDouble("defaults.fdrthreshold", 0.05);
             cisdistance = config.getInt("defaults.cisprobedistance", 250000);
             transdistance = config.getInt("defaults.transprobedistance", 5000000);
             includeProbesWithoutProperMapping = config.getBoolean("defaults.includeprobeswithoutmapping", true);
@@ -207,20 +205,6 @@ public class BinaryMetaAnalysisSettings {
      */
     public void setNrOfBins(int nrOfBins) {
         this.nrOfBins = nrOfBins;
-    }
-
-    /**
-     * @return the fdrthreshold
-     */
-    public double getFdrthreshold() {
-        return fdrthreshold;
-    }
-
-    /**
-     * @param fdrthreshold the fdrthreshold to set
-     */
-    public void setFdrthreshold(double fdrthreshold) {
-        this.fdrthreshold = fdrthreshold;
     }
 
     /**
