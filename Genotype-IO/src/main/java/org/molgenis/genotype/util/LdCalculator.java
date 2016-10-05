@@ -182,9 +182,6 @@ public class LdCalculator
 	 *            bi-allelic genetic variant
 	 * @param variant2
 	 *            bi-allelic genetic variant
-     * @param emRounds
-     *            Number of rounds of expectation maximization.
-     *            Defaults to 25, when null.
 	 * @return LD information
 	 */
     
@@ -240,10 +237,6 @@ public class LdCalculator
 
 		// Calculate expected genotypes, assuming equilibrium, take this as start:
 		double h11 = alleleFreq[0][0] * alleleFreq[1][0];
-//		double h12 = alleleFreq[0][0] * alleleFreq[1][1];
-//		double h21 = alleleFreq[0][1] * alleleFreq[1][0];
-//		double h22 = alleleFreq[0][1] * alleleFreq[1][1];
-        
         double h11h22 = h11 * alleleFreq[0][1] * alleleFreq[1][1];
         double h12h21 = alleleFreq[0][0] * alleleFreq[1][1] * alleleFreq[0][1] * alleleFreq[1][0];
         double h11h12h21h22 = (genotypesFreq[1][1]/(h11h22+h12h21))/2;
