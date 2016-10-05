@@ -174,18 +174,19 @@ public class Main {
 
     private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude) {
         THashMap<String, ArrayList<Pair<Integer, Integer>>> exclussionRanges = new THashMap<>();
+        
+        if(genomicRangesToExclude!=null){
+            for (String s : genomicRangesToExclude) {
+                String[] parts = s.split(":");
+                String key = parts[0];
+                parts = parts[1].split("-");
 
-        for (String s : genomicRangesToExclude) {
-            String[] parts = s.split(":");
-            String key = parts[0];
-            parts = parts[1].split("-");
-
-            if (!exclussionRanges.contains(key)) {
-                exclussionRanges.put(key, new ArrayList<Pair<Integer, Integer>>());
+                if (!exclussionRanges.contains(key)) {
+                    exclussionRanges.put(key, new ArrayList<Pair<Integer, Integer>>());
+                }
+                exclussionRanges.get(key).add(new Pair(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
             }
-            exclussionRanges.get(key).add(new Pair(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
         }
-
         THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = new THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>>();
 
         File riskFileFolder = new File(riskFolder);
