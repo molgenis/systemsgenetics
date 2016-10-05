@@ -246,8 +246,7 @@ public class LdCalculator
 		double x12y21 = (h12h21 * h11h12h21h22);
 
 		// Perform iterations using EM algorithm:
-                //27+ gives same answer as other LD calc.
-		for (int itr = 0; itr < 27; itr++){
+		for (int itr = 0; itr < 25; itr++){
 			h11 = ((x12y12 + genotypesTriangleFreq[0][0]));
             h11h22 = h11 * ((x12y21 + genotypesTriangleFreq[1][1]));
             h12h21 = ((x12y21 + genotypesTriangleFreq[0][1])) * ((x12y12 + genotypesTriangleFreq[1][0]));

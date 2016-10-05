@@ -57,7 +57,8 @@ public class Main {
         Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, if given two window-sizes (colon separated), a two step window approach is used.").withLongOpt("wSize").create("w");
         Option debug = OptionBuilder.withArgName("boolean").hasArg().withDescription("Switch on debugging.").withLongOpt("debug").create("d");
         Option excludeGenomicRange = OptionBuilder.withArgName("String").hasArg().withDescription("Exclude genomic range(s) from the risk score calculation. Range needs to be specified as: \"6:101-110;6:250000-350000. Warning: Chr name must be specified as expected in the genotype dataset.").withLongOpt("excludeRange").create("er");
-        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debug).addOption(excludeGenomicRange);
+        Option unWeightedScore = OptionBuilder.withArgName("boolean").hasArg().withDescription("Use unweighted combination of risk factors.").withLongOpt("unWeighted").create("u");
+        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debug).addOption(excludeGenomicRange).addOption(unWeightedScore);
 
         String genotypePath = null;
         String genotypeType = null;
@@ -68,6 +69,7 @@ public class Main {
         double[] pValThres = null;
         String[] genomicRangesToExclude = null;
         boolean debugMode = false;
+        boolean unweighted = false;
 
         CommandLine cmd;
         try {
@@ -144,6 +146,7 @@ public class Main {
                 genomicRangesToExclude = cmd.getOptionValue("excludeRange").split(";");
             }
             debugMode = cmd.hasOption("d");
+            unweighted = cmd.hasOption("u");
 
         } catch (ParseException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -154,7 +157,7 @@ public class Main {
                 Gpio.createDir(outputFolder.getAbsolutePath());
             }
             RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 750000, null, null);
-            THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude);
+            THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude, unweighted);
             if (windowSize.length == 1) {
                 DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode, pValThres);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
@@ -172,7 +175,7 @@ public class Main {
 
     }
 
-    private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude) {
+    private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude, boolean unweighted) {
         THashMap<String, ArrayList<Pair<Integer, Integer>>> exclussionRanges = new THashMap<>();
         
         if(genomicRangesToExclude!=null){
@@ -223,6 +226,10 @@ public class Main {
 //                        System.out.print(snpObject.getSequenceName() + "\t" + snpObject.getStartPos() + "\n");
                         double currentP = Double.parseDouble(parts[3]);
                         boolean addEntry = true;
+                        
+                        if(unweighted){
+                            parts[2] = "1";
+                        }
                         
                         if(exclussionRanges.contains(snpObject.getSequenceName())){
                             for(Pair<Integer, Integer> p : exclussionRanges.get(snpObject.getSequenceName())){
