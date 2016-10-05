@@ -136,7 +136,7 @@ class CalculateSimpleGeneticRiskScore {
                                                     continue;
                                                 }
                                                 try {
-                                                    if (calculateRsquare(var1, var2, 20) >= rSquare) {
+                                                    if (calculateRsquare(var1, var2) >= rSquare) {
                                                         excludeSNPs[t] = true;
                                                         excludeList.add(riskE2.getRsName());
                                                     }
@@ -238,7 +238,7 @@ class CalculateSimpleGeneticRiskScore {
                                                     continue;
                                                 }
                                                 try {
-                                                    if (calculateRsquare(var1, var2, 20) >= rSquare) {
+                                                    if (calculateRsquare(var1, var2) >= rSquare) {
                                                         excludeSNPs[t] = true;
                                                         excludeList.add(riskE2.getRsName());
                                                     }
@@ -296,7 +296,7 @@ class CalculateSimpleGeneticRiskScore {
                                             if (Math.abs(riskE2.getPos() - riskE.getPos()) <= windowSize[1]) {
                                                 GeneticVariant var2 = genotypeData.getSnpVariantByPos(riskE2.getChr(), riskE2.getPos());
                                                 try {
-                                                    if (calculateRsquare(var1, var2, 20) >= rSquare) {
+                                                    if (calculateRsquare(var1, var2) >= rSquare) {
                                                         excludeSNPs[t] = true;
                                                         excludeList.add(riskE2.getRsName());
                                                     }

@@ -45,7 +45,7 @@ public class LdCalculatorTest extends ResourceTest
 				'C');
 
 		Ld ld = LdCalculator.calculateLd(testInstance, testInstance);
-
+//                System.out.println("LD1: "+ld.getR2());
 		assertEquals(ld.getR2(), 1, 0.0001);
 		assertEquals(ld.getDPrime(), 1, 0.0001);
 
@@ -69,6 +69,7 @@ public class LdCalculatorTest extends ResourceTest
         Ld ld2 = LdCalculator.calculateLd(testInstance, testInstance2);
 
 		assertEquals(ld2.getR2(), 0.444444444, 0.0001);
+//                System.out.println("LD2: "+ld2.getR2());
         
 
 	}
@@ -88,8 +89,8 @@ public class LdCalculatorTest extends ResourceTest
 		variantMeta = mock(GeneticVariantMeta.class);
 		GeneticVariant testInstance = ReadOnlyGeneticVariant.createSnp(variantMeta , "rs1", 1, "chr1", sampleAllelesProvider, 'A','C');
         
-		assertEquals(LdCalculator.calculateRsquare(testInstance, testInstance, null), 1, 0.0001);
-        
+		assertEquals(LdCalculator.calculateRsquare(testInstance, testInstance), 1, 0.0001);
+//                System.out.println("LD1: "+LdCalculator.calculateRsquare(testInstance, testInstance));
         
         ArrayList<Alleles> sampleAlleles2 = new ArrayList<Alleles>();
 		sampleAlleles2.add(Alleles.createBasedOnChars('C', 'C'));
@@ -101,8 +102,8 @@ public class LdCalculatorTest extends ResourceTest
 
 		variantMeta = mock(GeneticVariantMeta.class);
 		GeneticVariant testInstance2 = ReadOnlyGeneticVariant.createSnp(variantMeta , "rs2", 2, "chr1", sampleAllelesProvider2, 'A','C');
-        assertEquals(LdCalculator.calculateRsquare(testInstance, testInstance2, null), 0.444444444, 0.0001);
-
+        assertEquals(LdCalculator.calculateRsquare(testInstance, testInstance2), 0.444444444, 0.0001);
+//            System.out.println("LD2: "+LdCalculator.calculateRsquare(testInstance, testInstance2));
 	}
 
 	@Test

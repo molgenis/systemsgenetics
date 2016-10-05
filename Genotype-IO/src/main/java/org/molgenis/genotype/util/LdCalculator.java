@@ -188,10 +188,7 @@ public class LdCalculator
 	 * @return LD information
 	 */
     
-	public static double calculateRsquare(GeneticVariant variant1, GeneticVariant variant2, Integer emRounds) throws LdCalculatorException{
-        if(emRounds==null){
-            emRounds=25;
-        }
+	public static double calculateRsquare(GeneticVariant variant1, GeneticVariant variant2) throws LdCalculatorException{
         
         if (variant1.getAlleleCount() != 2 || variant2.getAlleleCount() != 2)	{
 			throw new UnsupportedOperationException("Ld calculator currently only supports biallelic variants");
@@ -236,10 +233,10 @@ public class LdCalculator
 
 		// Precalculate triangles of non-double heterozygote:
 		double[][] genotypesTriangleFreq = new double[2][2];
-		genotypesTriangleFreq[0][0] = 2d * genotypesFreq[0][0] + genotypesFreq[1][0] + genotypesFreq[0][1];
-		genotypesTriangleFreq[1][0] = 2d * genotypesFreq[2][0] + genotypesFreq[1][0] + genotypesFreq[2][1];
-		genotypesTriangleFreq[0][1] = 2d * genotypesFreq[0][2] + genotypesFreq[1][2] + genotypesFreq[0][1];
-		genotypesTriangleFreq[1][1] = 2d * genotypesFreq[2][2] + genotypesFreq[1][2] + genotypesFreq[2][1];
+		genotypesTriangleFreq[0][0] = (2d * genotypesFreq[0][0] + genotypesFreq[1][0] + genotypesFreq[0][1])/2;
+		genotypesTriangleFreq[1][0] = (2d * genotypesFreq[2][0] + genotypesFreq[1][0] + genotypesFreq[2][1])/2;
+		genotypesTriangleFreq[0][1] = (2d * genotypesFreq[0][2] + genotypesFreq[1][2] + genotypesFreq[0][1])/2;
+		genotypesTriangleFreq[1][1] = (2d * genotypesFreq[2][2] + genotypesFreq[1][2] + genotypesFreq[2][1])/2;
 
 		// Calculate expected genotypes, assuming equilibrium, take this as start:
 		double h11 = alleleFreq[0][0] * alleleFreq[1][0];
@@ -247,32 +244,24 @@ public class LdCalculator
 //		double h21 = alleleFreq[0][1] * alleleFreq[1][0];
 //		double h22 = alleleFreq[0][1] * alleleFreq[1][1];
         
-        double s1 = h11 * alleleFreq[0][1] * alleleFreq[1][1];
-        double s2 = alleleFreq[0][0] * alleleFreq[1][1] * alleleFreq[0][1] * alleleFreq[1][0];
-        double denom = genotypesFreq[1][1]/(s1+s2);
+        double h11h22 = h11 * alleleFreq[0][1] * alleleFreq[1][1];
+        double h12h21 = alleleFreq[0][0] * alleleFreq[1][1] * alleleFreq[0][1] * alleleFreq[1][0];
+        double h11h12h21h22 = (genotypesFreq[1][1]/(h11h22+h12h21))/2;
         
 		// Calculate the frequency of the two double heterozygotes:
-//        double x12y12 = (h11 * h22 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
-		double x12y12 = (s1 * denom);
-        
-//		double x12y21 = (h12 * h21 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
-		double x12y21 = (s2 * denom);
+		double x12y12 = (h11h22 * h11h12h21h22);
+		double x12y21 = (h12h21 * h11h12h21h22);
 
 		// Perform iterations using EM algorithm:
-		for (int itr = 0; itr < emRounds; itr++){
-			h11 = ((x12y12 + genotypesTriangleFreq[0][0]) / 2);
-//			h12 = (x12y21 + genotypesTriangleFreq[0][1]) / 2;
-//			h21 = (x12y21 + genotypesTriangleFreq[1][0]) / 2;
-//			h22 = (x12y12 + genotypesTriangleFreq[1][1]) / 2;
-
-            s1 = h11 * ((x12y21 + genotypesTriangleFreq[1][1]) / 2);
-            s2 = ((x12y21 + genotypesTriangleFreq[0][1]) / 2) * ((x12y12 + genotypesTriangleFreq[1][0]) / 2);
-            denom = genotypesFreq[1][1]/(s1+s2);
+                //27+ gives same answer as other LD calc.
+		for (int itr = 0; itr < 27; itr++){
+			h11 = ((x12y12 + genotypesTriangleFreq[0][0]));
+            h11h22 = h11 * ((x12y21 + genotypesTriangleFreq[1][1]));
+            h12h21 = ((x12y21 + genotypesTriangleFreq[0][1])) * ((x12y12 + genotypesTriangleFreq[1][0]));
+            h11h12h21h22 = (genotypesFreq[1][1]/(h11h22+h12h21))/2;
             
-			x12y12 = (s1 * denom);
-			x12y21 = (s2 * denom);
-//            x12y12 = (h11 * h22 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
-//            x12y21 = (h12 * h21 / (h11 * h22 + h12 * h21)) * genotypesFreq[1][1];
+			x12y12 = (h11h22 * h11h12h21h22);
+			x12y21 = (h12h21 * h11h12h21h22);
 		}
 
 		double d = h11 - (alleleFreq[0][0] * alleleFreq[1][0]);
