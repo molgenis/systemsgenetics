@@ -320,7 +320,7 @@ public class ResultProcessorThread extends Thread {
                 if (!sorted) {
                     if (locationToStoreResult != 0) {
 
-                        Arrays.sort(finalEQTLs, 0, locationToStoreResult);
+                        Arrays.parallelSort(finalEQTLs, 0, locationToStoreResult);
 //                        SmoothSort.sort(finalEQTLs, 0, locationToStoreResult);
 //                        inplaceArrayQuickSort.sort(finalEQTLs, 0, locationToStoreResult);
 
@@ -508,7 +508,7 @@ public class ResultProcessorThread extends Thread {
 
                 if (locationToStoreResult == finalEQTLs.length) {
 
-                    Arrays.sort(finalEQTLs);
+                    Arrays.parallelSort(finalEQTLs);
 //                    SmoothSort.sort(finalEQTLs);
 //                    inplaceArrayQuickSort.sort(finalEQTLs);
                     sorted = true;

@@ -46,7 +46,8 @@ public class BinaryMetaAnalysis {
             settingsFile = args[0];
 
         } else {
-            System.out.println("Usage of the binary meta-analysis: settings.xml replacetext replacetextwith");
+            System.out.println("Usage of the binary meta-analysis: settings.xml");
+            System.out.println("Or                               : settings.xml replacetext replacetextwith");
             System.exit(-1);
         }
 

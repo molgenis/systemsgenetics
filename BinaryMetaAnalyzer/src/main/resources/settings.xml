@@ -2,10 +2,10 @@
 <settings>
     <defaults>
         <permutations>10</permutations>
+        <startpermutations>0</startpermutations>
         <snpannotation>/path/</snpannotation>
         <absolutezscore>false</absolutezscore>
         <finalnreqtls>500000</finalnreqtls>
-        <fdrthreshold>0.05</fdrthreshold>
         <cisprobedistance>250000</cisprobedistance>
         <transprobedistance>5000000</transprobedistance>
         <includeprobeswithoutmapping>true</includeprobeswithoutmapping>

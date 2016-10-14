@@ -20,7 +20,7 @@ public class ChromosomeYExpressionPlotter extends MetaQTL3 {
             m_settings = settings;
             String origOutputDir = m_settings.outputReportsDir;
             Gpio.createDir(m_settings.outputReportsDir);
-            initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null, true, true, null, null);
+            initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null, true, true, null, null, null);
             ChromosomeYExpressionPlot cp = new ChromosomeYExpressionPlot();
             cp.draw(m_gg, origOutputDir);
 
