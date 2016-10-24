@@ -7,6 +7,7 @@ package nl.systemsgenetics.simplegeneticriskscorecalculator;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.hash.THashSet;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -157,7 +158,7 @@ public class Main {
                 Gpio.createDir(outputFolder.getAbsolutePath());
             }
             RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 750000, null, null);
-            THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude, unweighted);
+            THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude, unweighted, debugMode);
             if (windowSize.length == 1) {
                 DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode, pValThres);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
@@ -172,13 +173,14 @@ public class Main {
         } catch (IOException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
-    private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude, boolean unweighted) {
+    private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude, boolean unweighted, boolean debugMode) {
         THashMap<String, ArrayList<Pair<Integer, Integer>>> exclussionRanges = new THashMap<>();
         
         if(genomicRangesToExclude!=null){
+            System.out.println("Trying to exclude genomic ranges.");
+            int ranges = 0;
             for (String s : genomicRangesToExclude) {
                 String[] parts = s.split(":");
                 String key = parts[0];
@@ -188,6 +190,10 @@ public class Main {
                     exclussionRanges.put(key, new ArrayList<Pair<Integer, Integer>>());
                 }
                 exclussionRanges.get(key).add(new Pair(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
+                ranges++;
+            }
+            if(debugMode){
+                System.out.println("Number of ranges excluded: "+ranges+" on: "+exclussionRanges.size()+" chromosomes");
             }
         }
         THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = new THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>>();
@@ -199,9 +205,11 @@ public class Main {
             System.exit(-1);
         }
         File[] riskFiles = riskFileFolder.listFiles();
-
+        
+        
         for (File f : riskFiles) {
-
+            THashSet<String> chromosomesExcluded = new THashSet<>();
+            int snpsExcluded = 0;
             try {
                 TextFile readFiles = new TextFile(f.getAbsolutePath(), TextFile.R);
 
@@ -232,15 +240,15 @@ public class Main {
                         }
                         
                         if(exclussionRanges.contains(snpObject.getSequenceName())){
+                            chromosomesExcluded.add(snpObject.getSequenceName());
                             for(Pair<Integer, Integer> p : exclussionRanges.get(snpObject.getSequenceName())){
-                                if(p.getLeft()>=snpObject.getStartPos() && p.getRight()<=snpObject.getStartPos()){
+                                if(p.getLeft()<=snpObject.getStartPos() && p.getRight()>=snpObject.getStartPos()){
                                     addEntry = false;
+                                    snpsExcluded++;
                                 }
                             }
                         }
-                        
-                        
-                        
+
                         if (addEntry) {
                             for (double p : pValueThreshold) {
                                 if (currentP < p) {
@@ -255,6 +263,10 @@ public class Main {
                             }
                         }
                     }
+                }
+                if(debugMode){
+                    System.out.println("Number of chromosomes where a snp is excluded: " + chromosomesExcluded);
+                    System.out.println("Number of SNPs excluded: " + snpsExcluded);
                 }
                 readFiles.close();
             } catch (IOException ex) {

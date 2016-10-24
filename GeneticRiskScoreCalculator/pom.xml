@@ -8,7 +8,7 @@
         <version>1.0.3-SNAPSHOT</version>
     </parent>
     <artifactId>GeneticRiskScoreCalculator</artifactId>
-    <version>0.1.2b-SNAPSHOT</version>
+    <version>0.1.2c-SNAPSHOT</version>
     <name>Genetic Risk Score Calculator</name>
     <url>http://maven.apache.org</url>
     <properties>
