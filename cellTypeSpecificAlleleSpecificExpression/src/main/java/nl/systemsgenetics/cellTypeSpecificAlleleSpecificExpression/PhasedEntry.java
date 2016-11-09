@@ -69,15 +69,21 @@ class PhasedEntry {
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_dispersionFile.txt";
         
-        int i=0;
+        
         
         if(dispersionLocation == null){
             PrintWriter dispersionWriter = new PrintWriter(dispersionOutput, "UTF-8");       
             dispersionWriter.write("Filename\tdispersion\n");
-        
+            
+            int i=0;
             for(String asLoc : allFiles){
                 dispersionParameters.add(new BetaBinomOverdispInSample(asLoc));
-                dispersionWriter.printf("%s\t%.6f\n", dispersionParameters.get(i).getSampleName(), dispersionParameters.get(i).getOverdispersion()[0] );
+                dispersionWriter.printf("%s\t%.6f\n", 
+                                        dispersionParameters.get(i).getSampleName(), 
+                                        dispersionParameters.get(i).getOverdispersion()[0]
+                                    );
+                                    
+                i++;
             }
 
             dispersionWriter.close();
@@ -88,9 +94,12 @@ class PhasedEntry {
             }
         } else {
             ArrayList<String> DispersionLines = UtilityMethods.readFileIntoStringArrayList(dispersionLocation);
+            
             //remove header line.
             DispersionLines.remove(0);
+            
             for(String Line : DispersionLines){
+                
                 String sampleName = Line.split("\t")[0];
                 double[] dispersion;
                 dispersion = new double[] { Double.parseDouble(Line.split("\t")[1]) };
