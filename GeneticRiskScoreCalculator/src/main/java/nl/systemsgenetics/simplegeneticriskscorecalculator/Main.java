@@ -7,6 +7,7 @@ package nl.systemsgenetics.simplegeneticriskscorecalculator;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.hash.THashSet;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -55,10 +56,10 @@ public class Main {
         Option rSquared = OptionBuilder.withArgName("double").hasArg().withDescription("R2 for pruning.").withLongOpt("rSquared").create("r");
         Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclusion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
         Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, if given two window-sizes (colon separated), a two step window approach is used.").withLongOpt("wSize").create("w");
-        Option debug = OptionBuilder.withArgName("boolean").hasArg().withDescription("Switch on debugging.").withLongOpt("debug").create("d");
+        Option debugOpt = OptionBuilder.withArgName("boolean").withDescription("Switch on debugging.").withLongOpt("debug").create('d');
         Option excludeGenomicRange = OptionBuilder.withArgName("String").hasArg().withDescription("Exclude genomic range(s) from the risk score calculation. Range needs to be specified as: \"6:101-110;6:250000-350000. Warning: Chr name must be specified as expected in the genotype dataset.").withLongOpt("excludeRange").create("er");
-        Option unWeightedScore = OptionBuilder.withArgName("boolean").hasArg().withDescription("Use unweighted combination of risk factors.").withLongOpt("unWeighted").create("u");
-        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debug).addOption(excludeGenomicRange).addOption(unWeightedScore);
+        Option unWeightedScore = OptionBuilder.withArgName("boolean").withDescription("Use unweighted combination of risk factors.").withLongOpt("unWeighted").create('u');
+        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debugOpt).addOption(excludeGenomicRange).addOption(unWeightedScore);
 
         String genotypePath = null;
         String genotypeType = null;
@@ -145,19 +146,19 @@ public class Main {
                 // initialise the member variable
                 genomicRangesToExclude = cmd.getOptionValue("excludeRange").split(";");
             }
-            debugMode = cmd.hasOption("d");
-            unweighted = cmd.hasOption("u");
+            debugMode = cmd.hasOption('d');
+            unweighted = cmd.hasOption('u');
 
         } catch (ParseException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         try {
-            if (!(outputFolder.exists())) {
+            if (outputFolder!=null && !(outputFolder.exists())) {
                 Gpio.createDir(outputFolder.getAbsolutePath());
             }
             RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 750000, null, null);
-            THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude, unweighted);
+            THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude, unweighted, debugMode);
             if (windowSize.length == 1) {
                 DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode, pValThres);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
@@ -172,13 +173,14 @@ public class Main {
         } catch (IOException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
-    private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude, boolean unweighted) {
+    private static THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> readRiskFiles(RandomAccessGenotypeData genotypeData, String riskFolder, double[] pValueThreshold, String[] genomicRangesToExclude, boolean unweighted, boolean debugMode) {
         THashMap<String, ArrayList<Pair<Integer, Integer>>> exclussionRanges = new THashMap<>();
         
         if(genomicRangesToExclude!=null){
+            System.out.println("Trying to exclude genomic ranges.");
+            int ranges = 0;
             for (String s : genomicRangesToExclude) {
                 String[] parts = s.split(":");
                 String key = parts[0];
@@ -188,6 +190,10 @@ public class Main {
                     exclussionRanges.put(key, new ArrayList<Pair<Integer, Integer>>());
                 }
                 exclussionRanges.get(key).add(new Pair(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
+                ranges++;
+            }
+            if(debugMode){
+                System.out.println("Number of ranges excluded: "+ranges+" on: "+exclussionRanges.size()+" chromosomes");
             }
         }
         THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = new THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>>();
@@ -199,9 +205,11 @@ public class Main {
             System.exit(-1);
         }
         File[] riskFiles = riskFileFolder.listFiles();
-
+        
+        
         for (File f : riskFiles) {
-
+            THashSet<String> chromosomesExcluded = new THashSet<>();
+            int snpsExcluded = 0;
             try {
                 TextFile readFiles = new TextFile(f.getAbsolutePath(), TextFile.R);
 
@@ -232,15 +240,15 @@ public class Main {
                         }
                         
                         if(exclussionRanges.contains(snpObject.getSequenceName())){
+                            chromosomesExcluded.add(snpObject.getSequenceName());
                             for(Pair<Integer, Integer> p : exclussionRanges.get(snpObject.getSequenceName())){
-                                if(p.getLeft()>=snpObject.getStartPos() && p.getRight()<=snpObject.getStartPos()){
+                                if(p.getLeft()<=snpObject.getStartPos() && p.getRight()>=snpObject.getStartPos()){
                                     addEntry = false;
+                                    snpsExcluded++;
                                 }
                             }
                         }
-                        
-                        
-                        
+
                         if (addEntry) {
                             for (double p : pValueThreshold) {
                                 if (currentP < p) {
@@ -255,6 +263,10 @@ public class Main {
                             }
                         }
                     }
+                }
+                if(debugMode){
+                    System.out.println("Number of chromosomes where a snp is excluded: " + chromosomesExcluded);
+                    System.out.println("Number of SNPs excluded: " + snpsExcluded);
                 }
                 readFiles.close();
             } catch (IOException ex) {
