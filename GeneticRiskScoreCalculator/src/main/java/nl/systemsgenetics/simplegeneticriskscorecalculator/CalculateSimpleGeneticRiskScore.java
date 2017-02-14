@@ -30,7 +30,7 @@ class CalculateSimpleGeneticRiskScore {
 
     private static final String[] chrOrder = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"};
 
-    static DoubleMatrixDataset<String, String> calculate(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double windowSize, boolean debugMode, double[] pValueThreshold) {
+    static DoubleMatrixDataset<String, String> calculate(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double windowSize, boolean debugMode, double[] pValueThreshold, boolean sumRisk) {
         ArrayList<String> keys = new ArrayList<String>();
         for (Entry<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
             for (Entry<String, THashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
@@ -166,7 +166,7 @@ class CalculateSimpleGeneticRiskScore {
         return scores;
     }
 
-    static DoubleMatrixDataset<String, String> calculateTwoStages(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double[] windowSize, boolean debugMode, double[] pValueThreshold) {
+    static DoubleMatrixDataset<String, String> calculateTwoStages(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double[] windowSize, boolean debugMode, double[] pValueThreshold, boolean sumRisk) {
         ArrayList<String> keys = new ArrayList<String>();
         for (Entry<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
             for (Entry<String, THashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
@@ -266,27 +266,30 @@ class CalculateSimpleGeneticRiskScore {
                                         direction = 1;
                                     }
 
-                                    //        StringBuilder Genos = new StringBuilder();
-                                    //        StringBuilder Genos2 = new StringBuilder();
-                                    //        StringBuilder Genos3 = new StringBuilder();
+//                                    StringBuilder Genos = new StringBuilder();
+//                                    StringBuilder Genos1 = new StringBuilder();
+//                                    StringBuilder Genos2 = new StringBuilder();
+//                                    StringBuilder Genos3 = new StringBuilder();
                                     for (int sample = 0; sample < var1.getSampleCalledDosages().length; sample++) {
                                         if (var1.getSampleCalledDosages()[sample] != -1) {
                                             scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (direction * or * Math.abs(var1.getSampleCalledDosages()[sample] - 2))));
-                                            //        Genos.append(Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
-                                            //        Genos2.append(direction * or * Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
-                                            //        Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
+//                                            Genos.append(Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
+//                                            Genos1.append(var1.getSampleVariants().get(sample).toString());Genos1.append(",");
+//                                            Genos2.append(direction * or * Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
+//                                            Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
                                         }
                                     }
-                                    //        System.out.println("");
-                                    //        System.out.println("SNP: "+riskE.getRsName());
-                                    //        System.out.println("Allele in data: "+var1.getRefAllele().toString());
-                                    //        System.out.println("Allele: "+riskE.getAllele());
-                                    //        System.out.println("Diction: "+direction);
-                                    //        System.out.println("Or: "+or);
-                                    //        System.out.println("Dosages: "+Genos.toString());
-                                    //        System.out.println("Scores: "+Genos2.toString());
-                                    //        System.out.println("ScoresT: "+Genos3.toString());
-                                    //        System.out.println("");
+//                                    System.out.println("");
+//                                    System.out.println("SNP: "+riskE.getRsName());
+//                                    System.out.println("Allele in data: "+var1.getRefAllele().toString());
+//                                    System.out.println("Allele: "+riskE.getAllele());
+//                                    System.out.println("Diction: "+direction);
+//                                    System.out.println("Or: "+or);
+//                                    System.out.println("Dosages: "+Genos.toString());
+//                                    System.out.println("Genotypes: "+Genos1.toString());
+//                                    System.out.println("Scores: "+Genos2.toString());
+//                                    System.out.println("ScoresT: "+Genos3.toString());
+//                                    System.out.println("");
 
                                     nrSNPs++;
 
