@@ -156,10 +156,6 @@ public class Main {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        if(sumRisks){
-            throw new UnsupportedOperationException("Summed risk is not supported yet."); 
-        }
-        
         try {
             if (outputFolder!=null && !(outputFolder.exists())) {
                 Gpio.createDir(outputFolder.getAbsolutePath());
