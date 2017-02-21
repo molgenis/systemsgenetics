@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -22,10 +23,10 @@ import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.statistics.HistogramType;
 
 public class Plots {
-	private static double betaTimesValueTempFunc (double[] estimatedRegressionParameters, int[] celltypeIndices, InteractionModel model) throws IllegalAccessException{
+	public static double betaTimesValueTempFunc (double[] estimatedRegressionParameters, int[] celltypeIndices, InteractionModel model) throws IllegalAccessException{
 		List<Double> betaTimesInteraction = new ArrayList<Double>();
 		double logValue = 0;
-		for (int i = 0; i < model.GetObservedValues().length; i++){
+		for (int i = 0; i < model.getObservedValues().length; i++){
 			double beta = estimatedRegressionParameters[celltypeIndices[0]];
 			double betaInteraction = 0;
 			if(celltypeIndices.length == 2){
@@ -36,13 +37,13 @@ public class Plots {
 			//betas.add(betaTimesValueTempFunc(estimatedRegressionParameters, celltypeIndices, model, i));
 
 			// Calculate Beta1 * celltype
-			double valueCelltype = estimatedRegressionParameters[celltypeIndices[0]] * model.GetObservedValues()[i][celltypeIndices[0]];
+			double valueCelltype = estimatedRegressionParameters[celltypeIndices[0]] * model.getObservedValues()[i][celltypeIndices[0]];
 			// instantiate valueBetaInteraction here so that it is 0  
 			double valueBetaInteraction = 0;
 			/* If there is an interaciton term included for this celltype
 			 * Calculate Beta2 * celltype:genotype */
 			if(celltypeIndices.length == 2){
-				valueBetaInteraction = estimatedRegressionParameters[celltypeIndices[1]] * model.GetObservedValues()[i][celltypeIndices[1]];
+				valueBetaInteraction = estimatedRegressionParameters[celltypeIndices[1]] * model.getObservedValues()[i][celltypeIndices[1]];
 			}
 			// Calculate the beta*cell% + beta*cell%*GT. If there is not cell%:GT for current celltype, valueBetaInteraction = 0
 			// TODO: More informative variable name, need to find official terminology
@@ -51,7 +52,7 @@ public class Plots {
 		}
 		return(logValue);
 	}
-	public static void boxPlot(OLSMultipleLinearRegression regression, InteractionModel model, String filename) throws IOException, IllegalAccessException{
+	public static void boxPlotBetas(OLSMultipleLinearRegression regression, InteractionModel model, String filename) throws IOException, IllegalAccessException{
 		/* Make a boxplot of the beta * values of linear regression model
 		 * 
 		 */
@@ -67,17 +68,17 @@ public class Plots {
 		String xAxisLabel = "";
 		// celltypeIndices = [[0, 4], [1,5], [2,6], [3,7]] where first index is cellcount% and second index is cellcount%:GT
 		if(estimatedRegressionParameters.length == 8){
-			for (int[] celltypeIndices : model.GetCelltypeVariablesIndex()){
+			for (int[] celltypeIndices : model.getCelltypeVariablesIndex()){
 				List<Double> betas = new ArrayList<Double>();
 				//	betaTimesValueTempFunc
-				for (int i = 0; i < model.GetObservedValues().length; i++){
+				for (int i = 0; i < model.getObservedValues().length; i++){
 					double beta = estimatedRegressionParameters[celltypeIndices[0]] + parameterErrors[celltypeIndices[0]];
 					double betaInteraction = 0;
 					if(celltypeIndices.length == 2){
 						betaInteraction = estimatedRegressionParameters[celltypeIndices[1]] + parameterErrors[celltypeIndices[0]];
 					}
 					beta += 2*betaInteraction;
-					beta *= model.GetObservedValues()[i][celltypeIndices[0]];
+					beta *= model.getObservedValues()[i][celltypeIndices[0]];
 					betas.add(beta);
 					betasFull.add(beta);
 				}
@@ -90,7 +91,7 @@ public class Plots {
 				}
 				
 				
-				xAxisLabel += " of "+model.GetIndependentVariableNames().get(celltypeIndices[0]);
+				xAxisLabel += " of "+model.getIndependentVariableNames().get(celltypeIndices[0]);
 				dataset.add(betas, xAxisLabel, "Beta of celltype");// + beta of interactionterm");
 			}
 
@@ -119,7 +120,7 @@ public class Plots {
 		// setContentPane(chartPanel);
 	}
 
-	public static void drawHistogram(PermutationResult permutationResults, String outfolder) throws IOException {
+	public static void drawHistogram(PermutationTest permutationResults, String outfolder) throws IOException {
 		// This assumes that all deconvolution reslts in deconResults have the same cell types
 		for (String celltype : permutationResults.getCelltypes()){
 			double[] pvalueVector = new double[permutationResults.getPvalues(celltype).size()];
@@ -148,5 +149,52 @@ public class Plots {
 
 			System.out.printf("Permutation distrbution written to: %s/%s_%d_pvalueDistribution.PNG\n",outfolder, celltype,permutationResults.getNumberOfPermutations());
 		}
+	}
+	
+	public static void boxPlotCorrelations(HashMap<String, ArrayList<Double>> correlationPerSignificantDecon, 
+										   HashMap<String, ArrayList<Double>> correlationPerSignificantUniqueDecon, 
+										   HashMap<String, ArrayList<Double>> correlationPerInsignificantDecon, 
+										   String deconCelltype, String filename) throws IOException {
+		/* Make a boxplot of the beta * values of linear regression model
+		 * 
+		 */
+		DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
+		for (String celltype : correlationPerSignificantDecon.keySet()){
+			/*String xAxisLabel = "?";
+			if(celltype.toLowerCase().contains("mono") || celltype.toLowerCase().contains("neut")){
+				xAxisLabel = "Myeloid";
+			}
+			else if(celltype.toLowerCase().contains("cd4") || celltype.toLowerCase().contains("cd8") || 
+					celltype.toLowerCase().contains("b") || celltype.toLowerCase().contains("lymph")){
+				xAxisLabel = "Lymphoid";
+			}*/
+			if(correlationPerSignificantDecon.get(celltype) != null){
+				dataset.add(correlationPerSignificantDecon.get(celltype), "significant", celltype);
+			}
+			if(correlationPerSignificantUniqueDecon.get(celltype) != null){
+				dataset.add(correlationPerSignificantUniqueDecon.get(celltype), "unique", celltype);
+			}
+			if(correlationPerInsignificantDecon.get(celltype) != null){
+				dataset.add(correlationPerInsignificantDecon.get(celltype), "insignificant", celltype);
+			}
+		}
+		final CategoryAxis xAxis = new CategoryAxis("Purified cell type");
+		final NumberAxis yAxis = new NumberAxis("Effect size");
+		yAxis.setAutoRangeIncludesZero(false);
+		final BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer();
+		renderer.setFillBox(true);
+		renderer.setSeriesToolTipGenerator(1, new BoxAndWhiskerToolTipGenerator());
+		renderer.setMeanVisible(false);
+		final CategoryPlot plot = new CategoryPlot(dataset, xAxis, yAxis, renderer);
+
+		final JFreeChart chart = new JFreeChart(
+				"Distribution of purified cell type specific eQTL effects with decon sign in "+deconCelltype,
+				plot
+				);
+		final ChartPanel chartPanel = new ChartPanel(chart);
+		chartPanel.setPreferredSize(new java.awt.Dimension(3000,1800));
+		ChartUtilities.saveChartAsPNG(new File(filename), chart, 1000, 600);
+		
+		// setContentPane(chartPanel);
 	}
 }

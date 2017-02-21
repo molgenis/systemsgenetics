@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -38,10 +37,10 @@ public class DeconvolutionTest {
 		interaction.SetExpressionValues(y);
 		interaction.SetObservedValues(xb);
 		try {
-			sumOfSquaresA = Deconvolution.calculateSumOfSquaresOLS(noInteraction, false);
-		sumOfSquaresB = Deconvolution.calculateSumOfSquaresOLS(interaction, false);
-		sumOfSquaresNoInterceptA = Deconvolution.calculateSumOfSquaresOLS(noInteraction, true);
-		sumOfSquaresNoInterceptB = Deconvolution.calculateSumOfSquaresOLS(interaction, true);
+		//	sumOfSquaresA = Deconvolution.calculateSumOfSquaresNNLS(noInteraction, false);
+		//sumOfSquaresB = Deconvolution.calculateSumOfSquaresOLS(interaction, false);
+		//sumOfSquaresNoInterceptA = Deconvolution.calculateSumOfSquaresOLS(noInteraction, true);
+		//sumOfSquaresNoInterceptB = Deconvolution.calculateSumOfSquaresOLS(interaction, true);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -105,7 +104,6 @@ public class DeconvolutionTest {
 	public void permutationTestTest() throws Exception {
 		LineIterator expressionIterator = FileUtils.lineIterator(new File("tests/resources/expTable_Corrected_addMean_head.txt"), "UTF-8");
 		LineIterator genotypeIterator = FileUtils.lineIterator(new File("tests/resources/dsgTable_testing_head.txt"), "UTF-8");
-		List<List<String>> cellcountTable = Deconvolution.readTabDelimitedColumns("tests/resources/counts.txt");
 		LineIterator cellcountIterator = FileUtils.lineIterator(new File("tests/resources/counts.txt"), "UTF-8");
 		ArrayList<String> celltypes = new ArrayList<String>(Arrays.asList(cellcountIterator.next().split("\t")));
 		celltypes.removeAll(Arrays.asList("", null));

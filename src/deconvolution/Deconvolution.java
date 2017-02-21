@@ -1,8 +1,9 @@
 package deconvolution;
 
 import deconvolution.Qtl;
+import deconvolution.Validate;
+import deconvolution.CellCount;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -10,27 +11,35 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.InputMismatchException;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
+
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.exception.DimensionMismatchException;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
 import JSci.maths.statistics.FDistribution;
 
 public class Deconvolution {
 	private static CommandLineOptions commandLineOptions = new CommandLineOptions(); 
-	private static List<String> celltypes = new ArrayList<String>();
+	private static CellCount cellCounts;
+	private static List<String> filteredQTLsOutput = new ArrayList<String>();
+	private static int QTLsFiltered = 0;
+	// things neded for fullModel defined here because for optimizing pvalue it needs to be available in 2 functions. 
+	// this could probably be done a lot neater
+	private static double sumOfSquaresFullModel = 0;
+	private static int degreesOfFreedomFullModel = 0;
+	private static int fullModelLength = 0;
+	private static String outputFolder;
+	// factory method for making static variable that can throw an exception
+
+	
+
 	public static void main(String[] args) throws Exception {
 		/*
 		 * Deconvolutes a set of QTLs given the expression levels, genotypes,
@@ -38,257 +47,210 @@ public class Deconvolution {
 		 * and writes them to an outfile
 		 * 
 		 * @param args List of command line arguments
+		 * 
+		 * TODO: Crashes if output folder does not exist, either add clear error message or make output folder 
 		 */
 		commandLineOptions.parseCommandLine(args);
-		// the cell type names are the first row of cellcount file, extract for
-		// later printing
-		String cellCountFile = commandLineOptions.getCellcountFile();
-		List<List<String>> cellcountTable = readTabDelimitedColumns(cellCountFile);
-		// make the outputfile
-		for(int i = 0; i < cellcountTable.size(); i++){
-			celltypes.add(cellcountTable.get(i).get(0));
+		outputFolder = commandLineOptions.getOutfolder();
+		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
+		
+		
+		if(commandLineOptions.getUseRelativeCellCounts()){
+			cellCounts.makeCellcountsRelative(outputFolder);
 		}
 
-		String expressionFile = commandLineOptions.getExpressionFile();
-		String genotypeFile = commandLineOptions.getGenotypeFile();
-
-		// make iterator of files so that we can loop over 2 at the same time
-		LineIterator expressionIterator = FileUtils.lineIterator(new File(expressionFile), "UTF-8");
-		LineIterator genotypeIterator = FileUtils.lineIterator(new File(genotypeFile), "UTF-8");
-		// leastsquare model is for calculating the coefficients that are used for plotting
-
-		// remove the headers (sample names)
-		String sampleNames = expressionIterator.next();
-		if (!sampleNames.equals(genotypeIterator.next())){
-			throw new Exception("Samplenames not the same in expression and genotype file");
-		}
 
 		if (commandLineOptions.getNumberOfPermutations() > 1) {
-			// permutationResults contains a hasmap of all pvalues per celltype gotten through permutation testing
-			PermutationResult permutationResults = permutationTest(expressionFile, genotypeFile, cellcountTable);
+			// permutationResults contains a hashmap of all pvalues per celltype gotten through permutation testing
+			//PermutationResult permutationResults = permutationTest(expressionFile, genotypeFile, cellcountTable);
+			throw new java.lang.UnsupportedOperationException("Not implemented yet.");
 		}
+		runDeconPerGeneSnpPair();
+	}
+
+	private static void runDeconPerGeneSnpPair() throws IOException, IllegalAccessException, RuntimeException{
+		/*
+		 * For each of the gene-SNP pair in the SnpsToTestFile run deconvolution
+		 */
+		HashMap<String,ArrayList<String>> geneSnpPairs = Utils.parseSnpPerGeneFile(commandLineOptions.getSnpsToTestFile());
+		String expressionFile = commandLineOptions.getExpressionFile();
+		DeconvolutionLogger.log.info(String.format("Parse expression data from %s",expressionFile));
+		ExpressionData expressionData = new ExpressionData(expressionFile);
+		DeconvolutionLogger.log.info("Done");
+		String genotypeFile = commandLineOptions.getGenotypeFile();
+		DeconvolutionLogger.log.info(String.format("Parse genotype data from %s",genotypeFile));
+		GenotypeData genotypeData = new GenotypeData(genotypeFile);
+		DeconvolutionLogger.log.info("Done");
+		if (!Utils.equalLists(expressionData.getSampleNames(), genotypeData.getSampleNames())){
+			throw new RuntimeException("Samplenames not the same in expression and genotype file.\nexpression sampleNames, genotype sampleNames: \n\n"+
+					Arrays.toString(expressionData.getSampleNames().toArray())+"\n "+Arrays.toString(genotypeData.getSampleNames().toArray()));
+		}
+		//file to write all samples in that got filtered out
+		Path filteredQTLsFile = Paths.get(outputFolder+"filteredQTLs.csv");
+		filteredQTLsOutput.add("QTL\treason");
+
 		int whileIndex = 0;
 		long time = System.currentTimeMillis();
-		// do something that takes some time...
-		Collection<Qtl> qtlList = new LinkedList<Qtl>();
 		List<DeconvolutionResult> deconvolutionResults = new ArrayList<DeconvolutionResult>();
-		while (expressionIterator.hasNext() && genotypeIterator.hasNext()) {
-			if (whileIndex % 500 == 0) {
-				System.out.printf("Processed %d eQTLs - ", whileIndex);
-				long completedIn = System.currentTimeMillis() - time;
-				System.out.printf("%s\n", DurationFormatUtils.formatDuration(completedIn, "HH:mm:ss:SS"));
-			}
-			whileIndex++;
-			ArrayList<String> expressionStringVector = new ArrayList<String>(Arrays.asList(expressionIterator.next().split("\t")));
-			ArrayList<String> genotypeStringVector = new ArrayList<String>(Arrays.asList(genotypeIterator.next().split("\t")));
-
-			String qtlName = expressionStringVector.get(0);
-			if(commandLineOptions.getNumberOfThreads() <= 1){
+		int QTLsTotal = 0;
+		HashMap<String, double[]> geneExpressionLevels = expressionData.getGeneExpression();
+		int skippedGenotypeGeneCombinations = 0;
+		System.out.println(geneExpressionLevels.keySet().size());
+		for(String gene : geneExpressionLevels.keySet()){
+			System.out.println(gene);
+			for(String genotype : geneSnpPairs.get(gene)){
+				System.out.println(genotype);
+				if(commandLineOptions.getTestRun() && whileIndex == 100){
+					break;
+				}
+				if (whileIndex % 5000 == 0) {
+					long completedIn = System.currentTimeMillis() - time;
+					DeconvolutionLogger.log.info(String.format("Processed %d gene-SNP pairs - %s - skipped %d gene-SNP combinations", whileIndex, DurationFormatUtils.formatDuration(completedIn, "HH:mm:ss:SS"), skippedGenotypeGeneCombinations));
+				}
+				whileIndex++;
+				String qtlName = gene+'_'+genotype;
 				try{
-					deconvolutionResults.add(deconvolution(expressionStringVector, genotypeStringVector, cellcountTable));
+					QTLsTotal++;
+					try{
+						deconvolutionResults.add(deconvolution(geneExpressionLevels.get(gene), genotypeData.getGenotypes().get(genotype), qtlName));
+					}
+					catch(NullPointerException e){
+						double[] genes = geneExpressionLevels.get(gene);
+						if (genes == null) {
+							DeconvolutionLogger.log.info(String.format("gene %s in SNP-gene pair file but not in expression data file",gene));
+						}
+					
+						if(commandLineOptions.getSkipGenotypes()){
+							skippedGenotypeGeneCombinations++;
+							throw e;
+						}
+						else{
+							double[] genotypes = genotypeData.getGenotypes().get(genotype);
+							if (genotypes == null) {
+								DeconvolutionLogger.log.info(String.format("genotype %s in SNP-gene pair file but not in genotype data file%s",genotype));
+							}
+							throw e;
+						}
+					}
 				}
 				// If there are not enough samples per genotype, skip this QTL
 				catch(NotEnoughGenotypesException e){
 					if(!commandLineOptions.getFilterSamples()){
-						deconvolutionResults.add(setPvaluesNA(cellcountTable, qtlName));
+						deconvolutionResults.add(setPvaluesNA(qtlName));
+					}
+					else{
+						filteredQTLsOutput.add(qtlName+"\tNot enough genotypes (e.g. AA and AB but no BB)");
+						QTLsFiltered++;
 					}
 				}
 				catch(NonNegativeConstraintViolatedException e){
+					if(!commandLineOptions.getFilterSamples()){
+						deconvolutionResults.add(setPvaluesNA(qtlName));
+					}
+					else{
+						filteredQTLsOutput.add(qtlName+"\tFailed non-negative linear model parameter constraint");
+						QTLsFiltered++;
+						// TODO: Use MLE
+					}
+				}
+				catch(NotEnoughSamplesPerGenotypeException e){
+					if(!commandLineOptions.getFilterSamples()){
+						deconvolutionResults.add(setPvaluesNA(qtlName));
+					}
+					else{
+						filteredQTLsOutput.add(qtlName+"\tNot enough samples per genotype");
+						QTLsFiltered++;
+					}
 					// TODO: Use MLE
 				}
 			}
-			else{
-				qtlList.add(new Qtl(expressionStringVector, genotypeStringVector, cellcountTable, qtlName));
-			}
-		}
-		if(commandLineOptions.getNumberOfThreads() >= 2){
-			throw new NotImplementedException("multiple threads not implemented");
-			//deconvolutionResults = multithread(qtlList, cellcountTable);
 		}
 		writeDeconvolutionResults(deconvolutionResults);
+		DeconvolutionLogger.log.info(String.format("Skipped %d gene-SNP combinations (because genotype in SNP-pair file but not in genotype file)",skippedGenotypeGeneCombinations));
+		DeconvolutionLogger.log.info(String.format("QTLs passed: %d", QTLsTotal-(QTLsFiltered+skippedGenotypeGeneCombinations)));
+		DeconvolutionLogger.log.info(String.format("QTLs filtered: %d", QTLsFiltered));
+		DeconvolutionLogger.log.info(String.format("Total: %d",QTLsTotal-skippedGenotypeGeneCombinations));
+		Files.write(filteredQTLsFile, filteredQTLsOutput, Charset.forName("UTF-8"));
+		String validate = commandLineOptions.getValidationFile();
+		if (validate != null){
+			DeconvolutionLogger.log.info(String.format("Validating results..."));
+			new Validate(deconvolutionResults, validate, outputFolder+"/figures/");
+		}
 	}
-
-	public static void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
+	
+	private static void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
 		/*
 		 * Append the deconvolution pvalues and, if the flag is set, the coefficients to the deconvolution result file
 		 * 
 		 * @param deconvolutionResult The deconvolutionresult
 		 */
 		List<String> output = new ArrayList<String>();
-		String header = "\t"+listToTabSeparatedString(celltypes);
+		String header = "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_pvalue");
+		header += "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_Pvalue_corrected_"+commandLineOptions.getMultipleTestingMethod());
 		if(commandLineOptions.getWriteCoefficients()){
 			// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
-			for(int i = 1; i < celltypes.size()*2 + 1; i++){
-				header += "\tBeta" + Integer.toString(i); 
+			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
+				try{
+					header += "\tBeta" + Integer.toString(i) +"_"+deconvolutionResults.get(0).getFullModel().getIndependentVariableNames().get(i-1);
+				}
+				catch(IndexOutOfBoundsException e){
+					DeconvolutionLogger.log.info(String.format("DeconvolutionResult index error with beta %d", i));
+					// to check which one gives the error
+					deconvolutionResults.get(0);
+					deconvolutionResults.get(0).getFullModel().getIndependentVariableNames().get(i-1);
+					throw e;
+				}
 			}
-			for(int i = 1; i < celltypes.size()*2 + 1; i++){
+			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
 				header += "\tBetaStandardError" + Integer.toString(i); 
 			}
 		}
+		if(commandLineOptions.getWholeBloodQTL()){
+			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
+		}
 		output.add(header);
 		for(DeconvolutionResult deconvolutionResult : deconvolutionResults){
-			if(commandLineOptions.getOnlyOutputSignificant()){
-				if(Collections.min(deconvolutionResult.GetPvalues()) > 0.05){
+			if(commandLineOptions.getOnlyOutputSignificant() && commandLineOptions.getFilterSamples()){
+				if(Collections.min(deconvolutionResult.getPvalues()) > 0.05){
+					QTLsFiltered++;
+					filteredQTLsOutput.add(deconvolutionResult.getQtlName()+"\tNone of the celltypes had a significant p-value");
 					continue;
 				}
 			}
 			String results = "";
-			results += deconvolutionResult.GetQtlName()+"\t"+listToTabSeparatedString(deconvolutionResult.GetPvalues());
+			results += deconvolutionResult.getQtlName()+"\t"+Utils.listToTabSeparatedString(deconvolutionResult.getPvalues());
+			results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getCorrectedPvalues());
 			if(commandLineOptions.getWriteCoefficients()){
-				results += "\t"+listToTabSeparatedString(deconvolutionResult.GetFullModel().GetEstimateRegressionParameters());
-				double[] estimatedErrors = deconvolutionResult.GetFullModel().GetEstimateRegressionParametersStandardErrors();
-				results += "\t"+listToTabSeparatedString(deconvolutionResult.GetFullModel().GetEstimateRegressionParametersStandardErrors());
+				try{
+					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParameters());
+					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParametersStandardErrors());
+				}catch (java.lang.IllegalAccessException e){
+					// if -m is set not all deconvolution resuts will have a full model. If not, set betas to NA
+					String str = "\tNA";
+					// celltype.size()*4 because for each celltype are 2 betas + 2 standard error of betas
+					results += StringUtils.repeat(str, cellCounts.getNumberOfCelltypes()*4);
+				}
+
+			}
+			if(commandLineOptions.getWholeBloodQTL()){
+				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTL());
+				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTLpvalue());
 			}
 			output.add(results);	
 		}
 
-		Path file = Paths.get(commandLineOptions.getOutfolder()+commandLineOptions.getOutfile());
+		Path file = Paths.get(outputFolder+commandLineOptions.getOutfile());
 		Files.write(file, output, Charset.forName("UTF-8"));
-		System.out.printf("Deconvolution output written to %s\n", file.toAbsolutePath());
+		DeconvolutionLogger.log.info(String.format("Deconvolution output written to %s", file.toAbsolutePath()));
+		DeconvolutionLogger.log.info(String.format("Files with additional info in  %s", outputFolder));
 	}
 
-	public static DeconvolutionResult setPvaluesNA(List<List<String>>  cellcountTable, String qtlName){
+	private static DeconvolutionResult setPvaluesNA(String qtlName){
 		List<Double> pvalues = new ArrayList<Double>();
-		for (int i = 0; i < celltypes.size(); i++){
+		for (int i = 0; i < cellCounts.getNumberOfCelltypes(); i++){
 			pvalues.add(333.0);
 		}
-		return(new DeconvolutionResult(celltypes, qtlName, pvalues));
-	}
-
-	public static List<DeconvolutionResult> multithread(Collection<Qtl> qtlList, List<List<String>>  cellcountTable){
-		throw new NotImplementedException("multithread not implemented");
-		/*
-		List<DeconvolutionResult> deconvolutionResults = new ArrayList<DeconvolutionResult>();
-		Parallel parallel = new Parallel(commandLineOptions.getNumberOfThreads());
-		parallel.For(qtlList, 
-				// The operation to perform with each item
-				new Parallel.Operation<Qtl>() {
-			public void perform(Qtl param) {
-				try {
-					try{
-						deconvolutionResults.add(deconvolution(param));
-					}
-					// If there are not enough samples per genotype, set this QTL to 333
-					catch(NotEnoughGenotypesException e){
-						List<Double> pvalues = new ArrayList<Double>();
-						for (int i = 0; i < param.getGenotypeVector().get(0).length()-1; i++){
-							pvalues.add(333.0);
-						}
-						deconvolutionResults.add(new DeconvolutionResult(celltypes, param.getQtlName(), pvalues));
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			};
-		});
-		return(deconvolutionResults);
-		 */
-	}
-
-	public static PermutationResult permutationTest(String expressionFile, String genotypeFile, List<List<String>> cellcountTable) throws Exception {
-		/*
-		 * Scramble the expression values for all the samples n number of times
-		 * and calculate p-value, for comparison to p-value from unscrambled
-		 * p-value
-		 * 
-		 * @param expressionIterator Iterator containing all rows of expression file 
-		 * 
-		 * @param genotypeIterator Iterator containing all rows of genotype file, same order as expression iterator 
-		 * 
-		 * @param cellcountTable A 2D list with for all samples the different cell counts
-		 * 
-		 * @return PermutationResult, containing hasmap of per cell type all pvalues
-		 */
-		System.out.println("Starting permutation test...");
-		PermutationResult deconResultsPermutation = new PermutationResult();
-		long time = System.currentTimeMillis();
-		// make iterator of files so that we can loop over 2 at the same time
-		for(int i = 0; i < commandLineOptions.getNumberOfPermutations(); i++){
-			LineIterator expressionIterator = FileUtils.lineIterator(new File(expressionFile), "UTF-8");
-			LineIterator genotypeIterator = FileUtils.lineIterator(new File(genotypeFile), "UTF-8");
-			// Skip over the header
-			expressionIterator.next();
-			genotypeIterator.next();
-			// set a seed so that all rows in the expression file can be shuffled identically
-			long seed = System.nanoTime();
-			// change number after % to get more/less prints of progress of permutations
-			if (i % 1 == 0) {
-				System.out.printf("Processed %d/%d permutations - ", i, commandLineOptions.getNumberOfPermutations());
-				long completedIn = System.currentTimeMillis() - time;
-				System.out.printf("%s\n", DurationFormatUtils.formatDuration(completedIn, "HH:mm:ss:SS"));
-			}
-			Collection<Qtl>  qtlCollection = new LinkedList<Qtl>();  
-			while (expressionIterator.hasNext() && genotypeIterator.hasNext()) {
-
-				ArrayList<String> expressionStringVector = new ArrayList<String>(Arrays.asList(expressionIterator.next().split("\t")));
-
-				ArrayList<String> genotypeStringVector = new ArrayList<String>(Arrays.asList(genotypeIterator.next().split("\t")));
-				// shuffle on expression or genotype, because at the moment not sure which one should be used for permutation
-				// and using this variable is easier than commenting in/out the 3 related lines
-				String qtlName = "";
-				if (commandLineOptions.getPermutationType().equals("expression")){
-					qtlName = expressionStringVector.remove(0);
-					// shuffle the expression vector with the previously set seed
-					Collections.shuffle(expressionStringVector, new Random(seed));
-					// add back the qtl name at the front
-					expressionStringVector.add(0, qtlName);
-				}
-				else if (commandLineOptions.getPermutationType().equals("genotype")){
-					qtlName = genotypeStringVector.remove(0);
-					// shuffle the genotype vector with the previously set seed
-					Collections.shuffle(genotypeStringVector, new Random(seed));
-					// add back the qtl name at the front
-					genotypeStringVector.add(0, qtlName);
-				}
-				else{
-					throw new Exception("shuffle should be either expression or genotype, not "+commandLineOptions.getPermutationType());
-				}
-
-				if(commandLineOptions.getNumberOfThreads() <= 1){
-					// deconvolution() gives for the current SNP-Gene QTL pair for each celltype in cellount table a pvalue. deconResultsPermutation.add() adds
-					// the pvalue to a hashmap of pvalues per celltype. After permutation for loop is finished, deconResultsPermutation will contain a hashmap
-					// with for each celltype all pvalues found during permutaiton testing
-					try{
-						deconResultsPermutation.add(deconvolution(expressionStringVector, genotypeStringVector, cellcountTable), commandLineOptions.getNumberOfPermutations());
-					}
-					catch(NotEnoughGenotypesException e){
-						// If there are not enough samples per genotype for this QTL, exclude it from testing
-					}
-				}
-				else{
-					Qtl qtl = new Qtl(expressionStringVector, genotypeStringVector,  cellcountTable, qtlName);
-					qtlCollection.add(qtl);
-				}
-			}
-			if(commandLineOptions.getNumberOfThreads() >= 2){
-				Parallel parralel = new Parallel(commandLineOptions.getNumberOfThreads());
-				parralel.For(qtlCollection, 
-						// The operation to perform with each item
-						new Parallel.Operation<Qtl>() {
-					public void perform(Qtl qtl) {
-						try {
-							// qtl contians the expression vector, genotype vector, and cell count table for the qtl
-							deconResultsPermutation.add(deconvolution(qtl), commandLineOptions.getNumberOfPermutations());
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					};
-				});
-			}
-		}
-
-
-		commandLineOptions.setOutfolder(commandLineOptions.getOutfolder()+"/shuffled_" + commandLineOptions.getPermutationType());
-		if(commandLineOptions.getForceNormalExpression()){
-			commandLineOptions.setOutfolder(commandLineOptions.getOutfolder()+"_forcedNormalExpression");
-			commandLineOptions.setOutfolder(commandLineOptions.getOutfolder()+"_"+commandLineOptions.getNormalizationType());
-		}
-		if(commandLineOptions.getForceNormalCellcount()){
-			commandLineOptions.setOutfolder(commandLineOptions.getOutfolder()+"_forceNormalCellcount");
-		}
-		new File(commandLineOptions.getOutfolder()).mkdirs();
-		Plots.drawHistogram(deconResultsPermutation, commandLineOptions.getOutfolder());
-		return(deconResultsPermutation);
+		return(new DeconvolutionResult(cellCounts.getCelltypes(), qtlName, pvalues, 0, 1));
 	}
 
 	public static void calculateSumOfSquaresNNLS(LeastSquareModel model, Boolean plotBetaTimesVariables) throws IOException, IllegalAccessException {
@@ -309,13 +271,13 @@ public class Deconvolution {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(model.GetNoIntercept());
-		regression.newSampleData(model.GetExpessionValuesGt0(), model.GetCellCountsGt0());
+		regression.setNoIntercept(model.getNoIntercept());
+		regression.newSampleData(model.getExpessionValuesGt0(), model.getCellCountsGt0());
 		regression.estimateRegressionParameters();
 		throw new NotImplementedException("NNLS not implemneted");
 	}
 
-	public static OLSMultipleLinearRegression multipleLinearRegression(InteractionModel model, Boolean plotBetaTimesVariables) throws IOException, IllegalAccessException {
+	private static OLSMultipleLinearRegression multipleLinearRegression(InteractionModel model, Boolean plotBetaTimesVariables) throws IOException, IllegalAccessException {
 		/*
 		 * Calculate the sum of squares, using Ordinary Linear Regression, given a y expression vector with y ~
 		 * model. If no_intercept == true, remove the intercept (equivalent to y
@@ -333,25 +295,26 @@ public class Deconvolution {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(model.GetNoIntercept());
+		regression.setNoIntercept(model.getNoIntercept());
 		try{
-			regression.newSampleData(model.GetExpessionValues(), model.GetObservedValues());
+			regression.newSampleData(model.getExpessionValues(), model.getObservedValues());
 		}
 		catch (DimensionMismatchException e){
-			System.out.printf("expression length: %d\nobserved values length: %d\n", model.GetExpessionValues().length, model.GetObservedValues().length);
+			DeconvolutionLogger.log.info(String.format("Length of expression and and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
+					model.getExpessionValues().length, model.getObservedValues().length));
 			throw(e);
 		}
 
 		if(plotBetaTimesVariables){
-			String outfolder = "/Users/NPK/UMCG/projects/deconvolution/results/betaTimesCellcountPlusInteraction/";
+			String outfolder = outputFolder+"betaTimesCellcountPlusInteraction/";
 			new File(outfolder).mkdirs();
-			if(model.GetQtlName().length() > 50){
-				model.SetQtlName(model.GetQtlName().substring(0, 20));
+			if(model.getQtlName().length() > 50){
+				model.setQtlName(model.getQtlName().substring(0, 20));
 			}
-			Plots.boxPlot(regression, model, outfolder+'/'+model.GetQtlName()+"_"+model.GetModelName()+"_betaTimesExplanatoryVariables.PNG");
+			Plots.boxPlotBetas(regression, model, outfolder+'/'+model.getQtlName()+"_"+model.getModelName()+"_betaTimesExplanatoryVariables.PNG");
 
 		}
-		//System.exit(0);
+
 		return (regression);
 	}
 
@@ -363,8 +326,7 @@ public class Deconvolution {
 		throw new NotImplementedException("mle not implemented yet");
 	}
 
-
-	public static double anova(double sumOfSquaresModelA, double sumOfSquaresModelB, int degreesOfFreedomA,
+	private static double anova(double sumOfSquaresModelA, double sumOfSquaresModelB, int degreesOfFreedomA,
 			int degreesOfFreedomB, Boolean no_intercept) {
 		/*
 		 * Compare and return the p-value of two linear models being
@@ -414,6 +376,9 @@ public class Deconvolution {
 		 * variance between the models is high, and variance within the models
 		 * is low
 		 **/
+		if(meanSquareError == 0){
+			meanSquareError += 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001;
+		}
 		double Fval = meanSquareErrorDiff / meanSquareError;
 
 		/**
@@ -430,12 +395,17 @@ public class Deconvolution {
 		return (pval);
 	}
 
-	public static DeconvolutionResult deconvolution(Qtl qtl) throws Exception {
-		return(deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getCellcountTable()));
+	public static DeconvolutionResult deconvolution(Qtl qtl) throws RuntimeException, IllegalAccessException, 
+																	NotEnoughGenotypesException, IOException, 
+																	NonNegativeConstraintViolatedException, 
+																	NotEnoughSamplesPerGenotypeException {
+		return deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getQtlName());
 	}
+	
 	//TODO: update documentation on parameters
-	public static DeconvolutionResult deconvolution(ArrayList<String> expressionStringVector, ArrayList<String>genotypeStringVector,
-			List<List<String>> cellcountTable) throws RuntimeException, NotEnoughGenotypesException, IllegalAccessException, IOException, NonNegativeConstraintViolatedException {
+	private static DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, NotEnoughGenotypesException, IllegalAccessException, 
+	IOException, NonNegativeConstraintViolatedException, 
+	NotEnoughSamplesPerGenotypeException {
 		/*
 		 * Make the linear regression models and then do an Anova of the sum of
 		 * squares
@@ -457,35 +427,21 @@ public class Deconvolution {
 		 * @param genotypeVector A vector with the expression levels of all
 		 * samples for *one* eQTL-gene pair. This should include qtl names as in first column, and sample names in first row
 		 * 
-		 * @param cellcountTable A 2D list with for all samples the different
-		 * cell counts. Should include celltype name in first row.
-		 * 
 		 * @param minimum_samples_per_genotype Minimum number of samples per genotype need to count it
 		 * 
 		 * @return A list with for each celltype a p-value for the celltype
 		 * specific eQTL for one eQTL
 		 */
-
-		// remove the eQTL name from the expression and genotype vector (the first column in the expression and genotype file)
-		String qtlName = expressionStringVector.remove(0);
-		String genotypeQTL = genotypeStringVector.remove(0);
-		if (!qtlName.equals(genotypeQTL)) {
-			String errorMessage = "eQTL names not the same for expression and genotype\nexpression file: " + qtlName
-					+ "\ngenotype file: " + genotypeQTL;
-			throw new RuntimeException(errorMessage);
-		}
-
-		double[] expressionVector = StringVectorToDoubleVector(expressionStringVector);
 		if(commandLineOptions.getForceNormalExpression()){
-			Statistics expressionStatistics = new Statistics(expressionVector);
+			Statistics expressionStatistics = new Statistics();
 			if(commandLineOptions.getNormalizationType().equals("normalizeAddMean")){
-				expressionVector = expressionStatistics.normalizeKeepMean(expressionVector, false);
+				expression = expressionStatistics.normalizeKeepMean(expression, false);
 			}
 			else if (commandLineOptions.getNormalizationType().equals("normalizeKeepExponential")){
-				expressionVector = expressionStatistics.normalizeKeepExponential(expressionVector, false);
+				expression = expressionStatistics.normalizeKeepExponential(expression, false);
 			}
 			else if (commandLineOptions.getNormalizationType().equals("normalize")){
-				expressionVector = Statistics.normalize(expressionVector);
+				expression = Statistics.normalize(expression);
 			}
 			else{
 				throw new InputMismatchException("Not valid option for normalization type (-nt). Valid options are normalize, normalizeAddMean, and normalizeKeepExponential");
@@ -505,7 +461,6 @@ public class Deconvolution {
 			throw new NotImplementedException("Normalizing cell counts not implemented yet");
 		}
 
-		double[] genotypeVector = StringVectorToDoubleVector(genotypeStringVector);
 		/* 
 		 * If roundDosage option is selected on the command line, round of the dosage to closest integer -> 0.49 = 0, 0.51 = 1, 1.51 = 2. 
 		 * If minimumSamplesPerGenotype is selected on the command line, check for current QTL if for each dosage (in case they are not round
@@ -516,21 +471,21 @@ public class Deconvolution {
 			int dosage_ref = 0;
 			int dosage_heterozygote = 0;
 			int dosage_alt = 0;
-			for (int i = 0; i < genotypeVector.length; i++) {
+			for (int i = 0; i < genotypes.length; i++) {
 				if (commandLineOptions.getRoundDosage()){
-					genotypeVector[i] = Math.round(genotypeVector[i]);
+					genotypes[i] = Math.round(genotypes[i]);
 				}
 				if (commandLineOptions.getMinimumSamplesPerGenotype() > 0 || commandLineOptions.getAllDosages()){
-					if(genotypeVector[i] < 0){
+					if(genotypes[i] < 0){
 						throw new RuntimeException("Genotype dosage can not be negative, check your dosage input file");
 					}
-					if(genotypeVector[i] < 0.5){
+					if(genotypes[i] < 0.5){
 						dosage_ref++;
 					}
-					else if(genotypeVector[i] < 1.5){
+					else if(genotypes[i] < 1.5){
 						dosage_heterozygote++;
 					}
-					else if (genotypeVector[i] <= 2){
+					else if (genotypes[i] <= 2){
 						dosage_alt++;
 					}
 					else{
@@ -547,26 +502,16 @@ public class Deconvolution {
 			if(commandLineOptions.getMinimumSamplesPerGenotype() > 0){
 				// Check that each genotype has enough samples (AA >= minimum_samples_per_genotype, AB >= minimum_samples_per_genotype, BB >= minimum_samples_per_genotype)
 				if(!(dosage_ref >= commandLineOptions.getMinimumSamplesPerGenotype() && dosage_heterozygote >= commandLineOptions.getMinimumSamplesPerGenotype() && dosage_alt >= commandLineOptions.getMinimumSamplesPerGenotype())){
-					throw new NotEnoughGenotypesException("Not enough samples for each genotype");
+					throw new NotEnoughSamplesPerGenotypeException("Not enough samples for each genotype");
 				}}
 		}
 
 		List<Double> pvalues = new ArrayList<Double>();
-		int numberOfCelltypes = celltypes.size();
-		// minus one because the size includes the celltype header
-		int numberOfSamples = cellcountTable.get(0).size()-1;	
-
-		// variable for saving which celltypes belong to the specific model
 		// things neded for fullModel defined outside of loop because every celltype model (ctModel) has to be compared to it
-		double sumOfSquaresFullModel = 0;
-		double[][] observedValuesFullModel = null;
-		int degreesOfFreedomFullModel = 0;
-		int fullModelLength = 0;
-
 		InteractionModel fullModel = new InteractionModel();
-		fullModel.SetModelName("full model");
-		fullModel.SetQtlName(qtlName);
-		fullModel.SetCelltypes(celltypes);
+		fullModel.setModelName("full model");
+		fullModel.setQtlName(qtlName);
+		fullModel.setCelltypes(cellCounts.getCelltypes());
 		List<InteractionModel> ctModels = new ArrayList<InteractionModel>(); 
 		/*
 		 * For each cell type model, e.g. ctModel 1 -> y = neut% + mono% + neut%:GT; ctModel 2 -> y = neut% + mono% + mono%:GT, one for each cell type, 
@@ -584,241 +529,221 @@ public class Deconvolution {
 		 * 
 		 */
 		// m = model, there are equally many models as celltypes, the fullModel gets made during the first iteration
-		// TODO: For loop looks overly complicated, see if it can be simplified
-		for (int m = 0; m < numberOfCelltypes; m++) {
+		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
 			InteractionModel ctModel = new InteractionModel();
-			ctModel.SetCelltypes(celltypes);
-			ctModel.SetExpressionValues(expressionVector);
-			int numberOfTerms = (numberOfCelltypes * 2) - 1;
-			double[][] observedValues = new double[numberOfSamples][numberOfTerms];
+			ctModel.setCelltypes(cellCounts.getCelltypes());
+			ctModel.setExpressionValues(expression);
+			ctModel.setGenotypes(genotypes);
+			int numberOfTerms = (cellCounts.getNumberOfCelltypes() * 2) - 1;
+			ctModel.InitializeObservedValue(cellCounts.getNumberOfSamples(), numberOfTerms);
 			// fullModel will be done in first loop as all models have to be compared to it
-			if(m == 0){
-				fullModel.SetExpressionValues(expressionVector);
+			if(modelIndex == 0){
+				fullModel.setExpressionValues(expression);
+				fullModel.setGenotypes(genotypes);
 				// number of terms + 1 because for full model all cell types are included
-				observedValuesFullModel = new double[numberOfSamples][numberOfTerms+1];
+				fullModel.InitializeObservedValue(cellCounts.getNumberOfSamples(), numberOfTerms+1);
 			}
-			int genotypeCounter = numberOfCelltypes;
-			for (int j = 0; j <= numberOfSamples-1; j++) {
-				for (int i = 0; i < numberOfCelltypes; i++) {
-					// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
-					// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
-					// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
-					// for each cell type is 1 model, celltype% * genotype without 1 celltype.
-					// j+1 because j==0 is header
-					double celltype_perc = Double.parseDouble(cellcountTable.get(i).get(j+1));
-					observedValues[j][i] = celltype_perc;
-					if(j == 0){
-						// add the celltype name at position i so that it gets in front of the celltype:GT, but once
-						ctModel.AddIndependentVariableName(i, cellcountTable.get(i).get(0));
-					}
-
-					// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
-					if (i != m) {
-						try {
-							// Only add IndependentVariableName once per QTL (j==0)
-							if(j == 0){
-
-								// Add the interaction term of celltype:genotype
-								ctModel.AddIndependentVariableName(cellcountTable.get(i).get(0)+":GT");
-								// save the index of the variables related to current celltype so that this can be used later to calculate
-								// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
-								// but for ctModel this is easiest method
-								int[] index = new int[] {i, numberOfCelltypes-1+i};
-								ctModel.AddCelltypeVariablesIndex(index);
-								// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
-								// it is explicit. Don't know if better.
-							}
-							observedValues[j][genotypeCounter] = celltype_perc * genotypeVector[j];
-						} catch (ArrayIndexOutOfBoundsException error) {
-							throw new RuntimeException(
-									"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
-									error);
-						}
-						genotypeCounter++;
-					}
-					// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
-					else if (j == 0){
-						int[] index = new int[] {i};
-						ctModel.AddCelltypeVariablesIndex(index);
-					}
-					if (m == 0){
-						observedValuesFullModel[j][i] = celltype_perc;
-						try {
-							if(j == 0){
-								/* save the index of the variables related to current celltype so that this can be used later to calculate
-								 * Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
-								 * but for ctModel this is easiest method
-								 */
-								int[] index = new int[] {i, numberOfCelltypes + i};
-								fullModel.AddCelltypeVariablesIndex(index);
-								// add the celltype name at position i so that it gets in front of the celltype:GT
-								fullModel.AddIndependentVariableName(i, cellcountTable.get(i).get(0));
-								fullModel.AddIndependentVariableName(cellcountTable.get(i).get(0)+":GT");
-							}
-							observedValuesFullModel[j][numberOfCelltypes + i] = celltype_perc * genotypeVector[j];
-						} catch (ArrayIndexOutOfBoundsException error) {
-							throw new RuntimeException(
-									"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
-									error);
-						}
-					}
-				}
-				// because 1 of numberOfCelltypes + i needs to be skipped,
-				// keeping it tracked with separate value is easier
-				genotypeCounter = numberOfCelltypes;
-			}
-			Boolean noIntercept = true;
-			if(m == 0){
-				// only need to set data of fullModel once, reused every loop of m
-				fullModel.SetObservedValues(observedValuesFullModel);
-				fullModel.SetNoIntercept(noIntercept);
-				OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel, commandLineOptions.getPlotBetas());
-				//for (int i = 0; i < estimatedRegressionParameters.length; i++){
-				//	System.out.printf("beta: %f\terror: %f\n", estimatedRegressionParameters[i], estimateRegressionParametersStandardErrors[i]);
-				//}
-				sumOfSquaresFullModel = regression.calculateResidualSumOfSquares();
-				degreesOfFreedomFullModel = expressionVector.length - (observedValuesFullModel[0].length + 1);
-				fullModelLength = fullModel.GetObservedValues().length;
-				if(commandLineOptions.getRemoveConstraintViolatingSamples() || commandLineOptions.getWriteCoefficients()){
-					/*
-					 * Check if the constraints of the model are violate -> (B1 + 2*B3)*Celcount% > 0    where B1 is cellcount% beta, and B3 is cellcount:GT interaction beta
-					 * 
-					 */
-					double[] estimatedRegressionParameters = regression.estimateRegressionParameters();
-					double[] estimateRegressionParametersStandardErrors = regression.estimateRegressionParametersStandardErrors();
-					double[][] variance = regression.estimateRegressionParametersVariance();
-					List<Double> betasFull = new ArrayList<Double>();
-					// The cell type indices are the indexes of the B1 and B3 of above (e.g. if 4 celltypes [[0, 4], [1, 5], etc], if 3 celltypes [[0,3], [1, 4], etc]
-					// This is to know the index of the CC% and CC%:GT beta that belong together for arbitary number of celltypes
-					// Calculate this for every celltype
-					for (int[] celltypeIndices : fullModel.GetCelltypeVariablesIndex()){
-						List<Double> betas = new ArrayList<Double>();
-						//	The observed  values are the actual value of CC% and CC%*GT
-						for (int i = 0; i < fullModel.GetObservedValues().length; i++){
-							// Calculate B1 (of CC%)
-							double beta = estimatedRegressionParameters[celltypeIndices[0]] + estimateRegressionParametersStandardErrors[celltypeIndices[0]];
-							double betaInteraction = 0;
-							// Calculate B3  (of CC%:GT), because this is only done for full model they all have a CC%:GT
-							// Add the standard error of the regression parameter, so that it is only counted as violating the constraint if with the error it's still < 0
-							betaInteraction = estimatedRegressionParameters[celltypeIndices[1]] + estimateRegressionParametersStandardErrors[celltypeIndices[0]];
-							// B1 + 2*B3
-							beta += 2*betaInteraction;
-							// (B1 + 2*B3) * CC%
-							beta *= fullModel.GetObservedValues()[i][celltypeIndices[0]];
-							betas.add(beta);
-							betasFull.add(beta);
-						}
-					}
-					// if for one of the celltypes this is < 0, model is violated
-					if(Collections.min(betasFull) < 0){
-						throw new NonNegativeConstraintViolatedException("For at least one celltype (B1+2*B2)*CC% < 0, where B1 is beta of CC%, and B2 is beta of CC%:GT");
-					}
-					if(commandLineOptions.getWriteCoefficients()){
-						fullModel.SetEstimateRegressionParameters(estimatedRegressionParameters);
-						fullModel.SetEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
-					}
-				}
-			}
-			ctModel.SetObservedValues(observedValues);
-			ctModel.SetNoIntercept(noIntercept);
-			ctModel.SetQtlName(qtlName);
-			/** SUM OF SQUARES - CELLTYPE MODEL **/
-			ctModel.SetModelName("ctModel_"+ Integer.toString(m));
-			OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel, commandLineOptions.getPlotBetas());
-			double sumOfSquaresCtModel = regression.calculateResidualSumOfSquares();
-			int degreesOfFreedomCtModel = expressionVector.length - (ctModel.GetObservedValues()[0].length + 1);
-
-			int expressionLength = expressionVector.length;
-
-			if (expressionLength != fullModelLength) {
-				throw new RuntimeException("expression vector and fullModel have different number of samples.\nexpression: "
-						+ expressionLength + "\nfullModel: " + fullModelLength);
-			}
-
-			// ANOVA compare full model to celltype model 
-			double pval = anova(sumOfSquaresFullModel, sumOfSquaresCtModel, degreesOfFreedomFullModel, degreesOfFreedomCtModel, true);
-			pvalues.add(pval);
+			// calculate p-value and save it, with other information, in a ctModel object. Then, add it to a list of these models to return as decon results
+			ctModel = calculateDeconvolutionPvalue(ctModel, modelIndex, fullModel, qtlName);
+			pvalues.add(ctModel.getPvalue());
 			ctModel.emptyExpressionValues();
+			ctModel.emptyGenotypes();
 			ctModel.emptyObservedValues();
 			ctModels.add(ctModel);
 		}
-		//calculateSumOfSquaresNNLS(leastSquareModel, true);
+		/*
+		 * TODO: implement below function
+		 * calculateSumOfSquaresNNLS(leastSquareModel, true);
+		 */
+		double wholeBloodQTL = 0;
+		double wholeBloodQTLpvalue = 0;
+		if(commandLineOptions.getWholeBloodQTL()){
+			// if true calculate spearman correlation between genotypes and expression values (i.e. whole blood eQTL)
+			wholeBloodQTL = new SpearmansCorrelation().correlation(fullModel.getGenotypes(), fullModel.getExpessionValues());
+			wholeBloodQTLpvalue = Statistics.calculateSpearmanTwoTailedPvalue(wholeBloodQTL, fullModel.getSampleSize());
+		}
 		fullModel.emptyExpressionValues();
 		fullModel.emptyObservedValues();
-		DeconvolutionResult deconResult = new DeconvolutionResult(celltypes, qtlName, pvalues, fullModel, ctModels);
+		fullModel.emptyGenotypes();
+		DeconvolutionResult deconResult =  new DeconvolutionResult();
+		deconResult = new DeconvolutionResult(cellCounts.getCelltypes(), qtlName, pvalues, fullModel, ctModels, 
+											  commandLineOptions.getMultipleTestingMethod(), wholeBloodQTL, wholeBloodQTLpvalue);
+
 		return deconResult;
 	}
 
-	public static List<List<String>> readTabDelimitedColumns(String filepath) throws IOException {
+	private static InteractionModel calculateDeconvolutionPvalue(InteractionModel ctModel, int modelIndex,
+			InteractionModel fullModel, String qtlName ) throws IllegalAccessException, IOException, NonNegativeConstraintViolatedException{
 		/*
-		 * Reads tab delimited file and returns them as list of list, with [x] =
-		 * colummn and [x][y] is value in column. Needed for reading counts
-		 * file, as there the rows are the samples, as opposed to expression and
-		 * genotype file where the columns are the samples. Needs to be read in
-		 * memory, so minimal memory requirement is larger than the size of the
-		 * counts file.
+		 * get pvalue for each ctmodel
 		 * 
-		 * @param filepath The path to a tab delimited file to read
-		 * 
-		 * @return A 2D array with each array being one column from filepath
+		 * @param ctModel InteractionModel object for saving the results
+		 * @param m The current model that is being evaluated (for each celltype 1 model)
+		 * @param fullModel InteractionModel object that contains information on the fullModel (such as expression values)
+		 * @param qtlName Name of the current qtl being calculated
 		 */
-		List<List<String>> allColumns = new ArrayList<List<String>>();
-		// parses file on tabs
-		CSVParser parser = new CSVParser(new FileReader(filepath), CSVFormat.newFormat('\t'));
-		for (CSVRecord row : parser) {
-			// starts at 1 because 1st element of column is the samplename
-			for (int i = 1; i < row.size(); i++) {
-				// First try to add an element from row to the *i*th list, if
-				// the *i*th list does not exist yet
-				// catch the IndexOutOfBoundsException, make a new list and it
-				// at the *i*th position of the 2D array allColumns
-				try {
-					allColumns.get(i - 1).add(row.get(i));
-				} catch (IndexOutOfBoundsException e) {
-					List<String> newColumn = new ArrayList<String>();
-					newColumn.add(row.get(i));
-					allColumns.add(newColumn);	
+		/*
+		 * Below nested for loops make the matrices that are necesarry to run the linear model and put them in a model object
+		 */
+		int genotypeCounter = cellCounts.getNumberOfCelltypes();
+		for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
+			for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
+				// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
+				// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
+				// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
+				// for each cell type is 1 model, celltype% * genotype without 1 celltype.
+				// j+1 because j==0 is header
+				double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
+				ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+				if(sampleIndex == 0){
+					// add the celltype name at position i so that it gets in front of the celltype:GT, but once
+					try{
+						ctModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+					}
+					catch(NullPointerException e){
+						DeconvolutionLogger.log.info(String.format("Nullpoint exception with celltype %s", celltypeIndex));
+						throw e;
+					}
+				}
+
+				// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
+				if (celltypeIndex != modelIndex) {
+					try {
+						// Only add IndependentVariableName once per QTL (j==0)
+						if(sampleIndex == 0){
+
+							// Add the interaction term of celltype:genotype
+							ctModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+							// save the index of the variables related to current celltype so that this can be used later to calculate
+							// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
+							// but for ctModel this is easiest method
+							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes()-1+celltypeIndex};
+							ctModel.addCelltypeVariablesIndex(index);
+							// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
+							// it is explicit. Don't know if better.
+						}
+						try{
+							ctModel.addObservedValue(celltype_perc * ctModel.getGenotypes()[sampleIndex], sampleIndex, genotypeCounter);
+						}
+						catch(NullPointerException e){
+							DeconvolutionLogger.log.info(String.format("Nullpoint exception with genotype %s", sampleIndex));
+							throw e;
+						}
+					} catch (ArrayIndexOutOfBoundsException error) {
+						throw new RuntimeException(
+								"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
+								error);
+					}
+					genotypeCounter++;
+				}
+				// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
+				else if (sampleIndex == 0){
+					int[] index = new int[] {celltypeIndex};
+					ctModel.addCelltypeVariablesIndex(index);
+				}
+				if (modelIndex == 0){
+					fullModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+					try {
+						if(sampleIndex == 0){
+							/* save the index of the variables related to current celltype so that this can be used later to calculate
+							 * Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
+							 * but for ctModel this is easiest method
+							 */
+							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex};
+							fullModel.addCelltypeVariablesIndex(index);
+							// add the celltype name at position i so that it gets in front of the celltype:GT
+							fullModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+							fullModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+						}
+						fullModel.addObservedValue(celltype_perc * ctModel.getGenotypes()[sampleIndex], sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);
+					} catch (ArrayIndexOutOfBoundsException error) {
+						throw new RuntimeException(
+								"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
+								error);
+					}
+				}
+			}
+			// because 1 of numberOfCelltypes + i needs to be skipped,
+			// keeping it tracked with separate value is easier
+			genotypeCounter = cellCounts.getNumberOfCelltypes();
+		}
+		Boolean noIntercept = true;
+		if(modelIndex == 0){
+			// only need to set data of fullModel once, reused every loop of m
+			fullModel.setNoIntercept(noIntercept);
+			OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel, commandLineOptions.getPlotBetas());
+			//for (int i = 0; i < estimatedRegressionParameters.length; i++){
+			//	DeconvolutionLogger.log.info(String.format("beta: %f\terror: %f\n", estimatedRegressionParameters[i], estimateRegressionParametersStandardErrors[i]));
+			//}
+			sumOfSquaresFullModel = regression.calculateResidualSumOfSquares();
+			degreesOfFreedomFullModel = ctModel.getExpessionValues().length - (fullModel.getObservedValues()[0].length + 1);
+			fullModelLength = fullModel.getObservedValues().length;
+			if(commandLineOptions.getRemoveConstraintViolatingSamples() || commandLineOptions.getWriteCoefficients()){
+				/*
+				 * Check if the constraints of the model are violate -> (B1 + 2*B3)*Celcount% > 0    where B1 is cellcount% beta, and B3 is cellcount:GT interaction beta
+				 * 
+				 */
+				double[] estimatedRegressionParameters = regression.estimateRegressionParameters();
+				double[] estimateRegressionParametersStandardErrors = regression.estimateRegressionParametersStandardErrors();
+				List<Double> betasFull = new ArrayList<Double>();
+				// The cell type indices are the indexes of the B1 and B3 of above (e.g. if 4 celltypes [[0, 4], [1, 5], etc], if 3 celltypes [[0,3], [1, 4], etc]
+				// This is to know the index of the CC% and CC%:GT beta that belong together for arbitary number of celltypes
+				// Calculate this for every celltype
+				for (int[] celltypeIndices : fullModel.getCelltypeVariablesIndex()){
+					List<Double> betas = new ArrayList<Double>();
+					//	The observed  values are the actual value of CC% and CC%*GT
+					for (int i = 0; i < fullModel.getObservedValues().length; i++){
+						// Calculate B1 (of CC%)
+						double beta = estimatedRegressionParameters[celltypeIndices[0]] + estimateRegressionParametersStandardErrors[celltypeIndices[0]];
+						double betaInteraction = 0;
+						// Calculate B3  (of CC%:GT), because this is only done for full model they all have a CC%:GT
+						// Add the standard error of the regression parameter, so that it is only counted as violating the constraint if with the error it's still < 0
+						betaInteraction = estimatedRegressionParameters[celltypeIndices[1]] + estimateRegressionParametersStandardErrors[celltypeIndices[0]];
+						// B1 + 2*B3
+						beta += 2*betaInteraction;
+						// (B1 + 2*B3) * CC%
+						beta *= fullModel.getObservedValues()[i][celltypeIndices[0]];
+						betas.add(beta);
+						betasFull.add(beta);
+					}
+				}
+				// if for one of the celltypes this is < 0, model is violated
+				if(Collections.min(betasFull) < 0){
+					throw new NonNegativeConstraintViolatedException("For at least one celltype (B1+2*B2)*CC% < 0, where B1 is beta of CC%, and B2 is beta of CC%:GT");
+				}
+				if(commandLineOptions.getWriteCoefficients()){
+					fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
+					fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
 				}
 			}
 		}
-		parser.close();
-		return allColumns;
-	}
+		ctModel.setNoIntercept(noIntercept);
+		ctModel.setQtlName(qtlName);
+		/** SUM OF SQUARES - CELLTYPE MODEL **/
+		ctModel.setModelName("ctModel_"+ Integer.toString(modelIndex));
+		OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel, commandLineOptions.getPlotBetas());
+		double sumOfSquaresCtModel = regression.calculateResidualSumOfSquares();
+		int degreesOfFreedomCtModel = ctModel.getExpessionValues().length - (ctModel.getObservedValues()[0].length + 1);
 
-	public static double[] StringVectorToDoubleVector(ArrayList<String> vector) {
-		/*
-		 * Converting a vector of string to a vector of doubles
-		 * 
-		 * @param vector A vector of strings
-		 * 
-		 * @return A vector of doubles
-		 */
-		int vectorLength = vector.size();
-		double[] doubles = new double[vectorLength];
-		for (int i = 0; i < vectorLength; i++) {
-			doubles[i] = Double.parseDouble(vector.get(i));
-		}
-		return doubles;
-	}
+		int expressionLength = ctModel.getExpessionValues().length;
 
-	public static <T> String listToTabSeparatedString(List<T> list)
-	{
-		/* Turn list into tab separated string*/
-		StringBuilder builder = new StringBuilder();
-		for(Object o: list)
-		{
-			builder.append(o+"\t");
+		if (expressionLength != fullModelLength) {
+			throw new RuntimeException("expression vector and fullModel have different number of samples.\nexpression: "
+					+ expressionLength + "\nfullModel: " + fullModelLength);
 		}
-		return builder.toString().trim();
-	}
-	public static <T> String listToTabSeparatedString(double[] list)
-	{
-		/* Turn list into tab separated string*/
-		StringBuilder builder = new StringBuilder();
-		for(Double o: list)
-		{
-			builder.append(Double.toString(o)+"\t");
+
+		// ANOVA compare full model to celltype model
+/*		if(ctModel.GetQtlName().contains("ENSG00000262539")){
+			System.out.println(sumOfSquaresFullModel);
+			System.out.println(sumOfSquaresCtModel);
+			System.out.println(degreesOfFreedomFullModel);
+			System.out.println(degreesOfFreedomCtModel);
 		}
-		return builder.toString().trim();
+	*/			
+		double pval = anova(sumOfSquaresFullModel, sumOfSquaresCtModel, degreesOfFreedomFullModel, degreesOfFreedomCtModel, true);
+		ctModel.setPvalue(pval);
+		ctModel.emptyExpressionValues();
+		ctModel.emptyObservedValues();
+		return ctModel;
 	}
 }

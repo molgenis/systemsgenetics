@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LeastSquareModel {
-	/* independentVariables = the names of the independent variables, e.g. neut%, mono%, neut%:GT */
+	/* independentVariables = the names of the independent variables, e.g. neut%, mono%, neut%:GT 
+	 * 
+	 * TODO: Now doing everything 3x for the 3 genotypes, should be merged to 1 single function that takes as input which genotype it is
+	 * */
 	// save the expression values for each dosage separatly
 	private List<Double> expressionValuesGt0 = new ArrayList<Double>();
 	private List<Double> expressionValuesGt1 = new ArrayList<Double>();
@@ -17,28 +20,28 @@ public class LeastSquareModel {
 	private Boolean noIntercept;
 	LeastSquareModel(){};
 
-	public void AddExpressionValuesGt0(double expressionValue){
+	public void addExpressionValuesGt0(double expressionValue){
 		/* 
 		 * Set the expression values (y) of the model. 
 		 */
 	    this.expressionValuesGt0.add(expressionValue);
 	  }
 	
-	public void AddExpressionValuesGt1(double expressionValue){
+	public void addExpressionValuesGt1(double expressionValue){
 		/* 
 		 * Set the expression values (y) of the model. 
 		 */
 		this.expressionValuesGt1.add(expressionValue);
 	  }
 	
-	public void AddExpressionValuesGt2(double expressionValue){
+	public void addExpressionValuesGt2(double expressionValue){
 		/* 
 		 * Set the expression values (y) of the model. 
 		 */
 		this.expressionValuesGt2.add(expressionValue);
 	  }
 	
-	public double[] GetExpessionValuesGt0() throws IllegalAccessException{
+	public double[] getExpessionValuesGt0() throws IllegalAccessException{
 		/* 
 		 * Get the expression values (y) of the model. 
 		 */
@@ -53,7 +56,7 @@ public class LeastSquareModel {
 	    return(expressionVector);
 	  }
 	
-	public double[] GetExpessionValuesGt1() throws IllegalAccessException{
+	public double[] getExpessionValuesGt1() throws IllegalAccessException{
 		/* 
 		 * Get the expression values (y) of the model. 
 		 */
@@ -68,7 +71,7 @@ public class LeastSquareModel {
 	    return(expressionVector);
 	  }
 	
-	public double[] GetExpessionValuesGt2() throws IllegalAccessException{
+	public double[] getExpessionValuesGt2() throws IllegalAccessException{
 		/* 
 		 * Get the expression values (y) of the model. 
 		 */
@@ -83,28 +86,28 @@ public class LeastSquareModel {
 	    return(expressionVector);
 	  }
 	
-	public void AddCellCountsGt0(int celltypeIndex, double cellcount){
+	public void addCellCountsGt0(int celltypeIndex, double cellcount){
 		/* 
 		 * Set the expression values (y) of the model. 
 		 */
 	    this.cellCountsGt0.get(celltypeIndex).add(cellcount);
 	  }
 	
-	public void AddCellCountsGt1(int celltypeIndex, double cellcount){
+	public void addCellCountsGt1(int celltypeIndex, double cellcount){
 		/* 
 		 * Set the expression values (y) of the model. 
 		 */
 		this.cellCountsGt1.get(celltypeIndex).add(cellcount);
 	  }
 	
-	public void AddCellCountsGt2(int celltypeIndex, double cellcount){
+	public void addCellCountsGt2(int celltypeIndex, double cellcount){
 		/* 
 		 * Set the expression values (y) of the model. 
 		 */
 		this.cellCountsGt2.get(celltypeIndex).add(cellcount);
 	  }
 	
-	public double[][] GetCellCountsGt0() throws IllegalAccessException{
+	public double[][] getCellCountsGt0() throws IllegalAccessException{
 		/* 
 		 * Get the expression values (y) of the model. 
 		 */
@@ -121,7 +124,7 @@ public class LeastSquareModel {
 	    return(cellCountMatrix);
 	  }
 	
-	public double[][] GetCellCountsGt1() throws IllegalAccessException{
+	public double[][] getCellCountsGt1() throws IllegalAccessException{
 		/* 
 		 * Get the expression values (y) of the model. 
 		 */
@@ -138,7 +141,7 @@ public class LeastSquareModel {
 	    return(cellCountMatrix);
 	  }
 	
-	public double[][] GetCellCountsGt2() throws IllegalAccessException{
+	public double[][] getCellCountsGt2() throws IllegalAccessException{
 		/* 
 		 * Get the expression values (y) of the model. 
 		 */
@@ -155,14 +158,14 @@ public class LeastSquareModel {
 	    return(cellCountMatrix);
 	  }
 	
-		public void AddCelltype(String celltype) throws IllegalAccessException{
+		public void addCelltype(String celltype) throws IllegalAccessException{
 		/* 
 		 * Get a list of all the celltypes given as input
 		 */
 		this.celltypes.add(celltype);
 	}
 	
-	public List<String> GetCelltypes() throws IllegalAccessException{
+	public List<String> getCelltypes() throws IllegalAccessException{
 		/* 
 		 * Get a list of all the celltypes given as input
 		 */
@@ -176,21 +179,21 @@ public class LeastSquareModel {
 	    this.qtlName = qtlName;
 	  }
 	
-	public String GetQtlName() throws IllegalAccessException{
+	public String getQtlName() throws IllegalAccessException{
 		if(this.qtlName == null){
 			throw new IllegalAccessException("QTL name not set for this model");
 		}
 	    return(this.qtlName);
 	  }		
 	
-	public void SetNoIntercept(Boolean noIntercept){
+	public void setNoIntercept(Boolean noIntercept){
 		/* 
 		 * Set No Intercept for the model. If true, the intercept will be removed
 		 */
 	    this.noIntercept = noIntercept;
 	  }
 	
-	public Boolean GetNoIntercept() throws IllegalAccessException{
+	public Boolean getNoIntercept() throws IllegalAccessException{
 		/* 
 		 * Get the No Intercept value for the model. If true, the intercept will be removed
 		 */

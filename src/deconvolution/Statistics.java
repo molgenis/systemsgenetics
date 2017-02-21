@@ -3,18 +3,22 @@ package deconvolution;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.math3.distribution.NormalDistribution;
+
 import java.lang.Math;
 
 public class Statistics 
 {
-
-    public Statistics(double[] data) 
-    {
-    }   
+	/*
+	 * Several functions for statistical computations
+	 */
+    public Statistics(){}   
     
     public double[] log10(double[] data){
     	/*
-    	 * Takes the log10 of all values in vector data and returns the vector of logged values 
+    	 * Takes the log10 of all values in vector data and returns the vector of logged values
+    	 * 
+    	 * @param data Vector to calculate log10 for
     	 */
     	for (int i = 0; i < data.length; i++){
     		data[i] = Math.log10(data[i]);
@@ -23,10 +27,13 @@ public class Statistics
     }
 
     static public double logmodulus(double value){
-		Boolean negative = false;
-		/* log modulus transformation, so that negative numbers are preserved
+    	/* log modulus transformation, so that negative numbers are preserved
 		 * Take log of absolute value, put back sign
+		 * 
+		 * @param value value to take log modulus of
 		 */
+		
+		Boolean negative = false;
 		if(value < 0){
 			negative = true;
 		}
@@ -39,6 +46,12 @@ public class Statistics
     }
     
     static public double[] normalize(double[] data){
+    	/*
+    	 * Normalize a vector
+    	 * 
+    	 * @param data vector to normalize
+    	 * 
+    	 */
     	double std = getStdDev(data);
     	double mean = getMean(data);
     	for(int i = 0; i < data.length; i++){
@@ -47,7 +60,12 @@ public class Statistics
     	return(data);
     }
     
-    static public List<Double>normalize(List<Double> data){
+    static public ArrayList<Double> normalize(ArrayList<Double> data){
+    	/*
+    	 * Normalize an arraylist
+    	 * 
+    	 * @param data Arraylist top normalize
+    	 */
     	double std = getStdDev(data);
     	double mean = getMean(data);
     	for(int i = 0; i < data.size(); i++){
@@ -56,21 +74,24 @@ public class Statistics
     	return(data);
     }
     
-    public double[] normalizeKeepMean(double[] data, Boolean testNormality){
-    	double mean = getMean(data);
-    	double[] normalizedData = normalize(data);
+    public double[] normalizeKeepMean(double[] expression, Boolean testNormality){
+    	/*
+    	 * Normalize vector, reinsert the mean
+    	 */
+    	double mean = getMean(expression);
+    	double[] normalizedData = normalize(expression);
     	if(testNormality){
     		//TODO: Test normality
     	}
     	// put back the power
     	for(int i = 0; i < normalizedData.length; i++){
-    		normalizedData[i] += mean;
+    		normalizedData[i] = normalizedData[i] + mean;
     	}
-    	return(data);
+    	return(expression);
     }
     
-    public double[] normalizeKeepExponential(double[] data, Boolean testNormality){
-    	double[] normalizedData = normalize(data);
+    public double[] normalizeKeepExponential(double[] expression, Boolean testNormality){
+    	double[] normalizedData = normalize(expression);
     	if(testNormality){
     		//TODO: Test normality
     	}
@@ -78,7 +99,7 @@ public class Statistics
     	for(int i = 0; i < normalizedData.length; i++){
     		normalizedData[i] = Math.pow(normalizedData[i], 2);
     	}
-    	return(data);
+    	return(expression);
     }
     
     static double getMean(double[] data)
@@ -121,28 +142,33 @@ public class Statistics
         return Math.sqrt(getVariance(data));
     }
     
-    static double getStdDev(List<Double> data)
-    {
+    static double getStdDev(List<Double> data){
         return Math.sqrt(getVariance(data));
     }
 
 
-    public double median(double[] data) 
-    {
-       
-       Arrays.sort(data);
-
-       if (data.length % 2 == 0) 
-       {
-          return (data[(data.length / 2) - 1] + data[data.length / 2]) / 2.0;
-       } 
-       else 
-       {
-          return data[data.length / 2];
-       }
+    public double median(double[] data){
+    	/*
+    	 * Calculate median of a vector
+    	 * 
+    	 * @param data Vector to calculate median for
+    	 */
+	    Arrays.sort(data);
+	
+	    if (data.length % 2 == 0){
+	       return (data[(data.length / 2) - 1] + data[data.length / 2]) / 2.0;
+	    } 
+	    else{
+	       return data[data.length / 2];
+	    }
     }
     
     public static List<List<String>> transposeStringMatrix(List<List<String>> cellcountTable){
+    	/*
+    	 * Transpose a matrix
+    	 * 
+    	 * @param cellcountTable Matrix to transpose
+    	 */
         List<List<String>> temp = new ArrayList<List<String>>();
         for (int i = 0; i < cellcountTable.size(); i++)
             for (int j = 0; j < cellcountTable.get(0).size(); j++)
@@ -151,11 +177,44 @@ public class Statistics
     }
     
     public static List<List<Double>> transposeDoubleMatrix(List<List<Double>> cellcountTable){
+    	/*
+    	 * Transpose a matrix
+    	 * 
+    	 * @param cellcountTable Matrix to transpose
+    	 */
         List<List<Double>> temp = new ArrayList<List<Double>>();
         for (int i = 0; i < cellcountTable.size(); i++)
             for (int j = 0; j < cellcountTable.get(0).size(); j++)
                 temp.get(i).set(j, cellcountTable.get(i).get(j));
         return temp;
+    }
+   
+    public static double calculateSpearmanTwoTailedPvalue(double spearmanCorrelation, int sampleSize){
+    	/*
+    	 * based on https://www.researchgate.net/post/How_do_you_calculate_a_p_value_for_spearmans_rank_correlation
+    	 * and https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient#Determining_significance
+    	 * 
+    	 * @param spearmanCorrelation Spearman correlation from SpearmansCorrelation()
+    	 * 
+    	 * @param sampleSize Number of samples used to calculate correlation
+    	 */
+    	double z = Math.sqrt((sampleSize-3)/1.06) * atanh(spearmanCorrelation);
+    	NormalDistribution normalDistribution = new NormalDistribution();
+    	double p = 2*normalDistribution.cumulativeProbability(-Math.abs(z));
+
+    	if (Double.isNaN(p)){
+    		p = 1;
+    	}
+    	return(p);
+    }
+    
+    private static double atanh(double x){
+    	/*
+    	 * Calculate hyperbolic Tangent of value (from https://github.com/maths/dragmath/blob/master/lib/jep/src/org/nfunk/jep/function/ArcTanH.java)
+    	 * 
+    	 * @param x Value to calculate atanh for
+    	 */
+    	return Math.log((1+x)/(1-x))/2;
     }
     
 }

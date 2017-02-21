@@ -1,28 +1,26 @@
 package deconvolution;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class Qtl {
-	private ArrayList<String> expressionVector;
-	private ArrayList<String> genotypeVector;
-	private List<List<String>> cellcountTable;
+	private double[] expressionVector;
+	private double[] genotypeVector;
+	private CellCount cellCounts;
 	private String qtlName;
 	public Qtl(){};
-	public Qtl( ArrayList<String> expressionVector, ArrayList<String> genotypeVector, List<List<String>> cellcountTable, String qtlName){
+	public Qtl( double[] expressionVector, double[] genotypeVector, CellCount cellCounts, String qtlName){
 	    this.expressionVector = expressionVector;
 	    this.genotypeVector = genotypeVector;
-	    this.cellcountTable = cellcountTable;
+	    this.cellCounts = cellCounts;
 	    this.qtlName = qtlName;
 	}
-	public ArrayList<String> getExpressionVector(){
+	public double[] getExpressionVector(){
 		return(expressionVector);
 	}
-	public ArrayList<String> getGenotypeVector(){
+	public double[] getGenotypeVector(){
 		return(genotypeVector);
 	}
-	public List<List<String>> getCellcountTable(){
-		return(cellcountTable);
+	public CellCount getCellCounts(){
+		return(cellCounts);
 	}
 	public String getQtlName(){
 		return(qtlName);
