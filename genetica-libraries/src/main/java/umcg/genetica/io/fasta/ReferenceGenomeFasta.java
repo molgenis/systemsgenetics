@@ -186,7 +186,7 @@ public class ReferenceGenomeFasta {
 
         chromosomes = new LinkedHashMap<String, LargeByteArray>(32);
         for (File f : fastaFiles) {
-            System.out.println(f.getAbsolutePath());
+//            System.out.println(f.getAbsolutePath());
             BufferedReader fasteReader = new BufferedReader(new FileReader(f));
 
             String line;
@@ -220,7 +220,7 @@ public class ReferenceGenomeFasta {
                     }
                     //				System.out.println("----");
                     //				System.out.println(line);
-                    System.out.println(headerMatcher.group(2));
+//                    System.out.println(headerMatcher.group(2));
                     long lenght = Long.parseLong(headerMatcher.group(2));
 
                     if (chr.equals("Y") && lenght == 59034049) {
