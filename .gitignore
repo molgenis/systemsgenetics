@@ -8,7 +8,7 @@ target/
 *.iws
 *.pdf
 *.png
-*.txt.gz
+
 Thumbs.db
 .idea/
 git.properties

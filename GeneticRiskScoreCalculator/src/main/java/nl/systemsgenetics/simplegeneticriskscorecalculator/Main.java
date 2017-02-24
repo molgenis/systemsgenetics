@@ -57,9 +57,10 @@ public class Main {
         Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclusion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
         Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, if given two window-sizes (colon separated), a two step window approach is used.").withLongOpt("wSize").create("w");
         Option debugOpt = OptionBuilder.withArgName("boolean").withDescription("Switch on debugging.").withLongOpt("debug").create('d');
+        Option sumRisksOpt = OptionBuilder.withArgName("boolean").withDescription("Sum risks.").withLongOpt("riskSum").create('s');
         Option excludeGenomicRange = OptionBuilder.withArgName("String").hasArg().withDescription("Exclude genomic range(s) from the risk score calculation. Range needs to be specified as: \"6:101-110;6:250000-350000. Warning: Chr name must be specified as expected in the genotype dataset.").withLongOpt("excludeRange").create("er");
         Option unWeightedScore = OptionBuilder.withArgName("boolean").withDescription("Use unweighted combination of risk factors.").withLongOpt("unWeighted").create('u');
-        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debugOpt).addOption(excludeGenomicRange).addOption(unWeightedScore);
+        options.addOption(FileOut).addOption(GenotypeTypeIn).addOption(GenotypeIn).addOption(InFolder).addOption(rSquared).addOption(pValueThreshold).addOption(WindowSize).addOption(debugOpt).addOption(excludeGenomicRange).addOption(unWeightedScore).addOption(sumRisksOpt);
 
         String genotypePath = null;
         String genotypeType = null;
@@ -71,6 +72,7 @@ public class Main {
         String[] genomicRangesToExclude = null;
         boolean debugMode = false;
         boolean unweighted = false;
+        boolean sumRisks = false;
 
         CommandLine cmd;
         try {
@@ -148,11 +150,12 @@ public class Main {
             }
             debugMode = cmd.hasOption('d');
             unweighted = cmd.hasOption('u');
+            sumRisks = cmd.hasOption('s');
 
         } catch (ParseException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
         try {
             if (outputFolder!=null && !(outputFolder.exists())) {
                 Gpio.createDir(outputFolder.getAbsolutePath());
@@ -160,10 +163,10 @@ public class Main {
             RandomAccessGenotypeData genotypeData = RandomAccessGenotypeDataReaderFormats.valueOf(genotypeType).createFilteredGenotypeData(genotypePath, 750000, null, null);
             THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks = readRiskFiles(genotypeData, riskFolder, pValThres, genomicRangesToExclude, unweighted, debugMode);
             if (windowSize.length == 1) {
-                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode, pValThres);
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculate(genotypeData, risks, outputFolder, rSquare, windowSize[0], debugMode, pValThres, sumRisks);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
             } else if (windowSize.length == 2) {
-                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize, debugMode, pValThres);
+                DoubleMatrixDataset<String, String> geneticRiskScoreMatrix = CalculateSimpleGeneticRiskScore.calculateTwoStages(genotypeData, risks, outputFolder, rSquare, windowSize, debugMode, pValThres, sumRisks);
                 writeMatrixToFile(geneticRiskScoreMatrix, outputFolder);
             } else {
                 System.out.println("More than two window-sizes is not supported.");
@@ -236,7 +239,11 @@ public class Main {
                         boolean addEntry = true;
                         
                         if(unweighted){
-                            parts[2] = "1";
+                            if(parts[2].startsWith("-")){
+                                parts[2] = "-1";
+                            } else {
+                                parts[2] = "1";
+                            }
                         }
                         
                         if(exclussionRanges.contains(snpObject.getSequenceName())){
@@ -265,7 +272,7 @@ public class Main {
                     }
                 }
                 if(debugMode){
-                    System.out.println("Number of chromosomes where a snp is excluded: " + chromosomesExcluded);
+                    System.out.println("Chromosomes where regios are excluded: " + chromosomesExcluded);
                     System.out.println("Number of SNPs excluded: " + snpsExcluded);
                 }
                 readFiles.close();

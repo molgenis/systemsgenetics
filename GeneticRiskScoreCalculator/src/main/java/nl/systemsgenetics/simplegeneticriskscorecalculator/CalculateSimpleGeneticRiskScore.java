@@ -30,7 +30,7 @@ class CalculateSimpleGeneticRiskScore {
 
     private static final String[] chrOrder = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"};
 
-    static DoubleMatrixDataset<String, String> calculate(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double windowSize, boolean debugMode, double[] pValueThreshold) {
+    static DoubleMatrixDataset<String, String> calculate(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double windowSize, boolean debugMode, double[] pValueThreshold, boolean sumRisk) {
         ArrayList<String> keys = new ArrayList<String>();
         for (Entry<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
             for (Entry<String, THashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
@@ -96,32 +96,49 @@ class CalculateSimpleGeneticRiskScore {
                                     }
                                     
                                     double or = riskE.getOr();
-                                    int direction = -1;
-                                    if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele() == (var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
-                                        direction = 1;
-                                    }
-
-                                    //        StringBuilder Genos = new StringBuilder();
-                                    //        StringBuilder Genos2 = new StringBuilder();
-                                    //        StringBuilder Genos3 = new StringBuilder();
-                                    for (int sample = 0; sample < var1.getSampleCalledDosages().length; sample++) {
-                                        if (var1.getSampleCalledDosages()[sample] != -1) {
-                                            scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (direction * or * Math.abs(var1.getSampleCalledDosages()[sample] - 2))));
-                                            //        Genos.append(Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
-                                            //        Genos2.append(direction * or * Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
-                                            //        Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
+                                    boolean riskCodedAsTwo;
+                                    if(sumRisk && or <0){
+                                        or = or*-1;
+                                        riskCodedAsTwo = false;
+                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                            riskCodedAsTwo = true;
+                                        }
+                                    } else {
+                                        riskCodedAsTwo = true;
+                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                            riskCodedAsTwo = false;
                                         }
                                     }
-                                    //        System.out.println("");
-                                    //        System.out.println("SNP: "+riskE.getRsName());
-                                    //        System.out.println("Allele in data: "+var1.getRefAllele().toString());
-                                    //        System.out.println("Allele: "+riskE.getAllele());
-                                    //        System.out.println("Diction: "+direction);
-                                    //        System.out.println("Or: "+or);
-                                    //        System.out.println("Dosages: "+Genos.toString());
-                                    //        System.out.println("Scores: "+Genos2.toString());
-                                    //        System.out.println("ScoresT: "+Genos3.toString());
-                                    //        System.out.println("");
+//                                    StringBuilder Genos = new StringBuilder();
+//                                    StringBuilder Genos1 = new StringBuilder();
+//                                    StringBuilder Genos2 = new StringBuilder();
+//                                    StringBuilder Genos3 = new StringBuilder();
+                                    for (int sample = 0; sample < var1.getSampleCalledDosages().length; sample++) {
+                                        if (var1.getSampleCalledDosages()[sample] != -1) {
+                                            if(riskCodedAsTwo){
+                                                scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (or * var1.getSampleCalledDosages()[sample])));
+//                                                Genos2.append(or * var1.getSampleCalledDosages()[sample]).append(",");
+                                            } else {
+                                                scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (or * Math.abs(var1.getSampleCalledDosages()[sample] - 2))));
+//                                                Genos2.append(or * Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
+                                            }
+//                                            Genos.append(var1.getSampleCalledDosages()[sample]).append(",");
+//                                            Genos1.append(var1.getSampleVariants().get(sample).toString());Genos1.append(",");
+//                                            Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
+                                        }
+                                    }
+                                    //I have now removed the conversion from 0 to 2 and vice versa from the calculations. Why is this needed?
+//                                            System.out.println("");
+//                                            System.out.println("SNP: "+riskE.getRsName());
+//                                            System.out.println("Allele in data: "+var1.getRefAllele().toString());
+//                                            System.out.println("Allele: "+riskE.getAllele());
+//                                            System.out.println("Diction: "+direction);
+//                                            System.out.println("Or: "+or);
+//                                            System.out.println("Genotypes: "+Genos1.toString());
+//                                            System.out.println("Dosages: "+Genos.toString());
+//                                            System.out.println("Scores: "+Genos2.toString());
+//                                            System.out.println("ScoresT: "+Genos3.toString());
+//                                            System.out.println("");
 
                                     nrSNPs++;
 
@@ -166,7 +183,7 @@ class CalculateSimpleGeneticRiskScore {
         return scores;
     }
 
-    static DoubleMatrixDataset<String, String> calculateTwoStages(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double[] windowSize, boolean debugMode, double[] pValueThreshold) {
+    static DoubleMatrixDataset<String, String> calculateTwoStages(RandomAccessGenotypeData genotypeData, THashMap<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> risks, File outputFolder, double rSquare, double[] windowSize, boolean debugMode, double[] pValueThreshold, boolean sumRisk) {
         ArrayList<String> keys = new ArrayList<String>();
         for (Entry<String, THashMap<String, THashMap<String, ArrayList<RiskEntry>>>> riskScorePheno : risks.entrySet()) {
             for (Entry<String, THashMap<String, ArrayList<RiskEntry>>> riskScorePheno2 : riskScorePheno.getValue().entrySet()) {
@@ -260,33 +277,52 @@ class CalculateSimpleGeneticRiskScore {
                                     if (debugMode) {
                                         out.write(riskE.InfoToString() + "\n");
                                     }
+                                    
                                     double or = riskE.getOr();
-                                    int direction = -1;
-                                    if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
-                                        direction = 1;
-                                    }
-
-                                    //        StringBuilder Genos = new StringBuilder();
-                                    //        StringBuilder Genos2 = new StringBuilder();
-                                    //        StringBuilder Genos3 = new StringBuilder();
-                                    for (int sample = 0; sample < var1.getSampleCalledDosages().length; sample++) {
-                                        if (var1.getSampleCalledDosages()[sample] != -1) {
-                                            scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (direction * or * Math.abs(var1.getSampleCalledDosages()[sample] - 2))));
-                                            //        Genos.append(Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
-                                            //        Genos2.append(direction * or * Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
-                                            //        Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
+                                    boolean riskCodedAsTwo;
+                                    if(sumRisk && or <0){
+                                        or = or*-1;
+                                        riskCodedAsTwo = false;
+                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                            riskCodedAsTwo = true;
+                                        }
+                                    } else {
+                                        riskCodedAsTwo = true;
+                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                            riskCodedAsTwo = false;
                                         }
                                     }
-                                    //        System.out.println("");
-                                    //        System.out.println("SNP: "+riskE.getRsName());
-                                    //        System.out.println("Allele in data: "+var1.getRefAllele().toString());
-                                    //        System.out.println("Allele: "+riskE.getAllele());
-                                    //        System.out.println("Diction: "+direction);
-                                    //        System.out.println("Or: "+or);
-                                    //        System.out.println("Dosages: "+Genos.toString());
-                                    //        System.out.println("Scores: "+Genos2.toString());
-                                    //        System.out.println("ScoresT: "+Genos3.toString());
-                                    //        System.out.println("");
+
+//                                    StringBuilder Genos = new StringBuilder();
+//                                    StringBuilder Genos1 = new StringBuilder();
+//                                    StringBuilder Genos2 = new StringBuilder();
+//                                    StringBuilder Genos3 = new StringBuilder();
+                                    for (int sample = 0; sample < var1.getSampleCalledDosages().length; sample++) {
+                                        if (var1.getSampleCalledDosages()[sample] != -1) {
+                                            if(riskCodedAsTwo){
+                                                scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (or * var1.getSampleCalledDosages()[sample])));
+//                                                Genos2.append(or * var1.getSampleCalledDosages()[sample]).append(",");
+                                            } else {
+                                                scores.getMatrix().setQuick(rowNr, sample, (scores.getMatrix().getQuick(rowNr, sample) + (or * Math.abs(var1.getSampleCalledDosages()[sample] - 2))));
+//                                                Genos2.append(or * Math.abs(var1.getSampleCalledDosages()[sample]-2)).append(",");
+                                            }
+//                                            Genos.append(var1.getSampleCalledDosages()[sample]).append(",");
+//                                            Genos1.append(var1.getSampleVariants().get(sample).toString());Genos1.append(",");
+//                                            Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
+                                        }
+                                    }
+                                    //I have now removed the conversion from 0 to 2 and vice versa from the calculations. Why is this needed?
+//                                    System.out.println("");
+//                                    System.out.println("SNP: "+riskE.getRsName());
+//                                    System.out.println("Allele in data: "+var1.getRefAllele().toString());
+//                                    System.out.println("Allele: "+riskE.getAllele());
+//                                    System.out.println("Risk coded as two: "+riskCodedAsTwo);
+//                                    System.out.println("Or: "+or);
+//                                    System.out.println("Dosages: "+Genos.toString());
+//                                    System.out.println("Genotypes: "+Genos1.toString());
+//                                    System.out.println("Scores: "+Genos2.toString());
+//                                    System.out.println("ScoresT: "+Genos3.toString());
+//                                    System.out.println("");
 
                                     nrSNPs++;
 
