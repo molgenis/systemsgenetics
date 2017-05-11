@@ -186,7 +186,7 @@ public class ReferenceGenomeFasta {
 
         chromosomes = new LinkedHashMap<String, LargeByteArray>(32);
         for (File f : fastaFiles) {
-//            System.out.println(f.getAbsolutePath());
+            System.out.println(f.getAbsolutePath());
             BufferedReader fasteReader = new BufferedReader(new FileReader(f));
 
             String line;
