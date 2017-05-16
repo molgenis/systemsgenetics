@@ -17,21 +17,22 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
 public class Utils {
+	/**
+	 * Add a value to one of the arrays in a 2D array
+	 * 
+	 * @param allColumns 2D array to add a value to
+	 * 
+	 * @param arrayIndex Index of the array to add a value to
+	 * 
+	 * @param value Value to add to the array
+	 * 
+	 * First try to add an element from row to the *i*th list, if
+	 * the *i*th list does not exist yet
+	 * catch the IndexOutOfBoundsException, make a new list and it
+	 * at the *i*th position of the 2D array allColumns
+	 */
 	private static List<List<String>> addSingleValueTo2DArray(List<List<String>> allColumns, int arrayIndex, String value){
-		/*
-		 * Add a value to one of the arrays in a 2D array
-		 * 
-		 * @param allColumns 2D array to add a value to
-		 * 
-		 * @param arrayIndex Index of the array to add a value to
-		 * 
-		 * @param value Value to add to the array
-		 * 
-		 * First try to add an element from row to the *i*th list, if
-		 * the *i*th list does not exist yet
-		 * catch the IndexOutOfBoundsException, make a new list and it
-		 * at the *i*th position of the 2D array allColumns
-		 */
+
 		try {
 			allColumns.get(arrayIndex).add(value);
 		} catch (IndexOutOfBoundsException e) {
@@ -41,19 +42,20 @@ public class Utils {
 		}
 		return allColumns;
 	}
+	
+	/**
+	 * Reads tab delimited file and returns them as list of list, with [x] =
+	 * colummn and [x][y] is value in column. Needed for reading counts
+	 * file, as there the rows are the samples, as opposed to expression and
+	 * genotype file where the columns are the samples. Needs to be read in
+	 * memory, so minimal memory requirement is larger than the size of the
+	 * counts file.
+	 * 
+	 * @param filepath The path to a tab delimited file to read
+	 * 
+	 * @return A 2D array with each array being one column from filepath
+	 */
 	public static List<List<String>> readTabDelimitedColumns(String filepath) throws IOException {
-		/*
-		 * Reads tab delimited file and returns them as list of list, with [x] =
-		 * colummn and [x][y] is value in column. Needed for reading counts
-		 * file, as there the rows are the samples, as opposed to expression and
-		 * genotype file where the columns are the samples. Needs to be read in
-		 * memory, so minimal memory requirement is larger than the size of the
-		 * counts file.
-		 * 
-		 * @param filepath The path to a tab delimited file to read
-		 * 
-		 * @return A 2D array with each array being one column from filepath
-		 */
 		List<List<String>> allColumns = new ArrayList<List<String>>();
 		// parses file on tabs
 		CSVParser parser = new CSVParser(new FileReader(filepath), CSVFormat.newFormat('\t'));
@@ -106,21 +108,21 @@ public class Utils {
 		return allColumns;
 	}
 
+	/**
+	 * Converting a vector of string to a vector of doubles
+	 * 
+	 * @param vector A vector of strings
+	 * 
+	 * @param start of vector from where to convert string to double
+	 * 
+	 * @return A vector of doubles
+	 */
 	public static double[] StringVectorToDoubleArrayList(String[] vector, int start) {
-		/*
-		 * Converting a vector of string to a vector of doubles
-		 * 
-		 * @param vector A vector of strings
-		 * 
-		 * @param start of vector from where to convert string to double
-		 * 
-		 * @return A vector of doubles
-		 */
 		int vectorLength = vector.length;
 		double[] doubles = new double[vectorLength-start];
 		// start at 1 because first element is sampleName
 		for (int i = start; i < vectorLength; i++) {
-			doubles[i-start] = Double.parseDouble(vector[i]);
+				doubles[i-start] = Double.parseDouble(vector[i]);
 		}
 		return doubles;
 	}
@@ -146,14 +148,14 @@ public class Utils {
 		return builder.toString().trim();
 	}
 
+	/**
+	 * Turn list into tab separated string
+	 * 
+	 *  @param list Each element will be separated by a tab
+	 *  @param append String to be added at end of each element
+	 */
 	public static <T> String listToTabSeparatedString(List<T> list, String append)
 	{
-		/* 
-		 * Turn list into tab separated string
-		 * 
-		 *  @param list Each element will be separated by a tab
-		 *  @param append String to be added at end of each element
-		 */
 		StringBuilder builder = new StringBuilder();
 		for(Object o: list)
 		{
@@ -162,14 +164,13 @@ public class Utils {
 		return builder.toString().trim();
 	}
 
-
+	/**
+	 * Find the index of the top n values in array orig (from http://stackoverflow.com/a/17623521/651779)
+	 * 
+	 * @param orig Array of doubles to find highest values in
+	 * @param n Number of highest values to report
+	 */
 	static ArrayList<Integer> indexesOfTopElements(double[] orig, int n) {
-		/*
-		 * Find the index of the top n values in array orig (from http://stackoverflow.com/a/17623521/651779)
-		 * 
-		 * @param orig Array of doubles to find highest values in
-		 * @param n Number of highest values to report
-		 */
 		double[] copy = Arrays.copyOf(orig,orig.length);
 		Arrays.sort(copy);
 		double[] honey = Arrays.copyOfRange(copy,copy.length - n, copy.length);
@@ -220,6 +221,7 @@ public class Utils {
 		LineIterator snpGenePairIterator = FileUtils.lineIterator(new File(snpsToTestFile), "UTF-8");
 		HashMap<String, ArrayList<String>> geneSnpPairs = new HashMap<String, ArrayList<String>>();
 		int totalSnpsToTest = 0;
+		snpGenePairIterator.next();
 		while (snpGenePairIterator.hasNext()) {
 			ArrayList<String> snpGeneStringVector = new ArrayList<String>(Arrays.asList(snpGenePairIterator.next().split("\t")));
 			String gene = snpGeneStringVector.get(0);

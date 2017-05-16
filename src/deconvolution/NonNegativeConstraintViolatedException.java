@@ -1,9 +1,6 @@
 package deconvolution;
 
 public class NonNegativeConstraintViolatedException extends Exception {
-    /**
-	 * 
-	 */
 	private static final long serialVersionUID = 476078491106110717L;
 
 	public NonNegativeConstraintViolatedException() {

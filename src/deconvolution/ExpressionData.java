@@ -32,7 +32,15 @@ public class ExpressionData {
 				DeconvolutionLogger.log.info(String.format("Number of columns at row %d: %d", rowNumber, expressionStringVector.length-1));
 				throw new RuntimeException(String.format("Expressione table does not have the same number of columns as there are celltypes at row %d",rowNumber));
 			}
-			double[] expressionValues = Utils.StringVectorToDoubleArrayList(expressionStringVector, 1);
+			
+			
+			double[] expressionValues = null;
+			try{
+				expressionValues = Utils.StringVectorToDoubleArrayList(expressionStringVector, 1);
+			}catch(NumberFormatException e){
+				DeconvolutionLogger.log.warning(String.format("Gene %s contains expression values that can not be converted to Double, SKIPPING!", geneName));
+			}
+			
 			geneExpression.put(geneName, expressionValues);
 		}
 	}

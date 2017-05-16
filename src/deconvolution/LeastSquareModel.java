@@ -3,11 +3,10 @@ package deconvolution;
 import java.util.ArrayList;
 import java.util.List;
 
+/** 
+* TODO: Now doing everything 3x for the 3 genotypes, should be merged to 1 single function that takes as input which genotype it is
+*/
 public class LeastSquareModel {
-	/* independentVariables = the names of the independent variables, e.g. neut%, mono%, neut%:GT 
-	 * 
-	 * TODO: Now doing everything 3x for the 3 genotypes, should be merged to 1 single function that takes as input which genotype it is
-	 * */
 	// save the expression values for each dosage separatly
 	private List<Double> expressionValuesGt0 = new ArrayList<Double>();
 	private List<Double> expressionValuesGt1 = new ArrayList<Double>();
@@ -21,30 +20,18 @@ public class LeastSquareModel {
 	LeastSquareModel(){};
 
 	public void addExpressionValuesGt0(double expressionValue){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 	    this.expressionValuesGt0.add(expressionValue);
 	  }
 	
 	public void addExpressionValuesGt1(double expressionValue){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 		this.expressionValuesGt1.add(expressionValue);
 	  }
 	
 	public void addExpressionValuesGt2(double expressionValue){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 		this.expressionValuesGt2.add(expressionValue);
 	  }
 	
 	public double[] getExpessionValuesGt0() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.expressionValuesGt0 == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -57,9 +44,6 @@ public class LeastSquareModel {
 	  }
 	
 	public double[] getExpessionValuesGt1() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.expressionValuesGt1 == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -72,9 +56,6 @@ public class LeastSquareModel {
 	  }
 	
 	public double[] getExpessionValuesGt2() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.expressionValuesGt2 == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -87,30 +68,18 @@ public class LeastSquareModel {
 	  }
 	
 	public void addCellCountsGt0(int celltypeIndex, double cellcount){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 	    this.cellCountsGt0.get(celltypeIndex).add(cellcount);
 	  }
 	
 	public void addCellCountsGt1(int celltypeIndex, double cellcount){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 		this.cellCountsGt1.get(celltypeIndex).add(cellcount);
 	  }
 	
 	public void addCellCountsGt2(int celltypeIndex, double cellcount){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 		this.cellCountsGt2.get(celltypeIndex).add(cellcount);
 	  }
 	
 	public double[][] getCellCountsGt0() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.cellCountsGt0 == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -123,11 +92,8 @@ public class LeastSquareModel {
 		}
 	    return(cellCountMatrix);
 	  }
-	
+
 	public double[][] getCellCountsGt1() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.cellCountsGt1 == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -141,10 +107,8 @@ public class LeastSquareModel {
 	    return(cellCountMatrix);
 	  }
 	
+
 	public double[][] getCellCountsGt2() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.cellCountsGt2 == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -158,17 +122,14 @@ public class LeastSquareModel {
 	    return(cellCountMatrix);
 	  }
 	
-		public void addCelltype(String celltype) throws IllegalAccessException{
-		/* 
-		 * Get a list of all the celltypes given as input
-		 */
+	public void addCelltype(String celltype) throws IllegalAccessException{
 		this.celltypes.add(celltype);
 	}
 	
+	/** 
+	 * Get a list of all the celltypes given as input
+	 */
 	public List<String> getCelltypes() throws IllegalAccessException{
-		/* 
-		 * Get a list of all the celltypes given as input
-		 */
 		if(this.celltypes == null){
 			throw new IllegalAccessException("celltypes not set for this model");
 		}
@@ -186,17 +147,17 @@ public class LeastSquareModel {
 	    return(this.qtlName);
 	  }		
 	
+	/** 
+	 * Set No Intercept for the model. If true, the intercept will be removed
+	 */
 	public void setNoIntercept(Boolean noIntercept){
-		/* 
-		 * Set No Intercept for the model. If true, the intercept will be removed
-		 */
 	    this.noIntercept = noIntercept;
 	  }
 	
+	/** 
+	 * Get the No Intercept value for the model. If true, the intercept will be removed
+	 */
 	public Boolean getNoIntercept() throws IllegalAccessException{
-		/* 
-		 * Get the No Intercept value for the model. If true, the intercept will be removed
-		 */
 		if(this.noIntercept == null){
 			throw new IllegalAccessException("noIntercept not set for this model");
 		}

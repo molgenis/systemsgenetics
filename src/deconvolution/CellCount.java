@@ -18,13 +18,13 @@ public class CellCount {
 	private static int numberOfCelltypes;
 	private static int numberOfSamples;
 	public CellCount() {};
+	/**
+	 * Read in cellcount file 
+	 * 
+	 * @param cellcountFile File with cellcount percentages, 
+	 * 		   with columns = celltype, rows is samples (includes column headers and row names)   
+	 */
 	public CellCount( String cellCountFile) throws IOException{
-		/*
-		 * Read in cellcount file 
-		 * 
-		 * @param cellcountFile File with cellcount percentages, 
-		 * 		   with columns = celltype, rows is samples (includes column headers and row names)   
-		 */
 		// the cell type names are the first row of cellcount file, extract for
 		// later printing
 		// is now saved as table of strings, should be changed to table of doubles so we only have to convert them ones

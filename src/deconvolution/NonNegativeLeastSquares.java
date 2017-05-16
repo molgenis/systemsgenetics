@@ -35,7 +35,7 @@ import Jama.Matrix;
 	 */
 	public class NonNegativeLeastSquares {
 		/**
-		 * Whee!!! This is my own Java implementation of the NNLS algorithm
+		 * This is my own Java implementation of the NNLS algorithm
 		 * as described in:
 		 * Lawson and Hanson, "Solving Least Squares Problems", Prentice-Hall, 1974, Chapter 23, p. 161.
 		 * It not only solves the least squares problem, but does so while also requiring

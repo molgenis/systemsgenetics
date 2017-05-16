@@ -19,24 +19,27 @@ public class DeconvolutionResult {
 	
 	public DeconvolutionResult(){};
 	
-	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues, InteractionModel fullModel, List<InteractionModel> ctModels, String multipleTestingMethod, double wholeBloodQTL, double wholeBloodQTLpvalue){
-		/*
-		 * Set the deconvolutionResult with the InteractionModels.
-		 * 
-		 * @param celltypes List of celltypes in the deconvolution result
-		 * 
-		 * @param qtlName The name of the QTL
-		 * 
-		 * @param pvalues The pvalues from the deconvolution model
-		 * 
-		 * @param fullModel Interaction model containing information of all celltypes
-		 * 
-		 * @param ctModels List of interaction models (each without all celltypes)
-		 * 
-		 * @param multipleTestingMethod Method to use for multiple testing correction
-		 * 
-		 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
-		 */
+	/**
+	 * Set the deconvolutionResult with the InteractionModels.
+	 * 
+	 * @param celltypes List of celltypes in the deconvolution result
+	 * 
+	 * @param qtlName The name of the QTL
+	 * 
+	 * @param pvalues The pvalues from the deconvolution model
+	 * 
+	 * @param fullModel Interaction model containing information of all celltypes
+	 * 
+	 * @param ctModels List of interaction models (each without all celltypes)
+	 * 
+	 * @param multipleTestingMethod Method to use for multiple testing correction
+	 * 
+	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
+	 */
+	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues, InteractionModel fullModel, 
+								List<InteractionModel> ctModels, String multipleTestingMethod, double wholeBloodQTL, 
+								double wholeBloodQTLpvalue){
+
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
@@ -50,20 +53,47 @@ public class DeconvolutionResult {
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
 	
+	/**
+	 * Set the deconvolutionResult with the InteractionModels.
+	 * 
+	 * @param celltypes List of celltypes in the deconvolution result
+	 * 
+	 * @param qtlName The name of the QTL
+	 * 
+	 * @param pvalues The pvalues from the deconvolution model
+	 * 
+	 * @param fullModel Interaction model containing information of all celltypes
+	 */
+	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues,InteractionModel fullModel,
+								double wholeBloodQTL,double wholeBloodQTLpvalue){
+		this.celltypes = celltypes;
+		this.qtlName = qtlName;
+		this.pvalues = pvalues;
+		this.correctedPvalues = pvalues;
+		for (int i = 0; i < celltypes.size(); i++){
+			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
+		}
+		this.fullModel = fullModel;
+		for (int i = 0; i < celltypes.size(); i++){
+			correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
+		}
+		this.wholeBloodQTL = wholeBloodQTL;
+		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
+	}
 	
+	/**
+	 * Set the deconvolutionResult without the InteractionModels. This is for when the models are not used, e.g. when option -m is used
+	 * and not all genotypes have enough samples
+	 * 
+	 * @param celltypes List of celltypes in the deconvolution result
+	 * 
+	 * @param qtlName The name of the QTL
+	 * 
+	 * @param pvalues The pvalues from the deconvolution model
+	 * 
+	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
+	 */
 	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues, double wholeBloodQTL,double wholeBloodQTLpvalue){
-		/*
-		 * Set the deconvolutionResult without the InteractionModels. This is for when the models are not used, e.g. when option -m is used
-		 * and not all genotypes have enough samples
-		 * 
-		 * @param celltypes List of celltypes in the deconvolution result
-		 * 
-		 * @param qtlName The name of the QTL
-		 * 
-		 * @param pvalues The pvalues from the deconvolution model
-		 * 
-		 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
-		 */
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
@@ -109,10 +139,10 @@ public class DeconvolutionResult {
 		return(this.qtlName);
 	}
 	
+	/** 
+	 * Get a list of all the celltypes given as input
+	 */
 	public List<String> getCelltypes() throws IllegalAccessException{
-		/* 
-		 * Get a list of all the celltypes given as input
-		 */
 		if(this.celltypes == null){
 			throw new IllegalAccessException("celltypes not set for this model");
 		}

@@ -11,11 +11,11 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
+/**
+ * Validate the deconvolution results using a tab-separated text file with correlation values of cell-type specific QTLs
+ * 
+ */
 public class Validate {
-	/*
-	 * Validate the deconvolution results using a tab-separated text file with correlation values of cell-type specific QTLs
-	 * 
-	 */
 	private File validationFile;
 	private List<DeconvolutionResult> deconvolutionResults = new ArrayList<DeconvolutionResult>();
 	private int numberOfTopCorrelations = 100; 
@@ -194,10 +194,10 @@ public class Validate {
 		}
 	}
 
+	/**
+	 * For the decon results, calculate the effect size
+	 */
 	private void getEffectSizeSignificants() throws IllegalAccessException, IOException{
-		/*
-		 * For the decon results, calculate the effect size
-		 */
 		for (String celltypeDecon : deconvolutionSignificant.keySet()){
 			// too many nested hashmaps should be able to do this in a much simpler method
 			HashMap<String, ArrayList<Double>> correlationPerSignificantDecon = new HashMap<String, ArrayList<Double>>();

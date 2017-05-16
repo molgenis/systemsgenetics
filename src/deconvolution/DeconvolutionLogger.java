@@ -7,13 +7,15 @@ import java.util.Date;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 	public class DeconvolutionLogger {
 	  static private FileHandler outfilePath;
 	  protected final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-	  static public void setup(String outputDir) throws IOException {
+	  static public void setup(String outputDir, Boolean noConsole) throws IOException {
 	    // get the global logger to configure it
+		 LogManager.getLogManager().reset();
 	    log.setLevel(Level.INFO);
 	    DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 	    Date date = new Date();
@@ -23,7 +25,9 @@ import java.util.logging.Logger;
 	    consoleHandler.setFormatter(customFormatter);
 	    outfilePath.setFormatter(customFormatter);
 	    log.setUseParentHandlers(false);
-	    log.addHandler(consoleHandler);
+	    if (!noConsole){
+	    	log.addHandler(consoleHandler);
+	    }
 	    log.addHandler(outfilePath);
 	    
 	  }

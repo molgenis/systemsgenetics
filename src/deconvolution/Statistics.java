@@ -7,32 +7,31 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.lang.Math;
 
+/**
+ * Several functions for statistical computations
+ */
 public class Statistics 
 {
-	/*
-	 * Several functions for statistical computations
-	 */
     public Statistics(){}   
-    
+	
+    /**
+	 * Takes the log10 of all values in vector data and returns the vector of logged values
+	 * 
+	 * @param data Vector to calculate log10 for
+	 */    
     public double[] log10(double[] data){
-    	/*
-    	 * Takes the log10 of all values in vector data and returns the vector of logged values
-    	 * 
-    	 * @param data Vector to calculate log10 for
-    	 */
     	for (int i = 0; i < data.length; i++){
     		data[i] = Math.log10(data[i]);
     	}
     	return(data);
     }
 
+	/** log modulus transformation, so that negative numbers are preserved
+	 * Take log of absolute value, put back sign
+	 * 
+	 * @param value value to take log modulus of
+	 */
     static public double logmodulus(double value){
-    	/* log modulus transformation, so that negative numbers are preserved
-		 * Take log of absolute value, put back sign
-		 * 
-		 * @param value value to take log modulus of
-		 */
-		
 		Boolean negative = false;
 		if(value < 0){
 			negative = true;
@@ -45,13 +44,13 @@ public class Statistics
 		return(logValue);
     }
     
+	/**
+	 * Normalize a vector
+	 * 
+	 * @param data vector to normalize
+	 * 
+	 */
     static public double[] normalize(double[] data){
-    	/*
-    	 * Normalize a vector
-    	 * 
-    	 * @param data vector to normalize
-    	 * 
-    	 */
     	double std = getStdDev(data);
     	double mean = getMean(data);
     	for(int i = 0; i < data.length; i++){
@@ -60,12 +59,12 @@ public class Statistics
     	return(data);
     }
     
+	/**
+	 * Normalize an arraylist
+	 * 
+	 * @param data Arraylist top normalize
+	 */
     static public ArrayList<Double> normalize(ArrayList<Double> data){
-    	/*
-    	 * Normalize an arraylist
-    	 * 
-    	 * @param data Arraylist top normalize
-    	 */
     	double std = getStdDev(data);
     	double mean = getMean(data);
     	for(int i = 0; i < data.size(); i++){
@@ -74,10 +73,10 @@ public class Statistics
     	return(data);
     }
     
+	/**
+	 * Normalize vector, reinsert the mean
+	 */
     public double[] normalizeKeepMean(double[] expression, Boolean testNormality){
-    	/*
-    	 * Normalize vector, reinsert the mean
-    	 */
     	double mean = getMean(expression);
     	double[] normalizedData = normalize(expression);
     	if(testNormality){
@@ -147,12 +146,12 @@ public class Statistics
     }
 
 
+	/**
+	 * Calculate median of a vector
+	 * 
+	 * @param data Vector to calculate median for
+	 */
     public double median(double[] data){
-    	/*
-    	 * Calculate median of a vector
-    	 * 
-    	 * @param data Vector to calculate median for
-    	 */
 	    Arrays.sort(data);
 	
 	    if (data.length % 2 == 0){
@@ -163,12 +162,12 @@ public class Statistics
 	    }
     }
     
+	/**
+	 * Transpose a matrix
+	 * 
+	 * @param cellcountTable Matrix to transpose
+	 */
     public static List<List<String>> transposeStringMatrix(List<List<String>> cellcountTable){
-    	/*
-    	 * Transpose a matrix
-    	 * 
-    	 * @param cellcountTable Matrix to transpose
-    	 */
         List<List<String>> temp = new ArrayList<List<String>>();
         for (int i = 0; i < cellcountTable.size(); i++)
             for (int j = 0; j < cellcountTable.get(0).size(); j++)
@@ -176,12 +175,12 @@ public class Statistics
         return temp;
     }
     
+	/**
+	 * Transpose a matrix
+	 * 
+	 * @param cellcountTable Matrix to transpose
+	 */
     public static List<List<Double>> transposeDoubleMatrix(List<List<Double>> cellcountTable){
-    	/*
-    	 * Transpose a matrix
-    	 * 
-    	 * @param cellcountTable Matrix to transpose
-    	 */
         List<List<Double>> temp = new ArrayList<List<Double>>();
         for (int i = 0; i < cellcountTable.size(); i++)
             for (int j = 0; j < cellcountTable.get(0).size(); j++)
@@ -189,15 +188,15 @@ public class Statistics
         return temp;
     }
    
+	/**
+	 * based on https://www.researchgate.net/post/How_do_you_calculate_a_p_value_for_spearmans_rank_correlation
+	 * and https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient#Determining_significance
+	 * 
+	 * @param spearmanCorrelation Spearman correlation from SpearmansCorrelation()
+	 * 
+	 * @param sampleSize Number of samples used to calculate correlation
+	 */
     public static double calculateSpearmanTwoTailedPvalue(double spearmanCorrelation, int sampleSize){
-    	/*
-    	 * based on https://www.researchgate.net/post/How_do_you_calculate_a_p_value_for_spearmans_rank_correlation
-    	 * and https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient#Determining_significance
-    	 * 
-    	 * @param spearmanCorrelation Spearman correlation from SpearmansCorrelation()
-    	 * 
-    	 * @param sampleSize Number of samples used to calculate correlation
-    	 */
     	double z = Math.sqrt((sampleSize-3)/1.06) * atanh(spearmanCorrelation);
     	NormalDistribution normalDistribution = new NormalDistribution();
     	double p = 2*normalDistribution.cumulativeProbability(-Math.abs(z));
@@ -208,12 +207,12 @@ public class Statistics
     	return(p);
     }
     
+	/**
+	 * Calculate hyperbolic Tangent of value (from https://github.com/maths/dragmath/blob/master/lib/jep/src/org/nfunk/jep/function/ArcTanH.java)
+	 * 
+	 * @param x Value to calculate atanh for
+	 */
     private static double atanh(double x){
-    	/*
-    	 * Calculate hyperbolic Tangent of value (from https://github.com/maths/dragmath/blob/master/lib/jep/src/org/nfunk/jep/function/ArcTanH.java)
-    	 * 
-    	 * @param x Value to calculate atanh for
-    	 */
     	return Math.log((1+x)/(1-x))/2;
     }
     

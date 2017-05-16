@@ -1,14 +1,7 @@
 package deconvolution;
 
 public class NotEnoughSamplesPerGenotypeException extends Exception {
-    /**
-	 * 
-	 */
 	private static final long serialVersionUID = 7189762595398313333L;
-
-	/**
-	 * 
-	 */
 
 	public NotEnoughSamplesPerGenotypeException() {
         super();

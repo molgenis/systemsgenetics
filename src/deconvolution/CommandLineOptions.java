@@ -27,6 +27,7 @@ public class CommandLineOptions {
 	private String permutationType = "genotype";
 	private Boolean forceNormalExpression = false;
 	private Boolean forceNormalCellcount = false;
+	private Boolean filterNonNegativeConstraint = false;
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
 	private Boolean allDosages = false;
@@ -42,19 +43,20 @@ public class CommandLineOptions {
 	private String multipleTestCorrectionMethod = "bonferonni";
 	private Boolean skipGenotypes = false;
 	private Boolean wholeBloodQTL = false;
+	private Boolean noConsole = false;
+	/**
+	 * Standard command line parsing.
+	 * 
+	 * @param args A string vector of all arguments given to the command
+	 * line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
+	 * 
+	 * @return A CommandLine object that includes all the options given to
+	 * the command line
+	 */
 	public void parseCommandLine(String[] args) throws ParseException, FileNotFoundException {
-		/*
-		 * Standard command line parsing.
-		 * 
-		 * @param args A string vector of all arguments given to the command
-		 * line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
-		 * 
-		 * @return A CommandLine object that includes all the options given to
-		 * the command line
-		 */
 		Options options = new Options();
 		Option help = new Option("help", "print this message");
-		Option allDosages = Option.builder("ad").required(false).hasArg().longOpt("all_dosages")
+		Option allDosages = Option.builder("ad").required(false).longOpt("all_dosages")
 				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
 		Option plotBetaTimesVariables = Option.builder("b").required(false).hasArg().longOpt("plot_betas")
 				.desc("Plot the B1*X1, B2*X2 etc values if the sum of Bx*CELLTYPEz+By*CELLTYPEz:GT < 0").build();
@@ -65,12 +67,12 @@ public class CommandLineOptions {
 		Option expression = Option.builder("e").required(true).hasArg().longOpt("expression")
 				.desc("Expression file name").argName("file").build();
 		Option filterSamplesOption =  Option.builder("f").required(false).longOpt("filter_samples")
-				.desc("If set, remove samples that are filtered out because of -m, -f or -ad. By default p-values of these are set to 333.0").build();
+				.desc("If set, remove samples that are filtered out because of -m, -nn or -ad. By default p-values of these are set to 333.0").build();
 		Option genotype = Option.builder("g").required(true).hasArg().longOpt("genotype").desc("Genotype file name")
 				.argName("file").build();
-		Option minimum_samples_per_genotype = Option.builder("m").required(false).hasArg().longOpt("minimum_samples_per_genotype")
+		Option minimumSamplesPerGenotype = Option.builder("m").required(false).hasArg().longOpt("minimum_samples_per_genotype")
 				.desc("The minimum amount of samples need for each genotype of a QTL for the QTL to be included in the results")
-				.build();
+				.argName("int").build();
 		Option multipleTestCorrectionMethod = Option.builder("mt").required(false).hasArg().longOpt("multiple_testing_correction_method")
 				.desc("Method used for doing multiple testing correction (currently only bonferonni)").build();
 		Option normalizationType = Option.builder("n").required(false).hasArg().longOpt("normalization_type")
@@ -79,6 +81,10 @@ public class CommandLineOptions {
 				.desc("Force normal on the expression data").build();
 		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
 				.desc("Force normal on the expression data").build();
+		Option filterNonNegativeConstraint = Option.builder("nn").required(false).longOpt("filter_non_negative_constraint")
+				.desc("Filter out QTLs which violate non-negative constaint of regression parameters").build();
+		Option noConsoleOption = Option.builder("no").required(false).longOpt("no_console")
+				.desc("Do not output logging info to the console").build();
 		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
 				.argName("path").build();
 		Option outfile = Option.builder("of").required(false).hasArg().longOpt("outfile").desc("Outfile name of deconvolution results (will be written in outfolder)")
@@ -91,13 +97,11 @@ public class CommandLineOptions {
 				.desc("Type to permute on, either genotype or expression (Default: genotype)").build();
 		Option roundDosage = Option.builder("r").required(false).longOpt("round_dosage")
 				.desc("Round the dosage to the closest int").build();
-		Option removeConstraintSamples = Option.builder("rc").required(false).longOpt("remove_constraint_violating_samples")
-				.desc("Remove samples that violate the non-negative beta constraint").build();
 		Option onlyOutputSignificantOption = Option.builder("s").required(false).longOpt("output_significant_only")
 				.desc("Only output results that are significant in at least one celltype.").build();
 		Option skipGenotypes = Option.builder("sg").required(false).longOpt("skip_genotypes")
 				.desc("Skip genotypes that are in the GeneSNP pair file but not in the genotype file.").build();
-		Option snpsToTestOption = Option.builder("sn").required(true).hasArg().longOpt("snpsToTest")
+		Option snpsToTestOption = Option.builder("sn").required(true).hasArg().longOpt("snpsToTest").argName("file")
 				.desc("Tab delimited file with first column gene name, second column SNP name. Need to match with names from genotype and expression files.").build();
 		Option doTestRun = Option.builder("t").required(false).longOpt("test_run")
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
@@ -107,7 +111,6 @@ public class CommandLineOptions {
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		options.addOption(onlyOutputSignificantOption);
 		options.addOption(writeCoefficientsOption);
-		options.addOption(removeConstraintSamples);
 		options.addOption(filterSamplesOption);
 		options.addOption(normalizationType);
 		options.addOption(plotBetaTimesVariables);
@@ -118,7 +121,7 @@ public class CommandLineOptions {
 		options.addOption(genotype);
 		options.addOption(cellcount);
 		options.addOption(roundDosage);
-		options.addOption(minimum_samples_per_genotype);
+		options.addOption(minimumSamplesPerGenotype);
 		options.addOption(forceNormalExpression);
 		options.addOption(forceNormalCellcount);
 		options.addOption(permuteType);
@@ -131,6 +134,8 @@ public class CommandLineOptions {
 		options.addOption(snpsToTestOption);
 		options.addOption(skipGenotypes);
 		options.addOption(wholeBloodQTL);
+		options.addOption(filterNonNegativeConstraint);
+		options.addOption(noConsoleOption);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
 			CommandLine cmdLine = cmdLineParser.parse(options, args);
@@ -152,13 +157,13 @@ public class CommandLineOptions {
 	
 	private void parseOptions(CommandLine cmdLine) throws FileNotFoundException{
 		if(cmdLine.hasOption("output_significant_only")){
-			onlyOutputSignificant = true;
+			onlyOutputSignificant = !onlyOutputSignificant;
 		}
 		if(cmdLine.hasOption("output_coefficients")){
-			writeCoefficients = true;
+			writeCoefficients = !writeCoefficients;
 		}
 		if(cmdLine.hasOption("remove_constraint_violating_samples")){
-			removeConstraintViolatingSamples = true;
+			removeConstraintViolatingSamples = !removeConstraintViolatingSamples;
 		}
 		permutationType = "genotype";
 		if(cmdLine.hasOption("permutation_type")){
@@ -178,18 +183,18 @@ public class CommandLineOptions {
 			roundDosage = true;
 		}
 		if (cmdLine.hasOption("force_normal_expression")){
-			forceNormalExpression = true;
+			forceNormalExpression = !forceNormalExpression;
 		}
 
 		if (cmdLine.hasOption("force_normal_cellcount")){
-			forceNormalCellcount = true;
+			forceNormalCellcount = !forceNormalCellcount;
 		}
 
 		if (cmdLine.hasOption("all_dosages")){
-			allDosages = true;
+			allDosages = !allDosages;
 		}
 		if (cmdLine.hasOption("skip_genotypes")){
-			skipGenotypes = true;
+			skipGenotypes = !skipGenotypes;
 		}
 		
 		if (cmdLine.hasOption("minimum_samples_per_genotype")) {
@@ -199,7 +204,7 @@ public class CommandLineOptions {
 			}
 		}
 		if (cmdLine.hasOption("plot_betas")) {
-			plotBetas = true;
+			plotBetas = !plotBetas;
 		}
 
 		expressionFile = cmdLine.getOptionValue("expression");
@@ -225,14 +230,18 @@ public class CommandLineOptions {
 		}
 		
 		outfolder = cmdLine.getOptionValue("outfolder");
+		
+		if (cmdLine.hasOption("no_console")) {
+			noConsole = !noConsole;
+		}
 		if (cmdLine.hasOption("normalization_type")){
 			normalizationType = cmdLine.getOptionValue("normalization_type");
 		}
 		if (cmdLine.hasOption("filter_samples")){
-			filterSamples = true;
+			filterSamples = !filterSamples;
 		}
 		if (cmdLine.hasOption("use_relative_cellcounts")){
-			useRelativeCellCounts = true;
+			useRelativeCellCounts = !useRelativeCellCounts;
 		}
 		if (cmdLine.hasOption("validate_output")){
 			validate = cmdLine.getOptionValue("validate_output");
@@ -241,7 +250,7 @@ public class CommandLineOptions {
 			}	
 		}
 		if (cmdLine.hasOption("test_run")) {
-			testRun = true;
+			testRun = !testRun;
 		}
 		
 		if (cmdLine.hasOption("multiple_testing_correction_method")){
@@ -249,7 +258,11 @@ public class CommandLineOptions {
 		}
 		
 		if (cmdLine.hasOption("whole_blood_qtl")){
-			wholeBloodQTL = true;
+			wholeBloodQTL = !wholeBloodQTL;
+		}
+		
+		if (cmdLine.hasOption("filter_non_negative_constraint")){
+			filterNonNegativeConstraint = !filterNonNegativeConstraint;
 		}
 	}
 	
@@ -263,7 +276,7 @@ public class CommandLineOptions {
 	    		outfolderDir.mkdir();
 	    		dirDidNotExist = true;
 	    	}
-	    	DeconvolutionLogger.setup(outfolder);
+	    	DeconvolutionLogger.setup(outfolder, noConsole);
 	    	if(dirDidNotExist){
 	    		DeconvolutionLogger.log.info("Created directory "+outfolder);
 	    	}
@@ -303,6 +316,8 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Multiple testing correction method (-mt): %s", multipleTestCorrectionMethod));
 		DeconvolutionLogger.log.info(String.format("Skipping genotypes that are in SNP-gene pair file but not in genotype file (-sg): %s", skipGenotypes));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
+		DeconvolutionLogger.log.info(String.format("Filter out QTLs which violate non-negative constaint of regression parameters (-nn): %s", filterNonNegativeConstraint));
+		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
 		if(validate == null){
 			DeconvolutionLogger.log.info(String.format("Validate (-v): %s", false));
 		}
@@ -391,6 +406,9 @@ public class CommandLineOptions {
 	}
 	public Boolean getWholeBloodQTL(){
 		return(wholeBloodQTL);
+	}
+	public Boolean getFilterNonNegativeConstraint(){
+		return(filterNonNegativeConstraint);
 	}
 }
 

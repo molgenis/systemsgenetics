@@ -32,7 +32,15 @@ public class GenotypeData {
 				DeconvolutionLogger.log.info(String.format("Number of columns at row %d: %d", rowNumber, genotypeStringVector.length-1));
 				throw new RuntimeException(String.format("Expressione table does not have the same number of columns as there are celltypes at row %d",rowNumber));
 			}
-			genotypes.put(snpName, Utils.StringVectorToDoubleArrayList(genotypeStringVector,1));
+			
+			double[] genotypeValues = null;
+			try{
+				genotypeValues = Utils.StringVectorToDoubleArrayList(genotypeStringVector, 1);
+			}catch(NumberFormatException e){
+				DeconvolutionLogger.log.warning(String.format("SNP %s contains genotype values that can not be converted to Double, SKIPPING!", snpName));
+			}
+			
+			genotypes.put(snpName, genotypeValues);
 		}
 	}
 	public void setSampleNames(ArrayList<String> sampleNames){

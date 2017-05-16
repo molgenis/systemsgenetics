@@ -20,12 +20,13 @@ public class InteractionModel {
 	public InteractionModel(){};
 	// initialize with number so that we can test if it has been set
 	private double pvalue = -1;
+	/**
+	 * Set the observed values. Per QTL for each sample the observed values are each term of the 
+	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
+	 * [mono%, neut%, mono% * GT]
+	 */
 	public void InitializeObservedValue( int sampleSize, int numberOfTerms){
-		/* 
-		 * Set the observed values. Per QTL for each sample the observed values are each term of the 
-		 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
-		 * [mono%, neut%, mono% * GT]
-		 */
+
 	    this.observedValues = new double[sampleSize][numberOfTerms];
 	    this.sampleSize = sampleSize;
 	  }
@@ -34,81 +35,82 @@ public class InteractionModel {
 	    this.observedValues[sampleIndex][termIndex] = observedValue;
 	  }
 	
+	/**
+	 * Get the observed values. Per QTL for each sample the observed values are each term of the 
+	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
+	 * [mono%, neut%, mono% * GT]
+	 */
 	public double[][] getObservedValues() throws IllegalAccessException{
-		/* 
-		 * Get the observed values. Per QTL for each sample the observed values are each term of the 
-		 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
-		 * [mono%, neut%, mono% * GT]
-		 */
 		if(this.observedValues == null){
 			throw new IllegalAccessException("observedValues not set for this model");
 		}
 	    return(this.observedValues);
 	  }
 	
+	/**
+	 * Add the index of the celltype variables of the linear model e.g.
+	 * the index of the celltype% and celltype%:GT of the model. If 
+	 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
+	 *    celltypeTerms = [[0,3],[1],[2,4]
+	 * This can be used to sum up the Beta * variable per cell type  
+	 */
 	public void addCelltypeVariablesIndex(int[] values){
-		/* 
-		 * Add the index of the celltype variables of the linear model e.g.
-		 * the index of the celltype% and celltype%:GT of the model. If 
-		 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
-		 *    celltypeTerms = [[0,3],[1],[2,4]
-		 * This can be used to sum up the Beta * variable per cell type  
-		 */
 		celltypeVariablesIndex.add(values);
 	  }
 	
+	/**
+	 * Get the index of the celltype variables of the linear model e.g.
+	 * the index of the celltype% and celltype%:GT of the model. If 
+	 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
+	 *    celltypeTerms = [[0,3],[1],[2,4]
+	 * This can be used to sum up the Beta * variable per cell type  
+	 */
 	public List<int[]> getCelltypeVariablesIndex() throws IllegalAccessException{
-		/* 
-		 * Get the index of the celltype variables of the linear model e.g.
-		 * the index of the celltype% and celltype%:GT of the model. If 
-		 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
-		 *    celltypeTerms = [[0,3],[1],[2,4]
-		 * This can be used to sum up the Beta * variable per cell type  
-		 */
 		if(this.celltypeVariablesIndex == null){
 			throw new IllegalAccessException("celltypeVariables not set for this model");
 		}
 	    return (this.celltypeVariablesIndex);
 	  }
 	
+	/** 
+	 * Add the name of the independent variable name at the end of the existing list
+	 * of independent variables.  
+	 */
 	public void addIndependentVariableName(String independentVariables){
-		/* 
-		 * Add the name of the independent variable name at the end of the existing list
-		 * of independent variables.  
-		 */
 	    this.independentVariableNames.add(independentVariables);
 	  }
 	
+	/**
+	 * Add the name of the independent variable name at <index> of the existing list
+	 * of independent variables.  
+	 */
 	public void addIndependentVariableName(int index, String independentVariables){
-		/* 
-		 * Add the name of the independent variable name at <index> of the existing list
-		 * of independent variables.  
-		 */
 	    this.independentVariableNames.add(index, independentVariables);
 	  }
 	
+	/** 
+	 * Get a list of the independent variables of the interaction model e.g.
+	 * 		[neut%, mono%, neut%:GT]
+	 */
 	public List<String> getIndependentVariableNames() throws IllegalAccessException{
-		/* 
-		 * Get a list of the independent variables of the interaction model e.g.
-		 * 		[neut%, mono%, neut%:GT]
-		 */
+
 		if(this.independentVariableNames == null){
 			throw new IllegalAccessException("celltypes not set for this model");
 		}
 	    return(this.independentVariableNames);
 	  }
 	
+	/** 
+	 * Set the expression values (y) of the model. 
+	 */
 	public void setExpressionValues(double[] expression){
-		/* 
-		 * Set the expression values (y) of the model. 
-		 */
 	    this.expressionValues = expression;
 	  }
 	
+	/** 
+	 * Get the expression values (y) of the model. 
+	 */
 	public double[] getExpessionValues() throws IllegalAccessException{
-		/* 
-		 * Get the expression values (y) of the model. 
-		 */
 		if(this.expressionValues == null){
 			throw new IllegalAccessException("expressionValues not set for this model");
 		}
@@ -120,34 +122,35 @@ public class InteractionModel {
 		}
 		return this.genotypes;
 	}
+	
+	/** 
+	 * Set No Intercept for the model. If true, the intercept will be removed
+	 */
 	public void setNoIntercept(Boolean noIntercept){
-		/* 
-		 * Set No Intercept for the model. If true, the intercept will be removed
-		 */
 	    this.noIntercept = noIntercept;
 	  }
 	
+	/** 
+	 * Get a list of all the celltypes given as input
+	 */
 	public void setCelltypes(List<String> celltypes) throws IllegalAccessException{
-		/* 
-		 * Get a list of all the celltypes given as input
-		 */
 		this.celltypes = celltypes;
 	}
 	
+	/** 
+	 * Get a list of all the celltypes given as input
+	 */
 	public List<String> getCelltypes() throws IllegalAccessException{
-		/* 
-		 * Get a list of all the celltypes given as input
-		 */
 		if(this.celltypes == null){
 			throw new IllegalAccessException("celltypes not set for this model");
 		}
 		return(this.celltypes);
 	}
 	
+	/** 
+	 * Get the No Intercept value for the model. If true, the intercept will be removed
+	 */
 	public Boolean getNoIntercept() throws IllegalAccessException{
-		/* 
-		 * Get the No Intercept value for the model. If true, the intercept will be removed
-		 */
 		if(this.noIntercept == null){
 			throw new IllegalAccessException("noIntercept not set for this model");
 		}
@@ -194,6 +197,15 @@ public class InteractionModel {
 			throw new IllegalAccessException("estimatedRegressionParameters not set for this model");
 		}
 		return(this.estimatedRegressionParameters);
+	}
+	
+	public void setAlltIndependentVariableNames(){
+		for (int celltypeIndex = 0; celltypeIndex < this.celltypes.size(); celltypeIndex++) {
+			int[] index = new int[] {celltypeIndex, this.celltypes.size() + celltypeIndex};
+			addCelltypeVariablesIndex(index);
+			addIndependentVariableName(celltypeIndex, this.celltypes.get(celltypeIndex));
+			addIndependentVariableName(this.celltypes.get(celltypeIndex)+":GT");
+		}
 	}
 	
 	public void emptyObservedValues(){
