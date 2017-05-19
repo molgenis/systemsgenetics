@@ -188,7 +188,13 @@ public class GenotypeHarmonizerParamaters {
                 .withLongOpt("update-id")
                 .create("id");
         OPTIONS.addOption(option);
-
+        
+        option = OptionBuilder.withArgName("boolean")
+                .withDescription("Filter out ambigous SNPs")
+                .withLongOpt("ambiguousSnpFilter")
+                .create("asf");
+        OPTIONS.addOption(option);
+        
         option = OptionBuilder.withArgName("boolean")
                 .withDescription("Match reference allele to harmonizing panel")
                 .withLongOpt("update-reference-allele")
