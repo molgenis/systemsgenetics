@@ -27,7 +27,8 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysis</mainClass>
+                            <!--<mainClass>nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysis</mainClass>-->
+                            <mainClass>nl.umcg.westrah.binarymetaanalyzer.InternalMetaAnalysis</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>

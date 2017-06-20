@@ -22,6 +22,7 @@ public class InternalMetaAnalysisSettings {
     private String datasetlocation;
     private String output;
     private String probeToFeature;
+    private String zScoreMergeOption;
     
     private XMLConfiguration config;
     
@@ -35,6 +36,7 @@ public class InternalMetaAnalysisSettings {
             probeToFeature = config.getString("defaults.probeToFeature");
             datasetname = config.getString("defaults.dataset.name");  // see if a dataset is defined
             datasetPrefix = config.getString("defaults.dataset.prefix");  // see if a dataset is defined
+            zScoreMergeOption = config.getString("defaults.zScoreMerge").toLowerCase();
             if (datasetPrefix == null) {
                 datasetPrefix = "Dataset";
             }
@@ -65,7 +67,7 @@ public class InternalMetaAnalysisSettings {
     public void setStartPermutations(int startPermutations) {
         this.startPermutations = startPermutations;
     }
-
+    
     /**
      * @return the nrPermutations
      */
@@ -80,6 +82,23 @@ public class InternalMetaAnalysisSettings {
         this.nrPermutations = nrPermutations;
     }
 
+    public String getzScoreMergeOption() {
+        return zScoreMergeOption;
+    }
+
+    public void setzScoreMergeOption(String zScoreMergeOption) {
+        this.zScoreMergeOption = zScoreMergeOption;
+    }
+
+    public XMLConfiguration getConfig() {
+        return config;
+    }
+
+    public void setConfig(XMLConfiguration config) {
+        this.config = config;
+    }
+
+    
 
     /**
      * @return the datasetname
