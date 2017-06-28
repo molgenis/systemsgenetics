@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.collections.primitives.ArrayIntList;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.math.stats.ZScores;
@@ -166,6 +167,7 @@ public class InternalMetaAnalysis {
                 if (datasetSNPId != -9) { // -9 means: snp not available
                     float[] datasetZScores = dataset.getZScores(datasetSNPId);
                     THashMap<String, DescriptiveStatistics> remappedEntries = new THashMap<String, DescriptiveStatistics>();
+                    THashMap<String, SummaryStatistics> remappedEntriesAbs = new THashMap<String, SummaryStatistics>();
 //                    System.out.println(dataset.getSNPs()[datasetSNPId]);
 //                    System.out.println(datasetZScores.length);
                     if (dataset.getIsCisDataset()) {
@@ -182,8 +184,10 @@ public class InternalMetaAnalysis {
                                 for (String feature : traitMap.get(p)) {
                                     if (!remappedEntries.containsKey(feature)) {
                                         remappedEntries.put(feature, new DescriptiveStatistics());
+                                        remappedEntriesAbs.put(feature, new SummaryStatistics());
                                     }
                                     remappedEntries.get(feature).addValue(datasetZScores[i]);
+                                    remappedEntriesAbs.get(feature).addValue(Math.abs(datasetZScores[i]));
 //                                System.out.print(p+"\t"+datasetZScores[i]);
                                 }
                             }
@@ -210,7 +214,11 @@ public class InternalMetaAnalysis {
                                         zScoresOut[counter] = e.getValue().getMean();
                                     } else if (settings.getzScoreMergeOption().equals("median")) {
                                         zScoresOut[counter] = e.getValue().getPercentile(50);
-                                    } else {
+                                    }  else if (settings.getzScoreMergeOption().equals("min")) {
+                                        zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMin();
+                                    } else if (settings.getzScoreMergeOption().equals("max")) {
+                                        zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMax();
+                                    }  else {
                                         System.out.println("Not supported merging.");
                                         System.exit(0);
                                     }
@@ -231,8 +239,10 @@ public class InternalMetaAnalysis {
                                 for (String feature : traitMap.get(p)) {
                                     if (!remappedEntries.containsKey(feature)) {
                                         remappedEntries.put(feature, new DescriptiveStatistics());
+                                        remappedEntriesAbs.put(feature, new SummaryStatistics());
                                     }
                                     remappedEntries.get(feature).addValue(datasetZScores[i]);
+                                    remappedEntriesAbs.get(feature).addValue(datasetZScores[i]);
                                 }
                             }
 //                            if(dataset.getSNPs()[datasetSNPId].equals("rs2546890")){
@@ -249,8 +259,7 @@ public class InternalMetaAnalysis {
                             for (Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
 
                                 int arrayLoc = traitLocationMap.get(e.getKey());
-                                
-
+                               
                                 if (e.getValue().getN() == 1) {
                                     zScoresOut[arrayLoc] = e.getValue().getValues()[0];
 
@@ -267,6 +276,10 @@ public class InternalMetaAnalysis {
                                         zScoresOut[arrayLoc] = e.getValue().getMean();
                                     } else if (settings.getzScoreMergeOption().equals("median")) {
                                         zScoresOut[arrayLoc] = e.getValue().getPercentile(50);
+                                    }  else if (settings.getzScoreMergeOption().equals("min")) {
+                                        zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMin();
+                                    } else if (settings.getzScoreMergeOption().equals("max")) {
+                                        zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMax();
                                     } else {
                                         System.out.println("Not supported merging.");
                                         System.exit(0);
