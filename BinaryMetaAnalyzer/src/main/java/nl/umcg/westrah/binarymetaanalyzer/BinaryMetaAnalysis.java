@@ -156,18 +156,23 @@ public class BinaryMetaAnalysis {
             System.out.println("Trans-window: " + settings.getTransdistance());
 
             TextFile zscoreTableTf = null;
+            TextFile zscoreTableTfNrSamples = null;
 
             if (settings.isMakezscoretable()) {
 
                 String tableoutfile = outdir + "ZScoreMatrix-Permutation" + permutation + ".txt.gz";
+                String tableoutfileNrSamples = outdir + "ZScoreMatrixNrSamples-Permutation" + permutation + ".txt.gz";
                 if (permutation == 0) {
                     tableoutfile = outdir + "ZScoreMatrix.txt.gz";
+                    tableoutfileNrSamples = outdir + "ZScoreMatrixNrSamples.txt.gz";
                 }
                 System.out.println("Writing z-score table: " + tableoutfile);
                 zscoreTableTf = new TextFile(tableoutfile, TextFile.W);
+                zscoreTableTfNrSamples = new TextFile(tableoutfileNrSamples, TextFile.W);
 
                 // write header
                 zscoreTableTf.writeln(zscoretableheader);
+                zscoreTableTfNrSamples.writeln(zscoretableheader);
             }
 
             System.out.println("Starting meta-analysis");
@@ -175,14 +180,17 @@ public class BinaryMetaAnalysis {
             for (int snp = 0; snp < snpList.length; snp++) {
 
                 double[] zscoretableoutput = null;
+                int[] zscorenrsamplestableoutput = null;
                 if (settings.isMakezscoretable()) {
 
                     if (zscoretableoutput != null) {
                         for (int i = 0; i < zscoretableoutput.length; i++) {
                             zscoretableoutput[i] = Double.NaN;
+                            zscorenrsamplestableoutput[i] = 0;
                         }
                     } else {
                         zscoretableoutput = new double[probeIndex.length];
+                        zscorenrsamplestableoutput = new int[probeIndex.length];
                     }
                 }
 
@@ -246,7 +254,7 @@ public class BinaryMetaAnalysis {
                             if (datasetSNPId != -9) { // -9 means: snp not available
                                 float[] datasetZScores = datasets[d].getZScores(datasetSNPId);
                                 if (datasets[d].getIsCisDataset()) {
-                                    // this requires us to retrieve the z-scores differently
+// this requires us to retrieve the z-scores differently
                                     // we need to figure out which probes match up, but their orders might be different
                                     // and the number of probes tested in each dataset might differ as well
 
@@ -289,12 +297,17 @@ public class BinaryMetaAnalysis {
                         MetaQTL4MetaTrait t = cisProbeArray[probe];
 
                         double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
+                        int metaZNrSamples = 0;
+                        for (int s = 0; s < sampleSizes.length; s++) {
+                            metaZNrSamples += sampleSizes[s];
+                        }
                         double p = Descriptives.convertZscoreToPvalue(metaZ);
 
                         if (settings.isMakezscoretable()) {
                             // get the correct index for trait t
                             int metaid = t.getCurrentMetaId();
                             zscoretableoutput[metaid] = metaZ;
+                            zscorenrsamplestableoutput[metaid] = metaZNrSamples;
                         }
 
                         if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
@@ -358,15 +371,21 @@ public class BinaryMetaAnalysis {
                         // initialize with NaN
                         for (int i = 0; i < zscoretableoutput.length; i++) {
                             zscoretableoutput[i] = Double.NaN;
+                            zscorenrsamplestableoutput[i] = 0;
                         }
                     }
                     for (int probe = 0; probe < traitList.length; probe++) {
                         MetaQTL4MetaTrait t = traitList[probe];
                         double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
+                        int metaAnalysisZNrSamples = 0;
+                        for (int s = 0; s < sampleSizes.length; s++) {
+                            metaAnalysisZNrSamples += sampleSizes[s];
+                        }
                         double metaAnalysisP = Descriptives.convertZscoreToPvalue(metaAnalysisZ);
 
                         if (settings.isMakezscoretable()) {
                             zscoretableoutput[probe] = metaAnalysisZ;
+                            zscorenrsamplestableoutput[probe] = metaAnalysisZNrSamples;
                         }
 
                         // create output object
@@ -385,12 +404,14 @@ public class BinaryMetaAnalysis {
                     // get alleles
 
                     zscoreTableTf.writeln(snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscoretableoutput, Strings.tab));
+                    zscoreTableTfNrSamples.writeln(snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscorenrsamplestableoutput, Strings.tab));
                 }
             }
             pb.close();
 
             if (settings.isMakezscoretable()) {
                 zscoreTableTf.close();
+                zscoreTableTfNrSamples.close();
             }
 
             for (BinaryMetaAnalysisDataset dataset : datasets) {
@@ -494,12 +515,14 @@ public class BinaryMetaAnalysis {
     }
 
     private void loadSNPAnnotation() throws IOException {
+
         snpChr = new String[snpList.length];
         snpPositions = new int[snpList.length];
         for (int s = 0; s < snpList.length; s++) {
             snpChr[s] = "-10".intern();
             snpPositions[s] = -10;
         }
+
         TObjectIntHashMap<String> snpMap = new TObjectIntHashMap<String>(snpList.length);
         for (int s = 0; s < snpList.length; s++) {
             snpMap.put(snpList[s], s);
@@ -517,6 +540,7 @@ public class BinaryMetaAnalysis {
             elems = tf.readLineElems(TextFile.tab);
         }
         tf.close();
+
     }
 
     // index the probes
