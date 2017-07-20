@@ -299,7 +299,9 @@ public class BinaryMetaAnalysis {
                         double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
                         int metaZNrSamples = 0;
                         for (int s = 0; s < sampleSizes.length; s++) {
-                            metaZNrSamples += sampleSizes[s];
+                            if(!Float.isNaN(finalZScores[probe][s])){
+                                metaZNrSamples += sampleSizes[s];
+                            }
                         }
                         double p = Descriptives.convertZscoreToPvalue(metaZ);
 
