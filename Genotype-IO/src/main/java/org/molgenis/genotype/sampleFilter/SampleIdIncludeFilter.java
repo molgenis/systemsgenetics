@@ -26,6 +26,11 @@ public class SampleIdIncludeFilter implements SampleFilter {
 			includedSampleIds.add(id);
 		}
 	}
+	
+	public SampleIdIncludeFilter(String sample){
+		this.includedSampleIds = new HashSet<String>(1);
+		includedSampleIds.add(sample);
+	}
     
 	public SampleIdIncludeFilter(HashSet<String> includedSampleIds) {
 		this.includedSampleIds = includedSampleIds;
