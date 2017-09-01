@@ -50,7 +50,7 @@ public class ConvertTextOutputToBinary {
 			+ "  |   Dasha Zhernakova, Marc Jan Bonder   |\n"
 			+ "  |      Lude Franke, Morris Swertz       |\n"
 			+ "  |                                       |\n"
-			+ "  |     Genomics Coordication Center      |\n"
+			+ "  |     Genomics Coordination Center      |\n"
 			+ "  |        Department of Genetics         |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";

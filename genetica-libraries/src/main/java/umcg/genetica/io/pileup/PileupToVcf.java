@@ -39,7 +39,7 @@ public class PileupToVcf {
 			+ "  |           Dasha Zhernakova,           |\n"
 			+ "  |      Lude Franke, Morris Swertz       |\n"
 			+ "  |                                       |\n"
-			+ "  |     Genomics Coordication Center      |\n"
+			+ "  |     Genomics Coordination Center      |\n"
 			+ "  |        Department of Genetics         |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";

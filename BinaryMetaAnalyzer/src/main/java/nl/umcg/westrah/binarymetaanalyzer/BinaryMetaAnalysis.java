@@ -267,8 +267,8 @@ public class BinaryMetaAnalysis {
 //                                printed = true;
 //                                System.out.println("SNP creates NaN pval: " + snpList[snp] + "\n");//z " + Strings.concat(zScores, Strings.semicolon) + "\tn " + Strings.concat(sampleSizes, Strings.semicolon));
 //                            }
+                            }
                         }
-                    }
                 } else {
                     Set<MetaQTL4MetaTrait> cisProbes = null;
                     if (!settings.isCis()) {
