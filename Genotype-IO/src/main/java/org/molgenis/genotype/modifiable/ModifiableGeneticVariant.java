@@ -258,7 +258,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 			for (int i = 0; i < probByProvider.length; ++i) {
 
 				for (int j = 0; j < 3; ++j) {
-					probs[i][2 - j] = probs[i][j];
+					probs[i][2 - j] = probByProvider[i][j];
 				}
 
 			}

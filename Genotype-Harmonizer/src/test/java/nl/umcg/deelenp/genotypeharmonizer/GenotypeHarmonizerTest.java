@@ -24,6 +24,7 @@ import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.vcf.VcfGenotypeData;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -34,465 +35,500 @@ import org.testng.annotations.Test;
  */
 public class GenotypeHarmonizerTest {
 
-	private File tmpOutputFolder;
-	private String fileSep = System.getProperty("file.separator");
-	private File testFilesFolder;
-	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
-	private static final Alleles MISSING_ALLELES = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
+    private File tmpOutputFolder;
+    private String fileSep = System.getProperty("file.separator");
+    private File testFilesFolder;
+    private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
+    private static final Alleles MISSING_ALLELES = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
 
-	public GenotypeHarmonizerTest() throws URISyntaxException {
-		testFilesFolder = new File(this.getClass().getResource("/").toURI());
-	}
+    public GenotypeHarmonizerTest() throws URISyntaxException {
+        testFilesFolder = new File(this.getClass().getResource("/").toURI());
+    }
 
-	@BeforeTest
-	public void setUpMethod() throws Exception {
-		File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+    @BeforeTest
+    public void setUpMethod() throws Exception {
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
 
-		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-		Date date = new Date();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        Date date = new Date();
 
-		tmpOutputFolder = new File(tmpDir, "GenotyperHarmonizerTest_" + dateFormat.format(date));
+        tmpOutputFolder = new File(tmpDir, "GenotyperHarmonizerTest_" + dateFormat.format(date));
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				System.out.println("Removing tmp dir and files");
-				for (File file : tmpOutputFolder.listFiles()) {
-					System.out.println(" - Deleting: " + file.getAbsolutePath());
-					file.delete();
-				}
-				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-				tmpOutputFolder.delete();
-			}
-		});
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                System.out.println("Removing tmp dir and files");
+                for (File file : tmpOutputFolder.listFiles()) {
+                    System.out.println(" - Deleting: " + file.getAbsolutePath());
+                    file.delete();
+                }
+                System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
+                tmpOutputFolder.delete();
+            }
+        });
 
-		tmpOutputFolder.mkdir();
+        tmpOutputFolder.mkdir();
 
+        System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
+    }
 
-		System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
-	}
+    /**
+     * Test of main method, of class GenotypeHarmonizer.
+     */
+    @Test
+    public void testMain() throws Exception {
+        System.out.println("main");
 
-	/**
-	 * Test of main method, of class GenotypeHarmonizer.
-	 */
-	@Test
-	public void testMain() throws Exception {
-		System.out.println("main");
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
-		System.out.println(studyDataBasePath);
-		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
+        GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test", "--refType", "VCF", "-ref", refData);
 
-		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test", "--refType", "VCF", "-ref", refData);
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-		System.out.println("Alignement complete now going to check using the real forward data");
+        RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test");
+        RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test");
-		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+            ++variantCounter;
 
-			++variantCounter;
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
 
-			//Do not test these SNPs it is not on forward strand in hapmap3
-			if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
-				continue;
-			}
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
 
-			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
-			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
+                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 
-			while (aligendVariantSampleAllelesIterator.hasNext()) {
-				Alleles aligned = aligendVariantSampleAllelesIterator.next();
-				Alleles original = orignalVariantSampleAllelesIterator.next();
-				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
-			}
-			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+        }
 
-		}
+        assertEquals(variantCounter, 3747);
 
-		assertEquals(variantCounter, 3747);
+        //Check if ID is updated based on 1000G
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
 
-		//Check if ID is updated based on 1000G
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
 
-		//Check if number of samples is correct
-		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+    }
 
+    /**
+     * Test of main method, of class GenotypeHarmonizer.
+     */
+    @Test
+    public void testMain2() throws Exception {
+        System.out.println("main");
 
-	}
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-	/**
-	 * Test of main method, of class GenotypeHarmonizer.
-	 */
-	@Test
-	public void testMain2() throws Exception {
-		System.out.println("main");
+        GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "-ref", refData, "--keep");
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
-		System.out.println(studyDataBasePath);
-		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test2", "-ref", refData, "--keep");
+        RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test2");
 
-		System.out.println("Alignement complete now going to check using the real forward data");
+        //Complicated to test matchFormatToPath
+        RandomAccessGenotypeData forwardHapmap3Data = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6").createGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test2");
+        BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
 
-		//Complicated to test matchFormatToPath
-		RandomAccessGenotypeData forwardHapmap3Data = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6").createGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+        HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
+        String snp;
 
+        while ((snp = keepFileReader.readLine()) != null) {
+            snpsKeptByKeepOption.add(snp);
+        }
 
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
+            ++variantCounter;
 
-		HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
-		String snp;
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
-		while ((snp = keepFileReader.readLine()) != null) {
-			snpsKeptByKeepOption.add(snp);
-		}
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
 
-			++variantCounter;
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
+                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+        }
 
-			//Do not test these SNPs it is not on forward strand in hapmap3
-			if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
-				continue;
-			}
+        assertEquals(variantCounter, 4088);
 
-			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
-			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
 
-			while (aligendVariantSampleAllelesIterator.hasNext()) {
-				Alleles aligned = aligendVariantSampleAllelesIterator.next();
-				Alleles original = orignalVariantSampleAllelesIterator.next();
-				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
-			}
-			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+    }
 
-		}
+    /**
+     * Test of main method, of class GenotypeHarmonizer.
+     */
+    @Test
+    public void testMain3() throws Exception {
+        System.out.println("main");
 
-		assertEquals(variantCounter, 4088);
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-		//Check if number of samples is correct
-		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+        GenotypeHarmonizer.main("--debug", "--inputType", "SHAPEIT2", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test3", "--refType", "VCF", "-ref", refData, "--keep", "--forceChr", "20");
 
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-	}
+        RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test3");
+        RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-	/**
-	 * Test of main method, of class GenotypeHarmonizer.
-	 */
-	@Test
-	public void testMain3() throws Exception {
-		System.out.println("main");
+        BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
-		System.out.println(studyDataBasePath);
-		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
+        HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
+        String snp;
 
-		GenotypeHarmonizer.main("--debug", "--inputType", "SHAPEIT2", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test3", "--refType", "VCF", "-ref", refData, "--keep", "--forceChr", "20");
+        while ((snp = keepFileReader.readLine()) != null) {
+            snpsKeptByKeepOption.add(snp);
+        }
 
-		System.out.println("Alignement complete now going to check using the real forward data");
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test3");
-		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+            ++variantCounter;
 
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
 
-		BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
 
-		HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
-		String snp;
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
 
-		while ((snp = keepFileReader.readLine()) != null) {
-			snpsKeptByKeepOption.add(snp);
-		}
+                //Shapeits imputs sporadic missing genotypes. Ignore this
+                if (original == MISSING_ALLELES) {
+                    continue;
+                }
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 
-			++variantCounter;
+        }
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+        assertEquals(variantCounter, 4088);
 
-			//Do not test these SNPs it is not on forward strand in hapmap3
-			if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
-				continue;
-			}
+        //Check if ID is updated based on 1000G
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
 
-			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
-			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
 
-			while (aligendVariantSampleAllelesIterator.hasNext()) {
-				Alleles aligned = aligendVariantSampleAllelesIterator.next();
-				Alleles original = orignalVariantSampleAllelesIterator.next();
+    }
 
-				//Shapeits imputs sporadic missing genotypes. Ignore this
-				if (original == MISSING_ALLELES) {
-					continue;
-				}
+    @Test
+    public void testMain4() throws Exception {
+        System.out.println("main");
 
-				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
-			}
-			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6";
+        System.out.println(studyDataBasePath);
 
-		}
+        GenotypeHarmonizer.main("--debug", "--input", studyDataBasePath, "--outputType", "SHAPEIT2", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
 
-		assertEquals(variantCounter, 4088);
+        System.out.println("Conversion complete now going to check using the orignal data");
 
-		//Check if ID is updated based on 1000G
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
+        RandomAccessGenotypeData convertedHapmap3Data = new HapsGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
+        RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-		//Check if number of samples is correct
-		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : convertedHapmap3Data) {
 
+            ++variantCounter;
 
-	}
+            if (!aligendVariant.isSnp()) {
+                //skip non SNPs
+                continue;
+            }
 
-	@Test
-	public void testMain4() throws Exception {
-		System.out.println("main");
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6";
-		System.out.println(studyDataBasePath);
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
 
-		GenotypeHarmonizer.main("--debug", "--input", studyDataBasePath, "--outputType", "SHAPEIT2", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
 
-		System.out.println("Conversion complete now going to check using the orignal data");
+                //Shapeits imputs sporadic missing genotypes. Ignore this
+                if (original == MISSING_ALLELES) {
+                    continue;
+                }
 
-		RandomAccessGenotypeData convertedHapmap3Data = new HapsGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test4");
-		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 
+        }
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : convertedHapmap3Data) {
+        assertEquals(variantCounter, 4248);
 
-			++variantCounter;
+        //Check if number of samples is correct
+        assertEquals(convertedHapmap3Data.getSamples().size(), forwardHapmap3Data.getSamples().size());
 
-			if (!aligendVariant.isSnp()) {
-				//skip non SNPs
-				continue;
-			}
+    }
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+    @Test
+    public void testMain5() throws Exception {
+        System.out.println("main");
 
-			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
-			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-			while (aligendVariantSampleAllelesIterator.hasNext()) {
-				Alleles aligned = aligendVariantSampleAllelesIterator.next();
-				Alleles original = orignalVariantSampleAllelesIterator.next();
+        GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test5", "--refType", "VCF", "-ref", refData, "--mafAlign", "0.2");
 
-				//Shapeits imputs sporadic missing genotypes. Ignore this
-				if (original == MISSING_ALLELES) {
-					continue;
-				}
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
-			}
-			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+        RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test5");
+        RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-		}
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		assertEquals(variantCounter, 4248);
+            ++variantCounter;
 
-		//Check if number of samples is correct
-		assertEquals(convertedHapmap3Data.getSamples().size(), forwardHapmap3Data.getSamples().size());
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
 
-	}
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
 
-	@Test
-	public void testMain5() throws Exception {
-		System.out.println("main");
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
+                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
-		System.out.println(studyDataBasePath);
-		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
+        }
 
-		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--update-id", "--outputType", "PLINK_BED", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test5", "--refType", "VCF", "-ref", refData, "--mafAlign", "0.2");
+        assertEquals(variantCounter, 3780);
 
-		System.out.println("Alignement complete now going to check using the real forward data");
+        //Check if ID is updated based on 1000G
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new BedBimFamGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test5");
-		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+    }
 
-			++variantCounter;
+    @Test
+    public void testMain6() throws Exception {
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+        /**
+         * Convert binary plink to gen Align the gen file and output aligned gen
+         * Compare aligned gen to original binary plink data
+         *
+         */
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-			//Do not test these SNPs it is not on forward strand in hapmap3
-			if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
-				continue;
-			}
+        GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "GEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6");
 
-			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
-			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+        GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test6.gen", tmpOutputFolder.getAbsolutePath() + fileSep + "test6.sample", "--inputType", "GEN", "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
 
-			while (aligendVariantSampleAllelesIterator.hasNext()) {
-				Alleles aligned = aligendVariantSampleAllelesIterator.next();
-				Alleles original = orignalVariantSampleAllelesIterator.next();
-				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
-			}
-			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-		}
+        RandomAccessGenotypeData aligenedHapmap3Data = new GenGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test6b");
+        RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-		assertEquals(variantCounter, 3780);
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		//Check if ID is updated based on 1000G
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
+            ++variantCounter;
 
-		//Check if number of samples is correct
-		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
 
-	}
-	
-	
-	@Test
-	public void testMain6() throws Exception {
-		
-		/**
-		 * Convert binary plink to gen
-		 * Align the gen file and output aligned gen
-		 * Compare aligned gen to original binary plink data
-		 * 
-		 */
-		
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
-		System.out.println(studyDataBasePath);
-		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
+                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 
-		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "GEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6");
-		
-		
-		GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test6.gen", tmpOutputFolder.getAbsolutePath() + fileSep + "test6.sample", "--inputType", "GEN", "--update-id", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test6b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
-		
-		
+        }
 
-		System.out.println("Alignement complete now going to check using the real forward data");
+        assertEquals(variantCounter, 3747);
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new GenGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test6b");
-		RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+        //Check if ID is updated based on 1000G
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
 
-			++variantCounter;
+    }
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+    /**
+     * Test Gen to TriTyper in combination with sample filter
+     */
+    @Test
+    public void testMain7() throws Exception {
+        System.out.println("main");
 
-			//Do not test these SNPs it is not on forward strand in hapmap3
-			if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
-				continue;
-			}
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-			Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
-			Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+        String sampleFilterFilePath = testFilesFolder + fileSep + "sampleFilterTestList.txt";
 
-			while (aligendVariantSampleAllelesIterator.hasNext()) {
-				Alleles aligned = aligendVariantSampleAllelesIterator.next();
-				Alleles original = orignalVariantSampleAllelesIterator.next();
-				assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
-			}
-			assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+        GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test7a", "-O", "GEN");
 
-		}
+        GenotypeHarmonizer.main("--debug", "--inputType", "GEN", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test7a", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test7b", "-ref", refData, "--keep", "-O", "TRITYPER", "-sf", sampleFilterFilePath);
 
-		assertEquals(variantCounter, 3747);
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-		//Check if ID is updated based on 1000G
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
+        RandomAccessGenotypeData aligenedHapmap3Data = new TriTyperGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test7b");
 
-		//Check if number of samples is correct
-		assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+        //Complicated to test matchFormatToPath
+        RandomAccessGenotypeData forwardHapmap3Data = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6").createGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
+        BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
 
-	}
-	
-	
-	/**
-	 * Test Gen to TriTyper in combination with sample filter
-	 */
-	@Test
-	public void testMain7() throws Exception {
-		System.out.println("main");
+        HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
+        String snp;
 
-		String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
-		System.out.println(studyDataBasePath);
-		String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
-		
-		String sampleFilterFilePath = testFilesFolder + fileSep + "sampleFilterTestList.txt"; 
+        while ((snp = keepFileReader.readLine()) != null) {
+            snpsKeptByKeepOption.add(snp);
+        }
 
-		GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test7a", "-O", "GEN");
-		
-		GenotypeHarmonizer.main("--debug", "--inputType", "GEN", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test7a", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test7b", "-ref", refData, "--keep", "-O", "TRITYPER", "-sf", sampleFilterFilePath);
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		System.out.println("Alignement complete now going to check using the real forward data");
+            ++variantCounter;
 
-		RandomAccessGenotypeData aligenedHapmap3Data = new TriTyperGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test7b");
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
-		//Complicated to test matchFormatToPath
-		RandomAccessGenotypeData forwardHapmap3Data = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6").createGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
 
+        }
 
+        assertEquals(variantCounter, 4087);
 
-		BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 155);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 155);
 
-		HashSet<String> snpsKeptByKeepOption = new HashSet<String>();
-		String snp;
+    }
 
-		while ((snp = keepFileReader.readLine()) != null) {
-			snpsKeptByKeepOption.add(snp);
-		}
+    @Test
+    public void testMain8() throws Exception {
 
-		//Check if the alles ar as expected acourding to real hapmap3 in forward strand
-		int variantCounter = 0;
-		for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
+        /**
+         * Convert binary plink to gen Align the gen file and output aligned gen
+         * Compare aligned gen to original binary plink data
+         *
+         */
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+        System.out.println(studyDataBasePath);
+        String refData = testFilesFolder + fileSep + "1000gCeuChr20Mb6";
 
-			++variantCounter;
+        GenotypeHarmonizer.main("--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "GEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test8");
 
-			GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
+        GenotypeHarmonizer.main("--debug", "--input", tmpOutputFolder.getAbsolutePath() + fileSep + "test8", "--inputType", "GEN", "-O", "Gen", "--update-id", "-ura", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "test8b", "--refType", "VCF", "-ref", refData, "--forceChr", "20", "--inputProb", "0.42");
 
-			//Do not test these SNPs it is not on forward strand in hapmap3
-			if (snpsKeptByKeepOption.contains(originalVariant.getPrimaryVariantId()) || originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
-				continue;
-			}
+        System.out.println("Alignement complete now going to check using the real forward data");
 
-		}
+        RandomAccessGenotypeData aligenedHapmap3Data = new GenGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test8b");
+        RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
 
-		assertEquals(variantCounter, 4087);
+        //Check if the alles ar as expected acourding to real hapmap3 in forward strand
+        int variantCounter = 0;
+        for (GeneticVariant aligendVariant : aligenedHapmap3Data) {
 
-		//Check if number of samples is correct
-		assertEquals(aligenedHapmap3Data.getSamples().size(), 155);
-		assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 155);
+            ++variantCounter;
 
+            GeneticVariant originalVariant = forwardHapmap3Data.getSnpVariantByPos(aligendVariant.getSequenceName(), aligendVariant.getStartPos());
 
-	}
+            //Do not test these SNPs it is not on forward strand in hapmap3
+            if (originalVariant.getPrimaryVariantId().equals("rs1047527") || originalVariant.getPrimaryVariantId().equals("rs2076553") || originalVariant.getPrimaryVariantId().equals("rs3761248")) {
+                continue;
+            }
+
+            Iterator<Alleles> aligendVariantSampleAllelesIterator = aligendVariant.getSampleVariants().iterator();
+            Iterator<Alleles> orignalVariantSampleAllelesIterator = originalVariant.getSampleVariants().iterator();
+
+            while (aligendVariantSampleAllelesIterator.hasNext()) {
+                Alleles aligned = aligendVariantSampleAllelesIterator.next();
+                Alleles original = orignalVariantSampleAllelesIterator.next();
+                assertTrue(aligned.sameAlleles(original), "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+            }
+            assertEquals(aligendVariant.getRefAllele(), originalVariant.getRefAllele());
+            assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
+
+        }
+
+        assertEquals(variantCounter, 3747);
+
+        //Check if ID is updated based on 1000G
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");
+
+        //Check if number of samples is correct
+        assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
+        assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
+
+    }
 
 }

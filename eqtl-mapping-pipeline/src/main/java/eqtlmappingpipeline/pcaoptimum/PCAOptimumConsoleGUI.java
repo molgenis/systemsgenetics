@@ -231,7 +231,7 @@ public class PCAOptimumConsoleGUI {
                     p.setSNPSets(cissnps, transsnps);
                     p.setPerformpcqtlNormalization(performEigenvectorQTLMapping);
                     p.setCovariatesRemoved(covariatesremoved);
-                    p.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, snpfile, threads, nrEQTLsToOutput, null, null, true, true, null, null);
+                    p.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, true, false, snpfile, threads, nrEQTLsToOutput, null, null, true, true, null, null, null);
                 }
             }
         } catch (Exception e) {

@@ -19,10 +19,11 @@ public class ReferenceGenomeFasta {
 
     private final LinkedHashMap<String, LargeByteArray> chromosomes;
     private static final Pattern FASTA_HEADER_PATTERN = Pattern.compile("^\\>(\\S+).*:(\\d+):\\d+$");
+    private static final Pattern FASTA_HEADER_PATTERN_ENSEMBL = Pattern.compile("^\\>(\\S+).*:(\\d+):\\d+ REF$");
     private static final Pattern FASTA_HEADER_CHR_PATTERN = Pattern.compile("^\\>(\\S+)");
 
     /**
-     * CHR 1-22, X and Y
+     * CHR 1-22, X, Y and MT
      */
     public static final Set<String> HUMAN_NORMAL_CHR;
 
@@ -52,6 +53,7 @@ public class ReferenceGenomeFasta {
         humanChr.add("22");
         humanChr.add("X");
         humanChr.add("Y");
+        humanChr.add("MT");
 
         HUMAN_NORMAL_CHR = Collections.unmodifiableSet(humanChr);
     }
@@ -171,10 +173,76 @@ public class ReferenceGenomeFasta {
                 chromosomes.put(chr, currentSeq);
 
 //				System.out.println(currentSeq.getSize());
+            } else {
+                for (int n = 0; n < line.length(); ++n) {
+                    currentSeq.setQuick(pos++, (byte) line.charAt(n));
+                }
             }
-
         }
 
+    }
+
+    public ReferenceGenomeFasta(File[] fastaFiles) throws IOException, Exception {
+
+        chromosomes = new LinkedHashMap<String, LargeByteArray>(32);
+        for (File f : fastaFiles) {
+            System.out.println(f.getAbsolutePath());
+            BufferedReader fasteReader = new BufferedReader(new FileReader(f));
+
+            String line;
+            LargeByteArray currentSeq = null;
+            long pos = 0;
+            while ((line = fasteReader.readLine()) != null) {
+
+                if (line.length() == 0) {
+                    continue;
+                }
+
+                if (line.charAt(0) == '>') {
+
+                    //				System.out.println("Previous chr bases read: " + pos);
+                    //                                System.out.println(line);
+                    Matcher headerChrMatcher = FASTA_HEADER_CHR_PATTERN.matcher(line);
+
+                    if (!headerChrMatcher.find()) {
+                        throw new Exception("Error parsing reference genome fasta header: " + line);
+                    }
+
+                    String chr = headerChrMatcher.group(1);
+
+                    Matcher headerMatcher = FASTA_HEADER_PATTERN.matcher(line);
+
+                    if (!headerMatcher.matches()) {
+                        headerMatcher = FASTA_HEADER_PATTERN_ENSEMBL.matcher(line);
+                        if (!headerMatcher.matches()) {
+                            throw new Exception("Error parsing reference genome fasta header: " + line);
+                        }
+                    }
+                    //				System.out.println("----");
+                    //				System.out.println(line);
+//                    System.out.println(headerMatcher.group(2));
+                    long lenght = Long.parseLong(headerMatcher.group(2));
+
+                    if (chr.equals("Y") && lenght == 59034049) {
+                        lenght = 59373566;
+                    }
+                    
+                    if (chr.equals("Y") && lenght == 56887902) {
+                        lenght = 57227415;
+                    }
+                    //				System.out.println(chr + " " + lenght);
+                    pos = 0;
+                    currentSeq = new LargeByteArray(lenght);
+                    chromosomes.put(chr, currentSeq);
+
+                    //				System.out.println(currentSeq.getSize());
+                } else {
+                    for (int n = 0; n < line.length(); ++n) {
+                        currentSeq.setQuick(pos++, (byte) line.charAt(n));
+                    }
+                }
+            }
+        }
     }
 
     public char getNucleotide(String chr, long pos) throws Exception {

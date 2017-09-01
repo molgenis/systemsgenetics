@@ -61,7 +61,7 @@ public class MetaQTL3 {
 
     public MetaQTL3(Settings settings) throws IOException, Exception {
         m_settings = settings;
-        initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null, false, false, null, null);
+        initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null, false, false, null, null, null);
     }
 
     public void setOutputPlotThreshold(double d) {
@@ -73,7 +73,7 @@ public class MetaQTL3 {
     public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith, String texttoreplace2, String texttoreplace2with,
             String ingt, String inexp, String inexpplatform, String inexpannot,
             String gte, String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads, Integer maxNrResults,
-            String regressouteqtls, String snpprobecombofile, boolean skipdotplot, boolean skipqqplot, Long rseed, Double maf) throws IOException, Exception {
+            String regressouteqtls, String snpprobecombofile, boolean skipdotplot, boolean skipqqplot, Long rseed, Double maf, Double hwe) throws IOException, Exception {
 
         if (m_settings == null && xmlSettingsFile == null && ingt != null) {
 
@@ -130,10 +130,12 @@ public class MetaQTL3 {
             m_settings.cisAnalysis = cis;
             m_settings.transAnalysis = trans;
             m_settings.nrPermutationsFDR = perm;
-            if(maf!=null && maf>0.0d ){
+            if(maf!=null && maf>0.0d && maf <1.0d){
                 m_settings.snpQCMAFThreshold = maf;
             }
-            
+            if(hwe!=null && hwe>=0.0d && hwe <=1.0d){
+                m_settings.snpQCHWEThreshold = hwe;
+            }
             if (!out.endsWith("/")) {
                 out += "/";
             }

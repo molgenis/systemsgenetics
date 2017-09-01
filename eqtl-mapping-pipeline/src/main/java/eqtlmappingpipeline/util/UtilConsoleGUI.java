@@ -58,7 +58,6 @@ public class UtilConsoleGUI {
         String ranked = "";
 
         String annot = null;
-        String snpselectionlist = null;
         String probeselectionlist = null;
         Integer stepSize = 5;
         Integer max = 5;
@@ -72,7 +71,7 @@ public class UtilConsoleGUI {
         Double cr = 0.95;
         Double hwep = 0.001;
         Integer dist = 1000000;
-
+        Integer threads = 1;
         Integer minnrdatasets = null;
         Integer minnrsamples = null;
 
@@ -178,6 +177,8 @@ public class UtilConsoleGUI {
                 snpfile = val;
             } else if (arg.equals("--probes")) {
                 probefile = val;
+            } else if (arg.equals("--threads")) {
+                threads = Integer.parseInt(val);
             } else if (arg.equals("--perm")) {
                 perm = Integer.parseInt(val);
             } else if (arg.equals("--nreqtls")) {
@@ -197,7 +198,7 @@ public class UtilConsoleGUI {
             } else if (arg.equals("--skipLargeFDRFile")) {
                 createLargeFdrFile = false;
             } else if (args[i].equals("--snpselectionlist")) {
-                snpselectionlist = val;
+                snpfile = val;
             } else if (args[i].equals("--probeselectionlist")) {
                 probeselectionlist = val;
             } else if (args[i].equals("--snpprobeselectionlist")) {
@@ -340,9 +341,9 @@ public class UtilConsoleGUI {
                             System.out.println("Optional: --snpselectionlist, --probeselectionlist, --snpprobeselectionlist");
                             printUsage();
                         } else {
-                            if (snpselectionlist != null || snpprobeselectionlist != null || probeselectionlist != null) {
+                            if (snpfile != null || snpprobeselectionlist != null || probeselectionlist != null) {
                                 try {
-                                    FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpselectionlist, probeselectionlist, snpprobeselectionlist);
+                                    FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpfile, probeselectionlist, snpprobeselectionlist);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                     System.exit(1);
@@ -418,8 +419,10 @@ public class UtilConsoleGUI {
                             try {
                                 PCAOptimum p = new PCAOptimum();
 //            public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
-
-                                p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, 10, snpselectionlist, 1);
+                                if (!out.endsWith(Gpio.getFileSeparator())) {
+                                    out += Gpio.getFileSeparator();
+                                }
+                                p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, perm, snpfile, threads);
                                 File file = new File(inexp);
 
                                 p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
