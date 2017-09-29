@@ -182,7 +182,6 @@ public class Deconvolution {
 		List<String> output = new ArrayList<String>();
 		String header = "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_pvalue");
 		header += "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_Pvalue_corrected_"+commandLineOptions.getMultipleTestingMethod());
-		if(commandLineOptions.getWriteCoefficients()){
 			DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
 			// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
 			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
@@ -198,7 +197,7 @@ public class Deconvolution {
 			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
 				header += "\tBetaStandardError" + Integer.toString(i); 
 			}
-		}
+		
 		if(commandLineOptions.getWholeBloodQTL()){
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
@@ -214,7 +213,6 @@ public class Deconvolution {
 			String results = "";
 			results += deconvolutionResult.getQtlName()+"\t"+Utils.listToTabSeparatedString(deconvolutionResult.getPvalues());
 			results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getCorrectedPvalues());
-			if(commandLineOptions.getWriteCoefficients()){
 				try{
 					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParameters());
 					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParametersStandardErrors());
@@ -225,7 +223,7 @@ public class Deconvolution {
 					results += StringUtils.repeat(str, cellCounts.getNumberOfCelltypes()*4);
 				}
 
-			}
+			
 			if(commandLineOptions.getWholeBloodQTL()){
 				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTL());
 				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTLpvalue());
@@ -666,7 +664,7 @@ public class Deconvolution {
 			sumOfSquaresFullModel = regression.calculateResidualSumOfSquares();
 			degreesOfFreedomFullModel = ctModel.getExpessionValues().length - (fullModel.getObservedValues()[0].length + 1);
 			fullModelLength = fullModel.getObservedValues().length;
-			if(commandLineOptions.getRemoveConstraintViolatingSamples() || commandLineOptions.getWriteCoefficients()){
+			if(commandLineOptions.getRemoveConstraintViolatingSamples()){
 				/**
 				 * Check if the constraints of the model are violate -> (B1 + 2*B3)*Celcount% > 0    where B1 is cellcount% beta, and B3 is cellcount:GT interaction beta
 				 * 
@@ -703,10 +701,9 @@ public class Deconvolution {
 					}
 					System.out.println();
 				}
-				if(commandLineOptions.getWriteCoefficients()){
 					fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
 					fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
-				}
+				
 			}
 		}
 		ctModel.setNoIntercept(noIntercept);

@@ -33,7 +33,6 @@ public class CommandLineOptions {
 	private String normalizationType = "normalizeAddMean";
 	private Boolean filterSamples = false;
 	private Boolean removeConstraintViolatingSamples = false;
-	private Boolean writeCoefficients = false;
 	private Boolean onlyOutputSignificant = false;
 	private Boolean useRelativeCellCounts = false;
 	private String validate;
@@ -83,8 +82,6 @@ public class CommandLineOptions {
 				.argName("path").build();
 		Option outfile = Option.builder("of").required(false).hasArg().longOpt("outfile").desc("Outfile name of deconvolution results (will be written in outfolder)")
 				.argName("file").build();
-		Option writeCoefficientsOption = Option.builder("oc").required(false).longOpt("output_coefficients").desc("Write the coefficients and coefficient standard error to deconvolution out file")
-				.argName("file").build();
 		Option permute = Option.builder("p").required(false).longOpt("permute").hasArg()
 				.desc("Do permutations. Uses more than usual memory.").build();
 		Option permuteType = Option.builder("pt").required(false).hasArg().longOpt("permutation_type")
@@ -104,7 +101,6 @@ public class CommandLineOptions {
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		options.addOption(onlyOutputSignificantOption);
-		options.addOption(writeCoefficientsOption);
 		options.addOption(filterSamplesOption);
 		options.addOption(normalizationType);
 		options.addOption(help);
@@ -151,9 +147,7 @@ public class CommandLineOptions {
 		if(cmdLine.hasOption("output_significant_only")){
 			onlyOutputSignificant = !onlyOutputSignificant;
 		}
-		if(cmdLine.hasOption("output_coefficients")){
-			writeCoefficients = !writeCoefficients;
-		}
+
 		if(cmdLine.hasOption("remove_constraint_violating_samples")){
 			removeConstraintViolatingSamples = !removeConstraintViolatingSamples;
 		}
@@ -293,7 +287,6 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
 		DeconvolutionLogger.log.info(String.format("Filter samples from output (-f): %s", filterSamples));
 		DeconvolutionLogger.log.info(String.format("Remove constraint violating samples (-rc): %s", removeConstraintViolatingSamples));
-		DeconvolutionLogger.log.info(String.format("Write the coefficients to outfile (-oc): %s", writeCoefficients));
 		DeconvolutionLogger.log.info(String.format("Only output significant results (-s): %s", onlyOutputSignificant));
 		DeconvolutionLogger.log.info(String.format("Use relative cellcounts (-cc): %s", useRelativeCellCounts));
 		DeconvolutionLogger.log.info(String.format("test run doing only 100 QTL (-t): %s", testRun));
@@ -364,9 +357,7 @@ public class CommandLineOptions {
 	public Boolean getRemoveConstraintViolatingSamples(){
 		return(removeConstraintViolatingSamples);
 	}
-	public Boolean getWriteCoefficients(){
-		return(writeCoefficients);
-	}
+
 	public Boolean getOnlyOutputSignificant(){
 		return(onlyOutputSignificant);
 	}
