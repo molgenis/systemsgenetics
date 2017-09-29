@@ -1,6 +1,5 @@
 package deconvolution;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +11,6 @@ public class DeconvolutionResult {
 	private Map<String, Double> pvaluePerCelltype = new HashMap<String, Double>();
 	private InteractionModel fullModel;
 	private List<InteractionModel> ctModels;
-	private List<Double> correctedPvalues;
-	private Map<String,Double> correctedPvaluePerCelltype = new HashMap<String, Double>();
 	private double wholeBloodQTL;
 	private double wholeBloodQTLpvalue;
 	
@@ -100,32 +97,11 @@ public class DeconvolutionResult {
 		for (int i = 0; i < celltypes.size(); i++){
 			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
 		}
-		for (int i = 0; i < celltypes.size(); i++){
-			correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
-		}
+
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
 	
-
-	private void correctPvaluesForMultipeTesting(List<Double> pvalues, String method){
-		correctedPvalues = new ArrayList<Double>();
-		if (method == "bonferonni"){
-			for(double pvalue : pvalues){
-				double correctedPvalue = pvalue*pvalues.size();
-				if(pvalue*pvalues.size() > 1){
-					correctedPvalue = 1;
-				}
-				correctedPvalues.add(correctedPvalue);
-			}
-			for (int i = 0; i < celltypes.size(); i++){
-				correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
-			}
-		}
-		else{
-			throw new RuntimeException("Only bonferonni has been implemented as multiple testing correction method");
-		}
-	}
 	
 	public void setQtlName(String qtlName){
 		this.qtlName = qtlName;
@@ -179,12 +155,7 @@ public class DeconvolutionResult {
 		}
 		return(this.pvaluePerCelltype);
 	}
-	public Map<String, Double>  getCorrectedPvaluePerCelltype() throws IllegalAccessException{
-		if(this.correctedPvaluePerCelltype == null){
-			throw new IllegalAccessException("correctedPvaluePerCelltype not set for this model");
-		}
-		return(this.correctedPvaluePerCelltype);
-	}
+
 	public double  getWholeBloodQTL() throws IllegalAccessException{
 		return(this.wholeBloodQTL);
 	}
