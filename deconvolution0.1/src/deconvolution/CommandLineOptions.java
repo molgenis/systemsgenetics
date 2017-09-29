@@ -37,7 +37,6 @@ public class CommandLineOptions {
 	private Boolean useRelativeCellCounts = false;
 	private String validate;
 	private Boolean testRun = false;
-	private String multipleTestCorrectionMethod = "bonferonni";
 	private Boolean skipGenotypes = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
@@ -236,10 +235,6 @@ public class CommandLineOptions {
 			testRun = !testRun;
 		}
 		
-		if (cmdLine.hasOption("multiple_testing_correction_method")){
-			multipleTestCorrectionMethod = cmdLine.getOptionValue("multiple_testing_correction_method");
-		}
-		
 		if (cmdLine.hasOption("whole_blood_qtl")){
 			wholeBloodQTL = !wholeBloodQTL;
 		}
@@ -290,7 +285,6 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Only output significant results (-s): %s", onlyOutputSignificant));
 		DeconvolutionLogger.log.info(String.format("Use relative cellcounts (-cc): %s", useRelativeCellCounts));
 		DeconvolutionLogger.log.info(String.format("test run doing only 100 QTL (-t): %s", testRun));
-		DeconvolutionLogger.log.info(String.format("Multiple testing correction method (-mt): %s", multipleTestCorrectionMethod));
 		DeconvolutionLogger.log.info(String.format("Skipping genotypes that are in SNP-gene pair file but not in genotype file (-sg): %s", skipGenotypes));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
@@ -369,9 +363,6 @@ public class CommandLineOptions {
 	}
 	public Boolean getTestRun(){
 		return(testRun);
-	}
-	public String getMultipleTestingMethod(){
-		return(multipleTestCorrectionMethod);
 	}
 	public Boolean getSkipGenotypes(){
 		return(skipGenotypes);

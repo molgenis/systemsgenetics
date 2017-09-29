@@ -181,7 +181,6 @@ public class Deconvolution {
 		 */
 		List<String> output = new ArrayList<String>();
 		String header = "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_pvalue");
-		header += "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_Pvalue_corrected_"+commandLineOptions.getMultipleTestingMethod());
 			DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
 			// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
 			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
@@ -212,7 +211,6 @@ public class Deconvolution {
 			}
 			String results = "";
 			results += deconvolutionResult.getQtlName()+"\t"+Utils.listToTabSeparatedString(deconvolutionResult.getPvalues());
-			results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getCorrectedPvalues());
 				try{
 					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParameters());
 					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParametersStandardErrors());
@@ -552,8 +550,7 @@ public class Deconvolution {
 		fullModel.emptyObservedValues();
 		fullModel.emptyGenotypes();
 		DeconvolutionResult deconResult =  new DeconvolutionResult();
-		deconResult = new DeconvolutionResult(cellCounts.getCelltypes(), qtlName, pvalues, fullModel, ctModels, 
-											  commandLineOptions.getMultipleTestingMethod(), wholeBloodQTL, wholeBloodQTLpvalue);
+		deconResult = new DeconvolutionResult(cellCounts.getCelltypes(), qtlName, pvalues, fullModel, ctModels, wholeBloodQTL, wholeBloodQTLpvalue);
 
 		return deconResult;
 	}

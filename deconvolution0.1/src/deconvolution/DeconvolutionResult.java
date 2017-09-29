@@ -37,7 +37,7 @@ public class DeconvolutionResult {
 	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
 	 */
 	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues, InteractionModel fullModel, 
-								List<InteractionModel> ctModels, String multipleTestingMethod, double wholeBloodQTL, 
+								List<InteractionModel> ctModels, double wholeBloodQTL, 
 								double wholeBloodQTLpvalue){
 
 		this.celltypes = celltypes;
@@ -48,7 +48,6 @@ public class DeconvolutionResult {
 		}
 		this.fullModel = fullModel;
 		this.ctModels = ctModels;
-		correctPvaluesForMultipeTesting(pvalues, multipleTestingMethod);
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
@@ -185,12 +184,6 @@ public class DeconvolutionResult {
 			throw new IllegalAccessException("correctedPvaluePerCelltype not set for this model");
 		}
 		return(this.correctedPvaluePerCelltype);
-	}
-	public List<Double>  getCorrectedPvalues() throws IllegalAccessException{
-		if(this.correctedPvalues == null){
-			throw new IllegalAccessException("correctedPvalues not set for this model");
-		}
-		return(this.correctedPvalues);
 	}
 	public double  getWholeBloodQTL() throws IllegalAccessException{
 		return(this.wholeBloodQTL);
