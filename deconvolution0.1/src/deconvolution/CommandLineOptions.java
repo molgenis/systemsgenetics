@@ -31,7 +31,6 @@ public class CommandLineOptions {
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
 	private Boolean allDosages = false;
-	private Boolean plotBetas = false;
 	private String normalizationType = "normalizeAddMean";
 	private Boolean filterSamples = false;
 	private Boolean removeConstraintViolatingSamples = false;
@@ -58,8 +57,6 @@ public class CommandLineOptions {
 		Option help = new Option("help", "print this message");
 		Option allDosages = Option.builder("ad").required(false).longOpt("all_dosages")
 				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
-		Option plotBetaTimesVariables = Option.builder("b").required(false).hasArg().longOpt("plot_betas")
-				.desc("Plot the B1*X1, B2*X2 etc values if the sum of Bx*CELLTYPEz+By*CELLTYPEz:GT < 0").build();
 		Option cellcount = Option.builder("c").required(true).hasArg().longOpt("cellcount").desc("Cellcount file name")
 				.argName("file").build();
 		Option useRelativeCellCountsOption = Option.builder("cc").required(false).longOpt("use_relative_cellcounts")
@@ -113,7 +110,6 @@ public class CommandLineOptions {
 		options.addOption(writeCoefficientsOption);
 		options.addOption(filterSamplesOption);
 		options.addOption(normalizationType);
-		options.addOption(plotBetaTimesVariables);
 		options.addOption(help);
 		options.addOption(permute);
 		options.addOption(outfile);
@@ -202,9 +198,6 @@ public class CommandLineOptions {
 			if(minimumSamplesPerGenotype < 0){
 				minimumSamplesPerGenotype = 0;
 			}
-		}
-		if (cmdLine.hasOption("plot_betas")) {
-			plotBetas = !plotBetas;
 		}
 
 		expressionFile = cmdLine.getOptionValue("expression");
@@ -300,7 +293,6 @@ public class CommandLineOptions {
 		if(numberOfPermutations > 0){
 			DeconvolutionLogger.log.info(String.format("Permutation type (-pt): %s", permutationType));
 		}
-		DeconvolutionLogger.log.info(String.format("Plot beta x variables (-b): %s", plotBetas));
 		DeconvolutionLogger.log.info(String.format("Normalize expression (-ne): %s", forceNormalExpression));
 		DeconvolutionLogger.log.info(String.format("Normalization type used if Normalize expression==true (-n): %s", normalizationType));
 		DeconvolutionLogger.log.info(String.format("Normalize cellcounts (-ne): %s", forceNormalCellcount));
@@ -359,9 +351,7 @@ public class CommandLineOptions {
 	public Boolean getRoundDosage(){
 		return(roundDosage);
 	}
-	public Boolean getPlotBetas(){
-		return(plotBetas);
-	}
+
 	public Boolean getAllDosages(){
 		return(allDosages);
 	}

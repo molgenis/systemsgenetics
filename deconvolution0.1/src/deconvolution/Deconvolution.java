@@ -289,7 +289,7 @@ public class Deconvolution {
 	 * @return The sum of squares value from running linear regression with
 	 * y ~ model
 	 */
-	private static OLSMultipleLinearRegression multipleLinearRegression(InteractionModel model, Boolean plotBetaTimesVariables) throws IOException, IllegalAccessException {
+	private static OLSMultipleLinearRegression multipleLinearRegression(InteractionModel model) throws IOException, IllegalAccessException {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
@@ -301,16 +301,6 @@ public class Deconvolution {
 			DeconvolutionLogger.log.info(String.format("Length of expression and and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
 					model.getExpessionValues().length, model.getObservedValues().length));
 			throw(e);
-		}
-
-		if(plotBetaTimesVariables){
-			String outfolder = outputFolder+"betaTimesCellcountPlusInteraction/";
-			new File(outfolder).mkdirs();
-			if(model.getQtlName().length() > 50){
-				model.setQtlName(model.getQtlName().substring(0, 20));
-			}
-			Plots.boxPlotBetas(regression, model, outfolder+'/'+model.getQtlName()+"_"+model.getModelName()+"_betaTimesExplanatoryVariables.PNG");
-
 		}
 
 		return (regression);
@@ -670,7 +660,7 @@ public class Deconvolution {
 		if(modelIndex == 0){
 			// only need to set data of fullModel once, reused every loop of m
 			fullModel.setNoIntercept(noIntercept);
-			OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel, commandLineOptions.getPlotBetas());
+			OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel);
 			//for (int i = 0; i < estimatedRegressionParameters.length; i++){
 			//	DeconvolutionLogger.log.info(String.format("beta: %f\terror: %f\n", estimatedRegressionParameters[i], estimateRegressionParametersStandardErrors[i]));
 			//}
@@ -726,7 +716,7 @@ public class Deconvolution {
 		ctModel.setNoIntercept(noIntercept);
 		/*** SUM OF SQUARES - CELLTYPE MODEL **/
 		ctModel.setModelName("ctModel_"+ Integer.toString(modelIndex));
-		OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel, commandLineOptions.getPlotBetas());
+		OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel);
 		double sumOfSquaresCtModel = regression.calculateResidualSumOfSquares();
 		int degreesOfFreedomCtModel = ctModel.getExpessionValues().length - (ctModel.getObservedValues()[0].length + 1);
 
