@@ -3,7 +3,6 @@ package deconvolution;
 import deconvolution.Qtl;
 import deconvolution.Validate;
 import deconvolution.CellCount;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -696,10 +695,7 @@ public class Deconvolution {
 						betasFull.add(beta);
 					}
 				}
-				// if for one of the celltypes this is < 0, model is violated
-				if(commandLineOptions.getFilterNonNegativeConstraint() && Collections.min(betasFull) < 0){
-					throw new NonNegativeConstraintViolatedException("For at least one celltype (B1+2*B2)*CC% < 0, where B1 is beta of CC%, and B2 is beta of CC%:GT");
-				}
+
 				if(Collections.min(betasFull) < -130310130){
 					for (int i = 0; i < estimatedRegressionParameters.length; i++){
 						System.out.print(estimatedRegressionParameters[i]);

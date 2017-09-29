@@ -27,7 +27,6 @@ public class CommandLineOptions {
 	private String permutationType = "genotype";
 	private Boolean forceNormalExpression = false;
 	private Boolean forceNormalCellcount = false;
-	private Boolean filterNonNegativeConstraint = false;
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
 	private Boolean allDosages = false;
@@ -78,8 +77,6 @@ public class CommandLineOptions {
 				.desc("Force normal on the expression data").build();
 		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
 				.desc("Force normal on the expression data").build();
-		Option filterNonNegativeConstraint = Option.builder("nn").required(false).longOpt("filter_non_negative_constraint")
-				.desc("Filter out QTLs which violate non-negative constaint of regression parameters").build();
 		Option noConsoleOption = Option.builder("no").required(false).longOpt("no_console")
 				.desc("Do not output logging info to the console").build();
 		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
@@ -130,7 +127,6 @@ public class CommandLineOptions {
 		options.addOption(snpsToTestOption);
 		options.addOption(skipGenotypes);
 		options.addOption(wholeBloodQTL);
-		options.addOption(filterNonNegativeConstraint);
 		options.addOption(noConsoleOption);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
@@ -253,10 +249,6 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("whole_blood_qtl")){
 			wholeBloodQTL = !wholeBloodQTL;
 		}
-		
-		if (cmdLine.hasOption("filter_non_negative_constraint")){
-			filterNonNegativeConstraint = !filterNonNegativeConstraint;
-		}
 	}
 	
 
@@ -308,7 +300,6 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Multiple testing correction method (-mt): %s", multipleTestCorrectionMethod));
 		DeconvolutionLogger.log.info(String.format("Skipping genotypes that are in SNP-gene pair file but not in genotype file (-sg): %s", skipGenotypes));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
-		DeconvolutionLogger.log.info(String.format("Filter out QTLs which violate non-negative constaint of regression parameters (-nn): %s", filterNonNegativeConstraint));
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
 		if(validate == null){
 			DeconvolutionLogger.log.info(String.format("Validate (-v): %s", false));
@@ -396,9 +387,6 @@ public class CommandLineOptions {
 	}
 	public Boolean getWholeBloodQTL(){
 		return(wholeBloodQTL);
-	}
-	public Boolean getFilterNonNegativeConstraint(){
-		return(filterNonNegativeConstraint);
 	}
 }
 
