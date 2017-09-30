@@ -271,7 +271,7 @@ public class Deconvolution {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(model.getNoIntercept());
+		regression.setNoIntercept(true);
 		try{
 			regression.newSampleData(expressionValues, model.getObservedValues());
 		}
@@ -525,6 +525,8 @@ public class Deconvolution {
 			throws IllegalAccessException{
 		int genotypeCounter = cellCounts.getNumberOfCelltypes();
 		String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
+		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
+		InteractionModel ctModel = interactionModelCollection.getInteractionModel(modelName);
 		for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
 			for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
 				// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
@@ -533,11 +535,11 @@ public class Deconvolution {
 				// for each cell type is 1 model, celltype% * genotype without 1 celltype.
 				// j+1 because j==0 is header
 				double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
-				interactionModelCollection.getInteractionModel(modelName).addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+				ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
 				if(sampleIndex == 0){
 					// add the celltype name at position i so that it gets in front of the celltype:GT, but once
 					try{
-						interactionModelCollection.getInteractionModel(modelName).addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+						ctModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
 					}
 					catch(NullPointerException e){
 						DeconvolutionLogger.log.info(String.format("Nullpoint exception with celltype %s", celltypeIndex));
@@ -552,17 +554,17 @@ public class Deconvolution {
 						if(sampleIndex == 0){
 
 							// Add the interaction term of celltype:genotype
-							interactionModelCollection.getInteractionModel(modelName).addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+							ctModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
 							// save the index of the variables related to current celltype so that this can be used later to calculate
 							// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
 							// but for ctModel this is easiest method
 							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes()-1+celltypeIndex};
-							interactionModelCollection.getInteractionModel(modelName).addCelltypeVariablesIndex(index);
+							ctModel.addCelltypeVariablesIndex(index);
 							// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
 							// it is explicit. Don't know if better.
 						}
 						try{
-							interactionModelCollection.getInteractionModel(modelName).addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, genotypeCounter);
+							ctModel.addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, genotypeCounter);
 						}
 						catch(NullPointerException e){
 							DeconvolutionLogger.log.info(String.format("Nullpoint exception with genotype %s", sampleIndex));
@@ -578,10 +580,10 @@ public class Deconvolution {
 				// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
 				else if (sampleIndex == 0){
 					int[] index = new int[] {celltypeIndex};
-					interactionModelCollection.getInteractionModel(modelName).addCelltypeVariablesIndex(index);
+					ctModel.addCelltypeVariablesIndex(index);
 				}
 				if (modelIndex == 0){
-					interactionModelCollection.getInteractionModel("fullModel").addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+					fullModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
 					try {
 						if(sampleIndex == 0){
 							/** save the index of the variables related to current celltype so that this can be used later to calculate
@@ -589,12 +591,12 @@ public class Deconvolution {
 							 * but for ctModel this is easiest method
 							 */
 							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex};
-							interactionModelCollection.getInteractionModel("fullModel").addCelltypeVariablesIndex(index);
+							fullModel.addCelltypeVariablesIndex(index);
 							// add the celltype name at position i so that it gets in front of the celltype:GT
-							interactionModelCollection.getInteractionModel("fullModel").addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
-							interactionModelCollection.getInteractionModel("fullModel").addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+							fullModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+							fullModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
 						}
-						interactionModelCollection.getInteractionModel("fullModel").addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);					
+						fullModel.addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);					
 					} catch (ArrayIndexOutOfBoundsException error) {
 						throw new RuntimeException(
 								"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
@@ -622,13 +624,11 @@ public class Deconvolution {
 	 */
 	private static InteractionModelCollection calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection, int modelIndex) 
 			throws IllegalAccessException, IOException {
-		Boolean noIntercept = true;
 		String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
 		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
 		InteractionModel ctModel = interactionModelCollection.getInteractionModel(modelName);
 		if(modelIndex == 0){
 			// only need to set data of fullModel once, reused every loop of m
-			fullModel.setNoIntercept(noIntercept);
 			OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel, 
 																			  interactionModelCollection.getExpessionValues());
 			//for (int i = 0; i < estimatedRegressionParameters.length; i++){
@@ -642,7 +642,6 @@ public class Deconvolution {
 			fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
 			fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
 		}
-		interactionModelCollection.getInteractionModel(modelName).setNoIntercept(noIntercept);
 		/*** SUM OF SQUARES - CELLTYPE MODEL **/
 		OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel, 
 																		  interactionModelCollection.getExpessionValues());

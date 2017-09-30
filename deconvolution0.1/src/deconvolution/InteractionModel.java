@@ -13,7 +13,6 @@ public class InteractionModel {
 	private List<String> independentVariableNames = new ArrayList<String>();
 	private List<int[]> celltypeVariablesIndex = new ArrayList <int[]>();
 	private double[][] observedValues;
-	private Boolean noIntercept;
 	private String modelName;
 	private double[] estimatedRegressionParameters;
 	private double[] estimateRegressionParametersStandardErrors;
@@ -96,25 +95,6 @@ public class InteractionModel {
 			throw new IllegalAccessException("celltypes not set for this model");
 		}
 	    return(this.independentVariableNames);
-	  }
-	
-	/** 
-	 * Set No Intercept for the model. If true, the intercept will be removed
-	 */
-	public void setNoIntercept(Boolean noIntercept){
-	    this.noIntercept = noIntercept;
-	  }
-	
-
-
-	/** 
-	 * Get the No Intercept value for the model. If true, the intercept will be removed
-	 */
-	public Boolean getNoIntercept() throws IllegalAccessException{
-		if(this.noIntercept == null){
-			throw new IllegalAccessException("noIntercept not set for this model");
-		}
-	    return(this.noIntercept);
 	  }
 	
 	public void setModelName(String modelName){
