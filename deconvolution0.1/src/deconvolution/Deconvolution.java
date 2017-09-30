@@ -471,6 +471,8 @@ public class Deconvolution {
 		// number of terms + 1 because for full model all cell types are included
 		interactionModelCollection.getInteractionModel("fullModel").InitializeObservedValue(cellCounts.getNumberOfSamples(), 
 																						    numberOfTerms+1);
+		interactionModelCollection = createObservedValueMatricesFullModel(interactionModelCollection);
+
 		// m = model, there are equally many models as celltypes, the fullModel gets made during the first iteration
 		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
 			InteractionModel ctModel = new InteractionModel();
@@ -482,8 +484,7 @@ public class Deconvolution {
 			// calculate p-value and save it, with other information, in a ctModel object. Then, add it to a list of these models to return as decon results
 			ctModel.setModelName(interactionModelCollection.getCelltypes().get(modelIndex));
 			interactionModelCollection.addInteractionModel(ctModel,ctModel.getModelName());
-
-			interactionModelCollection = createObservedValueMatrices(interactionModelCollection, modelIndex);
+			interactionModelCollection = createObservedValueMatricesCtModels(interactionModelCollection, modelIndex);
 
 			interactionModelCollection = calculateDeconvolutionPvalue(interactionModelCollection, modelIndex);
 
@@ -508,9 +509,10 @@ public class Deconvolution {
 
 		return deconResult;
 	}
-
+	
 	/**
-	 * Construct the observed value matrices that are used for calculating the regression
+	 * Construct the observed value matrices that are used for calculating the regression for the full model.
+	 * Add all permutations of genotypes/swappedGenotypes (swappedGenotypes -> 0=2, 2=0)
 	 * 
 	 * @param ctModel InteractionModel object for saving the results
 	 * @param m The current model that is being evaluated (for each celltype 1 model)
@@ -521,7 +523,49 @@ public class Deconvolution {
 	 * @return 
 	 * @throws IllegalAccessException 
 	 */
-	private static InteractionModelCollection createObservedValueMatrices(InteractionModelCollection interactionModelCollection, int modelIndex) 
+	private static InteractionModelCollection createObservedValueMatricesFullModel(InteractionModelCollection interactionModelCollection) 
+			throws IllegalAccessException{
+		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
+		for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
+			for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
+				double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
+				// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
+				fullModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+				try {
+					if(sampleIndex == 0){
+						/** save the index of the variables related to current celltype so that this can be used later to calculate
+						 * Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
+						 * but for ctModel this is easiest method
+						 */
+						int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex};
+						fullModel.addCelltypeVariablesIndex(index);
+						// add the celltype name at position i so that it gets in front of the celltype:GT
+						fullModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+						fullModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+					}
+					fullModel.addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);					
+				} catch (ArrayIndexOutOfBoundsException error) {
+					throw new RuntimeException(
+							"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
+							error);
+				}
+			}
+		}
+		return(interactionModelCollection);
+	}
+
+	/**
+	 * Construct the observed value matrices that are used for calculating the regression
+	 * 
+	 * @param InteractionModelCollection Collection of InteractionModel objects for saving the results
+	 * @param m The current model that is being evaluated (for each celltype 1 model)
+	 */
+	/**
+	 * Below nested for loops make the matrices that are necesarry to run the linear model and put them in a model object
+	 * @return 
+	 * @throws IllegalAccessException 
+	 */
+	private static InteractionModelCollection createObservedValueMatricesCtModels(InteractionModelCollection interactionModelCollection, int modelIndex) 
 			throws IllegalAccessException{
 		int genotypeCounter = cellCounts.getNumberOfCelltypes();
 		String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
@@ -581,27 +625,6 @@ public class Deconvolution {
 				else if (sampleIndex == 0){
 					int[] index = new int[] {celltypeIndex};
 					ctModel.addCelltypeVariablesIndex(index);
-				}
-				if (modelIndex == 0){
-					fullModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
-					try {
-						if(sampleIndex == 0){
-							/** save the index of the variables related to current celltype so that this can be used later to calculate
-							 * Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
-							 * but for ctModel this is easiest method
-							 */
-							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex};
-							fullModel.addCelltypeVariablesIndex(index);
-							// add the celltype name at position i so that it gets in front of the celltype:GT
-							fullModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
-							fullModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
-						}
-						fullModel.addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);					
-					} catch (ArrayIndexOutOfBoundsException error) {
-						throw new RuntimeException(
-								"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
-								error);
-					}
 				}
 			}
 			// because 1 of numberOfCelltypes + i needs to be skipped,

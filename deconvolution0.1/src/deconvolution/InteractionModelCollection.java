@@ -13,6 +13,7 @@ import java.util.List;
 public class InteractionModelCollection {
 	private double[] expressionValues;
 	private double[] genotypes;
+	private double[] swappedGenotypes;
 	private int sampleSize;
 	private List<String> celltypes = new ArrayList<String>();
 	private String qtlName;
@@ -63,13 +64,13 @@ public class InteractionModelCollection {
 		return this.genotypes;
 	}
 
-	/** 
-	 * Get a list of all the celltypes given as input
+
+	/*
+	 * Swap genotypes so that 2 = 0 and 0 = 2
 	 */
 	public void setCelltypes(List<String> celltypes) throws IllegalAccessException{
 		this.celltypes = celltypes;
 	}
-
 	/** 
 	 * Get a list of all the celltypes given as input
 	 */
@@ -87,8 +88,22 @@ public class InteractionModelCollection {
 
 	public void setGenotypes(double[] genotypes) {
 		this.genotypes = genotypes;
+		swapGenotypes();
 	}
-
+	/** 
+	 * Get a list of all the celltypes given as input
+	 */
+	private void swapGenotypes(){
+		this.swappedGenotypes = this.genotypes.clone();
+		for(int i = 0; i < this.genotypes.length; i++) {
+			if(this.genotypes[i] == 0){
+				this.swappedGenotypes[i] = 2;
+			}
+			else if(this.genotypes[i] == 2){
+				this.swappedGenotypes[i] = 0;
+			}
+		}
+	}
 	public void emptyGenotypes(){
 		this.genotypes = null;
 	}
