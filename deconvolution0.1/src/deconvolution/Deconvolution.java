@@ -132,16 +132,6 @@ public class Deconvolution {
 					}
 					filteredQTLsOutput.add(qtlName+"\tNot enough genotypes (e.g. AA and AB but no BB)");
 				}
-				catch(NonNegativeConstraintViolatedException e){
-					if(!commandLineOptions.getFilterSamples()){
-						deconvolutionResults.add(setPvaluesNA(qtlName));
-					}
-					else{
-						QTLsFiltered++;
-						// TODO: Use MLE
-					}
-					filteredQTLsOutput.add(qtlName+"\tFailed non-negative linear model parameter constraint");
-				}
 				catch(NotEnoughSamplesPerGenotypeException e){
 					if(!commandLineOptions.getFilterSamples()){
 						deconvolutionResults.add(setPvaluesNA(qtlName));
@@ -373,15 +363,13 @@ public class Deconvolution {
 
 	public static DeconvolutionResult deconvolution(Qtl qtl) throws RuntimeException, IllegalAccessException, 
 	NotEnoughGenotypesException, IOException, 
-	NonNegativeConstraintViolatedException, 
 	NotEnoughSamplesPerGenotypeException {
 		return deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getQtlName());
 	}
 
 	//TODO: update documentation on parameters
 	private static DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, NotEnoughGenotypesException, IllegalAccessException, 
-	IOException, NonNegativeConstraintViolatedException, 
-	NotEnoughSamplesPerGenotypeException {
+	IOException, NotEnoughSamplesPerGenotypeException {
 		/**
 		 * Make the linear regression models and then do an Anova of the sum of
 		 * squares
@@ -633,31 +621,33 @@ public class Deconvolution {
 	 * Below nested for loops make the matrices that are necesarry to run the linear model and put them in a model object
 	 */
 	private static InteractionModelCollection calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection, int modelIndex) 
-			throws IllegalAccessException, IOException, NonNegativeConstraintViolatedException{
+			throws IllegalAccessException, IOException {
 		Boolean noIntercept = true;
 		String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
+		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
+		InteractionModel ctModel = interactionModelCollection.getInteractionModel(modelName);
 		if(modelIndex == 0){
 			// only need to set data of fullModel once, reused every loop of m
-			interactionModelCollection.getInteractionModel("fullModel").setNoIntercept(noIntercept);
-			OLSMultipleLinearRegression regression = multipleLinearRegression(interactionModelCollection.getInteractionModel("fullModel"), 
+			fullModel.setNoIntercept(noIntercept);
+			OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel, 
 																			  interactionModelCollection.getExpessionValues());
 			//for (int i = 0; i < estimatedRegressionParameters.length; i++){
 			//	DeconvolutionLogger.log.info(String.format("beta: %f\terror: %f\n", estimatedRegressionParameters[i], estimateRegressionParametersStandardErrors[i]));
 			//}
 			sumOfSquaresFullModel = regression.calculateResidualSumOfSquares();
-			degreesOfFreedomFullModel = interactionModelCollection.getExpessionValues().length - (interactionModelCollection.getInteractionModel("fullModel").getObservedValues()[0].length + 1);
+			degreesOfFreedomFullModel = interactionModelCollection.getExpessionValues().length - (fullModel.getObservedValues()[0].length + 1);
 			fullModelLength = interactionModelCollection.getInteractionModel("fullModel").getObservedValues().length;
 			double[] estimatedRegressionParameters = regression.estimateRegressionParameters();
 			double[] estimateRegressionParametersStandardErrors = regression.estimateRegressionParametersStandardErrors();
-			interactionModelCollection.getInteractionModel("fullModel").setEstimateRegressionParameters(estimatedRegressionParameters);
-			interactionModelCollection.getInteractionModel("fullModel").setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
+			fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
+			fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
 		}
 		interactionModelCollection.getInteractionModel(modelName).setNoIntercept(noIntercept);
 		/*** SUM OF SQUARES - CELLTYPE MODEL **/
-		OLSMultipleLinearRegression regression = multipleLinearRegression(interactionModelCollection.getInteractionModel(modelName), 
+		OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel, 
 																		  interactionModelCollection.getExpessionValues());
 		double sumOfSquaresCtModel = regression.calculateResidualSumOfSquares();
-		int degreesOfFreedomCtModel = interactionModelCollection.getExpessionValues().length - (interactionModelCollection.getInteractionModel(modelName).getObservedValues()[0].length + 1);
+		int degreesOfFreedomCtModel = interactionModelCollection.getExpessionValues().length - (ctModel.getObservedValues()[0].length + 1);
 
 		int expressionLength = interactionModelCollection.getExpessionValues().length;
 
@@ -667,8 +657,8 @@ public class Deconvolution {
 		}
 		
 		double pval = anova(sumOfSquaresFullModel, sumOfSquaresCtModel, degreesOfFreedomFullModel, degreesOfFreedomCtModel, true);
-		interactionModelCollection.getInteractionModel(modelName).setPvalue(pval);
-		interactionModelCollection.getInteractionModel(modelName).emptyObservedValues();
+		ctModel.setPvalue(pval);
+		ctModel.emptyObservedValues();
 		interactionModelCollection.setPvalue(pval,modelName);
 		return interactionModelCollection;
 	}

@@ -120,7 +120,6 @@ public class InteractionModelCollection {
 		if(pvalue == null){
 			throw new IllegalAccessException(String.format("Pvalue not set for model %s", modelName));
 		}
-		System.out.println(pvalue);
 	    return(pvalue);
 	  }
 }
