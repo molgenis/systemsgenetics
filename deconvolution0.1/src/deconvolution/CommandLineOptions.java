@@ -25,8 +25,6 @@ public class CommandLineOptions {
 	private String outfolder;
 	private int numberOfPermutations = 0;
 	private String permutationType = "genotype";
-	private Boolean forceNormalExpression = false;
-	private Boolean forceNormalCellcount = false;
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
 	private Boolean allDosages = false;
@@ -34,7 +32,6 @@ public class CommandLineOptions {
 	private Boolean filterSamples = false;
 	private Boolean removeConstraintViolatingSamples = false;
 	private Boolean onlyOutputSignificant = false;
-	private Boolean useRelativeCellCounts = false;
 	private String validate;
 	private Boolean testRun = false;
 	private Boolean skipGenotypes = false;
@@ -167,13 +164,6 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("round_dosage")) {
 			roundDosage = true;
 		}
-		if (cmdLine.hasOption("force_normal_expression")){
-			forceNormalExpression = !forceNormalExpression;
-		}
-
-		if (cmdLine.hasOption("force_normal_cellcount")){
-			forceNormalCellcount = !forceNormalCellcount;
-		}
 
 		if (cmdLine.hasOption("all_dosages")){
 			allDosages = !allDosages;
@@ -222,9 +212,7 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("filter_samples")){
 			filterSamples = !filterSamples;
 		}
-		if (cmdLine.hasOption("use_relative_cellcounts")){
-			useRelativeCellCounts = !useRelativeCellCounts;
-		}
+
 		if (cmdLine.hasOption("validate_output")){
 			validate = cmdLine.getOptionValue("validate_output");
 			if(!new File(validate).exists() || new File(validate).isDirectory()) { 
@@ -274,16 +262,13 @@ public class CommandLineOptions {
 		if(numberOfPermutations > 0){
 			DeconvolutionLogger.log.info(String.format("Permutation type (-pt): %s", permutationType));
 		}
-		DeconvolutionLogger.log.info(String.format("Normalize expression (-ne): %s", forceNormalExpression));
 		DeconvolutionLogger.log.info(String.format("Normalization type used if Normalize expression==true (-n): %s", normalizationType));
-		DeconvolutionLogger.log.info(String.format("Normalize cellcounts (-ne): %s", forceNormalCellcount));
 		DeconvolutionLogger.log.info(String.format("Round dosage (-r): %s", roundDosage));
 		DeconvolutionLogger.log.info(String.format("Filter out QTLs where not all dosages are present in at least 1 sample (-ad): %s", allDosages));
 		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
 		DeconvolutionLogger.log.info(String.format("Filter samples from output (-f): %s", filterSamples));
 		DeconvolutionLogger.log.info(String.format("Remove constraint violating samples (-rc): %s", removeConstraintViolatingSamples));
 		DeconvolutionLogger.log.info(String.format("Only output significant results (-s): %s", onlyOutputSignificant));
-		DeconvolutionLogger.log.info(String.format("Use relative cellcounts (-cc): %s", useRelativeCellCounts));
 		DeconvolutionLogger.log.info(String.format("test run doing only 100 QTL (-t): %s", testRun));
 		DeconvolutionLogger.log.info(String.format("Skipping genotypes that are in SNP-gene pair file but not in genotype file (-sg): %s", skipGenotypes));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
@@ -317,12 +302,7 @@ public class CommandLineOptions {
 	public String getPermutationType(){
 		return(permutationType);
 	}
-	public Boolean getForceNormalExpression(){
-		return(forceNormalExpression);
-	}
-	public Boolean getForceNormalCellcount(){
-		return(forceNormalCellcount);
-	}
+
 	public int getMinimumSamplesPerGenotype(){
 		return(minimumSamplesPerGenotype);
 	}
@@ -355,9 +335,7 @@ public class CommandLineOptions {
 	public Boolean getOnlyOutputSignificant(){
 		return(onlyOutputSignificant);
 	}
-	public Boolean getUseRelativeCellCounts(){
-		return(useRelativeCellCounts);
-	}
+
 	public String getValidationFile(){
 		return(validate);
 	}

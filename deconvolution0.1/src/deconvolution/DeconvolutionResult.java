@@ -65,14 +65,10 @@ public class DeconvolutionResult {
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
-		this.correctedPvalues = pvalues;
 		for (int i = 0; i < celltypes.size(); i++){
 			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
 		}
-		this.fullModel = fullModel;
-		for (int i = 0; i < celltypes.size(); i++){
-			correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
-		}
+
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
@@ -93,7 +89,6 @@ public class DeconvolutionResult {
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
-		correctedPvalues = pvalues;
 		for (int i = 0; i < celltypes.size(); i++){
 			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
 		}

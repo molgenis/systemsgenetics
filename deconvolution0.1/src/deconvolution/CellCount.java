@@ -1,10 +1,6 @@
 package deconvolution;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import deconvolution.Utils;
@@ -66,39 +62,5 @@ public class CellCount {
 	}
 	public double[][] getCellcountPercentages(){
 		return(cellcountPercentages);
-	}
-
-	public void makeCellcountsRelative(String outputFolder) throws IOException{
-		for (int i = 0; i < numberOfCelltypes; i++) {
-			double average = 0;
-			for (int j = 0; j <= numberOfSamples-1; j++) {
-				average +=  cellcountPercentages[j][i];
-			}
-			average = average/cellcountPercentages.length;
-			for (int j = 0; j <= numberOfSamples-1; j++) {
-				cellcountPercentages[j][i] =  cellcountPercentages[j][i]/average;
-			}
-		}
-		/*
-		 * Write the new cellcounts to output folder so that it can be used after running
-		 */
-		List<String> newCCoutput = new ArrayList<String>();
-		String header = new String(); 
-		for (String celltype : getCelltypes()){
-			header += celltype+"\t";
-		}
-		header = header.substring(0, header.length() - 2);
-		newCCoutput.add(header);
-		for (int j = 0; j <= getNumberOfSamples()-1; j++) {
-			String line = "";
-			for (int i = 0; i < getNumberOfCelltypes(); i++) {
-				line += getCellcountPercentages()[j][i]+"\t";
-			}
-			line = line.substring(0, line.length() - 2);
-			newCCoutput.add(line);
-		}
-		Path file = Paths.get(outputFolder+"normalizedCellcounts.csv");
-		Files.write(file, newCCoutput, Charset.forName("UTF-8"));
-		DeconvolutionLogger.log.info(String.format("New cellcount (cause -cc option used) written to  %s", file));
 	}
 }

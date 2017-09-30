@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.InputMismatchException;
 import java.util.List;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -37,7 +36,7 @@ public class Deconvolution {
 	private static String outputFolder;
 	// factory method for making static variable that can throw an exception
 
-	
+
 	/**
 	 * Deconvolutes a set of QTLs given the expression levels, genotypes,
 	 * and cell counts. Calculates the p-values for the deconvoluted QTLs
@@ -51,11 +50,6 @@ public class Deconvolution {
 		commandLineOptions.parseCommandLine(args);
 		outputFolder = commandLineOptions.getOutfolder();
 		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
-		
-		
-		if(commandLineOptions.getUseRelativeCellCounts()){
-			cellCounts.makeCellcountsRelative(outputFolder);
-		}
 
 
 		if (commandLineOptions.getNumberOfPermutations() > 1) {
@@ -120,7 +114,7 @@ public class Deconvolution {
 							if (genes == null) {
 								DeconvolutionLogger.log.info(String.format("gene %s in SNP-gene pair file but not in expression data file",gene));
 							}
-						
+
 							if (genotypes == null) {
 								DeconvolutionLogger.log.info(String.format("genotype %s in SNP-gene pair file but not in genotype data file",genotype));
 							}
@@ -172,7 +166,7 @@ public class Deconvolution {
 			new Validate(deconvolutionResults, validate, outputFolder+"/figures/");
 		}
 	}
-	
+
 	private static void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
 		/**
 		 * Append the deconvolution pvalues and, if the flag is set, the coefficients to the deconvolution result file
@@ -181,22 +175,22 @@ public class Deconvolution {
 		 */
 		List<String> output = new ArrayList<String>();
 		String header = "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_pvalue");
-			DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
-			// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
-			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
-				try{
-					header += "\tBeta" + Integer.toString(i) +"_"+deconvolutionResults.get(0).getFullModel().getIndependentVariableNames().get(i-1);
-				}
-				catch(IndexOutOfBoundsException e){
-					DeconvolutionLogger.log.info(String.format("DeconvolutionResult index error with beta %d", i));
-					throw e;
-				}
+		DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
+		// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
+		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
+			try{
+				header += "\tBeta" + Integer.toString(i) +"_"+deconvolutionResults.get(0).getFullModel().getIndependentVariableNames().get(i-1);
 			}
-			
-			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
-				header += "\tBetaStandardError" + Integer.toString(i); 
+			catch(IndexOutOfBoundsException e){
+				DeconvolutionLogger.log.info(String.format("DeconvolutionResult index error with beta %d", i));
+				throw e;
 			}
-		
+		}
+
+		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
+			header += "\tBetaStandardError" + Integer.toString(i); 
+		}
+
 		if(commandLineOptions.getWholeBloodQTL()){
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
@@ -211,17 +205,17 @@ public class Deconvolution {
 			}
 			String results = "";
 			results += deconvolutionResult.getQtlName()+"\t"+Utils.listToTabSeparatedString(deconvolutionResult.getPvalues());
-				try{
-					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParameters());
-					results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParametersStandardErrors());
-				}catch (java.lang.IllegalAccessException e){
-					// if -m is set not all deconvolution resuts will have a full model. If not, set betas to NA
-					String str = "\tNA";
-					// celltype.size()*4 because for each celltype are 2 betas + 2 standard error of betas
-					results += StringUtils.repeat(str, cellCounts.getNumberOfCelltypes()*4);
-				}
+			try{
+				results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParameters());
+				results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getFullModel().getEstimateRegressionParametersStandardErrors());
+			}catch (java.lang.IllegalAccessException e){
+				// if -m is set not all deconvolution resuts will have a full model. If not, set betas to NA
+				String str = "\tNA";
+				// celltype.size()*4 because for each celltype are 2 betas + 2 standard error of betas
+				results += StringUtils.repeat(str, cellCounts.getNumberOfCelltypes()*4);
+			}
 
-			
+
 			if(commandLineOptions.getWholeBloodQTL()){
 				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTL());
 				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTLpvalue());
@@ -379,12 +373,12 @@ public class Deconvolution {
 	}
 
 	public static DeconvolutionResult deconvolution(Qtl qtl) throws RuntimeException, IllegalAccessException, 
-																	NotEnoughGenotypesException, IOException, 
-																	NonNegativeConstraintViolatedException, 
-																	NotEnoughSamplesPerGenotypeException {
+	NotEnoughGenotypesException, IOException, 
+	NonNegativeConstraintViolatedException, 
+	NotEnoughSamplesPerGenotypeException {
 		return deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getQtlName());
 	}
-	
+
 	//TODO: update documentation on parameters
 	private static DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, NotEnoughGenotypesException, IllegalAccessException, 
 	IOException, NonNegativeConstraintViolatedException, 
@@ -415,34 +409,6 @@ public class Deconvolution {
 		 * @return A list with for each celltype a p-value for the celltype
 		 * specific eQTL for one eQTL
 		 */
-		if(commandLineOptions.getForceNormalExpression()){
-			Statistics expressionStatistics = new Statistics();
-			if(commandLineOptions.getNormalizationType().equals("normalizeAddMean")){
-				expression = expressionStatistics.normalizeKeepMean(expression, false);
-			}
-			else if (commandLineOptions.getNormalizationType().equals("normalizeKeepExponential")){
-				expression = expressionStatistics.normalizeKeepExponential(expression, false);
-			}
-			else if (commandLineOptions.getNormalizationType().equals("normalize")){
-				expression = Statistics.normalize(expression);
-			}
-			else{
-				throw new InputMismatchException("Not valid option for normalization type (-nt). Valid options are normalize, normalizeAddMean, and normalizeKeepExponential");
-			}
-		}
-		if(commandLineOptions.getForceNormalCellcount()){ 
-			/**	for(int i = 0; i < cellcountTable.size(); i++){
-				List<List<String>> cellcountTableTranspose = Statistics.transposeStringMatrix(cellcountTable);
-				List<List<Double>>  cellcountTableTransposeNormalize = new ArrayList<List<Double>>();
-				for(List<String> cellcount : cellcountTableTranspose){
-					String celltype = cellcount.remove(0);
-					List<Double> normalizeCellcountVector = Statistics.normalize(cellcount); 
-					cellcountTableTransposeNormalize.add(normalizeCellcountVector);
-				}
-				cellcountTable = Statistics.transposeMatrix(cellcountTableTransposeNormalize);
-			}*/
-			throw new NotImplementedException("Normalizing cell counts not implemented yet");
-		}
 
 		/** 
 		 * If roundDosage option is selected on the command line, round of the dosage to closest integer -> 0.49 = 0, 0.51 = 1, 1.51 = 2. 
@@ -661,47 +627,10 @@ public class Deconvolution {
 			sumOfSquaresFullModel = regression.calculateResidualSumOfSquares();
 			degreesOfFreedomFullModel = ctModel.getExpessionValues().length - (fullModel.getObservedValues()[0].length + 1);
 			fullModelLength = fullModel.getObservedValues().length;
-			if(commandLineOptions.getRemoveConstraintViolatingSamples()){
-				/**
-				 * Check if the constraints of the model are violate -> (B1 + 2*B3)*Celcount% > 0    where B1 is cellcount% beta, and B3 is cellcount:GT interaction beta
-				 * 
-				 */
-				double[] estimatedRegressionParameters = regression.estimateRegressionParameters();
-				double[] estimateRegressionParametersStandardErrors = regression.estimateRegressionParametersStandardErrors();
-				List<Double> betasFull = new ArrayList<Double>();
-				// The cell type indices are the indexes of the B1 and B3 of above (e.g. if 4 celltypes [[0, 4], [1, 5], etc], if 3 celltypes [[0,3], [1, 4], etc]
-				// This is to know the index of the CC% and CC%:GT beta that belong together for arbitary number of celltypes
-				// Calculate this for every celltype
-				for (int[] celltypeIndices : fullModel.getCelltypeVariablesIndex()){
-					List<Double> betas = new ArrayList<Double>();
-					//	The observed  values are the actual value of CC% and CC%*GT
-					for (int i = 0; i < fullModel.getObservedValues().length; i++){
-						// Calculate B1 (of CC%)
-						double beta = estimatedRegressionParameters[celltypeIndices[0]] + estimateRegressionParametersStandardErrors[celltypeIndices[0]];
-						double betaInteraction = 0;
-						// Calculate B3  (of CC%:GT), because this is only done for full model they all have a CC%:GT
-						// Add the standard error of the regression parameter, so that it is only counted as violating the constraint if with the error it's still < 0
-						betaInteraction = estimatedRegressionParameters[celltypeIndices[1]] + estimateRegressionParametersStandardErrors[celltypeIndices[1]];
-						// B1 + 2*B3
-						beta += 2*betaInteraction;
-						// (B1 + 2*B3) * CC%
-						beta *= fullModel.getObservedValues()[i][celltypeIndices[0]];
-						betas.add(beta);
-						betasFull.add(beta);
-					}
-				}
-
-				if(Collections.min(betasFull) < -130310130){
-					for (int i = 0; i < estimatedRegressionParameters.length; i++){
-						System.out.print(estimatedRegressionParameters[i]);
-						System.out.print("\t");
-					}
-					System.out.println();
-				}
-					fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
-					fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
-				
-			}
+			double[] estimatedRegressionParameters = regression.estimateRegressionParameters();
+			double[] estimateRegressionParametersStandardErrors = regression.estimateRegressionParametersStandardErrors();
+			fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
+			fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
 		}
 		ctModel.setNoIntercept(noIntercept);
 		/*** SUM OF SQUARES - CELLTYPE MODEL **/
@@ -718,13 +647,13 @@ public class Deconvolution {
 		}
 
 		// ANOVA compare full model to celltype model
-/**		if(ctModel.GetQtlName().contains("ENSG00000262539")){
+		/**		if(ctModel.GetQtlName().contains("ENSG00000262539")){
 			System.out.println(sumOfSquaresFullModel);
 			System.out.println(sumOfSquaresCtModel);
 			System.out.println(degreesOfFreedomFullModel);
 			System.out.println(degreesOfFreedomCtModel);
 		}
-	*/			
+		 */			
 		double pval = anova(sumOfSquaresFullModel, sumOfSquaresCtModel, degreesOfFreedomFullModel, degreesOfFreedomCtModel, true);
 		ctModel.setPvalue(pval);
 		ctModel.emptyExpressionValues();

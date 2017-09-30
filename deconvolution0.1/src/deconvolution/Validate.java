@@ -175,22 +175,6 @@ public class Validate {
 			if(significantCount == 1){
 				deconvolutionSignificantUnique.get(significantCelltype+"_unique").add(qtl);
 			}
-			significantCount = 0;
-			significantCelltype = null;
-			for (String celltype : deconResult.getCorrectedPvaluePerCelltype().keySet()){
-				double correctedPval = deconResult.getCorrectedPvaluePerCelltype().get(celltype);
-				if (correctedPval < 0.05){
-					significantCount++;
-					significantCelltype = celltype;
-					deconvolutionSignificantCorrected.get(celltype).add(qtl);
-				}
-				else{
-					deconvolutionInsignificantCorrected.get(celltype).add(qtl);
-				}
-			}
-			if(significantCount == 1){
-				deconvolutionSignificantCorrectedUnique.get(significantCelltype+"_unique").add(qtl);
-			}
 		}
 	}
 
