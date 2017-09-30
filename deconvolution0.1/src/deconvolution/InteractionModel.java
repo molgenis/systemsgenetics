@@ -3,18 +3,17 @@ package deconvolution;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * InteractionModel contains the information (observed values, pvalue, regression parameter values etc)
+ * of one single interaction model. All the InteractionModels that are used in the deconvolution are collected 
+ * in InteractionModelCollection
+ */
 public class InteractionModel {
 	/* independentVariables = the names of the independent variables, e.g. neut%, mono%, neut%:GT */
 	private List<String> independentVariableNames = new ArrayList<String>();
 	private List<int[]> celltypeVariablesIndex = new ArrayList <int[]>();
 	private double[][] observedValues;
-	private double[] expressionValues;
-	private double[] genotypes;
-	private int sampleSize;
-	private Boolean noIntercept;
-	private String qtlName;
 	private String modelName;
-	private List<String> celltypes = new ArrayList<String>();
 	private double[] estimatedRegressionParameters;
 	private double[] estimateRegressionParametersStandardErrors;
 	public InteractionModel(){};
@@ -26,9 +25,7 @@ public class InteractionModel {
 	 * [mono%, neut%, mono% * GT]
 	 */
 	public void InitializeObservedValue( int sampleSize, int numberOfTerms){
-
 	    this.observedValues = new double[sampleSize][numberOfTerms];
-	    this.sampleSize = sampleSize;
 	  }
 	
 	public void addObservedValue( double observedValue, int sampleIndex, int termIndex){
@@ -100,74 +97,6 @@ public class InteractionModel {
 	    return(this.independentVariableNames);
 	  }
 	
-	/** 
-	 * Set the expression values (y) of the model. 
-	 */
-	public void setExpressionValues(double[] expression){
-	    this.expressionValues = expression;
-	  }
-	
-	/** 
-	 * Get the expression values (y) of the model. 
-	 */
-	public double[] getExpessionValues() throws IllegalAccessException{
-		if(this.expressionValues == null){
-			throw new IllegalAccessException("expressionValues not set for this model");
-		}
-	    return(this.expressionValues);
-	  }
-	public double[] getGenotypes() throws IllegalAccessException {
-		if(this.genotypes == null){
-			throw new IllegalAccessException("genotypes not set for this model");
-		}
-		return this.genotypes;
-	}
-	
-	/** 
-	 * Set No Intercept for the model. If true, the intercept will be removed
-	 */
-	public void setNoIntercept(Boolean noIntercept){
-	    this.noIntercept = noIntercept;
-	  }
-	
-	/** 
-	 * Get a list of all the celltypes given as input
-	 */
-	public void setCelltypes(List<String> celltypes) throws IllegalAccessException{
-		this.celltypes = celltypes;
-	}
-	
-	/** 
-	 * Get a list of all the celltypes given as input
-	 */
-	public List<String> getCelltypes() throws IllegalAccessException{
-		if(this.celltypes == null){
-			throw new IllegalAccessException("celltypes not set for this model");
-		}
-		return(this.celltypes);
-	}
-	
-	/** 
-	 * Get the No Intercept value for the model. If true, the intercept will be removed
-	 */
-	public Boolean getNoIntercept() throws IllegalAccessException{
-		if(this.noIntercept == null){
-			throw new IllegalAccessException("noIntercept not set for this model");
-		}
-	    return(this.noIntercept);
-	  }
-
-	public void setQtlName(String qtlName){
-	    this.qtlName = qtlName;
-	  }
-	
-	public String getQtlName() throws IllegalAccessException{
-		if(this.qtlName == null){
-			throw new IllegalAccessException("QTL name not set for this model");
-		}
-	    return(this.qtlName);
-	  }
-	
 	public void setModelName(String modelName){
 	    this.modelName = modelName;
 	  }
@@ -199,22 +128,10 @@ public class InteractionModel {
 		return(this.estimatedRegressionParameters);
 	}
 	
-	public void setAlltIndependentVariableNames(){
-		for (int celltypeIndex = 0; celltypeIndex < this.celltypes.size(); celltypeIndex++) {
-			int[] index = new int[] {celltypeIndex, this.celltypes.size() + celltypeIndex};
-			addCelltypeVariablesIndex(index);
-			addIndependentVariableName(celltypeIndex, this.celltypes.get(celltypeIndex));
-			addIndependentVariableName(this.celltypes.get(celltypeIndex)+":GT");
-		}
-	}
-	
 	public void emptyObservedValues(){
 		this.observedValues = null;
 	}
-	public void emptyExpressionValues(){
-		this.expressionValues = null;
-	}
-	
+
 	public void setPvalue(double pvalue){
 		this.pvalue = pvalue;
 	}
@@ -224,16 +141,13 @@ public class InteractionModel {
 		}
 		return this.pvalue;
 	}
-
-	public void setGenotypes(double[] genotypes) {
-		this.genotypes = genotypes;
-	}
-
-	public void emptyGenotypes(){
-		this.genotypes = null;
+	public void setAlltIndependentVariableNames(List<String> list){
+		for (int celltypeIndex = 0; celltypeIndex < list.size(); celltypeIndex++) {
+			int[] index = new int[] {celltypeIndex, list.size() + celltypeIndex};
+			addCelltypeVariablesIndex(index);
+			addIndependentVariableName(celltypeIndex, list.get(celltypeIndex));
+			addIndependentVariableName(list.get(celltypeIndex)+":GT");
+		}
 	}
 	
-	public int getSampleSize(){
-		return this.sampleSize;
-	}
 }

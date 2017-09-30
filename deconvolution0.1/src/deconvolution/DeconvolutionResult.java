@@ -8,12 +8,9 @@ import java.util.Map;
 public class DeconvolutionResult {
 	private List<String> celltypes;
 	private String qtlName;
-	private List<Double> pvalues;
+	private List<Double> pvalues = new ArrayList<Double>();
 	private Map<String, Double> pvaluePerCelltype = new HashMap<String, Double>();
-	private InteractionModel fullModel;
-	private List<InteractionModel> ctModels;
-	private List<Double> correctedPvalues;
-	private Map<String,Double> correctedPvaluePerCelltype = new HashMap<String, Double>();
+	private InteractionModelCollection interactionModelCollection;
 	private double wholeBloodQTL;
 	private double wholeBloodQTLpvalue;
 	
@@ -22,33 +19,25 @@ public class DeconvolutionResult {
 	/**
 	 * Set the deconvolutionResult with the InteractionModels.
 	 * 
-	 * @param celltypes List of celltypes in the deconvolution result
-	 * 
-	 * @param qtlName The name of the QTL
-	 * 
-	 * @param pvalues The pvalues from the deconvolution model
-	 * 
-	 * @param fullModel Interaction model containing information of all celltypes
-	 * 
-	 * @param ctModels List of interaction models (each without all celltypes)
-	 * 
-	 * @param multipleTestingMethod Method to use for multiple testing correction
+	 * @param interactionModelCollection Collection of the interaction models used to get the deconvolution result
 	 * 
 	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
+	 * 
+	 * @param wholeBloodQTLpvalue pvalue of the pearman correlation of genotypes and expression levels
+	 * @throws IllegalAccessException 
 	 */
-	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues, InteractionModel fullModel, 
-								List<InteractionModel> ctModels, String multipleTestingMethod, double wholeBloodQTL, 
-								double wholeBloodQTLpvalue){
+	public DeconvolutionResult( InteractionModelCollection interactionModelCollection, double wholeBloodQTL, 
+								double wholeBloodQTLpvalue) throws IllegalAccessException{
 
-		this.celltypes = celltypes;
-		this.qtlName = qtlName;
-		this.pvalues = pvalues;
+		this.celltypes = interactionModelCollection.getCelltypes();
+		this.qtlName = interactionModelCollection.getQtlName();
 		for (int i = 0; i < celltypes.size(); i++){
-			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
+			String modelName = interactionModelCollection.getCelltypes().get(i);
+			Double pvalue = interactionModelCollection.getPvalue(modelName);
+			this.pvalues.add(pvalue);
+			pvaluePerCelltype.put(celltypes.get(i), pvalue);
 		}
-		this.fullModel = fullModel;
-		this.ctModels = ctModels;
-		correctPvaluesForMultipeTesting(pvalues, multipleTestingMethod);
+		this.interactionModelCollection = interactionModelCollection;
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
@@ -69,14 +58,10 @@ public class DeconvolutionResult {
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
-		this.correctedPvalues = pvalues;
 		for (int i = 0; i < celltypes.size(); i++){
 			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
 		}
-		this.fullModel = fullModel;
-		for (int i = 0; i < celltypes.size(); i++){
-			correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
-		}
+
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
@@ -97,36 +82,14 @@ public class DeconvolutionResult {
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
-		correctedPvalues = pvalues;
 		for (int i = 0; i < celltypes.size(); i++){
 			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
 		}
-		for (int i = 0; i < celltypes.size(); i++){
-			correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
-		}
+
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
 	}
 	
-
-	private void correctPvaluesForMultipeTesting(List<Double> pvalues, String method){
-		correctedPvalues = new ArrayList<Double>();
-		if (method == "bonferonni"){
-			for(double pvalue : pvalues){
-				double correctedPvalue = pvalue*pvalues.size();
-				if(pvalue*pvalues.size() > 1){
-					correctedPvalue = 1;
-				}
-				correctedPvalues.add(correctedPvalue);
-			}
-			for (int i = 0; i < celltypes.size(); i++){
-				correctedPvaluePerCelltype.put(celltypes.get(i), correctedPvalues.get(i));
-			}
-		}
-		else{
-			throw new RuntimeException("Only bonferonni has been implemented as multiple testing correction method");
-		}
-	}
 	
 	public void setQtlName(String qtlName){
 		this.qtlName = qtlName;
@@ -160,38 +123,21 @@ public class DeconvolutionResult {
 		return(this.pvalues);
 	}
 	
-	public InteractionModel getFullModel() throws IllegalAccessException{
-		if(this.fullModel == null){
-			throw new IllegalAccessException("fullModel not set for this model");
+	public InteractionModel getModel(String modelName) throws IllegalAccessException{
+		InteractionModel interationModel = this.interactionModelCollection.getInteractionModel(modelName);
+		if(interationModel == null){
+			throw new IllegalAccessException(String.format("model not set for %s", modelName));
 		}
-		return(this.fullModel);
+		return(interationModel);
 	}
-	
-	public List<InteractionModel> getCtModels() throws IllegalAccessException{
-		if(this.ctModels == null){
-			throw new IllegalAccessException("ctModels not set for this model");
-		}
-		return(this.ctModels);
-	}
-	
+		
 	public Map<String, Double>  getPvaluePerCelltype() throws IllegalAccessException{
 		if(this.pvaluePerCelltype == null){
 			throw new IllegalAccessException("pvaluePerCelltype not set for this model");
 		}
 		return(this.pvaluePerCelltype);
 	}
-	public Map<String, Double>  getCorrectedPvaluePerCelltype() throws IllegalAccessException{
-		if(this.correctedPvaluePerCelltype == null){
-			throw new IllegalAccessException("correctedPvaluePerCelltype not set for this model");
-		}
-		return(this.correctedPvaluePerCelltype);
-	}
-	public List<Double>  getCorrectedPvalues() throws IllegalAccessException{
-		if(this.correctedPvalues == null){
-			throw new IllegalAccessException("correctedPvalues not set for this model");
-		}
-		return(this.correctedPvalues);
-	}
+
 	public double  getWholeBloodQTL() throws IllegalAccessException{
 		return(this.wholeBloodQTL);
 	}
