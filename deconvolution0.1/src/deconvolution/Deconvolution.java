@@ -17,10 +17,7 @@ import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
-import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
-
 import JSci.maths.statistics.FDistribution;
 
 public class Deconvolution {
@@ -28,11 +25,6 @@ public class Deconvolution {
 	private static CellCount cellCounts;
 	private static List<String> filteredQTLsOutput = new ArrayList<String>();
 	private static int QTLsFiltered = 0;
-	// things neded for fullModel defined here because for optimizing pvalue it needs to be available in 2 functions. 
-	// this could probably be done a lot neater
-	private static double sumOfSquaresFullModel = 0;
-	private static int degreesOfFreedomFullModel = 0;
-	private static int fullModelLength = 0;
 	private static String outputFolder;
 	// factory method for making static variable that can throw an exception
 
@@ -92,7 +84,7 @@ public class Deconvolution {
 				if(commandLineOptions.getTestRun() && whileIndex == 100){
 					break;
 				}
-				if (whileIndex % 5000 == 0) {
+				if (whileIndex % 100 == 0) {
 					long completedIn = System.currentTimeMillis() - time;
 					DeconvolutionLogger.log.info(String.format("Processed %d gene-SNP pairs - %s - skipped %d gene-SNP combinations", whileIndex, DurationFormatUtils.formatDuration(completedIn, "HH:mm:ss:SS"), skippedGenotypeGeneCombinations));
 				}
@@ -140,7 +132,6 @@ public class Deconvolution {
 						QTLsFiltered++;
 					}
 					filteredQTLsOutput.add(qtlName+"\tNot enough samples per genotype");
-					// TODO: Use MLE
 				}
 			}
 		}
@@ -167,9 +158,10 @@ public class Deconvolution {
 		String header = "\t"+Utils.listToTabSeparatedString(cellCounts.getCelltypes(), "_pvalue");
 		DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
 		// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
+		InteractionModel bestFullModel = deconvolutionResults.get(0).getInteractionModelCollection().getBestFullModel();
 		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
 			try{
-				header += "\tBeta" + Integer.toString(i) +"_"+deconvolutionResults.get(0).getModel("fullModel").getIndependentVariableNames().get(i-1);
+				header += "\tBeta" + Integer.toString(i) +"_"+bestFullModel.getIndependentVariableNames().get(i-1);
 			}
 			catch(IndexOutOfBoundsException e){
 				DeconvolutionLogger.log.info(String.format("DeconvolutionResult index error with beta %d", i));
@@ -177,15 +169,19 @@ public class Deconvolution {
 			}
 		}
 
-		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
-			header += "\tBetaStandardError" + Integer.toString(i); 
-		}
+		header += "\tgenotypeConfiguration";
+		// TODO: Don't know how to get standard error for NNLS so I removed this for now, also we didnt really use the error.
+		// 		 but want to leave it here incase I will use it later
+		//for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
+		//	header += "\tBetaStandardError" + Integer.toString(i); 
+		//}
 
 		if(commandLineOptions.getWholeBloodQTL()){
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
 		output.add(header);
 		for(DeconvolutionResult deconvolutionResult : deconvolutionResults){
+			bestFullModel = deconvolutionResult.getInteractionModelCollection().getBestFullModel();
 			if(commandLineOptions.getOnlyOutputSignificant() && commandLineOptions.getFilterSamples()){
 				if(Collections.min(deconvolutionResult.getPvalues()) > 0.05){
 					QTLsFiltered++;
@@ -196,8 +192,8 @@ public class Deconvolution {
 			String results = "";
 			results += deconvolutionResult.getQtlName()+"\t"+Utils.listToTabSeparatedString(deconvolutionResult.getPvalues());
 			try{
-				results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getModel("fullModel").getEstimateRegressionParameters());
-				results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getModel("fullModel").getEstimateRegressionParametersStandardErrors());
+				results += "\t"+Utils.listToTabSeparatedString(bestFullModel.getEstimateRegressionParameters());
+				//results += "\t"+Utils.listToTabSeparatedString(deconvolutionResult.getInteractionModelCollection().getBestFullModel().getEstimateRegressionParametersStandardErrors());
 			}catch (java.lang.IllegalAccessException e){
 				// if -m is set not all deconvolution resuts will have a full model. If not, set betas to NA
 				String str = "\tNA";
@@ -205,7 +201,8 @@ public class Deconvolution {
 				results += StringUtils.repeat(str, cellCounts.getNumberOfCelltypes()*4);
 			}
 
-
+			results += "\t"+bestFullModel.getGenotypeOrder();
+			
 			if(commandLineOptions.getWholeBloodQTL()){
 				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTL());
 				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTLpvalue());
@@ -228,60 +225,6 @@ public class Deconvolution {
 		dummyModel.setModelName("dummy");
 		dummyModel.setAlltIndependentVariableNames(cellCounts.getCelltypes());
 		return(new DeconvolutionResult(cellCounts.getCelltypes(), qtlName, pvalues, dummyModel, 0, 1));
-	}
-
-	/**
-	 * Calculate the sum of squares, using Non-Negative Linear Regression, given a y expression vector with y ~
-	 * model. This calculates the Beta parameters three times, for samples with GT = 0, GT = 1, GT = 2
-	 * instead of using the interaction terms of the actual genotype.
-	 * If no_intercept == true, remove the intercept (equivalent to y * ~ model -1 in R)
-	 * 
-	 * @return	The parameters per genotype dosage
-	 * @param model An InteractionModel object including the y vector expression values and ObservedValues (model)
-	 * Such that
-	 * test_trait ~ geno_A + lymph% + geno_A:geno_B it can be for one QTL
-	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
-	 * [0, 51.5, 0] [0, 48.7, 0]] 
-	 */
-	public static void calculateSumOfSquaresNNLS(LeastSquareModel model, Boolean plotBetaTimesVariables) throws IOException, IllegalAccessException {
-		// OLS = Ordinary Least Squares
-		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(model.getNoIntercept());
-		regression.newSampleData(model.getExpessionValuesGt0(), model.getCellCountsGt0());
-		regression.estimateRegressionParameters();
-		throw new NotImplementedException("NNLS not implemneted");
-	}
-
-	/**
-	 * Calculate the sum of squares, using Ordinary Linear Regression, given a y expression vector with y ~
-	 * model. If no_intercept == true, remove the intercept (equivalent to y
-	 * ~ model -1 in R)
-	 * 
-	 * @param model An InteractionModel object including the y vector expression values and ObservedValues (model)
-	 * Such that
-	 * test_trait ~ geno_A + lymph% + geno_A:geno_B it can be for one QTL
-	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
-	 * [0, 51.5, 0] [0, 48.7, 0]]
-	 * 
-	 * @return The sum of squares value from running linear regression with
-	 * y ~ model
-	 */
-	private static OLSMultipleLinearRegression multipleLinearRegression(InteractionModel model, double[] expressionValues) throws IOException, IllegalAccessException {
-		// OLS = Ordinary Least Squares
-		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(true);
-		try{
-			regression.newSampleData(expressionValues, model.getObservedValues());
-		}
-		catch (DimensionMismatchException e){
-			DeconvolutionLogger.log.info(String.format("Length of expression and and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
-					expressionValues.length, model.getObservedValues().length));
-			throw(e);
-		}
-
-		return (regression);
 	}
 
 	public static double maximumLikelihoodEstimator() throws IOException, IllegalAccessException {
@@ -367,35 +310,34 @@ public class Deconvolution {
 		return deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getQtlName());
 	}
 
-	//TODO: update documentation on parameters
+	/**
+	 * Make the linear regression models and then do an Anova of the sum of
+	 * squares
+	 * 
+	 * Full model: Exp ~ celltype_1 + celltype_2 + ... + celltype_n +
+	 * celltype_1:Gt + celltype_2:Gt + ... + celltype_n:Gt <- without
+	 * intercept
+	 * 
+	 * Compare with anova to Exp ~ celltype_1 + celltype_2 + celtype_n +
+	 * celltype_1:Gt + celltype_2:Gt + .. + celltype_n-1 <- without
+	 * intercept Exp ~ celltype_1 + celltype_2 + celtype_n + celltype_1:Gt +
+	 * .. + celltype_n <- without intercept Exp ~ celltype_1 + celltype_2 +
+	 * celtype_n + celltype_2:Gt + .. + celltype_n <- without intercept
+	 *
+	 * 
+	 * @param expression A vector with the expression value per sample
+	 * 
+	 * @param genotypes A vector with the expression levels of all
+	 * samples for *one* eQTL-gene pair. This should include qtl names as in first column, and sample names in first row
+	 * 
+	 * @param qtlName Name of the QTL (usaully snp name + gene name)
+	 * 
+	 * @return A list with for each celltype a p-value for the celltype
+	 * specific eQTL for one eQTL
+	 */
 	private static DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, NotEnoughGenotypesException, IllegalAccessException, 
 	IOException, NotEnoughSamplesPerGenotypeException {
-		/**
-		 * Make the linear regression models and then do an Anova of the sum of
-		 * squares
-		 * 
-		 * Full model: Exp ~ celltype_1 + celltype_2 + ... + celltype_n +
-		 * celltype_1:Gt + celltype_2:Gt + ... + celltype_n:Gt <- without
-		 * intercept
-		 * 
-		 * Compare with anova to Exp ~ celltype_1 + celltype_2 + celtype_n +
-		 * celltype_1:Gt + celltype_2:Gt + .. + celltype_n-1 <- without
-		 * intercept Exp ~ celltype_1 + celltype_2 + celtype_n + celltype_1:Gt +
-		 * .. + celltype_n <- without intercept Exp ~ celltype_1 + celltype_2 +
-		 * celtype_n + celltype_2:Gt + .. + celltype_n <- without intercept
-		 *
-		 * 
-		 * @param expressionVector A vector with the genotype of all samples for
-		 * *one* eQTL-gene pair. This should include qtl names as in first column, and sample names in first row
-		 * 
-		 * @param genotypeVector A vector with the expression levels of all
-		 * samples for *one* eQTL-gene pair. This should include qtl names as in first column, and sample names in first row
-		 * 
-		 * @param minimum_samples_per_genotype Minimum number of samples per genotype need to count it
-		 * 
-		 * @return A list with for each celltype a p-value for the celltype
-		 * specific eQTL for one eQTL
-		 */
+
 
 		/** 
 		 * If roundDosage option is selected on the command line, round of the dosage to closest integer -> 0.49 = 0, 0.51 = 1, 1.51 = 2. 
@@ -448,10 +390,7 @@ public class Deconvolution {
 		interactionModelCollection.setGenotypes(genotypes);
 		interactionModelCollection.setExpressionValues(expression);
 
-		// things neded for fullModel defined outside of loop because every celltype model (ctModel) has to be compared to it
-		InteractionModel fullModel = new InteractionModel();
-		fullModel.setModelName("fullModel");
-		interactionModelCollection.addInteractionModel(fullModel, fullModel.getModelName());
+
 		/**
 		 * For each cell type model, e.g. ctModel 1 -> y = neut% + mono% + neut%:GT; ctModel 2 -> y = neut% + mono% + mono%:GT, one for each cell type, 
 		 * where the interaction term (e.g mono%:GT) of the celltype:genotype to test is removed, calculate and save the observations in an observation vector
@@ -467,32 +406,12 @@ public class Deconvolution {
 		 * 		fullModel = [[sample1_neut%, sample1_mono%, sample1_neut%*sample1_genotype, sample1_mono%*sample1_genotype], [sample2_neut%, ..., etc]]
 		 * 
 		 */
-		int numberOfTerms = (cellCounts.getNumberOfCelltypes() * 2) - 1;
-		// number of terms + 1 because for full model all cell types are included
-		interactionModelCollection.getInteractionModel("fullModel").InitializeObservedValue(cellCounts.getNumberOfSamples(), 
-																						    numberOfTerms+1);
-		interactionModelCollection = createObservedValueMatricesFullModel(interactionModelCollection);
+		createObservedValueMatricesFullModel(interactionModelCollection);
+		findBestFullModel(interactionModelCollection);
+		createObservedValueMatricesCtModels(interactionModelCollection, interactionModelCollection.getBestFullModel().getGenotypeOrder());
 
-		// m = model, there are equally many models as celltypes, the fullModel gets made during the first iteration
-		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
-			InteractionModel ctModel = new InteractionModel();
-			
-			ctModel.InitializeObservedValue(cellCounts.getNumberOfSamples(), numberOfTerms);
-			// fullModel will be done in first loop as all models have to be compared to it
-			if(modelIndex == 0){
-			}
-			// calculate p-value and save it, with other information, in a ctModel object. Then, add it to a list of these models to return as decon results
-			ctModel.setModelName(interactionModelCollection.getCelltypes().get(modelIndex));
-			interactionModelCollection.addInteractionModel(ctModel,ctModel.getModelName());
-			interactionModelCollection = createObservedValueMatricesCtModels(interactionModelCollection, modelIndex);
+		calculateDeconvolutionPvalue(interactionModelCollection);
 
-			interactionModelCollection = calculateDeconvolutionPvalue(interactionModelCollection, modelIndex);
-
-		}
-		/**
-		 * TODO: implement below function
-		 * calculateSumOfSquaresNNLS(leastSquareModel, true);
-		 */
 		double wholeBloodQTL = 0;
 		double wholeBloodQTLpvalue = 0;
 		if(commandLineOptions.getWholeBloodQTL()){
@@ -501,14 +420,44 @@ public class Deconvolution {
 			wholeBloodQTLpvalue = Statistics.calculateSpearmanTwoTailedPvalue(wholeBloodQTL, interactionModelCollection.getSampleSize());
 		}
 		interactionModelCollection.emptyExpressionValues();
-		fullModel.emptyObservedValues();
 		interactionModelCollection.emptyGenotypes();
 		DeconvolutionResult deconResult =  new DeconvolutionResult();
-		
+
 		deconResult = new DeconvolutionResult(interactionModelCollection, wholeBloodQTL, wholeBloodQTLpvalue);
 
 		return deconResult;
 	}
+
+/*
+ * Go through all full models, calculate the regression statistics and select the model with the highest R2 as the new full model
+ */
+private static void findBestFullModel(InteractionModelCollection interactionModelCollection) throws IllegalAccessException, IOException{
+	// set to -1 so that first loop can be initialized
+	double sumOfSquares = -1;
+	for (String modelName : interactionModelCollection.getFullModelNames()){
+		InteractionModel fullModel = interactionModelCollection.getInteractionModel(modelName);
+		if(commandLineOptions.getUseNNLS()){
+			fullModel.calculateSumOfSquaresNNLS(interactionModelCollection.getExpessionValues());
+		}
+		else{
+			fullModel.calculateSumOfSquaresOLS(interactionModelCollection.getExpessionValues(), true);
+		}
+		if (sumOfSquares == -1){
+			sumOfSquares = fullModel.getSumOfSquares();
+			interactionModelCollection.setBestFullModel(fullModel.getModelName());
+		}
+		if (fullModel.getSumOfSquares() <= sumOfSquares){
+			sumOfSquares = fullModel.getSumOfSquares();
+			interactionModelCollection.setBestFullModel(fullModel.getModelName());
+			fullModel.emptyObservedValues();
+		}
+		else{
+			interactionModelCollection.removeInteractionModel(fullModel.getModelName());
+		}
+	}
+}
+
+
 	
 	/**
 	 * Construct the observed value matrices that are used for calculating the regression for the full model.
@@ -517,122 +466,172 @@ public class Deconvolution {
 	 * @param ctModel InteractionModel object for saving the results
 	 * @param m The current model that is being evaluated (for each celltype 1 model)
 	 * @param fullModel InteractionModel object that contains information on the fullModel (such as expression values)
-	 */
-	/**
-	 * Below nested for loops make the matrices that are necesarry to run the linear model and put them in a model object
-	 * @return 
-	 * @throws IllegalAccessException 
-	 */
-	private static InteractionModelCollection createObservedValueMatricesFullModel(InteractionModelCollection interactionModelCollection) 
-			throws IllegalAccessException{
-		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
-		for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
-			for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
-				double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
-				// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
-				fullModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
-				try {
-					if(sampleIndex == 0){
-						/** save the index of the variables related to current celltype so that this can be used later to calculate
-						 * Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
-						 * but for ctModel this is easiest method
-						 */
-						int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex};
-						fullModel.addCelltypeVariablesIndex(index);
-						// add the celltype name at position i so that it gets in front of the celltype:GT
-						fullModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
-						fullModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
-					}
-					fullModel.addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);					
-				} catch (ArrayIndexOutOfBoundsException error) {
-					throw new RuntimeException(
-							"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
-							error);
-				}
-			}
-		}
-		return(interactionModelCollection);
-	}
-
-	/**
-	 * Construct the observed value matrices that are used for calculating the regression
 	 * 
-	 * @param InteractionModelCollection Collection of InteractionModel objects for saving the results
-	 * @param m The current model that is being evaluated (for each celltype 1 model)
+	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesCtModel
 	 */
-	/**
-	 * Below nested for loops make the matrices that are necesarry to run the linear model and put them in a model object
-	 * @return 
-	 * @throws IllegalAccessException 
-	 */
-	private static InteractionModelCollection createObservedValueMatricesCtModels(InteractionModelCollection interactionModelCollection, int modelIndex) 
+	private static void createObservedValueMatricesFullModel(InteractionModelCollection interactionModelCollection) 
 			throws IllegalAccessException{
-		int genotypeCounter = cellCounts.getNumberOfCelltypes();
-		String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
-		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
-		InteractionModel ctModel = interactionModelCollection.getInteractionModel(modelName);
-		for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
-			for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
-				// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
-				// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
-				// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
-				// for each cell type is 1 model, celltype% * genotype without 1 celltype.
-				// j+1 because j==0 is header
-				double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
-				ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
-				if(sampleIndex == 0){
-					// add the celltype name at position i so that it gets in front of the celltype:GT, but once
-					try{
-						ctModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
-					}
-					catch(NullPointerException e){
-						DeconvolutionLogger.log.info(String.format("Nullpoint exception with celltype %s", celltypeIndex));
-						throw e;
-					}
-				}
+		int numberOfTerms = cellCounts.getNumberOfCelltypes() * 2;
+		ArrayList<String> binaryPermutations = new ArrayList<String>();
+		if(commandLineOptions.getUseNNLS()){
+			// if we use NNLS we need to see what genotype configuration works best, so get configuration permutations for all celltypes
+			binaryPermutations = Utils.binaryPermutations("",interactionModelCollection.getCelltypes().size(), new ArrayList<String>());
+		}else{
+			// if we use OLS we just use default genotype orientation (all 0's)
+			binaryPermutations.add(String.join("", Collections.nCopies(interactionModelCollection.getCelltypes().size(), "0")));
+		}
+		
+		// Have to test which genotype combination is the best, so 2**number of celltype loops
+		for (String binaryPermutation : binaryPermutations){
+			// things neded for fullModel defined outside of loop because every celltype model (ctModel) has to be compared to it
+			InteractionModel fullModel = new InteractionModel(cellCounts.getNumberOfSamples(), 
+															  numberOfTerms);
+			fullModel.setModelName(String.format("fullModel_%s",binaryPermutation));
+			interactionModelCollection.addInteractionModel(fullModel, String.format("fullModel_%s",binaryPermutation), true);
+			// number of terms + 1 because for full model all cell types are included
+			interactionModelCollection.addInteractionModel(fullModel, fullModel.getModelName()); 
 
-				// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
-				if (celltypeIndex != modelIndex) {
+			for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
+				for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
+					double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
+					// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
+					fullModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
 					try {
-						// Only add IndependentVariableName once per QTL (j==0)
 						if(sampleIndex == 0){
-
-							// Add the interaction term of celltype:genotype
-							ctModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
-							// save the index of the variables related to current celltype so that this can be used later to calculate
-							// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
-							// but for ctModel this is easiest method
-							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes()-1+celltypeIndex};
-							ctModel.addCelltypeVariablesIndex(index);
-							// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
-							// it is explicit. Don't know if better.
+							/** save the index of the variables related to current celltype so that this can be used later to calculate
+							 * Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
+							 * but for ctModel this is easiest method
+							 */
+							int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex};
+							fullModel.addCelltypeVariablesIndex(index);
+								// add the celltype name at position i so that it gets in front of the celltype:GT
+								fullModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+								fullModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+								
 						}
-						try{
-							ctModel.addObservedValue(celltype_perc * interactionModelCollection.getGenotypes()[sampleIndex], sampleIndex, genotypeCounter);
+						// Have permutation of (2**number of celltypes) as binary ( so 00, 10, 01, 11 ), when 0 do normal genotype, 1 do swapped genotype
+						double[] genotypes;
+						fullModel.addGenotypeOrder(interactionModelCollection.getCelltypes().get(celltypeIndex), 
+								binaryPermutation.charAt(celltypeIndex));
+						// Use the binary string permutation to decide if the genotype should be swapped or not
+						if(binaryPermutation.charAt(celltypeIndex) == '0'){
+							genotypes = interactionModelCollection.getGenotypes();
+						} else{
+							genotypes = interactionModelCollection.getSwappedGenotypes();
 						}
-						catch(NullPointerException e){
-							DeconvolutionLogger.log.info(String.format("Nullpoint exception with genotype %s", sampleIndex));
-							throw e;
-						}
+						fullModel.addObservedValue(celltype_perc * genotypes[sampleIndex], 
+												   sampleIndex, cellCounts.getNumberOfCelltypes() + celltypeIndex);					
 					} catch (ArrayIndexOutOfBoundsException error) {
 						throw new RuntimeException(
 								"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
 								error);
 					}
-					genotypeCounter++;
-				}
-				// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
-				else if (sampleIndex == 0){
-					int[] index = new int[] {celltypeIndex};
-					ctModel.addCelltypeVariablesIndex(index);
 				}
 			}
-			// because 1 of numberOfCelltypes + i needs to be skipped,
-			// keeping it tracked with separate value is easier
-			genotypeCounter = cellCounts.getNumberOfCelltypes();
+			fullModel.setModelLength();
 		}
-		return(interactionModelCollection);
 	}
+
+	/**
+	 * Construct the observed value matrices that are used for calculating the regression
+	 * @param genotypeOrder 
+	 * 
+	 * @param InteractionModelCollection Collection of InteractionModel objects for saving the results
+	 * @param genotypeOrder The order of genotypes to use, e.g. 010 means non swapped genotypes celltype 1, swapped genotypes celltype 2, non swapped genotypes celltype 3
+	 * 
+	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesFullModel
+	 */
+	private static void createObservedValueMatricesCtModels(InteractionModelCollection interactionModelCollection, HashMap<String, Character> genotypeOrder) 
+			throws IllegalAccessException{
+		int genotypeCounter = cellCounts.getNumberOfCelltypes();
+		// -1 because one interaction term is removed
+		int numberOfTerms = (cellCounts.getNumberOfCelltypes() * 2) - 1;
+
+		// m = model, there are equally many models as celltypes, the fullModel gets made during the first iteration
+		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
+			InteractionModel ctModel = new InteractionModel(cellCounts.getNumberOfSamples(), numberOfTerms);
+
+			// fullModel will be done in first loop as all models have to be compared to it
+
+			// calculate p-value and save it, with other information, in a ctModel object. Then, add it to a list of these models to return as decon results
+			ctModel.setModelName(interactionModelCollection.getCelltypes().get(modelIndex));
+			interactionModelCollection.addInteractionModel(ctModel,ctModel.getModelName());
+
+			for (int sampleIndex = 0; sampleIndex <= cellCounts.getNumberOfSamples()-1; sampleIndex++) {
+				for (int celltypeIndex = 0; celltypeIndex < cellCounts.getNumberOfCelltypes(); celltypeIndex++) {
+					// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
+					// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
+					// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
+					// for each cell type is 1 model, celltype% * genotype without 1 celltype.
+					// j+1 because j==0 is header
+					double celltype_perc = cellCounts.getCellcountPercentages()[sampleIndex][celltypeIndex];
+					ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+					if(sampleIndex == 0){
+						// add the celltype name at position i so that it gets in front of the celltype:GT, but once
+						try{
+							ctModel.addIndependentVariableName(celltypeIndex, cellCounts.getCelltypes().get(celltypeIndex));
+						}
+						catch(NullPointerException e){
+							DeconvolutionLogger.log.info(String.format("Nullpoint exception with celltype %s", celltypeIndex));
+							throw e;
+						}
+					}
+
+					// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
+					if (celltypeIndex != modelIndex) {
+						try {
+							// Only add IndependentVariableName once per QTL (j==0)
+							if(sampleIndex == 0){
+
+								// Add the interaction term of celltype:genotype
+								ctModel.addIndependentVariableName(cellCounts.getCelltypes().get(celltypeIndex)+":GT");
+								// save the index of the variables related to current celltype so that this can be used later to calculate
+								// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
+								// but for ctModel this is easiest method
+								int[] index = new int[] {celltypeIndex, cellCounts.getNumberOfCelltypes()-1+celltypeIndex};
+								ctModel.addCelltypeVariablesIndex(index);
+								// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
+								// it is explicit. Don't know if better.
+							}
+							try{
+								double genotype = 0;
+								char genotypeOrderAtCelltype = genotypeOrder.get(cellCounts.getCelltypes().get(celltypeIndex));
+								if(genotypeOrderAtCelltype == '0'){
+									genotype = interactionModelCollection.getGenotypes()[sampleIndex];
+								}
+								else if(genotypeOrderAtCelltype == '1'){
+									genotype = interactionModelCollection.getSwappedGenotypes()[sampleIndex];
+								}
+								else{
+									throw new RuntimeException(String.format("Genotype order should be 0 or 1, was: %s", genotypeOrderAtCelltype));
+								}
+								ctModel.addObservedValue(celltype_perc * genotype, sampleIndex, genotypeCounter);
+							}
+							catch(NullPointerException e){
+								DeconvolutionLogger.log.info(String.format("Nullpoint exception with genotype %s", sampleIndex));
+								throw e;
+							}
+						} catch (ArrayIndexOutOfBoundsException error) {
+							throw new RuntimeException(
+									"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
+									error);
+						}
+						genotypeCounter++;
+					}
+					// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
+					else if (sampleIndex == 0){
+						int[] index = new int[] {celltypeIndex};
+						ctModel.addCelltypeVariablesIndex(index);
+					}
+				}
+				// because 1 of numberOfCelltypes + i needs to be skipped,
+				// keeping it tracked with separate value is easier
+				genotypeCounter = cellCounts.getNumberOfCelltypes();
+			}
+		ctModel.setModelLength();	
+		}
+	}
+	
 	
 	/**
 	 * get pvalue for each ctmodel
@@ -642,46 +641,32 @@ public class Deconvolution {
 	 * @param fullModel InteractionModel object that contains information on the fullModel (such as expression values)
 	 * @param qtlName Name of the current qtl being calculated
 	 */
-	/**
-	 * Below nested for loops make the matrices that are necesarry to run the linear model and put them in a model object
-	 */
-	private static InteractionModelCollection calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection, int modelIndex) 
+	private static void calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection) 
 			throws IllegalAccessException, IOException {
-		String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
-		InteractionModel fullModel = interactionModelCollection.getInteractionModel("fullModel");
-		InteractionModel ctModel = interactionModelCollection.getInteractionModel(modelName);
-		if(modelIndex == 0){
-			// only need to set data of fullModel once, reused every loop of m
-			OLSMultipleLinearRegression regression = multipleLinearRegression(fullModel, 
-																			  interactionModelCollection.getExpessionValues());
-			//for (int i = 0; i < estimatedRegressionParameters.length; i++){
-			//	DeconvolutionLogger.log.info(String.format("beta: %f\terror: %f\n", estimatedRegressionParameters[i], estimateRegressionParametersStandardErrors[i]));
-			//}
-			sumOfSquaresFullModel = regression.calculateResidualSumOfSquares();
-			degreesOfFreedomFullModel = interactionModelCollection.getExpessionValues().length - (fullModel.getObservedValues()[0].length + 1);
-			fullModelLength = interactionModelCollection.getInteractionModel("fullModel").getObservedValues().length;
-			double[] estimatedRegressionParameters = regression.estimateRegressionParameters();
-			double[] estimateRegressionParametersStandardErrors = regression.estimateRegressionParametersStandardErrors();
-			fullModel.setEstimateRegressionParameters(estimatedRegressionParameters);
-			fullModel.setEstimateRegressionParametersStandardErrors(estimateRegressionParametersStandardErrors);
-		}
-		/*** SUM OF SQUARES - CELLTYPE MODEL **/
-		OLSMultipleLinearRegression regression = multipleLinearRegression(ctModel, 
-																		  interactionModelCollection.getExpessionValues());
-		double sumOfSquaresCtModel = regression.calculateResidualSumOfSquares();
-		int degreesOfFreedomCtModel = interactionModelCollection.getExpessionValues().length - (ctModel.getObservedValues()[0].length + 1);
+		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
+			String modelName = interactionModelCollection.getCelltypes().get(modelIndex);
+			InteractionModel fullModel = interactionModelCollection.getBestFullModel();
+			InteractionModel ctModel = interactionModelCollection.getInteractionModel(modelName);
 
-		int expressionLength = interactionModelCollection.getExpessionValues().length;
+			if (commandLineOptions.getUseNNLS()){
+				ctModel.calculateSumOfSquaresNNLS(interactionModelCollection.getExpessionValues());
+			}
+			else{
+				ctModel.calculateSumOfSquaresOLS(interactionModelCollection.getExpessionValues(), false);
+			}
+			ctModel.emptyObservedValues();
+			
+			int expressionLength = interactionModelCollection.getExpessionValues().length;
+			if (expressionLength != fullModel.getModelLength()) {
+				throw new RuntimeException("expression vector and fullModel have different number of samples.\nexpression: "
+						+ expressionLength + "\nfullModel: " + fullModel.getModelLength());
+			}
 
-		if (expressionLength != fullModelLength) {
-			throw new RuntimeException("expression vector and fullModel have different number of samples.\nexpression: "
-					+ expressionLength + "\nfullModel: " + fullModelLength);
+			//double pval = anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), fullModel.getDegreesOfFreedom(), ctModel.getDegreesOfFreedom(), true);
+			double pval = anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), fullModel.getDegreesOfFreedom(), ctModel.getDegreesOfFreedom(), true);
+			ctModel.setPvalue(pval);
+			ctModel.emptyObservedValues();
+			interactionModelCollection.setPvalue(pval,modelName);
 		}
-		
-		double pval = anova(sumOfSquaresFullModel, sumOfSquaresCtModel, degreesOfFreedomFullModel, degreesOfFreedomCtModel, true);
-		ctModel.setPvalue(pval);
-		ctModel.emptyObservedValues();
-		interactionModelCollection.setPvalue(pval,modelName);
-		return interactionModelCollection;
 	}
 }

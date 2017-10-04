@@ -130,6 +130,14 @@ public class DeconvolutionResult {
 		}
 		return(interationModel);
 	}
+	
+	public InteractionModelCollection getInteractionModelCollection() throws IllegalAccessException{
+		if(this.interactionModelCollection == null){
+			throw new IllegalAccessException("interactionModelCollection not set");
+		}
+		return(this.interactionModelCollection);
+	}
+		
 		
 	public Map<String, Double>  getPvaluePerCelltype() throws IllegalAccessException{
 		if(this.pvaluePerCelltype == null){

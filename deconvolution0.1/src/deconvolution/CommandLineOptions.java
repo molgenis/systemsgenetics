@@ -37,6 +37,7 @@ public class CommandLineOptions {
 	private Boolean skipGenotypes = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
+	private Boolean useNNLS = false;
 	/**
 	 * Standard command line parsing.
 	 * 
@@ -72,6 +73,7 @@ public class CommandLineOptions {
 				.desc("Force normal on the expression data").build();
 		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
 				.desc("Force normal on the expression data").build();
+		Option useNNLSOption = Option.builder("n").required(false).longOpt("use_NNLS").desc("Use non-negative least squares").build();
 		Option noConsoleOption = Option.builder("no").required(false).longOpt("no_console")
 				.desc("Do not output logging info to the console").build();
 		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
@@ -120,6 +122,7 @@ public class CommandLineOptions {
 		options.addOption(skipGenotypes);
 		options.addOption(wholeBloodQTL);
 		options.addOption(noConsoleOption);
+		options.addOption(useNNLSOption);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
 			CommandLine cmdLine = cmdLineParser.parse(options, args);
@@ -161,8 +164,12 @@ public class CommandLineOptions {
 			}
 		}
 		
+		if (cmdLine.hasOption("use_NNLS")){
+			useNNLS = !useNNLS;
+		}
+		
 		if (cmdLine.hasOption("round_dosage")) {
-			roundDosage = true;
+			roundDosage = !roundDosage;
 		}
 
 		if (cmdLine.hasOption("all_dosages")){
@@ -258,6 +265,7 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("SNPs to test file (-sn): %s", snpsToTestFile));
 		DeconvolutionLogger.log.info(String.format("Outfolder (-o): %s", outfolder));
 		DeconvolutionLogger.log.info(String.format("Outfile (-of): %s", outfile));
+		DeconvolutionLogger.log.info(String.format("Use non negative least squares(-n): %s", useNNLS));
 		DeconvolutionLogger.log.info(String.format("Number of permutations (-p): %s", numberOfPermutations));
 		if(numberOfPermutations > 0){
 			DeconvolutionLogger.log.info(String.format("Permutation type (-pt): %s", permutationType));
@@ -347,6 +355,9 @@ public class CommandLineOptions {
 	}
 	public Boolean getWholeBloodQTL(){
 		return(wholeBloodQTL);
+	}
+	public Boolean getUseNNLS(){
+		return(useNNLS);
 	}
 }
 

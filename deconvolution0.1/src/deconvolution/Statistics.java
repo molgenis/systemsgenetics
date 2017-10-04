@@ -3,6 +3,7 @@ package deconvolution;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.lang.Math;
@@ -76,12 +77,9 @@ public class Statistics
 	/**
 	 * Normalize vector, reinsert the mean
 	 */
-    public double[] normalizeKeepMean(double[] expression, Boolean testNormality){
+    public double[] normalizeKeepMean(double[] expression){
     	double mean = getMean(expression);
     	double[] normalizedData = normalize(expression);
-    	if(testNormality){
-    		//TODO: Test normality
-    	}
     	// put back the power
     	for(int i = 0; i < normalizedData.length; i++){
     		normalizedData[i] = normalizedData[i] + mean;
@@ -89,11 +87,8 @@ public class Statistics
     	return(expression);
     }
     
-    public double[] normalizeKeepExponential(double[] expression, Boolean testNormality){
+    public double[] normalizeKeepExponential(double[] expression){
     	double[] normalizedData = normalize(expression);
-    	if(testNormality){
-    		//TODO: Test normality
-    	}
     	// put back the power
     	for(int i = 0; i < normalizedData.length; i++){
     		normalizedData[i] = Math.pow(normalizedData[i], 2);

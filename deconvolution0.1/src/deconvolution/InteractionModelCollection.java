@@ -19,16 +19,26 @@ public class InteractionModelCollection {
 	private String qtlName;
 	private HashMap<String, InteractionModel> interactionModels = new HashMap<String, InteractionModel>();
 	private HashMap<String, Double> pvalues = new HashMap<String, Double>();
-
+	private ArrayList<String> fullModelNames = new ArrayList<String>();
+	private String bestFullModel;
 	/*
 	 * Add interaction model to the collections
 	 */
 	public void addInteractionModel(InteractionModel interactionModel, String modelName){
 		this.interactionModels.put(modelName, interactionModel);
 	}
+	/*
+	 * Add interaction model to the collections
+	 */
+	public void addInteractionModel(InteractionModel interactionModel, String modelName, Boolean isFullModel){
+		this.interactionModels.put(modelName, interactionModel);
+		if(isFullModel){
+			fullModelNames.add(modelName);
+		}
+	}
 
 	/*
-	 * Get interaction model at index 
+	 * Get interaction model with modelName 
 	 */
 	public InteractionModel getInteractionModel(String modelName) throws IllegalAccessException{
 		InteractionModel interactionModel = this.interactionModels.get(modelName);
@@ -38,7 +48,13 @@ public class InteractionModelCollection {
 		return(interactionModel);
 	}
 
-
+	/*
+	 * Remove interaction model with modelName
+	 */
+	public void removeInteractionModel(String modelName) throws IllegalAccessException{
+		this.interactionModels.remove(modelName);
+	}
+	
 	/** 
 	 * Set the expression values (y) for all the interaction models. 
 	 */
@@ -64,6 +80,15 @@ public class InteractionModelCollection {
 		return this.genotypes;
 	}
 
+	/*
+	 * Get the genotypes of all the interaction models
+	 */
+	public double[] getSwappedGenotypes() throws IllegalAccessException {
+		if(this.swappedGenotypes == null){
+			throw new IllegalAccessException("genotypes not set for this model");
+		}
+		return this.swappedGenotypes;	
+	}
 
 	/*
 	 * Swap genotypes so that 2 = 0 and 0 = 2
@@ -137,4 +162,19 @@ public class InteractionModelCollection {
 		}
 	    return(pvalue);
 	  }
+	
+	public ArrayList<String> getFullModelNames(){
+		return this.fullModelNames;
+	}
+	
+	public void setBestFullModel(String modelName){
+		this.bestFullModel = modelName;
+	}
+	
+	public InteractionModel getBestFullModel() throws IllegalAccessException{
+		if(this.bestFullModel == null){
+			throw new IllegalAccessException("bestFullModel not set");
+		}
+		return(this.getInteractionModel(this.bestFullModel));
+	}
 }

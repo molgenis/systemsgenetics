@@ -238,4 +238,23 @@ public class Utils {
 
 		return geneSnpPairs;
 	}
+	
+	/**
+	 * Create permutations of binary numbers of length iterations. E.g. if iterations == 2, would give
+	 * 00, 10, 01, 11
+	 * 
+	 * @param soFar The string that will contain the binary permutation. Should be empty when given to the function (used in the recursion)
+	 * @param iterations The length of the binary string
+	 * @param permutations List that contains all the permutations of the binary string. Should be given empty (used to save the recursion results)
+	 */
+		public static ArrayList<String> binaryPermutations(String soFar, double iterations, ArrayList<String> permutations) {
+		    if(iterations == 0) {
+		    	permutations.add(soFar);
+		    }
+		    else {
+		    	binaryPermutations(soFar + "0", iterations - 1, permutations);
+		        binaryPermutations(soFar + "1", iterations - 1, permutations);
+		    }
+			return permutations;
+		}
 }
