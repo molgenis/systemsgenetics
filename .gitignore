@@ -3,5 +3,6 @@ deconvolution.jar
 .Rhistory
 .classpath
 .project
-deconvolution0.1/.classpath
-deconvolution0.1/.project
+deconvolution/
+*.jar
+*.class
