@@ -9,16 +9,23 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-
 ## Introduction 
-DeconCell is an r package containing models for predicting the proportions of circulating immune cell subpopulations using expression data whole blood. Models were built using elastic net bye training in 95 samples from healthy dutch individulas with FACS quantification of 73 circulating cell subpopulations. 
+DeconCell is an r package containing models for predicting the proportions of circulating immune cell subpopulations using bulk gene expression data from  whole blood. Models were built using an elastic net and training in 95 healthy dutch volunteers from the [500FG cohort](http://www.humanfunctionalgenomics.org/site/?page_id=82) with FACS quantification of 73 circulating cell subpopulations as described in our previous [publication](http://www.cell.com/cell-reports/fulltext/S2211-1247(16)31473-5). 
 For aditional details on methods and results please go our [manuscript](link to be updated). 
 
-## Pre-processing example data
-Let's load and pre-process our example data. These are 5 samples with > ~40k genes quantified. These are gene quantifications, we need to approximate our data to a normal-like distribution and account for library sized. In order to do these we use the `dCell.expProcessing` function. This function will perform a TMM normalization (as described in the [edgeR](http://bioconductor.org/packages/release/bioc/html/edgeR.html)package) a log2(counts+1) and finally each gene is scaled. 
+
+## Install the package from github
+
 ```{r}
 library(devtools)
-#install_github("raguirreg/DeconCell")
+install_github("raguirreg/DeconCell")
+```
+
+
+## Pre-processing example data
+Let's load and pre-process our example data. These are 5 samples with > ~40k genes quantified. These are gene quantifications, we need to approximate the example data to a normal-like distribution and account for library sizes. In order to do this, we use the `dCell.expProcessing` function. This function will perform a TMM normalization (as described in the [edgeR](http://bioconductor.org/packages/release/bioc/html/edgeR.html)package) a log2(counts+1) and scale (z-transformation) per gene.
+
+```{r}
 library(DeconCell)
 library(edgeR)
 
