@@ -113,7 +113,53 @@ public class MetaQTL4TraitAnnotation {
         System.out.println(tf.getFileName() + " has annotation for " + visitedPlatforms.size() + " platforms and " + metatraits.size() + " traits.");
         tf.close();
     }
-
+    
+//    public MetaQTL4TraitAnnotation(File probeAnnotationFile) throws IOException {
+//        TextFile tf = new TextFile(probeAnnotationFile, TextFile.R);
+//        String header = tf.readLine();
+////        System.out.println(header);
+//    
+//        int nrPlatforms = 1;
+//        metatraits = new MetaQTL4MetaTraitTreeSet();
+//        metaTraitNameToObj = new HashMap<String, MetaQTL4MetaTrait>();
+//        platformToId = new HashMap<String, Integer>();
+//        platforms = new String[nrPlatforms];
+//        traitHashPerPlatform = new ArrayList<HashMap<String, MetaQTL4MetaTrait>>();
+//        
+//        int probeCounter = 0;
+//        // parse lines
+//        for (String[] elems : tf.readLineElemsIterable(TextFile.tab)) {
+//        
+//            if(probeCounter==0){
+//                platforms[0] = elems[0];
+//                platformToId.put(elems[0], 0);
+//                traitHashPerPlatform.add(new HashMap<String, MetaQTL4MetaTrait>());
+//            }    
+//
+//            String metaTraitName = elems[1];
+//            String chr = elems[3].intern();
+//            int chrstartpos = Integer.parseInt(elems[4]);
+//            int chrendpos = Integer.parseInt(elems[5]);
+//
+//            String hugo = elems[2];
+//
+//            String[] platformIds = new String[nrPlatforms];
+//            // int metaTraitId, String metaTraitName, String chr, int chrStart, int chrEnd, String annotation, String[] platformIds
+//
+//            MetaQTL4MetaTrait metaTraitObj = new MetaQTL4MetaTrait(probeCounter, metaTraitName, chr, chrstartpos, chrendpos, hugo, platformIds);
+//
+//            platformIds[0] = elems[1];
+//            HashMap<String, MetaQTL4MetaTrait> probeToId = traitHashPerPlatform.get(0);
+//            probeToId.put(elems[1], metaTraitObj);
+//            
+//            probeCounter++;
+//            metatraits.add(metaTraitObj);
+//            metaTraitNameToObj.put(metaTraitName, metaTraitObj);
+//        }
+//        System.out.println(tf.getFileName() + " has annotation for " + metatraits.size() + " traits.");
+//        tf.close();
+//    }
+    
     public Integer getPlatformId(String platform) {
         return platformToId.get(platform);
     }

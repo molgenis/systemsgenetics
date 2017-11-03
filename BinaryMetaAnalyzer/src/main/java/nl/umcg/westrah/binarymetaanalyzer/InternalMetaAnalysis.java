@@ -5,8 +5,10 @@
  */
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import umcg.genetica.io.text.TextFile;
 import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
@@ -14,26 +16,33 @@ import umcg.genetica.io.bin.BinaryFile;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.collections.primitives.ArrayIntList;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import umcg.genetica.console.ProgressBar;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.math.stats.ZScores;
 
 /**
  * @author Harm-Jan
  */
 public class InternalMetaAnalysis {
 
+    //Check why it ran over the number of observed permutations!
+    //What is the SNP index?
     private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
     private int[] snpIndex;
-    private Integer[] probeIndex;
     private String[] snpList;
     private InternalMetaAnalysisDataset dataset;
     private final InternalMetaAnalysisSettings settings;
 
-    HashMap<String, String> traitMap = new HashMap<String, String>();
-    LinkedHashMap<String,Integer> outputEntries = null;
-    
+    THashMap<String, ArrayList<String>> traitMap;
+    ArrayList<String> outputEntries = null;
+
     public static void main(String[] args) {
 
         String settingsFile = null;
@@ -55,8 +64,6 @@ public class InternalMetaAnalysis {
         }
 
         InternalMetaAnalysis meta = new InternalMetaAnalysis(settingsFile, textToReplace, replaceTextWith);
-        System.exit(0);
-
     }
 
     public InternalMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
@@ -69,6 +76,8 @@ public class InternalMetaAnalysis {
         } catch (IOException ex) {
             Logger.getLogger(InternalMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
         }
+        //ToDo, check for non overlapping sites.
+        //Check allele assesed?
 
     }
 
@@ -76,9 +85,8 @@ public class InternalMetaAnalysis {
 
         String outdir = settings.getOutput();
 
-        outputEntries = new LinkedHashMap<String,Integer>();
-        traitMap = new HashMap<String, String>();
-
+        traitMap = new THashMap<String, ArrayList<String>>();
+        LinkedHashMap<String, Integer> traitLocationMap = new LinkedHashMap<String, Integer>();
         TextFile entryReader = new TextFile(settings.getProbeToFeature(), TextFile.R);
         String row;
         int index = 0;
@@ -86,14 +94,21 @@ public class InternalMetaAnalysis {
 //            System.out.println(row);
             String[] parts = TAB_PATTERN.split(row);
             
-            if(!outputEntries.containsKey(parts[1])){
-                outputEntries.put(parts[1], index);
+            if (!traitLocationMap.containsKey(parts[1])) {
+                traitLocationMap.put(parts[1],index);
                 index++;
             }
             
-            traitMap.put(parts[0], parts[1]);
+            if (!traitMap.containsKey(parts[0])) {
+                traitMap.put(parts[0], new ArrayList<String>());
+            }
+            traitMap.get(parts[0]).add(parts[1]);
         }
+        outputEntries = new ArrayList<String>(traitLocationMap.keySet());
 
+        if (!Gpio.exists(settings.getOutput())) {
+            Gpio.createOuputDir(new File(settings.getOutput()));
+        }
 
         for (int permutation = settings.getStartPermutations(); permutation <= settings.getNrPermutations(); permutation++) {
             boolean runningPermutation = true;
@@ -104,6 +119,7 @@ public class InternalMetaAnalysis {
             //Initialize the new binaryOutput
             //Original initialize binary matrix
             String fileName = settings.getOutput() + settings.getDatasetname();
+
             if (runningPermutation) {
                 fileName += "-PermutationRound-" + permutation;
             }
@@ -122,9 +138,6 @@ public class InternalMetaAnalysis {
             System.out.println("Creating SNP index");
             createSNPIndex(outdir);
             System.out.println("Total of " + snpIndex.length + " SNPs");
-            System.out.println("Creating probe index");
-            createProbeIndex(outdir);
-            System.out.println("Total of " + probeIndex.length + " probes");
 
             // write magic number
             if (dataset.getIsCisDataset()) {
@@ -137,15 +150,153 @@ public class InternalMetaAnalysis {
             zScoreRowNamesFile.writeln("SNP\tAlleles\tMinorAllele\tAlleleAssessed\tNrCalled\tMaf\tHWE\tCallRate");
 
             TextFile tf = new TextFile(fileName + "-ColNames.txt.gz", TextFile.W);
-            tf.writeList(new ArrayList<String>(outputEntries.keySet()));
+            tf.writeList(outputEntries);
             tf.close();
 
-            //Writing from original result processing
-            //Get data from a thread and write R.
-            //writeBinaryResult(r);
-            //meta-analyze and write output
+            // create dataset objects
+            // run analysis
+            System.out.println("Starting meta-analysis");
+            ProgressBar pb = new ProgressBar(snpList.length);
+            for (int snp = 0; snp < snpList.length; snp++) {
+                //Here now. Need to check what probes to meta-analyze, do the meta-analysis and write.
+                // do we need to check if alleles are different in the same dataset?
+                // get ZScores for this SNP, no matter what.
+                // get list of probes to test
+                int datasetSNPId = snpIndex[snp];
+
+                if (datasetSNPId != -9) { // -9 means: snp not available
+                    float[] datasetZScores = dataset.getZScores(datasetSNPId);
+                    THashMap<String, DescriptiveStatistics> remappedEntries = new THashMap<String, DescriptiveStatistics>();
+                    THashMap<String, SummaryStatistics> remappedEntriesAbs = new THashMap<String, SummaryStatistics>();
+//                    System.out.println(dataset.getSNPs()[datasetSNPId]);
+//                    System.out.println(datasetZScores.length);
+                    if (dataset.getIsCisDataset()) {
+                        // this requires us to retrieve the z-scores differently
+                        // we need to figure out which probes match up, but their orders might be different
+                        // and the number of probes tested in each dataset might differ as well
+
+                        // get the probes tested against the SNP
+                        String[] datasetCisProbes = dataset.getCisProbes(datasetSNPId);
+//                        System.out.println(datasetCisProbes.length);
+                        for (int i = 0; i < datasetCisProbes.length; i++) {
+                            String p = datasetCisProbes[i];
+                            if (traitMap.containsKey(p)) {
+                                for (String feature : traitMap.get(p)) {
+                                    if (!remappedEntries.containsKey(feature)) {
+                                        remappedEntries.put(feature, new DescriptiveStatistics());
+                                        remappedEntriesAbs.put(feature, new SummaryStatistics());
+                                    }
+                                    remappedEntries.get(feature).addValue(datasetZScores[i]);
+                                    remappedEntriesAbs.get(feature).addValue(Math.abs(datasetZScores[i]));
+//                                System.out.print(p+"\t"+datasetZScores[i]);
+                                }
+                            }
+                        }
+                        if (!remappedEntries.isEmpty()) {
+                            double[] zScoresOut = new double[remappedEntries.size()];
+                            String[] keysOut = new String[remappedEntries.size()];
+                            int counter = 0;
+                            for (Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
+                                keysOut[counter] = e.getKey();
+                                if (e.getValue().getN() == 1) {
+                                    zScoresOut[counter] = e.getValue().getValues()[0];
+
+                                } else {
+                                    //Now we need to meta-analyze it.
+                                    if (settings.getzScoreMergeOption().equals("weightedzscore")) {
+                                        //Need to get sample size
+                                        ArrayIntList sampleSizes = new ArrayIntList();
+                                        for (int sC = 0; sC < e.getValue().getN(); sC++) {
+                                            sampleSizes.add(dataset.getSampleSize(datasetSNPId));
+                                        }
+                                        zScoresOut[counter] = ZScores.getWeightedZ(e.getValue().getValues(), sampleSizes.toArray());
+                                    } else if (settings.getzScoreMergeOption().equals("mean")) {
+                                        zScoresOut[counter] = e.getValue().getMean();
+                                    } else if (settings.getzScoreMergeOption().equals("median")) {
+                                        zScoresOut[counter] = e.getValue().getPercentile(50);
+                                    }  else if (settings.getzScoreMergeOption().equals("min")) {
+                                        zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMin();
+                                    } else if (settings.getzScoreMergeOption().equals("max")) {
+                                        zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMax();
+                                    }  else {
+                                        System.out.println("Not supported merging.");
+                                        System.exit(0);
+                                    }
+
+                                }
+                                counter++;
+                            }
+                            //                        writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile)
+                            writeBinaryResult(dataset.getSNPs()[datasetSNPId], dataset.getHwes()[datasetSNPId], dataset.getCallrates()[datasetSNPId], dataset.getMafs()[datasetSNPId], dataset.getN()[datasetSNPId], dataset.getAlleles()[datasetSNPId], dataset.getMinorAlleles()[datasetSNPId], dataset.getAlleleAssessed(datasetSNPId), zScoresOut, keysOut, zScoreBinaryFile, zScoreRowNamesFile);
+                        }
+                    } else { // this is not a cis dataset
+                        // use the full probe index
+
+                        // probeIndex[t.getMetaTraitId()][d] = p;
+                        for (int i = 0; i < dataset.getProbeList().length; i++) {
+                            String p = dataset.getProbeList()[i];
+                            if (traitMap.containsKey(p)) {
+                                for (String feature : traitMap.get(p)) {
+                                    if (!remappedEntries.containsKey(feature)) {
+                                        remappedEntries.put(feature, new DescriptiveStatistics());
+                                        remappedEntriesAbs.put(feature, new SummaryStatistics());
+                                    }
+                                    remappedEntries.get(feature).addValue(datasetZScores[i]);
+                                    remappedEntriesAbs.get(feature).addValue(datasetZScores[i]);
+                                }
+                            }
+//                            if(dataset.getSNPs()[datasetSNPId].equals("rs2546890")){
+//                                System.out.println(p+"\t"+datasetZScores[i]);
+//                            }
+                        }
+                        if (!remappedEntries.isEmpty()) {
+                            //This is almost idenitcal to the cis-data. 
+                            //But here we need to make sure the remapped data is stored in the correct relative to the file description. i.e. outputEntries
+                            
+                            //Not observed zScores are kept at 0.
+                            double[] zScoresOut = new double[outputEntries.size()];
+
+                            for (Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
+
+                                int arrayLoc = traitLocationMap.get(e.getKey());
+                               
+                                if (e.getValue().getN() == 1) {
+                                    zScoresOut[arrayLoc] = e.getValue().getValues()[0];
+
+                                } else {
+                                    //Now we need to meta-analyze it.
+                                    if (settings.getzScoreMergeOption().equals("weightedzscore")) {
+                                        //Need to get sample size
+                                        ArrayIntList sampleSizes = new ArrayIntList();
+                                        for (int sC = 0; sC < e.getValue().getN(); sC++) {
+                                            sampleSizes.add(dataset.getSampleSize(datasetSNPId));
+                                        }
+                                        zScoresOut[arrayLoc] = ZScores.getWeightedZ(e.getValue().getValues(), sampleSizes.toArray());
+                                    } else if (settings.getzScoreMergeOption().equals("mean")) {
+                                        zScoresOut[arrayLoc] = e.getValue().getMean();
+                                    } else if (settings.getzScoreMergeOption().equals("median")) {
+                                        zScoresOut[arrayLoc] = e.getValue().getPercentile(50);
+                                    }  else if (settings.getzScoreMergeOption().equals("min")) {
+                                        zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMin();
+                                    } else if (settings.getzScoreMergeOption().equals("max")) {
+                                        zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMax();
+                                    } else {
+                                        System.out.println("Not supported merging.");
+                                        System.exit(0);
+                                    }
+
+                                }
+                            }
+                            //                        writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile)
+                            writeBinaryResult(dataset.getSNPs()[datasetSNPId], dataset.getHwes()[datasetSNPId], dataset.getCallrates()[datasetSNPId], dataset.getMafs()[datasetSNPId], dataset.getN()[datasetSNPId], dataset.getAlleles()[datasetSNPId], dataset.getMinorAlleles()[datasetSNPId], dataset.getAlleleAssessed(datasetSNPId), zScoresOut, null, zScoreBinaryFile, zScoreRowNamesFile);
+                        }
+                    }
+                }
+                pb.iterate();
+            }
+            pb.close();
+
             //Close binaryOutput & Create binary check file.
-            //To move later!
             zScoreBinaryFile.close();
             fileName = "check";
             if (runningPermutation) {
@@ -164,73 +315,7 @@ public class InternalMetaAnalysis {
             md5writer.write(md5Parser.marshal(zScoreBinaryFile.getWrittenHash()) + "  " + fileName + '\n');
             zScoreRowNamesFile.close();
             md5writer.close();
-            //
 
-            // create dataset objects
-            // run analysis
-
-            System.out.println("Starting meta-analysis");
-            ProgressBar pb = new ProgressBar(snpList.length);
-            for (int snp = 0; snp < snpList.length; snp++) {
-//                //Here now. Need to check what probes to meta-analyze, do the meta-analysis and write.
-//
-//                // do we need to check if alleles are different in the same dataset?
-//
-//                // get ZScores for this SNP, no matter what.
-//                // get list of probes to test
-//                // do cis stuff
-//
-//                // get all the possible traits near the SNP
-//                HashMap<String, Integer> probeMap = new HashMap<String, Integer>();
-//
-//
-//                float[] finalZScores = new float[probeMap.size()]; // size: [possible cis-probes][nr of datasets]
-//
-//                // get list of probes to test for each dataset
-//
-//                //initialize z-score
-//                for (int p = 0; p < probeMap.size(); p++) {
-//                    finalZScores[p] = Float.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
-//                }
-//                // load the z-scores for the dataset
-//                int datasetSNPId = snpIndex[snp];
-//
-//                if (datasetSNPId != -9) { // -9 means: snp not available
-//                    float[] datasetZScores = dataset.getZScores(datasetSNPId);
-//                    
-//                    // use the full probe index
-//                    for (int probe = 0; probe < cisProbeArray.length; probe++) {
-//                        MetaQTL4MetaTrait cisProbe = cisProbeArray[probe];
-//                        Integer metaProbeIndex = traitMap.get(cisProbe);
-//                        Integer datasetProbeId = probeIndex[metaProbeIndex][d];
-//                        if (datasetProbeId != null) {
-//                            finalZScores[probe][d] = datasetZScores[datasetProbeId];
-//                            if (flipZScores[d]) {
-//                                finalZScores[probe][d] *= -1;
-//                            }
-//                        }
-//                    }
-//                }
-//
-//                for (int probe = 0; probe < finalZScores.length; probe++) {
-//                    MetaQTL4MetaTrait t = cisProbeArray[probe];
-//
-//                    double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
-//                    double p = Descriptives.convertZscoreToPvalue(metaZ);
-//
-//                    if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
-//                        // create output object
-//                        QTL q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
-////                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
-//                        addEQTL(q);
-//                    }
-//                }
-                pb.iterate();
-            }
-            pb.close();
-
-
-//            writeBuffer(outdir, permutation);
         }
     }
 
@@ -258,7 +343,7 @@ public class InternalMetaAnalysis {
         for (int s = 0; s < allSNPs.size(); s++) {
             snpIndex[s] = -9;
         }
-        
+
         for (int s = 0; s < snps.length; s++) {
             String snp = snps[s];
             int id = snpMap.get(snp);
@@ -267,202 +352,89 @@ public class InternalMetaAnalysis {
             }
         }
 
-        TextFile tf = new TextFile(outdir + "snpindex.txt", TextFile.W);
-        String header = "metaID";
-        header += "\t" + dataset.getName() + "-sid";
-        tf.writeln(header);
-        
-        for (int s = 0; s < snpList.length; s++) {
-            String ln = snpList[s];
-            ln += "\t" + snpIndex[s];
-            tf.writeln(ln);
-        }
-        tf.close();
+//        TextFile tf = new TextFile(outdir + "snpindex.txt", TextFile.W);
+//        String header = "metaID";
+//        header += "\t" + dataset.getName() + "-sid";
+//        tf.writeln(header);
+//
+//        for (int s = 0; s < snpList.length; s++) {
+//            String ln = snpList[s];
+//            ln += "\t" + snpIndex[s];
+//            tf.writeln(ln);
+//        }
+//        tf.close();
     }
 
     // index the probes
-    private void createProbeIndex(String outdir) throws IOException {
-
-        HashSet<String> confineToTheseProbes = new HashSet<String>(traitMap.keySet());
-
-        probeIndex = new Integer[dataset.getProbeList().length];
-
-        String[] probes = dataset.getProbeList();
-
-        for (int p = 0; p < probes.length; p++) {
-
-            String t = traitMap.get(probes[p]);
-//            System.out.println(probes[p]);
-//            System.out.println(t);
-            Integer index = outputEntries.get(t);
-
-            if (index!=null && confineToTheseProbes.contains(probes[p])) {
-                probeIndex[p] = index;
-            } else {
-                probeIndex[p]=null;
-            }
-        }
-
-    }
-
+//    private void createProbeIndex() throws IOException {
 //
-//    private void writeBinaryResult(Result r) throws IOException {
+//        HashSet<String> confineToTheseProbes = new HashSet<String>(traitMap.keySet());
 //
-//        if (r != null) {
-//            int[] numSamples = null;
-//            try {
-//                numSamples = r.numSamples;
-//            } catch (NullPointerException e) {
-//                System.out.println("ERROR: null result?");
-//            }
+//        probeIndex = new Integer[dataset.getProbeList().length];
 //
-//            int wpId = r.wpid;
-//            WorkPackage currentWP = m_availableWorkPackages[wpId];
-//            double[][] zscores = r.zscores;
+//        String[] probes = dataset.getProbeList();
 //
-//            if (zscores != null) {
-//                SNP[] snps = currentWP.getSnps();
-//                int numDatasets = zscores.length;
-//                double[] finalZscores = r.finalZScore;
-//                StringBuilder snpoutput = null;
+//        for (int p = 0; p < probes.length; p++) {
 //
-//                // if we're doing a meta-analysis, write the meta-analysis Z to a separate binaryFile
-//                if (m_gg.length > 1) {
-//                    int totalSampleNr = 0;
-//                    String snpname = null;
-//                    for (int d = 0; d < numDatasets; d++) {
-//                        if (snps[d] != null) {
-//                            snpname = snps[d].getName();
+//            String t = traitMap.get(probes[p]);
+////            System.out.println(probes[p]);
+////            System.out.println(t);
+//            Integer index = outputEntries.get(t);
 //
-//                            byte[] alleles = snps[d].getAlleles();
-//                            byte minorAllele = snps[d].getMinorAllele();
-//                            byte alleleassessed = alleles[1];
-//
-//                            if (currentWP.getFlipSNPAlleles()[d]) {
-//                                alleleassessed = alleles[0];
-//                            }
-//                            if (snpoutput == null) {
-//                                snpoutput = new StringBuilder();
-//                                snpoutput.append(snpname);
-//                                snpoutput.append("\t");
-//                                snpoutput.append(BaseAnnot.getAllelesDescription(alleles));
-//                                snpoutput.append("\t");
-//                                snpoutput.append(BaseAnnot.toString(minorAllele));
-//                                snpoutput.append("\t");
-//                                snpoutput.append(BaseAnnot.toString(alleleassessed));
-//                            }
-//                            totalSampleNr += r.numSamples[d];
-//                        }
-//                    }
-//
-//                    StringBuilder sb = null;
-//                    for (int p = 0; p < finalZscores.length; p++) {
-//                        float z = (float) finalZscores[p];
-//                        if (m_cisOnly) {
-//                            int[] probes = currentWP.getProbes();
-//                            int probeId = probes[p];
-//                            String probeName = m_probeList[probeId];
-//                            if (sb == null) {
-//                                sb = new StringBuilder();
-//                            } else {
-//                                sb.append("\t");
-//                            }
-//                            sb.append(probeName);
-//
-//                            zScoreMetaAnalysisFile.writeFloat(z);
-//                        } else {
-//                            zScoreMetaAnalysisFile.writeFloat(z);
-//                        }
-//                    }
-//
-//                    if (snpoutput != null) {
-//                        snpoutput.append("\t");
-//                        snpoutput.append(totalSampleNr);
-//                        snpoutput.append("\t-\t-\t-\t");
-//                        snpoutput.append(finalZscores.length);
-//                        snpoutput.append("\t");
-//                        if (sb != null) {
-//                            snpoutput.append(sb.toString());
-//                        } else {
-//                            snpoutput.append("-");
-//                        }
-//                        zScoreMetaAnalysisRowNamesFile.writeln(snpoutput.toString());
-//                    }
-//                }
-//
-//                for (int d = 0; d < numDatasets; d++) {
-//                    double[] datasetZScores = zscores[d];
-//                    SNP datasetSNP = snps[d];
-//                    if (datasetSNP != null) {
-//                        BinaryFile outfile = zScoreBinaryFile[d];
-//
-//                        String snpname = datasetSNP.getName();
-//
-//                        byte[] alleles = datasetSNP.getAlleles();
-//                        byte minorAllele = datasetSNP.getMinorAllele();
-//                        byte alleleassessed = alleles[1];
-//                        double hwe = datasetSNP.getHWEP();
-//                        double cr = datasetSNP.getCR();
-//                        double maf = datasetSNP.getMAF();
-//
-//                        if (currentWP.getFlipSNPAlleles()[d]) {
-//                            alleleassessed = alleles[0];
-//                        }
-//                        TextFile snpfile = zScoreRowNamesFile[d];
-//                        StringBuilder sb = null;
-//                        for (int p = 0; p < datasetZScores.length; p++) {
-//                            float z = (float) datasetZScores[p];
-//                            if (currentWP.getFlipSNPAlleles()[d]) {
-//                                z *= -1;
-//                            }
-//                            // System.out.println(p + "\t" + alleleassessed + "\t" + m_probeList[p] + "\t" + z + "\t" + currentWP.getFlipSNPAlleles()[d]);
-//                            if (m_cisOnly) {
-//                                // take into account that not all probes have been tested..
-//                                int[] probes = currentWP.getProbes();
-//                                int probeId = probes[p];
-//                                String probeName = m_probeList[probeId];
-//                                outfile.writeFloat(z);
-//                                if (sb == null) {
-//                                    sb = new StringBuilder();
-//                                } else {
-//                                    sb.append("\t");
-//                                }
-//                                sb.append(probeName);
-//                            } else {
-//                                outfile.writeFloat(z);
-//                            }
-//                        }
-//
-//                        StringBuilder buffer = new StringBuilder();
-//                        buffer.append(snpname)
-//                                .append("\t")
-//                                .append(BaseAnnot.getAllelesDescription(alleles))
-//                                .append("\t")
-//                                .append(BaseAnnot.toString(minorAllele))
-//                                .append("\t")
-//                                .append(BaseAnnot.toString(alleleassessed))
-//                                .append("\t")
-//                                .append(datasetSNP.getNrCalled())
-//                                .append("\t")
-//                                .append(maf)
-//                                .append("\t")
-//                                .append(hwe)
-//                                .append("\t")
-//                                .append(cr)
-//                                .append("\t")
-//                                .append(datasetZScores.length)
-//                                .append("\t");
-//                        if (sb != null) {
-//                            buffer.append(sb.toString());
-//                        } else {
-//                            buffer.append("-");
-//                        }
-//
-//                        snpfile.writeln(buffer.toString());
-//
-//                    }
-//                }
+//            if (index != null && confineToTheseProbes.contains(probes[p])) {
+//                probeIndex[p] = index;
+//            } else {
+//                probeIndex[p] = null;
 //            }
 //        }
 //    }
+//
+    private void writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile) throws IOException {
+        StringBuilder sb = null;
+        for (int p = 0; p < datasetZScores.length; p++) {
+            float z = (float) datasetZScores[p];
+            // System.out.println(p + "\t" + alleleassessed + "\t" + m_probeList[p] + "\t" + z + "\t" + currentWP.getFlipSNPAlleles()[d]);
+            if (probeNames != null) {
+                // take into account that not all probes have been tested..
+                String probeName = probeNames[p];
+                outfile.writeFloat(z);
+                if (sb == null) {
+                    sb = new StringBuilder();
+                } else {
+                    sb.append("\t");
+                }
+                sb.append(probeName);
+            } else {
+                outfile.writeFloat(z);
+            }
+        }
+
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(snpname)
+                .append("\t")
+                .append(alleles)
+                .append("\t")
+                .append(minorAllele)
+                .append("\t")
+                .append(alleleassessed)
+                .append("\t")
+                .append(numberCalled)
+                .append("\t")
+                .append(maf)
+                .append("\t")
+                .append(hwe)
+                .append("\t")
+                .append(cr)
+                .append("\t")
+                .append(datasetZScores.length)
+                .append("\t");
+        if (sb != null) {
+            buffer.append(sb.toString());
+        } else {
+            buffer.append("-");
+        }
+
+        snpfile.writeln(buffer.toString());
+    }
+
 }
