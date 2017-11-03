@@ -21,7 +21,8 @@ public class InternalMetaAnalysisDataset {
 
     private boolean isCisDataset = false;
     private final String datasetLoc;
-    private MetaQTL4MetaTrait[][] snpCisProbeMap;
+    private String[][] snpCisProbeMap;
+    
 
     private long[] snpBytes;
     private String[] alleles;
@@ -61,7 +62,7 @@ public class InternalMetaAnalysisDataset {
         this.datasetLoc = dir;
         // check presence of files
         if (!Gpio.exists(matrix)) {
-            throw new IOException("Could not find file: " + matrix);
+            throw new IOException("Could not find file: " + matrix+"\nPlease make sure you are using the correct number of permutations in the settings file.");
         }
         if (!Gpio.exists(probeFile)) {
             throw new IOException("Could not find file: " + probeFile);
@@ -111,7 +112,7 @@ public class InternalMetaAnalysisDataset {
         if (isCisDataset) {
 
             // jagged array, hurrah
-            snpCisProbeMap = new MetaQTL4MetaTrait[nrSNPs][0];
+            snpCisProbeMap = new String[nrSNPs][0];
         }
 
         tf.open();
@@ -172,6 +173,20 @@ public class InternalMetaAnalysisDataset {
             if (ln + 1 < nrSNPs) {
                 snpBytes[ln + 1] = snpBytes[ln] + (nrZScores * 4);
             }
+            
+            if (isCisDataset) {
+                String[] snpProbeList = new String[(elems.length - 9)];
+                for (int e = 9; e < elems.length; e++) {
+                    // get the list of probes for this particular SNP.
+
+                    String probe = elems[e];
+                    // System.out.println(snp+"\t"+elems[e]);
+                    snpProbeList[e - 9] = probe;
+                }
+
+                snpCisProbeMap[ln] = snpProbeList;
+            }
+            
             elems = tf.readLineElems(TextFile.tab);
             ln++;
         }
@@ -190,7 +205,7 @@ public class InternalMetaAnalysisDataset {
         probeList = allProbes.toArray(new String[0]);
     }
 
-    public MetaQTL4MetaTrait[] getCisProbes(int snp) {
+    public String[] getCisProbes(int snp) {
         return snpCisProbeMap[snp];
     }
 
@@ -249,4 +264,57 @@ public class InternalMetaAnalysisDataset {
         return name;
     }
 
+    public boolean isIsCisDataset() {
+        return isCisDataset;
+    }
+
+    public String getDatasetLoc() {
+        return datasetLoc;
+    }
+
+    public String[][] getSnpCisProbeMap() {
+        return snpCisProbeMap;
+    }
+
+    public long[] getSnpBytes() {
+        return snpBytes;
+    }
+
+    public String[] getAlleles() {
+        return alleles;
+    }
+
+    public String[] getAllelesAssessed() {
+        return allelesAssessed;
+    }
+
+    public String[] getMinorAlleles() {
+        return minorAlleles;
+    }
+
+    public int[] getN() {
+        return n;
+    }
+
+    public double[] getCallrates() {
+        return callrates;
+    }
+
+    public double[] getHwes() {
+        return hwes;
+    }
+
+    public double[] getMafs() {
+        return mafs;
+    }
+
+    public String[] getSnps() {
+        return snps;
+    }
+
+    public RandomAccessFile getRaf() {
+        return raf;
+    }
+
+    
 }
