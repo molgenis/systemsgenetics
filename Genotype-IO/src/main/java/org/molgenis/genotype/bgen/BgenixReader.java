@@ -1,11 +1,15 @@
 package org.molgenis.genotype.bgen;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 
 /**
@@ -51,18 +55,64 @@ public class BgenixReader {
 			queryByChromosome.setString(1, chr);
 			return queryByChromosome.executeQuery();
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage());
 		}
 	}
 	
 	public synchronized ResultSet getVariantsPostion(String chr, int position){
 		try {
 			queryByPosition.setString(1, chr);
-			queryByPosition.setInt(1, position);
+			queryByPosition.setInt(2, position);
 			return queryByPosition.executeQuery();
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage());
 		}
+	}
+	
+	public synchronized ResultSet getVariantsRange(String chr, int from, int to){
+		try {
+			queryByRange.setString(1, chr);
+			queryByRange.setInt(2, from);
+			queryByRange.setInt(3, to);
+			return queryByRange.executeQuery();
+		} catch (SQLException ex) {
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage());
+		}
+	}
+	
+	/**
+	 * Returns null if no meta data is found in bgenix file
+	 */
+	public BgenixMetadata getMetadata() {
+		
+		try {
+			DatabaseMetaData md = dbConnection.getMetaData();
+			
+			//Check if metadata present
+			ResultSet rs = md.getTables(null, null, "Metadata", null);
+			if(!rs.next()){
+				return null;
+			}
+			
+			ResultSet metaDataResultSet = dbConnection.createStatement().executeQuery("SELECT * FROM Metadata");
+			
+			if(!metaDataResultSet.next()){
+				return null;
+			}
+			
+			String fileName = metaDataResultSet.getString("filename");
+			int fileSize = metaDataResultSet.getInt("file_size");
+			int lastWriteTime = metaDataResultSet.getInt("last_write_time");
+			byte[] first1000bytes = new byte[1000];
+			metaDataResultSet.getBinaryStream("first_1000_bytes").read(first1000bytes);
+			int indexCreationTime = metaDataResultSet.getInt("index_creation_time");
+			
+			return new BgenixMetadata(fileName, fileSize, lastWriteTime, first1000bytes, indexCreationTime);
+			
+		} catch (SQLException | IOException ex) {
+			throw new GenotypeDataException("Unable to read bgenix metadata. Error: " + ex.getMessage());
+		}
+		
 	}
 
 }
