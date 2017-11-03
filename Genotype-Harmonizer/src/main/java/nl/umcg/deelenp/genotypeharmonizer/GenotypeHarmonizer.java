@@ -54,7 +54,7 @@ class GenotypeHarmonizer {
             + "  |           Dennis Hendriksen           |\n"
             + "  |      Lude Franke, Morris Swertz       |\n"
             + "  |                                       |\n"
-            + "  |     Genomics Coordication Center      |\n"
+            + "  |     Genomics Coordination Center      |\n"
             + "  |  University Medical Center Groningen  |\n"
             + "  \\---------------------------------------/";
     private static final Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
