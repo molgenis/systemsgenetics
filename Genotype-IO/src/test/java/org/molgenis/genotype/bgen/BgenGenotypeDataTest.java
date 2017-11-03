@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.molgenis.genotype.oxford;
+package org.molgenis.genotype.bgen;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
