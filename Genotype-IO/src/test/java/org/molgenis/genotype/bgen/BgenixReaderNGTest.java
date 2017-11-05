@@ -54,27 +54,27 @@ public class BgenixReaderNGTest extends ResourceTest {
 		String chr = "01";
 		BgenixReader instance = new BgenixReader(bgenixFile);
 
-		ResultSet result = instance.getVariantsChromosome(chr);
-
-
-		while (result.next()) {
-			System.out.print(result.getString("chromosome"));
-			System.out.print("\t");
-			System.out.print(result.getString("position"));
-			System.out.print("\t");
-			System.out.print(result.getString("rsid"));
-			System.out.print("\t");
-			System.out.print(result.getString("number_of_alleles"));
-			System.out.print("\t");
-			System.out.print(result.getString("allele1"));
-			System.out.print("\t");
-			System.out.print(result.getString("allele2"));
-			System.out.print("\t");
-			System.out.print(result.getString("file_start_position"));
-			System.out.print("\t");
-			System.out.print(result.getString("size_in_bytes"));
-			System.out.println();
-		}
+//		ResultSet result = instance.getVariantsChromosome(chr);
+//
+//
+//		while (result.next()) {
+//			System.out.print(result.getString("chromosome"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("position"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("rsid"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("number_of_alleles"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("allele1"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("allele2"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("file_start_position"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("size_in_bytes"));
+//			System.out.println();
+//		}
 
 		//assertEquals(result, expResult);
 		// TODO review the generated test code and remove the default call to fail.
@@ -100,26 +100,26 @@ public class BgenixReaderNGTest extends ResourceTest {
 		int pos = 2;
 		BgenixReader instance = new BgenixReader(bgenixFile);
 
-		ResultSet result = instance.getVariantsPostion(chr, pos);
-
-		while (result.next()) {
-			System.out.print(result.getString("chromosome"));
-			System.out.print("\t");
-			System.out.print(result.getString("position"));
-			System.out.print("\t");
-			System.out.print(result.getString("rsid"));
-			System.out.print("\t");
-			System.out.print(result.getString("number_of_alleles"));
-			System.out.print("\t");
-			System.out.print(result.getString("allele1"));
-			System.out.print("\t");
-			System.out.print(result.getString("allele2"));
-			System.out.print("\t");
-			System.out.print(result.getString("file_start_position"));
-			System.out.print("\t");
-			System.out.print(result.getString("size_in_bytes"));
-			System.out.println();
-		}
+//		ResultSet result = instance.getVariantsPostion(chr, pos);
+//
+//		while (result.next()) {
+//			System.out.print(result.getString("chromosome"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("position"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("rsid"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("number_of_alleles"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("allele1"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("allele2"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("file_start_position"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("size_in_bytes"));
+//			System.out.println();
+//		}
 	}
 
 	/**
@@ -134,26 +134,26 @@ public class BgenixReaderNGTest extends ResourceTest {
 		int to = 4;
 		BgenixReader instance = new BgenixReader(bgenixFile);
 
-		ResultSet result = instance.getVariantsRange(chr, from, to);
-
-		while (result.next()) {
-			System.out.print(result.getString("chromosome"));
-			System.out.print("\t");
-			System.out.print(result.getString("position"));
-			System.out.print("\t");
-			System.out.print(result.getString("rsid"));
-			System.out.print("\t");
-			System.out.print(result.getString("number_of_alleles"));
-			System.out.print("\t");
-			System.out.print(result.getString("allele1"));
-			System.out.print("\t");
-			System.out.print(result.getString("allele2"));
-			System.out.print("\t");
-			System.out.print(result.getString("file_start_position"));
-			System.out.print("\t");
-			System.out.print(result.getString("size_in_bytes"));
-			System.out.println();
-		}
+//		ResultSet result = instance.getVariantsRange(chr, from, to);
+//
+//		while (result.next()) {
+//			System.out.print(result.getString("chromosome"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("position"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("rsid"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("number_of_alleles"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("allele1"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("allele2"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("file_start_position"));
+//			System.out.print("\t");
+//			System.out.print(result.getString("size_in_bytes"));
+//			System.out.println();
+//		}
 	}
 
 	/**

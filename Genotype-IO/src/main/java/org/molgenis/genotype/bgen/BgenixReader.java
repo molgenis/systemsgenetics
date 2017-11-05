@@ -48,31 +48,31 @@ public class BgenixReader {
 		return newDbConnection;
 	}
 	
-	public synchronized ResultSet getVariantsChromosome(String chr){
+	public synchronized BgenixVariantQueryResult getVariantsChromosome(String chr){
 		try {
 			queryByChromosome.setString(1, chr);
-			return queryByChromosome.executeQuery();
+			return new BgenixVariantQueryResult(queryByChromosome.executeQuery());
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
 	}
 	
-	public synchronized ResultSet getVariantsPostion(String chr, int position){
+	public synchronized BgenixVariantQueryResult getVariantsPostion(String chr, int position){
 		try {
 			queryByPosition.setString(1, chr);
 			queryByPosition.setInt(2, position);
-			return queryByPosition.executeQuery();
+			return new BgenixVariantQueryResult(queryByPosition.executeQuery());
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
 	}
 	
-	public synchronized ResultSet getVariantsRange(String chr, int from, int to){
+	public synchronized BgenixVariantQueryResult getVariantsRange(String chr, int from, int to){
 		try {
 			queryByRange.setString(1, chr);
 			queryByRange.setInt(2, from);
 			queryByRange.setInt(3, to);
-			return queryByRange.executeQuery();
+			return new BgenixVariantQueryResult(queryByRange.executeQuery());
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
