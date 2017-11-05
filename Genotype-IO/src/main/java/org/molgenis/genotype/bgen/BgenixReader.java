@@ -8,8 +8,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 
 /**
@@ -35,7 +33,7 @@ public class BgenixReader {
 			queryByPosition = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ? AND position = ?");
 			queryByRange = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ? AND (position BETWEEN ? AND ?)");
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage(), ex);
 		}
 		
 	}
@@ -45,7 +43,7 @@ public class BgenixReader {
 		try {
 			newDbConnection = DriverManager.getConnection("jdbc:sqlite:"+bgenixFile.getPath());
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage(), ex);
 		}
 		return newDbConnection;
 	}
@@ -55,7 +53,7 @@ public class BgenixReader {
 			queryByChromosome.setString(1, chr);
 			return queryByChromosome.executeQuery();
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
 	}
 	
@@ -65,7 +63,7 @@ public class BgenixReader {
 			queryByPosition.setInt(2, position);
 			return queryByPosition.executeQuery();
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
 	}
 	
@@ -76,12 +74,14 @@ public class BgenixReader {
 			queryByRange.setInt(3, to);
 			return queryByRange.executeQuery();
 		} catch (SQLException ex) {
-			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
 	}
 	
 	/**
 	 * Returns null if no meta data is found in bgenix file
+	 * 
+	 * @return 
 	 */
 	public BgenixMetadata getMetadata() {
 		
@@ -110,7 +110,7 @@ public class BgenixReader {
 			return new BgenixMetadata(fileName, fileSize, lastWriteTime, first1000bytes, indexCreationTime);
 			
 		} catch (SQLException | IOException ex) {
-			throw new GenotypeDataException("Unable to read bgenix metadata. Error: " + ex.getMessage());
+			throw new GenotypeDataException("Unable to read bgenix metadata. Error: " + ex.getMessage(), ex);
 		}
 		
 	}
