@@ -45,7 +45,7 @@ public class VariantQcChecker implements VariantFilter {
             return false;
         }
 
-        if (variant.getHwePvalue() < hwe) {
+        if (Double.isNaN(variant.getHwePvalue()) || variant.getHwePvalue() < hwe) {
             return false;
         }
 

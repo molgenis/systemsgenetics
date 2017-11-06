@@ -230,7 +230,7 @@ public class GenotypeHarmonizerParamaters {
 
         option = OptionBuilder.withArgName("double")
                 .hasArg()
-                .withDescription("The minimum minor allele frequency to include variant from input data")
+                .withDescription("The minimum minor allele frequency to include variant from input data. In case of >2 allelles most frequence of most rare allele is reported")
                 .withLongOpt("mafFilter")
                 .create("mf");
         OPTIONS.addOption(option);
@@ -251,7 +251,7 @@ public class GenotypeHarmonizerParamaters {
 
         option = OptionBuilder.withArgName("double")
                 .hasArg()
-                .withDescription("The minimum hardy weinberg equilibrium p-value to include variant from input data")
+                .withDescription("The minimum hardy weinberg equilibrium p-value to include variant from input data. We only calculated HWE for biallelic variants. All others are will pass this filter")
                 .withLongOpt("hweFilter")
                 .create("hf");
         OPTIONS.addOption(option);
