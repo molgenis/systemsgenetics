@@ -113,7 +113,7 @@ public class QTLFileCompare {
         System.out.println("--out\t\tstring\t\tOutput file name\n"
                 + "--file1\t\tstring\t\tLocation of file 1\n"
                 + "--file2\t\tstring\t\tLocation of file 2\n"
-                + "--fdrCuttoff\t\tdouble\t\talterntive FDR cutoff\n"
+                + "--fdrCuttoff\t\tdouble\t\talternative FDR cutoff\n"
                 + "--genebased\t\t\tPerform comparison on the basis of gene names (optional, defaults to probe based comparison)\n"
                 + "--matchSnpOnPos\t\tUse chr and and chr pos to match SNPs and ignore identifiers\n"
                 + "--splitGeneNames\t\tSplit gene names on ; when doing --genebased. Count as 2 effects (beta)");
