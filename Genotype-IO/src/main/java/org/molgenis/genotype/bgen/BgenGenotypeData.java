@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import com.facebook.presto.orc.zstd.ZstdDecompressor;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 
@@ -36,7 +37,7 @@ public class BgenGenotypeData {
 	private static final Logger LOGGER = Logger.getLogger(BgenGenotypeData.class);
 	private final boolean sampleIdentifiersPresent;
 	private final Inflater gzipInflater = new Inflater();
-	private final Inflater gzipInflater = new Inflater();
+	private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
 	private static final Charset charset = Charset.forName("UTF-8");
 	private final blockRepresentation snpBlockRepresentation;
 	private final layout fileLayout;
