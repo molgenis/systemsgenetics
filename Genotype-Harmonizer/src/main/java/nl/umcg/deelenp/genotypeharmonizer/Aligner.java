@@ -27,7 +27,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class Aligner {
 
-	private static Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
+	private static final Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
 
 	/**
 	 *
@@ -40,18 +40,23 @@ public class Aligner {
 	 * @param updateId
 	 * @param keep
 	 * @param snpUpdateFile file to write ID updates to.
+	 * @param maxMafForMafAlignment
+	 * @param snpLogFile
+	 * @param matchRefAllele
 	 * @return
 	 * @throws LdCalculatorException
+	 * @throws java.io.IOException
+	 * @throws nl.umcg.deelenp.genotypeharmonizer.GenotypeAlignmentException
 	 */
 	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile, boolean matchRefAllele) throws LdCalculatorException, IOException, GenotypeAlignmentException {
 
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
 		//The included study variants after the first loop
-		ArrayList<ModifiableGeneticVariant> studyVariantList = new ArrayList<ModifiableGeneticVariant>();
+		ArrayList<ModifiableGeneticVariant> studyVariantList = new ArrayList<>();
 
 		//The ref variants for the non-excluded study variants after the first loop in the exact same order as the study variants. 
-		ArrayList<GeneticVariant> refVariantList = new ArrayList<GeneticVariant>();
+		ArrayList<GeneticVariant> refVariantList = new ArrayList<>();
 
 		BufferedWriter snpUpdateWriter = null;
 		if (updateId) {
@@ -88,17 +93,17 @@ public class Aligner {
 				continue studyVariants;
 			}
 
-			if (!studyVariant.isSnp()) {
-				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "Not a SNP");
-				studyVariant.exclude();
-				continue studyVariants;
-			}
-
-			if (!studyVariant.isBiallelic()) {
-				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "Not biallelic");
-				studyVariant.exclude();
-				continue studyVariants;
-			}
+//			if (!studyVariant.isSnp()) {
+//				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "Not a SNP");
+//				studyVariant.exclude();
+//				continue studyVariants;
+//			}
+//
+//			if (!studyVariant.isBiallelic()) {
+//				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "Not biallelic");
+//				studyVariant.exclude();
+//				continue studyVariants;
+//			}
 
 			Iterator<GeneticVariant> potentialRefVariants = ref.getVariantsByPos(studyVariant.getSequenceName(), studyVariant.getStartPos()).iterator();
 
@@ -124,6 +129,9 @@ public class Aligner {
 
 					if (potentialRefVariant.getVariantId().isSameId(studyVariant.getVariantId())) {
 
+						//TODO only take complement for SNP variants
+						//TODO how to handle if study allelles are subset of ref alleles
+						
 						//test if same alleles or complement
 						if (potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles())
 								|| potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles().getComplement())) {
@@ -143,6 +151,9 @@ public class Aligner {
 					//Find ref based on Alleles
 					for (GeneticVariant potentialRefVariant : potentialRefVariantsList) {
 
+						//TODO only take complement for SNP variants
+						//TODO how to handle if study allelles are subset of ref alleles. Not possible for AT or GC but is possible for other variants
+						
 						//test if same alleles or complement
 						if (potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles())
 								|| potentialRefVariant.getVariantAlleles().sameAlleles(studyVariant.getVariantAlleles().getComplement())) {
@@ -172,25 +183,6 @@ public class Aligner {
 
 			}
 
-
-			//If we get here we have found a variant is our reference data on the same position with comparable alleles.
-
-//			//We have to exclude maf of zero otherwise we cannot do LD calculation
-//			if (!(studyVariant.getMinorAlleleFrequency() > 0)) {
-//				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "MAF of 0 in study data");
-//				studyVariant.exclude();
-//				continue studyVariants;
-//			}
-//
-//			//We have to exclude maf of zero otherwise we can not do LD calculation
-//			if (!(refVariant.getMinorAlleleFrequency() > 0)) {
-//				snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.EXCLUDED, "MAF of 0 in reference data");
-//				studyVariant.exclude();
-//				continue studyVariants;
-//			}
-
-
-
 			if (
                     updateId && 
                     !(refVariant.getPrimaryVariantId() == null && studyVariant.getPrimaryVariantId() == null) && 
@@ -210,6 +202,8 @@ public class Aligner {
 
 
 			if (!studyVariant.isAtOrGcSnp()) {
+				
+				//TODO based on previous contraits this should never happen for indels but lets make sure
 
 				++nonGcNonAtSnpsEncountered;
 				//Non ambiguous SNP. We can just swap assess the strand of the reference data to determine if we need to swap
@@ -247,8 +241,8 @@ public class Aligner {
 			throw new GenotypeAlignmentException("No variants where found in the input genotype data. Please check your variant filter options");
 		}
 
-		LOGGER.info("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
-		System.out.println("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
+		LOGGER.info("Iteration 1 - Completed, non A/T and non G/C variants are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
+		System.out.println("Iteration 1 - Completed, non A/T and non G/C variants are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 
 		if (studyVariantList.isEmpty()) {
 			snpLogWriter.close();
@@ -286,6 +280,8 @@ public class Aligner {
 				//Here we only do LD check for AG, AC, TC, TG SNPs
 				if (!studyVariant.isAtOrGcSnp()) {
 
+					//TODO only do this if both the study and ref variant are bialilic. This need to be mentioned in the manual
+					
 					//Correlate the haps with both these snps between study and ref
 					CorrelationResults hapCor = correlateHaplotypes(minLdToIncludeAlign,
 							flankSnpsToConsider, studyVariantList, refVariantList,
@@ -346,6 +342,8 @@ public class Aligner {
 			//Only do LD alignment on AT and GC SNPs.
 			if (studyVariant.isAtOrGcSnp()) {
 
+				//TODO this is why we can't work with study GC or AT snps that are subset of alleles in reference. We can't do LD calculations
+				
 				++GcAtSnpsEncountered;
 
 				//Correlate the haps with both these snps between study and ref
@@ -473,6 +471,8 @@ public class Aligner {
 			if (variantIndex == otherVariantIndex) {
 				continue otherVariantsLoop;
 			}
+			
+			//TODO skip over multi allelelic
 
 			GeneticVariant otherSnpStudyVariant = studyVariantList.get(otherVariantIndex);
 
