@@ -656,4 +656,9 @@ public class GenotypeHarmonizerParamaters {
     public boolean getMatchRefAllele() {
         return matchRefAllele;
     }
+	//ToDo add Bgen file type for ref / in  / out
+	
+	//ToDo add filter for multi-allelic SNPs
+	
+	//ToDo add filter based on duplicated SNP ids ? Only keep first occurance?
 }
