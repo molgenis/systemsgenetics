@@ -409,8 +409,8 @@ public class BgenGenotypeData {
 					
 					//At genotype / haplotype data
 				case compression_2:
-//					zstd.	
-					break;
+//					zstdInflater.decompress(snpInfoBuffer, snpInfoBufferPos,(int) snpBlockSize - 4,snpBlockData, 0, (int) snpBlockSizeDecompressed);
+					//Is this enough?
 					
 				default:
 					break;
