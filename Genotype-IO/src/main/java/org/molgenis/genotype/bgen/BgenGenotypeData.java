@@ -245,6 +245,20 @@ public class BgenGenotypeData {
 		return value;
 	}
 	
+	/**
+	 * Convert 1 byte to unsigned 8 bit int from start index.
+	 *
+	 * https://stackoverflow.com/questions/13203426/convert-4-bytes-to-an-unsigned-32-bit-integer-and-storing-it-in-a-long
+	 *
+	 * @return
+	 * @throws EOFException
+	 * @throws IOException
+	 */
+	private int getUInt8(byte[] bytes, int startIndex) {
+		int value = bytes[0 + startIndex] & 0xFF;
+		return value;
+	}
+	
 	private void readGeneticVariant(long lastSnpStart, int sampleCount, layout currentFileLayout, blockRepresentation currentBlockRepresentation) throws IOException {
 		//Binary index writer.
 //		for (int snpI = 0; snpI < variantCount; ++snpI) {
@@ -393,8 +407,35 @@ public class BgenGenotypeData {
 						throw new GenotypeDataException("Error decompressing bgen data", ex);
 					}
 					gzipInflater.reset();
-					System.out.println("Number of individuals: "+getUInt32(snpBlockData, 0));
-//					System.out.println(getUInt16(snpBlockData, 0) / 32768f + " " + getUInt16(snpBlockData, 2) / 32768f + " " + getUInt16(snpBlockData, 4) / 32768f);
+					
+					int blockBuffer=0;
+					//must equal data before.
+					int numberOfIndividuals = (int) getUInt32(snpBlockData, blockBuffer);
+					System.out.println("Number of individuals: "+numberOfIndividuals);
+					blockBuffer+=4;
+					//must equal data before.
+					int numberOfAlleles = (int) getUInt16(snpBlockData, blockBuffer);
+					System.out.println("Number of Alleles: "+numberOfAlleles);
+					blockBuffer+=2;
+					
+					System.out.println("Min ploidy: "+getUInt8(snpBlockData, blockBuffer));
+					blockBuffer+=1;
+					System.out.println("Max ploidy: "+getUInt8(snpBlockData, blockBuffer));
+					blockBuffer+=1;
+					for(int i=0; i<numberOfIndividuals; i++){
+						//Here we need to handle missing ploidity.
+						//Missingness is encoded by the most significant bit; thus a value of 1 for the most significant bit indicates that no probability data is stored for this sample.
+						System.out.println("ploidity: "+getUInt8(snpBlockData, blockBuffer));
+						blockBuffer+=1;
+					}
+					System.out.println("phased: "+getUInt8(snpBlockData, blockBuffer));
+					blockBuffer+=1;
+					
+					System.out.println("Bit representation of probability: "+getUInt8(snpBlockData, blockBuffer));
+					blockBuffer+=1;
+					
+					//At genotype / haplotype data
+
 					break;
 				case compression_2:
 					break;
