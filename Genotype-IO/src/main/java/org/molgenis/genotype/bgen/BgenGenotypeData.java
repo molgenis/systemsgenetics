@@ -176,7 +176,7 @@ public class BgenGenotypeData {
 				byte[] sampleName = new byte[sampleIdLength];
 				this.bgenFile.read(sampleName, 0, sampleIdLength);
 				sampleIds[i] = new String(sampleName,charset);
-				System.out.println("\t"+sampleIds[i]);
+//				System.out.println("\t"+sampleIds[i]);
 			}
 		}
 //		System.out.println("offset:"+ (snpOffset + 4));
@@ -258,15 +258,14 @@ public class BgenGenotypeData {
 //		int snpInfoBufferSize = 
 		this.bgenFile.read(snpInfoBuffer, 0, snpInfoBuffer.length);
 		int snpInfoBufferPos = 0;
-
+		
 //		if (snpInfoBufferSize < 20) {
 //			throw new GenotypeDataException("Error reading bgen snp data. File is corrupt");
 //		}
 
 		int fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp ID length " + fieldLength);
-		this.bgenFile.skipBytes(fieldLength);
-
+		
 		snpInfoBufferPos += 2 + fieldLength; // skip id length and snp id
 
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
@@ -320,6 +319,8 @@ public class BgenGenotypeData {
 			}
 			System.out.println(alleleBuffer.toString());
 			
+//			System.out.println("Location where genotypes start: "+this.bgenFile.getFilePointer());
+			this.bgenFile.seek(snpInfoBufferPos+lastSnpStart);
 			System.out.println("Location where genotypes start: "+this.bgenFile.getFilePointer());
 			readGenotypesFromVariant(this.bgenFile.getFilePointer(), currentFileLayout, currentBlockRepresentation, sampleCount);
 //			//move to next SNP
@@ -349,7 +350,7 @@ public class BgenGenotypeData {
 			System.out.println("Snp block size: "+snpBlockSize);
 			byte[] snpBlockData = new byte[6 * (int) sampleCount];
 			if(currentBlockRepresentation.equals(blockRepresentation.compression_1)){
-				gzipInflater.setInput(snpInfoBuffer, snpInfoBufferPos, (int) snpBlockSize);
+				gzipInflater.setInput(snpInfoBuffer, snpInfoBufferPos+4, (int) snpBlockSize-4);
 				try {
 					gzipInflater.inflate(snpBlockData);
 				} catch (DataFormatException ex) {
@@ -372,6 +373,7 @@ public class BgenGenotypeData {
 				snpInfoBufferPos += 4;
 				snpBlockSizeDecompressed = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpInfoBufferPos += 4;
+				System.out.println("In");
 			} else {
 				snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpInfoBufferPos += 4;
@@ -379,21 +381,26 @@ public class BgenGenotypeData {
 			}
 			System.out.println("Snp block size: "+snpBlockSize);
 			System.out.println("Snp block size decompressed: "+snpBlockSizeDecompressed);
-//			byte[] snpBlockData = new byte[6 * (int) sampleCount];
+			
+			byte[] snpBlockData = new byte[(int) snpBlockSizeDecompressed];
+			switch (currentBlockRepresentation) {
 
-			if (currentBlockRepresentation.equals(blockRepresentation.compression_1)) {
-//				inflater.setInput(snpInfoBuffer, snpInfoBufferPos + 4, (int) snpBlockSize - 4);
-//				try {
-//					inflater.inflate(snpBlockData);
-//				} catch (DataFormatException ex) {
-//					throw new GenotypeDataException("Error decompressing bgen data", ex);
-//				}
-//				inflater.reset();
-//				System.out.println(getUInt16(snpBlockData, 0) / 32768f + " " + getUInt16(snpBlockData, 2) / 32768f + " " + getUInt16(snpBlockData, 4) / 32768f);
-			} else if (currentBlockRepresentation.equals(blockRepresentation.compression_1)) {
-				
-			} else {
-				//Not compressed.
+				case compression_1:
+					gzipInflater.setInput(snpInfoBuffer, snpInfoBufferPos, (int) snpBlockSize - 4);
+					try {
+						gzipInflater.inflate(snpBlockData);
+					} catch (DataFormatException ex) {
+						throw new GenotypeDataException("Error decompressing bgen data", ex);
+					}
+					gzipInflater.reset();
+					System.out.println("Number of individuals: "+getUInt32(snpBlockData, 0));
+//					System.out.println(getUInt16(snpBlockData, 0) / 32768f + " " + getUInt16(snpBlockData, 2) / 32768f + " " + getUInt16(snpBlockData, 4) / 32768f);
+					break;
+				case compression_2:
+					break;
+			//Not compressed.
+				default:
+					break;
 			}
 
 		}
