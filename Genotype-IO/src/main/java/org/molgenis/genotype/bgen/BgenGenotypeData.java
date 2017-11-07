@@ -387,7 +387,6 @@ public class BgenGenotypeData {
 				snpInfoBufferPos += 4;
 				snpBlockSizeDecompressed = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpInfoBufferPos += 4;
-				System.out.println("In");
 			} else {
 				snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpInfoBufferPos += 4;
@@ -408,40 +407,52 @@ public class BgenGenotypeData {
 					}
 					gzipInflater.reset();
 					
-					int blockBuffer=0;
-					//must equal data before.
-					int numberOfIndividuals = (int) getUInt32(snpBlockData, blockBuffer);
-					System.out.println("Number of individuals: "+numberOfIndividuals);
-					blockBuffer+=4;
-					//must equal data before.
-					int numberOfAlleles = (int) getUInt16(snpBlockData, blockBuffer);
-					System.out.println("Number of Alleles: "+numberOfAlleles);
-					blockBuffer+=2;
-					
-					System.out.println("Min ploidy: "+getUInt8(snpBlockData, blockBuffer));
-					blockBuffer+=1;
-					System.out.println("Max ploidy: "+getUInt8(snpBlockData, blockBuffer));
-					blockBuffer+=1;
-					for(int i=0; i<numberOfIndividuals; i++){
-						//Here we need to handle missing ploidity.
-						//Missingness is encoded by the most significant bit; thus a value of 1 for the most significant bit indicates that no probability data is stored for this sample.
-						System.out.println("ploidity: "+getUInt8(snpBlockData, blockBuffer));
-						blockBuffer+=1;
-					}
-					System.out.println("phased: "+getUInt8(snpBlockData, blockBuffer));
-					blockBuffer+=1;
-					
-					System.out.println("Bit representation of probability: "+getUInt8(snpBlockData, blockBuffer));
-					blockBuffer+=1;
-					
 					//At genotype / haplotype data
-
-					break;
 				case compression_2:
+//					zstd.	
 					break;
-			//Not compressed.
+					
 				default:
 					break;
+//					snpInfoBufferPos = ;
+					//Not compressed.
+			}
+			int blockBuffer=0;
+			//must equal data before.
+			int numberOfIndividuals = (int) getUInt32(snpBlockData, blockBuffer);
+			System.out.println("Number of individuals: "+numberOfIndividuals);
+			blockBuffer+=4;
+			//must equal data before.
+			int numberOfAlleles = (int) getUInt16(snpBlockData, blockBuffer);
+			System.out.println("Number of Alleles: "+numberOfAlleles);
+			blockBuffer+=2;
+
+			int minPloidy = getUInt8(snpBlockData, blockBuffer);
+			System.out.println("Min ploidy: "+minPloidy);
+			blockBuffer+=1;
+			int maxPloidy = getUInt8(snpBlockData, blockBuffer);
+			System.out.println("Max ploidy: "+maxPloidy);
+			blockBuffer+=1;
+			for(int i=0; i<numberOfIndividuals; i++){
+				//Here we need to handle missing ploidity.
+				//Missingness is encoded by the most significant bit; thus a value of 1 for the most significant bit indicates that no probability data is stored for this sample.
+				System.out.println("ploidity: "+getUInt8(snpBlockData, blockBuffer));
+				blockBuffer+=1;
+			}
+			int phased = getUInt8(snpBlockData, blockBuffer);
+			System.out.println("phased: "+phased);
+			blockBuffer+=1;
+			if(phased>1){
+				throw new GenotypeDataException("Bgen file format error. Unsupported value for the phased flag observed.");
+			}
+			int bitProbabilityRepresentation = getUInt8(snpBlockData, blockBuffer);
+			System.out.println("Bit representation of probability: "+bitProbabilityRepresentation);
+			blockBuffer+=1;
+
+			if(phased==1){
+
+			} else {
+
 			}
 
 		}
