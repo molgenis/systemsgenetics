@@ -91,6 +91,7 @@ public class BinaryMetaAnalysis {
 		try {
 			run();
 		} catch (IOException ex) {
+			ex.printStackTrace();
 			Logger.getLogger(BinaryMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
 		}
 		
@@ -99,12 +100,15 @@ public class BinaryMetaAnalysis {
 	public void run() throws IOException {
 		
 		String outdir = settings.getOutput();
+		System.out.println("Placing output here: " + outdir);
 		outdir = Gpio.formatAsDirectory(outdir);
 		Gpio.createDir(outdir);
 		// load probe annotation and index
 		// this particular probe annotation can take multiple probes for a single location into account.
 		System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
 		loadProbeAnnotation();
+		
+		System.out.println("Permutations: " + settings.getStartPermutations() + " until " + settings.getNrPermutations());
 		
 		if (traitList.length == 0) {
 			System.err.println("Error: no annotation loaded.");
@@ -413,7 +417,7 @@ public class BinaryMetaAnalysis {
 				System.exit(-1);
 			}
 			
-			
+			System.out.println(pairs.size() + " SNP/Probe combinations loaded from file: " + settings.getSNPProbeSelection());
 			Collections.sort(pairs);
 			
 			snpprobeCombos = new MetaQTL4MetaTrait[snpList.length][];
@@ -429,6 +433,11 @@ public class BinaryMetaAnalysis {
 				}
 				list.add(traitList[p.getProbeId()]);
 				prevSNP = p.getSnpId();
+			}
+			
+			// add the last one...
+			if(prevSNP>-1){
+				snpprobeCombos[prevSNP] = list.toArray(new MetaQTL4MetaTrait[0]);
 			}
 		}
 	}
@@ -473,6 +482,8 @@ public class BinaryMetaAnalysis {
 				}
 			}
 			System.out.println(confineToTheseSNPs.size() + " SNPs loaded.");
+		} else if (snpPreSelection != null) {
+			confineToTheseSNPs = snpPreSelection;
 		}
 		
 		// create a list of all available SNPs
@@ -535,7 +546,12 @@ public class BinaryMetaAnalysis {
 		
 		HashSet<String> platforms = new HashSet<String>();
 		platforms.addAll(settings.getDatasetannotations());
+		System.out.println("Defined platforms in settings file: ");
+		for (String s : platforms) {
+			System.out.println(s);
+		}
 		probeAnnotation = new MetaQTL4TraitAnnotation(new File(settings.getProbetranslationfile()), platforms);
+		
 		traitList = new MetaQTL4MetaTrait[probeAnnotation.getMetatraits().size()];
 		
 		int q = 0;
@@ -544,6 +560,8 @@ public class BinaryMetaAnalysis {
 			traitMap.put(t, q);
 			q++;
 		}
+		
+		System.out.println(traitList.length + " traits loaded");
 		
 	}
 	
@@ -560,18 +578,23 @@ public class BinaryMetaAnalysis {
 		for (int s = 0; s < snpList.length; s++) {
 			snpMap.put(snpList[s], s);
 		}
-		TextFile tf = new TextFile(settings.getSNPAnnotationFile(), TextFile.R);
 		
+		// loads only annotation for snps that are in the datasets..
+		TextFile tf = new TextFile(settings.getSNPAnnotationFile(), TextFile.R);
 		String[] elems = tf.readLineElems(TextFile.tab);
+		
 		while (elems != null) {
-			String snp = elems[2];
-			if (snpMap.contains(snp)) {
-				int id = snpMap.get(snp);
-				snpChr[id] = new String(elems[0].getBytes("UTF-8")).intern();
-				snpPositions[id] = Integer.parseInt(elems[1]);
+			if (elems.length > 2) {
+				String snp = elems[2];
+				if (snpMap.contains(snp)) {
+					int id = snpMap.get(snp);
+					snpChr[id] = new String(elems[0].getBytes("UTF-8")).intern();
+					snpPositions[id] = Integer.parseInt(elems[1]);
+				}
 			}
 			elems = tf.readLineElems(TextFile.tab);
 		}
+		
 		tf.close();
 		
 	}
@@ -621,6 +644,8 @@ public class BinaryMetaAnalysis {
 			}
 			tf.close();
 			System.out.println(confineToTheseProbes.size() + " Probes loaded.");
+		} else if (probePreselection != null) {
+			confineToTheseProbes = probePreselection;
 		}
 		
 		
