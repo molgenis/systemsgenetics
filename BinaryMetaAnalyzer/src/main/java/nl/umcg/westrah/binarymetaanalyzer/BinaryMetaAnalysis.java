@@ -499,7 +499,7 @@ public class BinaryMetaAnalysis {
 			System.out.println(snps.length + " in dataset " + dataset.getName() + "\t" + allSNPs.size() + " unique SNPs found");
 		}
 		
-		if(allSNPs.isEmpty()){
+		if (allSNPs.isEmpty()) {
 			System.err.println("Error: no SNPs found that match your request");
 			System.exit(-1);
 		}
@@ -658,6 +658,9 @@ public class BinaryMetaAnalysis {
 		
 		
 		System.out.println("");
+		
+		// TODO: write probe list of probes that we didn't find in the annotation
+		
 		probeIndex = new Integer[traitList.length][datasets.length];
 		
 		for (int d = 0; d < datasets.length; d++) {
@@ -671,12 +674,17 @@ public class BinaryMetaAnalysis {
 			for (int p = 0; p < probes.length; p++) {
 				
 				MetaQTL4MetaTrait t = traitHashForPlatform.get(probes[p]);
-				int index = traitMap.get(t);
-				
-				if (confineToTheseProbes == null || confineToTheseProbes.contains(probes[p]) || confineToTheseProbes.contains(t.getMetaTraitName())) {
-					// TODO: selecting on individual platform probes/genes. Is this the best approach?
-					probeIndex[index][d] = p;
+				if (t != null) {
+					int index = traitMap.get(t);
+//					if (confineToTheseProbes == null || confineToTheseProbes.contains(probes[p]) || confineToTheseProbes.contains(t.getMetaTraitName())) {
+					if (confineToTheseProbes == null || confineToTheseProbes.contains(t.getMetaTraitName())) {
+						// TODO: was there a reason we selected specific platform probes/identifiers?
+						probeIndex[index][d] = p;
+					}
 				}
+//				else {
+//					probeIndex[index][d] = -1;
+//				}
 			}
 		}
 		
