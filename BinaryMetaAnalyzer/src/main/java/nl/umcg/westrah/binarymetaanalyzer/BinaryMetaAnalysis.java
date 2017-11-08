@@ -138,6 +138,7 @@ public class BinaryMetaAnalysis {
 			System.out.println("Creating SNP index");
 			createSNPIndex(outdir);
 			System.out.println("Total of " + snpIndex.length + " SNPs");
+			
 			System.out.println("Creating probe index");
 			createProbeIndex(outdir);
 			System.out.println("Total of " + probeIndex.length + " probes");
@@ -436,7 +437,7 @@ public class BinaryMetaAnalysis {
 			}
 			
 			// add the last one...
-			if(prevSNP>-1){
+			if (prevSNP > -1) {
 				snpprobeCombos[prevSNP] = list.toArray(new MetaQTL4MetaTrait[0]);
 			}
 		}
@@ -495,7 +496,14 @@ public class BinaryMetaAnalysis {
 					allSNPs.add(snp);
 				}
 			}
+			System.out.println(snps.length + " in dataset " + dataset.getName() + "\t" + allSNPs.size() + " unique SNPs found");
 		}
+		
+		if(allSNPs.isEmpty()){
+			System.err.println("Error: no SNPs found that match your request");
+			System.exit(-1);
+		}
+		
 		
 		// create a temporary map that maps each SNP to a meta-analysis position
 		int ctr = 0;
@@ -561,7 +569,7 @@ public class BinaryMetaAnalysis {
 			q++;
 		}
 		
-		System.out.println(traitList.length + " traits loaded");
+		System.out.println(traitList.length + " trait annotations loaded");
 		
 	}
 	
