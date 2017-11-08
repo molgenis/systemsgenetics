@@ -181,10 +181,13 @@ public class BgenGenotypeData {
 		}
 //		System.out.println("offset:"+ (snpOffset + 4));
 		//Check if bgenix file is present.
-		File bgenix = new File(bgenFile.getAbsolutePath()+".bgi");
+		File bgenixFile = new File(bgenFile.getAbsolutePath()+".bgi");
 		System.out.println(bgenFile.getAbsolutePath()+".bgi");
-		if(bgenix.exists()){
-			BgenixReader indexInformation = new BgenixReader(bgenix);
+		
+		long lastSnpStart = snpOffset + 4;
+		
+		if(bgenixFile.exists()){
+			BgenixReader indexInformation = new BgenixReader(bgenixFile);
 			BgenixMetadata metadata = indexInformation.getMetadata();
 			if(metadata!=null){
 				if(!metadata.getFileName().equals(bgenFile.getName())){
@@ -203,10 +206,12 @@ public class BgenGenotypeData {
 				}
 			}
 		} else {
+			BgenixWriter b =  new BgenixWriter(bgenixFile);
+			createBgenixFile(b, lastSnpStart, (int) sampleCount,this.fileLayout);
 //			throw new GenotypeDataException("Currently only bgen genotype data indexed using bgenix is supported.");
 		}
 		
-		long lastSnpStart = snpOffset + 4;
+		
 		
 		//Read the first snp to get into genotype-io.
 		readGeneticVariant(lastSnpStart, (int) sampleCount,this.fileLayout, this.snpBlockRepresentation);
@@ -343,6 +348,10 @@ public class BgenGenotypeData {
 //
 //		}
 
+	}
+	
+	private void createBgenixFile(BgenixWriter b, long lastSnpStart, int i, layout fileLayout) {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 	
 	private void readGenotypesFromVariant(long filePointer, layout currentFileLayout, blockRepresentation currentBlockRepresentation, int sampleCount) throws IOException {
