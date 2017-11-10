@@ -1,16 +1,16 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import umcg.genetica.containers.Triple;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.containers.Pair;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.math.stats.Heterogeneity;
 import umcg.genetica.math.stats.ZScores;
+import umcg.genetica.util.Primitives;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class MetaAnalysisQC {
 	
@@ -94,7 +94,7 @@ public class MetaAnalysisQC {
 		
 		// isq per file
 		// isq per group
-		
+		boolean debug = false;
 		String[] eQTLFiles = eQTLFileStr.split(",");
 		HashMap<QTLQC, QTLQC> qtlmap = new HashMap<QTLQC, QTLQC>(); // this feels like inception
 		for (int q = 0; q < eQTLFiles.length; q++) {
@@ -133,28 +133,31 @@ public class MetaAnalysisQC {
 						System.err.println("Warning:  " + snp + "/" + gene + " eQTL found alleles " + alleles + ", assessed " + alleleAssessed + " while expecting: " + qtl.getAlleles() + ", " + qtl.getAlleleAssessed());
 					}
 					
-					boolean debug = false;
-					if (snp.equals("rs28498283") && gene.equals("ENSG00000085265")) {
+					
+					if (debug && snp.equals("rs28498283") && gene.equals("ENSG00000085265")) {
 						System.out.println(qtl);
 //						debug = true;
 						System.out.println("flipperdeflip " + flipAlleles);
 					}
 					
-					ArrayList<Double> isqd = new ArrayList<Double>();
+					ArrayList<Double> isqz = new ArrayList<Double>();
 					ArrayList<Integer> isqn = new ArrayList<Integer>();
 					int totaln = 0;
 					for (int i = 0; i < cohorts.length; i++) {
 						if (!cohorts[i].equals("-")) {
 							Double z = Double.parseDouble(cohortsZ[i]);
 							Integer n = Integer.parseInt(cohortsNr[i]);
-							isqd.add(z);
+							isqz.add(z);
 							isqn.add(n);
 							totaln += n;
 						}
 					}
-					Pair<Double, Double> isq = Heterogeneity.getISq(isqd, isqn); // i,p
-					
-					qtl.setIsq(q, isq.getRight(), isq.getLeft());
+					Triple<Double, Double, Integer> isq = Heterogeneity.getISq(isqz, isqn); // i,p
+					double efilezmeta = ZScores.getWeightedZ(Primitives.toPrimitiveArr(isqz.toArray(new Double[0])),
+							Primitives.toPrimitiveArr(isqn.toArray(new Integer[0])));
+					double efilecor = ZScores.zToR(efilezmeta, isq.getRight());
+					qtl.setQTLFileISq(q, isq.getMiddle(), isq.getLeft(), isq.getRight());
+					qtl.setQTLFileCor(efilecor, q);
 
 //					qtl.setAlleleflip(flipAlleles, eqtlfileId);
 					
@@ -206,11 +209,11 @@ public class MetaAnalysisQC {
 		// construct a header
 		String header = "SNP\tGene";
 		for (int i = 0; i < eQTLFiles.length; i++) {
-			header += "\tIsq-eQTLFile-" + i + "\tIsq-eQTLFile-" + i;
+			header += "\tCor-eQTLFile-" + i + "\tIsq-eQTLFile-" + i + "\tIsqP-eQTLFile-" + i + "\tIsqN-eQTLFile-" + i;
 		}
 		for (int group1 = 0; group1 < groupIndex.size(); group1++) {
 			String gname1 = groupNames.get(group1);
-			header += "\tCorr-" + gname1 + "\tN-" + gname1 + "\tIsq-" + gname1 + "\tIsqP-" + gname1;
+			header += "\tCorr-" + gname1 + "\tN-" + gname1 + "\tIsq-" + gname1 + "\tIsqP-" + gname1 + "\tIsqN-" + gname1;
 		}
 		for (int group1 = 0; group1 < groupIndex.size(); group1++) {
 			String gname1 = groupNames.get(group1);
@@ -220,8 +223,11 @@ public class MetaAnalysisQC {
 			}
 		}
 		
+		header += "\tNrTests\tNrTestsSignificant";
 		if (hashSNPAnnotation != null) {
-			header += "\tAnnotation";
+			// format: rs7923609	10	65133822	A/G	G	Liver enzyme levels (alkaline phosphatase)	22001757
+			
+			header += "\tRSId\tChr\tPos\tAlleles\tAssessed\tTraits\tPMIDs";
 		}
 		
 		// prepare the outfile
@@ -231,10 +237,11 @@ public class MetaAnalysisQC {
 		// get all QTLs
 		ArrayList<QTLQC> qtlList = new ArrayList<QTLQC>();
 		qtlList.addAll(qtlmap.keySet());
-		
-		for (QTLQC e : qtlList) {
-			if (e.getSnp().equals("rs28498283") && e.getGene().equals("ENSG00000085265")) {
-				System.out.println(e);
+		if (debug) {
+			for (QTLQC e : qtlList) {
+				if (e.getSnp().equals("rs28498283") && e.getGene().equals("ENSG00000085265")) {
+					System.out.println(e);
+				}
 			}
 		}
 		
@@ -243,6 +250,7 @@ public class MetaAnalysisQC {
 		int written = 0;
 		int[][] writtenArr = new int[nrgroups][nrgroups];
 		int[][] sigArr = new int[nrgroups][nrgroups];
+		int[] nrCompsNonSig = new int[qtlList.size()];
 		
 		for (int q = 0; q < qtlList.size(); q++) {
 			double sumR21 = 0;
@@ -266,29 +274,32 @@ public class MetaAnalysisQC {
 				String lnOut = qtl.getSnp() + "\t" + qtl.getGene();
 				
 				// get ISQ per eQTL file
-				Pair<double[], double[]> efileIsq = qtl.getIsq();
-				double[] isq = efileIsq.getLeft();
-				double[] isqp = efileIsq.getRight();
-				for (int i = 0; i < isq.length; i++) {
-					lnOut += "\t" + isq[i] + "\t" + isqp[i];
+				Triple<double[], double[], int[]> efileIsq = qtl.getIsqEfile();
+				double[] isqEFile = efileIsq.getLeft();
+				double[] isqpEFile = efileIsq.getMiddle();
+				int[] isqnEFile = efileIsq.getRight();
+				double[] corEfile = qtl.getQTLFileCor();
+				for (int i = 0; i < isqEFile.length; i++) {
+					lnOut += "\t" + corEfile[i] + "\t" + isqEFile[i] + "\t" + isqpEFile[i] + "\t" + isqnEFile[i];
 				}
 				
 				// add iSq per group
-				Pair<double[], double[]> groupIsq = qtl.getGroupIsq();
-				double[] isqgroup = efileIsq.getLeft();
-				double[] isqpgroup = efileIsq.getRight();
+				Triple<double[], double[], int[]> groupIsq = qtl.getGroupIsq();
+				double[] isqgroup = groupIsq.getLeft();
+				double[] isqpgroup = groupIsq.getMiddle();
+				int[] isqngroup = groupIsq.getRight();
 				
 				double[] zs = new double[groupIndex.size()];
 				int[] ns = new int[groupIndex.size()];
 				
-				for (int group1 = 0; group1 < groupIndex.size(); group1++) {
+				for (int group1 = 0; group1 < nrgroups; group1++) {
 					double z1orig = qtl.getZ()[group1]; // snpZScores[group1][snp][p];
 					int n1 = qtl.getN()[group1]; // snpZScoresNr[group1][snp][p];
 					double corr1 = ZScores.zToR(z1orig, n1);
 					double z1 = zFromCorr(corr1);
 					zs[group1] = z1;
 					ns[group1] = n1;
-					lnOut += "\t" + corr1 + "\t" + n1 + "\t" + isqgroup[group1] + "\t" + isqpgroup[group1];
+					lnOut += "\t" + corr1 + "\t" + n1 + "\t" + isqgroup[group1] + "\t" + isqpgroup[group1] + "\t" + isqngroup[group1];
 				}
 				
 				// format :
@@ -296,10 +307,12 @@ public class MetaAnalysisQC {
 				ArrayList<Boolean> isNaN = new ArrayList<Boolean>();
 				int[][] writtenArrTmp = new int[nrgroups][nrgroups];
 				int[][] sigArrTmp = new int[nrgroups][nrgroups];
-				for (int group1 = 0; group1 < groupIndex.size(); group1++) {
+				int nrTests = 0;
+				int nrSignificantTests = 0;
+				for (int group1 = 0; group1 < nrgroups; group1++) {
 					int n1 = ns[group1];
 					double z1 = zs[group1];
-					for (int group2 = group1 + 1; group2 < groupIndex.size(); group2++) {
+					for (int group2 = group1 + 1; group2 < nrgroups; group2++) {
 						int n2 = ns[group2];
 						double z2 = zs[group2];
 						double se = Math.sqrt((1 / (n1 - 3d)) + (1 / (n2 - 3d)));
@@ -308,15 +321,20 @@ public class MetaAnalysisQC {
 						boolean pisnan = Double.isNaN(pVal);
 						isNaN.add(pisnan);
 						if (!pisnan) {
+							nrTests++;
 							writtenArrTmp[group1][group2]++;
 							if (pVal < threshold) {
 								sigArrTmp[group1][group2]++;
+								nrSignificantTests++;
+							} else {
+								nrCompsNonSig[q]++;
 							}
 						}
 						lnOut += "\t" + zDiff + "\t" + pVal;
 					}
 				}
 				
+				lnOut += "\t" + nrTests + "\t" + nrSignificantTests;
 				if (hashSNPAnnotation != null) {
 					lnOut += "\t" + hashSNPAnnotation.get(qtl.getSnp());
 				}
@@ -327,11 +345,11 @@ public class MetaAnalysisQC {
 					if (b) nanctr++;
 				}
 //				if (nanctr != isNaN.size()) {
+				
 				if (!nonan || nanctr == 0) {
-					
 					// update ctrs
-					for (int group1 = 0; group1 < groupIndex.size(); group1++) {
-						for (int group2 = group1 + 1; group2 < groupIndex.size(); group2++) {
+					for (int group1 = 0; group1 < nrgroups; group1++) {
+						for (int group2 = group1 + 1; group2 < nrgroups; group2++) {
 							writtenArr[group1][group2] += writtenArrTmp[group1][group2];
 							sigArr[group1][group2] += sigArrTmp[group1][group2];
 						}
@@ -352,6 +370,7 @@ public class MetaAnalysisQC {
 		System.out.println();
 		System.out.println();
 		System.out.println("Group1\tGroup2\tNrQTL\tNrP<0.05\tPerc");
+		int nrcomps = 0;
 		for (int group1 = 0; group1 < groupIndex.size(); group1++) {
 			for (int group2 = group1 + 1; group2 < groupIndex.size(); group2++) {
 				System.out.println(groupNames.get(group1)
@@ -359,8 +378,19 @@ public class MetaAnalysisQC {
 						+ "\t" + writtenArr[group1][group2]
 						+ "\t" + sigArr[group1][group2]
 						+ "\t" + ((double) sigArr[group1][group2] / writtenArr[group1][group2]));
+				nrcomps++;
 			}
 		}
+
+//		int[] nrSig = new int[nrcomps];
+//		for (int q = 0; q < nrCompsNonSig.length; q++) {
+//			nrSig[nrCompsNonSig[q]]++;
+//		}
+//
+//		System.out.println("NrTests\tSignificantly different in NrTests\t");
+//		for (int q = 0; q < nrSig.length; q++) {
+//			System.out.println(q + "\t" + nrSig[q]);
+//		}
 		
 	}
 	
@@ -386,6 +416,8 @@ public class MetaAnalysisQC {
 		
 		double[][] groupzscores; // [group][datasets]
 		int[][] groupsamplesizes;
+		private int[] isqNFile;
+		private double[] QTLFileCor;
 		
 		public QTLQC(String snp, String gene, String alleles, String alleleAssessed, int nrGroups, int nrEQTLFiles, int[] cohortsPerGroup) {
 			this.z = new double[nrGroups];
@@ -397,8 +429,11 @@ public class MetaAnalysisQC {
 			this.alleleAssessed = alleleAssessed;
 			this.isqFile = new double[nrEQTLFiles];
 			this.isqPFile = new double[nrEQTLFiles];
+			this.isqNFile = new int[nrEQTLFiles];
+			this.QTLFileCor = new double[nrEQTLFiles];
 			this.groupzscores = new double[nrGroups][];
 			this.groupsamplesizes = new int[nrGroups][];
+			
 			for (int q = 0; q < nrGroups; q++) {
 				int nrCohorts = cohortsPerGroup[q];
 				groupzscores[q] = new double[nrCohorts];
@@ -409,13 +444,14 @@ public class MetaAnalysisQC {
 			}
 		}
 		
-		public void setIsq(int e, double p, double isq) {
+		public void setQTLFileISq(int e, double p, double isq, int n) {
 			this.isqFile[e] = isq;
 			this.isqPFile[e] = p;
+			this.isqNFile[e] = n;
 		}
 		
-		public Pair<double[], double[]> getIsq() {
-			return new Pair<double[], double[]>(isqFile, isqPFile);
+		public Triple<double[], double[], int[]> getIsqEfile() {
+			return new Triple<double[], double[], int[]>(isqFile, isqPFile, isqNFile);
 		}
 		
 		@Override
@@ -550,10 +586,11 @@ public class MetaAnalysisQC {
 			this.groupsamplesizes[groupId][cohortIndexInGroup] = n;
 		}
 		
-		public Pair<double[], double[]> getGroupIsq() {
+		public Triple<double[], double[], int[]> getGroupIsq() {
 			
 			double[] p = new double[groupsamplesizes.length];
 			double[] i = new double[groupsamplesizes.length];
+			int[] ntotal = new int[groupsamplesizes.length];
 			for (int q = 0; q < groupsamplesizes.length; q++) {
 				int nrNull = 0;
 				for (int cohort = 0; cohort < groupsamplesizes[q].length; cohort++) {
@@ -569,14 +606,24 @@ public class MetaAnalysisQC {
 						ctr++;
 					}
 				}
-				Pair<Double, Double> isq = Heterogeneity.getISq(z, n);
-				p[q] = isq.getRight();
+				Triple<Double, Double, Integer> isq = Heterogeneity.getISq(z, n);
+				p[q] = isq.getMiddle();
 				i[q] = isq.getLeft();
+				ntotal[q] = isq.getRight();
 			}
 			
-			return new Pair<double[], double[]>(i, p);
+			
+			return new Triple<double[], double[], int[]>(i, p, ntotal);
 			
 			
+		}
+		
+		public void setQTLFileCor(double QTLFileCor, int e) {
+			this.QTLFileCor[e] = QTLFileCor;
+		}
+		
+		public double[] getQTLFileCor() {
+			return QTLFileCor;
 		}
 	}
 	

@@ -10,6 +10,8 @@ import cern.jet.random.tdouble.StudentT;
 //import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
 
+import java.util.ArrayList;
+
 /**
  * @author juha
  */
@@ -379,4 +381,6 @@ public class ZScores {
 	public static double betaToZ(double b, double se, double n) {
 		return b / (se * Math.sqrt(n));
 	}
+	
+	
 }

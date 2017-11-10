@@ -157,6 +157,10 @@ public class BinaryMetaAnalysisCLI {
 					nonan = true;
 				}
 				
+				if (cmd.hasOption("annot")) {
+					snpannotation = cmd.getOptionValue("annot");
+				}
+				
 				if (eqtlfile == null || groupdefinition == null || outfile == null) {
 					System.err.println("Specify -e, -g and -o with --qc");
 					System.out.println();
