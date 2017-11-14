@@ -14,8 +14,21 @@ import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import com.facebook.presto.orc.zstd.ZstdDecompressor;
+import java.util.List;
+import java.util.Map;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.Allele;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.util.FixedSizeIterable;
+import org.molgenis.genotype.util.Ld;
+import org.molgenis.genotype.util.LdCalculatorException;
+import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variant.GeneticVariantMeta;
+import org.molgenis.genotype.variant.GenotypeRecord;
+import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
+import org.molgenis.genotype.variant.id.GeneticVariantId;
+import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 /**
  *
@@ -207,7 +220,7 @@ public class BgenGenotypeData {
 			}
 		} else {
 			BgenixWriter b =  new BgenixWriter(bgenixFile);
-			createBgenixFile(b, lastSnpStart, (int) sampleCount,this.fileLayout);
+			createBgenixFile(bgenFile, b, lastSnpStart, (int) sampleCount,this.fileLayout);
 //			throw new GenotypeDataException("Currently only bgen genotype data indexed using bgenix is supported.");
 		}
 		
@@ -350,8 +363,33 @@ public class BgenGenotypeData {
 
 	}
 	
-	private void createBgenixFile(BgenixWriter b, long lastSnpStart, int i, layout fileLayout) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	private void createBgenixFile(File bgen, BgenixWriter b, long pointerFirstSnp, int nSamples, layout fileLayout) throws IOException {
+		this.bgenFile.seek(0);
+		
+		byte[] firstBytes = new byte[1000];
+		this.bgenFile.read(firstBytes, 0, 1000);
+		
+		//Add current time in int.
+		BgenixMetadata m = new BgenixMetadata(bgen.getName(), (int) this.bgenFile.length(), (int) bgen.lastModified(), firstBytes, 100000);
+		b.writeMetadata(m);
+		
+		//Loop through the start of the file
+		int stepToNextVariant = 0;
+		while((pointerFirstSnp+stepToNextVariant)<bgenFile.length()){
+			//Loop through variants.
+			long currentStart = pointerFirstSnp+stepToNextVariant;
+			ReadOnlyGeneticVariant var = ReadOnlyGeneticVariant.createSnp(variantMeta, snpIds, nSamples, sequenceName, sampleVariantsProvider, 0, 0);
+			
+			
+			
+			
+			
+			String variantId = null;
+			
+			b.addVariantToIndex(var, pointerFirstSnp, stepToNextVariant, variantId);
+		}
+		
+		b.finalizeIndex();
 	}
 	
 	private void readGenotypesFromVariant(long filePointer, layout currentFileLayout, blockRepresentation currentBlockRepresentation, int sampleCount) throws IOException {
