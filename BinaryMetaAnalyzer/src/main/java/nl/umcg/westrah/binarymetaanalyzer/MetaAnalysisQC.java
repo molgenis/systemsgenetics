@@ -1,22 +1,37 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import org.apache.commons.math3.util.CombinatoricsUtils;
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
+import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Heterogeneity;
 import umcg.genetica.math.stats.ZScores;
+import umcg.genetica.text.Strings;
 import umcg.genetica.util.Primitives;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 
 public class MetaAnalysisQC {
 	
 	
 	public static void main(String[] args) {
 		// test this
+		
+		MetaAnalysisQC q = new MetaAnalysisQC();
+		String efile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\eQTLsFDR0.05-PrunedLevel_2CohortFilter_20170925.txt.gz";
+		String outfile = efile + "-AllComboComparison.txt";
+		try {
+			q.effectSizeStability(efile, outfile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 //	public Pair<Double,Double> ZToBetaSE(double variance, double p, double q, int n, double z) {
@@ -25,6 +40,209 @@ public class MetaAnalysisQC {
 //		return new Pair<Double, Double>(beta,se);
 //	}
 	
+	public void leaveOneOut(String eFile, String outfile) throws IOException {
+		
+		TextFile out = new TextFile(outfile, TextFile.W);
+		
+		String header = "SNP\tGene\tN\tiSquare\tP(iSquare)\tnumDatasets\tR\tRlo\tRavg\tRmedian\tRvar\tRhi";
+		out.writeln(header);
+		TextFile tf = new TextFile(eFile, TextFile.R);
+		int nrLines = tf.countLines();
+		System.out.println(nrLines + " in file: " + eFile);
+		System.out.println("Output: " + outfile);
+		tf.close();
+		tf.open();
+		tf.readLine();
+		String[] data = tf.readLineElems(Strings.tab);
+		ProgressBar pb = new ProgressBar(nrLines, "Performing leave one out meta-analysis...");
+		while (data != null) {
+			if (data.length > 13) {
+				String snp = data[1];
+				String gene = data[4];
+				String alleles = data[8];
+				String alleleAssessed = data[9];
+				String[] cohorts = data[11].split(";");
+				String[] cohortsZ = data[12].split(";");
+				String[] cohortsNr = data[13].split(";");
+				
+				ArrayList<Double> z = new ArrayList<Double>(cohorts.length);
+				ArrayList<Integer> n = new ArrayList<Integer>(cohorts.length);
+				int nTotal = 0;
+				for (int i = 0; i < cohortsZ.length; i++) {
+					if (!cohorts[i].equals("-")) {
+						z.add(Double.parseDouble(cohortsZ[i]));
+						int nc = Integer.parseInt(cohortsNr[i]);
+						n.add(nc);
+						nTotal += nc;
+					}
+				}
+				
+				ArrayList<Double> rmetas = new ArrayList<Double>();
+				for (int i = 0; i < z.size(); i++) {
+					// select all datasets, except i;
+					double[] q = new double[z.size() - 1];
+					int[] r = new int[z.size() - 1];
+					int ctr = 0;
+					int metatotaln = 0;
+					for (int j = 0; j < z.size(); j++) {
+						if (j != i) {
+							q[ctr] = z.get(j);
+							r[ctr] = n.get(j);
+							metatotaln += r[ctr];
+							ctr++;
+						}
+					}
+					
+					// meta
+					double zmeta = ZScores.getWeightedZ(q, r);
+					double rmeta = ZScores.zToR(zmeta, metatotaln);
+					rmetas.add(rmeta);
+					
+				}
+				
+				double[] zarr = Primitives.toPrimitiveArr(z);
+				int[] narr = Primitives.toPrimitiveArr(n);
+				int nmeta = 0;
+				for (int q : narr) {
+					nmeta += q;
+				}
+				
+				double zmeta = ZScores.getWeightedZ(zarr, narr);
+				double R = ZScores.zToR(zmeta, nmeta);
+				// avg, etc
+				// "SNP\tGene\tN\tnumDatasets\tR\tRlo\tRavg\tRmedian\tRvar\tRhi";
+				
+				double[] rmetaArr = Primitives.toPrimitiveArr(rmetas);
+				double rlo = JSci.maths.ArrayMath.min(rmetaArr);
+				double rhi = JSci.maths.ArrayMath.max(rmetaArr);
+				double ravg = JSci.maths.ArrayMath.mean(rmetaArr);
+				double rmed = JSci.maths.ArrayMath.median(rmetaArr);
+				double rvar = JSci.maths.ArrayMath.variance(rmetaArr);
+				int nDatasets = z.size();
+				Triple<Double, Double, Integer> isqvals = Heterogeneity.getISq(z, n);
+				double isquare = isqvals.getLeft();
+				double isquarep = isqvals.getMiddle();
+				String outln = snp + "\t" + gene
+						+ "\t" + nmeta
+						+ "\t" + isquare
+						+ "\t" + isquarep
+						+ "\t" + nDatasets
+						+ "\t" + R
+						+ "\t" + rlo
+						+ "\t" + ravg
+						+ "\t" + rmed
+						+ "\t" + rvar
+						+ "\t" + rhi;
+				
+				out.writeln(outln);
+			}
+			pb.iterate();
+			data = tf.readLineElems(Strings.tab);
+		}
+		pb.close();
+		out.close();
+		tf.close();
+		
+	}
+	
+	public void effectSizeStability(String eQTLFileStr, String outFileStr) throws IOException {
+		
+		
+		TextFile tf = new TextFile(eQTLFileStr, TextFile.R);
+		int nrLines = tf.countLines();
+		System.out.println(nrLines + " lines in eQTL file: " + eQTLFileStr);
+		tf.close();
+		tf.open();
+		String header = tf.readLine();
+		String[] data = tf.readLineElems(TextFile.tab); // header
+		String headerOut = "snp\tgene\tmetaz\tmetar\tn\tminR\tavgR\tmaxR\tvarR\tNrCombos";
+		TextFile out = new TextFile(outFileStr, TextFile.W);
+		out.writeln(headerOut);
+		int qtlctr = 0;
+		ProgressBar pb = new ProgressBar(nrLines);
+		while (data != null) {
+			if (data.length > 13) {
+				String snp = data[1];
+				String gene = data[4];
+				String alleles = data[8];
+				String alleleAssessed = data[9];
+				String[] cohorts = data[11].split(";");
+				String[] cohortsZ = data[12].split(";");
+				String[] cohortsNr = data[13].split(";");
+				
+				ArrayList<Double> z = new ArrayList<Double>(cohorts.length);
+				ArrayList<Integer> n = new ArrayList<Integer>(cohorts.length);
+				int nTotal = 0;
+				for (int i = 0; i < cohortsZ.length; i++) {
+					if (!cohorts[i].equals("-")) {
+						z.add(Double.parseDouble(cohortsZ[i]));
+						int nc = Integer.parseInt(cohortsNr[i]);
+						n.add(nc);
+						nTotal += nc;
+					}
+				}
+				
+				int nrDatasetsTotal = z.size();
+				ArrayList<Double> r = new ArrayList<Double>();
+				int comboctr = 0;
+				for (int nrDatasetsInCombo = 2; nrDatasetsInCombo < nrDatasetsTotal + 1; nrDatasetsInCombo++) {
+					Iterator<int[]> combos = CombinatoricsUtils.combinationsIterator(nrDatasetsTotal, nrDatasetsInCombo);
+					
+					while (combos.hasNext()) {
+						int[] combo = combos.next();
+						ArrayList<Double> selectZ = new ArrayList<Double>(combo.length);
+						ArrayList<Integer> selectN = new ArrayList<Integer>(combo.length);
+						
+						int sumN = 0;
+						for (int i : combo) {
+							selectZ.add(z.get(i));
+							selectN.add(n.get(i));
+							sumN += n.get(i);
+						}
+						
+						if (combo.length == selectN.size()) {
+							// meta-analyze
+							int[] n2 = Primitives.toPrimitiveArr(selectN);
+							double[] z2 = Primitives.toPrimitiveArr(selectZ);
+							double zm = ZScores.getWeightedZ(z2, n2);
+							
+							double rm = ZScores.zToR(zm, sumN);
+							r.add(rm);
+						}
+						comboctr++;
+						if (comboctr % 10000000 == 0) {
+							System.out.print("\r" + qtlctr + "\t" + nrDatasetsInCombo + "/" + nrDatasetsTotal + "\t" + comboctr + "\t" + r.size());
+						}
+					}
+				}
+				System.out.println();
+				
+				double[] ra = Primitives.toPrimitiveArr(r);
+				double[] za = Primitives.toPrimitiveArr(z);
+				int[] na = Primitives.toPrimitiveArr(n);
+				double min = JSci.maths.ArrayMath.min(ra);
+				double max = JSci.maths.ArrayMath.max(ra);
+				double avg = JSci.maths.ArrayMath.mean(ra);
+				double var = JSci.maths.ArrayMath.variance(ra);
+				double metaZ = ZScores.getWeightedZ(za, na);
+				double metaR = ZScores.zToR(metaZ, nTotal);
+				
+				
+				String outln = snp + "\t" + gene + "\t" + metaZ + "\t" + metaR + "\t" + nTotal + "\t" + min + "\t" + avg + "\t" + max + "\t" + var + "\t" + ra.length;
+				out.writeln(outln);
+				out.flush();
+				
+				qtlctr++;
+				pb.set(qtlctr);
+			}
+			data = tf.readLineElems(TextFile.tab); // header
+		}
+		tf.close();
+		out.close();
+		pb.close();
+		
+	}
+	
 	/**
 	 * @param eQTLFileStr         a string pointing to a (comma separated list of) eQTLFile(s)
 	 * @param groupDefinitionFile a string pointing to a file containing two columns: cohortname\tgroupName
@@ -32,7 +250,7 @@ public class MetaAnalysisQC {
 	 * @param snpannotationfile   a string pointing to a file containing some annotation for the snps
 	 * @throws IOException
 	 */
-	public void ComparePBMCWithWholeBloodCohorts(String eQTLFileStr,
+	public void comparePBMCWithWholeBloodCohorts(String eQTLFileStr,
 												 String groupDefinitionFile,
 												 String outfileLoc,
 												 String snpannotationfile,
@@ -108,7 +326,11 @@ public class MetaAnalysisQC {
 				String[] data = str.split("\t");
 				if (data.length > 13) {
 					String snp = data[1];
+					String snpChr = data[2];
+					String snpChrPos = data[3];
 					String gene = data[4];
+					String geneChr = data[5];
+					String geneChrPos = data[6];
 					String alleles = data[8];
 					String alleleAssessed = data[9];
 					String[] cohorts = data[11].split(";");
@@ -140,6 +362,7 @@ public class MetaAnalysisQC {
 						System.out.println("flipperdeflip " + flipAlleles);
 					}
 					
+					qtl.setChr(snpChr, snpChrPos, geneChr, geneChrPos);
 					ArrayList<Double> isqz = new ArrayList<Double>();
 					ArrayList<Integer> isqn = new ArrayList<Integer>();
 					int totaln = 0;
@@ -207,7 +430,7 @@ public class MetaAnalysisQC {
 		}
 		
 		// construct a header
-		String header = "SNP\tGene";
+		String header = "SNP\tSNPChr\tSNPChrPos\tGene\tGeneChr\tGeneChrPos";
 		for (int i = 0; i < eQTLFiles.length; i++) {
 			header += "\tCor-eQTLFile-" + i + "\tIsq-eQTLFile-" + i + "\tIsqP-eQTLFile-" + i + "\tIsqN-eQTLFile-" + i;
 		}
@@ -271,7 +494,8 @@ public class MetaAnalysisQC {
 			
 			if (totalN > 0) {
 //			for (int p = 0; p < nrTransPerSNP[snp]; p++) {
-				String lnOut = qtl.getSnp() + "\t" + qtl.getGene();
+				String lnOut = qtl.getSnp() + "\t" + qtl.getSnpChr() + "\t" + qtl.getSnpChrPos()
+						+ "\t" + qtl.getGene() + "\t" + qtl.getGeneChr() + "\t" + qtl.getSnpChrPos();
 				
 				// get ISQ per eQTL file
 				Triple<double[], double[], int[]> efileIsq = qtl.getIsqEfile();
@@ -369,18 +593,25 @@ public class MetaAnalysisQC {
 		
 		System.out.println();
 		System.out.println();
-		System.out.println("Group1\tGroup2\tNrQTL\tNrP<0.05\tPerc");
+		String header2 = "Group1\tGroup2\tNrQTL\tNrP<0.05\tPerc";
+		System.out.println(header2);
+		
+		TextFile tf2 = new TextFile(outfileLoc + "_comparisons.txt", TextFile.W);
+		tf2.writeln(header2);
 		int nrcomps = 0;
 		for (int group1 = 0; group1 < groupIndex.size(); group1++) {
 			for (int group2 = group1 + 1; group2 < groupIndex.size(); group2++) {
-				System.out.println(groupNames.get(group1)
+				String ln = groupNames.get(group1)
 						+ "\t" + groupNames.get(group2)
 						+ "\t" + writtenArr[group1][group2]
 						+ "\t" + sigArr[group1][group2]
-						+ "\t" + ((double) sigArr[group1][group2] / writtenArr[group1][group2]));
+						+ "\t" + ((double) sigArr[group1][group2] / writtenArr[group1][group2]);
+				System.out.println(ln);
+				tf2.writeln(ln);
 				nrcomps++;
 			}
 		}
+		tf2.close();
 
 //		int[] nrSig = new int[nrcomps];
 //		for (int q = 0; q < nrCompsNonSig.length; q++) {
@@ -418,6 +649,10 @@ public class MetaAnalysisQC {
 		int[][] groupsamplesizes;
 		private int[] isqNFile;
 		private double[] QTLFileCor;
+		private String snpChr;
+		private String snpChrPos;
+		private String geneChr;
+		private String geneChrPos;
 		
 		public QTLQC(String snp, String gene, String alleles, String alleleAssessed, int nrGroups, int nrEQTLFiles, int[] cohortsPerGroup) {
 			this.z = new double[nrGroups];
@@ -624,6 +859,29 @@ public class MetaAnalysisQC {
 		
 		public double[] getQTLFileCor() {
 			return QTLFileCor;
+		}
+		
+		public void setChr(String snpChr, String snpChrPos, String geneChr, String geneChrPos) {
+			this.snpChr = snpChr;
+			this.snpChrPos = snpChrPos;
+			this.geneChr = geneChr;
+			this.geneChrPos = geneChrPos;
+		}
+		
+		public String getSnpChr() {
+			return snpChr;
+		}
+		
+		public String getSnpChrPos() {
+			return snpChrPos;
+		}
+		
+		public String getGeneChr() {
+			return geneChr;
+		}
+		
+		public String getGeneChrPos() {
+			return geneChrPos;
 		}
 	}
 	

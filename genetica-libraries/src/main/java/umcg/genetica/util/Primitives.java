@@ -4,6 +4,7 @@
 package umcg.genetica.util;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -229,5 +230,13 @@ public class Primitives {
 			arr[i] = toArray[i];
 		}
 		return arr;
+	}
+	
+	public static int[] toPrimitiveArr(List<Integer> selectN) {
+		return toPrimitiveArr(selectN.toArray(new Integer[0]));
+	}
+	
+	public static double[] toPrimitiveArr(ArrayList<Double> selectZ) {
+		return toPrimitiveArr(selectZ.toArray(new Double[0]));
 	}
 }

@@ -24,18 +24,21 @@ public class BinaryMetaAnalysisCLI {
 		
 		Option option = Option.builder()
 				.longOpt("meta")
-				
 				.desc("Run meta-analysis")
 				.build();
 		OPTIONS.addOption(option);
-		option = Option.builder()
-				.longOpt("qc")
-				
-				.desc("Run QC")
-				.build();
 		
+		option = Option.builder()
+				.longOpt("compareeffectsize")
+				.desc("Compare QTL effect sizes between (groups of) datasets")
+				.build();
 		OPTIONS.addOption(option);
 		
+		option = Option.builder()
+				.longOpt("leaveoneout")
+				.desc("Leave one out meta-analysis")
+				.build();
+		OPTIONS.addOption(option);
 		
 		option = Option.builder("s")
 				.longOpt("settings")
@@ -130,7 +133,27 @@ public class BinaryMetaAnalysisCLI {
 				} else {
 					BinaryMetaAnalysis bm = new BinaryMetaAnalysis(settings, texttoreplace, replacewith);
 				}
-			} else if (cmd.hasOption("qc")) {
+			} else if (cmd.hasOption("leaveoneout")) {
+				boolean r = true;
+				String in = null;
+				String out = null;
+				if (cmd.hasOption("e")) {
+					in = cmd.getOptionValue("e");
+				} else {
+					r = false;
+					System.out.println("Specify QTL file using -e");
+				}
+				if (cmd.hasOption("o")) {
+					out = cmd.getOptionValue("o");
+				} else {
+					r = false;
+					System.out.println("Specify output file name with -o");
+				}
+				if (r) {
+					MetaAnalysisQC q = new MetaAnalysisQC();
+					q.leaveOneOut(in, out);
+				}
+			} else if (cmd.hasOption("compareeffectsize")) {
 				MetaAnalysisQC q = new MetaAnalysisQC();
 				String eqtlfile = null;
 				String groupdefinition = null;
@@ -166,7 +189,7 @@ public class BinaryMetaAnalysisCLI {
 					System.out.println();
 					printHelp();
 				} else {
-					q.ComparePBMCWithWholeBloodCohorts(eqtlfile,
+					q.comparePBMCWithWholeBloodCohorts(eqtlfile,
 							groupdefinition,
 							outfile,
 							snpannotation,
