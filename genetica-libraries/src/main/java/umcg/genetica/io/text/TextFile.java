@@ -28,7 +28,7 @@ import umcg.genetica.text.Strings;
 public class TextFile implements Iterable<String> {
 // check 1,2,3
 
-	public static final int DEFAULT_BUFFER_SIZE = 4096;
+	public static final int DEFAULT_BUFFER_SIZE = 8192;
 	public static final Pattern tab = Pattern.compile("\\t");//Using the \t from string.tab is technically not valid. I would not want to depend on this
 	public static final Pattern space = Strings.space;
 	public static final Pattern colon = Strings.colon;
