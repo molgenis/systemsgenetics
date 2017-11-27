@@ -404,7 +404,7 @@ class CalculationThread extends Thread {
             }
             res2 /= x.length;
             
-            throw new RuntimeException("Error in eQTL calculation, mean of X or Y was not 0, specified mean y: " + meanY + " and really is: " + res+", specifief mean x: " + meanX + " and really is: " + res2);
+            throw new RuntimeException("Error in eQTL calculation, mean of X or Y was not 0, specified mean y: " + meanY + " and really is: " + res+", specified mean x: " + meanX + " and really is: " + res2);
         }
 
 

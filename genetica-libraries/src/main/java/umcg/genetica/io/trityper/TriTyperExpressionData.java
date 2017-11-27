@@ -563,7 +563,7 @@ public class TriTyperExpressionData {
 
         }
         
-        //This is requered for the correlation matrix.        
+        //This is required for the correlation matrix.
         probeMean = new double[probes.length];
         probeOriginalMean = new double[probes.length];
         probeVariance = new double[probes.length];
