@@ -40,7 +40,6 @@
 
 package deconvolution;
 
-import edu.rit.numeric.TooManyIterationsException;
 
 /**
  * 
@@ -84,8 +83,13 @@ public class NonNegativeLeastSquares
 	 */
 	public final int N;
 
-
-
+	/**
+	 * The residual vector of b, Qb, where
+	 * Q is an MxM-element orthogonal matrix generated
+	 * during the solve() method's execution.
+	 */
+	public double[] residuals;
+	
 	/**
 	 * The N-element x vector for the least squares problem. On
 	 * output from the solve() method, x contains the solution
@@ -203,11 +207,12 @@ public class NonNegativeLeastSquares
 	 *     (unchecked exception) Thrown if too many iterations occurred without
 	 *     finding a minimum (more than 3N iterations).
 	 */
-	public void solve(double[][]a, double[]b)
+	public void solve(double[][]originalA, double[]originalB)
 		{
 		int i, iz, j, l, izmax, jz, jj, ip, ii;
 		double sm, wmax, asave, unorm, ztest, up, alpha, t, cc, ss, temp;
-
+		double[] b = originalB.clone();
+		double[][] a = originalA.clone();
 		// Keep count of iterations.
 		int iter = 0;
 
@@ -235,7 +240,11 @@ public class NonNegativeLeastSquares
 				sm = 0.0;
 				for (l = nsetp; l < M; ++ l)
 					{
-					sm += a[l][j]*b[l];
+					try{
+						sm += a[l][j]*b[l];
+					} catch (NullPointerException e){
+						throw e;
+					}
 					}
 				w[j] = sm;
 				}
@@ -340,7 +349,7 @@ public class NonNegativeLeastSquares
 				++ iter;
 				if (iter > itmax)
 					{
-					throw new TooManyIterationsException
+					throw new RuntimeException
 						("NonNegativeLeastSquares.solve(): Too many iterations");
 					}
 
@@ -453,14 +462,17 @@ public class NonNegativeLeastSquares
 
 			// All new coefficients are positive. Continue the main loop.
 			}
-
 		// Compute the squared Euclidean norm of the final residual vector.
 		normsqr = 0.0;
+		int x = 0;
+		residuals = new double[M-nsetp];
 		for (i = nsetp; i < M; ++ i)
-			{
+		{	
 			normsqr += sqr (b[i]);
-			}
+			residuals[x] = b[i];
+			x++;
 		}
+	}
 
 // Hidden operations.
 
