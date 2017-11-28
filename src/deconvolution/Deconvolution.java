@@ -197,6 +197,13 @@ public class Deconvolution {
 		if(commandLineOptions.getWholeBloodQTL()){
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
+		
+		if(commandLineOptions.getUseNNLS()){
+			header += "\tAIC_fullModel";
+			for(String celltype : cellCounts.getAllCelltypes()){
+				header += "\tAIC_"+celltype;
+			}
+		}
 		output.add(header);
 		for(DeconvolutionResult deconvolutionResult : deconvolutionResults){
 			bestFullModel = deconvolutionResult.getInteractionModelCollection().getBestFullModel();
@@ -254,9 +261,18 @@ public class Deconvolution {
 				results += "\t"+bestCtModel.getGenotypeConfiguration();
 			}
 			if(commandLineOptions.getWholeBloodQTL()){
-				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTL());
-				results += "\t"+Double.toString(deconvolutionResult.getWholeBloodQTLpvalue());
+				results += "\t"+deconvolutionResult.getWholeBloodQTL();
+				results += "\t"+deconvolutionResult.getWholeBloodQTLpvalue();
 			}
+			
+			if(commandLineOptions.getUseNNLS()){
+				results += "\t"+deconvolutionResult.getInteractionModelCollection().getBestFullModel().getAIC();
+				for(String celltype : cellCounts.getAllCelltypes()){
+					results += "\t"+deconvolutionResult.getInteractionModelCollection().getBestCtModel(celltype).getAIC();
+					
+				}
+			}
+			
 			output.add(results);	
 		}
 
@@ -496,7 +512,6 @@ public class Deconvolution {
 			throws IllegalAccessException, IOException {
 		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
 			InteractionModel fullModel = interactionModelCollection.getBestFullModel();
-			InteractionModel ctModel = interactionModelCollection.getBestCtModel(cellCounts.getCelltype(modelIndex));
 			
 			int expressionLength = interactionModelCollection.getExpessionValues().length;
 			if (expressionLength != fullModel.getModelLength()) {
@@ -505,9 +520,18 @@ public class Deconvolution {
 			}
 			
 			if(commandLineOptions.getUseNNLS()){
-				double fullModelAIC = Statistics.AIC(fullModel.getEstimateRegressionParameters(), fullModel.getNumberOfTerms()); 
+				// add one ot the number of terms because the error should also included as a parameter
+				double fullModelAIC = Statistics.AIC(fullModel.getResiduals(), fullModel.getNumberOfTerms()+1);
+				fullModel.setAIC(fullModelAIC);
+				interactionModelCollection.createObservedValueMatricesCtModel(fullModel.getGenotypeConfiguration(), true);
+				for(String celltype : interactionModelCollection.getCellCount().getAllCelltypes()){
+					InteractionModel ctModel = interactionModelCollection.getBestCtModel(celltype);
+					double ctModelAIC = Statistics.AIC(ctModel.getResiduals(), ctModel.getNumberOfTerms()+1);
+					ctModel.setAIC(ctModelAIC);
+				}
 			}
 			else{
+				InteractionModel ctModel = interactionModelCollection.getBestCtModel(cellCounts.getCelltype(modelIndex));
 				double pval = anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), fullModel.getDegreesOfFreedom(), ctModel.getDegreesOfFreedom(), true);
 				ctModel.setPvalue(pval);
 				interactionModelCollection.setPvalue(pval, interactionModelCollection.getCelltypeOfModel(ctModel.getModelName()));

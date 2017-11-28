@@ -28,6 +28,8 @@ public class InteractionModel {
 	private Integer modelLength;
 	private Integer numberOfTerms;
 	private double[] estimatedRegressionParameters;
+	private double AIC;
+	private double[] residuals;
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
@@ -51,9 +53,6 @@ public class InteractionModel {
 	 * [mono%, neut%, mono% * GT]
 	 */
 	public double[][] getObservedValues() throws IllegalAccessException{
-		if(this.observedValues == null){
-			throw new IllegalAccessException("observedValues not set for this model");
-		}
 	    return(this.observedValues);
 	  }
 	
@@ -76,9 +75,6 @@ public class InteractionModel {
 	 * This can be used to sum up the Beta * variable per cell type  
 	 */
 	public List<int[]> getCelltypeVariablesIndex() throws IllegalAccessException{
-		if(this.celltypeVariablesIndex == null){
-			throw new IllegalAccessException("celltypeVariables not set for this model");
-		}
 	    return (this.celltypeVariablesIndex);
 	  }
 	
@@ -103,10 +99,6 @@ public class InteractionModel {
 	 * 		[neut%, mono%, neut%:GT]
 	 */
 	public List<String> getIndependentVariableNames() throws IllegalAccessException{
-
-		if(this.independentVariableNames == null){
-			throw new IllegalAccessException(String.format("celltypes not set for this model %s", this.modelName));
-		}
 	    return(this.independentVariableNames);
 	  }
 	
@@ -115,9 +107,6 @@ public class InteractionModel {
 	  }
 	
 	public String getModelName() throws IllegalAccessException{
-		if(this.modelName == null){
-			throw new IllegalAccessException(String.format("modelName name not set for this model %s", this.modelName));
-		}
 	    return(this.modelName);
 	  }
 		
@@ -125,9 +114,6 @@ public class InteractionModel {
 		this.estimateRegressionParametersStandardErrors = estimateRegressionParametersStandardErrors;
 	}
 	public double[] getEstimateRegressionParametersStandardErrors() throws IllegalAccessException{
-		if(this.estimateRegressionParametersStandardErrors == null){
-			throw new IllegalAccessException(String.format("estimateRegressionParametersStandardErrors not set for this model %s", this.modelName));
-		}
 		return(this.estimateRegressionParametersStandardErrors);
 	}
 	
@@ -140,9 +126,6 @@ public class InteractionModel {
 		this.pvalue = pvalue;
 	}
 	public double getPvalue() throws IllegalAccessException{
-		if(this.pvalue == null){
-			throw new IllegalAccessException(String.format("pvalue not set for model %s", this.modelName));
-		}
 		return this.pvalue;
 	}
 	public void setAlltIndependentVariableNames(List<String> list){
@@ -158,10 +141,6 @@ public class InteractionModel {
 		this.genotypeConfiguration = genotypeConfiguration;
 	}
 	public String getGenotypeConfiguration() throws IllegalAccessException{
-		// 0 = dont swap genotype, 1 = swap genotype
-		if(this.genotypeConfiguration == null){
-			throw new IllegalAccessException(String.format("genotypeConfiguration not set for model %s", this.modelName));
-		}
 		return this.genotypeConfiguration;
 	}
 
@@ -170,9 +149,6 @@ public class InteractionModel {
 	}
 	
 	public int getModelLength() throws IllegalAccessException {
-		if(this.modelLength == null){
-			throw new IllegalAccessException(String.format("modelLength not set for model %s", this.modelName));
-		}
 		return this.modelLength;
 	}
 
@@ -181,19 +157,21 @@ public class InteractionModel {
 	}
 	
 	public double getSumOfSquares() throws IllegalAccessException {
-		if(this.sumOfSquares == null){
-			throw new IllegalAccessException(String.format("sumOfSquares not set for model %s", this.modelName));
-		}
 		return(this.sumOfSquares);
+	}
+	
+	public void setAIC(double AIC) {
+		this.AIC = AIC;
+	}
+	
+	public double getAIC() {
+		return(this.AIC);
 	}
 
 	public void setDegreesOfFreedom(int degreesOfFreedom) {
 		this.degreesOfFreedom  = degreesOfFreedom;
 	}
 	public int getDegreesOfFreedom() throws IllegalAccessException {
-		if(this.degreesOfFreedom == null){
-			throw new IllegalAccessException(String.format("degreesOfFreedom not set for model %s", this.modelName));
-		}
 		return(this.degreesOfFreedom);
 	}
 	
@@ -207,10 +185,14 @@ public class InteractionModel {
 	}
 	
 	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
-		if(this.estimatedRegressionParameters == null){
-			throw new IllegalAccessException(String.format("residuals not set for model %s", this.modelName));
-		}
 		return(this.estimatedRegressionParameters);
+	}
+	
+	private void setResiduals(double[] residuals) {
+		this.residuals = residuals;
+	}
+	public double[] getResiduals() {
+		return(this.residuals);
 	}
 	
 	/**
@@ -259,8 +241,8 @@ public class InteractionModel {
 		nnls.solve(a, b);
 		setSumOfSquares(nnls.normsqr);
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
-		this.setEstimatedRegressionParamters(nnls.x);
-
+		setEstimatedRegressionParamters(nnls.x);
+		setResiduals(nnls.residuals);
 
 		nnls = null;
 	}
@@ -293,5 +275,7 @@ public class InteractionModel {
 		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
 	}
+
+
 }
 
