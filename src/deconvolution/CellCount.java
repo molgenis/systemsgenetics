@@ -51,8 +51,11 @@ public class CellCount {
 	public List<List<String>> getCellcountTable(){
 		return(cellcountTable);
 	}	
-	public List<String> getCelltypes(){
+	public List<String> getAllCelltypes(){
 		return(celltypes);
+	}	
+	public String getCelltype(int index){
+		return(celltypes.get(index));
 	}	
 	public int getNumberOfCelltypes(){
 		return(numberOfCelltypes);

@@ -28,7 +28,6 @@ public class CommandLineOptions {
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
 	private Boolean allDosages = false;
-	private String normalizationType = "normalizeAddMean";
 	private Boolean filterSamples = false;
 	private Boolean removeConstraintViolatingSamples = false;
 	private Boolean onlyOutputSignificant = false;
@@ -67,8 +66,6 @@ public class CommandLineOptions {
 				.argName("int").build();
 		Option multipleTestCorrectionMethod = Option.builder("mt").required(false).hasArg().longOpt("multiple_testing_correction_method")
 				.desc("Method used for doing multiple testing correction (currently only bonferonni)").build();
-		Option normalizationType = Option.builder("n").required(false).hasArg().longOpt("normalization_type")
-				.desc("Type to normalization to use when normalizing expression data (Default: normalizeAddMean)").build();
 		Option forceNormalCellcount = Option.builder("nc").required(false).hasArg().longOpt("force_normal_cellcount")
 				.desc("Force normal on the expression data").build();
 		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
@@ -100,7 +97,6 @@ public class CommandLineOptions {
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		options.addOption(onlyOutputSignificantOption);
 		options.addOption(filterSamplesOption);
-		options.addOption(normalizationType);
 		options.addOption(help);
 		options.addOption(permute);
 		options.addOption(outfile);
@@ -213,9 +209,6 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("no_console")) {
 			noConsole = !noConsole;
 		}
-		if (cmdLine.hasOption("normalization_type")){
-			normalizationType = cmdLine.getOptionValue("normalization_type");
-		}
 		if (cmdLine.hasOption("filter_samples")){
 			filterSamples = !filterSamples;
 		}
@@ -270,7 +263,6 @@ public class CommandLineOptions {
 		if(numberOfPermutations > 0){
 			DeconvolutionLogger.log.info(String.format("Permutation type (-pt): %s", permutationType));
 		}
-		DeconvolutionLogger.log.info(String.format("Normalization type used if Normalize expression==true (-n): %s", normalizationType));
 		DeconvolutionLogger.log.info(String.format("Round dosage (-r): %s", roundDosage));
 		DeconvolutionLogger.log.info(String.format("Filter out QTLs where not all dosages are present in at least 1 sample (-ad): %s", allDosages));
 		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
@@ -327,9 +319,7 @@ public class CommandLineOptions {
 		}
 		return(outfolder);
 	}
-	public String getNormalizationType(){
-		return(normalizationType);
-	}
+
 	public void setOutfolder(String newOutfolder){
 		outfolder = newOutfolder;
 	}
