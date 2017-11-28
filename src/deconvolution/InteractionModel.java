@@ -2,7 +2,6 @@ package deconvolution;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.math3.exception.DimensionMismatchException;
@@ -19,17 +18,16 @@ public class InteractionModel {
 	private List<int[]> celltypeVariablesIndex = new ArrayList <int[]>();
 	private double[][] observedValues;
 	private String modelName;
-	private double[] estimatedRegressionParameters;
 	private double[] estimateRegressionParametersStandardErrors;
 	public InteractionModel(){};
-	private HashMap<String, Character> genotypeOrder = new HashMap<String, Character>();
+	private String genotypeConfiguration;
 	// initialize with number so that we can test if it has been set
-	private double sumOfSquares = -1;
-	private double pvalue = -1;
-	private int degreesOfFreedom = -1;
-	private int modelLength = -1;
-	private int numberOfTerms;
-
+	private Double sumOfSquares;
+	private Double pvalue;
+	private Integer degreesOfFreedom;
+	private Integer modelLength;
+	private Integer numberOfTerms;
+	private double[] estimatedRegressionParameters;
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
@@ -133,15 +131,6 @@ public class InteractionModel {
 		return(this.estimateRegressionParametersStandardErrors);
 	}
 	
-	public void setEstimateRegressionParameters(double[] estimatedRegressionParameters){
-		this.estimatedRegressionParameters = estimatedRegressionParameters;
-	}
-	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
-		if(this.estimatedRegressionParameters == null){
-			throw new IllegalAccessException(String.format("estimatedRegressionParameters not set for model %s", this.modelName));
-		}
-		return(this.estimatedRegressionParameters);
-	}
 	
 	public void emptyObservedValues(){
 		this.observedValues = null;
@@ -151,7 +140,7 @@ public class InteractionModel {
 		this.pvalue = pvalue;
 	}
 	public double getPvalue() throws IllegalAccessException{
-		if(this.pvalue == -1){
+		if(this.pvalue == null){
 			throw new IllegalAccessException(String.format("pvalue not set for model %s", this.modelName));
 		}
 		return this.pvalue;
@@ -164,13 +153,16 @@ public class InteractionModel {
 			addIndependentVariableName(list.get(celltypeIndex)+":GT");
 		}
 	}
-	public void addGenotypeOrder(String celltype, char c){
+	public void setGenotypeConfiguration(String genotypeConfiguration){
 		// 0 = dont swap genotype, 1 = swap genotype
-		this.genotypeOrder.put(celltype, c);
+		this.genotypeConfiguration = genotypeConfiguration;
 	}
-	public HashMap<String, Character> getGenotypeOrder(){
+	public String getGenotypeConfiguration() throws IllegalAccessException{
 		// 0 = dont swap genotype, 1 = swap genotype
-		return this.genotypeOrder;
+		if(this.genotypeConfiguration == null){
+			throw new IllegalAccessException(String.format("genotypeConfiguration not set for model %s", this.modelName));
+		}
+		return this.genotypeConfiguration;
 	}
 
 	public void setModelLength(){
@@ -178,7 +170,7 @@ public class InteractionModel {
 	}
 	
 	public int getModelLength() throws IllegalAccessException {
-		if(this.modelLength == -1){
+		if(this.modelLength == null){
 			throw new IllegalAccessException(String.format("modelLength not set for model %s", this.modelName));
 		}
 		return this.modelLength;
@@ -189,7 +181,7 @@ public class InteractionModel {
 	}
 	
 	public double getSumOfSquares() throws IllegalAccessException {
-		if(this.sumOfSquares == -1){
+		if(this.sumOfSquares == null){
 			throw new IllegalAccessException(String.format("sumOfSquares not set for model %s", this.modelName));
 		}
 		return(this.sumOfSquares);
@@ -199,14 +191,26 @@ public class InteractionModel {
 		this.degreesOfFreedom  = degreesOfFreedom;
 	}
 	public int getDegreesOfFreedom() throws IllegalAccessException {
-		if(this.degreesOfFreedom == -1){
+		if(this.degreesOfFreedom == null){
 			throw new IllegalAccessException(String.format("degreesOfFreedom not set for model %s", this.modelName));
 		}
 		return(this.degreesOfFreedom);
 	}
 	
-	private int getNumberOfTerms(){
+	public int getNumberOfTerms(){
 		return this.numberOfTerms;
+	}
+	
+	
+	public void setEstimatedRegressionParamters(double[] estimatedRegressionParamters){
+		this.estimatedRegressionParameters = estimatedRegressionParamters;
+	}
+	
+	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
+		if(this.estimatedRegressionParameters == null){
+			throw new IllegalAccessException(String.format("residuals not set for model %s", this.modelName));
+		}
+		return(this.estimatedRegressionParameters);
 	}
 	
 	/**
@@ -230,13 +234,15 @@ public class InteractionModel {
 		// Use clone for a and b because the solve() method changes the matrix in place, want to keep the original values
 		/*
 		 * The MxN-element A matrix for the least squares
-		 *
 		 * problem. On input to the solve() method, a contains the
 		 * matrix A. On output, a has been replaced with QA,
 		 * where Q is an MxM-element orthogonal matrix
 		 * generated during the solve() method's execution.
 		 */
 		double[][] a = this.observedValues;
+		if(a == null){
+			throw new RuntimeException("this.observedValues should not be null");
+		}
 		/*
 		 * The M-element b vector for the least squares problem. On
 		 * input to the solve() method, b contains the vector
@@ -253,6 +259,9 @@ public class InteractionModel {
 		nnls.solve(a, b);
 		setSumOfSquares(nnls.normsqr);
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
+		this.setEstimatedRegressionParamters(nnls.x);
+
+
 		nnls = null;
 	}
 	
@@ -266,10 +275,9 @@ public class InteractionModel {
 	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
 	 * [0, 51.5, 0] [0, 48.7, 0]]
 	 * @param expressionValues Vector of expression values to use
-	 * @param estimateRegressionParameters If true, estimate the regression parameters and save them in the InteractionModel
 	 * @return A regression object
 	 */
-	public void calculateSumOfSquaresOLS(double[] expressionValues, Boolean estimateRegressionParameters) throws IOException, IllegalAccessException {
+	public void calculateSumOfSquaresOLS(double[] expressionValues ) throws IOException, IllegalAccessException {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
@@ -284,11 +292,6 @@ public class InteractionModel {
 		}
 		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
-		if(estimateRegressionParameters){
-			this.setEstimateRegressionParameters(regression.estimateRegressionParameters());
-			//this.setEstimateRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
-
-		}
 	}
 }
 
