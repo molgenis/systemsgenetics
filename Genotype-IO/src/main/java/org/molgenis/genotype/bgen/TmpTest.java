@@ -60,17 +60,23 @@ public class TmpTest {
 	private static double readProb(byte[] bytes, int firstByteIndex, int indexBitInFirstByte, int totalBits, long conversionFactor) {
 
 		int totalBytesMin1 = (totalBits + indexBitInFirstByte) / 8;
-		int bitsFromLastByte = totalBits;
-		if (totalBytesMin1 > 0) {
-			bitsFromLastByte = (totalBits + indexBitInFirstByte) % 8;
-			if (bitsFromLastByte == 0) {
-				bitsFromLastByte = 8;
-			}
-		}
+		
+		
+		//int bitsFromLastByte2 = totalBits - ((totalBytesMin1 - 1) * 8) - (8 - indexBitInFirstByte);
+		//Below is simplification of real formula above
+		int bitsFromLastByte = totalBits - (totalBytesMin1 * 8) + indexBitInFirstByte;
+		
+		//Below is old way to calculate bitsFromLastByte but I think above is faster
+//		int bitsFromLastByte = (totalBits + indexBitInFirstByte) % 8;
+//		if (bitsFromLastByte == 0) {
+//			bitsFromLastByte = 8;
+//		}
+		
+		
 
 		int bitshiftAfterFirstByte = 8 - indexBitInFirstByte;
 
-		System.out.println("Total bytes: " + totalBytesMin1);
+		System.out.println("Total bytes min 1: " + totalBytesMin1);
 		System.out.println("First byte: " + firstByteIndex);
 		System.out.println("Index of first bit first byte: " + indexBitInFirstByte);
 		System.out.println("Total bits: " + totalBits);
@@ -128,3 +134,4 @@ public class TmpTest {
 	}
 
 }
+
