@@ -35,6 +35,13 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("zmeanandvar")
+				.desc("Determine Z-score mean and variance per gene/probe and per permutation")
+				.build();
+		OPTIONS.addOption(option);
+		
+		
+		option = Option.builder()
 				.longOpt("leaveoneout")
 				.desc("Leave one out meta-analysis")
 				.build();
@@ -197,6 +204,26 @@ public class BinaryMetaAnalysisCLI {
 							nonan);
 				}
 				
+			} else if (cmd.hasOption("zmeanandvar")) {
+				String settings = null;
+				String texttoreplace = null;
+				String replacewith = null;
+				if (cmd.hasOption("settings")) {
+					settings = cmd.getOptionValue("settings");
+				}
+				if (cmd.hasOption("rt")) {
+					texttoreplace = cmd.getOptionValue("rt");
+				}
+				if (cmd.hasOption("rtw")) {
+					replacewith = cmd.getOptionValue("rtw");
+				}
+				if (settings == null) {
+					System.err.println("Error: Please provide settings with --meta");
+					System.out.println();
+					printHelp();
+				} else {
+					CheckZScoreMeanAndVariance v = new CheckZScoreMeanAndVariance(settings, texttoreplace, replacewith);
+				}
 			} else {
 				System.out.println("Choose --meta or --qc");
 				printHelp();

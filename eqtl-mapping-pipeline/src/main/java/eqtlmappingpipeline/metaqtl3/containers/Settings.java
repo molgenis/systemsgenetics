@@ -92,7 +92,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public Integer batchid;
 	public Integer batchsize;
 	public boolean displayWarnings = true;
-	public int numberOfVariantsToBuffer = 10000;
+	public int numberOfVariantsToBuffer = 1000;
 	
 	public Settings() {
 	}
