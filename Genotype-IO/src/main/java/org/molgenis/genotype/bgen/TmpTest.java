@@ -11,111 +11,119 @@ public class TmpTest {
 	/**
 	 * Index is the number of last bits used from the first byte
 	 */
-	static final int[] FIRST_BYTE_MASK = {255, 127, 63, 31, 7, 3, 1};
+	static final int[] FIRST_BYTE_MASK = {255, 127, 63, 31, 15, 7, 3, 1};
 	/**
 	 * Index is the number of first bits used from the last byte
 	 */
-	static final int[] LAST_BYTE_MASK = {128, 192, 224, 240, 248, 252, 254, 255};
+	static final int[] LAST_BYTE_MASK = {0, 128, 192, 224, 240, 248, 252, 254, 255};
 
 	/**
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
 
-		byte[] test = {-1, 12, 2, 0, 0};
+		//byte[] test = {(byte) 0b0011_0000, (byte) 0b1111_0011, (byte) 0b1011_0011, (byte) 0b0000_1101, (byte) 0b1111_1111};
+		byte[] test = {(byte) 0b0000_1000, (byte) 0b1111_0011, (byte) 0b1011_0011, (byte) 0b0000_1101, (byte) 0b1111_1111};
 
-		System.out.println(Integer.toBinaryString(test[0]));
+		System.out.println(Integer.toBinaryString(test[0] & (255)));
+		System.out.println(Integer.toBinaryString(test[1] & (255)));
+		System.out.println(Integer.toBinaryString(test[2] & (255)));
+		System.out.println(Integer.toBinaryString(test[3] & (255)));
+		System.out.println(Integer.toBinaryString(test[4] & (255)));
 
-		readProb(test, 0, 0, 22);
+		int bits = 23;
+		long factor = (1L << bits) - 1;
+
+		System.out.println("Prob divide factor: " + factor);
+
+		readProb(test, 1, 3, bits, factor);
+
+		bits = 1;
+		factor = (1L << bits) - 1;
+
+		System.out.println("Prob divide factor: " + factor);
+
+		readProb(test, 0, 4, bits, factor);
 
 	}
 
 	/**
 	 *
 	 * @param bytes
-	 * @param firstByte
-	 * @param firstBitInFirstByte
+	 * @param firstByteIndex zero based index of first byte in byte array
+	 * @param indexBitInFirstByte zero based index of first used bit in first
+	 * byte
 	 * @param totalBits
+	 * @param conversionFactor
 	 * @return
 	 */
-	private static double readProb(byte[] bytes, int firstByte, int firstBitInFirstByte, int totalBits) {
+	private static double readProb(byte[] bytes, int firstByteIndex, int indexBitInFirstByte, int totalBits, long conversionFactor) {
 
-		int totalBytes = (totalBits + firstBitInFirstByte) / 8;
-		int bitsFromLastByteMin1;
-		if (totalBytes == 0) {
-			totalBytes = 1;
-			bitsFromLastByteMin1 = totalBits - 1;
-		} else {
-			bitsFromLastByteMin1 = (totalBits + firstBitInFirstByte) % 8;
-			if (bitsFromLastByteMin1 > 0) {
-				++totalBytes;
-				bitsFromLastByteMin1 -= 1;
-			} else {
-				bitsFromLastByteMin1 = 7;
+		int totalBytesMin1 = (totalBits + indexBitInFirstByte) / 8;
+		int bitsFromLastByte = totalBits;
+		if (totalBytesMin1 > 0) {
+			bitsFromLastByte = (totalBits + indexBitInFirstByte) % 8;
+			if (bitsFromLastByte == 0) {
+				bitsFromLastByte = 8;
 			}
 		}
 
-		System.out.println("Total bytes: " + totalBytes);
-		System.out.println("Fist byte: " + firstByte);
-		System.out.println("First bit first byte: " + firstBitInFirstByte);
-		System.out.println("Total bits: " + totalBits);
-		System.out.println("Bits from last byte min 1: " + bitsFromLastByteMin1);
+		int bitshiftAfterFirstByte = 8 - indexBitInFirstByte;
 
-		long encodedProb;
-		switch (totalBytes) {
-			case 5:
-				//cast to long to make bit shift work on 5 byte value
+		System.out.println("Total bytes: " + totalBytesMin1);
+		System.out.println("First byte: " + firstByteIndex);
+		System.out.println("Index of first bit first byte: " + indexBitInFirstByte);
+		System.out.println("Total bits: " + totalBits);
+		System.out.println("Bits from last byte: " + bitsFromLastByte);
+		System.out.println("First byte mask: " + Integer.toBinaryString(FIRST_BYTE_MASK[indexBitInFirstByte]));
+		System.out.println("Last byte mask: " + Integer.toBinaryString(LAST_BYTE_MASK[bitsFromLastByte]));
+		System.out.println("Bit shift after first byte: " + bitshiftAfterFirstByte);
+
+		long encodedProb; // long because values are stored as unsigned int
+
+		//Switch because this is very fast compared to loops or if statements
+		switch (totalBytesMin1) {
+			case 0:
 				encodedProb
-						= ((long) bytes[firstByte + 4] & LAST_BYTE_MASK[bitsFromLastByteMin1]) << (24 + bitsFromLastByteMin1 - firstBitInFirstByte)
-						| (bytes[firstByte + 3] & 255) << (24 - firstBitInFirstByte)
-						| (bytes[firstByte + 2] & 255) << (16 - firstBitInFirstByte)
-						| (bytes[firstByte + 1] & 255) << (8 - firstBitInFirstByte)
-						| (bytes[firstByte] & FIRST_BYTE_MASK[firstBitInFirstByte]);
+						= bytes[firstByteIndex] >> (8 - indexBitInFirstByte - totalBits) & FIRST_BYTE_MASK[8 - totalBits];
 				break;
-			case 4:
+			case 1:
+				//Last byte parsing is different then longer encoding
 				encodedProb
-						= (bytes[firstByte + 3] & LAST_BYTE_MASK[bitsFromLastByteMin1]) << (16 + bitsFromLastByteMin1 - firstBitInFirstByte)
-						| (bytes[firstByte + 2] & 255) << (16 - firstBitInFirstByte)
-						| (bytes[firstByte + 1] & 255) << (8 - firstBitInFirstByte)
-						| (bytes[firstByte] & FIRST_BYTE_MASK[firstBitInFirstByte]);
+						= (bytes[firstByteIndex + 1] & LAST_BYTE_MASK[bitsFromLastByte]) >> (8 - bitsFromLastByte) << bitshiftAfterFirstByte
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[indexBitInFirstByte]);
+				break;
+			case 2:
+				encodedProb
+						= (bytes[firstByteIndex + 2] & LAST_BYTE_MASK[bitsFromLastByte]) << (bitshiftAfterFirstByte + bitsFromLastByte)
+						| (bytes[firstByteIndex + 1] & 255) << (indexBitInFirstByte)
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[indexBitInFirstByte]);
 				break;
 			case 3:
 				encodedProb
-						= (bytes[firstByte + 2] & LAST_BYTE_MASK[bitsFromLastByteMin1]) << (9 + bitsFromLastByteMin1 - firstBitInFirstByte)
-						| (bytes[firstByte + 1] & 255) << (8 - firstBitInFirstByte)
-						| (bytes[firstByte] & FIRST_BYTE_MASK[firstBitInFirstByte]);
+						= (bytes[firstByteIndex + 3] & LAST_BYTE_MASK[bitsFromLastByte]) << (8 + bitshiftAfterFirstByte + bitsFromLastByte)
+						| (bytes[firstByteIndex + 2] & 255) << (8 + bitshiftAfterFirstByte)
+						| (bytes[firstByteIndex + 1] & 255) << (bitshiftAfterFirstByte)
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[indexBitInFirstByte]);
 				break;
-			case 2:
-				if (bitsFromLastByteMin1 < firstBitInFirstByte) {
-					encodedProb
-							= (bytes[firstByte + 1] & LAST_BYTE_MASK[bitsFromLastByteMin1]) >> (firstBitInFirstByte - bitsFromLastByteMin1)
-							| (bytes[firstByte] & FIRST_BYTE_MASK[firstBitInFirstByte]);
-				} else {
-					encodedProb
-							= (bytes[firstByte + 1] & LAST_BYTE_MASK[bitsFromLastByteMin1]) << (bitsFromLastByteMin1 - firstBitInFirstByte +1)
-							| (bytes[firstByte] & FIRST_BYTE_MASK[firstBitInFirstByte]);
-				}
-				break;
-			case 1:
-
-				System.out.println(Long.toBinaryString(((long) (bytes[firstByte])
-						& LAST_BYTE_MASK[bitsFromLastByteMin1 + firstBitInFirstByte]
-						& FIRST_BYTE_MASK[firstBitInFirstByte])));
-
+			case 4:
+				//cast to long to make bit shift work on 5 byte value
 				encodedProb
-						= (bytes[firstByte]
-						& LAST_BYTE_MASK[bitsFromLastByteMin1 + firstBitInFirstByte]
-						& FIRST_BYTE_MASK[firstBitInFirstByte])
-						>> (7 - firstBitInFirstByte - bitsFromLastByteMin1);
+						= ((long) bytes[firstByteIndex + 4] & LAST_BYTE_MASK[bitsFromLastByte]) << (16 + bitshiftAfterFirstByte + bitsFromLastByte)
+						| (bytes[firstByteIndex + 3] & 255) << (16 + indexBitInFirstByte)
+						| (bytes[firstByteIndex + 2] & 255) << (8 + indexBitInFirstByte)
+						| (bytes[firstByteIndex + 1] & 255) << (indexBitInFirstByte)
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[indexBitInFirstByte]);
 				break;
+
 			default:
-				throw new GenotypeDataException("Error parsing bgen file");
+				throw new GenotypeDataException("Error parsing bgen file. Debug info: totalBits=" + totalBits + " indexBitInFirstByte=" + indexBitInFirstByte + " totalBits=" + totalBits);
 		}
 
-		System.out.println(encodedProb);
-		System.out.println(Long.toBinaryString(encodedProb));
+		System.out.println("Result: " + encodedProb);
+		System.out.println("Result in bin: " + Long.toBinaryString(encodedProb));
 
-		return 0d;
+		return ((double) encodedProb) / conversionFactor;
 
 	}
 
