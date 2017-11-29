@@ -7,7 +7,6 @@ package nl.umcg.westrah.binarymetaanalyzer;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -116,16 +115,6 @@ public class BinaryMetaAnalysis {
 			System.exit(-1);
 		}
 		
-		String zscoretableheader = null;
-		if (settings.isMakezscoretable()) {
-			StringBuilder builder = new StringBuilder();
-			builder.append("SNP\tAlleles\tAlleleAssessed");
-			for (int t = 0; t < traitList.length; t++) {
-				builder.append("\t").append(traitList[t].getMetaTraitName()).append("_").append(traitList[t].getAnnotation());
-			}
-			zscoretableheader = builder.toString();
-		}
-		
 		for (int permutation = settings.getStartPermutations(); permutation <= settings.getNrPermutations(); permutation++) {
 			clearResultsBuffer();
 			
@@ -168,45 +157,9 @@ public class BinaryMetaAnalysis {
 			System.out.println("Cis-window: " + settings.getCisdistance());
 			System.out.println("Trans-window: " + settings.getTransdistance());
 			
-			TextFile zscoreTableTf = null;
-			TextFile zscoreTableTfNrSamples = null;
-			
-			if (settings.isMakezscoretable()) {
-				
-				String tableoutfile = outdir + "ZScoreMatrix-Permutation" + permutation + ".txt.gz";
-				String tableoutfileNrSamples = outdir + "ZScoreMatrixNrSamples-Permutation" + permutation + ".txt.gz";
-				if (permutation == 0) {
-					tableoutfile = outdir + "ZScoreMatrix.txt.gz";
-					tableoutfileNrSamples = outdir + "ZScoreMatrixNrSamples.txt.gz";
-				}
-				System.out.println("Writing z-score table: " + tableoutfile);
-				zscoreTableTf = new TextFile(tableoutfile, TextFile.W);
-				zscoreTableTfNrSamples = new TextFile(tableoutfileNrSamples, TextFile.W);
-				
-				// write header
-				zscoreTableTf.writeln(zscoretableheader);
-				zscoreTableTfNrSamples.writeln(zscoretableheader);
-			}
-			
 			System.out.println("Starting meta-analysis");
 			ProgressBar pb = new ProgressBar(snpList.length);
 			for (int snp = 0; snp < snpList.length; snp++) {
-				
-				double[] zscoretableoutput = null;
-				int[] zscorenrsamplestableoutput = null;
-				if (settings.isMakezscoretable()) {
-					
-					if (zscoretableoutput != null) {
-						for (int i = 0; i < zscoretableoutput.length; i++) {
-							zscoretableoutput[i] = Double.NaN;
-							zscorenrsamplestableoutput[i] = 0;
-						}
-					} else {
-						zscoretableoutput = new double[probeIndex.length];
-						zscorenrsamplestableoutput = new int[probeIndex.length];
-					}
-				}
-				
 				boolean printed = false;
 				int[] sampleSizes = new int[datasets.length];
 				Boolean[] flipZScores = new Boolean[datasets.length];
@@ -235,9 +188,6 @@ public class BinaryMetaAnalysis {
 				if (settings.getAnalysisType().equals(BinaryMetaAnalysisSettings.Analysis.CIS) || snpprobeCombos != null) {
 					// do cis stuff, or stuff to specific sets of probes...
 					
-					// get all the possible traits near the SNP
-//                    Set<MetaQTL4MetaTrait> cisProbesForSNP = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getCisdistance());
-//                    MetaQTL4MetaTrait[] cisProbeArray = cisProbesForSNP.toArray(new MetaQTL4MetaTrait[0]);
 					HashMap<MetaQTL4MetaTrait, Integer> cisProbeMap = new HashMap<MetaQTL4MetaTrait, Integer>();
 					MetaQTL4MetaTrait[] cisProbeArray = null;
 					if (snpprobeCombos != null) {
@@ -326,20 +276,7 @@ public class BinaryMetaAnalysis {
 							MetaQTL4MetaTrait t = cisProbeArray[probe];
 							
 							double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
-							int metaZNrSamples = 0;
-							for (int s = 0; s < sampleSizes.length; s++) {
-								if (!Float.isNaN(finalZScores[probe][s])) {
-									metaZNrSamples += sampleSizes[s];
-								}
-							}
 							double p = Descriptives.convertZscoreToPvalue(metaZ);
-							
-							if (settings.isMakezscoretable()) {
-								// get the correct index for trait t
-								int metaid = t.getCurrentMetaId();
-								zscoretableoutput[metaid] = metaZ;
-								zscorenrsamplestableoutput[metaid] = metaZNrSamples;
-							}
 							
 							if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
 								// create output object
@@ -401,28 +338,10 @@ public class BinaryMetaAnalysis {
 					}
 					
 					// meta-analyze!
-					if (settings.isMakezscoretable()) {
-						// initialize with NaN
-						for (int i = 0; i < zscoretableoutput.length; i++) {
-							zscoretableoutput[i] = Double.NaN;
-							zscorenrsamplestableoutput[i] = 0;
-						}
-					}
 					for (int probe = 0; probe < traitList.length; probe++) {
 						MetaQTL4MetaTrait t = traitList[probe];
 						double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
-						int metaAnalysisZNrSamples = 0;
-						for (int s = 0; s < sampleSizes.length; s++) {
-							if (!Float.isNaN(finalZScores[probe][s])) {
-								metaAnalysisZNrSamples += sampleSizes[s];
-							}
-						}
 						double metaAnalysisP = Descriptives.convertZscoreToPvalue(metaAnalysisZ);
-						
-						if (settings.isMakezscoretable()) {
-							zscoretableoutput[probe] = metaAnalysisZ;
-							zscorenrsamplestableoutput[probe] = metaAnalysisZNrSamples;
-						}
 						
 						// create output object
 						if (!Double.isNaN(metaAnalysisP) && !Double.isNaN(metaAnalysisZ)) {
@@ -433,22 +352,8 @@ public class BinaryMetaAnalysis {
 					}
 				}
 				pb.iterate();
-				
-				// write z-score output
-				if (settings.isMakezscoretable()) {
-					String snpName = snpList[snp];
-					// get alleles
-					
-					zscoreTableTf.writeln(snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscoretableoutput, Strings.tab));
-					zscoreTableTfNrSamples.writeln(snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscorenrsamplestableoutput, Strings.tab));
-				}
 			}
 			pb.close();
-			
-			if (settings.isMakezscoretable()) {
-				zscoreTableTf.close();
-				zscoreTableTfNrSamples.close();
-			}
 			
 			for (BinaryMetaAnalysisDataset dataset : datasets) {
 				dataset.close();
