@@ -23,8 +23,9 @@ public class TmpTest {
 	public static void main(String[] args) {
 
 		//byte[] test = {(byte) 0b0011_0000, (byte) 0b1111_0011, (byte) 0b1011_0011, (byte) 0b0000_1101, (byte) 0b1111_1111};
-		byte[] test = {(byte) 0b0000_1000, (byte) 0b1111_0011, (byte) 0b1011_0011, (byte) 0b0000_1101, (byte) 0b1111_1111};
-
+		//byte[] test = {(byte) 0b0000_1000, (byte) 0b1111_1111, (byte) 0b1111_1111, (byte) 0b11111_1111, (byte) 0b1111_1111};
+		byte[] test = {(byte) 0b0011_0000, (byte) 0b1111_0011, (byte) 0b1011_0011, (byte) 0b0000_1101, (byte) 0b1111_1111};
+		
 		System.out.println(Integer.toBinaryString(test[0] & (255)));
 		System.out.println(Integer.toBinaryString(test[1] & (255)));
 		System.out.println(Integer.toBinaryString(test[2] & (255)));
@@ -44,6 +45,15 @@ public class TmpTest {
 		System.out.println("Prob divide factor: " + factor);
 
 		readProb(test, 0, 4, bits, factor);
+		
+		System.out.println("---------");
+		
+		bits = 32;
+		factor = (1L << bits) - 1;
+
+		System.out.println("Prob divide factor: " + factor);
+
+		readProb(test, 1, 0, bits, factor);
 
 	}
 
@@ -59,7 +69,7 @@ public class TmpTest {
 	 */
 	private static double readProb(byte[] bytes, int firstByteIndex, int indexBitInFirstByte, int totalBits, long conversionFactor) {
 
-		int totalBytesMin1 = (totalBits + indexBitInFirstByte) / 8;
+		int totalBytesMin1 = (totalBits + indexBitInFirstByte - 1) / 8;
 		
 		
 		//int bitsFromLastByte2 = totalBits - ((totalBytesMin1 - 1) * 8) - (8 - indexBitInFirstByte);
@@ -107,13 +117,12 @@ public class TmpTest {
 				break;
 			case 3:
 				encodedProb
-						= (bytes[firstByteIndex + 3] & LAST_BYTE_MASK[bitsFromLastByte]) << (8 + bitshiftAfterFirstByte + bitsFromLastByte)
+						= ((long) bytes[firstByteIndex + 3] & LAST_BYTE_MASK[bitsFromLastByte]) << (8 + bitshiftAfterFirstByte + bitsFromLastByte)
 						| (bytes[firstByteIndex + 2] & 255) << (8 + bitshiftAfterFirstByte)
 						| (bytes[firstByteIndex + 1] & 255) << (bitshiftAfterFirstByte)
 						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[indexBitInFirstByte]);
 				break;
 			case 4:
-				//cast to long to make bit shift work on 5 byte value
 				encodedProb
 						= ((long) bytes[firstByteIndex + 4] & LAST_BYTE_MASK[bitsFromLastByte]) << (16 + bitshiftAfterFirstByte + bitsFromLastByte)
 						| (bytes[firstByteIndex + 3] & 255) << (16 + indexBitInFirstByte)
