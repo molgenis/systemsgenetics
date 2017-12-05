@@ -21,22 +21,21 @@ import java.util.logging.Logger;
 public class CheckZScoreMeanAndVariance {
 	
 	private MetaQTL4TraitAnnotation probeAnnotation;
-	private BinaryMetaAnalysisDataset[] datasets = new BinaryMetaAnalysisDataset[0];
-	private int[][] snpIndex;
-	private String[] snpList;
-	private final BinaryMetaAnalysisSettings settings;
-	private String[] snpChr;
-	private int[] snpPositions;
-	private Integer[][] probeIndex;
 	
-	private boolean bufferHasOverFlown;
-	private double maxSavedPvalue = -Double.MAX_VALUE;
-	private boolean sorted;
-	private int locationToStoreResult;
-	private MetaQTL4MetaTrait[][] snpprobeCombos;
+	private BinaryMetaAnalysisSettings settings;
 	
-	TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = new TObjectIntHashMap<MetaQTL4MetaTrait>();
-	MetaQTL4MetaTrait[] traitList = null;
+	
+	public static void main(String[] args) {
+		String in = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\eqtl\\met\\";
+		String out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\eqtl\\met\\check\\";
+		int nrperm = 1;
+		CheckZScoreMeanAndVariance c = new CheckZScoreMeanAndVariance();
+		try {
+			c.checkZScoreTable(in, out, nrperm);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public CheckZScoreMeanAndVariance(String settingsFile, String textToReplace, String replaceTextWith) {
 		// initialize settings
@@ -49,6 +48,122 @@ public class CheckZScoreMeanAndVariance {
 			ex.printStackTrace();
 			Logger.getLogger(BinaryMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
 		}
+		
+	}
+	
+	public CheckZScoreMeanAndVariance() {
+	
+	}
+	
+	public void checkZScoreTable(String inLoc, String outLoc, int nrPerm) throws IOException {
+		
+		double[][] zMeans = new double[nrPerm][];
+		double[][] zVars = new double[nrPerm][];
+		double[][] zNs = new double[nrPerm][];
+		int maxNrProbes = 0;
+		
+		for (int permutation = 0; permutation < nrPerm; permutation++) {
+//			header += "\tNZ\tMeanZ\tVarZ";
+			
+			
+			// perm0\tperm1\tperm2
+			// gene0
+			// gene1
+			
+			String zmatfileloc = inLoc + "ZScoreMatrix-Permutation" + permutation + ".txt.gz";
+			if (permutation == 0) {
+				zmatfileloc = inLoc + "ZScoreMatrix.txt.gz";
+//				zmatfileloc = inLoc + "ZScoreMatrix2.txt";
+			}
+			System.out.println(zmatfileloc + " parsing");
+			TextFile tf = new TextFile(zmatfileloc, TextFile.R);
+			String[] headerIn = tf.readLineElems(TextFile.tab);
+			int nrsnps = tf.countLines();
+			tf.close();
+			tf.open();
+			tf.readLine();
+			
+			// format: SNP     Alleles AlleleAssessed  66023_ENST00000294984
+			int nrprobes = headerIn.length - 3;
+			double[][] zmat = new double[nrprobes][nrsnps];
+			System.out.println("size: " + nrprobes + " genes \t" + nrsnps + " snps");
+			String[] elems = tf.readLineElems(TextFile.tab);
+			int snp = 0;
+			while (elems != null) {
+				
+				double[] probes = new double[elems.length - 3];
+				for (int i = 3; i < elems.length; i++) {
+					probes[i - 3] = Double.parseDouble(elems[i]);
+				}
+				
+				for (int i = 0; i < probes.length; i++) {
+					zmat[i][snp] = probes[i];
+				}
+				
+				snp++;
+				if (snp % 100 == 0) {
+					System.out.print("\r" + snp + " out of " + nrsnps);
+				}
+				elems = tf.readLineElems(TextFile.tab);
+			}
+			tf.close();
+			
+			System.out.println();
+			
+			double[] zmean = new double[nrprobes];
+			double[] zvar = new double[nrprobes];
+			double[] zn = new double[nrprobes];
+			int nrWithOutVals = 0;
+			for (int p = 0; p < nrprobes; p++) {
+				ArrayList<Double> nonan = new ArrayList<Double>();
+				for (int s = 0; s < zmat[p].length; s++) {
+					if (!Double.isNaN(zmat[p][s])) {
+						nonan.add(zmat[p][s]);
+					}
+				}
+				if (nonan.size() > 0) {
+					double[] arr = Primitives.toPrimitiveArr(nonan.toArray(new Double[0]));
+					zmean[p] = JSci.maths.ArrayMath.mean(arr);
+					zvar[p] = JSci.maths.ArrayMath.variance(arr);
+					zn[p] = nonan.size();
+					
+					if (zn.length > maxNrProbes) {
+						maxNrProbes = zn.length;
+					}
+				} else {
+					nrWithOutVals++;
+					// System.out.println(p + " has length 0 " + zmat[p].length + " vals before filter\t" + nonan.size() + "\tafter filter");
+				}
+			}
+			System.out.println(nrWithOutVals + " probes have no vals out of " + nrprobes);
+			
+			zMeans[permutation] = zmean;
+			zVars[permutation] = zvar;
+			zNs[permutation] = zn;
+			
+		}
+		
+		// write to disk
+		String header = "ProbeRank";
+		for (int permutation = 0; permutation <= nrPerm; permutation++) {
+			header += "\tN-Perm\tMeanZ-Perm" + permutation + "\tVarZ-Perm" + permutation;
+		}
+		
+		TextFile out = new TextFile(outLoc + "ZScoreMeanAndVariancePerProbe.txt", TextFile.W);
+		System.out.println("Writing to: " + outLoc + "ZScoreMeanAndVariancePerProbe.txt");
+		out.writeln(header);
+		for (int i = 0; i < maxNrProbes; i++) {
+			String ln = "" + i;
+			for (int p = 0; p < zMeans.length; p++) {
+				if (i >= zMeans[p].length) {
+					ln += "\t0\tNotTested\tNotTested";
+				} else {
+					ln += "\t" + zNs[p][i] + "\t" + zMeans[p][i] + "\t" + zVars[p][i];
+				}
+			}
+			out.writeln(ln);
+		}
+		out.close();
 		
 	}
 	
@@ -133,6 +248,7 @@ public class CheckZScoreMeanAndVariance {
 			
 			
 			System.out.println();
+			
 			// write to disk
 			String header = "ProbeRank";
 			for (int permutation = settings.getStartPermutations(); permutation <= settings.getNrPermutations(); permutation++) {

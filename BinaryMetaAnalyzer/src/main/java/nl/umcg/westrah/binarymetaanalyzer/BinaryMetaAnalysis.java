@@ -142,6 +142,7 @@ public class BinaryMetaAnalysis {
 						settings.getDatasetannotations().get(d),
 						probeAnnotation);
 			}
+			
 			System.out.println("Loaded " + datasets.length + " datasets");
 			
 			// create meta-analysis SNP index. have to recreate this every permutation,
@@ -276,6 +277,7 @@ public class BinaryMetaAnalysis {
 								int datasetSNPId = snpIndex[snp][d];
 								
 								if (datasetSNPId != -9) { // -9 means: snp not available
+									// TODO: for faster disk access, we should wrap this into a buffer of some sort
 									float[] datasetZScores = datasets[d].getZScores(datasetSNPId);
 									
 									if (datasets[d].getIsCisDataset()) {
@@ -582,6 +584,7 @@ public class BinaryMetaAnalysis {
 			confineToTheseSNPs = snpPreSelection;
 		}
 		
+		
 		// create a list of all available SNPs
 		HashSet<String> allSNPs = new HashSet<String>();
 		for (BinaryMetaAnalysisDataset dataset : datasets) {
@@ -609,6 +612,9 @@ public class BinaryMetaAnalysis {
 			snpList[ctr] = s;
 			ctr++;
 		}
+		
+		// TODO: for faster disk access, we would need to sort the SNPs by dataset ID...
+		
 		
 		// fill index
 		snpIndex = new int[allSNPs.size()][datasets.length];

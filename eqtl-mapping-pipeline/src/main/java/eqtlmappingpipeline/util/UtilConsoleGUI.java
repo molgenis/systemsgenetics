@@ -39,9 +39,9 @@ public class UtilConsoleGUI {
 	MODE run;
 	
 	public UtilConsoleGUI(String[] args) {
-
-//        String settingstexttoreplace = null;
-//        String settingstexttoreplacewith = null;
+		
+		String settingstexttoreplace = null;
+		String settingstexttoreplacewith = null;
 //        boolean cis = false;
 //        boolean trans = false;
 //        String outtype = "text";
@@ -220,11 +220,11 @@ public class UtilConsoleGUI {
 				fileQtlsToRegressOut = val;
 			} else if (args[i].equals("--preRankExpressionFiles")) {
 				ranked = "ranked";
+			} else if (arg.equals("--replacetext")) {
+				settingstexttoreplace = val;
+			} else if (arg.equals("--replacetextwith")) {
+				settingstexttoreplacewith = val;
 			}
-//            else if (arg.equals("--replacetext")) {
-//                settingstexttoreplace = val;
-//            } else if (arg.equals("--replacetextwith")) {
-//                settingstexttoreplacewith = val;
 //            }  else if (arg.equals("--inexpplatform")) {
 //                inexpplatform = val;
 //            }
@@ -471,14 +471,15 @@ public class UtilConsoleGUI {
 							System.err.println("ERROR: you have specified an eQTL file to regress out, but the file was not found " + fileQtlsToRegressOut);
 							break;
 						}
-						RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
+						RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut, settingstexttoreplace, settingstexttoreplacewith);
 						break;
 					
 					case CREATTTFROMDOUBLEMAT:
 						if (inexpannot == null || in == null || out == null) {
 							System.out.println("Please specify --inexpannot, --in, --out");
 						} else {
-							String[] argsNew = {inexpannot, in, out, ranked};
+							String[] argsNew = {"-m", inexpannot, "-d", in, "-o", out, "-r", ranked};
+							
 							umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
 						}
 						break;

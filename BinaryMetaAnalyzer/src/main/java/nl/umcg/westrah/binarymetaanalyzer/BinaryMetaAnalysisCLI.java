@@ -40,6 +40,14 @@ public class BinaryMetaAnalysisCLI {
 				.build();
 		OPTIONS.addOption(option);
 		
+		option = Option.builder()
+				.longOpt("zscorematcheck")
+				.desc("Determine Z-score mean and variance per gene/probe and per permutation, from z-score matrices")
+				.build();
+		OPTIONS.addOption(option);
+		
+		
+		
 		
 		option = Option.builder()
 				.longOpt("leaveoneout")
@@ -203,6 +211,23 @@ public class BinaryMetaAnalysisCLI {
 							threshold,
 							nonan);
 				}
+				
+			} else if (cmd.hasOption("zscorematcheck")) {
+				String input = null;
+				String output = null;
+				String nrperm = null;
+				
+				if (cmd.hasOption("e")) {
+					input = cmd.getOptionValue("e");
+				}
+				if (cmd.hasOption("o")) {
+					output = cmd.getOptionValue("o");
+				}
+				if (cmd.hasOption("t")) {
+					nrperm = cmd.getOptionValue("t");
+				}
+				CheckZScoreMeanAndVariance v = new CheckZScoreMeanAndVariance();
+				v.checkZScoreTable(input, output, Integer.parseInt(nrperm));
 				
 			} else if (cmd.hasOption("zmeanandvar")) {
 				String settings = null;
