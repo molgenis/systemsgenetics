@@ -326,15 +326,16 @@ public class MetaQTL3 {
 			System.exit(0);
 		}
 		
-		// determine number of threadss
+//		// determine number of threads
 		if (m_settings.nrThreads == null) {
 			m_settings.nrThreads = Runtime.getRuntime().availableProcessors();
-		} else {
-			int numProcs = Runtime.getRuntime().availableProcessors();
-			if (m_settings.nrThreads > numProcs || m_settings.nrThreads < 1) {
-				m_settings.nrThreads = numProcs;
-			}
 		}
+//		else {
+//			int numProcs = Runtime.getRuntime().availableProcessors();
+//			if (m_settings.nrThreads > numProcs || m_settings.nrThreads < 1) {
+//				m_settings.nrThreads = numProcs;
+//			}
+//		}
 		
 		if (m_workPackages.length < m_settings.nrThreads) {
 			m_settings.nrThreads = m_workPackages.length;

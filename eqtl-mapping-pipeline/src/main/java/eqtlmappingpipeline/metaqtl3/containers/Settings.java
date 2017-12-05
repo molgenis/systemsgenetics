@@ -1,7 +1,7 @@
 /*
-* To change this template, choose Tools | Templates
-* and open the template in the editor.
-*/
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package eqtlmappingpipeline.metaqtl3.containers;
 
 import eqtlmappingpipeline.Main;
@@ -286,11 +286,29 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			nrThreads = (Runtime.getRuntime().availableProcessors() - 1);
 		} else {
 			int numProcs = Runtime.getRuntime().availableProcessors();
-			if (nrthread > numProcs || nrthread < 1) {
-				nrThreads = numProcs;
-			} else {
-				nrThreads = nrthread;
+			System.out.println("Machine has " + numProcs + " CPUs");
+			
+			boolean forcethreads = false;
+			try {
+				forcethreads = config.getBoolean("defaults.analysis.forcethreads", false);
+			} catch (Exception e) {
 			}
+			
+			if (forcethreads) {
+				System.out.println("WARNING: forcing " + nrthread + " threads");
+				nrThreads = nrthread;
+			} else {
+				if (nrthread > numProcs || nrthread < 1) {
+					nrThreads = numProcs;
+				} else {
+					nrThreads = nrthread;
+				}
+			}
+			
+			
+			System.out.println(nrThreads + " will be used for analysis.");
+			
+			
 		}
 		
 		try {
