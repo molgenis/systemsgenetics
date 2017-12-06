@@ -28,8 +28,10 @@ public class InteractionModel {
 	private Integer modelLength;
 	private Integer numberOfTerms;
 	private double[] estimatedRegressionParameters;
-	private double AIC;
+	private Double AIC;
 	private double[] residuals;
+	private String celltype;
+	
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
@@ -160,8 +162,9 @@ public class InteractionModel {
 		return(this.sumOfSquares);
 	}
 	
-	public void setAIC(double AIC) {
-		this.AIC = AIC;
+	public void setAIC() {
+		// +1 because error term is also a parameter
+		this.AIC = Statistics.AIC(this.residuals, this.getNumberOfTerms()+1);
 	}
 	
 	public double getAIC() {

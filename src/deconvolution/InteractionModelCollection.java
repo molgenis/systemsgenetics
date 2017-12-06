@@ -20,6 +20,7 @@ public class InteractionModelCollection {
 	private HashMap<String, Double> pvalues = new HashMap<String, Double>();
 	private ArrayList<String> fullModelNames = new ArrayList<String>();
 	private HashMap<String, ArrayList<String>> ctModelNames = new HashMap<String, ArrayList<String>>();
+	private HashMap<String, String> ctModelName = new HashMap<String, String>();
 	private String bestFullModel;
 	private HashMap<String, String> bestCtModel = new HashMap<String, String>();
 	private CellCount cellCount; 
@@ -27,6 +28,13 @@ public class InteractionModelCollection {
 	private ArrayList<String> genotypeConfigurationsFullModel = new ArrayList<String> ();
 	private ArrayList<String> genotypeConfigurationsCtModel = new ArrayList<String> ();
 	private HashMap<String, String> celltypeOfModel = new HashMap<String,String>();
+	private HashMap<String, HashMap<String,String>> ctModelByGenotypeConfiguration = new HashMap<String, HashMap<String, String>>();
+	private Double fullModelAIC;
+	private HashMap<String, Double> ctModelAICs = new HashMap<String, Double>();
+	private HashMap<String, String> ctModelsSameGenotypeConfigurationBestFullModel = new HashMap<String, String>();
+	private HashMap<String, String> modelCelltype = new HashMap<String, String>();
+	private HashMap<String, ArrayList<String>> genotypeConfigMap = new HashMap<String, ArrayList<String>>();
+	
 	/*
 	 * Have to initialize instance with if NNLS or OLS will be used, and for that we need cellCounts
 	 */
@@ -55,7 +63,13 @@ public class InteractionModelCollection {
 		}
 	}
 
+	public String getCtModelName(String celltype){
+		return(ctModelName.get(celltype));
+	}
 
+	public HashMap<String, String> getCtModelsByGenotypeConfiguration(String genotypeConfiguration){
+		return(this.ctModelByGenotypeConfiguration.get(genotypeConfiguration));
+	}
 
 	/*
 	 * Get interaction model with modelName 
@@ -109,9 +123,6 @@ public class InteractionModelCollection {
 	 * Get the genotypes of all the interaction models
 	 */
 	public double[] getSwappedGenotypes() throws IllegalAccessException {
-		if(this.swappedGenotypes == null){
-			throw new IllegalAccessException("genotypes not set for this model");
-		}
 		return this.swappedGenotypes;	
 	}
 
@@ -123,7 +134,9 @@ public class InteractionModelCollection {
 		this.genotypes = genotypes;
 		swapGenotypes();
 	}
-
+	/** 
+	 * Get a list of all the celltypes given as input
+	 */
 	private void swapGenotypes(){
 		this.swappedGenotypes = this.genotypes.clone();
 		for(int i = 0; i < this.genotypes.length; i++) {
@@ -165,6 +178,17 @@ public class InteractionModelCollection {
 		this.bestFullModel = modelName;
 	}
 
+	private void setCtModelSameGenotypeConfigurationAsBestFullModel(String celltype, String modelName){
+		this.ctModelsSameGenotypeConfigurationBestFullModel.put(celltype, modelName);
+	}
+	public String getCtModelSameGenotypeConfigurationAsBestFullModel(String celltype) throws IllegalAccessException{
+		if(!this.ctModelsSameGenotypeConfigurationBestFullModel.containsKey(celltype)){
+			InteractionModel bestFullModel = this.getBestFullModel();
+			setCtModelSameGenotypeConfigurationAsBestFullModel(celltype, this.getCtModelsByGenotypeConfiguration(bestFullModel.getGenotypeConfiguration()).get(celltype));
+		}
+		return(this.ctModelsSameGenotypeConfigurationBestFullModel.get(celltype));
+	}
+
 	private void setBestCtModel(String celltype, String modelName){
 		this.bestCtModel.put(celltype, modelName);
 	}
@@ -175,6 +199,30 @@ public class InteractionModelCollection {
 	// per celltype there is one best Ct model
 	public InteractionModel getBestCtModel(String celltype) throws IllegalAccessException{
 		return(this.getInteractionModel(this.bestCtModel.get(celltype)));
+	}
+
+	private HashMap<String, String> getCtModelsWithConfiguration(String genotypConfiguration) throws IllegalAccessException{
+		return(this.ctModelByGenotypeConfiguration.get(this.getBestFullModel().getGenotypeConfiguration()));
+	}
+
+	public void setAIC() throws IllegalAccessException{
+		getBestFullModel().setAIC();
+		this.fullModelAIC = getBestFullModel().getAIC();
+		HashMap<String, String> cellTypeCtModel = getCtModelsWithConfiguration(getBestFullModel().getGenotypeConfiguration());
+		for(String celltype : cellTypeCtModel.keySet()){
+			String modelName = cellTypeCtModel.get(celltype);
+			InteractionModel ctModel = this.getInteractionModel(modelName);
+			ctModel.setAIC();
+			this.ctModelAICs.put(modelName,ctModel.getAIC());
+		}
+	}
+
+	public double getFullModelAIC() throws IllegalAccessException{
+		return(fullModelAIC);
+	}
+
+	public double getCtModelAIC(String ctModelName) throws IllegalAccessException{
+		return(ctModelAICs.get(ctModelName));
 	}
 
 	/*
@@ -216,6 +264,7 @@ public class InteractionModelCollection {
 			double sumOfSquares = -1;
 			for (String modelName : getCtModelNames(celltype)){
 				InteractionModel ctModel = getInteractionModel(modelName);
+				modelCelltype.put(modelName, celltype);
 				if(useNNLS){
 					ctModel.calculateSumOfSquaresNNLS(getExpessionValues());
 				}
@@ -228,14 +277,21 @@ public class InteractionModelCollection {
 
 					setBestCtModel(this.celltypeOfModel.get(modelName), ctModel.getModelName());
 				}
+				setCtModelByGenotypeConfiguration();
 				if (ctModel.getSumOfSquares() <= sumOfSquares){
 					sumOfSquares = ctModel.getSumOfSquares();
 					setBestCtModel(this.celltypeOfModel.get(modelName), ctModel.getModelName());
 					ctModel.emptyObservedValues();
 				}
 				else{
-					removeInteractionModel(ctModel.getModelName());
+					// if the interaction model name of the full model is not the same as the model name of the 
+					// CT model, we want to remove the ct model data to preserve RAM. If it is the same,
+					// we keep it so that AIC can be calculated
+					if(!ctModel.getModelName().equals(this.getCtModelSameGenotypeConfigurationAsBestFullModel(celltype))){
+						removeInteractionModel(ctModel.getModelName());
+					}
 				}
+
 			}
 		}
 	}
@@ -247,8 +303,23 @@ public class InteractionModelCollection {
 		if(getUseNNLS()){
 			// if we use NNLS we need to see what genotype configuration works best, so get configuration permutations for all celltypes
 			this.genotypeConfigurationsFullModel = Utils.binaryPermutations("",getCellCount().getAllCelltypes().size(), new ArrayList<String>());
-			// for NNLS, don't set genotype configuration for ctModel, should use best configuration of full model
-			//this.genotypeConfigurationsCtModel = Utils.binaryPermutations("",getCellCount().getAllCelltypes().size()-1, new ArrayList<String>());
+			//			for(String configuration : genotypeConfigurationsFullModel){
+			//				System.out.println(configuration);
+			//			}
+			//			System.exit(0);
+			for(String genotypeConfiguration : genotypeConfigurationsFullModel){
+				genotypeConfigMap.putIfAbsent(genotypeConfiguration, new ArrayList<String>());
+				for(int i = 0; i < genotypeConfiguration.length()-1; i++){
+					String s = genotypeConfiguration.substring(0, i);
+					String s2 = genotypeConfiguration.substring(i+1, genotypeConfiguration.length());
+					String newS = s.concat(s2);
+					genotypeConfigMap.get(genotypeConfiguration).add(this.getCellCount().getCelltype(i)+"_"+newS);
+				}
+				String newS = genotypeConfiguration.substring(0, genotypeConfiguration.length()-1);
+				genotypeConfigMap.get(genotypeConfiguration).add(this.getCellCount().getCelltype(genotypeConfiguration.length()-1)+"_"+newS);
+			}
+
+			this.genotypeConfigurationsCtModel = Utils.binaryPermutations("",getCellCount().getAllCelltypes().size()-1, new ArrayList<String>());
 		}else{
 			// if we use OLS we just use default genotype orientation (all 0's)
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(getCellCount().getAllCelltypes().size(), "0")));
@@ -327,114 +398,112 @@ public class InteractionModelCollection {
 		}
 	}
 
+	public void setCtModelByGenotypeConfiguration() throws IllegalAccessException{		
+		InteractionModel bestFullModel = this.getBestFullModel();
+		String bestFullModelgenotypeConfiguration = bestFullModel.getGenotypeConfiguration();
+		HashMap<String, String> cellTypeCtModelName = new HashMap<String, String>();
+			for(String ctModelName : genotypeConfigMap.get(bestFullModelgenotypeConfiguration)){
+				cellTypeCtModelName.put(ctModelName.split("_")[0], ctModelName);
+				ctModelByGenotypeConfiguration.putIfAbsent(bestFullModelgenotypeConfiguration, cellTypeCtModelName);			
+		}
+	}
+
 	/**
-	 * Construct the observed value matrices that are used for calculating the regression for one genotype configuration
-	 *
-	 * @param genotypeConfiguration The order of genotypes to use, e.g. 010 means non swapped genotypes celltype 1, swapped genotypes celltype 2, non swapped genotypes celltype 3
-	 * @param isBest If when calling this method it is already known that this is the best model (isBest=True), then add the ctModel as best model
+	 * Construct the observed value matrices that are used for calculating the regression
+	 * @param genotypeOrder 
 	 * 
+	 * @param InteractionModelCollection Collection of InteractionModel objects for saving the results
+	 * @param genotypeOrder The order of genotypes to use, e.g. 010 means non swapped genotypes celltype 1, swapped genotypes celltype 2, non swapped genotypes celltype 3
+	 * 
+	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesFullModel
 	 */
-	public void createObservedValueMatricesCtModel(String genotypeConfiguration, Boolean isBest) 
+	public void createObservedValueMatricesCtModels() 
 			throws IllegalAccessException{
 		int genotypeCounter = getCellCount().getNumberOfCelltypes();
 		// -1 because one interaction term is removed
 		int numberOfTerms = (getCellCount().getNumberOfCelltypes() * 2) - 1;
-		// m = model, there are equally many models as celltypes
-		for (int modelIndex = 0; modelIndex < getCellCount().getNumberOfCelltypes(); modelIndex++) {
-			InteractionModel ctModel = new InteractionModel(getCellCount().getNumberOfSamples(), numberOfTerms);	
-			ctModel.setGenotypeConfiguration(genotypeConfiguration);
-			// calculate p-value and save it, with other information, in a ctModel object. Then, add it to a list of these models to return as decon results
-			String modelName = String.format("%s_%s", getCellCount().getCelltype(modelIndex), genotypeConfiguration);
-			ctModel.setModelName(modelName);
-			celltypeOfModel.put(modelName, getCellCount().getCelltype(modelIndex));
-			addInteractionModel(ctModel,ctModel.getModelName(), false);	
-			for (int sampleIndex = 0; sampleIndex <= getCellCount().getNumberOfSamples()-1; sampleIndex++) {
-				int configurationIndex = 0;
-				for (int celltypeIndex = 0; celltypeIndex < getCellCount().getNumberOfCelltypes(); celltypeIndex++) {
-					// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
-					// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
-					// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
-					// for each cell type is 1 model, celltype% * genotype without 1 celltype.
-					// j+1 because j==0 is header
-					double celltype_perc = getCellCount().getCellcountPercentages()[sampleIndex][celltypeIndex];
-					ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
-					if(sampleIndex == 0){
-						// add the celltype name at position i so that it gets in front of the celltype:GT, but once
-						try{
-							ctModel.addIndependentVariableName(celltypeIndex, getCellCount().getCelltype(celltypeIndex));
-						}
-						catch(NullPointerException e){
-							DeconvolutionLogger.log.info(String.format("Nullpoint exception with celltype %s", celltypeIndex));
-							throw e;
-						}
-					}
-
-					// if celltypeIndex is the same as m modelIndex, don't add the interaction term of celltype:GT
-					if (celltypeIndex != modelIndex) {
-						// Only add IndependentVariableName once per QTL (j==0)
-						if(sampleIndex == 0){
-
-							// Add the interaction term of celltype:genotype
-							ctModel.addIndependentVariableName(getCellCount().getCelltype(celltypeIndex)+":GT");
-							// save the index of the variables related to current celltype so that this can be used later to calculate
-							// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
-							// but for ctModel this is easiest method
-							int[] index = new int[] {celltypeIndex, getCellCount().getNumberOfCelltypes()-1+celltypeIndex};
-							ctModel.addCelltypeVariablesIndex(index);
-							// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
-							// it is explicit. Don't know if better.
-						}
-						try {
-							double genotype = 0;
-							// because the genotype configuration is of length (number of celltypes - 1), when a model is skipped we need to 
-							// adjust all celltype indices from that point forward
-							char genotypeOrderAtCelltype = genotypeConfiguration.charAt(configurationIndex);
-							configurationIndex++;
-							if(genotypeOrderAtCelltype == '0'){
-								genotype = getGenotypes()[sampleIndex];
-							}
-							else if(genotypeOrderAtCelltype == '1'){
-								genotype = getSwappedGenotypes()[sampleIndex];
-							}
-							else{
-								throw new RuntimeException(String.format("Genotype order should be 0 or 1, was: %s", genotypeOrderAtCelltype));
-							}
-							ctModel.addObservedValue(celltype_perc * genotype, sampleIndex, genotypeCounter);
-
-						} catch (ArrayIndexOutOfBoundsException error) {
-							DeconvolutionLogger.log.info("ERROR: The counts file and expression and/or genotype file do not have equal number of samples or QTLs");
-							throw error;
-						}
-						genotypeCounter++;
-					}
-					// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
-					else if (sampleIndex == 0){
-						int[] index = new int[] {celltypeIndex};
-						ctModel.addCelltypeVariablesIndex(index);
-					}
-				}
-				// because 1 of numberOfCelltypes + i needs to be skipped,
-				// keeping it tracked with separate value is easier
-				genotypeCounter = getCellCount().getNumberOfCelltypes();
-			}
-			ctModel.setModelLength();
-			if(isBest){
-				setBestCtModel(this.celltypeOfModel.get(modelName), ctModel.getModelName());
-			}
-		}
-	}
-
-
-	/**
-	 * Construct the observed value matrices that are used for calculating the regression for
-	 * all genotype configurations in genotypeConfiguration
-	 */
-	public void createObservedValueMatricesCtModels() 
-			throws IllegalAccessException{
 		for (String genotypeConfiguration : getGenotypeConfigurationsCtModel()){
 			// m = model, there are equally many models as celltypes
-			createObservedValueMatricesCtModel(genotypeConfiguration,false);
+			for (int modelIndex = 0; modelIndex < getCellCount().getNumberOfCelltypes(); modelIndex++) {
+				InteractionModel ctModel = new InteractionModel(getCellCount().getNumberOfSamples(), numberOfTerms);	
+				ctModel.setGenotypeConfiguration(genotypeConfiguration);
+				// calculate p-value and save it, with other information, in a ctModel object. Then, add it to a list of these models to return as decon results
+				String modelName = String.format("%s_%s", getCellCount().getCelltype(modelIndex), genotypeConfiguration);
+				ctModel.setModelName(modelName);
+				celltypeOfModel.put(modelName, getCellCount().getCelltype(modelIndex));
+				addInteractionModel(ctModel,ctModel.getModelName(), false);	
+				for (int sampleIndex = 0; sampleIndex <= getCellCount().getNumberOfSamples()-1; sampleIndex++) {
+					int configurationIndex = 0;
+					for (int celltypeIndex = 0; celltypeIndex < getCellCount().getNumberOfCelltypes(); celltypeIndex++) {
+						// There is one fullModel including all celltypes add values for celltypePerc and interaction term of
+						// celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
+						// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
+						// for each cell type is 1 model, celltype% * genotype without 1 celltype.
+						// j+1 because j==0 is header
+						double celltype_perc = getCellCount().getCellcountPercentages()[sampleIndex][celltypeIndex];
+						ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
+						if(sampleIndex == 0){
+							// add the celltype name at position i so that it gets in front of the celltype:GT, but once
+							try{
+								ctModel.addIndependentVariableName(celltypeIndex, getCellCount().getCelltype(celltypeIndex));
+							}
+							catch(NullPointerException e){
+								DeconvolutionLogger.log.info(String.format("Nullpoint exception with celltype %s", celltypeIndex));
+								throw e;
+							}
+						}
+
+						// if celltypeIndex is the same as m modelIndex, don't add the interaction term of celltype:GT
+						if (celltypeIndex != modelIndex) {
+							// Only add IndependentVariableName once per QTL (j==0)
+							if(sampleIndex == 0){
+
+								// Add the interaction term of celltype:genotype
+								ctModel.addIndependentVariableName(getCellCount().getCelltype(celltypeIndex)+":GT");
+								// save the index of the variables related to current celltype so that this can be used later to calculate
+								// Beta1 celltype% + Beta2 * celltype%:GT. For fullModel not so necesarry as it's always <numberOfCelltypes> away,
+								// but for ctModel this is easiest method
+								int[] index = new int[] {celltypeIndex, getCellCount().getNumberOfCelltypes()-1+celltypeIndex};
+								ctModel.addCelltypeVariablesIndex(index);
+								// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
+								// it is explicit. Don't know if better.
+							}
+							try {
+								double genotype = 0;
+								// because the genotype configuration is of length (number of celltypes - 1), when a model is skipped we need to 
+								// adjust all celltype indices from that point forward
+								char genotypeOrderAtCelltype = genotypeConfiguration.charAt(configurationIndex);
+								configurationIndex++;
+								if(genotypeOrderAtCelltype == '0'){
+									genotype = getGenotypes()[sampleIndex];
+								}
+								else if(genotypeOrderAtCelltype == '1'){
+									genotype = getSwappedGenotypes()[sampleIndex];
+								}
+								else{
+									throw new RuntimeException(String.format("Genotype order should be 0 or 1, was: %s", genotypeOrderAtCelltype));
+								}
+								ctModel.addObservedValue(celltype_perc * genotype, sampleIndex, genotypeCounter);
+
+							} catch (ArrayIndexOutOfBoundsException error) {
+								DeconvolutionLogger.log.info("ERROR: The counts file and expression and/or genotype file do not have equal number of samples or QTLs");
+								throw error;
+							}
+							genotypeCounter++;
+						}
+						// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables
+						else if (sampleIndex == 0){
+							int[] index = new int[] {celltypeIndex};
+							ctModel.addCelltypeVariablesIndex(index);
+						}
+					}
+					// because 1 of numberOfCelltypes + i needs to be skipped,
+					// keeping it tracked with separate value is easier
+					genotypeCounter = getCellCount().getNumberOfCelltypes();
+				}
+				ctModel.setModelLength();
+
+			}
 		}
 	}
-
 }
