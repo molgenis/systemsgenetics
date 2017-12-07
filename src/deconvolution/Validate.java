@@ -88,7 +88,6 @@ public class Validate {
 	private Map<Integer, String> columnIndexes = new HashMap<Integer, String>();
 	private Map<String, HashMap<String, Double>> correlationsPerQTL = new HashMap<String, HashMap<String, Double>>();
 	private ArrayList<ArrayList<String>> validationData = new ArrayList<ArrayList<String>>();
-	private String figuresOutfolder;
 
 	public Validate(){};
 	public Validate( List<DeconvolutionResult> deconvolutionResults , String validationFile, String figuresOutfolder) throws IOException, IllegalAccessException{
@@ -100,7 +99,6 @@ public class Validate {
 		 */
 		this.validationFile = new File(validationFile);
 		this.deconvolutionResults = deconvolutionResults;
-		this.figuresOutfolder = figuresOutfolder;
 		new File(figuresOutfolder).mkdirs();
 		extractCorrelations();
 		significantDeconResults();
@@ -264,8 +262,6 @@ public class Validate {
 					}
 				}
 			}	
-			Plots.boxPlotCorrelations(correlationPerSignificantDecon, correlationPerInsignificantCorrectedDecon, correlationPerSignificantCorrectedUniqueDecon,
-					celltypeDecon, this.figuresOutfolder+celltypeDecon+".png");
 			//System.out.println(celltypeDecon);
 			String celltype = "Neut";
 			System.out.println(celltype);
@@ -275,8 +271,6 @@ public class Validate {
 			System.exit(1);
 			//System.out.println("-------------");
 			//System.out.println("===================");
-			Plots.boxPlotCorrelations(correlationPerSignificantCorrectedDecon, correlationPerInsignificantCorrectedDecon, correlationPerSignificantCorrectedUniqueDecon,
-					celltypeDecon, this.figuresOutfolder+celltypeDecon+"_pvalCorrected.png");
 		}
 	}
 

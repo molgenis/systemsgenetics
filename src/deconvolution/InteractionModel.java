@@ -18,7 +18,6 @@ public class InteractionModel {
 	private List<int[]> celltypeVariablesIndex = new ArrayList <int[]>();
 	private double[][] observedValues;
 	private String modelName;
-	private double[] estimateRegressionParametersStandardErrors;
 	public InteractionModel(){};
 	private String genotypeConfiguration;
 	// initialize with number so that we can test if it has been set
@@ -30,7 +29,6 @@ public class InteractionModel {
 	private double[] estimatedRegressionParameters;
 	private Double AIC;
 	private double[] residuals;
-	private String celltype;
 	
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
@@ -110,15 +108,7 @@ public class InteractionModel {
 	
 	public String getModelName() throws IllegalAccessException{
 	    return(this.modelName);
-	  }
-		
-	public void setEstimateRegressionParametersStandardErrors(double[] estimateRegressionParametersStandardErrors){
-		this.estimateRegressionParametersStandardErrors = estimateRegressionParametersStandardErrors;
-	}
-	public double[] getEstimateRegressionParametersStandardErrors() throws IllegalAccessException{
-		return(this.estimateRegressionParametersStandardErrors);
-	}
-	
+	}	
 	
 	public void emptyObservedValues(){
 		this.observedValues = null;
@@ -183,7 +173,7 @@ public class InteractionModel {
 	}
 	
 	
-	public void setEstimatedRegressionParamters(double[] estimatedRegressionParamters){
+	public void setEstimatedRegressionParameters(double[] estimatedRegressionParamters){
 		this.estimatedRegressionParameters = estimatedRegressionParamters;
 	}
 	
@@ -244,7 +234,7 @@ public class InteractionModel {
 		nnls.solve(a, b);
 		setSumOfSquares(nnls.normsqr);
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
-		setEstimatedRegressionParamters(nnls.x);
+		setEstimatedRegressionParameters(nnls.x);
 		setResiduals(nnls.residuals);
 
 		nnls = null;
@@ -277,6 +267,8 @@ public class InteractionModel {
 		}
 		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
+		setResiduals(regression.estimateResiduals());
+		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
 	}
 
 

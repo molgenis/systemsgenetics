@@ -38,7 +38,7 @@
 //
 //******************************************************************************
 
-package deconvolutionm;
+package deconvolution;
 
 /**
  * Class TooManyIterationsException is an unchecked runtime exception thrown if
@@ -52,6 +52,11 @@ public class TooManyIterationsException
 	{
 
 // Exported constructors.
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1197543784511710098L;
 
 	/**
 	 * Construct a new too-many-iterations exception with no detail message and

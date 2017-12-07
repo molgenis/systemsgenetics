@@ -499,7 +499,6 @@ public class Deconvolution {
 		DeconvolutionResult deconResult =  new DeconvolutionResult();
 		interactionModelCollection.setAIC();
 		deconResult = new DeconvolutionResult(interactionModelCollection, wholeBloodQTL, wholeBloodQTLpvalue);
-
 		return deconResult;
 	}
 

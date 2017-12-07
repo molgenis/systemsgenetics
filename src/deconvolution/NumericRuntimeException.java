@@ -54,6 +54,11 @@ public class NumericRuntimeException
 // Exported constructors.
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4282166190962135014L;
+
+	/**
 	 * Construct a new numeric runtime exception with no detail message and no
 	 * cause.
 	 */

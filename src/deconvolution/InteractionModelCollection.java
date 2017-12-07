@@ -34,7 +34,7 @@ public class InteractionModelCollection {
 	private HashMap<String, String> ctModelsSameGenotypeConfigurationBestFullModel = new HashMap<String, String>();
 	private HashMap<String, String> modelCelltype = new HashMap<String, String>();
 	private HashMap<String, ArrayList<String>> genotypeConfigMap = new HashMap<String, ArrayList<String>>();
-	
+
 	/*
 	 * Have to initialize instance with if NNLS or OLS will be used, and for that we need cellCounts
 	 */
@@ -274,7 +274,6 @@ public class InteractionModelCollection {
 
 				if (sumOfSquares == -1){
 					sumOfSquares = ctModel.getSumOfSquares();
-
 					setBestCtModel(this.celltypeOfModel.get(modelName), ctModel.getModelName());
 				}
 				setCtModelByGenotypeConfiguration();
@@ -303,10 +302,6 @@ public class InteractionModelCollection {
 		if(getUseNNLS()){
 			// if we use NNLS we need to see what genotype configuration works best, so get configuration permutations for all celltypes
 			this.genotypeConfigurationsFullModel = Utils.binaryPermutations("",getCellCount().getAllCelltypes().size(), new ArrayList<String>());
-			//			for(String configuration : genotypeConfigurationsFullModel){
-			//				System.out.println(configuration);
-			//			}
-			//			System.exit(0);
 			for(String genotypeConfiguration : genotypeConfigurationsFullModel){
 				genotypeConfigMap.putIfAbsent(genotypeConfiguration, new ArrayList<String>());
 				for(int i = 0; i < genotypeConfiguration.length()-1; i++){
@@ -322,8 +317,14 @@ public class InteractionModelCollection {
 			this.genotypeConfigurationsCtModel = Utils.binaryPermutations("",getCellCount().getAllCelltypes().size()-1, new ArrayList<String>());
 		}else{
 			// if we use OLS we just use default genotype orientation (all 0's)
-			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(getCellCount().getAllCelltypes().size(), "0")));
-			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(getCellCount().getAllCelltypes().size()-1, "0")));
+			String fullModelGenotypeConfiguration = String.join("", Collections.nCopies(getCellCount().getAllCelltypes().size(), "0"));
+			this.genotypeConfigurationsFullModel.add(fullModelGenotypeConfiguration);
+			String ctModelGenotypeConfiguration = String.join("", Collections.nCopies(getCellCount().getAllCelltypes().size()-1, "0"));
+			this.genotypeConfigurationsCtModel.add(ctModelGenotypeConfiguration);
+			genotypeConfigMap.putIfAbsent(fullModelGenotypeConfiguration, new ArrayList<String>());
+			for(int i = 0; i < ctModelGenotypeConfiguration.length(); i++){
+				genotypeConfigMap.get(fullModelGenotypeConfiguration).add(this.getCellCount().getCelltype(i)+"_"+ctModelGenotypeConfiguration);
+			}
 		}
 	}
 	private ArrayList<String> getGenotypeConfigurationsFullModel() throws IllegalAccessException{
@@ -402,9 +403,9 @@ public class InteractionModelCollection {
 		InteractionModel bestFullModel = this.getBestFullModel();
 		String bestFullModelgenotypeConfiguration = bestFullModel.getGenotypeConfiguration();
 		HashMap<String, String> cellTypeCtModelName = new HashMap<String, String>();
-			for(String ctModelName : genotypeConfigMap.get(bestFullModelgenotypeConfiguration)){
-				cellTypeCtModelName.put(ctModelName.split("_")[0], ctModelName);
-				ctModelByGenotypeConfiguration.putIfAbsent(bestFullModelgenotypeConfiguration, cellTypeCtModelName);			
+		for(String ctModelName : genotypeConfigMap.get(bestFullModelgenotypeConfiguration)){
+			cellTypeCtModelName.put(ctModelName.split("_")[0], ctModelName);
+			ctModelByGenotypeConfiguration.putIfAbsent(bestFullModelgenotypeConfiguration, cellTypeCtModelName);			
 		}
 	}
 
