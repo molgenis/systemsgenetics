@@ -322,7 +322,7 @@ public class InteractionModelCollection {
 			String ctModelGenotypeConfiguration = String.join("", Collections.nCopies(getCellCount().getAllCelltypes().size()-1, "0"));
 			this.genotypeConfigurationsCtModel.add(ctModelGenotypeConfiguration);
 			genotypeConfigMap.putIfAbsent(fullModelGenotypeConfiguration, new ArrayList<String>());
-			for(int i = 0; i < ctModelGenotypeConfiguration.length(); i++){
+			for(int i = 0; i < this.getCellCount().getNumberOfCelltypes(); i++){
 				genotypeConfigMap.get(fullModelGenotypeConfiguration).add(this.getCellCount().getCelltype(i)+"_"+ctModelGenotypeConfiguration);
 			}
 		}
