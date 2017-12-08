@@ -121,7 +121,7 @@ public class InteractionModel {
 		return this.pvalue;
 	}
 	public void setAlltIndependentVariableNames(List<String> list){
-		for (int celltypeIndex = 0; celltypeIndex < list.size(); celltypeIndex++) {
+		for (int celltypeIndex = 0; celltypeIndex < list.size(); ++celltypeIndex) {
 			int[] index = new int[] {celltypeIndex, list.size() + celltypeIndex};
 			addCelltypeVariablesIndex(index);
 			addIndependentVariableName(celltypeIndex, list.get(celltypeIndex));
@@ -206,38 +206,17 @@ public class InteractionModel {
 	 *  @return An nnls object
 	 */
 	public void calculateSumOfSquaresNNLS(double[] expressionValues) throws IOException, IllegalAccessException {
-		// Use clone for a and b because the solve() method changes the matrix in place, want to keep the original values
-		/*
-		 * The MxN-element A matrix for the least squares
-		 * problem. On input to the solve() method, a contains the
-		 * matrix A. On output, a has been replaced with QA,
-		 * where Q is an MxM-element orthogonal matrix
-		 * generated during the solve() method's execution.
-		 */
-		double[][] a = this.observedValues;
-		if(a == null){
-			throw new RuntimeException("this.observedValues should not be null");
-		}
-		/*
-		 * The M-element b vector for the least squares problem. On
-		 * input to the solve() method, b contains the vector
-		 * b. On output, b has been replaced with Qb, where
-		 * Q is an MxM-element orthogonal matrix generated
-		 * during the solve() method's execution.
-		*/
-		double[] b = expressionValues.clone();
 		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares(getModelLength(), getNumberOfTerms());
 		// results contain:
 		// normsqr: sqroot of the norm error vector
 		// x: the parameters
 		// For more, check out the Class documentation
-		nnls.solve(a, b);
+		nnls.solve(this.observedValues, expressionValues);
 		setSumOfSquares(nnls.normsqr);
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
 		setEstimatedRegressionParameters(nnls.x);
-		setResiduals(nnls.residuals);
-
-		nnls = null;
+		double[] residuals = Statistics.calculateResiduals(observedValues, expressionValues, nnls.x);
+		setResiduals(residuals);
 	}
 	
 	/**
