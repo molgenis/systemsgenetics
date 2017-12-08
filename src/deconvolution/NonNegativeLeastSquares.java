@@ -47,7 +47,12 @@ package deconvolution;
  * from: https://www.cs.rit.edu/~ark/pj.shtml#download
  * Manual: https://www.cs.rit.edu/~ark/pj/doc/edu/rit/numeric/NonNegativeLeastSquares.html
  * 
- * I only made very minor adjustments for inputting data to solve() method.
+ * I made some adjustments for inputting data to solve() method and outputting some other data.
+ * Most important change: original code replaces the A matrix and b vector given as input
+ * to the solve() method by their orthogonals (see solve() documentation). However, here
+ * they get cloned first, so that the input data given to solve() keeps its original values.
+ * This is because I do not use the orthogonal data outside of this class, and I do want to
+ * keep my original values.
  * 
  * Class NonNegativeLeastSquares provides a method for solving a least squares
  * minimization problem with nonnegativity constraints. The solve()
@@ -83,13 +88,6 @@ public class NonNegativeLeastSquares
 	 */
 	public final int N;
 
-	/**
-	 * The residual vector of b, Qb, where
-	 * Q is an MxM-element orthogonal matrix generated
-	 * during the solve() method's execution.
-	 */
-	public double[] residuals;
-	
 	/**
 	 * The N-element x vector for the least squares problem. On
 	 * output from the solve() method, x contains the solution
@@ -192,14 +190,14 @@ public class NonNegativeLeastSquares
 	 * the documentation for each field.
 	 * 
 	 * The MxN-element A matrix for the least squares
-	 * problem. On input to the solve() method, a contains the
-	 * matrix A. On output, a has been replaced with QA,
+	 * problem. On input to the solve() method, originalA contains the
+	 * matrix A. On output, originalA is cloned into a. a has been replaced with QA,
 	 * where Q is an MxM-element orthogonal matrix
 	 * generated during the solve() method's execution.
 	 *
 	 * The M-element b vector for the least squares problem. On
-	 * input to the solve() method, b contains the vector
-	 * b. On output, b has been replaced with Qb, where
+	 * input to the solve() method, originalB contains the vector
+	 * b. On output, originalB is cloned into b. b has been replaced with Qb, where
 	 * Q is an MxM-element orthogonal matrix generated
 	 * during the solve() method's execution.
 	 *
@@ -211,8 +209,12 @@ public class NonNegativeLeastSquares
 		{
 		int i, iz, j, l, izmax, jz, jj, ip, ii;
 		double sm, wmax, asave, unorm, ztest, up, alpha, t, cc, ss, temp;
+		
+		// cloning originalA and originalB so that those values are kept for later use
 		double[] b = originalB.clone();
-		double[][] a = originalA.clone();
+		double[][] a = new double[originalA.length][];
+		for(int z = 0; z < originalA.length; ++z)
+		    a[z] = originalA[z].clone();
 		// Keep count of iterations.
 		int iter = 0;
 
@@ -464,13 +466,9 @@ public class NonNegativeLeastSquares
 			}
 		// Compute the squared Euclidean norm of the final residual vector.
 		normsqr = 0.0;
-		int x = 0;
-		residuals = new double[M-nsetp];
 		for (i = nsetp; i < M; ++ i)
 		{	
 			normsqr += sqr (b[i]);
-			residuals[x] = b[i];
-			x++;
 		}
 	}
 
