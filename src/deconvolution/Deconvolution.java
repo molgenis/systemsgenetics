@@ -100,16 +100,16 @@ public class Deconvolution {
 					long completedIn = System.currentTimeMillis() - time;
 					DeconvolutionLogger.log.info(String.format("Processed %d gene-SNP pairs - %s - skipped %d gene-SNP combinations", whileIndex, DurationFormatUtils.formatDuration(completedIn, "HH:mm:ss:SS"), skippedGenotypeGeneCombinations));
 				}
-				whileIndex++;
+				++whileIndex;
 				String qtlName = gene+'_'+genotype;
 				try{
-					QTLsTotal++;
+					++QTLsTotal;
 					try{
 						deconvolutionResults.add(deconvolution(geneExpressionLevels.get(gene), genotypeData.getGenotypes().get(genotype), qtlName));
 					}
 					catch(IllegalAccessException e){
 						if(commandLineOptions.getSkipGenotypes()){
-							skippedGenotypeGeneCombinations++;
+							++skippedGenotypeGeneCombinations;
 							continue;
 						}
 						else{
@@ -132,7 +132,7 @@ public class Deconvolution {
 						deconvolutionResults.add(setPvaluesNA(qtlName));
 					}
 					else{
-						QTLsFiltered++;
+						++QTLsFiltered;
 					}
 					filteredQTLsOutput.add(qtlName+"\tNot enough genotypes (e.g. AA and AB but no BB)");
 				}
@@ -141,7 +141,7 @@ public class Deconvolution {
 						deconvolutionResults.add(setPvaluesNA(qtlName));
 					}
 					else{
-						QTLsFiltered++;
+						++QTLsFiltered;
 					}
 					filteredQTLsOutput.add(qtlName+"\tNot enough samples per genotype");
 				}
@@ -172,7 +172,7 @@ public class Deconvolution {
 		// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
 		InteractionModelCollection firstInteractionModelCollection = deconvolutionResults.get(0).getInteractionModelCollection();
 		InteractionModel bestFullModelForHeaderOnly = firstInteractionModelCollection.getBestFullModel();
-		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
+		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; ++i){
 			try{
 				header += "\tBeta" + Integer.toString(i) +"_"+bestFullModelForHeaderOnly.getIndependentVariableNames().get(i-1);
 			}
@@ -184,14 +184,14 @@ public class Deconvolution {
 		for(String celltype : cellCounts.getAllCelltypes()){
 			header += "\teffectDirectionDosage2_"+celltype;
 		}
-		header += "\tgenotypeConfiguration";
-		for(String celltype : cellCounts.getAllCelltypes()){
-			header += "\tgenotypeConfiguration_"+celltype;
-		}
+		//header += "\tgenotypeConfiguration";
+		//for(String celltype : cellCounts.getAllCelltypes()){
+		//	header += "\tgenotypeConfiguration_"+celltype;
+		//}
 
 		// TODO: Don't know how to get standard error for NNLS so I removed this for now, also we didnt really use the error.
 		// 		 but want to leave it here incase I will use it later
-		//for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; i++){
+		//for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; ++i){
 		//	header += "\tBetaStandardError" + Integer.toString(i); 
 		//}
 
@@ -199,18 +199,16 @@ public class Deconvolution {
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
 
-		if(commandLineOptions.getUseNNLS()){
-			header += "\tAIC_fullModel";
-			for(String celltype : cellCounts.getAllCelltypes()){
-				header += "\tAIC_"+celltype;
-			}
+		header += "\tAIC_fullModel";
+		for(String celltype : cellCounts.getAllCelltypes()){
+			header += "\tAIC_diff_"+celltype;
 		}
 		output.add(header);
 		for(DeconvolutionResult deconvolutionResult : deconvolutionResults){
 			InteractionModel bestFullModel = deconvolutionResult.getInteractionModelCollection().getBestFullModel();
 			if(commandLineOptions.getOnlyOutputSignificant() && commandLineOptions.getFilterSamples()){
 				if(Collections.min(deconvolutionResult.getPvalues()) > 0.05){
-					QTLsFiltered++;
+					++QTLsFiltered;
 					filteredQTLsOutput.add(deconvolutionResult.getQtlName()+"\tNone of the celltypes had a significant p-value");
 					continue;
 				}
@@ -232,7 +230,7 @@ public class Deconvolution {
 			// If genotype configuration == 0 and beta == positive, dosage2 effect = positive
 			// If genotype configuration == 1 and beta == negative, dosage2 effect = positive
 			// else is negative
-			for(int i = 0; i < cellCounts.getNumberOfCelltypes(); i++){
+			for(int i = 0; i < cellCounts.getNumberOfCelltypes(); ++i){
 				char genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(i);
 				if (genotypeConfiguration == '0'){
 					// add cellCounts.getNumberOfCelltypes() to get the regression parameter for the interaction term (first ones are indepent effect betas)
@@ -256,25 +254,24 @@ public class Deconvolution {
 
 			}
 
-			results += "\t"+bestFullModel.getGenotypeConfiguration();
-			for(String celltype : cellCounts.getAllCelltypes()){
-				InteractionModel bestCtModel = deconvolutionResult.getInteractionModelCollection().getBestCtModel(celltype); 
-				results += "\t"+bestCtModel.getGenotypeConfiguration();
-			}
+			//results += "\t"+bestFullModel.getGenotypeConfiguration();
+			//for(String celltype : cellCounts.getAllCelltypes()){
+			//	InteractionModel bestCtModel = deconvolutionResult.getInteractionModelCollection().getBestCtModel(celltype); 
+			//	results += "\t"+bestCtModel.getGenotypeConfiguration();
+			//}
 			if(commandLineOptions.getWholeBloodQTL()){
 				results += "\t"+deconvolutionResult.getWholeBloodQTL();
 				results += "\t"+deconvolutionResult.getWholeBloodQTLpvalue();
 			}
-
-			if(commandLineOptions.getUseNNLS()){
-				results += "\t"+bestFullModel.getAIC();
-				for(String celltype : cellCounts.getAllCelltypes()){
-					//System.out.println(celltype);
-					String modelName = deconvolutionResult.getInteractionModelCollection().getCtModelSameGenotypeConfigurationAsBestFullModel(celltype);
-					//System.out.println(modelName);
-					results += "\t"+deconvolutionResult.getInteractionModelCollection().getCtModelAIC(modelName);
-					
-				}
+			
+			double bestFullModelAIC = bestFullModel.getAIC();
+			results += "\t"+bestFullModelAIC;
+			for(String celltype : cellCounts.getAllCelltypes()){
+				//System.out.println(celltype);
+				String modelName = deconvolutionResult.getInteractionModelCollection().getCtModelSameGenotypeConfigurationAsBestFullModel(celltype);
+				double ctModelAIC = deconvolutionResult.getInteractionModelCollection().getCtModelAIC(modelName);
+				double ctModelDifferenceInAIC = bestFullModelAIC - ctModelAIC; 
+				results += "\t"+ctModelDifferenceInAIC;
 			}
 
 			output.add(results);	
@@ -291,7 +288,7 @@ public class Deconvolution {
 	 */
 	private static DeconvolutionResult setPvaluesNA(String qtlName) throws IllegalAccessException{
 		List<Double> pvalues = new ArrayList<Double>();
-		for (int i = 0; i < cellCounts.getNumberOfCelltypes(); i++){
+		for (int i = 0; i < cellCounts.getNumberOfCelltypes(); ++i){
 			pvalues.add(333.0);
 		}
 		InteractionModel dummyModel = new InteractionModel();
@@ -341,8 +338,8 @@ public class Deconvolution {
 			int degreesOfFreedomB, Boolean no_intercept) {
 		if (no_intercept) {
 			// removing the intercept will give another degree of freedom
-			degreesOfFreedomA++;
-			degreesOfFreedomB++;
+			++degreesOfFreedomA;
+			++degreesOfFreedomB;
 		}
 		// Within-group Variance
 		double meanSquareError = sumOfSquaresModelA / degreesOfFreedomA;
@@ -373,10 +370,6 @@ public class Deconvolution {
 		FDistribution Fdist = new FDistribution(degreesOfFreedomDifference, degreesOfFreedomB);
 		/*** Calculate 1 - the probability of observing a lower Fvalue **/
 		double pval = 1 - Fdist.cumulative(Fval);
-		//if(pval > 0.99999){
-		//	System.out.println(String.format("sumOfSquaresModelA: %f\nsumOfSquaresModelB: %f\ndegreesOfFreedomA: %d\ndegreesOfFreedomB: %d", 
-		//			sumOfSquaresModelA, sumOfSquaresModelB, degreesOfFreedomA, degreesOfFreedomB));
-		//}
 		return (pval);
 	}
 
@@ -425,7 +418,7 @@ public class Deconvolution {
 			int dosage_ref = 0;
 			int dosage_heterozygote = 0;
 			int dosage_alt = 0;
-			for (int i = 0; i < genotypes.length; i++) {
+			for (int i = 0; i < genotypes.length; ++i) {
 				if (commandLineOptions.getRoundDosage()){
 					genotypes[i] = Math.round(genotypes[i]);
 				}
@@ -434,13 +427,13 @@ public class Deconvolution {
 						throw new RuntimeException("Genotype dosage can not be negative, check your dosage input file");
 					}
 					if(genotypes[i] < 0.5){
-						dosage_ref++;
+						++dosage_ref;
 					}
 					else if(genotypes[i] < 1.5){
-						dosage_heterozygote++;
+						++dosage_heterozygote;
 					}
 					else if (genotypes[i] <= 2){
-						dosage_alt++;
+						++dosage_alt;
 					}
 					else{
 						throw new RuntimeException("Genotype dosage can not be larger than 2, check your dosage input file");
@@ -513,7 +506,7 @@ public class Deconvolution {
 	 */
 	private static void calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection) 
 			throws IllegalAccessException, IOException {
-		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); modelIndex++) {
+		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); ++modelIndex) {
 			InteractionModel fullModel = interactionModelCollection.getBestFullModel();
 
 			int expressionLength = interactionModelCollection.getExpessionValues().length;
