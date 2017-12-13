@@ -250,8 +250,6 @@ public class MetaQTL3 {
 			pathwayDefinitions = null;
 		}
 		
-		// if we've got a batch id set, and a batch size, split the phenotype data
-		
 		
 		for (int i = 0; i < numDatasets; i++) {
 			System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
@@ -283,6 +281,7 @@ public class MetaQTL3 {
 			m_gg = tmp_gg;
 		}
 		
+		// rank and normalize data
 		for (int i = 0; i < numDatasets; i++) {
 			if (!m_settings.performParametricAnalysis) {
 				m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
@@ -299,14 +298,21 @@ public class MetaQTL3 {
 			}
 			EQTLRegression eqr = new EQTLRegression();
 			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectsSaveOutput, m_gg);
+			
+			// shouldn't we re-rank?
+			for (int i = 0; i < numDatasets; i++) {
+				if (!m_settings.performParametricAnalysis) {
+					m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
+				}
+				m_gg[i].getExpressionData().calcAndSubtractMean();
+				m_gg[i].getExpressionData().calcMeanAndVariance();
+				numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
+			}
 		}
 		
 		System.out.println(ConsoleGUIElems.LINE);
 		System.out.println("");
 		
-		// sort datasets on size to increase efficiency of random reads..
-		// for some reason, it is faster to load the largest dataset first.
-		Arrays.sort(m_gg, Collections.reverseOrder());
 		
 		System.out.println("Accumulating available data...");
 		System.out.print(ConsoleGUIElems.LINE);
@@ -325,7 +331,7 @@ public class MetaQTL3 {
 			System.err.println("Error: No work detected");
 			System.exit(0);
 		}
-		
+
 //		// determine number of threads
 		if (m_settings.nrThreads == null) {
 			m_settings.nrThreads = Runtime.getRuntime().availableProcessors();
@@ -978,9 +984,8 @@ public class MetaQTL3 {
 			snploaders[d].close();
 		}
 		
-		//This should happen outside of the mapEQTLs. This porbably helps the GC to clean up un necessary stuff.
-		//Without the need of foced GC.
-		if (!m_settings.runOnlyPermutations && hasResults) {
+		
+		if (!m_settings.skipFDRCalculation || (!m_settings.runOnlyPermutations && hasResults)) {
 			if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
 				System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
 				FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType, m_settings.fullFdrOutput);
@@ -996,7 +1001,18 @@ public class MetaQTL3 {
 				}
 				
 			}
+		} else {
+			String reason = "";
+			if (m_settings.skipFDRCalculation) {
+				reason = "Defined in settings.";
+			} else if (m_settings.runOnlyPermutations) {
+				reason = "Only running permutations.";
+			} else if (!hasResults) {
+				reason = "No results for QTL mapping.";
+			}
+			System.out.println("Skipping FDR calculation. Reason: " + reason);
 		}
+		
 		
 		System.out.print(ConsoleGUIElems.DOUBLELINE);
 		

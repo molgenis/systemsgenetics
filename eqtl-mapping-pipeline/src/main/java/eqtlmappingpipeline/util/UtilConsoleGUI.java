@@ -32,7 +32,7 @@ public class UtilConsoleGUI {
 		
 		GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
 		SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
-		ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITTT, SPLITPHENO
+		ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITTT, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO
 	}
 	
 	;
@@ -101,6 +101,10 @@ public class UtilConsoleGUI {
 			if (arg.equals("--convertbinarymatrix")) {
 				region = val;
 				run = MODE.CONVERTBINARYMATRIX;
+			} else if (arg.equals("--eqtmlink")) {
+				run = MODE.EQTLEQTMLINK;
+			} else if (arg.equals("--mergeqtlfile")) {
+				run = MODE.QTLFILEMERGE;
 			} else if (arg.equals("--splitpheno")) {
 				run = MODE.SPLITPHENO;
 			} else if (arg.equals("--splitTT")) {
@@ -316,7 +320,22 @@ public class UtilConsoleGUI {
 							}
 						}
 						break;
-					
+					case QTLFILEMERGE:
+						if (in == null || out == null || nreqtls == null) {
+							System.out.println("USAGE: --in eQTLFile --out eQTLFile --nreqtls nr eqtls");
+						} else {
+							QTLFileMerger m = new QTLFileMerger();
+							m.mergeChr(in, out, nreqtls);
+						}
+						break;
+					case EQTLEQTMLINK:
+						if (in == null || out == null || in2 == null) {
+							System.out.println("USAGE: --in eQTLFile --in2 eqtmfile --out directory");
+						} else {
+							EQTMGeneLinker l = new EQTMGeneLinker();
+							l.link(in, in2, out);
+						}
+						break;
 					case SORTFILE:
 						if (in == null) {
 							System.out.println("USAGE: --in eQTLFile --out eQTLFile");
@@ -537,7 +556,9 @@ public class UtilConsoleGUI {
 				+ "--convertbinarymatrix\t\tConverts binary matrix to text\n"
 				+ "--filterpheno\t\tFilters phenotype file for sample list\n"
 				+ "--splitpheno\t\tSplits phenotype file by chromosome\n"
-				+ "--splitTT\t\tSplit trityper folder into chromosome chunks\n");
+				+ "--splitTT\t\tSplit trityper folder into chromosome chunks\n"
+				+ "--mergeqtlfile\t\tMerge QTL files (and sort them)\n"
+				+ "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n");
 		System.out.println("");
 
 //        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);

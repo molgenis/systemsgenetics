@@ -93,6 +93,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public Integer batchsize;
 	public boolean displayWarnings = true;
 	public int numberOfVariantsToBuffer = 1000;
+	public boolean skipFDRCalculation = false;
 	
 	public Settings() {
 	}
@@ -328,6 +329,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		}
 		if (correctiontype != null) {
 		} else {
+		}
+		
+		// skipFDRCalculation
+		try {
+			skipFDRCalculation = config.getBoolean("defaults.multipletesting.skipFDRCalculation", false);
+		} catch (Exception e) {
 		}
 		
 		try {

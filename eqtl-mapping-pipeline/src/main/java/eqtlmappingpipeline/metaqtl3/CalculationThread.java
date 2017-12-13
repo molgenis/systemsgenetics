@@ -346,6 +346,7 @@ class CalculationThread extends Thread {
     protected static void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r, WorkPackage wp, boolean metaAnalyseModelCorrelationYHat, boolean metaAnalyseInteractionTerms, boolean determinefoldchange) {
         final double[] y;
         double[][] covariates = covariateRawData;
+        
         if (x.length != sampleCount) {
             y = new double[x.length];
             int itr = 0;
@@ -389,6 +390,8 @@ class CalculationThread extends Thread {
             y = new double[x.length];
             System.arraycopy(rawData[probeId], 0, y, 0, x.length);
         }
+        
+        
         double meanX = JSci.maths.ArrayMath.mean(x);
         if(meanY > 0.000000001d || meanY < -0.00000001d || meanX > 0.000000001d || meanX < -0.00000001d){
             

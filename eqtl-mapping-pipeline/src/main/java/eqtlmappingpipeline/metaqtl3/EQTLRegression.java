@@ -445,6 +445,7 @@ public class EQTLRegression {
         }
 
         for (int ds = 0; ds < gg.length; ds++) {
+//            gg[ds].getExpressionData().calcMeanAndVariance();
             ggSNPLoaders[ds].close();
             ggSNPLoaders[ds] = null;
         }
