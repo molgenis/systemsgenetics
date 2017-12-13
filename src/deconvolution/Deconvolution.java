@@ -205,7 +205,8 @@ public class Deconvolution {
 		}
 		output.add(header);
 		for(DeconvolutionResult deconvolutionResult : deconvolutionResults){
-			InteractionModel bestFullModel = deconvolutionResult.getInteractionModelCollection().getBestFullModel();
+			InteractionModelCollection interationModelCollection = deconvolutionResult.getInteractionModelCollection();
+			InteractionModel bestFullModel = interationModelCollection.getBestFullModel();
 			if(commandLineOptions.getOnlyOutputSignificant() && commandLineOptions.getFilterSamples()){
 				if(Collections.min(deconvolutionResult.getPvalues()) > 0.05){
 					++QTLsFiltered;
@@ -269,9 +270,7 @@ public class Deconvolution {
 			for(String celltype : cellCounts.getAllCelltypes()){
 				//System.out.println(celltype);
 				String modelName = deconvolutionResult.getInteractionModelCollection().getCtModelSameGenotypeConfigurationAsBestFullModel(celltype);
-				double ctModelAIC = deconvolutionResult.getInteractionModelCollection().getCtModelAIC(modelName);
-				double ctModelDifferenceInAIC = bestFullModelAIC - ctModelAIC; 
-				results += "\t"+ctModelDifferenceInAIC;
+				results += "\t"+interationModelCollection.getInteractionModel(modelName).getAICdelta();
 			}
 
 			output.add(results);	

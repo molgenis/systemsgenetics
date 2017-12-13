@@ -206,14 +206,16 @@ public class InteractionModelCollection {
 	}
 
 	public void setAIC() throws IllegalAccessException{
-		getBestFullModel().setAIC();
-		this.fullModelAIC = getBestFullModel().getAIC();
-		HashMap<String, String> cellTypeCtModel = getCtModelsWithConfiguration(getBestFullModel().getGenotypeConfiguration());
+		InteractionModel bestFullModel = getBestFullModel();
+		bestFullModel.setAIC();
+		this.fullModelAIC = bestFullModel.getAIC();
+		HashMap<String, String> cellTypeCtModel = getCtModelsWithConfiguration(bestFullModel.getGenotypeConfiguration());
 		for(String celltype : cellTypeCtModel.keySet()){
 			String modelName = cellTypeCtModel.get(celltype);
 			InteractionModel ctModel = this.getInteractionModel(modelName);
 			ctModel.setAIC();
 			this.ctModelAICs.put(modelName,ctModel.getAIC());
+			ctModel.setAICdelta(bestFullModel.getAIC());
 		}
 	}
 

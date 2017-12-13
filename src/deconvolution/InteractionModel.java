@@ -29,6 +29,7 @@ public class InteractionModel {
 	private double[] estimatedRegressionParameters;
 	private Double AIC;
 	private double[] residuals;
+	private double AICdelta;
 	
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
@@ -250,6 +251,11 @@ public class InteractionModel {
 		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
 	}
 
-
+	public void setAICdelta(double comparativeAIC) {
+		this.AICdelta = this.getAIC() - comparativeAIC;
+	}
+	public double getAICdelta() {
+		return this.AICdelta;
+	}
 }
 
