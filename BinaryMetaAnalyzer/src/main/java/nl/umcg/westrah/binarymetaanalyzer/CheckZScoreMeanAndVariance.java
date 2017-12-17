@@ -78,7 +78,16 @@ public class CheckZScoreMeanAndVariance {
 			System.out.println(zmatfileloc + " parsing");
 			TextFile tf = new TextFile(zmatfileloc, TextFile.R);
 			String[] headerIn = tf.readLineElems(TextFile.tab);
-			int nrsnps = tf.countLines();
+			String ln = tf.readLine();
+			int nrsnps = 0;
+			while (ln != null) {
+				nrsnps++;
+				if (nrsnps % 10 == 0) {
+					System.out.print("\r" + nrsnps + " lines read");
+				}
+				ln = tf.readLine();
+			}
+			System.out.println();
 			tf.close();
 			tf.open();
 			tf.readLine();

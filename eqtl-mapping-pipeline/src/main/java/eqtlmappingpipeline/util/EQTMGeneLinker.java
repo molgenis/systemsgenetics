@@ -21,18 +21,24 @@ public class EQTMGeneLinker {
 		
 		EQTMGeneLinker l = new EQTMGeneLinker();
 		String eqtl = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\eQTLsFDR0.05-PrunedLevel_2CohortFilter_ParalogueFilter_20171204.txt.gz";
+		eqtl = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\eQTLsFDR0.05-PrunedLevel_2CohortFilter_20170925.txt.gz";
+		
 		String eqtm = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\eQTM\\cis-eQTM250k\\eQTLsFDR0.05-ProbeLevel.txt";
 //		String outlink = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\eQTM\\linksWithEQTL250k\\";
 		String outlink = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\eQTM\\linksWithEQTL\\";
 		
-		String meqtl = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\trans250k\\eQTLsFDR-ProbeLevel.txt.gz";
-		String compout = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\trans250k\\eqtlcompare\\All";
+		String meqtl = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\trans250k\\eQTLsFDR0.05-ProbeLevel.txt";
+		String compout = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\trans250k\\eqtlcompare\\FDR005";
 		
+		String truepositivesAndNegatives = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\2017-11-14-TP - TN Set - v2.txt";
 		try {
 //			l.link(eqtl, eqtm, outlink);
 			
-			
-			l.compare2(eqtl, eqtm, meqtl, compout);
+			String outdir = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\";
+			meqtl = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\transtp\\eQTLsFDR0.05-ProbeLevel.txt";
+			l.compareTP(eqtm, meqtl, truepositivesAndNegatives, outdir);
+			compout = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\FDR005";
+			l.compare2(eqtl, eqtm, meqtl, truepositivesAndNegatives, compout);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
@@ -40,7 +46,136 @@ public class EQTMGeneLinker {
 		}
 	}
 	
-	private void compare2(String eqtlfile, String eqtmfile, String meqtlfile, String compout) throws Exception {
+	private void compareTP(String eqtmfile, String meqtlfile, String tpAndTn, String out) throws IOException {
+		ArrayList<EQTL> tp = new ArrayList<EQTL>();
+		ArrayList<EQTL> tn = new ArrayList<EQTL>();
+		
+		
+		TextFile tf = new TextFile(tpAndTn, TextFile.R);
+		tf.readLine();
+		String[] elems = tf.readLineElems(TextFile.tab);
+		
+		while (elems != null) {
+			String tps = elems[0];
+			String snp = elems[1];
+			String gene = elems[2];
+			
+			EQTL e = new EQTL();
+			e.setRsName(snp);
+			e.setProbe(gene);
+			if (tps.equals("TP")) {
+				tp.add(e);
+			} else {
+				tn.add(e);
+			}
+			
+			
+			elems = tf.readLineElems(TextFile.tab);
+		}
+		tf.close();
+		
+		System.out.println(tp.size() + " TP");
+		System.out.println(tn.size() + " TN");
+		
+		QTLTextFile f = new QTLTextFile(eqtmfile, QTLTextFile.R);
+		ArrayList<EQTL> eqtm = f.readList();
+		f.close();
+		System.out.println(eqtm.size() + " eQTM ");
+		
+		f = new QTLTextFile(meqtlfile, QTLTextFile.R);
+		ArrayList<EQTL> meqtl = f.readList();
+		f.close();
+		System.out.println(meqtl.size() + " meQTL");
+		TextFile tpout = new TextFile(out + "combos-tp.txt", TextFile.W);
+		TextFile tnout = new TextFile(out + "combos-tn.txt", TextFile.W);
+		TextFile tpandtnout = new TextFile(out + "combos-tnplustp.txt", TextFile.W);
+		
+		for (int q = 0; q < 2; q++) {
+			ArrayList<EQTL> eqtl;
+			int ctrmeqtl = 0;
+			int ctreqtm = 0;
+			int ctrmeqtlsignificant = 0;
+			if (q == 0) {
+				eqtl = tp;
+			} else {
+				eqtl = tn;
+			}
+			
+			int qtlctr = 0;
+			
+			for (EQTL e : eqtl) {
+				
+				// link to eQTM
+				EQTL maxeqtm = null;
+				double minp = 2;
+				for (EQTL m : eqtm) {
+					if (e.getProbe().equals(m.getProbe())) {
+						if (m.getPvalue() < minp) {
+							minp = m.getPvalue();
+							maxeqtm = m;
+							
+						}
+					}
+				}
+				
+				EQTL maxmeqtl = null;
+				if (maxeqtm != null) {
+					ctreqtm++;
+					double minmeqtlpval = 2;
+					for (EQTL m : meqtl) {
+						String esnp = e.getRsName();
+						String mesnp = m.getRsName();
+						String meCG = m.getProbe();
+						String eqtmCG = maxeqtm.getRsName();
+						if (esnp.equals(mesnp)) {
+							if (meCG.equals(eqtmCG)) {
+								if (m.getPvalue() < minmeqtlpval) {
+									minmeqtlpval = m.getPvalue();
+									maxmeqtl = m;
+								}
+							}
+						}
+					}
+					if (q == 0) {
+						tpout.writeln(e.getRsName() + "\t" + maxeqtm.getRsName());
+					} else {
+						tnout.writeln(e.getRsName() + "\t" + maxeqtm.getRsName());
+					}
+					tpandtnout.writeln(e.getRsName() + "\t" + maxeqtm.getRsName());
+				}
+				
+				
+				// prepare output
+				if (maxmeqtl != null) {
+					ctrmeqtl++;
+					if (maxmeqtl.getFDR() < 0.05) {
+						ctrmeqtlsignificant++;
+					}
+					
+				}
+				
+				qtlctr++;
+				System.out.print("\r" + qtlctr + "/" + eqtl.size());
+				
+			}
+			
+			System.out.println();
+			if (q == 0) {
+				System.out.println("TP: " + tp.size() + "\teqtm: " + ctreqtm + "\tmeqtl: " + ctrmeqtl + "\tsignificant " + ctrmeqtlsignificant);
+			} else {
+				System.out.println("TN: " + tp.size() + "\teqtm: " + ctreqtm + "\tmeqtl: " + ctrmeqtl + "\tsignificant " + ctrmeqtlsignificant);
+			}
+			
+		}
+		
+		tpandtnout.close();
+		tnout.close();
+		tpout.close();
+		
+		
+	}
+	
+	private void compare2(String eqtlfile, String eqtmfile, String meqtlfile, String tpAndTn, String compout) throws Exception {
 		
 		
 		QTLTextFile f = new QTLTextFile(eqtlfile, QTLTextFile.R);
@@ -62,7 +197,7 @@ public class EQTMGeneLinker {
 		// link meQTL toGenes
 		ZScorePlot zp = new ZScorePlot();
 		String plotname = compout + "plot.jpg";
-		zp.init(3, new String[]{"eQTL", "eQTM", "meQTL"}, false, plotname);
+		zp.init(2, new String[]{"eQTL", "meQTL"}, false, plotname);
 		
 		TextFile out = new TextFile(compout + "comparisons.txt", TextFile.W);
 		
@@ -129,19 +264,24 @@ public class EQTMGeneLinker {
 				Boolean flip = BaseAnnot.flipalleles(e.getAlleles(), e.getAlleleAssessed(), maxmeqtl.getAlleles(), maxmeqtl.getAlleleAssessed());
 				double zscoreflipped1 = maxmeqtl.getZscore();
 				
+				
 				if (flip) {
 					zscoreflipped1 *= -1;
 				}
 				double zscoreflipped2 = zscoreflipped1;
 				
 				// flip based on eqtm
-				if (maxeqtm.getZscore() < 0) {
+				double eqtmz = maxeqtm.getZscore();
+				if (!maxeqtm.getAlleleAssessed().equals("C")) {
+					eqtmz *= -1;
+				}
+				if (eqtmz < 0) {
 					zscoreflipped2 *= -1;
 				}
-				
-				zp.draw(e.getZscore(), maxeqtm.getZscore(), 0, 1);
-				zp.draw(e.getZscore(), zscoreflipped2, 0, 2);
-				zp.draw(maxeqtm.getZscore(), zscoreflipped2, 1, 2);
+
+//				zp.draw(e.getZscore(), eqtmz, 0, 1);
+				zp.draw(e.getZscore(), zscoreflipped2, 0, 1);
+//				zp.draw(eqtmz, zscoreflipped2, 1, 2);
 				
 				String lnout = e.getRsName()
 						+ "\t" + e.getRsChr()

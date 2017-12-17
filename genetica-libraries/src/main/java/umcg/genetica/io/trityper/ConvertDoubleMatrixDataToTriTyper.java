@@ -64,7 +64,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 // initialise the member variable
                 dataMatrix = cmd.getOptionValue("dataMatrix");
             } else {
-                System.out.println("Missing necesarray information: data matrix");
+                System.out.println("Missing necessary information: data matrix");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
