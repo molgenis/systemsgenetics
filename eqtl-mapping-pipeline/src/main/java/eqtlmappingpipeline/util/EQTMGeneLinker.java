@@ -36,14 +36,47 @@ public class EQTMGeneLinker {
 			
 			String outdir = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\";
 			meqtl = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\transtp\\eQTLsFDR0.05-ProbeLevel.txt";
-			l.compareTP(eqtm, meqtl, truepositivesAndNegatives, outdir);
+//			l.compareTP(eqtm, meqtl, truepositivesAndNegatives, outdir);
 			compout = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\FDR005";
-			l.compare2(eqtl, eqtm, meqtl, truepositivesAndNegatives, compout);
+//			l.compare2(eqtl, eqtm, meqtl, truepositivesAndNegatives, compout);
+			
+			String meprs = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\eQTLsFDR0.05.txt";
+			String out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\genes.txt";
+			l.linkmePRSToEQTM(meprs, eqtm, out);
+			
+			String ePRS = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\ePRS\\eQTLsFDR0.05-ProbeLevel.txt";
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void linkmePRSToEQTM(String meprs, String eqtm, String out) throws IOException {
+		QTLTextFile f = new QTLTextFile(eqtm, QTLTextFile.R);
+		ArrayList<EQTL> meqtl = f.readList();
+		f.close();
+		
+		HashMap<String, String> cgToGen = new HashMap<String, String>();
+		for (EQTL e : meqtl) {
+			cgToGen.put(e.getRsName(), e.getProbe());
+		}
+		
+		QTLTextFile f2 = new QTLTextFile(meprs, QTLTextFile.R);
+		ArrayList<EQTL> eprs = f2.readList();
+		f.close();
+		
+		TextFile outf = new TextFile(out, TextFile.W);
+		outf.writeln("Trait\tCG\tCGChr\tCGChrPos\teQTMGene");
+		for (EQTL e : eprs) {
+			String cg = e.getProbe();
+			String gene = cgToGen.get(cg);
+			if (gene != null) {
+				outf.writeln(e.getRsName() + "\t" + e.getProbe() + "\t" + e.getProbeChr() + "\t" + e.getProbeChrPos() + "\t" + gene);
+			}
+		}
+		outf.close();
 	}
 	
 	private void compareTP(String eqtmfile, String meqtlfile, String tpAndTn, String out) throws IOException {
