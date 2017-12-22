@@ -112,8 +112,8 @@ public class FixedEffectMetaAnalysisTask implements Callable<String> {
 								+ eqtls.get(0).getAlleles() + "\t"
 								+ eqtls.get(0).getAlleleAssessed() + "\t"
 								+ metaZ + "\t"
-								+ Strings.concat(datasetNames, Strings.comma) + "\t"
-								+ Strings.concat(zscores, Strings.comma) + "\t" + Strings.concat(samplesizes, Strings.comma) + "\t-\t-\t-\t-\t-\t-\t-";
+								+ Strings.concat(datasetNames, Strings.semicolon) + "\t"
+								+ Strings.concat(zscores, Strings.semicolon) + "\t" + Strings.concat(samplesizes, Strings.semicolon) + "\t-\t-\t-\t-\t-\t-\t-";
 				
 				return outStr;
 			} else {

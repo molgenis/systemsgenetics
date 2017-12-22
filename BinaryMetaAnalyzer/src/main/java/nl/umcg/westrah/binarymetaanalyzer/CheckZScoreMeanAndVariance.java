@@ -12,6 +12,7 @@ import umcg.genetica.util.Primitives;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -62,6 +63,7 @@ public class CheckZScoreMeanAndVariance {
 		double[][] zNs = new double[nrPerm][];
 		int maxNrProbes = 0;
 		
+		ArrayList<ArrayList<String>> probeListPerFile = new ArrayList<ArrayList<String>>();
 		for (int permutation = 0; permutation < nrPerm; permutation++) {
 //			header += "\tNZ\tMeanZ\tVarZ";
 			
@@ -94,6 +96,11 @@ public class CheckZScoreMeanAndVariance {
 			
 			// format: SNP     Alleles AlleleAssessed  66023_ENST00000294984
 			int nrprobes = headerIn.length - 3;
+			ArrayList<String> fileprobes = new ArrayList<String>();
+			for (int g = 3; g < headerIn.length; g++) {
+				fileprobes.add(headerIn[g]);
+			}
+			probeListPerFile.add(fileprobes);
 			double[][] zmat = new double[nrprobes][nrsnps];
 			System.out.println("size: " + nrprobes + " genes \t" + nrsnps + " snps");
 			String[] elems = tf.readLineElems(TextFile.tab);
@@ -155,7 +162,7 @@ public class CheckZScoreMeanAndVariance {
 		// write to disk
 		String header = "ProbeRank";
 		for (int permutation = 0; permutation <= nrPerm; permutation++) {
-			header += "\tN-Perm\tMeanZ-Perm" + permutation + "\tVarZ-Perm" + permutation;
+			header += "\tGene-Perm\tN-Perm\tMeanZ-Perm" + permutation + "\tVarZ-Perm" + permutation;
 		}
 		
 		TextFile out = new TextFile(outLoc + "ZScoreMeanAndVariancePerProbe.txt", TextFile.W);
@@ -165,9 +172,11 @@ public class CheckZScoreMeanAndVariance {
 			String ln = "" + i;
 			for (int p = 0; p < zMeans.length; p++) {
 				if (i >= zMeans[p].length) {
-					ln += "\t0\tNotTested\tNotTested";
+					ln += "\t-\t0\tNotTested\tNotTested";
 				} else {
-					ln += "\t" + zNs[p][i] + "\t" + zMeans[p][i] + "\t" + zVars[p][i];
+					ArrayList<String> geneNames = probeListPerFile.get(p);
+					String gene = geneNames.get(i);
+					ln += "\t" + gene + "\t" + zNs[p][i] + "\t" + zMeans[p][i] + "\t" + zVars[p][i];
 				}
 			}
 			out.writeln(ln);

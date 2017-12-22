@@ -39,12 +39,18 @@ public class EQTMGeneLinker {
 //			l.compareTP(eqtm, meqtl, truepositivesAndNegatives, outdir);
 			compout = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\tptn\\FDR005";
 //			l.compare2(eqtl, eqtm, meqtl, truepositivesAndNegatives, compout);
+
+//			String meprs = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\eQTLsFDR0.05.txt";
+//			String out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\genes.txt";
+//			l.linkmePRSToEQTM(meprs, eqtm, out);
+//
+//			String ePRS = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\ePRS\\eQTLsFDR0.05-ProbeLevel.txt";
 			
-			String meprs = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\eQTLsFDR0.05.txt";
-			String out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\genes.txt";
-			l.linkmePRSToEQTM(meprs, eqtm, out);
-			
-			String ePRS = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\mePRS\\ePRS\\eQTLsFDR0.05-ProbeLevel.txt";
+			String eqtlfile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\lclcompare\\eQTLGenVersusNewLCLMeta-FDR0.05-eQTLsWithIdenticalDirecton.txt.gz";
+			String meqtlfile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\trans250k\\eQTLsFDR0.05-ProbeLevel.txt";
+			String eqtmfile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\eQTM\\cis-eQTM250k\\eQTLsFDR0.05-ProbeLevel.txt";
+			String out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\lclcompare\\meqtl\\2017-12-22-meQTLvsLCLEQTL";
+			l.compare2(eqtlfile, eqtmfile, meqtlfile, null, out);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -210,10 +216,39 @@ public class EQTMGeneLinker {
 	
 	private void compare2(String eqtlfile, String eqtmfile, String meqtlfile, String tpAndTn, String compout) throws Exception {
 		
+		ArrayList<EQTL> eqtl = null;
+		QTLTextFile f = null;
+		if (eqtlfile.endsWith("eQTLsWithIdenticalDirecton.txt.gz")) {
+			TextFile tf = new TextFile(eqtlfile, TextFile.R);
+			String[] elems = tf.readLineElems(TextFile.tab);
+			eqtl = new ArrayList<>();
+			while (elems != null) {
+				String snp = elems[0];
+				String gene = elems[1];
+				String alleles = elems[2];
+				String assessed = elems[3];
+				String zscorestr = elems[4];
+				Double z = Double.parseDouble(zscorestr);
+				
+				EQTL e = new EQTL();
+				
+				e.setProbe(gene);
+				e.setRsName(snp);
+				
+				e.setAlleles(alleles);
+				e.setAlleleAssessed(assessed);
+				e.setZscore(z);
+				eqtl.add(e);
+				elems = tf.readLineElems(TextFile.tab);
+			}
+			tf.close();
+		} else {
+			f = new QTLTextFile(eqtlfile, QTLTextFile.R);
+			eqtl = f.readList();
+			f.close();
+		}
 		
-		QTLTextFile f = new QTLTextFile(eqtlfile, QTLTextFile.R);
-		ArrayList<EQTL> eqtl = f.readList();
-		f.close();
+		
 		System.out.println(eqtl.size() + " eQTL ");
 		
 		f = new QTLTextFile(eqtmfile, QTLTextFile.R);

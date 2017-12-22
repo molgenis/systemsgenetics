@@ -102,6 +102,7 @@ public class FixedEffectMetaAnalysis {
 					
 					// file may contain multiple datasets
 					String[] datasetname = Strings.semicolon.split(elems[QTLTextFile.DATASETNAMES]);
+					
 					Double overallZscore = Double.parseDouble(elems[QTLTextFile.METAZ]);
 					Integer[] samplesizes = new Integer[datasetname.length];
 					
@@ -110,8 +111,12 @@ public class FixedEffectMetaAnalysis {
 					String[] samplesizestr = Strings.semicolon.split(elems[QTLTextFile.DATASETSIZE]);
 					String[] datasetZstr = Strings.semicolon.split(elems[QTLTextFile.DATASETZSCORE]);
 					for (int i = 0; i < datasetname.length; i++) {
-						samplesizes[i] = Integer.parseInt(samplesizestr[i]);
-						datasetZ[i] = Double.parseDouble(datasetZstr[i]);
+						try {
+							samplesizes[i] = Integer.parseInt(samplesizestr[i]);
+							datasetZ[i] = Double.parseDouble(datasetZstr[i]);
+						} catch (NumberFormatException ex) {
+						
+						}
 					}
 					
 					String alleleAssessed = elems[QTLTextFile.ASESSEDALLELE];
@@ -160,71 +165,6 @@ public class FixedEffectMetaAnalysis {
 		for (Pair<String, String> eqtl : uniqueSNPProbeCombos) {
 			FixedEffectMetaAnalysisTask t = new FixedEffectMetaAnalysisTask(eqtlindex, eqtl, filesInDir, allEQTLs, minimalNrDatasets, minimalNrSamples);
 			pool.submit(t);
-//            ArrayList<EQTL> eqtls = new ArrayList<EQTL>();
-//            String snp = eqtl.getLeft();
-//            String probe = eqtl.getRight();
-//            for (int f = 0; f < filesInDir.length; f++) {
-//                for (int e = 0; e < allEQTLs[f].length; e++) {
-//                    EQTL eq = allEQTLs[f][e];
-//                    if (eq.getRsName().equals(snp) && eq.getProbe().equals(probe)) {
-//                        eqtls.add(eq);
-//                    }
-//                }
-//            }
-//
-//            System.out.println(eqctr + "\t" + snp + "\t" + probe + "\t" + eqtls.size());
-//            eqctr++;
-//            // meta-analyze the collected EQTLs
-//            double[] zscores = new double[eqtls.size()];
-//            int[] samplesize = new int[eqtls.size()];
-//            int nrSamples = 0;
-//            String[] datsets = new String[eqtls.size()];
-//            EQTL first = null;
-//            if (eqtls.size() >= 3) {
-//                for (int q = 0; q < eqtls.size(); q++) {
-//                    // if this is not the first eQTL
-//                    // check whether we should flip the allele...
-//                    EQTL e = eqtls.get(q);
-//                    Boolean flipZ = false;
-//                    if (q > 0) {
-//                        flipZ = BaseAnnot.flipalleles(first.getAlleles(), first.getAlleleAssessed(), e.getAlleles(), e.getAlleleAssessed());
-//                        if (flipZ == null) {
-//                            System.err.println("ERROR: alleles not compatible! " + e.getRsName() + "\t" + first.getAlleles() + "\t" + e.getAlleles());
-//                        }
-//                    } else {
-//                        first = e;
-//                    }
-//
-//                    // flip the allele if required
-//                    if (flipZ) {
-//                        zscores[q] = -e.getZscore();
-//                    } else {
-//                        zscores[q] = e.getZscore();
-//                    }
-//
-//                    samplesize[q] = e.getDatasetsSamples()[0];
-//                    nrSamples += samplesize[q];
-//                }
-//
-//                // calculate meta statistics
-//                double metaZ = ZScores.getWeightedZ(zscores, samplesize);
-//                double pvalue = ZScores.zToP(metaZ);
-//
-//                // format
-//                // PValue  SNPName SNPChr  SNPChrPos       ProbeName       ProbeChr        ProbeCenterChrPos       CisTrans        SNPType AlleleAssessed  OverallZScore   DatasetsWhereSNPProbePairIsAvailableAndPassesQC DatasetsZScores DatasetsNrSamples       IncludedDatasetsMeanProbeExpression     IncludedDatasetsProbeExpressionVariance HGNCName        IncludedDatasetsCorrelationCoefficient
-//
-//                String outStr =
-//                        pvalue + "\t"
-//                        + snp + "\t-\t-\t"
-//                        + probe + "\t-\t-\ttrans\t"
-//                        + eqtls.get(0).getAlleles() + "\t"
-//                        + eqtls.get(0).getAlleleAssessed() + "\t"
-//                        + metaZ + "\t"
-//                        + Strings.concat(datsets, Strings.comma) + "\t"
-//                        + Strings.concat(zscores, Strings.comma) + "\t" + Strings.concat(samplesize, Strings.comma) + "\t-\t-";
-//
-//                outfile.writeln(outStr);
-//            }
 			submitted++;
 		}
 		System.out.println(submitted + " eQTLs meta-analyzing");
@@ -258,6 +198,9 @@ public class FixedEffectMetaAnalysis {
 		if (Gpio.exists(output + "eQTLs_sorted.txt")) {
 			Gpio.moveFile(output + "eQTLs_sorted.txt", output + "eQTLs.txt");
 		}
+		threadPool.shutdown();
 		
 	}
+	
+	
 }
