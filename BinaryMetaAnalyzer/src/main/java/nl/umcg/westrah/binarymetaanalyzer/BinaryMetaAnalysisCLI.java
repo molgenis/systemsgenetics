@@ -29,6 +29,12 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("internalmeta")
+				.desc("Run internal meta-analysis")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("compareeffectsize")
 				.desc("Compare QTL effect sizes between (groups of) datasets")
 				.build();
@@ -45,9 +51,6 @@ public class BinaryMetaAnalysisCLI {
 				.desc("Determine Z-score mean and variance per gene/probe and per permutation, from z-score matrices")
 				.build();
 		OPTIONS.addOption(option);
-		
-		
-		
 		
 		option = Option.builder()
 				.longOpt("leaveoneout")
@@ -148,6 +151,28 @@ public class BinaryMetaAnalysisCLI {
 				} else {
 					BinaryMetaAnalysis bm = new BinaryMetaAnalysis(settings, texttoreplace, replacewith);
 				}
+			} else if (cmd.hasOption("internalmeta")) {
+				
+				String settings = null;
+				String texttoreplace = null;
+				String replacewith = null;
+				if (cmd.hasOption("settings")) {
+					settings = cmd.getOptionValue("settings");
+				}
+				if (cmd.hasOption("rt")) {
+					texttoreplace = cmd.getOptionValue("rt");
+				}
+				if (cmd.hasOption("rtw")) {
+					replacewith = cmd.getOptionValue("rtw");
+				}
+				if (settings == null) {
+					System.err.println("Error: Please provide settings with --internalmeta");
+					System.out.println();
+					printHelp();
+				} else {
+					InternalMetaAnalysis bm = new InternalMetaAnalysis(settings, texttoreplace, replacewith);
+				}
+				
 			} else if (cmd.hasOption("leaveoneout")) {
 				boolean r = true;
 				String in = null;

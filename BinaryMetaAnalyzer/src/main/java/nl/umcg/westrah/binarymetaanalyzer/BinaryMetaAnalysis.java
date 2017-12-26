@@ -21,12 +21,9 @@ import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.util.BaseAnnot;
-import umcg.genetica.math.stats.Descriptives;
-import umcg.genetica.math.stats.ZScores;
+
 import umcg.genetica.text.Strings;
 
-import static com.google.common.primitives.Ints.toArray;
 
 /**
  * @author Harm-Jan
@@ -44,7 +41,6 @@ public class BinaryMetaAnalysis {
 			settingsFile = args[0];
 			textToReplace = args[1];
 			replaceTextWith = args[2];
-			
 		} else if (args.length == 1) {
 			settingsFile = args[0];
 			
@@ -192,15 +188,17 @@ public class BinaryMetaAnalysis {
 				zscoreTableTfNrSamples.writeln(zscoretableheader);
 			}
 			
-			System.out.println("Starting meta-analysis");
-			ProgressBar pb = new ProgressBar(snpList.length);
+			
 			int cores = Runtime.getRuntime().availableProcessors();
 			System.out.println("Will try to make us of " + cores + " CPU cores");
+			System.out.println();
 			ExecutorService threadPool = Executors.newFixedThreadPool(cores);
 			CompletionService<Triple<ArrayList<QTL>, String, String>> pool = new ExecutorCompletionService<Triple<ArrayList<QTL>, String, String>>(threadPool);
 			
+			System.out.println("Starting meta-analysis");
+			ProgressBar pb = new ProgressBar(snpList.length);
+			int returned = 0;
 			for (int snp = 0; snp < snpList.length; snp++) {
-				
 				// this can go in different threads..
 				BinaryMetaAnalysisTask t = new BinaryMetaAnalysisTask(settings,
 						probeAnnotation,
@@ -214,13 +212,36 @@ public class BinaryMetaAnalysis {
 						traitMap,
 						traitList,
 						snp);
-				
 				pool.submit(t);
-				
+				if (snp % (cores * 4) == 0) {
+					while (returned < snp) {
+						try {
+							Future<Triple<ArrayList<QTL>, String, String>> threadfuture = pool.take();
+							if (threadfuture != null) {
+								Triple<ArrayList<QTL>, String, String> result = threadfuture.get();
+								
+								for (QTL q : result.getLeft()) {
+									addEQTL(q);
+								}
+								if (settings.isMakezscoretable()) {
+									zscoreTableTf.writeln(result.getMiddle());
+									zscoreTableTfNrSamples.writeln(result.getRight());
+									
+								}
+								
+								result = null;
+								returned++;
+								pb.iterate();
+							}
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							e.printStackTrace();
+						}
+					}
+				}
 			}
-			pb.close();
-			
-			int returned = 0;
+
 			while (returned < snpList.length) {
 				try {
 					Future<Triple<ArrayList<QTL>, String, String>> threadfuture = pool.take();
@@ -243,7 +264,7 @@ public class BinaryMetaAnalysis {
 					e.printStackTrace();
 				}
 			}
-			
+			pb.close();
 			threadPool.shutdown();
 			if (settings.isMakezscoretable()) {
 				zscoreTableTf.close();
@@ -253,6 +274,7 @@ public class BinaryMetaAnalysis {
 			for (BinaryMetaAnalysisDataset dataset : datasets) {
 				dataset.close();
 			}
+			
 			writeBuffer(outdir, permutation);
 		}
 

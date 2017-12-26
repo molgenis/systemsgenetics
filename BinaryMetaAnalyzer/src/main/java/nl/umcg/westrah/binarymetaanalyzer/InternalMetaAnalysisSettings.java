@@ -48,7 +48,7 @@ public class InternalMetaAnalysisSettings {
             
             // parse datasets
         } catch (ConfigurationException e) {
-            e.printStackTrace();
+        
         }
     }
 

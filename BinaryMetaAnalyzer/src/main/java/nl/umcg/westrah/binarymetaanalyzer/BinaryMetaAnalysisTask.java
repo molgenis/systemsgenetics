@@ -127,6 +127,13 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				
 				float[][] finalZScores = new float[cisProbeMap.size()][datasets.length];
 				
+				// initialize with NaN
+				for (int q = 0; q < probeIndex.length; q++) {
+					for (int r = 0; r < datasets.length; r++) {
+						finalZScores[q][r] = Float.NaN;
+					}
+				}
+				
 				// get list of probes to test for each dataset
 				for (int d = 0; d < datasets.length; d++) {
 					if (flipZScores[d] == null) {
@@ -236,6 +243,13 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 			// iterate over the probe index
 			float[][] finalZScores = new float[probeIndex.length][datasets.length];
 			
+			// initialize with NaN
+			for (int q = 0; q < probeIndex.length; q++) {
+				for (int r = 0; r < datasets.length; r++) {
+					finalZScores[q][r] = Float.NaN;
+				}
+			}
+			
 			for (int d = 0; d < datasets.length; d++) {
 				if (datasets[d].getIsCisDataset()) {
 					System.err.println("ERROR: cannot run trans analysis on a cis dataset: " + settings.getDatasetlocations().get(d));
@@ -302,10 +316,10 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				}
 			}
 		}
-		
-		if (qtlOutput.size() > 1) {
-			Collections.sort(qtlOutput);
-		}
+
+//		if (qtlOutput.size() > 1) {
+//			Collections.sort(qtlOutput);
+//		}
 		
 		// write z-score output
 		if (settings.isMakezscoretable()) {

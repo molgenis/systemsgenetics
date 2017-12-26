@@ -147,7 +147,7 @@ public class BinaryMetaAnalysisSettings {
 			
 			// parse datasets
 		} catch (ConfigurationException e) {
-			e.printStackTrace();
+		
 		}
 	}
 	
