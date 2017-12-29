@@ -78,7 +78,9 @@ public class InternalMetaAnalysisTask implements Runnable {
 			if (runningPermutation) {
 				fileName += "-PermutationRound-" + permutation;
 			}
-			zScoreBinaryFile = new BinaryFile(fileName + ".dat", BinaryFile.W);
+			
+			boolean useHash = false;
+			zScoreBinaryFile = new BinaryFile(fileName + ".dat", BinaryFile.W, 1048576 * 50, useHash); // 50mb output buffer
 			
 			System.out.println("Loading dataset");
 			dataset = new InternalMetaAnalysisDataset(settings.getDatasetlocation(),
@@ -123,20 +125,26 @@ public class InternalMetaAnalysisTask implements Runnable {
 			}
 			fileName += ".md5";
 			
-			HexBinaryAdapter md5Parser = new HexBinaryAdapter();
-			BufferedWriter md5writer = new BufferedWriter(new FileWriter(settings.getOutput() + fileName));
 			
 			fileName = settings.getOutput() + settings.getDatasetname();
 			if (runningPermutation) {
 				fileName += "-PermutationRound-" + permutation;
 			}
 			fileName += ".dat";
-			md5writer.write(md5Parser.marshal(zScoreBinaryFile.getWrittenHash()) + "  " + fileName + '\n');
-			zScoreRowNamesFile.close();
-			md5writer.close();
+			
+			if (useHash) {
+				HexBinaryAdapter md5Parser = new HexBinaryAdapter();
+				BufferedWriter md5writer = new BufferedWriter(new FileWriter(settings.getOutput() + fileName));
+				md5writer.write(md5Parser.marshal(zScoreBinaryFile.getWrittenHash()) + "  " + fileName + '\n');
+				zScoreRowNamesFile.close();
+				md5writer.close();
+			}
 			mtPb.complete(taskid);
 			
 		} catch (IOException e) {
+			
+			e.printStackTrace();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
@@ -319,10 +327,15 @@ public class InternalMetaAnalysisTask implements Runnable {
 	
 	private void createSNPIndex(String outdir) throws IOException {
 		// create a list of all available SNPs
-		HashSet<String> allSNPs = new HashSet<String>();
+		ArrayList<String> allSNPs = new ArrayList<String>();
 		String[] snps = dataset.getSNPs();
-		for (String snp : snps) {
-			allSNPs.add(snp);
+		{
+			HashSet<String> visitedSNPs = new HashSet<>();
+			for (String snp : snps) {
+				if (!visitedSNPs.contains(snp)) {
+					allSNPs.add(snp);
+				}
+			}
 		}
 		
 		// create a temporary map that maps each SNP to a meta-analysis position

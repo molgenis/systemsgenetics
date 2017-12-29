@@ -45,6 +45,10 @@ public class BinaryFile {
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize) throws IOException {
+		this(loc, mode, buffersize, true);
+	}
+	
+	public BinaryFile(String loc, boolean mode, int buffersize, boolean useHash) throws IOException {
 		if (loc.trim().length() == 0) {
 			throw new IOException("Could not find file: no file specified");
 		}

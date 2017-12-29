@@ -8,6 +8,8 @@ package nl.umcg.westrah.binarymetaanalyzer;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import umcg.genetica.io.Gpio;
@@ -19,6 +21,8 @@ import umcg.genetica.io.text.TextFile;
  */
 public class InternalMetaAnalysisDataset {
 	
+	private MappedByteBuffer mappedRAF;
+	private byte[] buffer;
 	private boolean isCisDataset = false;
 	private final String datasetLoc;
 	private String[][] snpCisProbeMap;
@@ -88,7 +92,15 @@ public class InternalMetaAnalysisDataset {
 		loadProbes(probeFile);
 		System.out.println(probeList.length + " probes loaded");
 		
+		// get size of matrix
+		long filesize = Gpio.getFileSize(matrix);
+		long maxFileSizeMemory = 1 * 1048576 * 1024; // 5gb
+		
+		System.out.println("Matrix: " + matrix + " file size is: " + filesize + " bytes or " + Gpio.humanizeFileSize(filesize));
+		
 		raf = new RandomAccessFile(matrix, "r");
+		
+		
 	}
 	
 	private void loadSNPs(String snpFile) throws IOException {
@@ -210,16 +222,9 @@ public class InternalMetaAnalysisDataset {
 	}
 	
 	
-	long bufferLowerPos = -1;
-	long bufferUpperPos = -1;
-	int bufferLowerSNPid = -1;
-	int bufferUpperSNPid = -1;
-	
-	byte[] buffer = null;
-	
-	public synchronized float[] getZScoresBuffered(int snp) throws IOException {
-		
+	public synchronized float[] getZScoresFromInternalBuffer(int snp) throws IOException {
 		long snpBytePos = snpBytes[snp];
+		
 		long snpByteNextPos = 0;
 		if (snp == snpBytes.length - 1) {
 			snpByteNextPos = raf.length();
@@ -227,58 +232,61 @@ public class InternalMetaAnalysisDataset {
 			snpByteNextPos = snpBytes[snp + 1];
 		}
 		
-		if (buffer == null || !(snpBytePos >= bufferLowerPos && snpByteNextPos <= bufferUpperPos)) {
-			// read 100 snps
-			int nrSnpsToLoad = 100;
-			if (snp + nrSnpsToLoad > snpBytes.length) {
-				nrSnpsToLoad = snpBytes.length - snp;
-			}
-			long snpByteNextBufferPos = snpBytes[snp + nrSnpsToLoad];
-			raf.seek(snpBytePos);
-			int readlen = (int) (snpByteNextBufferPos - snpBytePos);
-			byte[] bytesToRead = new byte[readlen];
-			raf.read(bytesToRead);
-			buffer = bytesToRead;
-			bufferLowerPos = snpBytePos;
-			bufferUpperPos = snpByteNextBufferPos;
-			bufferLowerSNPid = snp;
-			bufferUpperSNPid = snp + nrSnpsToLoad;
-		}
-		
-		
-		// determine relative location
-		int bytesum = 0;
-		for (int pos = bufferLowerSNPid; pos < snp; pos++) {
-			bytesum += snpBytes[pos];
-		}
 		int readlen = (int) (snpByteNextPos - snpBytePos);
-		byte[] snpdata = new byte[readlen];
-		System.arraycopy(buffer, bytesum, snpdata, 0, readlen);
+		byte[] bytesToRead = new byte[readlen];
+		System.arraycopy(buffer, (int) snpBytePos, bytesToRead, 0, readlen);
 		
-		ByteBuffer bytebuffer = ByteBuffer.wrap(snpdata);
+		ByteBuffer bytebuffer = ByteBuffer.wrap(bytesToRead);
 		float[] output = new float[readlen / 4];
 		for (int i = 0; i < output.length; i++) {
 			output[i] = bytebuffer.getFloat();
 		}
 		
-		
 		return output;
 	}
 	
+	private long currentSeekLoc;
+	private long currentEndSeekLoc;
+	private byte[] mappedBuffer;
+	
 	public synchronized float[] getZScores(int snp) throws IOException {
-		long snpBytePos = snpBytes[snp];
 		
+		long snpBytePos = snpBytes[snp];
 		long snpByteNextPos = 0;
 		if (snp == snpBytes.length - 1) {
 			snpByteNextPos = raf.length();
 		} else {
 			snpByteNextPos = snpBytes[snp + 1];
 		}
+		boolean outOfBounds = false;
+		if (snpBytePos >= currentEndSeekLoc || snpBytePos < currentSeekLoc || snpByteNextPos > currentEndSeekLoc) {
+			outOfBounds = true;
+		}
 		
-		raf.seek(snpBytePos);
+		if (mappedRAF == null || outOfBounds) {
+			int buffersize = 1000; // nr of snps to buffer
+			currentSeekLoc = snpBytePos;
+			if (snp + buffersize > snpBytes.length) {
+				currentEndSeekLoc = raf.length();
+			} else {
+				currentEndSeekLoc = snpBytes[snp + buffersize];
+			}
+			long bytesToRead = currentEndSeekLoc - snpBytePos;
+			System.out.println(Thread.currentThread().getName() + ":\t\tMapping new buffer " + Gpio.humanizeFileSize(bytesToRead) + "\tlen: " + bytesToRead + "\t" + snpBytePos + "\t" + snpByteNextPos);
+			if (mappedBuffer == null || mappedBuffer.length != bytesToRead) {
+				// minimize GC calls by reusing the same buffer over and over and over again :D
+				mappedBuffer = new byte[(int) bytesToRead];
+			}
+			mappedRAF = raf.getChannel().map(FileChannel.MapMode.READ_ONLY, snpBytePos, bytesToRead);
+			mappedRAF.load();
+			System.out.println(Thread.currentThread().getName() + ":\t\t\tBuffer read");
+			mappedBuffer = new byte[(int) bytesToRead];
+		}
 		int readlen = (int) (snpByteNextPos - snpBytePos);
 		byte[] bytesToRead = new byte[readlen];
-		raf.read(bytesToRead);
+		int relativeSeekPos = (int) (snpBytePos - currentSeekLoc);
+//		System.out.println(Thread.currentThread().getName() + "\tsnp: " + snp + "\tseek: " + snpBytePos + "\trelative: " + relativeSeekPos + "\tlen: " + readlen + "\tbufSta: " + currentSeekLoc + "\tbufEnd: " + currentEndSeekLoc);
+		System.arraycopy(mappedBuffer, relativeSeekPos, bytesToRead, 0, readlen);
 		
 		ByteBuffer bytebuffer = ByteBuffer.wrap(bytesToRead);
 		float[] output = new float[readlen / 4];
