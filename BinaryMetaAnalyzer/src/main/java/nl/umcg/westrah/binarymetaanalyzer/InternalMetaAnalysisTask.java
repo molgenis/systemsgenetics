@@ -117,28 +117,28 @@ public class InternalMetaAnalysisTask implements Runnable {
 				mtPb.iterate(taskid);
 			}
 			
-			//Close binaryOutput & Create binary check file.
 			zScoreBinaryFile.close();
+			zScoreRowNamesFile.close();
+			
 			fileName = "check";
 			if (runningPermutation) {
 				fileName += "-PermutationRound-" + permutation;
 			}
-			fileName += ".md5";
-			
-			
-			fileName = settings.getOutput() + settings.getDatasetname();
-			if (runningPermutation) {
-				fileName += "-PermutationRound-" + permutation;
-			}
-			fileName += ".dat";
-			
 			if (useHash) {
+				//Close binaryOutput & Create binary check file.
+				fileName += ".md5";
 				HexBinaryAdapter md5Parser = new HexBinaryAdapter();
 				BufferedWriter md5writer = new BufferedWriter(new FileWriter(settings.getOutput() + fileName));
 				md5writer.write(md5Parser.marshal(zScoreBinaryFile.getWrittenHash()) + "  " + fileName + '\n');
-				zScoreRowNamesFile.close();
 				md5writer.close();
+			} else {
+				// lame attempt to check whether process is completed.
+				fileName += ".txt";
+				TextFile check = new TextFile(settings.getOutput() + fileName, TextFile.W);
+				check.writeln("Number of snps analyzed: " + snpList.length);
+				check.close();
 			}
+			
 			mtPb.complete(taskid);
 			
 		} catch (IOException e) {

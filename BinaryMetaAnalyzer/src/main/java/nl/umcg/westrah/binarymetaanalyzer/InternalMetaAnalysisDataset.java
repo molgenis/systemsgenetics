@@ -94,7 +94,6 @@ public class InternalMetaAnalysisDataset {
 		
 		// get size of matrix
 		long filesize = Gpio.getFileSize(matrix);
-		long maxFileSizeMemory = 1 * 1048576 * 1024; // 5gb
 		
 		System.out.println("Matrix: " + matrix + " file size is: " + filesize + " bytes or " + Gpio.humanizeFileSize(filesize));
 		
@@ -221,30 +220,6 @@ public class InternalMetaAnalysisDataset {
 		return snpCisProbeMap[snp];
 	}
 	
-	
-	public synchronized float[] getZScoresFromInternalBuffer(int snp) throws IOException {
-		long snpBytePos = snpBytes[snp];
-		
-		long snpByteNextPos = 0;
-		if (snp == snpBytes.length - 1) {
-			snpByteNextPos = raf.length();
-		} else {
-			snpByteNextPos = snpBytes[snp + 1];
-		}
-		
-		int readlen = (int) (snpByteNextPos - snpBytePos);
-		byte[] bytesToRead = new byte[readlen];
-		System.arraycopy(buffer, (int) snpBytePos, bytesToRead, 0, readlen);
-		
-		ByteBuffer bytebuffer = ByteBuffer.wrap(bytesToRead);
-		float[] output = new float[readlen / 4];
-		for (int i = 0; i < output.length; i++) {
-			output[i] = bytebuffer.getFloat();
-		}
-		
-		return output;
-	}
-	
 	private long currentSeekLoc;
 	private long currentEndSeekLoc;
 	private byte[] mappedBuffer;
@@ -272,14 +247,14 @@ public class InternalMetaAnalysisDataset {
 				currentEndSeekLoc = snpBytes[snp + buffersize];
 			}
 			long bytesToRead = currentEndSeekLoc - snpBytePos;
-			System.out.println(Thread.currentThread().getName() + ":\t\tMapping new buffer " + Gpio.humanizeFileSize(bytesToRead) + "\tlen: " + bytesToRead + "\t" + snpBytePos + "\t" + snpByteNextPos);
+			// System.out.println(Thread.currentThread().getName() + ":\t\tMapping new buffer " + Gpio.humanizeFileSize(bytesToRead) + "\tlen: " + bytesToRead + "\t" + snpBytePos + "\t" + snpByteNextPos);
 			if (mappedBuffer == null || mappedBuffer.length != bytesToRead) {
 				// minimize GC calls by reusing the same buffer over and over and over again :D
 				mappedBuffer = new byte[(int) bytesToRead];
 			}
 			mappedRAF = raf.getChannel().map(FileChannel.MapMode.READ_ONLY, snpBytePos, bytesToRead);
 			mappedRAF.load();
-			System.out.println(Thread.currentThread().getName() + ":\t\t\tBuffer read");
+			// System.out.println(Thread.currentThread().getName() + ":\t\t\tBuffer read");
 			mappedBuffer = new byte[(int) bytesToRead];
 		}
 		int readlen = (int) (snpByteNextPos - snpBytePos);
