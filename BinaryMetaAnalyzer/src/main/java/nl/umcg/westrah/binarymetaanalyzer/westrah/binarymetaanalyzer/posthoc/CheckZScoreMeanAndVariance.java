@@ -1,20 +1,15 @@
-package nl.umcg.westrah.binarymetaanalyzer;
+package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
-import umcg.genetica.console.ProgressBar;
+import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysis;
+import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysisDataset;
+import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysisSettings;
+import nl.umcg.westrah.binarymetaanalyzer.MetaQTL4TraitAnnotation;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.util.BaseAnnot;
-import umcg.genetica.math.stats.Descriptives;
-import umcg.genetica.math.stats.ZScores;
-import umcg.genetica.text.Strings;
 import umcg.genetica.util.Primitives;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;

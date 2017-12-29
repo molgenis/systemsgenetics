@@ -52,11 +52,97 @@ public class EQTMGeneLinker {
 			String out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\lclcompare\\meqtl\\2017-12-22-meQTLvsLCLEQTL";
 			l.compare2(eqtlfile, eqtmfile, meqtlfile, null, out);
 			
+			
+			meqtlfile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\trans250k\\eQTLsFDR0.05-ProbeLevel.txt";
+			eqtmfile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\meQTL\\eQTM\\cis-eQTM250k\\eQTLsFDR0.05-ProbeLevel.txt";
+			out = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\methylationQTL-FDR0.05.txt";
+			
+			l.convertToEQTLFile(meqtlfile, eqtmfile, out, 0.05);
+			
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void convertToEQTLFile(String meqtlfile, String eqtmfile, String out, double threshold) throws IOException {
+		QTLTextFile f = new QTLTextFile(eqtmfile, QTLTextFile.R);
+		
+		ArrayList<EQTL> eqtm = f.readList();
+		f.close();
+		System.out.println(eqtm.size() + " eQTM ");
+		
+		f = new QTLTextFile(meqtlfile, QTLTextFile.R);
+		ArrayList<EQTL> meqtl = f.readList();
+		f.close();
+		
+		
+		// match eQTM to meQTL
+		TextFile inq = new TextFile(meqtlfile, TextFile.R);
+		TextFile outf = new TextFile(out, TextFile.W);
+		outf.writeln(inq.readLine());
+		inq.close();
+		
+		HashSet<String> printed = new HashSet<String>();
+		for (int q = 0; q < meqtl.size(); q++) {
+			EQTL me = meqtl.get(q);
+			EQTL matchingeqtm = null;
+			for (EQTL me2 : eqtm) {
+				if (me2.getRsName().equals(me.getProbe())) {
+					// matching CG
+					if (matchingeqtm == null) {
+						matchingeqtm = me2;
+					} else {
+						if (me2.getPvalue() < matchingeqtm.getPvalue()) {
+							matchingeqtm = me2;
+						}
+					}
+				}
+			}
+			
+			if (matchingeqtm != null) {
+				
+				me.setProbe(matchingeqtm.getProbe());
+				
+				String eqtl = me.getRsName() + "_" + me.getProbe();
+				if (!printed.contains(eqtl)) {
+					// print
+					// flip effect depending on eQTM
+					double eqtmz = matchingeqtm.getZscore();
+					if (!matchingeqtm.getAlleleAssessed().equals("C")) {
+						eqtmz *= -1;
+					}
+					
+					if (eqtmz < 0) {
+						// flip all the zscores
+						me.setZscore(me.getZscore() * -1);
+						Double[] z = me.getDatasetZScores();
+						for (int i = 0; i < z.length; i++) {
+							if (z[i] != null) {
+								z[i] *= -1;
+							}
+						}
+					}
+					
+					String[] ds = me.getDatasets();
+					for (int i = 0; i < ds.length; i++) {
+						if (ds[i] != null && !ds[i].equals("-")) {
+							ds[i] = "Meth-" + ds[i];
+						}
+					}
+					
+					outf.writeln(me.toString());
+				}
+				
+				printed.add(eqtl);
+				
+			}
+		}
+		outf.close();
+		
+		
 	}
 	
 	private void linkmePRSToEQTM(String meprs, String eqtm, String out) throws IOException {

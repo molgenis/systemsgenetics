@@ -1,5 +1,7 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.CheckZScoreMeanAndVariance;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.MetaAnalysisQC;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -229,12 +231,14 @@ public class BinaryMetaAnalysisCLI {
 					System.out.println();
 					printHelp();
 				} else {
-					q.comparePBMCWithWholeBloodCohorts(eqtlfile,
+					q.compareEffectSizes(eqtlfile,
 							groupdefinition,
 							outfile,
 							snpannotation,
 							threshold,
-							nonan);
+							nonan,
+							true
+					);
 				}
 				
 			} else if (cmd.hasOption("zscorematcheck")) {

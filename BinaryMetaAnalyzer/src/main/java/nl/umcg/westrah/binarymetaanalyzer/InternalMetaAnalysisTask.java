@@ -154,7 +154,7 @@ public class InternalMetaAnalysisTask implements Runnable {
 		if (datasetSNPId != -9) { // -9 means: snp not available
 			float[] datasetZScores = new float[0];
 			try {
-				datasetZScores = dataset.getZScoresBuffered(datasetSNPId);
+				datasetZScores = dataset.getZScores(datasetSNPId);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
