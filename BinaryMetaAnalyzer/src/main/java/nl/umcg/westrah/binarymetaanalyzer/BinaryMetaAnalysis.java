@@ -22,6 +22,8 @@ import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
+import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.text.Strings;
 
 
@@ -188,9 +190,17 @@ public class BinaryMetaAnalysis {
 				zscoreTableTfNrSamples.writeln(zscoretableheader);
 			}
 			
+			Descriptives.initializeZScoreToPValue();
 			
-			int cores = Runtime.getRuntime().availableProcessors();
-			System.out.println("Will try to make us of " + cores + " CPU cores");
+			int availableProcessors = Runtime.getRuntime().availableProcessors();
+			int cores = settings.getNrThreads();
+			if (cores < 1) {
+				cores = 1;
+			} else if (cores > availableProcessors) {
+				cores = availableProcessors;
+			}
+			
+			System.out.println("Will try to make use of " + cores + " CPU cores");
 			System.out.println();
 			ExecutorService threadPool = Executors.newFixedThreadPool(cores);
 			CompletionService<Triple<ArrayList<QTL>, String, String>> pool = new ExecutorCompletionService<Triple<ArrayList<QTL>, String, String>>(threadPool);
@@ -241,7 +251,7 @@ public class BinaryMetaAnalysis {
 					}
 				}
 			}
-
+			
 			while (returned < snpList.length) {
 				try {
 					Future<Triple<ArrayList<QTL>, String, String>> threadfuture = pool.take();

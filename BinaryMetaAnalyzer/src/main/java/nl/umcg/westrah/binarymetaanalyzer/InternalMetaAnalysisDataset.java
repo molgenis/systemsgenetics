@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.SNPLoader;
 
 /**
  * @author Harm-Jan
@@ -238,6 +239,7 @@ public class InternalMetaAnalysisDataset {
 			outOfBounds = true;
 		}
 		
+		
 		if (mappedRAF == null || outOfBounds) {
 			int buffersize = 1000; // nr of snps to buffer
 			currentSeekLoc = snpBytePos;
@@ -255,7 +257,7 @@ public class InternalMetaAnalysisDataset {
 			mappedRAF = raf.getChannel().map(FileChannel.MapMode.READ_ONLY, snpBytePos, bytesToRead);
 			mappedRAF.load();
 			// System.out.println(Thread.currentThread().getName() + ":\t\t\tBuffer read");
-			mappedBuffer = new byte[(int) bytesToRead];
+			mappedRAF.get(mappedBuffer);
 		}
 		int readlen = (int) (snpByteNextPos - snpBytePos);
 		byte[] bytesToRead = new byte[readlen];

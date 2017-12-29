@@ -83,7 +83,7 @@ public class BinaryMetaAnalysisSettings {
 			probeAndSNPPresenceFilterSampleThreshold = config.getInt("defaults.snpprobeselectsamplesizethreshold", -1);
 			
 			runonlypermutation = config.getInt("defaults.runonlypermutation", -1);
-			nrThresds = config.getInt("defaults.threads", 0);
+			nrThresds = config.getInt("defaults.threads", 1);
 			boolean cis = config.getBoolean("defaults.cis", false);
 			boolean trans = config.getBoolean("defaults.trans", false);
 			if (cis && !trans) {
@@ -440,7 +440,7 @@ public class BinaryMetaAnalysisSettings {
 	/**
 	 * @return the nrThresds
 	 */
-	public int getNrThresds() {
+	public int getNrThreads() {
 		return nrThresds;
 	}
 	

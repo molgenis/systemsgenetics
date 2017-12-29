@@ -217,7 +217,7 @@ public class BinaryMetaAnalysisDataset {
 		return snpCisProbeMap[snp];
 	}
 	
-	public synchronized  float[] getZScores(int snp) throws IOException {
+	public synchronized float[] getZScores(int snp) throws IOException {
 		long snpBytePos = snpBytes[snp];
 		
 		long snpByteNextPos = 0;
