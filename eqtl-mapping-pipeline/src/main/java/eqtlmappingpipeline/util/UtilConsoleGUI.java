@@ -88,7 +88,7 @@ public class UtilConsoleGUI {
 		String annotationIds = null;
 		String geneAnnotationFile = null;
 		
-		FDRMethod FdrMethod = FDRMethod.ALL;
+		FDRMethod fdrMethod = FDRMethod.ALL;
 		
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
@@ -178,11 +178,11 @@ public class UtilConsoleGUI {
 			} else if (args[i].equals("--FdrMethod")) {
 				val = val.toLowerCase();
 				if (val.equals("probe")) {
-					FdrMethod = FDRMethod.PROBELEVEL;
+					fdrMethod = FDRMethod.PROBELEVEL;
 				} else if (val.equals("gene")) {
-					FdrMethod = FDRMethod.GENELEVEL;
+					fdrMethod = FDRMethod.GENELEVEL;
 				} else if (val.equals("snp")) {
-					FdrMethod = FDRMethod.SNPLEVEL;
+					fdrMethod = FDRMethod.SNPLEVEL;
 				}
 			} else if (args[i].equals("--stringentFDR")) {
 				stringentFDR = true;
@@ -388,14 +388,14 @@ public class UtilConsoleGUI {
 						} else {
 							if (snpfile != null || snpprobeselectionlist != null || probeselectionlist != null) {
 								try {
-									FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpfile, probeselectionlist, snpprobeselectionlist);
+									FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, fdrMethod, createLargeFdrFile, snpfile, probeselectionlist, snpprobeselectionlist);
 								} catch (IOException e) {
 									e.printStackTrace();
 									System.exit(1);
 								}
 							} else {
 								try {
-									FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile);
+									FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, fdrMethod, createLargeFdrFile);
 								} catch (IOException e) {
 									e.printStackTrace();
 									System.exit(1);
