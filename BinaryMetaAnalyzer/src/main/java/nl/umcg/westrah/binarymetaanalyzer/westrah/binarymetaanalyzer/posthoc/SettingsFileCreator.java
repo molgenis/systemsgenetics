@@ -19,12 +19,13 @@ public class SettingsFileCreator {
 		String tool = "/groups/umcg-wijmenga/tmp03/projects/eQTLGen/tools/BinaryMetaAnalyzer-1.0.12-SNAPSHOT-jar-with-dependencies.jar";
 		SettingsFileCreator s = new SettingsFileCreator();
 		try {
-//			s.createInternalMeta(directoryfile, outputdir, averagingmethod, nrpermutations, settingloclocal, settinglocserver, tool);
+			s.createInternalMeta(directoryfile, outputdir, averagingmethod, nrpermutations, settingloclocal, settinglocserver, tool);
 			
-			String snpAnnotationfile = "/groups/umcg-bios/tmp03/users/umcg-hwestra/eqtl/HelpFiles/GiantSNPMappings_Filtered_on_Maf0.001_Indels.txt.gz";
-			String probetranslation = "/groups/umcg-bios/tmp03/users/umcg-hwestra/eqtl/HelpFiles/ProbeAnnotation2_CorrectlyMapped_mapping.txt";
-			directoryfile = "";
-			String shellout = "";
+			String snpAnnotationfile = "/groups/umcg-wijmenga/tmp03/projects/eQTLGen/helpfiles/GiantSNPMappings_Filtered_on_Maf0.001_Indels.txt.gz";
+			String probetranslation = "/groups/umcg-wijmenga/tmp03/projects/eQTLGen/helpfiles/annotation_meta_all_2017-08-17.txt";
+			outputdir = "/groups/umcg-wijmenga/tmp03/projects/eQTLGen/analysis/trans-eqtl/standardized/pcCorrected/v1012/2017-12-29-IlluminaMetaAnalysis/";
+			directoryfile = "C:\\Data\\tmp\\2017-12-27-Standardization\\directoryFileMeta.txt";
+			String shellout = "C:\\Data\\tmp\\2017-12-27-Standardization\\2017-12-29-BinaryMetaFile.xml";
 			
 			
 			s.createBinaryMeta(10, snpAnnotationfile, 200000000, probetranslation, outputdir, 32, directoryfile, shellout);
@@ -89,9 +90,9 @@ public class SettingsFileCreator {
 				"\t\t<trans>true</trans>\n" +
 				"\t\t<probeselection></probeselection>\n" +
 				"\t\t<snpprobeselection/>\n" +
-				"\t</defaults>";
+				"\t</defaults>\n";
 		
-		output += "\t<datasets>";
+		output += "\t<datasets>\n";
 		
 		for (Dataset d : combos) {
 			output += "\t\t<dataset>\n" +
@@ -99,7 +100,7 @@ public class SettingsFileCreator {
 					"\t\t\t<prefix>" + d.prefix + "</prefix>\n" +
 					"\t\t\t<location>" + d.location + "</location>\n" +
 					"\t\t\t<expressionplatform>" + d.useannotation + "</expressionplatform>\n" +
-					"\t\t</dataset>";
+					"\t\t</dataset>\n";
 		}
 		
 		output += "\t</datasets>";
@@ -178,17 +179,17 @@ public class SettingsFileCreator {
 					"#SBATCH --job-name=ST-" + combo.dsname + "\n" +
 					"#SBATCH --output=" + outputdir + "/logs/ST-" + combo.dsname + ".out\n" +
 					"#SBATCH --error=" + outputdir + "/logs/ST-" + combo.dsname + ".err\n" +
-					"#SBATCH --time=24:00:00\n" +
+					"#SBATCH --time=3:00:00\n" +
 					"#SBATCH --constraint=tmp03\n" +
 					"#SBATCH --cpus-per-task=12\n" +
-					"#SBATCH --mem=6gb\n" +
+					"#SBATCH --mem=12gb\n" +
 					"#SBATCH --nodes=1\n" +
 					"#SBATCH --open-mode=append\n" +
 					"#SBATCH --export=NONE\n" +
 					"#SBATCH --get-user-env=L\n" +
 					"\n" +
 					"" +
-					"java -Xmx5g -jar  " + tool + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
+					"java -Xmx11g -jar  " + tool + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
 			tf.writeln(shellout);
 			tf.close();
 			
@@ -202,16 +203,16 @@ public class SettingsFileCreator {
 				"#SBATCH --array=1-" + (ctr - 1) + "\n" +
 				"#SBATCH --output=" + outputdir + "/logs/ST-job%a.out\n" +
 				"#SBATCH --error=" + outputdir + "/logs/ST-job%a.err\n" +
-				"#SBATCH --time=96:00:00\n" +
+				"#SBATCH --time=4:00:00\n" +
 				"#SBATCH --constraint=tmp03\n" +
 				"#SBATCH --cpus-per-task=12\n" +
-				"#SBATCH --mem=6gb\n" +
+				"#SBATCH --mem=12gb\n" +
 				"#SBATCH --nodes=1\n" +
 				"#SBATCH --open-mode=append\n" +
 				"#SBATCH --export=NONE\n" +
 				"#SBATCH --get-user-env=L\n" +
 				"\n" +
-				"java -Xmx5g -jar  " + tool + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
+				"java -Xmx11g -jar  " + tool + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
 		tf.writeln(shellout);
 		tf.close();
 		
