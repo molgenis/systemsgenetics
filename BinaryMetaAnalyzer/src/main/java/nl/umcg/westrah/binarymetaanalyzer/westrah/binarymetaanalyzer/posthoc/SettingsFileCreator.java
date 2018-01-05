@@ -26,9 +26,9 @@ public class SettingsFileCreator {
 			outputdir = "/groups/umcg-wijmenga/tmp03/projects/eQTLGen/analysis/trans-eqtl/standardized/pcCorrected/v1012/2017-12-29-IlluminaMetaAnalysis/";
 			directoryfile = "C:\\Data\\tmp\\2017-12-27-Standardization\\directoryFileMeta.txt";
 			String shellout = "C:\\Data\\tmp\\2017-12-27-Standardization\\2017-12-29-BinaryMetaFile.xml";
-			
-			
-			s.createBinaryMeta(10, snpAnnotationfile, 200000000, probetranslation, outputdir, 32, directoryfile, shellout);
+
+
+//			s.createBinaryMeta(10, snpAnnotationfile, 200000000, probetranslation, outputdir, 32, directoryfile, shellout);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -36,7 +36,17 @@ public class SettingsFileCreator {
 		
 	}
 	
-	public void createBinaryMeta(int nrpermutations, String snpannotation, int nrFinalEQTLs, String probetranslation, String outputdirectory, int nrthreads, String directoryfile, String shelloutfile) throws IOException {
+	public void createBinaryMeta(int nrpermutations,
+								 String snpannotation,
+								 String snplimit,
+								 String probelimit,
+								 String snpprobelimit,
+								 int nrFinalEQTLs,
+								 String probetranslation,
+								 String outputdirectory,
+								 int nrthreads,
+								 String directoryfile,
+								 String shelloutfile) throws IOException {
 		
 		TextFile input = new TextFile(directoryfile, TextFile.R);
 		String[] elems = input.readLineElems(TextFile.tab); // datasetname prefix location
@@ -46,21 +56,33 @@ public class SettingsFileCreator {
 			String prefix;
 			String location;
 			String useannotation;
+			
+			@Override
+			public String toString() {
+				return "Dataset{" +
+						"dsname='" + dsname + '\'' +
+						", prefix='" + prefix + '\'' +
+						", location='" + location + '\'' +
+						", useannotation='" + useannotation + '\'' +
+						'}';
+			}
 		}
 		
 		ArrayList<Dataset> combos = new ArrayList<>();
 		while (elems != null) {
-			
-			String dsname = elems[0];
-			String prefix = elems[1];
-			String location = elems[2];
-			String useannotation = elems[3];
-			Dataset combo = new Dataset();
-			combo.dsname = dsname;
-			combo.prefix = prefix;
-			combo.location = location;
-			combo.useannotation = useannotation;
-			combos.add(combo);
+			if (elems.length > 3) {
+				String dsname = elems[0];
+				String prefix = elems[1];
+				String location = elems[2];
+				String useannotation = elems[3];
+				Dataset combo = new Dataset();
+				combo.dsname = dsname;
+				combo.prefix = prefix;
+				combo.location = location;
+				combo.useannotation = useannotation;
+				combos.add(combo);
+				System.out.println(combo);
+			}
 			elems = input.readLineElems(TextFile.tab);
 		}
 		input.close();
@@ -88,8 +110,9 @@ public class SettingsFileCreator {
 				"\t\t<threads>" + nrthreads + "</threads>\n" +
 				"\t\t<cis>false</cis>\n" +
 				"\t\t<trans>true</trans>\n" +
-				"\t\t<probeselection></probeselection>\n" +
-				"\t\t<snpprobeselection/>\n" +
+				"\t\t<probeselection>"+snpprobelimit+"</probeselection>\n" +
+				"\t\t<snpselection>" + snplimit + "</snpselection>\n" +
+				"\t\t<snpprobeselection>"+probelimit+"</snpprobeselection>\n" +
 				"\t</defaults>\n";
 		
 		output += "\t<datasets>\n";
@@ -112,7 +135,7 @@ public class SettingsFileCreator {
 		outshell.close();
 	}
 	
-	public void createInternalMeta(String directoryfile, String outputdir, String averagingMethod, String nrPermutations, String settingsloclocal, String settingslocserver, String tool) throws IOException {
+	public void createInternalMeta(String datasetDefinition, String metaOutputDir, String averagingMethod, String nrPermutations, String settingsloclocal, String settingslocserver, String toollocserver) throws IOException {
 		
 		
 		/*
@@ -120,7 +143,7 @@ public class SettingsFileCreator {
 		 
 		 */
 		
-		TextFile input = new TextFile(directoryfile, TextFile.R);
+		TextFile input = new TextFile(datasetDefinition, TextFile.R);
 		String[] elems = input.readLineElems(TextFile.tab); // datasetname prefix location
 		
 		class Dataset {
@@ -128,21 +151,35 @@ public class SettingsFileCreator {
 			String prefix;
 			String location;
 			String probetofeature;
+			
+			@Override
+			public String toString() {
+				return "Dataset{" +
+						"dsname='" + dsname + '\'' +
+						", prefix='" + prefix + '\'' +
+						", location='" + location + '\'' +
+						", probetofeature='" + probetofeature + '\'' +
+						'}';
+			}
 		}
 		
 		ArrayList<Dataset> combos = new ArrayList<>();
 		while (elems != null) {
 			
-			String dsname = elems[0];
-			String prefix = elems[1];
-			String location = elems[2];
-			String probetofeature = elems[3];
-			Dataset combo = new Dataset();
-			combo.dsname = dsname;
-			combo.prefix = prefix;
-			combo.location = location;
-			combo.probetofeature = probetofeature;
-			combos.add(combo);
+			if (elems.length > 3) {
+				
+				String dsname = elems[0];
+				String prefix = elems[1];
+				String location = elems[2];
+				String probetofeature = elems[3];
+				Dataset combo = new Dataset();
+				combo.dsname = dsname;
+				combo.prefix = prefix;
+				combo.location = location;
+				combo.probetofeature = probetofeature;
+				combos.add(combo);
+				System.out.println(combo.toString());
+			}
 			elems = input.readLineElems(TextFile.tab);
 		}
 		input.close();
@@ -154,7 +191,7 @@ public class SettingsFileCreator {
 		int ctr = 1;
 		for (Dataset combo : combos) {
 			
-			String outputloc = outputdir + combo.dsname + "/";
+			String outputloc = metaOutputDir + combo.dsname + "/";
 			String output = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?> \n" +
 					"<settings>\n" +
 					"\t<defaults>\n" +
@@ -177,19 +214,19 @@ public class SettingsFileCreator {
 			tf = new TextFile(settingsloclocal + ctr + ".sh", TextFile.W);
 			String shellout = "#!/bin/bash\n" +
 					"#SBATCH --job-name=ST-" + combo.dsname + "\n" +
-					"#SBATCH --output=" + outputdir + "/logs/ST-" + combo.dsname + ".out\n" +
-					"#SBATCH --error=" + outputdir + "/logs/ST-" + combo.dsname + ".err\n" +
+					"#SBATCH --output=" + metaOutputDir + "/logs/ST-" + combo.dsname + ".out\n" +
+					"#SBATCH --error=" + metaOutputDir + "/logs/ST-" + combo.dsname + ".err\n" +
 					"#SBATCH --time=3:00:00\n" +
 					"#SBATCH --constraint=tmp03\n" +
 					"#SBATCH --cpus-per-task=12\n" +
-					"#SBATCH --mem=12gb\n" +
+					"#SBATCH --mem=20gb\n" +
 					"#SBATCH --nodes=1\n" +
 					"#SBATCH --open-mode=append\n" +
 					"#SBATCH --export=NONE\n" +
 					"#SBATCH --get-user-env=L\n" +
 					"\n" +
 					"" +
-					"java -Xmx11g -jar  " + tool + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
+					"java -Xmx19g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
 			tf.writeln(shellout);
 			tf.close();
 			
@@ -201,18 +238,18 @@ public class SettingsFileCreator {
 		String shellout = "#!/bin/bash\n" +
 				"#SBATCH --job-name=ST\n" +
 				"#SBATCH --array=1-" + (ctr - 1) + "\n" +
-				"#SBATCH --output=" + outputdir + "/logs/ST-job%a.out\n" +
-				"#SBATCH --error=" + outputdir + "/logs/ST-job%a.err\n" +
+				"#SBATCH --output=" + metaOutputDir + "/logs/ST-job%a.out\n" +
+				"#SBATCH --error=" + metaOutputDir + "/logs/ST-job%a.err\n" +
 				"#SBATCH --time=4:00:00\n" +
 				"#SBATCH --constraint=tmp03\n" +
 				"#SBATCH --cpus-per-task=12\n" +
-				"#SBATCH --mem=12gb\n" +
+				"#SBATCH --mem=20gb\n" +
 				"#SBATCH --nodes=1\n" +
 				"#SBATCH --open-mode=append\n" +
 				"#SBATCH --export=NONE\n" +
 				"#SBATCH --get-user-env=L\n" +
 				"\n" +
-				"java -Xmx11g -jar  " + tool + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
+				"java -Xmx19g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
 		tf.writeln(shellout);
 		tf.close();
 		

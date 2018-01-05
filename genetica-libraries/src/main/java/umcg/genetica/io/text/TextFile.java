@@ -4,20 +4,14 @@
  */
 package umcg.genetica.io.text;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.anarres.parallelgzip.ParallelGZIPOutputStream;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.text.Strings;
@@ -80,7 +74,8 @@ public class TextFile implements Iterable<String> {
 		} else {
 			if (writeable) {
 				if (gzipped) {
-					GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file), buffersize);
+//					ParallelGZIPOutputStream gzipOutputStream = new ParallelGZIPOutputStream(new FileOutputStream(file), buffersize));
+					GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file), buffersize){{def.setLevel(Deflater.BEST_SPEED);}};
 					out = new BufferedWriter(new OutputStreamWriter(gzipOutputStream), buffersize);
 					
 				} else {

@@ -4,12 +4,14 @@
  */
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
+import umcg.genetica.io.Gpio;
 
 /**
  * @author harm-jan
@@ -55,11 +57,16 @@ public class BinaryMetaAnalysisSettings {
 		return analysisType;
 	}
 	
+	public void copyToOutputDir() throws ConfigurationException {
+		config.save(output + "settings.xml");
+	}
+	
+	
 	public enum Analysis {
 		CIS, TRANS, CISTRANS
 	}
 	
-	public void parse(String settings, String texttoreplace, String replacetextwith) {
+	public void parse(String settings, String texttoreplace, String replacetextwith)  {
 		try {
 			config = new XMLConfiguration(settings);
 			
@@ -77,6 +84,14 @@ public class BinaryMetaAnalysisSettings {
 			confineSNPs = config.getBoolean("defaults.confineSNPsToSNPsPresentInAllDatasets", false);
 			probetranslationfile = config.getString("defaults.probetranslationfile");
 			output = config.getString("defaults.output");
+			if (!Gpio.exists(output)) {
+				try {
+					Gpio.createDir(output);
+					copyToOutputDir();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 			
 			probeDatasetPresenceThreshold = config.getInt("defaults.minimalnumberofdatasetsthatcontainprobe", 0);
 			snpDatasetPresenceThreshold = config.getInt("defaults.minimalnumberofdatasetsthatcontainsnp", 0);

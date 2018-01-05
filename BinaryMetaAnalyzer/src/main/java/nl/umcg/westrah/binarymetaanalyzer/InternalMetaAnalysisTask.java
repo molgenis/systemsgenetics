@@ -160,7 +160,7 @@ public class InternalMetaAnalysisTask implements Runnable {
 		int datasetSNPId = snpIndex[snp];
 		
 		if (datasetSNPId != -9) { // -9 means: snp not available
-			float[] datasetZScores = new float[0];
+			float[] datasetZScores = null;
 			try {
 				datasetZScores = dataset.getZScores(datasetSNPId);
 			} catch (IOException e) {
@@ -170,157 +170,174 @@ public class InternalMetaAnalysisTask implements Runnable {
 			THashMap<String, SummaryStatistics> remappedEntriesAbs = new THashMap<String, SummaryStatistics>();
 //                    System.out.println(dataset.getSNPs()[datasetSNPId]);
 //                    System.out.println(datasetZScores.length);
-			if (dataset.getIsCisDataset()) {
-				// this requires us to retrieve the z-scores differently
-				// we need to figure out which probes match up, but their orders might be different
-				// and the number of probes tested in each dataset might differ as well
-				
-				// get the probes tested against the SNP
-				String[] datasetCisProbes = dataset.getCisProbes(datasetSNPId);
+			
+			// count NaNs
+			
+			
+			if (datasetZScores != null && datasetZScores.length > 0) {
+				int nrNaN = 0;
+				for (int c = 0; c < datasetZScores.length; c++) {
+					if (Float.isNaN(datasetZScores[c])) {
+						nrNaN++;
+					}
+				}
+				// no need to run analysis on a snp that has no data associated with it.
+				if (nrNaN != datasetZScores.length) {
+					if (dataset.getIsCisDataset()) {
+						// this requires us to retrieve the z-scores differently
+						// we need to figure out which probes match up, but their orders might be different
+						// and the number of probes tested in each dataset might differ as well
+						
+						// get the probes tested against the SNP
+						String[] datasetCisProbes = dataset.getCisProbes(datasetSNPId);
 //                        System.out.println(datasetCisProbes.length);
-				for (int i = 0; i < datasetCisProbes.length; i++) {
-					String p = datasetCisProbes[i];
-					if (traitMap.containsKey(p)) {
-						for (String feature : traitMap.get(p)) {
-							if (!remappedEntries.containsKey(feature)) {
-								remappedEntries.put(feature, new DescriptiveStatistics());
-								remappedEntriesAbs.put(feature, new SummaryStatistics());
-							}
-							remappedEntries.get(feature).addValue(datasetZScores[i]);
-							remappedEntriesAbs.get(feature).addValue(Math.abs(datasetZScores[i]));
+						for (int i = 0; i < datasetCisProbes.length; i++) {
+							String p = datasetCisProbes[i];
+							if (traitMap.containsKey(p)) {
+								for (String feature : traitMap.get(p)) {
+									if (!remappedEntries.containsKey(feature)) {
+										remappedEntries.put(feature, new DescriptiveStatistics());
+										remappedEntriesAbs.put(feature, new SummaryStatistics());
+									}
+									remappedEntries.get(feature).addValue(datasetZScores[i]);
+									remappedEntriesAbs.get(feature).addValue(Math.abs(datasetZScores[i]));
 //                                System.out.print(p+"\t"+datasetZScores[i]);
-						}
-					}
-				}
-				if (!remappedEntries.isEmpty()) {
-					double[] zScoresOut = new double[remappedEntries.size()];
-					// initialize with NaN
-					for (int q = 0; q < zScoresOut.length; q++) {
-						zScoresOut[q] = Double.NaN;
-					}
-					
-					String[] keysOut = new String[remappedEntries.size()];
-					int counter = 0;
-					for (Map.Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
-						keysOut[counter] = e.getKey();
-						if (e.getValue().getN() == 0) {
-							zScoresOut[counter] = Double.NaN;
-						} else if (e.getValue().getN() == 1) {
-							zScoresOut[counter] = e.getValue().getValues()[0];
-						} else {
-							//Now we need to meta-analyze it.
-							if (settings.getzScoreMergeOption().equals("weightedzscore")) {
-								//Need to get sample size
-								ArrayIntList sampleSizes = new ArrayIntList();
-								for (int sC = 0; sC < e.getValue().getN(); sC++) {
-									sampleSizes.add(dataset.getSampleSize(datasetSNPId));
 								}
-								zScoresOut[counter] = ZScores.getWeightedZ(e.getValue().getValues(), sampleSizes.toArray());
-							} else if (settings.getzScoreMergeOption().equals("mean")) {
-								zScoresOut[counter] = e.getValue().getMean();
-							} else if (settings.getzScoreMergeOption().equals("median")) {
-								zScoresOut[counter] = e.getValue().getPercentile(50);
-							} else if (settings.getzScoreMergeOption().equals("min")) {
-								zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMin();
-							} else if (settings.getzScoreMergeOption().equals("max")) {
-								zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMax();
-							} else {
-								System.out.println("Not supported merging.");
-								System.exit(0);
+							}
+						}
+						if (!remappedEntries.isEmpty()) {
+							double[] zScoresOut = new double[remappedEntries.size()];
+							// initialize with NaN
+							for (int q = 0; q < zScoresOut.length; q++) {
+								zScoresOut[q] = Double.NaN;
 							}
 							
+							String[] keysOut = new String[remappedEntries.size()];
+							int counter = 0;
+							for (Map.Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
+								keysOut[counter] = e.getKey();
+								if (e.getValue().getN() == 0) {
+									zScoresOut[counter] = Double.NaN;
+								} else if (e.getValue().getN() == 1) {
+									zScoresOut[counter] = e.getValue().getValues()[0];
+								} else {
+									//Now we need to meta-analyze it.
+									if (settings.getzScoreMergeOption().equals("weightedzscore")) {
+										//Need to get sample size
+										ArrayIntList sampleSizes = new ArrayIntList();
+										for (int sC = 0; sC < e.getValue().getN(); sC++) {
+											sampleSizes.add(dataset.getSampleSize(datasetSNPId));
+										}
+										zScoresOut[counter] = ZScores.getWeightedZ(e.getValue().getValues(), sampleSizes.toArray());
+									} else if (settings.getzScoreMergeOption().equals("mean")) {
+										zScoresOut[counter] = e.getValue().getMean();
+									} else if (settings.getzScoreMergeOption().equals("median")) {
+										zScoresOut[counter] = e.getValue().getPercentile(50);
+									} else if (settings.getzScoreMergeOption().equals("min")) {
+										zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMin();
+									} else if (settings.getzScoreMergeOption().equals("max")) {
+										zScoresOut[counter] = remappedEntriesAbs.get(e.getKey()).getMax();
+									} else {
+										System.out.println("Not supported merging.");
+										System.exit(0);
+									}
+									
+								}
+								counter++;
+							}
+							//                        writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile)
+							
+							writeBinaryResult(dataset.getSNPs()[datasetSNPId],
+									dataset.getHwes()[datasetSNPId],
+									dataset.getCallrates()[datasetSNPId],
+									dataset.getMafs()[datasetSNPId],
+									dataset.getN()[datasetSNPId],
+									dataset.getAlleles()[datasetSNPId],
+									dataset.getMinorAlleles()[datasetSNPId],
+									dataset.getAlleleAssessed(datasetSNPId),
+									zScoresOut,
+									keysOut);
+							
 						}
-						counter++;
+					} else { // this is not a cis dataset
+						// use the full probe index
+						
+						// probeIndex[t.getMetaTraitId()][d] = p;
+						for (int i = 0; i < dataset.getProbeList().length; i++) {
+							String p = dataset.getProbeList()[i];
+							if (traitMap.containsKey(p)) {
+								for (String feature : traitMap.get(p)) {
+									if (!remappedEntries.containsKey(feature)) {
+										remappedEntries.put(feature, new DescriptiveStatistics());
+										remappedEntriesAbs.put(feature, new SummaryStatistics());
+									}
+									remappedEntries.get(feature).addValue(datasetZScores[i]);
+									remappedEntriesAbs.get(feature).addValue(datasetZScores[i]);
+								}
+							}
+						}
+						if (!remappedEntries.isEmpty()) {
+							//This is almost idenitcal to the cis-data.
+							//But here we need to make sure the remapped data is stored in the correct relative to the file description. i.e. outputEntries
+							
+							//Not observed zScores are kept at 0.
+							double[] zScoresOut = new double[outputEntries.size()];
+							for (int q = 0; q < zScoresOut.length; q++) {
+								zScoresOut[q] = Double.NaN;
+							}
+							
+							for (Map.Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
+								
+								int arrayLoc = traitLocationMap.get(e.getKey());
+								
+								if (e.getValue().getN() == 0) {
+									zScoresOut[arrayLoc] = Double.NaN;
+								} else if (e.getValue().getN() == 1) {
+									zScoresOut[arrayLoc] = e.getValue().getValues()[0];
+								} else {
+									//Now we need to meta-analyze it.
+									if (settings.getzScoreMergeOption().equals("weightedzscore")) {
+										//Need to get sample size
+										ArrayIntList sampleSizes = new ArrayIntList();
+										for (int sC = 0; sC < e.getValue().getN(); sC++) {
+											sampleSizes.add(dataset.getSampleSize(datasetSNPId));
+										}
+										zScoresOut[arrayLoc] = ZScores.getWeightedZ(e.getValue().getValues(), sampleSizes.toArray());
+									} else if (settings.getzScoreMergeOption().equals("mean")) {
+										zScoresOut[arrayLoc] = e.getValue().getMean();
+									} else if (settings.getzScoreMergeOption().equals("median")) {
+										zScoresOut[arrayLoc] = e.getValue().getPercentile(50);
+									} else if (settings.getzScoreMergeOption().equals("min")) {
+										zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMin();
+									} else if (settings.getzScoreMergeOption().equals("max")) {
+										zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMax();
+									} else {
+										System.out.println("Not supported merging.");
+										System.exit(0);
+									}
+									
+								}
+							}
+							//                        writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile)
+							
+							writeBinaryResult(dataset.getSNPs()[datasetSNPId],
+									dataset.getHwes()[datasetSNPId],
+									dataset.getCallrates()[datasetSNPId],
+									dataset.getMafs()[datasetSNPId],
+									dataset.getN()[datasetSNPId],
+									dataset.getAlleles()[datasetSNPId],
+									dataset.getMinorAlleles()[datasetSNPId],
+									dataset.getAlleleAssessed(datasetSNPId),
+									zScoresOut,
+									null
+							);
+							
+						}
 					}
-					//                        writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile)
-					
-					writeBinaryResult(dataset.getSNPs()[datasetSNPId],
-							dataset.getHwes()[datasetSNPId],
-							dataset.getCallrates()[datasetSNPId],
-							dataset.getMafs()[datasetSNPId],
-							dataset.getN()[datasetSNPId],
-							dataset.getAlleles()[datasetSNPId],
-							dataset.getMinorAlleles()[datasetSNPId],
-							dataset.getAlleleAssessed(datasetSNPId),
-							zScoresOut,
-							keysOut);
-					
 				}
-			} else { // this is not a cis dataset
-				// use the full probe index
 				
-				// probeIndex[t.getMetaTraitId()][d] = p;
-				for (int i = 0; i < dataset.getProbeList().length; i++) {
-					String p = dataset.getProbeList()[i];
-					if (traitMap.containsKey(p)) {
-						for (String feature : traitMap.get(p)) {
-							if (!remappedEntries.containsKey(feature)) {
-								remappedEntries.put(feature, new DescriptiveStatistics());
-								remappedEntriesAbs.put(feature, new SummaryStatistics());
-							}
-							remappedEntries.get(feature).addValue(datasetZScores[i]);
-							remappedEntriesAbs.get(feature).addValue(datasetZScores[i]);
-						}
-					}
-				}
-				if (!remappedEntries.isEmpty()) {
-					//This is almost idenitcal to the cis-data.
-					//But here we need to make sure the remapped data is stored in the correct relative to the file description. i.e. outputEntries
-					
-					//Not observed zScores are kept at 0.
-					double[] zScoresOut = new double[outputEntries.size()];
-					for (int q = 0; q < zScoresOut.length; q++) {
-						zScoresOut[q] = Double.NaN;
-					}
-					
-					for (Map.Entry<String, DescriptiveStatistics> e : remappedEntries.entrySet()) {
-						
-						int arrayLoc = traitLocationMap.get(e.getKey());
-						
-						if (e.getValue().getN() == 0) {
-							zScoresOut[arrayLoc] = Double.NaN;
-						} else if (e.getValue().getN() == 1) {
-							zScoresOut[arrayLoc] = e.getValue().getValues()[0];
-						} else {
-							//Now we need to meta-analyze it.
-							if (settings.getzScoreMergeOption().equals("weightedzscore")) {
-								//Need to get sample size
-								ArrayIntList sampleSizes = new ArrayIntList();
-								for (int sC = 0; sC < e.getValue().getN(); sC++) {
-									sampleSizes.add(dataset.getSampleSize(datasetSNPId));
-								}
-								zScoresOut[arrayLoc] = ZScores.getWeightedZ(e.getValue().getValues(), sampleSizes.toArray());
-							} else if (settings.getzScoreMergeOption().equals("mean")) {
-								zScoresOut[arrayLoc] = e.getValue().getMean();
-							} else if (settings.getzScoreMergeOption().equals("median")) {
-								zScoresOut[arrayLoc] = e.getValue().getPercentile(50);
-							} else if (settings.getzScoreMergeOption().equals("min")) {
-								zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMin();
-							} else if (settings.getzScoreMergeOption().equals("max")) {
-								zScoresOut[arrayLoc] = remappedEntriesAbs.get(e.getKey()).getMax();
-							} else {
-								System.out.println("Not supported merging.");
-								System.exit(0);
-							}
-							
-						}
-					}
-					//                        writeBinaryResult(String snpname, double hwe, double cr, double maf, int numberCalled, String alleles, String minorAllele, String alleleassessed, double[] datasetZScores, String[] probeNames, BinaryFile outfile, TextFile snpfile)
-					
-					writeBinaryResult(dataset.getSNPs()[datasetSNPId],
-							dataset.getHwes()[datasetSNPId],
-							dataset.getCallrates()[datasetSNPId],
-							dataset.getMafs()[datasetSNPId],
-							dataset.getN()[datasetSNPId],
-							dataset.getAlleles()[datasetSNPId],
-							dataset.getMinorAlleles()[datasetSNPId],
-							dataset.getAlleleAssessed(datasetSNPId),
-							zScoresOut,
-							null
-					);
-					
-				}
 			}
+			
 		}
 	}
 	

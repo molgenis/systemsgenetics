@@ -10,13 +10,18 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
+import org.apache.commons.io.FileUtils;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
@@ -32,6 +37,9 @@ import umcg.genetica.text.Strings;
  */
 public class BinaryMetaAnalysis {
 	
+	
+	private final boolean usetmp;
+	private String tempDir;
 	
 	public static void main(String[] args) {
 		
@@ -75,10 +83,19 @@ public class BinaryMetaAnalysis {
 	TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = new TObjectIntHashMap<MetaQTL4MetaTrait>();
 	MetaQTL4MetaTrait[] traitList = null;
 	
-	public BinaryMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
+	
+	public BinaryMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith, boolean usetmp) {
 		// initialize settings
 		settings = new BinaryMetaAnalysisSettings();
+		this.usetmp = true;
+		
+		if (usetmp) {
+			String property = "java.io.tmpdir";
+			this.tempDir = System.getProperty(property);
+			System.out.println("Found temp dir here: " + tempDir);
+		}
 		settings.parse(settingsFile, textToReplace, replaceTextWith);
+		
 		int maxResults = settings.getFinalEQTLBufferMaxLength();
 		int tmpbuffersize = (maxResults / 10);
 		
@@ -90,6 +107,7 @@ public class BinaryMetaAnalysis {
 		
 		finalEQTLs = new QTL[(maxResults + tmpbuffersize)];
 		try {
+			
 			run();
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -98,12 +116,23 @@ public class BinaryMetaAnalysis {
 		
 	}
 	
+	public BinaryMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
+		this(settingsFile, textToReplace, replaceTextWith, false);
+		
+	}
+	
 	public void run() throws IOException {
 		
 		String outdir = settings.getOutput();
+		if (usetmp) {
+			outdir = tempDir;
+		}
+		
+		
 		System.out.println("Placing output here: " + outdir);
 		outdir = Gpio.formatAsDirectory(outdir);
 		Gpio.createDir(outdir);
+		
 		// load probe annotation and index
 		// this particular probe annotation can take multiple probes for a single location into account.
 		System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
@@ -182,8 +211,8 @@ public class BinaryMetaAnalysis {
 					tableoutfileNrSamples = outdir + "ZScoreMatrixNrSamples.txt.gz";
 				}
 				System.out.println("Writing z-score table: " + tableoutfile);
-				zscoreTableTf = new TextFile(tableoutfile, TextFile.W);
-				zscoreTableTfNrSamples = new TextFile(tableoutfileNrSamples, TextFile.W);
+				zscoreTableTf = new TextFile(tableoutfile, TextFile.W, 10 * 1048576);
+				zscoreTableTfNrSamples = new TextFile(tableoutfileNrSamples, TextFile.W, 10 * 1048576);
 				
 				// write header
 				zscoreTableTf.writeln(zscoretableheader);
@@ -202,6 +231,7 @@ public class BinaryMetaAnalysis {
 			
 			System.out.println("Will try to make use of " + cores + " CPU cores");
 			System.out.println();
+			
 			ExecutorService threadPool = Executors.newFixedThreadPool(cores);
 			CompletionService<Triple<ArrayList<QTL>, String, String>> pool = new ExecutorCompletionService<Triple<ArrayList<QTL>, String, String>>(threadPool);
 			
@@ -287,14 +317,16 @@ public class BinaryMetaAnalysis {
 			
 			writeBuffer(outdir, permutation);
 		}
-
-        /*
-		 TODO:
-         - ZSCORE RETRIEVAL
-         - Plotting of z-scores
-         - validation
-         - multithreadalize
-         */
+		if (usetmp) {
+			
+			// move contents of tmp dir to final directory
+			File source = new File(tempDir);
+			File dest = new File(settings.getOutput());
+			FileUtils.copyDirectory(source, dest);
+			
+			FileUtils.cleanDirectory(source);
+			
+		}
 	}
 	
 	private void createSNPProbeCombos(String outdir) throws IOException {
@@ -519,7 +551,7 @@ public class BinaryMetaAnalysis {
 		}
 		
 		// loads only annotation for snps that are in the datasets..
-		TextFile tf = new TextFile(settings.getSNPAnnotationFile(), TextFile.R);
+		TextFile tf = new TextFile(settings.getSNPAnnotationFile(), TextFile.R, 10 * 1048576);
 		String[] elems = tf.readLineElems(TextFile.tab);
 		
 		while (elems != null) {
@@ -657,7 +689,7 @@ public class BinaryMetaAnalysis {
 				finalEQTLs[locationToStoreResult] = q;
 				locationToStoreResult++;
 				
-				if (locationToStoreResult == finalEQTLs.length) {
+				if (locationToStoreResult == finalEQTLs.length) { // note that finalEQTLs has size: QTL[settings.getFinalEQTLBufferMaxLength()+tmpbuffersize]
 					
 					Arrays.parallelSort(finalEQTLs);
 					sorted = true;
@@ -692,9 +724,8 @@ public class BinaryMetaAnalysis {
 			outfilename = outdir + "PermutedEQTLsPermutationRound" + permutation + ".txt.gz";
 		}
 		
-		System.out.println("Writing output: " + outfilename);
 		
-		TextFile output = new TextFile(outfilename, TextFile.W);
+		TextFile output = new TextFile(outfilename, TextFile.W, 10 * 1048576);
 		String header = "PValue\t"
 				+ "SNPName\t"
 				+ "SNPChr\t"
@@ -722,10 +753,20 @@ public class BinaryMetaAnalysis {
 		
 		DecimalFormat format = new DecimalFormat("###.#######", new DecimalFormatSymbols(Locale.US));
 		DecimalFormat smallFormat = new DecimalFormat("0.#####E0", new DecimalFormatSymbols(Locale.US));
+		
+		int ctr = 0;
+		for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
+			if (finalEQTLs[i] != null) {
+				ctr++;
+			}
+		}
+		System.out.println("There are " + ctr + " results in the buffer. ");
+		ProgressBar pb = new ProgressBar(ctr, "Writing: " + outfilename);
 		for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
 			QTL q = finalEQTLs[i];
 			if (q != null) {
-				StringBuilder sb = new StringBuilder();
+				StringBuilder sb = new StringBuilder(4096);
+				
 				if (q.getPvalue() < 1E-4) {
 					sb.append(smallFormat.format(q.getPvalue()));
 				} else {
@@ -798,9 +839,11 @@ public class BinaryMetaAnalysis {
 				sb.append("\t-\t-\t-\t-");
 				
 				output.writeln(sb.toString());
+				pb.iterate();
 			}
 		}
 		
+		pb.close();
 		output.close();
 		
 		System.out.println(
