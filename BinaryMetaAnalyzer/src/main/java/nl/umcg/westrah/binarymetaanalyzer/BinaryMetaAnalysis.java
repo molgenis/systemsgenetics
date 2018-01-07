@@ -681,6 +681,14 @@ public class BinaryMetaAnalysis {
 	private void addEQTL(QTL q) {
 		
 		double pval = q.getPvalue();
+		
+		// sort every 1E7 results
+		if (locationToStoreResult % 1E7 == 0) {
+			System.out.println("Sorting intermediate output.");
+			Arrays.parallelSort(finalEQTLs, 0, locationToStoreResult);
+			System.out.println("Done sorting...");
+		}
+		
 		if (bufferHasOverFlown) {
 			if (pval <= maxSavedPvalue) {
 				
