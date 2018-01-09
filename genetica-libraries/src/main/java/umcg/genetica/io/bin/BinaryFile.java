@@ -20,7 +20,7 @@ public class BinaryFile {
 	protected final DataInputStream is;
 	protected final String loc;
 	protected final boolean writeable;
-	private final HashingOutputStream osh;
+	private final OutputStream osh;
 	
 	public BinaryFile(String loc, boolean mode) throws IOException {
 		if (loc.trim().length() == 0) {
@@ -45,6 +45,10 @@ public class BinaryFile {
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize) throws IOException {
+		this(loc, mode, buffersize, true);
+	}
+	
+	public BinaryFile(String loc, boolean mode, int buffersize, boolean useHash) throws IOException {
 		if (loc.trim().length() == 0) {
 			throw new IOException("Could not find file: no file specified");
 		}
@@ -54,7 +58,11 @@ public class BinaryFile {
 		if (writeable) {
 			try {
 				is = null;
-				osh = new HashingOutputStream("md5", new FileOutputStream(loc));
+				if (!useHash) {
+					osh = new FileOutputStream(loc);
+				} else {
+					osh = new HashingOutputStream("md5", new FileOutputStream(loc));
+				}
 				os = new DataOutputStream(new BufferedOutputStream(osh, buffersize));
 			} catch (NoSuchAlgorithmException ex) {
 				throw new RuntimeException(ex);
@@ -209,7 +217,13 @@ public class BinaryFile {
 	
 	public byte[] getWrittenHash() throws IOException {
 		if (writeable) {
-			return osh.getDigest();
+			if (osh instanceof HashingOutputStream) {
+				HashingOutputStream hash = (HashingOutputStream) osh;
+				return hash.getDigest();
+			} else {
+				throw new UnsupportedOperationException("OutputStream is not a HashingOutputStream");
+			}
+			
 		} else {
 			return null;
 		}

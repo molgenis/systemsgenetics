@@ -32,16 +32,16 @@ public class UtilConsoleGUI {
 		
 		GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
 		SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
-		ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITTT, SPLITPHENO
+		ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITTT, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO
 	}
 	
 	;
 	MODE run;
 	
 	public UtilConsoleGUI(String[] args) {
-
-//        String settingstexttoreplace = null;
-//        String settingstexttoreplacewith = null;
+		
+		String settingstexttoreplace = null;
+		String settingstexttoreplacewith = null;
 //        boolean cis = false;
 //        boolean trans = false;
 //        String outtype = "text";
@@ -88,7 +88,7 @@ public class UtilConsoleGUI {
 		String annotationIds = null;
 		String geneAnnotationFile = null;
 		
-		FDRMethod FdrMethod = FDRMethod.ALL;
+		FDRMethod fdrMethod = FDRMethod.ALL;
 		
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
@@ -101,6 +101,10 @@ public class UtilConsoleGUI {
 			if (arg.equals("--convertbinarymatrix")) {
 				region = val;
 				run = MODE.CONVERTBINARYMATRIX;
+			} else if (arg.equals("--eqtmlink")) {
+				run = MODE.EQTLEQTMLINK;
+			} else if (arg.equals("--mergeqtlfile")) {
+				run = MODE.QTLFILEMERGE;
 			} else if (arg.equals("--splitpheno")) {
 				run = MODE.SPLITPHENO;
 			} else if (arg.equals("--splitTT")) {
@@ -174,11 +178,11 @@ public class UtilConsoleGUI {
 			} else if (args[i].equals("--FdrMethod")) {
 				val = val.toLowerCase();
 				if (val.equals("probe")) {
-					FdrMethod = FDRMethod.PROBELEVEL;
+					fdrMethod = FDRMethod.PROBELEVEL;
 				} else if (val.equals("gene")) {
-					FdrMethod = FDRMethod.GENELEVEL;
+					fdrMethod = FDRMethod.GENELEVEL;
 				} else if (val.equals("snp")) {
-					FdrMethod = FDRMethod.SNPLEVEL;
+					fdrMethod = FDRMethod.SNPLEVEL;
 				}
 			} else if (args[i].equals("--stringentFDR")) {
 				stringentFDR = true;
@@ -220,11 +224,11 @@ public class UtilConsoleGUI {
 				fileQtlsToRegressOut = val;
 			} else if (args[i].equals("--preRankExpressionFiles")) {
 				ranked = "ranked";
+			} else if (arg.equals("--replacetext")) {
+				settingstexttoreplace = val;
+			} else if (arg.equals("--replacetextwith")) {
+				settingstexttoreplacewith = val;
 			}
-//            else if (arg.equals("--replacetext")) {
-//                settingstexttoreplace = val;
-//            } else if (arg.equals("--replacetextwith")) {
-//                settingstexttoreplacewith = val;
 //            }  else if (arg.equals("--inexpplatform")) {
 //                inexpplatform = val;
 //            }
@@ -316,7 +320,22 @@ public class UtilConsoleGUI {
 							}
 						}
 						break;
-					
+					case QTLFILEMERGE:
+						if (in == null || out == null || nreqtls == null) {
+							System.out.println("USAGE: --in eQTLFile --out eQTLFile --nreqtls nr eqtls");
+						} else {
+							QTLFileMerger m = new QTLFileMerger();
+							m.mergeChr(in, out, nreqtls);
+						}
+						break;
+					case EQTLEQTMLINK:
+						if (in == null || out == null || in2 == null) {
+							System.out.println("USAGE: --in eQTLFile --in2 eqtmfile --out directory");
+						} else {
+							EQTMGeneLinker l = new EQTMGeneLinker();
+							l.link(in, in2, out);
+						}
+						break;
 					case SORTFILE:
 						if (in == null) {
 							System.out.println("USAGE: --in eQTLFile --out eQTLFile");
@@ -369,14 +388,14 @@ public class UtilConsoleGUI {
 						} else {
 							if (snpfile != null || snpprobeselectionlist != null || probeselectionlist != null) {
 								try {
-									FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile, snpfile, probeselectionlist, snpprobeselectionlist);
+									FDR.calculateFDRAdvanced(in, perm, nreqtls, threshold, createQQPlot, null, null, fdrMethod, createLargeFdrFile, snpfile, probeselectionlist, snpprobeselectionlist);
 								} catch (IOException e) {
 									e.printStackTrace();
 									System.exit(1);
 								}
 							} else {
 								try {
-									FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, FdrMethod, createLargeFdrFile);
+									FDR.calculateFDR(in, perm, nreqtls, threshold, createQQPlot, null, null, fdrMethod, createLargeFdrFile);
 								} catch (IOException e) {
 									e.printStackTrace();
 									System.exit(1);
@@ -471,14 +490,15 @@ public class UtilConsoleGUI {
 							System.err.println("ERROR: you have specified an eQTL file to regress out, but the file was not found " + fileQtlsToRegressOut);
 							break;
 						}
-						RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut);
+						RegressCisEffectsFromGeneExpressionData regress = new RegressCisEffectsFromGeneExpressionData(settingsfile, fileQtlsToRegressOut, settingstexttoreplace, settingstexttoreplacewith);
 						break;
 					
 					case CREATTTFROMDOUBLEMAT:
 						if (inexpannot == null || in == null || out == null) {
 							System.out.println("Please specify --inexpannot, --in, --out");
 						} else {
-							String[] argsNew = {inexpannot, in, out, ranked};
+							String[] argsNew = {"-m", inexpannot, "-d", in, "-o", out, "-r", ranked};
+							
 							umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
 						}
 						break;
@@ -536,7 +556,9 @@ public class UtilConsoleGUI {
 				+ "--convertbinarymatrix\t\tConverts binary matrix to text\n"
 				+ "--filterpheno\t\tFilters phenotype file for sample list\n"
 				+ "--splitpheno\t\tSplits phenotype file by chromosome\n"
-				+ "--splitTT\t\tSplit trityper folder into chromosome chunks\n");
+				+ "--splitTT\t\tSplit trityper folder into chromosome chunks\n"
+				+ "--mergeqtlfile\t\tMerge QTL files (and sort them)\n"
+				+ "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n");
 		System.out.println("");
 
 //        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);
