@@ -684,9 +684,9 @@ public class BinaryMetaAnalysis {
 		
 		// sort every 1E7 results
 		if (locationToStoreResult % 1E7 == 0) {
-			System.out.println("Sorting intermediate output.");
+//			System.out.println("Sorting intermediate output.");
 			Arrays.parallelSort(finalEQTLs, 0, locationToStoreResult);
-			System.out.println("Done sorting...");
+//			System.out.println("Done sorting...");
 		}
 		
 		if (bufferHasOverFlown) {

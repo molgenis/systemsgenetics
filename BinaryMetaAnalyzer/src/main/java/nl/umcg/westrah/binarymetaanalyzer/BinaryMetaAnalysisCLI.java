@@ -2,6 +2,7 @@ package nl.umcg.westrah.binarymetaanalyzer;
 
 import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.CheckZScoreMeanAndVariance;
 import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.MetaAnalysisQC;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.QTLFileFilter;
 import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.SettingsFileCreator;
 import org.apache.commons.cli.*;
 
@@ -231,6 +232,12 @@ public class BinaryMetaAnalysisCLI {
 				.build();
 		OPTIONS.addOption(option);
 		
+		option = Option.builder()
+				.longOpt("filtereqtl")
+				.desc("Use tmp dir for temporary storage")
+				.build();
+		OPTIONS.addOption(option);
+		
 		
 	}
 	
@@ -259,7 +266,7 @@ public class BinaryMetaAnalysisCLI {
 					replacewith = cmd.getOptionValue("rtw");
 				}
 				boolean usetmp = false;
-				if(cmd.hasOption("usetmp")){
+				if (cmd.hasOption("usetmp")) {
 					usetmp = true;
 				}
 				
@@ -464,6 +471,38 @@ public class BinaryMetaAnalysisCLI {
 					);
 				}
 				
+			} else if (cmd.hasOption("filtereqtl")) {
+				String input = null;
+				String output = null;
+				String snp = null;
+				String gene = null;
+				String snpgene = null;
+				
+				QTLFileFilter f = new QTLFileFilter();
+				
+				
+				if (cmd.hasOption("e")) {
+					input = cmd.getOptionValue("e");
+				}
+				if (cmd.hasOption("o")) {
+					output = cmd.getOptionValue("o");
+				}
+				if (cmd.hasOption("snpconfine")) {
+					snp = cmd.getOptionValue("snpconfine");
+				}
+				if (cmd.hasOption("probeconfine")) {
+					snp = cmd.getOptionValue("probeconfine");
+				}
+				if (cmd.hasOption("snpprobeconfine")) {
+					snp = cmd.getOptionValue("snpprobeconfine");
+				}
+				
+				if (input == null || output == null) {
+					System.out.println("Use at least -e and -o for --filtereqtl");
+					System.out.println("Optional: --snpconfine, --probeconfine, --snpprobeconfine");
+				} else {
+					f.filter(snp, gene, snpgene, input, output);
+				}
 			} else if (cmd.hasOption("zscorematcheck")) {
 				String input = null;
 				String output = null;
@@ -478,6 +517,7 @@ public class BinaryMetaAnalysisCLI {
 				if (cmd.hasOption("t")) {
 					nrperm = cmd.getOptionValue("t");
 				}
+				
 				CheckZScoreMeanAndVariance v = new CheckZScoreMeanAndVariance();
 				v.checkZScoreTable(input, output, Integer.parseInt(nrperm));
 				
