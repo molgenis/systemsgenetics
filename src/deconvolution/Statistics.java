@@ -238,25 +238,5 @@ public class Statistics
 		int k=2;
 		return(-2*logLik(residuals) + k*npar);
 	}
-	
-	/*
-	 * Calculate the linear model residuals given an observation matrix, measured values vector, and betas vector.
-	 * The indexes between observed values, measured values and betas have to match
-	 * 
-	 * @param observedValues Matrix with the observed values
-	 * @param measuredValues Vector with the measured values
-	 * @param betas Betas from linear model
-	 */
-	public static double[] calculateResiduals(double[][]observedValues, double[]measuredValues, double[] betas){
-		double[] residuals = new double[measuredValues.length];
-		for(int i = 0; i < measuredValues.length; ++i ){
-			double predictedValue = 0;
-			for(int z = 0; z < betas.length; ++z){
-				predictedValue += betas[z] * observedValues[i][z];
-			}
-			residuals[i] = measuredValues[i] - predictedValue;
-		}
-		return(residuals);
-	}
 }
 
