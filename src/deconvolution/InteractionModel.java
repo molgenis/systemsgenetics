@@ -2,7 +2,6 @@ package deconvolution;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.math3.exception.DimensionMismatchException;
@@ -19,17 +18,22 @@ public class InteractionModel {
 	private List<int[]> celltypeVariablesIndex = new ArrayList <int[]>();
 	private double[][] observedValues;
 	private String modelName;
-	private double[] estimatedRegressionParameters;
-	private double[] estimateRegressionParametersStandardErrors;
 	public InteractionModel(){};
-	private HashMap<String, Character> genotypeOrder = new HashMap<String, Character>();
+	private String genotypeConfiguration;
 	// initialize with number so that we can test if it has been set
-	private double sumOfSquares = -1;
-	private double pvalue = -1;
-	private int degreesOfFreedom = -1;
-	private int modelLength = -1;
-	private int numberOfTerms;
-
+	private Double sumOfSquares;
+	private Double pvalue;
+	private Integer degreesOfFreedom;
+	private Integer modelLength;
+	private Integer numberOfTerms;
+	private double[] estimatedRegressionParameters;
+	private Double AIC;
+	private double[] residuals;
+	private double AICdelta;
+	private double[] estimatedRegressionParametersStandardError;
+	private double estimatedStandardError;
+	private double[] predictedValues;
+	
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
@@ -53,9 +57,6 @@ public class InteractionModel {
 	 * [mono%, neut%, mono% * GT]
 	 */
 	public double[][] getObservedValues() throws IllegalAccessException{
-		if(this.observedValues == null){
-			throw new IllegalAccessException("observedValues not set for this model");
-		}
 	    return(this.observedValues);
 	  }
 	
@@ -78,9 +79,6 @@ public class InteractionModel {
 	 * This can be used to sum up the Beta * variable per cell type  
 	 */
 	public List<int[]> getCelltypeVariablesIndex() throws IllegalAccessException{
-		if(this.celltypeVariablesIndex == null){
-			throw new IllegalAccessException("celltypeVariables not set for this model");
-		}
 	    return (this.celltypeVariablesIndex);
 	  }
 	
@@ -105,10 +103,6 @@ public class InteractionModel {
 	 * 		[neut%, mono%, neut%:GT]
 	 */
 	public List<String> getIndependentVariableNames() throws IllegalAccessException{
-
-		if(this.independentVariableNames == null){
-			throw new IllegalAccessException(String.format("celltypes not set for this model %s", this.modelName));
-		}
 	    return(this.independentVariableNames);
 	  }
 	
@@ -117,60 +111,29 @@ public class InteractionModel {
 	  }
 	
 	public String getModelName() throws IllegalAccessException{
-		if(this.modelName == null){
-			throw new IllegalAccessException(String.format("modelName name not set for this model %s", this.modelName));
-		}
 	    return(this.modelName);
-	  }
-		
-	public void setEstimateRegressionParametersStandardErrors(double[] estimateRegressionParametersStandardErrors){
-		this.estimateRegressionParametersStandardErrors = estimateRegressionParametersStandardErrors;
-	}
-	public double[] getEstimateRegressionParametersStandardErrors() throws IllegalAccessException{
-		if(this.estimateRegressionParametersStandardErrors == null){
-			throw new IllegalAccessException(String.format("estimateRegressionParametersStandardErrors not set for this model %s", this.modelName));
-		}
-		return(this.estimateRegressionParametersStandardErrors);
-	}
-	
-	public void setEstimateRegressionParameters(double[] estimatedRegressionParameters){
-		this.estimatedRegressionParameters = estimatedRegressionParameters;
-	}
-	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
-		if(this.estimatedRegressionParameters == null){
-			throw new IllegalAccessException(String.format("estimatedRegressionParameters not set for model %s", this.modelName));
-		}
-		return(this.estimatedRegressionParameters);
-	}
-	
-	public void emptyObservedValues(){
-		this.observedValues = null;
-	}
+	}	
 
 	public void setPvalue(double pvalue){
 		this.pvalue = pvalue;
 	}
 	public double getPvalue() throws IllegalAccessException{
-		if(this.pvalue == -1){
-			throw new IllegalAccessException(String.format("pvalue not set for model %s", this.modelName));
-		}
 		return this.pvalue;
 	}
 	public void setAlltIndependentVariableNames(List<String> list){
-		for (int celltypeIndex = 0; celltypeIndex < list.size(); celltypeIndex++) {
+		for (int celltypeIndex = 0; celltypeIndex < list.size(); ++celltypeIndex) {
 			int[] index = new int[] {celltypeIndex, list.size() + celltypeIndex};
 			addCelltypeVariablesIndex(index);
 			addIndependentVariableName(celltypeIndex, list.get(celltypeIndex));
 			addIndependentVariableName(list.get(celltypeIndex)+":GT");
 		}
 	}
-	public void addGenotypeOrder(String celltype, char c){
+	public void setGenotypeConfiguration(String genotypeConfiguration){
 		// 0 = dont swap genotype, 1 = swap genotype
-		this.genotypeOrder.put(celltype, c);
+		this.genotypeConfiguration = genotypeConfiguration;
 	}
-	public HashMap<String, Character> getGenotypeOrder(){
-		// 0 = dont swap genotype, 1 = swap genotype
-		return this.genotypeOrder;
+	public String getGenotypeConfiguration() throws IllegalAccessException{
+		return this.genotypeConfiguration;
 	}
 
 	public void setModelLength(){
@@ -178,9 +141,6 @@ public class InteractionModel {
 	}
 	
 	public int getModelLength() throws IllegalAccessException {
-		if(this.modelLength == -1){
-			throw new IllegalAccessException(String.format("modelLength not set for model %s", this.modelName));
-		}
 		return this.modelLength;
 	}
 
@@ -189,26 +149,51 @@ public class InteractionModel {
 	}
 	
 	public double getSumOfSquares() throws IllegalAccessException {
-		if(this.sumOfSquares == -1){
-			throw new IllegalAccessException(String.format("sumOfSquares not set for model %s", this.modelName));
-		}
 		return(this.sumOfSquares);
+	}
+	
+	public void setAIC() {
+		// +1 because error term is also a parameter
+		this.AIC = Statistics.AIC(this.residuals, this.getNumberOfTerms()+1);
+	}
+	
+	public double getAIC() {
+		return(this.AIC);
 	}
 
 	public void setDegreesOfFreedom(int degreesOfFreedom) {
 		this.degreesOfFreedom  = degreesOfFreedom;
 	}
 	public int getDegreesOfFreedom() throws IllegalAccessException {
-		if(this.degreesOfFreedom == -1){
-			throw new IllegalAccessException(String.format("degreesOfFreedom not set for model %s", this.modelName));
-		}
 		return(this.degreesOfFreedom);
 	}
 	
-	private int getNumberOfTerms(){
+	public int getNumberOfTerms(){
 		return this.numberOfTerms;
 	}
 	
+	
+	public void setEstimatedRegressionParameters(double[] estimatedRegressionParamters){
+		this.estimatedRegressionParameters = estimatedRegressionParamters;
+	}
+	
+	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
+		return(this.estimatedRegressionParameters);
+	}
+	
+	private void setResiduals(double[] residuals) {
+		this.residuals = residuals;
+	}
+	public double[] getResiduals() {
+		return(this.residuals);
+	}
+	
+	private void setPredictedValues(double[] predictedValues) {
+		this.predictedValues = predictedValues;
+	}
+	public double[] getPredictedValues(){
+		return this.predictedValues;
+	}
 	/**
 	 * Calculate the sum of squares, using Non-Negative Linear Regression, given a y expression vector with y ~
 	 * model.
@@ -227,35 +212,36 @@ public class InteractionModel {
 	 *  @return An nnls object
 	 */
 	public void calculateSumOfSquaresNNLS(double[] expressionValues) throws IOException, IllegalAccessException {
-		// Use clone for a and b because the solve() method changes the matrix in place, want to keep the original values
-		/*
-		 * The MxN-element A matrix for the least squares
-		 *
-		 * problem. On input to the solve() method, a contains the
-		 * matrix A. On output, a has been replaced with QA,
-		 * where Q is an MxM-element orthogonal matrix
-		 * generated during the solve() method's execution.
-		 */
-		double[][] a = this.observedValues;
-		/*
-		 * The M-element b vector for the least squares problem. On
-		 * input to the solve() method, b contains the vector
-		 * b. On output, b has been replaced with Qb, where
-		 * Q is an MxM-element orthogonal matrix generated
-		 * during the solve() method's execution.
-		*/
-		double[] b = expressionValues.clone();
-		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares(getModelLength(), getNumberOfTerms());
+		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares();
+		
+		try{
+			nnls.newSampleData(expressionValues, this.getObservedValues());
+		}
+		catch (DimensionMismatchException e){
+			DeconvolutionLogger.log.info(String.format("Length of expression and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
+					expressionValues.length, this.getNumberOfTerms()));
+			throw(e);
+		}
+		
 		// results contain:
 		// normsqr: sqroot of the norm error vector
 		// x: the parameters
 		// For more, check out the Class documentation
-		nnls.solve(a, b);
-		setSumOfSquares(nnls.normsqr);
+		double[] estimatedRegressionParameters = nnls.estimateRegressionParameters();
+		setEstimatedRegressionParameters(estimatedRegressionParameters);
+		
+		setSumOfSquares(nnls.calculateResidualSumOfSquares());
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
-		nnls = null;
+		
+		double[] predictedValues = nnls.getPredictedExpressionValues();
+		double[] residuals = nnls.estimateResiduals();
+		//setEstimatedStandardError(nnls.estimateRegressionStandardError());
+		setResiduals(residuals);
+		setPredictedValues(predictedValues);
 	}
 	
+
+
 	/**
 	 * Calculate the sum of squares, using Ordinary Linear Regression, given a y expression vector with y ~
 	 * model. Remove of the intercept (equivalent to y ~ model -1 in R) is hard-code in
@@ -266,10 +252,9 @@ public class InteractionModel {
 	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
 	 * [0, 51.5, 0] [0, 48.7, 0]]
 	 * @param expressionValues Vector of expression values to use
-	 * @param estimateRegressionParameters If true, estimate the regression parameters and save them in the InteractionModel
 	 * @return A regression object
 	 */
-	public void calculateSumOfSquaresOLS(double[] expressionValues, Boolean estimateRegressionParameters) throws IOException, IllegalAccessException {
+	public void calculateSumOfSquaresOLS(double[] expressionValues, boolean estimateErrors) throws IOException, IllegalAccessException {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
@@ -278,16 +263,48 @@ public class InteractionModel {
 			regression.newSampleData(expressionValues, this.getObservedValues());
 		}
 		catch (DimensionMismatchException e){
-			DeconvolutionLogger.log.info(String.format("Length of expression and and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
+			DeconvolutionLogger.log.info(String.format("Length of expression and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
 					expressionValues.length, this.getNumberOfTerms()));
 			throw(e);
 		}
 		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
-		if(estimateRegressionParameters){
-			this.setEstimateRegressionParameters(regression.estimateRegressionParameters());
-			//this.setEstimateRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
+		setResiduals(regression.estimateResiduals());
+		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
+		if(estimateErrors){
+			setEstimatedRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
+			setEstimatedStandardError(regression.estimateRegressionStandardError());
+		}
+	}
 
+	public void setAICdelta(double comparativeAIC) {
+		// if comparateAIC < this.getAIC(): comparativeAIC = better
+		this.AICdelta = comparativeAIC - this.getAIC();
+	}
+	public double getAICdelta() {
+		return this.AICdelta;
+	}
+
+	public void setEstimatedRegressionParametersStandardErrors(double[] estimatedRegressionParametersStandardErrors) {
+		this.estimatedRegressionParametersStandardError = estimatedRegressionParametersStandardErrors;
+	}
+
+	public double[] getEstimatedRegressionParametersStandardErrors() {
+		return this.estimatedRegressionParametersStandardError;
+	}
+	
+	public void setEstimatedStandardError(double estimatedStandardError){
+		this.estimatedStandardError = estimatedStandardError;
+	}
+	public double getEstimatedStandardError(){
+		return this.estimatedStandardError;
+	}
+
+	public void cleanUp(Boolean removePredictedValues) {
+		this.observedValues = null;
+		this.residuals = null;
+		if(removePredictedValues){
+			this.predictedValues = null;
 		}
 	}
 }

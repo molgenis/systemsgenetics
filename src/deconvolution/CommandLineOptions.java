@@ -23,21 +23,20 @@ public class CommandLineOptions {
 	private String snpsToTestFile;
 	private String outfile = "deconvolutionResults.csv";
 	private String outfolder;
-	private int numberOfPermutations = 0;
-	private String permutationType = "genotype";
 	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
 	private Boolean allDosages = false;
-	private String normalizationType = "normalizeAddMean";
 	private Boolean filterSamples = false;
 	private Boolean removeConstraintViolatingSamples = false;
 	private Boolean onlyOutputSignificant = false;
-	private String validate;
 	private Boolean testRun = false;
 	private Boolean skipGenotypes = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
 	private Boolean useNNLS = false;
+	private Boolean outputPredictedExpression = false;
+	private String genotypeConfigurationType = "all";
+	
 	/**
 	 * Standard command line parsing.
 	 * 
@@ -62,13 +61,13 @@ public class CommandLineOptions {
 				.desc("If set, remove samples that are filtered out because of -m, -nn or -ad. By default p-values of these are set to 333.0").build();
 		Option genotype = Option.builder("g").required(true).hasArg().longOpt("genotype").desc("Genotype file name")
 				.argName("file").build();
+		Option genotypeConfigurationTypeOption = Option.builder("gc").required(false).hasArg().longOpt("genotypeConfigurationType")
+				.desc("Which genotype configuration type to use (either all or two)").build();
 		Option minimumSamplesPerGenotype = Option.builder("m").required(false).hasArg().longOpt("minimum_samples_per_genotype")
 				.desc("The minimum amount of samples need for each genotype of a QTL for the QTL to be included in the results")
 				.argName("int").build();
 		Option multipleTestCorrectionMethod = Option.builder("mt").required(false).hasArg().longOpt("multiple_testing_correction_method")
 				.desc("Method used for doing multiple testing correction (currently only bonferonni)").build();
-		Option normalizationType = Option.builder("n").required(false).hasArg().longOpt("normalization_type")
-				.desc("Type to normalization to use when normalizing expression data (Default: normalizeAddMean)").build();
 		Option forceNormalCellcount = Option.builder("nc").required(false).hasArg().longOpt("force_normal_cellcount")
 				.desc("Force normal on the expression data").build();
 		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
@@ -78,12 +77,10 @@ public class CommandLineOptions {
 				.desc("Do not output logging info to the console").build();
 		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
 				.argName("path").build();
+		Option outputPredictedExpressionOption = Option.builder("oe").required(false).longOpt("outputPredictedExpression").desc("Write output file with predicted expression")
+				.build();
 		Option outfile = Option.builder("of").required(false).hasArg().longOpt("outfile").desc("Outfile name of deconvolution results (will be written in outfolder)")
 				.argName("file").build();
-		Option permute = Option.builder("p").required(false).longOpt("permute").hasArg()
-				.desc("Do permutations. Uses more than usual memory.").build();
-		Option permuteType = Option.builder("pt").required(false).hasArg().longOpt("permutation_type")
-				.desc("Type to permute on, either genotype or expression (Default: genotype)").build();
 		Option roundDosage = Option.builder("r").required(false).longOpt("round_dosage")
 				.desc("Round the dosage to the closest int").build();
 		Option onlyOutputSignificantOption = Option.builder("s").required(false).longOpt("output_significant_only")
@@ -94,15 +91,11 @@ public class CommandLineOptions {
 				.desc("Tab delimited file with first column gene name, second column SNP name. Need to match with names from genotype and expression files.").build();
 		Option doTestRun = Option.builder("t").required(false).longOpt("test_run")
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
-		Option validateResults = Option.builder("v").required(false).hasArg().longOpt("validate_output")
-				.desc("Validate how well deconvolution worked by comparing to cell-type specific data").build();
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		options.addOption(onlyOutputSignificantOption);
 		options.addOption(filterSamplesOption);
-		options.addOption(normalizationType);
 		options.addOption(help);
-		options.addOption(permute);
 		options.addOption(outfile);
 		options.addOption(expression);
 		options.addOption(genotype);
@@ -111,11 +104,9 @@ public class CommandLineOptions {
 		options.addOption(minimumSamplesPerGenotype);
 		options.addOption(forceNormalExpression);
 		options.addOption(forceNormalCellcount);
-		options.addOption(permuteType);
 		options.addOption(allDosages);
 		options.addOption(outfolder);
 		options.addOption(useRelativeCellCountsOption);
-		options.addOption(validateResults);
 		options.addOption(doTestRun);
 		options.addOption(multipleTestCorrectionMethod);
 		options.addOption(snpsToTestOption);
@@ -123,6 +114,8 @@ public class CommandLineOptions {
 		options.addOption(wholeBloodQTL);
 		options.addOption(noConsoleOption);
 		options.addOption(useNNLSOption);
+		options.addOption(outputPredictedExpressionOption);
+		options.addOption(genotypeConfigurationTypeOption);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
 			CommandLine cmdLine = cmdLineParser.parse(options, args);
@@ -150,18 +143,9 @@ public class CommandLineOptions {
 		if(cmdLine.hasOption("remove_constraint_violating_samples")){
 			removeConstraintViolatingSamples = !removeConstraintViolatingSamples;
 		}
-		permutationType = "genotype";
-		if(cmdLine.hasOption("permutation_type")){
-			permutationType = cmdLine.getOptionValue("permutation_type");
-			if(!(permutationType.equals("genotype") || permutationType.equals("expression"))){
-				throw new IllegalArgumentException("permutation_type should be genotype or expression, not "+cmdLine.getOptionValue("permutation_type"));
-			}
-		}
-		if (cmdLine.hasOption("permute")) {
-			numberOfPermutations = Integer.parseInt(cmdLine.getOptionValue("permute"));
-			if(numberOfPermutations < 1){
-				numberOfPermutations = 1;
-			}
+		
+		if(cmdLine.hasOption("genotypeConfigurationTypeOption")){
+			
 		}
 		
 		if (cmdLine.hasOption("use_NNLS")){
@@ -183,6 +167,14 @@ public class CommandLineOptions {
 			minimumSamplesPerGenotype = Integer.parseInt(cmdLine.getOptionValue("minimum_samples_per_genotype"));
 			if(minimumSamplesPerGenotype < 0){
 				minimumSamplesPerGenotype = 0;
+			}
+		}
+		
+		if(cmdLine.hasOption("genotypeConfigurationType")){
+			genotypeConfigurationType = cmdLine.getOptionValue("genotypeConfigurationType");
+			
+			if(!(genotypeConfigurationType.equals("all") || genotypeConfigurationType.equals("two") || genotypeConfigurationType.equals("one"))){
+				throw new IllegalArgumentException("genotypeConfigurationType should be all or two, not "+genotypeConfigurationType);
 			}
 		}
 
@@ -213,25 +205,20 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("no_console")) {
 			noConsole = !noConsole;
 		}
-		if (cmdLine.hasOption("normalization_type")){
-			normalizationType = cmdLine.getOptionValue("normalization_type");
-		}
 		if (cmdLine.hasOption("filter_samples")){
 			filterSamples = !filterSamples;
 		}
 
-		if (cmdLine.hasOption("validate_output")){
-			validate = cmdLine.getOptionValue("validate_output");
-			if(!new File(validate).exists() || new File(validate).isDirectory()) { 
-			    throw new FileNotFoundException(validate+" does not exist");
-			}	
-		}
 		if (cmdLine.hasOption("test_run")) {
 			testRun = !testRun;
 		}
 		
 		if (cmdLine.hasOption("whole_blood_qtl")){
 			wholeBloodQTL = !wholeBloodQTL;
+		}
+		
+		if (cmdLine.hasOption("outputPredictedExpression")){
+			outputPredictedExpression = !outputPredictedExpression;
 		}
 	}
 	
@@ -258,6 +245,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
+	    DeconvolutionLogger.log.info("Running deconvolution version 0.1.6, compiled 24-DEC-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
@@ -266,11 +254,6 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Outfolder (-o): %s", outfolder));
 		DeconvolutionLogger.log.info(String.format("Outfile (-of): %s", outfile));
 		DeconvolutionLogger.log.info(String.format("Use non negative least squares(-n): %s", useNNLS));
-		DeconvolutionLogger.log.info(String.format("Number of permutations (-p): %s", numberOfPermutations));
-		if(numberOfPermutations > 0){
-			DeconvolutionLogger.log.info(String.format("Permutation type (-pt): %s", permutationType));
-		}
-		DeconvolutionLogger.log.info(String.format("Normalization type used if Normalize expression==true (-n): %s", normalizationType));
 		DeconvolutionLogger.log.info(String.format("Round dosage (-r): %s", roundDosage));
 		DeconvolutionLogger.log.info(String.format("Filter out QTLs where not all dosages are present in at least 1 sample (-ad): %s", allDosages));
 		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
@@ -281,12 +264,9 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Skipping genotypes that are in SNP-gene pair file but not in genotype file (-sg): %s", skipGenotypes));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
-		if(validate == null){
-			DeconvolutionLogger.log.info(String.format("Validate (-v): %s", false));
-		}
-		else{
-			DeconvolutionLogger.log.info(String.format("Validating using (-v): %s", validate));
-		}
+		DeconvolutionLogger.log.info(String.format("Write predicted expression to output file (-oe): %s", outputPredictedExpression));
+		DeconvolutionLogger.log.info(String.format("Genotype configuration to use (-gc): %s", genotypeConfigurationType));
+		
 		DeconvolutionLogger.log.info("=================================================");
 	}
 	public String getExpressionFile(){
@@ -303,12 +283,6 @@ public class CommandLineOptions {
 	}
 	public String getOutfile(){
 		return(outfile);
-	}
-	public int getNumberOfPermutations(){
-		return(numberOfPermutations);
-	}
-	public String getPermutationType(){
-		return(permutationType);
 	}
 
 	public int getMinimumSamplesPerGenotype(){
@@ -327,9 +301,7 @@ public class CommandLineOptions {
 		}
 		return(outfolder);
 	}
-	public String getNormalizationType(){
-		return(normalizationType);
-	}
+
 	public void setOutfolder(String newOutfolder){
 		outfolder = newOutfolder;
 	}
@@ -344,9 +316,6 @@ public class CommandLineOptions {
 		return(onlyOutputSignificant);
 	}
 
-	public String getValidationFile(){
-		return(validate);
-	}
 	public Boolean getTestRun(){
 		return(testRun);
 	}
@@ -358,6 +327,13 @@ public class CommandLineOptions {
 	}
 	public Boolean getUseNNLS(){
 		return(useNNLS);
+	}
+	public Boolean getOutputPredictedExpression(){
+		return outputPredictedExpression;
+	}
+
+	public String getGenotypeConfigurationType() {
+		return genotypeConfigurationType;
 	}
 }
 

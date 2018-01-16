@@ -211,5 +211,32 @@ public class Statistics
     	return Math.log((1+x)/(1-x))/2;
     }
     
+    
+	/*
+	 * Calculate log-likelihood from linear models residuals (same as logLik in R)
+	 * 
+	 * @param residuals residuals of linear model
+	 */
+	private static double logLik(double[] residuals){
+		double logSummedResiduals = 0;
+		for(double residual : residuals){
+			logSummedResiduals += Math.pow(residual, 2);
+		}
+		logSummedResiduals = Math.log(logSummedResiduals);
+			
+		double logLikelihood = 0.5 * (0 - residuals.length * (Math.log(2 * Math.PI) + 1 - Math.log(residuals.length)+logSummedResiduals));
+		return(logLikelihood);
+	}
+	
+	/*
+	 * Calculate Akaike's ‘An Information Criterion’ with k = 2 (same is AIC in R)
+	 * 
+	 * @param residuals residuals of linear model
+	 * @param npar represents the number of parameters in the fitted model
+	 */
+	public static double AIC(double[] residuals, int npar){
+		int k=2;
+		return(-2*logLik(residuals) + k*npar);
+	}
 }
 

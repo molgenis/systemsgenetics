@@ -29,13 +29,13 @@ public class DeconvolutionResult {
 	public DeconvolutionResult( InteractionModelCollection interactionModelCollection, double wholeBloodQTL, 
 								double wholeBloodQTLpvalue) throws IllegalAccessException{
 
-		this.celltypes = interactionModelCollection.getCelltypes();
+		celltypes = interactionModelCollection.getAllCelltypes();
 		this.qtlName = interactionModelCollection.getQtlName();
 		for (int i = 0; i < celltypes.size(); i++){
-			String modelName = interactionModelCollection.getCelltypes().get(i);
+			String modelName = celltypes.get(i);
 			Double pvalue = interactionModelCollection.getPvalue(modelName);
 			this.pvalues.add(pvalue);
-			pvaluePerCelltype.put(celltypes.get(i), pvalue);
+			pvaluePerCelltype.put(modelName, pvalue);
 		}
 		this.interactionModelCollection = interactionModelCollection;
 		this.wholeBloodQTL = wholeBloodQTL;

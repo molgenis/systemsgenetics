@@ -20,11 +20,14 @@ public class CellCount {
 	 * @param cellcountFile File with cellcount percentages, 
 	 * 		   with columns = celltype, rows is samples (includes column headers and row names)   
 	 */
+	@SuppressWarnings("unchecked")
 	public CellCount( String cellCountFile) throws IOException{
 		// the cell type names are the first row of cellcount file, extract for
 		// later printing
-		// is now saved as table of strings, should be changed to table of doubles so we only have to convert them ones
-		cellcountTable = Utils.readTabDelimitedColumns(cellCountFile);
+		// is now saved as table of strings
+		Object[] cellCountData = Utils.readTabDelimitedColumns(cellCountFile);
+		samplenames = (ArrayList<String>) cellCountData[0];
+		cellcountTable = (List<List<String>>) cellCountData[1];
 		numberOfCelltypes = cellcountTable.size();
 		DeconvolutionLogger.log.info(String.format("Celltypes to use:"));
 		for(int i = 0; i < numberOfCelltypes; i++){
@@ -37,9 +40,6 @@ public class CellCount {
 		// minus one because the size includes the celltype header
 		numberOfSamples = cellcountTable.get(0).size()-1;
 		DeconvolutionLogger.log.info(String.format("Number of samples: %d", numberOfSamples));
-		for(String sampleName : cellcountTable.get(0)){
-			samplenames.add(sampleName);
-		}
 		cellcountPercentages = new double[numberOfSamples][numberOfCelltypes];
 		for (int j = 0; j <= numberOfSamples-1; j++) {
 			for (int i = 0; i < numberOfCelltypes; i++) {
@@ -48,11 +48,22 @@ public class CellCount {
 		}
 	}
 
+	public void emptyCellcountPercentages(){
+		cellcountPercentages = null;
+	}
+	
+	public List<String> getSampleNames(){
+		return samplenames;
+	}
+	
 	public List<List<String>> getCellcountTable(){
 		return(cellcountTable);
 	}	
-	public List<String> getCelltypes(){
+	public List<String> getAllCelltypes(){
 		return(celltypes);
+	}	
+	public String getCelltype(int index){
+		return(celltypes.get(index));
 	}	
 	public int getNumberOfCelltypes(){
 		return(numberOfCelltypes);

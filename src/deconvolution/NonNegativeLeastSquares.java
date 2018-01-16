@@ -40,7 +40,9 @@
 
 package deconvolution;
 
-import edu.rit.numeric.TooManyIterationsException;
+import org.apache.commons.math3.exception.MathIllegalArgumentException;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
 
 /**
  * 
@@ -48,7 +50,15 @@ import edu.rit.numeric.TooManyIterationsException;
  * from: https://www.cs.rit.edu/~ark/pj.shtml#download
  * Manual: https://www.cs.rit.edu/~ark/pj/doc/edu/rit/numeric/NonNegativeLeastSquares.html
  * 
- * I only made very minor adjustments for inputting data to solve() method.
+ * I (Niek de Klein, 2017) made some adjustments for inputting data to solve() method and outputting some other data.
+ * 
+ * Also extended from math.commons AbstractMultipleLinearRegression
+ * 
+ * Most important change: original code replaces the A matrix and b vector given as input
+ * to the solve() method by their orthogonals (see solve() documentation). However, here
+ * they get cloned first, so that the input data given to solve() keeps its original values.
+ * This is because I do not use the orthogonal data outside of this class, and I do want to
+ * keep my original values.
  * 
  * Class NonNegativeLeastSquares provides a method for solving a least squares
  * minimization problem with nonnegativity constraints. The solve()
@@ -64,34 +74,37 @@ import edu.rit.numeric.TooManyIterationsException;
  * Problems (Society for Industrial and Applied Mathematics, 1995), page
  * 161.
  *
- * @author  Alan Kaminsky
- * @version 22-Apr-2005
+ * @author  Alan Kaminsky (modified by Niek de Klein)
+ * @version 14-Dec-2017
  */
 public class NonNegativeLeastSquares
-	{
-
-// Exported data members.
+{
 
 	/**
 	 * The number of rows, typically the number of input data points, in the
 	 * least squares problem.
 	 */
-	public final int M;
+	private int M;
 
 	/**
 	 * The number of columns, typically the number of output parameters, in the
 	 * least squares problem.
 	 */
-	public final int N;
+	private int N;
 
-
-
+	
+	// initial y
+	private double[] measuredValues;
+	// initial x
+	private double[][] observedValues;
+	// predicted values for y
+	private double[] predictedValues;
 	/**
 	 * The N-element x vector for the least squares problem. On
 	 * output from the solve() method, x contains the solution
 	 * vector x.
 	 */
-	public final double[] x;
+	private double[] x;
 
 	/**
 	 * The N-element index vector. On output from the solve()
@@ -103,63 +116,80 @@ public class NonNegativeLeastSquares
 	 * the set of zero values; that is, the elements that are forced to be zero
 	 * (active constraints).
 	 */
-	public final int[] index;
+	private int[] index;
 
 	/**
 	 * The number of elements in the set P; that is, the number of
 	 * positive values (inactive constraints). An output of the solve()
 	 * method.
 	 */
-	public int nsetp;
+	private int nsetp;
 
-	/**
-	 * The squared Euclidean norm of the residual vector, ||Ax -
-	 * b||<SUP>2</SUP>. An output of the solve() method.
-	 */
-	public double normsqr;
+
+	// After solving, the orthogonal matrix of the A matrix and b vector
+	// cloning originalA and originalB so that those values are kept for later use
+	private double[] b;
+	private double[][] a;
 
 	// Working storage.
-	private final double[] w;
-	private final double[] zz;
-	private final double[] terms;
+	private double[] w;
+	private double[] zz;
+	private double[] terms;
 
 	// Maximum number of iterations.
-	private final int itmax;
+	private int itmax;
 
 	// Magic numbers.
 	private static final double factor = 0.01;
 
-// Exported constructors.
+	// Exported constructors.
 
 	/**
 	 * Construct a new nonnegative least squares problem of the given size.
-	 * Fields M and N are set to the given values. The array
+	 * Fields M and N are set based on the observed values matrix. The array
 	 * fields a, b, x, and index are
 	 * allocated with the proper sizes but are not filled in.
 	 *
-	 * @param  M  Number of rows (input data points) in the least squares
-	 *            problem.
-	 * @param  N  Number of columns (output parameters) in the least squares
-	 *            problem.
+	 * @param  originalA See solve() method documentation for description
+	 * @param  originalB See solve() method documentation for description
 	 *
 	 * @exception  IllegalArgumentException
 	 *     (unchecked exception) Thrown if M &lt;= 0 or N
 	 *     &lt;= 0.
 	 */
-	public NonNegativeLeastSquares
-		(int M,
-		 int N)
-		{
+	public NonNegativeLeastSquares(){}
+
+	/**
+     * Loads model x and y sample data, overriding any previous sample.
+     *
+     * @param y the [n,1] array representing the y sample
+     * @param x the [n,k] array representing the x sample
+     * @throws MathIllegalArgumentException if the x and y array data are not
+     *             compatible for the regression
+     */
+    public void newSampleData(double[] y, double[][] x) throws MathIllegalArgumentException {
+    	this.measuredValues = y;
+    	this.observedValues = x;
+		// cloning y and x so that those values are kept for later use
+		b = y.clone();
+		a = new double[x.length][];
+		for(int z = 0; z < x.length; ++z)
+			a[z] = x[z].clone();
+
+		//Number of rows (input data points) in the least squares problem.
+		int M = x.length;
+		// Number of columns (output parameters) in the least squares problem.
+		int N = x[0].length;
 		if (M <= 0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares(): M = " + M + " illegal");
-			}
+			("NonNegativeLeastSquares(): M = " + M + " illegal");
+		}
 		if (N <= 0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares(): N = " + N + " illegal");
-			}
+			("NonNegativeLeastSquares(): N = " + N + " illegal");
+		}
 
 		this.M = M;
 		this.N = N;
@@ -172,10 +202,10 @@ public class NonNegativeLeastSquares
 		this.zz = new double [M];
 		this.terms = new double [2];
 		this.itmax = 3*N;
-		}
-
-// Exported operations.
-
+		
+		solve();
+    }
+	
 	/**
 	 * Solve this least squares minimization problem with nonnegativity
 	 * constraints. The solve() method finds an approximate solution to
@@ -188,14 +218,14 @@ public class NonNegativeLeastSquares
 	 * the documentation for each field.
 	 * 
 	 * The MxN-element A matrix for the least squares
-	 * problem. On input to the solve() method, a contains the
-	 * matrix A. On output, a has been replaced with QA,
+	 * problem. On input to the solve() method, originalA contains the
+	 * matrix A. On output, originalA is cloned into a. a has been replaced with QA,
 	 * where Q is an MxM-element orthogonal matrix
 	 * generated during the solve() method's execution.
 	 *
 	 * The M-element b vector for the least squares problem. On
-	 * input to the solve() method, b contains the vector
-	 * b. On output, b has been replaced with Qb, where
+	 * input to the solve() method, originalB contains the vector
+	 * b. On output, originalB is cloned into b. b has been replaced with Qb, where
 	 * Q is an MxM-element orthogonal matrix generated
 	 * during the solve() method's execution.
 	 *
@@ -203,8 +233,8 @@ public class NonNegativeLeastSquares
 	 *     (unchecked exception) Thrown if too many iterations occurred without
 	 *     finding a minimum (more than 3N iterations).
 	 */
-	public void solve(double[][]a, double[]b)
-		{
+	private void solve()
+	{
 		int i, iz, j, l, izmax, jz, jj, ip, ii;
 		double sm, wmax, asave, unorm, ztest, up, alpha, t, cc, ss, temp;
 
@@ -215,46 +245,50 @@ public class NonNegativeLeastSquares
 		// index[0] through index[nsetp-1] = set P.
 		// index[nsetp] through index[N-1] = set Z.
 		for (i = 0; i < N; ++ i)
-			{
+		{
 			x[i] = 0.0;
 			index[i] = i;
-			}
+		}
 		nsetp = 0;
 
 		// Main loop begins here.
 		mainloop: for (;;)
-			{
+		{
 			// Quit if all coefficients are already in the solution, or if M
 			// columns of A have been triangularized.
 			if (nsetp >= N || nsetp >= M) break mainloop;
 
 			// Compute components of the dual (negative gradient) vector W.
 			for (iz = nsetp; iz < N; ++ iz)
-				{
+			{
 				j = index[iz];
 				sm = 0.0;
 				for (l = nsetp; l < M; ++ l)
-					{
-					sm += a[l][j]*b[l];
+				{
+					try{
+						sm += a[l][j]*b[l];
+					} catch (NullPointerException e){
+						throw e;
 					}
-				w[j] = sm;
 				}
+				w[j] = sm;
+			}
 
 			// Find a candidate j to be moved from set Z to set P.
 			candidateloop: for (;;)
-				{
+			{
 				// Find largest positive W[j].
 				wmax = 0.0;
 				izmax = -1;
 				for (iz = nsetp; iz < N; ++ iz)
-					{
+				{
 					j = index[iz];
 					if (w[j] > wmax)
-						{
+					{
 						wmax = w[j];
 						izmax = iz;
-						}
 					}
+				}
 
 				// If wmax <= 0, terminate. This indicates satisfaction of the
 				// Kuhn-Tucker conditions.
@@ -269,12 +303,12 @@ public class NonNegativeLeastSquares
 				up = constructHouseholderTransform (nsetp, nsetp+1, a, j);
 				unorm = 0.0;
 				for (l = 0; l < nsetp; ++ l)
-					{
+				{
 					unorm += sqr (a[l][j]);
-					}
+				}
 				unorm = Math.sqrt (unorm);
 				if (diff (unorm + Math.abs(a[nsetp][j])*factor, unorm) > 0.0)
-					{
+				{
 					// Column j is sufficiently independent. Copy B into ZZ,
 					// update ZZ, and solve for ztest = proposed new value for
 					// X[j].
@@ -284,13 +318,13 @@ public class NonNegativeLeastSquares
 
 					// If ztest is positive, we've found our candidate.
 					if (ztest > 0.0) break candidateloop;
-					}
+				}
 
 				// Reject j as a candidate to be moved from set Z to set P.
 				// Restore a[nsetp][j], set w[j] = 0, and try again.
 				a[nsetp][j] = asave;
 				w[j] = 0.0;
-				}
+			}
 
 			// The index j = index[iz] has been selected to be moved from set Z
 			// to set P. Update B, update indexes, apply Householder
@@ -304,62 +338,62 @@ public class NonNegativeLeastSquares
 
 			jj = -1;
 			for (jz = nsetp; jz < N; ++ jz)
-				{
+			{
 				jj = index[jz];
 				applyHouseholderTransform (nsetp-1, nsetp, a, j, up, a, jj);
-				}
+			}
 
 			for (l = nsetp; l < M; ++ l)
-				{
+			{
 				a[l][j] = 0.0;
-				}
+			}
 
 			w[j] = 0.0;
 
 			// Solve the triangular system. Store the solution temporarily in
 			// zz.
 			for (l = 0; l < nsetp; ++ l)
-				{
+			{
 				ip = nsetp - l;
 				if (l != 0)
-					{
+				{
 					for (ii = 0; ii < ip; ++ ii)
-						{
+					{
 						zz[ii] -= a[ii][jj] * zz[ip];
-						}
 					}
+				}
 				-- ip;
 				jj = index[ip];
 				zz[ip] /= a[ip][jj];
-				}
+			}
 
 			// Secondary loop begins here.
 			secondaryloop: for (;;)
-				{
+			{
 				// Increment iteration counter.
 				++ iter;
 				if (iter > itmax)
-					{
-					throw new TooManyIterationsException
-						("NonNegativeLeastSquares.solve(): Too many iterations");
-					}
+				{
+					throw new RuntimeException
+					("NonNegativeLeastSquares.solve(): Too many iterations");
+				}
 
 				// See if all new constrained coefficients are feasible. If not,
 				// compute alpha.
 				alpha = 2.0;
 				for (ip = 0; ip < nsetp; ++ ip)
-					{
+				{
 					l = index[ip];
 					if (zz[ip] <= 0.0)
-						{
+					{
 						t = -x[l] / (zz[ip] - x[l]);
 						if (alpha > t)
-							{
+						{
 							alpha = t;
 							jj = ip;
-							}
 						}
 					}
+				}
 
 				// If all new constrained coefficients are feasible then alpha
 				// will still be 2. If so, exit from secondary loop to main
@@ -369,46 +403,46 @@ public class NonNegativeLeastSquares
 				// Otherwise, use alpha (which will be between 0 and 1) to
 				// interpolate between the old x and the new zz.
 				for (ip = 0; ip < nsetp; ++ ip)
-					{
+				{
 					l = index[ip];
 					x[l] += alpha * (zz[ip] - x[l]);
-					}
+				}
 
 				// Modify A and B and the index arrays to move coefficient i
 				// from set P to set Z.
 				i = index[jj];
 				tertiaryloop: for (;;)
-					{
+				{
 					x[i] = 0.0;
 					if (jj != nsetp-1)
-						{
+					{
 						++ jj;
 						for (j = jj; j < nsetp; ++ j)
-							{
+						{
 							ii = index[j];
 							index[j-1] = ii;
 							a[j-1][ii] =
-								computeGivensRotation
+									computeGivensRotation
 									(a[j-1][ii], a[j][ii], terms);
 							a[j][ii] = 0.0;
 							cc = terms[0];
 							ss = terms[1];
 							for (l = 0; l < N; ++ l)
-								{
+							{
 								if (l != ii)
-									{
+								{
 									// Apply Givens rotation to column l of A.
 									temp = a[j-1][l];
 									a[j-1][l] =  cc*temp + ss*a[j][l];
 									a[j  ][l] = -ss*temp + cc*a[j][l];
-									}
 								}
+							}
 							// Apply Givens rotation to B.
 							temp = b[j-1];
 							b[j-1] =  cc*temp + ss*b[j];
 							b[j  ] = -ss*temp + cc*b[j];
-							}
 						}
+					}
 					-- nsetp;
 					index[nsetp] = i;
 
@@ -418,51 +452,44 @@ public class NonNegativeLeastSquares
 					// that are nonpositive will be set to 0 and moved from set
 					// P to set Z.
 					for (jj = 0; jj < nsetp; ++ jj)
-						{
+					{
 						i = index[jj];
 						if (x[i] <= 0.0) continue tertiaryloop;
-						}
-					break tertiaryloop;
 					}
+					break tertiaryloop;
+				}
 
 				// Copy b into zz, then solve the tridiagonal system again and
 				// continue the secondary loop.
 				System.arraycopy (b, 0, zz, 0, M);
 				for (l = 0; l < nsetp; ++ l)
-					{
+				{
 					ip = nsetp - l;
 					if (l != 0)
-						{
+					{
 						for (ii = 0; ii < ip; ++ ii)
-							{
+						{
 							zz[ii] -= a[ii][jj] * zz[ip];
-							}
 						}
+					}
 					-- ip;
 					jj = index[ip];
 					zz[ip] /= a[ip][jj];
-					}
 				}
+			}
 
 			// Update x from zz.
 			for (ip = 0; ip < nsetp; ++ ip)
-				{
+			{
 				i = index[ip];
 				x[i] = zz[ip];
-				}
+			}
 
 			// All new coefficients are positive. Continue the main loop.
-			}
-
-		// Compute the squared Euclidean norm of the final residual vector.
-		normsqr = 0.0;
-		for (i = nsetp; i < M; ++ i)
-			{
-			normsqr += sqr (b[i]);
-			}
 		}
+	}
 
-// Hidden operations.
+	// Hidden operations.
 
 	/**
 	 * Construct a Householder transformation. u is an
@@ -489,11 +516,11 @@ public class NonNegativeLeastSquares
 	 *     transformation.
 	 */
 	private static double constructHouseholderTransform
-		(int ipivot,
-		 int i1,
-		 double[][] u,
-		 int pivotcol)
-		{
+	(int ipivot,
+			int i1,
+			double[][] u,
+			int pivotcol)
+	{
 		int M = u.length;
 		int j;
 		double cl, clinv, sm, up;
@@ -502,26 +529,26 @@ public class NonNegativeLeastSquares
 
 		// Construct the transformation.
 		for (j = i1; j < M; ++ j)
-			{
+		{
 			cl = Math.max (Math.abs (u[j][pivotcol]), cl);
-			}
+		}
 		if (cl <= 0.0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares.constructHouseholderTransform(): Illegal pivot vector");
-			}
+			("NonNegativeLeastSquares.constructHouseholderTransform(): Illegal pivot vector");
+		}
 		clinv = 1.0 / cl;
 		sm = sqr (u[ipivot][pivotcol] * clinv);
 		for (j = i1; j < M; ++ j)
-			{
+		{
 			sm += sqr (u[j][pivotcol] * clinv);
-			}
+		}
 		cl = cl * Math.sqrt (sm);
 		if (u[ipivot][pivotcol] > 0.0) cl = -cl;
 		up = u[ipivot][pivotcol] - cl;
 		u[ipivot][pivotcol] = cl;
 		return up;
-		}
+	}
 
 	/**
 	 * Apply a Householder transformation to one column of a matrix. u
@@ -560,53 +587,53 @@ public class NonNegativeLeastSquares
 	 *     transformation is to be applied.
 	 */
 	private static void applyHouseholderTransform
-		(int ipivot,
-		 int i1,
-		 double[][] u,
-		 int pivotcol,
-		 double up,
-		 double[][] c,
-		 int applycol)
-		{
+	(int ipivot,
+			int i1,
+			double[][] u,
+			int pivotcol,
+			double up,
+			double[][] c,
+			int applycol)
+	{
 		int M = u.length;
 		int i;
 		double cl, b, sm;
 
 		cl = Math.abs (u[ipivot][pivotcol]);
 		if (cl <= 0.0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot vector");
-			}
+			("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot vector");
+		}
 
 		b = up * u[ipivot][pivotcol];
 		// b must be nonpositive here. If b = 0, return.
 		if (b == 0.0)
-			{
+		{
 			return;
-			}
+		}
 		else if (b > 0.0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot element");
-			}
+			("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot element");
+		}
 		b = 1.0 / b;
 
 		sm = c[ipivot][applycol] * up;
 		for (i = i1; i < M; ++ i)
-			{
+		{
 			sm += c[i][applycol] * u[i][pivotcol];
-			}
+		}
 		if (sm != 0.0)
-			{
+		{
 			sm = sm * b;
 			c[ipivot][applycol] += sm * up;
 			for (i = i1; i < M; ++ i)
-				{
+			{
 				c[i][applycol] += sm * u[i][pivotcol];
-				}
 			}
 		}
+	}
 
 	/**
 	 * Apply a Householder transformation to a vector. u is an
@@ -641,52 +668,52 @@ public class NonNegativeLeastSquares
 	 *     c contains the transformed vector.
 	 */
 	private static void applyHouseholderTransform
-		(int ipivot,
-		 int i1,
-		 double[][] u,
-		 int pivotcol,
-		 double up,
-		 double[] c)
-		{
+	(int ipivot,
+			int i1,
+			double[][] u,
+			int pivotcol,
+			double up,
+			double[] c)
+	{
 		int M = u.length;
 		int i;
 		double cl, b, sm;
 
 		cl = Math.abs (u[ipivot][pivotcol]);
 		if (cl <= 0.0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot vector");
-			}
+			("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot vector");
+		}
 
 		b = up * u[ipivot][pivotcol];
 		// b must be nonpositive here. If b = 0, return.
 		if (b == 0.0)
-			{
+		{
 			return;
-			}
+		}
 		else if (b > 0.0)
-			{
+		{
 			throw new IllegalArgumentException
-				("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot element");
-			}
+			("NonNegativeLeastSquares.applyHouseholderTransform(): Illegal pivot element");
+		}
 		b = 1.0 / b;
 
 		sm = c[ipivot] * up;
 		for (i = i1; i < M; ++ i)
-			{
+		{
 			sm += c[i] * u[i][pivotcol];
-			}
+		}
 		if (sm != 0.0)
-			{
+		{
 			sm = sm * b;
 			c[ipivot] += sm * up;
 			for (i = i1; i < M; ++ i)
-				{
+			{
 				c[i] += sm * u[i][pivotcol];
-				}
 			}
 		}
+	}
 
 	/**
 	 * Compute the sine and cosine terms of a Givens rotation matrix. The terms
@@ -705,35 +732,35 @@ public class NonNegativeLeastSquares
 	 * @return  sqrt(a<SUP>2</SUP>+b<SUP>2</SUP>).
 	 */
 	private static double computeGivensRotation
-		(double a,
-		 double b,
-		 double[] terms)
-		{
+	(double a,
+			double b,
+			double[] terms)
+	{
 		double xr, yr;
 
 		if (Math.abs(a) > Math.abs(b))
-			{
+		{
 			xr = b/a;
 			yr = Math.sqrt (1.0 + sqr (xr));
 			terms[0] = sign (1.0/yr, a);
 			terms[1] = terms[0]*xr;
 			return Math.abs(a)*yr;
-			}
+		}
 		else if (b != 0.0)
-			{
+		{
 			xr = a/b;
 			yr = Math.sqrt (1.0 + sqr (xr));
 			terms[1] = sign (1.0/yr, b);
 			terms[0] = terms[1]*xr;
 			return Math.abs(b)*yr;
-			}
+		}
 		else
-			{
+		{
 			terms[0] = 0.0;
 			terms[1] = 1.0;
 			return 0.0;
-			}
 		}
+	}
 
 	/**
 	 * Determine if x differs from y, to machine precision.
@@ -742,30 +769,80 @@ public class NonNegativeLeastSquares
 	 *          if x differs from y to machine precision.
 	 */
 	private static double diff
-		(double x,
-		 double y)
-		{
+	(double x,
+			double y)
+	{
 		return x - y;
-		}
+	}
 
 	/**
 	 * Returns x^2.
 	 */
 	private static double sqr
-		(double x)
-		{
+	(double x)
+	{
 		return x*x;
-		}
+	}
 
 	/**
 	 * Returns the number whose absolute value is x and whose sign is the same
 	 * as that of y. x is assumed to be nonnegative.
 	 */
 	private static double sign
-		(double x,
-		 double y)
-		{
+	(double x,
+			double y)
+	{
 		return y >= 0.0 ? x : -x;
+	}
+
+
+	protected RealVector calculateBeta() {
+		this.solve();
+		RealVector xRealVector = new ArrayRealVector(x);
+		return xRealVector;
+	}
+
+	protected double calculateResidualSumOfSquares(){
+		/**
+		 * The squared Euclidean norm of the residual vector, ||Ax -
+		 * b||<SUP>2</SUP>. An output of the solve() method.
+		 */
+		// Compute the squared Euclidean norm of the final residual vector.
+		double normsqr = 0.0;
+		for (int i = nsetp; i < M; ++ i)
+		{	
+			normsqr += sqr (b[i]);
 		}
 
+		return normsqr;
 	}
+
+	public double[] estimateRegressionParameters() {
+		return this.x;
+	}
+	
+	public double[] getPredictedExpressionValues(){
+		if(predictedValues != null){
+			return predictedValues;
+		}
+		predictedValues = new double[measuredValues.length];
+		for(int i = 0; i < measuredValues.length; ++i ){
+			double predictedValue = 0;
+			for(int z = 0; z < x.length; ++z){
+				predictedValue += x[z] * observedValues[i][z];
+			}
+			predictedValues[i] = predictedValue;
+		}
+		return predictedValues;
+	}
+	
+	public double[] estimateResiduals() {
+		double[] predictedValues = getPredictedExpressionValues();
+		double[] residuals = new double[measuredValues.length];
+		for(int i = 0; i < measuredValues.length; ++i ){
+			residuals[i] = measuredValues[i] - predictedValues[i];
+		}
+		return(residuals);
+	}
+
+}

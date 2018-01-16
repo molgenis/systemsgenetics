@@ -43,6 +43,7 @@ public class Utils {
 		return allColumns;
 	}
 	
+	
 	/**
 	 * Reads tab delimited file and returns them as list of list, with [x] =
 	 * colummn and [x][y] is value in column. Needed for reading counts
@@ -51,17 +52,20 @@ public class Utils {
 	 * memory, so minimal memory requirement is larger than the size of the
 	 * counts file.
 	 * 
+	 * 
 	 * @param filepath The path to a tab delimited file to read
 	 * 
-	 * @return A 2D array with each array being one column from filepath
+	 * @return A 2D array with each array being one column from filepath except first column
+	 * 		   and a 1D array with the first column (without header)
 	 */
-	public static List<List<String>> readTabDelimitedColumns(String filepath) throws IOException {
+	public static Object[] readTabDelimitedColumns(String filepath) throws IOException {
 		List<List<String>> allColumns = new ArrayList<List<String>>();
 		// parses file on tabs
 		CSVParser parser = new CSVParser(new FileReader(filepath), CSVFormat.newFormat('\t'));
 		Boolean header = true;
 		int rowNumber = 0;
 		int columnIndexHeader = 0;
+		List<String> firstColumn = new ArrayList<String>();
 		for (CSVRecord row : parser) {
 			rowNumber++;
 			// starts at 1 because 1st element of column is the samplename, unless its the header row
@@ -89,15 +93,17 @@ public class Utils {
 					// This changes the allColumns list of list in place, e.g. for example loop -> [[]] -> [[1]] -> [[1,2]] -> [[1,2],[3]] -> etc
 					allColumns = addSingleValueTo2DArray(allColumns, columnIndex - 1, row.get(columnIndex));
 				}
-
 			}
-			if(!header && row.size()-1 != columnIndexHeader){
-				DeconvolutionLogger.log.info(String.format("Table %s does not have the same number of columns as there are in the header at row %d",filepath,rowNumber));
-				DeconvolutionLogger.log.info(String.format("Number of header columns: %d",columnIndexHeader));
-				DeconvolutionLogger.log.info(String.format("Number of columns at row %d: %d", rowNumber, row.size()-1));
-				DeconvolutionLogger.log.info(row.toString());
-				parser.close();
-				throw new RuntimeException(String.format("Cellcount percentage table does not have the same number of columns as there are celltypes at row %d",rowNumber));
+			if(!header){
+				firstColumn.add(row.get(0));
+				if(row.size()-1 != columnIndexHeader){
+					DeconvolutionLogger.log.info(String.format("Table %s does not have the same number of columns as there are in the header at row %d",filepath,rowNumber));
+					DeconvolutionLogger.log.info(String.format("Number of header columns: %d",columnIndexHeader));
+					DeconvolutionLogger.log.info(String.format("Number of columns at row %d: %d", rowNumber, row.size()-1));
+					DeconvolutionLogger.log.info(row.toString());
+					parser.close();
+					throw new RuntimeException(String.format("Cellcount percentage table does not have the same number of columns as there are celltypes at row %d",rowNumber));
+				}
 			}
 			if(header){
 				header = false;
@@ -105,7 +111,7 @@ public class Utils {
 
 		}
 		parser.close();
-		return allColumns;
+		return new Object[] {firstColumn, allColumns};
 	}
 
 	/**

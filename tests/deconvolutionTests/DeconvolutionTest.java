@@ -11,7 +11,6 @@ import org.apache.commons.io.LineIterator;
 import org.junit.Before;
 import org.junit.Test;
 import deconvolution.Deconvolution;
-//import deconvolution.InteractionModel;
 
 public class DeconvolutionTest {
 	private double [] y;
