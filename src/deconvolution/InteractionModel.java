@@ -30,6 +30,9 @@ public class InteractionModel {
 	private Double AIC;
 	private double[] residuals;
 	private double AICdelta;
+	private double[] estimatedRegressionParametersStandardError;
+	private double estimatedStandardError;
+	private double[] predictedValues;
 	
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
@@ -110,10 +113,6 @@ public class InteractionModel {
 	public String getModelName() throws IllegalAccessException{
 	    return(this.modelName);
 	}	
-	
-	public void emptyObservedValues(){
-		this.observedValues = null;
-	}
 
 	public void setPvalue(double pvalue){
 		this.pvalue = pvalue;
@@ -189,6 +188,12 @@ public class InteractionModel {
 		return(this.residuals);
 	}
 	
+	private void setPredictedValues(double[] predictedValues) {
+		this.predictedValues = predictedValues;
+	}
+	public double[] getPredictedValues(){
+		return this.predictedValues;
+	}
 	/**
 	 * Calculate the sum of squares, using Non-Negative Linear Regression, given a y expression vector with y ~
 	 * model.
@@ -207,19 +212,36 @@ public class InteractionModel {
 	 *  @return An nnls object
 	 */
 	public void calculateSumOfSquaresNNLS(double[] expressionValues) throws IOException, IllegalAccessException {
-		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares(getModelLength(), getNumberOfTerms());
+		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares();
+		
+		try{
+			nnls.newSampleData(expressionValues, this.getObservedValues());
+		}
+		catch (DimensionMismatchException e){
+			DeconvolutionLogger.log.info(String.format("Length of expression and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
+					expressionValues.length, this.getNumberOfTerms()));
+			throw(e);
+		}
+		
 		// results contain:
 		// normsqr: sqroot of the norm error vector
 		// x: the parameters
 		// For more, check out the Class documentation
-		nnls.solve(this.observedValues, expressionValues);
-		setSumOfSquares(nnls.normsqr);
+		double[] estimatedRegressionParameters = nnls.estimateRegressionParameters();
+		setEstimatedRegressionParameters(estimatedRegressionParameters);
+		
+		setSumOfSquares(nnls.calculateResidualSumOfSquares());
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
-		setEstimatedRegressionParameters(nnls.x);
-		double[] residuals = Statistics.calculateResiduals(observedValues, expressionValues, nnls.x);
+		
+		double[] predictedValues = nnls.getPredictedExpressionValues();
+		double[] residuals = nnls.estimateResiduals();
+		//setEstimatedStandardError(nnls.estimateRegressionStandardError());
 		setResiduals(residuals);
+		setPredictedValues(predictedValues);
 	}
 	
+
+
 	/**
 	 * Calculate the sum of squares, using Ordinary Linear Regression, given a y expression vector with y ~
 	 * model. Remove of the intercept (equivalent to y ~ model -1 in R) is hard-code in
@@ -232,7 +254,7 @@ public class InteractionModel {
 	 * @param expressionValues Vector of expression values to use
 	 * @return A regression object
 	 */
-	public void calculateSumOfSquaresOLS(double[] expressionValues ) throws IOException, IllegalAccessException {
+	public void calculateSumOfSquaresOLS(double[] expressionValues, boolean estimateErrors) throws IOException, IllegalAccessException {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
@@ -241,7 +263,7 @@ public class InteractionModel {
 			regression.newSampleData(expressionValues, this.getObservedValues());
 		}
 		catch (DimensionMismatchException e){
-			DeconvolutionLogger.log.info(String.format("Length of expression and and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
+			DeconvolutionLogger.log.info(String.format("Length of expression and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
 					expressionValues.length, this.getNumberOfTerms()));
 			throw(e);
 		}
@@ -249,13 +271,41 @@ public class InteractionModel {
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
 		setResiduals(regression.estimateResiduals());
 		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
+		if(estimateErrors){
+			setEstimatedRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
+			setEstimatedStandardError(regression.estimateRegressionStandardError());
+		}
 	}
 
 	public void setAICdelta(double comparativeAIC) {
-		this.AICdelta = this.getAIC() - comparativeAIC;
+		// if comparateAIC < this.getAIC(): comparativeAIC = better
+		this.AICdelta = comparativeAIC - this.getAIC();
 	}
 	public double getAICdelta() {
 		return this.AICdelta;
+	}
+
+	public void setEstimatedRegressionParametersStandardErrors(double[] estimatedRegressionParametersStandardErrors) {
+		this.estimatedRegressionParametersStandardError = estimatedRegressionParametersStandardErrors;
+	}
+
+	public double[] getEstimatedRegressionParametersStandardErrors() {
+		return this.estimatedRegressionParametersStandardError;
+	}
+	
+	public void setEstimatedStandardError(double estimatedStandardError){
+		this.estimatedStandardError = estimatedStandardError;
+	}
+	public double getEstimatedStandardError(){
+		return this.estimatedStandardError;
+	}
+
+	public void cleanUp(Boolean removePredictedValues) {
+		this.observedValues = null;
+		this.residuals = null;
+		if(removePredictedValues){
+			this.predictedValues = null;
+		}
 	}
 }
 
