@@ -254,9 +254,9 @@ public class FDR {
             fileSuffix = "-SNPLevel";
         }
 
-        String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt";
-        String outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + fileSuffix + ".txt";
-        String outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + fileSuffix + ".txt";
+        String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt.gz";
+        String outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + fileSuffix + ".txt.gz";
+        String outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + fileSuffix + ".txt.gz";
         String outFileNameAll = outputDir + "/eQTLsFDR" + fileSuffix + ".txt.gz";
 
         TextFile outputWriterSignificant = new TextFile(outFileName, TextFile.W);
@@ -922,9 +922,9 @@ public class FDR {
             fileSuffix = "-ProbeLevel";
         }
 
-        String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt";
-        String outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + fileSuffix + ".txt";
-        String outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + fileSuffix + ".txt";
+        String outFileName = outputDir + "/eQTLsFDR" + fdrcutoff + fileSuffix + ".txt.gz";
+        String outFileNameSnps = outputDir + "/eQTLSNPsFDR" + fdrcutoff + fileSuffix + ".txt.gz";
+        String outFileNameProbes = outputDir + "/eQTLProbesFDR" + fdrcutoff + fileSuffix + ".txt.gz";
         String outFileNameAll = outputDir + "/eQTLsFDR" + fileSuffix + ".txt.gz";
 
         TextFile outputWriterSignificant = new TextFile(outFileName, TextFile.W);

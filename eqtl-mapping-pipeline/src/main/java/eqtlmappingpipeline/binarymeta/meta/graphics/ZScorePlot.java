@@ -206,6 +206,7 @@ public class ZScorePlot {
             document.close();
             writer.close();
         } else {
+            g2d.dispose();
             javax.imageio.ImageIO.write(bimage, "png", new File(outputFile + "-ZScoreComparison.png"));
         }
     }
