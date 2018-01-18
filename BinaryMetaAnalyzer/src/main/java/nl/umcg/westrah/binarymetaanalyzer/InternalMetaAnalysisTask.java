@@ -5,7 +5,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import org.apache.commons.collections.primitives.ArrayIntList;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import umcg.genetica.console.ProgressBar;
+import umcg.genetica.console.MultiThreadProgressBar;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.stats.ZScores;
@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 public class InternalMetaAnalysisTask implements Runnable {
 	

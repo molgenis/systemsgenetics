@@ -6,36 +6,23 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 
-import umcg.genetica.containers.Triple;
+import umcg.genetica.console.MultiThreadProgressBar;
 import umcg.genetica.io.text.TextFile;
-
-import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
 
 import umcg.genetica.io.bin.BinaryFile;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import org.apache.commons.collections.primitives.ArrayIntList;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
-import umcg.genetica.math.stats.ZScores;
 
 /**
  * @author Marc-Jan

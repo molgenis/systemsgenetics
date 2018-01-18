@@ -1,4 +1,4 @@
-package nl.umcg.westrah.binarymetaanalyzer;
+package umcg.genetica.console;
 
 import com.google.common.base.Strings;
 import umcg.genetica.console.ProgressBar;

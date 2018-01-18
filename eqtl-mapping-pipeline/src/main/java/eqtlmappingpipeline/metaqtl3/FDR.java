@@ -18,7 +18,9 @@ import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.*;
 
+import umcg.genetica.console.MultiThreadProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.QTLTextFile;
@@ -91,7 +93,7 @@ public class FDR {
 		System.out.println(nrColsInPermutedFiles + " columns in permuted QTL file.");
 		// new permutationfile format requires different column layout...
 		FileFormat format = FileFormat.LARGE;
-		if (nrColsInPermutedFiles < 7) {
+		if (nrColsInPermutedFiles <= 7) {
 			System.out.println("Small permutation files detected.");
 			format = FileFormat.REDUCED;
 		}
@@ -122,127 +124,61 @@ public class FDR {
 		} else if (m == FDRMethod.FULL) {
 			System.out.println("Determining the FDR using all data");
 		}
-		
-		TDoubleIntHashMap permutedPvalues = new TDoubleIntHashMap(10000, 0.5f);
+
 
 //        ProgressBar pb = new ProgressBar(nrPermutationsFDR, "Reading permuted data:");
-		System.out.println("Reading permuted files");
-		
+		System.out.println("Reading permuted files from: " + permutationDir + ".\nAssuming " + maxNrMostSignificantEQTLs + " effects");
+		TDoubleIntHashMap permutedPvalues = new TDoubleIntHashMap(10000, 0.5f);
+		Executor ex = Executors.newWorkStealingPool();
+		ExecutorCompletionService<TDoubleIntHashMap> service = new ExecutorCompletionService<>(ex);
+		int submit = 0;
+//		MultiThreadProgressBar pb = new MultiThreadProgressBar(nrPermutationsFDR);
 		for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
-			String fileString = permutationDir + "/PermutedEQTLsPermutationRound" + (permutationRound + 1) + ".txt.gz";
-			System.out.println(fileString);
-			// read the permuted eqtl output
-			TextFile gz = new TextFile(fileString, TextFile.R, 1048576);
-			
-			String[] header = gz.readLineElems(TextFile.tab);
-			int snpcol = -1;
-			int pvalcol = -1;
-			int probecol = -1;
-			int genecol = -1;
-			
-			
-			if (f == FileFormat.REDUCED) {
-				
-				//PValue  SNP     Probe   Gene
-				for (int col = 0; col < header.length; col++) {
-					if (header[col].equals("PValue")) {
-						pvalcol = col;
-					}
-					if (header[col].equals("SNP")) {
-						snpcol = col;
-					}
-					if (header[col].equals("Probe")) {
-						probecol = col;
-					}
-					if (header[col].equals("Gene")) {
-						genecol = col;
-					}
-				}
-				
-				//PValue  SNP     Probe   Gene
-				if (snpcol == -1 || pvalcol == -1 || probecol == -1 && genecol == -1) {
-					System.out.println("Column not found in permutation file: " + fileString);
-					System.out.println("PValue: " + pvalcol);
-					System.out.println("SNP: " + snpcol);
-					System.out.println("Probe: " + probecol);
-					System.out.println("Gene: " + genecol);
-				}
-			}
-
-//            String[] data = gz.readLineElemsReturnReference(TextFile.tab);
-			int itr = 0;
-			
-			THashSet<String> visitedEffects = new THashSet<String>();
-			String permln = gz.readLine();
-			int lnctr = 0;
-			while (permln != null) {
-				if (permln.length() != 0) {
-					if (itr > maxNrMostSignificantEQTLs - 1) {
-						System.out.println("Breaking because: " + itr);
-						break;
-					} else {
-						String fdrId = null;
-						if (f == FileFormat.REDUCED) {
-							if (m == FDRMethod.PROBELEVEL) {
-								// fdrId = data[probecol];
-								fdrId = Strings.subsplit(permln, Strings.tab, probecol, probecol + 1)[0];
-							} else if (m == FDRMethod.SNPLEVEL) {
-//								fdrId = data[snpcol];
-								fdrId = Strings.subsplit(permln, Strings.tab, snpcol, snpcol + 1)[0];
-							} else if (m == FDRMethod.GENELEVEL && header.length > 3) {
-//								fdrId = data[genecol];
-								fdrId = Strings.subsplit(permln, Strings.tab, genecol, genecol + 1)[0];
-							}
-							if (fdrId != null) {
-								fdrId = new String(fdrId.getBytes("UTF-8")).intern();
-							}
+			// run files in parallel
+			// String permutationDir, int permutationRound, FileFormat f, int maxNrMostSignificantEQTLs, FDRMethod m
+			ReadPermutationFile t = new ReadPermutationFile(permutationDir, permutationRound, f, maxNrMostSignificantEQTLs, m, null);
+			service.submit(t);
+			submit++;
+		}
+//		while (!pb.allCompleted()) {
+//			pb.display();
+//			try {
+//				Thread.sleep(2000);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//		}
+		System.out.println();
+		int returned = 0;
+		while (returned < submit) {
+			try {
+				Future<TDoubleIntHashMap> h = service.take();
+				TDoubleIntHashMap result = h.get();
+				// update final hash
+				if (h != null) {
+					for (double d : result.keys()) {
+						int val;
+						if (!permutedPvalues.containsKey(d)) {
+							val = 0;
 						} else {
-							if (m == FDRMethod.GENELEVEL) {
-//								fdrId = data[QTLTextFile.HUGO];
-								fdrId = Strings.subsplit(permln, Strings.tab, QTLTextFile.HUGO, QTLTextFile.HUGO + 1)[0];
-							} else if (m == FDRMethod.SNPLEVEL) {
-//								fdrId = data[QTLTextFile.SNP];
-								fdrId = Strings.subsplit(permln, Strings.tab, QTLTextFile.SNP, QTLTextFile.SNP + 1)[0];
-							} else if (m == FDRMethod.PROBELEVEL) {
-//								fdrId = data[4];
-								fdrId = Strings.subsplit(permln, Strings.tab, 4, 5)[0];
-							}
-							if (fdrId != null) {
-								fdrId = new String(fdrId.getBytes("UTF-8")).intern();
-							}
+							val = permutedPvalues.get(d);
 						}
-						
-						// take top effect per gene / probe
-						if (m == FDRMethod.FULL || (!fdrId.equals("-") && !visitedEffects.contains(fdrId))) {
-							
-							if (m != FDRMethod.FULL) {
-								visitedEffects.add(fdrId);
-							}
-							
-							double permutedP = Double.parseDouble(Strings.subsplit(permln, Strings.tab, 0, 1)[0]);
-							if (permutedPvalues.containsKey(permutedP)) {
-								permutedPvalues.increment(permutedP);
-							} else {
-								permutedPvalues.put(permutedP, 1);
-							}
-							
-							itr++;
-						}
-						lnctr++;
-						if (lnctr % 100000 == 0) {
-							System.out.println(lnctr + " lines parsed.\r");
-						}
-						permln = gz.readLine();
+						permutedPvalues.put(d, val + result.get(d));
 					}
+					returned++;
 				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
 			}
-			gz.close();
-			System.out.println();
-			System.out.println();
-			
 		}
 		
-		
+		int nreqtl = 0;
+		for (double k : permutedPvalues.keys()) {
+			nreqtl += permutedPvalues.get(k);
+		}
+		System.out.println("After loading: " + submit + " permutation files, found " + permutedPvalues.keys().length + " unique p-values and " + nreqtl + " overall eqtl, or " + (nreqtl / nrPermutationsFDR) + " per file.");
 		double[] uniquePermutedPvalues = permutedPvalues.keys();
 		Arrays.sort(uniquePermutedPvalues);
 		
@@ -360,6 +296,7 @@ public class FDR {
 		
 		// start reading
 		String str = realEQTLs.readLine();
+		int lnctr = 0;
 		while (str != null) {
 			if (itr > maxNrMostSignificantEQTLs - 1) {
 				break;
@@ -477,9 +414,15 @@ public class FDR {
 				}
 				
 				str = realEQTLs.readLine();
+				lnctr++;
+				if (lnctr % 100000 == 0) {
+					System.out.print(lnctr + " lines parsed\r");
+				}
 			}
 			
 		}
+		System.out.println("");
+		System.out.println("Done.");
 		
 		//Write buffer to files
 		double fdr = 0;
@@ -506,7 +449,8 @@ public class FDR {
 				// there is already an FDR column; replace
 				String[] elems = Strings.subsplit(cachedEqtls, Strings.tab, 0, headerElems.length);
 				elems[fdrcol] = "" + fdr;
-				currentString = new StringBuilder(Strings.concat(elems, Strings.tab)).append("\n");;
+				currentString = new StringBuilder(Strings.concat(elems, Strings.tab)).append("\n");
+				;
 			} else {
 				currentString.append(cachedEqtls).append('\t').append(String.valueOf(fdr)).append('\n');
 			}
@@ -1297,4 +1241,6 @@ public class FDR {
 			
 		}
 	}
+	
+	
 }
