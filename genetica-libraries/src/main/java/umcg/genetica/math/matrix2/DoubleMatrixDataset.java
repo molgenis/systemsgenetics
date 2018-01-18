@@ -698,7 +698,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	/**
 	 * Creates a new view to this dataset with a subset of rows and columns.
 	 * 
-	 * New order of rows and cols is based on input
+	 * New order of rows and cols is based on input order.
 	 * 
 	 * @param rowsToView
 	 * @param colsToView
@@ -732,6 +732,30 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		
 	}
 	
-	
+	/**
+	 * Creates a new view to this dataset with a subset of rows.
+	 * 
+	 * New order of rows is based on input order.
+	 * 
+	 * @param rowsToView
+	 * @return 
+	 */
+	public DoubleMatrixDataset<R, C> viewRowSelection(LinkedHashSet<R> rowsToView) {
+
+		int[] rowNrs = new int[rowsToView.size()];
+
+		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
+
+		int i = 0;
+		for (R row : rowsToView) {
+			
+			rowNrs[i] = hashRows.get(row);
+			newHashRows.put(row, i++);
+			
+		}
+		
+		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
+		
+	}
 
 }
