@@ -219,14 +219,14 @@ public class SettingsFileCreator {
 					"#SBATCH --time=3:00:00\n" +
 					"#SBATCH --constraint=tmp03\n" +
 					"#SBATCH --cpus-per-task=12\n" +
-					"#SBATCH --mem=20gb\n" +
+					"#SBATCH --mem=50gb\n" +
 					"#SBATCH --nodes=1\n" +
 					"#SBATCH --open-mode=append\n" +
 					"#SBATCH --export=NONE\n" +
 					"#SBATCH --get-user-env=L\n" +
 					"\n" +
 					"" +
-					"java -Xmx19g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
+					"java -XX:StringTableSize=1000003 -Xmx49g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
 			tf.writeln(shellout);
 			tf.close();
 			
@@ -243,13 +243,13 @@ public class SettingsFileCreator {
 				"#SBATCH --time=4:00:00\n" +
 				"#SBATCH --constraint=tmp03\n" +
 				"#SBATCH --cpus-per-task=12\n" +
-				"#SBATCH --mem=20gb\n" +
+				"#SBATCH --mem=50gb\n" +
 				"#SBATCH --nodes=1\n" +
 				"#SBATCH --open-mode=append\n" +
 				"#SBATCH --export=NONE\n" +
 				"#SBATCH --get-user-env=L\n" +
 				"\n" +
-				"java -Xmx19g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
+				"java -XX:StringTableSize=1000003 -Xmx49g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
 		tf.writeln(shellout);
 		tf.close();
 		

@@ -2,6 +2,7 @@ package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
 
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.text.Strings;
 
 import javax.xml.soap.Text;
 import java.io.IOException;
@@ -10,7 +11,21 @@ import java.util.TreeSet;
 
 public class QTLFileFilter {
 	
-	public void filter(String snp, String gene, String snpgene, String in, String out) throws IOException {
+	public static void main(String[] args) {
+		
+		String str = "a;b;c;d;-;f;g;h;-;j";
+		int[] occ = Strings.countOccurrences(str, Strings.semicolon, "-");
+		System.out.println(occ[0]);
+		System.out.println(occ[1]);
+		
+		String[] meh = Strings.subsplit(str, Strings.semicolon, 9, 10);
+		for (String s : meh) {
+			System.out.println(s);
+		}
+		
+	}
+	
+	public void filter(String snp, String gene, String snpgene, String in, int minimalNrOfCohorts, String out) throws IOException {
 		
 		System.out.println("QTL File Filter");
 		System.out.println("Input: " + in);
@@ -44,7 +59,7 @@ public class QTLFileFilter {
 			genes = new HashSet<>();
 			snpgenes = new HashSet<>();
 			
-			TextFile tf = new TextFile(gene, TextFile.R);
+			TextFile tf = new TextFile(snpgene, TextFile.R);
 			String[] elems = tf.readLineElems(TextFile.tab);
 			while (elems != null) {
 				if (elems.length >= 2) {
@@ -68,10 +83,13 @@ public class QTLFileFilter {
 		
 		String ln = tf.readLine();
 		int ctr = 0;
+		HashSet<String> genesFound = new HashSet<>();
+		HashSet<String> snpsFound = new HashSet<>();
+		int written = 0;
 		while (ln != null) {
 			String substr = null;
-			if (ln.length() > 100) {
-				substr = ln.substring(0, 100);
+			if (ln.length() > 1000) {
+				substr = ln.substring(0, 1000);
 			} else {
 				substr = ln;
 			}
@@ -79,9 +97,13 @@ public class QTLFileFilter {
 			String[] elems = substr.split("\t");
 			if (snps != null && !snps.contains(elems[1])) {
 				write = false;
+			} else {
+				snpsFound.add(elems[1]);
 			}
 			if (genes != null && !genes.contains(elems[4])) {
 				write = false;
+			} else {
+				genesFound.add(elems[4]);
 			}
 			if (snpgenes != null && write) {
 				Pair<String, String> s = new Pair<String, String>(elems[1], elems[4]);
@@ -89,13 +111,29 @@ public class QTLFileFilter {
 					write = false;
 				}
 			}
+			if (minimalNrOfCohorts > 1) {
+				// check number of cohorts
+				String[] lnelems = Strings.subsplit(ln, Strings.tab, 11, 12);
+				String datasets = lnelems[0];
+				int[] occ = Strings.countOccurrences(datasets, Strings.semicolon, "-");
+				int nrmissing = occ[1];
+				int total = occ[0];
+				if (total - nrmissing < minimalNrOfCohorts) {
+					write = false;
+				}
+			}
 			if (write) {
 				tfo.writeln(ln);
+				written++;
+				if (snpgenes != null && snpgenes.size() == written) {
+					System.out.println("I seem to have found all requested SNP/Gene combinations. Stopping.");
+					break;
+				}
 			}
 			ln = tf.readLine();
 			ctr++;
-			if (ctr % 10000 == 0) {
-				System.out.print(ctr + " lines processed\r");
+			if (ctr % 100000 == 0) {
+				System.out.print(ctr + " lines processed. " + genesFound.size() + " genes and " + snpsFound.size() + " snps found sofar. " + written + " lines written\r");
 			}
 		}
 		
@@ -104,10 +142,6 @@ public class QTLFileFilter {
 		tfo.close();
 		
 		System.out.println("Done.");
-	}
-	
-	public class SNPGenePairSet extends TreeSet<Pair<String, String>> {
-	
 	}
 	
 }

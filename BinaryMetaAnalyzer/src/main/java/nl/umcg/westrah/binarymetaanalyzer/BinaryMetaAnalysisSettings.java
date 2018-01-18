@@ -52,6 +52,7 @@ public class BinaryMetaAnalysisSettings {
 	private String snpprobeselection;
 	
 	private String snpAnnotationFile;
+	public int minimalNumberOfDatasets = 1;
 	
 	public Analysis getAnalysisType() {
 		return analysisType;
@@ -66,7 +67,7 @@ public class BinaryMetaAnalysisSettings {
 		CIS, TRANS, CISTRANS
 	}
 	
-	public void parse(String settings, String texttoreplace, String replacetextwith)  {
+	public void parse(String settings, String texttoreplace, String replacetextwith) {
 		try {
 			config = new XMLConfiguration(settings);
 			
@@ -83,6 +84,13 @@ public class BinaryMetaAnalysisSettings {
 			makezscoretable = config.getBoolean("defaults.makezscoretable", false);
 			confineSNPs = config.getBoolean("defaults.confineSNPsToSNPsPresentInAllDatasets", false);
 			probetranslationfile = config.getString("defaults.probetranslationfile");
+			
+			try {
+				minimalNumberOfDatasets = config.getInt("defaults.minimalNumberOfDatasets", 1);
+			} catch (Exception e) {
+			
+			}
+			
 			output = config.getString("defaults.output");
 			if (!Gpio.exists(output)) {
 				try {

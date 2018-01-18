@@ -128,7 +128,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				float[][] finalZScores = new float[cisProbeMap.size()][datasets.length];
 				
 				// initialize with NaN
-				for (int q = 0; q < probeIndex.length; q++) {
+				for (int q = 0; q < cisProbeMap.size(); q++) {
 					for (int r = 0; r < datasets.length; r++) {
 						finalZScores[q][r] = Float.NaN;
 					}
@@ -294,32 +294,44 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 			}
 			for (int probe = 0; probe < traitList.length; probe++) {
 				MetaQTL4MetaTrait t = traitList[probe];
-				double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
-				int metaAnalysisZNrSamples = 0;
-				for (int s = 0; s < sampleSizes.length; s++) {
-					if (!Float.isNaN(finalZScores[probe][s])) {
-						metaAnalysisZNrSamples += sampleSizes[s];
+				boolean write = true;
+				if (settings.minimalNumberOfDatasets > 1) {
+					float[] datasetZScores = finalZScores[probe];
+					int nrMissing = 0;
+					for (float f : datasetZScores) {
+						if (Float.isNaN(f)) {
+							nrMissing++;
+						}
+					}
+					if (datasetZScores.length - nrMissing < settings.minimalNumberOfDatasets) {
+						write = false;
 					}
 				}
-				double metaAnalysisP = Descriptives.convertZscoreToPvalue(metaAnalysisZ);
 				
-				if (settings.isMakezscoretable()) {
-					zscoretableoutput[probe] = metaAnalysisZ;
-					zscorenrsamplestableoutput[probe] = metaAnalysisZNrSamples;
-				}
-				
-				// create output object
-				if (!Double.isNaN(metaAnalysisP) && !Double.isNaN(metaAnalysisZ)) {
-					QTL q = new QTL(metaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), metaAnalysisZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
+				if (write) {
+					double metaAnalysisZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
+					int metaAnalysisZNrSamples = 0;
+					for (int s = 0; s < sampleSizes.length; s++) {
+						if (!Float.isNaN(finalZScores[probe][s])) {
+							metaAnalysisZNrSamples += sampleSizes[s];
+						}
+					}
+					double metaAnalysisP = Descriptives.convertZscoreToPvalue(metaAnalysisZ);
+					
+					if (settings.isMakezscoretable()) {
+						zscoretableoutput[probe] = metaAnalysisZ;
+						zscorenrsamplestableoutput[probe] = metaAnalysisZNrSamples;
+					}
+					
+					// create output object
+					if (!Double.isNaN(metaAnalysisP) && !Double.isNaN(metaAnalysisZ)) {
+						QTL q = new QTL(metaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), metaAnalysisZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
 //                            System.out.println(q.getSNPId()+"\t"+q.getMetaTrait().getMetaTraitName()+"\t"+q.toString());
-					qtlOutput.add(q);
+						qtlOutput.add(q);
+					}
 				}
 			}
 		}
-
-//		if (qtlOutput.size() > 1) {
-//			Collections.sort(qtlOutput);
-//		}
 		
 		// write z-score output
 		if (settings.isMakezscoretable()) {

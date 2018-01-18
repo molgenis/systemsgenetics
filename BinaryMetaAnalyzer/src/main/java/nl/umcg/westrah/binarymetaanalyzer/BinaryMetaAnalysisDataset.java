@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
@@ -91,10 +92,11 @@ public class BinaryMetaAnalysisDataset {
 		} else {
 			System.out.println("This dataset is a full size dataset.");
 		}
-		loadSNPs(snpFile);
-		System.out.println(snps.length + " SNPs loaded");
 		loadProbes(probeFile);
 		System.out.println(probeList.length + " probes loaded");
+		
+		loadSNPs(snpFile);
+		System.out.println(snps.length + " SNPs loaded");
 		
 		raf = new RandomAccessFile(matrix, "r");
 	}
@@ -127,6 +129,8 @@ public class BinaryMetaAnalysisDataset {
 		tf.readLine(); // skip header
 		String[] elems = tf.readLineElems(TextFile.tab);
 		int ln = 0;
+		
+		HashMap<String, MetaQTL4MetaTrait> traithash = probeAnnotation.getTraitHashForPlatform(platformId);
 		
 		snps = new String[nrSNPs];
 		snpBytes[0] = 4; // account for magic number.
@@ -186,9 +190,8 @@ public class BinaryMetaAnalysisDataset {
 				MetaQTL4MetaTrait[] snpProbeList = new MetaQTL4MetaTrait[(elems.length - 9)];
 				for (int e = 9; e < elems.length; e++) {
 					// get the list of probes for this particular SNP.
-					
-					String probe = elems[e];
-					MetaQTL4MetaTrait t = probeAnnotation.getTraitForPlatformId(platformId, probe);
+					String probe = new String(elems[e].getBytes("UTF-8")).intern();
+					MetaQTL4MetaTrait t = traithash.get(probe);
 					// System.out.println(snp+"\t"+elems[e]);
 					snpProbeList[e - 9] = t;
 				}

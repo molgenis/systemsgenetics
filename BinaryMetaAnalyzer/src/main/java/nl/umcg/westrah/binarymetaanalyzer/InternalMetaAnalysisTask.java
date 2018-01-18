@@ -87,7 +87,6 @@ public class InternalMetaAnalysisTask implements Runnable {
 					settings.getDatasetname(),
 					settings.getDatasetPrefix(),
 					permutation);
-			
 			System.out.println("Loaded");
 			
 			// create meta-analysis SNP index. have to recreate this every permutation,
@@ -344,6 +343,7 @@ public class InternalMetaAnalysisTask implements Runnable {
 	
 	private void createSNPIndex(String outdir) throws IOException {
 		// create a list of all available SNPs
+		System.out.println("Creating SNP index..");
 		ArrayList<String> allSNPs = new ArrayList<String>();
 		String[] snps = dataset.getSNPs();
 		{
@@ -351,6 +351,7 @@ public class InternalMetaAnalysisTask implements Runnable {
 			for (String snp : snps) {
 				if (!visitedSNPs.contains(snp)) {
 					allSNPs.add(snp);
+					visitedSNPs.add(snp);
 				}
 			}
 		}
@@ -378,18 +379,18 @@ public class InternalMetaAnalysisTask implements Runnable {
 				snpIndex[id] = s;
 			}
 		}
-
-//        TextFile tf = new TextFile(outdir + "snpindex.txt", TextFile.W);
-//        String header = "metaID";
-//        header += "\t" + dataset.getName() + "-sid";
-//        tf.writeln(header);
+		System.out.println("Done.");
+//		TextFile tf = new TextFile(outdir + "snpindex.txt", TextFile.W);
+//		String header = "metaID";
+//		header += "\t" + dataset.getName() + "-sid";
+//		tf.writeln(header);
 //
-//        for (int s = 0; s < snpList.length; s++) {
-//            String ln = snpList[s];
-//            ln += "\t" + snpIndex[s];
-//            tf.writeln(ln);
-//        }
-//        tf.close();
+//		for (int s = 0; s < snpList.length; s++) {
+//			String ln = snpList[s];
+//			ln += "\t" + snpIndex[s];
+//			tf.writeln(ln);
+//		}
+//		tf.close();
 	}
 	
 	private void writeBinaryResult(String snpname,

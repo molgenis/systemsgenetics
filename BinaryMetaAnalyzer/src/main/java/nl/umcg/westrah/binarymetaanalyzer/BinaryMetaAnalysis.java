@@ -87,7 +87,7 @@ public class BinaryMetaAnalysis {
 	public BinaryMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith, boolean usetmp) {
 		// initialize settings
 		settings = new BinaryMetaAnalysisSettings();
-		this.usetmp = true;
+		this.usetmp =  usetmp;
 		
 		if (usetmp) {
 			String property = "java.io.tmpdir";

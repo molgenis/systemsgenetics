@@ -1,9 +1,6 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.CheckZScoreMeanAndVariance;
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.MetaAnalysisQC;
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.QTLFileFilter;
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.SettingsFileCreator;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.*;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -14,21 +11,16 @@ public class BinaryMetaAnalysisCLI {
 	
 	static {
 		OPTIONS = new Options();
-
-//		Option option = Option.builder().longOpt("gwas").build();
-//		OPTIONS.addOption(option);
-
-//		option = Option.builder()
-//				.longOpt("meta")
-//				.hasArg()
-//				.desc("Run second iteration conditional on a set of predefined variants. Specify file in format: region iter variant pval")
-//				.build();
-//		OPTIONS.addOption(option);
-		
 		
 		Option option = Option.builder()
 				.longOpt("meta")
 				.desc("Run meta-analysis")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("applyfdr")
+				.desc("Apply the FDR values of one file on another")
 				.build();
 		OPTIONS.addOption(option);
 		
@@ -227,6 +219,13 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("minnrofcohorts")
+				.hasArg()
+				.desc("Minimum number of cohorts (for QTL filter)")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("usetmp")
 				.desc("Use tmp dir for temporary storage")
 				.build();
@@ -238,6 +237,15 @@ public class BinaryMetaAnalysisCLI {
 				.build();
 		OPTIONS.addOption(option);
 		
+		option = Option.builder()
+				.longOpt("onlyoutputsignificant")
+				.desc("Only output signifciant results when applying FDR")
+				.build();
+		OPTIONS.addOption(option);
+		
+		
+		//
+		//
 		
 	}
 	
@@ -265,6 +273,7 @@ public class BinaryMetaAnalysisCLI {
 				if (cmd.hasOption("rtw")) {
 					replacewith = cmd.getOptionValue("rtw");
 				}
+				
 				boolean usetmp = false;
 				if (cmd.hasOption("usetmp")) {
 					usetmp = true;
@@ -339,6 +348,41 @@ public class BinaryMetaAnalysisCLI {
 				} else {
 					c.createInternalMeta(input, outputdir, averagingmethod, nrpermutations, scriptloclocal, scriptlocserver, tool);
 				}
+			} else if (cmd.hasOption("applyfdr")) {
+				
+				ApplyFDR f = new ApplyFDR();
+				String input = null;
+				if (cmd.hasOption("in")) {
+					input = cmd.getOptionValue("in");
+				}
+				
+				String output = null;
+				if (cmd.hasOption("out")) {
+					output = cmd.getOptionValue("out");
+				}
+				
+				String ref = null;
+				
+				if (cmd.hasOption("e")) {
+					ref = cmd.getOptionValue("e");
+				}
+				
+				double threshold = 0.05;
+				if (cmd.hasOption("threshold")) {
+					threshold = Double.parseDouble(cmd.getOptionValue("threshold"));
+				}
+				
+				boolean onlywritesignificant = false;
+				if (cmd.hasOption("onlyoutputsignificant")) {
+					onlywritesignificant = true;
+				}
+				if (input == null || output == null || ref == null) {
+					System.out.println("Use --in --out and --eqtls");
+				} else {
+					f.apply(input, output, threshold, onlywritesignificant, ref);
+				}
+				
+				
 			} else if (cmd.hasOption("createsettingsbinarymeta")) {
 				SettingsFileCreator c = new SettingsFileCreator();
 				
@@ -487,21 +531,28 @@ public class BinaryMetaAnalysisCLI {
 				if (cmd.hasOption("o")) {
 					output = cmd.getOptionValue("o");
 				}
+				int minNrOfCohorts = -1;
+				if (cmd.hasOption("minnrofcohorts")) {
+					minNrOfCohorts = Integer.parseInt(cmd.getOptionValue("minnrofcohorts"));
+				}
+				if (cmd.hasOption("o")) {
+					output = cmd.getOptionValue("o");
+				}
 				if (cmd.hasOption("snpconfine")) {
 					snp = cmd.getOptionValue("snpconfine");
 				}
 				if (cmd.hasOption("probeconfine")) {
-					snp = cmd.getOptionValue("probeconfine");
+					gene = cmd.getOptionValue("probeconfine");
 				}
 				if (cmd.hasOption("snpprobeconfine")) {
-					snp = cmd.getOptionValue("snpprobeconfine");
+					snpgene = cmd.getOptionValue("snpprobeconfine");
 				}
 				
 				if (input == null || output == null) {
 					System.out.println("Use at least -e and -o for --filtereqtl");
 					System.out.println("Optional: --snpconfine, --probeconfine, --snpprobeconfine");
 				} else {
-					f.filter(snp, gene, snpgene, input, output);
+					f.filter(snp, gene, snpgene, input, minNrOfCohorts, output);
 				}
 			} else if (cmd.hasOption("zscorematcheck")) {
 				String input = null;
