@@ -79,7 +79,7 @@ public class QuantileNormalization {
             }
 //            double[] probesRankedAfterQQNorm = rda.rank(probesQuantileNormalized, false);
             
-            System.out.println("Normalized sample:\t" + (s+1) + "\tPearson correlation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(probes, probesRanked) + "\ttSpearman correlation original data and quantile normalized data:\t"+spearman.correlation(probes, probesQuantileNormalized));
+            System.out.println("Normalized sample:\t" + (s+1) + "\tPearson correlation original data and ranked data:\t" + JSci.maths.ArrayMath.correlation(probes, probesRanked) + "\tSpearman correlation original data and quantile normalized data:\t"+spearman.correlation(probes, probesQuantileNormalized));
         }
     }
 

@@ -193,7 +193,9 @@ public class FDR {
 //								fdrId = data[genecol];
 								fdrId = Strings.subsplit(permln, Strings.tab, genecol, genecol + 1)[0];
 							}
-							fdrId = new String(fdrId.getBytes("UTF-8")).intern();
+							if (fdrId != null) {
+								fdrId = new String(fdrId.getBytes("UTF-8")).intern();
+							}
 						} else {
 							if (m == FDRMethod.GENELEVEL) {
 //								fdrId = data[QTLTextFile.HUGO];
@@ -205,7 +207,9 @@ public class FDR {
 //								fdrId = data[4];
 								fdrId = Strings.subsplit(permln, Strings.tab, 4, 5)[0];
 							}
-							fdrId = new String(fdrId.getBytes("UTF-8")).intern();
+							if (fdrId != null) {
+								fdrId = new String(fdrId.getBytes("UTF-8")).intern();
+							}
 						}
 						
 						// take top effect per gene / probe
@@ -274,7 +278,10 @@ public class FDR {
 		TextFile outputWriterSignificant = new TextFile(outFileName, TextFile.W, 10 * 1048576);
 		TextFile outputWriterESNPs = new TextFile(outFileNameSnps, TextFile.W, 10 * 1048576);
 		TextFile outputWriterEProbes = new TextFile(outFileNameProbes, TextFile.W, 10 * 1048576);
-		
+		System.out.println("writing the following files: ");
+		System.out.println(outFileName);
+		System.out.println(outFileNameSnps);
+		System.out.println(outFileNameProbes);
 		TextFile outputWriterAll = null;
 		if (createLargeFdrFiles) {
 			System.out.println("Will also output large FDR file here: " + outFileNameAll);
@@ -305,6 +312,18 @@ public class FDR {
 		
 		if (fdrcol > -1) {
 			System.out.println("Found FDR at column: " + fdrcol);
+			if (createLargeFdrFiles) {
+				outputWriterAll.append(header);
+				outputWriterAll.append("\n");
+			}
+			outputWriterEProbes.append(header);
+			outputWriterEProbes.append("\n");
+			
+			outputWriterESNPs.append(header);
+			outputWriterESNPs.append("\n");
+			
+			outputWriterSignificant.append(header);
+			outputWriterSignificant.append("\n");
 		} else {
 			if (createLargeFdrFiles) {
 				outputWriterAll.append(header);
@@ -398,7 +417,7 @@ public class FDR {
 							// there is already an FDR column; replace
 							String[] elems = Strings.subsplit(cachedEqtls, Strings.tab, 0, headerElems.length);
 							elems[fdrcol] = "" + fdr;
-							currentString = new StringBuilder(Strings.concat(elems, Strings.tab));
+							currentString = new StringBuilder(Strings.concat(elems, Strings.tab)).append("\n");
 						} else {
 							currentString.append(cachedEqtls).append('\t').append(String.valueOf(fdr)).append('\n');
 						}
@@ -487,7 +506,7 @@ public class FDR {
 				// there is already an FDR column; replace
 				String[] elems = Strings.subsplit(cachedEqtls, Strings.tab, 0, headerElems.length);
 				elems[fdrcol] = "" + fdr;
-				currentString = new StringBuilder(Strings.concat(elems, Strings.tab));
+				currentString = new StringBuilder(Strings.concat(elems, Strings.tab)).append("\n");;
 			} else {
 				currentString.append(cachedEqtls).append('\t').append(String.valueOf(fdr)).append('\n');
 			}
