@@ -33,7 +33,7 @@ public class NormalizationConsoleGUI {
         boolean forceReplacementOfMissingValues = false;
         boolean forceReplacementOfMissingValues2 = false;
         boolean treatZerosAsNulls = false;
-		boolean forceNormalDistribution = false;
+        boolean forceNormalDistribution = false;
 
         int maxPcaToRemove = 100;
         int stepSizePcaRemoval = 5;
@@ -96,24 +96,24 @@ public class NormalizationConsoleGUI {
                 forceReplacementOfMissingValues2 = true;
             }
             if (arg.equals("--forceMissingValues")) {
-				fullNorm = false;
+                fullNorm = false;
                 forceMissingValues = true;
             }
             if (arg.equals("--treatZerosAsNulls")) {
-				fullNorm = false;
+                fullNorm = false;
                 treatZerosAsNulls = true;
             }
             if (arg.equals("--forceNormalDist")) {
                 forceNormalDistribution = true;
-				fullNorm = false;
+                fullNorm = false;
             }
             if (arg.equals("--sampleInclude")) {
                 sampleIncludeList = val;
-				fullNorm = false;
+                fullNorm = false;
             }
             if (arg.equals("--probeInclude")) {
                 probeIncludeList = val;
-				fullNorm = false;
+                fullNorm = false;
             }
         }
 
@@ -131,30 +131,30 @@ public class NormalizationConsoleGUI {
         if (runLogTransform && runMTransform) {
             throw new IllegalArgumentException("Error: can't perform both log and M-value transformation.");
         }
-		
-		if(runPCAdjustment && forceNormalDistribution){
-			throw new IllegalArgumentException("Error: can't perform both PC removal and force normal distribution.");
-		}
-        
-        if((forceMissingValues && (forceReplacementOfMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues && (forceMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues2 && (forceReplacementOfMissingValues || forceMissingValues))){
+
+        if (runPCAdjustment && forceNormalDistribution) {
+            throw new IllegalArgumentException("Error: can't perform both PC removal and force normal distribution.");
+        }
+
+        if ((forceMissingValues && (forceReplacementOfMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues && (forceMissingValues || forceReplacementOfMissingValues2)) || (forceReplacementOfMissingValues2 && (forceReplacementOfMissingValues || forceMissingValues))) {
             throw new IllegalArgumentException("Error: can't perform two forces on missing values.");
         }
 
-        if(forceMissingValues && !treatZerosAsNulls){
+        if (forceMissingValues && !treatZerosAsNulls) {
             runLogTransform = false;
             runMTransform = false;
             runCenterScale = false;
             runPCAdjustment = false;
             runCovariateAdjustment = false;
         }
-        
+
         try {
             Normalizer p = new Normalizer();
 
             if (!fullNorm) {
                 p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
                         runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
-                        runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues, 
+                        runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues,
                         forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
             } else {
                 // run full normalization
@@ -183,7 +183,7 @@ public class NormalizationConsoleGUI {
                 + "--adjustcovariates\t\t\tRun covariate adjustment\n"
                 + "--centerscale\t\t\t\tCenter the mean to 0, linearly scale using standard deviation\n"
                 + "--adjustPCA\t\t\t\tRun PCA adjustment \n"
-				+ "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
+                + "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
                 + "--sampleInclude\t\t\t\tList of high quality sample, other samples will be removed. \n"
                 + "\n"
                 + "Covariate adjustment parameters:\n"
@@ -193,15 +193,15 @@ public class NormalizationConsoleGUI {
                 + "PCA parameters\n"
                 + "--maxnrpcaremoved\tinteger\t\tMaximum number of PCs to remove\n"
                 + "--stepsizepcaremoval\tinteger\t\tStep size for PC removal\n"
-                +"\n"
-                +"Selection\n"
-                +"--probeInclude\tFile\tList of probes to keep in the file\n"
-                +"--sampleInclude\tFile\tList of samples to keep in the file\n"
-                +"\n"
-                +"Additional QN missing value parameters (Only one of the force option's is allowed at once.)\n"
-                +"--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen, without --treatZerosAsNulls, only QN will be performed.\n"
-                +"--forceReplacementOfMissingValuesSampleBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by sample mean.\n"
-                +"--forceReplacementOfMissingValuesProbeBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by probe mean.\n"
-                +"--treatZerosAsNulls\tTransforms all zeros to nulls during QN.\n");
+                + "\n"
+                + "Selection\n"
+                + "--probeInclude\tFile\tList of probes to keep in the file\n"
+                + "--sampleInclude\tFile\tList of samples to keep in the file\n"
+                + "\n"
+                + "Additional QN missing value parameters (Only one of the force option's is allowed at once.)\n"
+                + "--forceMissingValues\tUses a Quantile normalization strategy where missing values are ignored. If chosen, without --treatZerosAsNulls, only QN will be performed.\n"
+                + "--forceReplacementOfMissingValuesSampleBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by sample mean.\n"
+                + "--forceReplacementOfMissingValuesProbeBased\tUses a Quantile normalization strategy where missing values are ignored and replaced by probe mean.\n"
+                + "--treatZerosAsNulls\tTransforms all zeros to nulls during QN.\n");
     }
 }

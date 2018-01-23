@@ -33,8 +33,6 @@ public class EQTLRegression {
     public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
         this.gg = gg;
 
-
-
         this.eqtlsToRegressOut = new EQTL[eqtls.size()];
         for (int q = 0; q < eqtls.size(); q++) {
             eqtlsToRegressOut[q] = new EQTL();
@@ -83,8 +81,6 @@ public class EQTLRegression {
      * Removes the effect of a supplied list of eQTL from the datasets by use of
      * regression
      *
-     * @param regressOutEQTLEffectFileName the location of the file containing
-     * the eQTL to be removed
      */
     private void regressOutEQTLEffects() throws IOException {
 
@@ -117,12 +113,10 @@ public class EQTLRegression {
         int[] nrEQTLsRegressedOut = new int[gg.length];
         int[][] explainedVariancePerEQTLProbe = new int[gg.length][101];
 
-
-
         SNPLoader[] ggSNPLoaders = new SNPLoader[gg.length];
         boolean dosageInformationPresentForAllDatasets = true;
         for (int d = 0; d < gg.length; d++) {
-            ggSNPLoaders[d] = gg[d].getGenotypeData().createSNPLoader();
+            ggSNPLoaders[d] = gg[d].getGenotypeData().createSNPLoader(1);
             if (!ggSNPLoaders[d].hasDosageInformation()) {
                 dosageInformationPresentForAllDatasets = false;
             }
@@ -451,6 +445,7 @@ public class EQTLRegression {
         }
 
         for (int ds = 0; ds < gg.length; ds++) {
+//            gg[ds].getExpressionData().calcMeanAndVariance();
             ggSNPLoaders[ds].close();
             ggSNPLoaders[ds] = null;
         }

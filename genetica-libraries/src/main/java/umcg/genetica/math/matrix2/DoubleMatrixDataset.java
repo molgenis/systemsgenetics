@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -379,26 +380,27 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public void save(String fileName) throws IOException {
 		save(new File(fileName), "-");
 	}
-        public void save(File fileName) throws IOException {
+
+	public void save(File fileName) throws IOException {
 		save(fileName, "-");
 	}
-        
-        public void save(String fileName, String rowDescriptor) throws IOException {
-		save(new File(fileName) , rowDescriptor);
+
+	public void save(String fileName, String rowDescriptor) throws IOException {
+		save(new File(fileName), rowDescriptor);
 	}
-        
-        public void saveDice(String fileName) throws IOException {
-            saveDice(new File(fileName), "-");
-        }
-        
-        public void saveDice(File fileName) throws IOException {
-            saveDice(fileName, "-");
-        }
-        
-        public void saveDice(String fileName, String rowDescriptor) throws IOException {
-		saveDice(new File(fileName) , rowDescriptor);
+
+	public void saveDice(String fileName) throws IOException {
+		saveDice(new File(fileName), "-");
 	}
-        
+
+	public void saveDice(File fileName) throws IOException {
+		saveDice(fileName, "-");
+	}
+
+	public void saveDice(String fileName, String rowDescriptor) throws IOException {
+		saveDice(new File(fileName), rowDescriptor);
+	}
+
 	public void saveDice(File fileName, String rowDescriptor) throws IOException {
 		TextFile out = new TextFile(fileName, TextFile.W);
 
@@ -635,13 +637,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		if (row != null && column != null) {
 			matrix.setQuick(row, column, value);
+		} else if (row == null) {
+			throw new NoSuchElementException("Row not found: " + rowName.toString());
 		} else {
-			if (row == null) {
-				throw new NoSuchElementException("Row not found: " + rowName.toString());
-			} else {
-				throw new NoSuchElementException("Column not found: " + columnName.toString());
-			}
-
+			throw new NoSuchElementException("Column not found: " + columnName.toString());
 		}
 
 	}
@@ -660,18 +659,16 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		if (row != null && column != null) {
 			return matrix.getQuick(row, column);
+		} else if (row == null) {
+			throw new NoSuchElementException("Row not found: " + rowName.toString());
 		} else {
-			if (row == null) {
-				throw new NoSuchElementException("Row not found: " + rowName.toString());
-			} else {
-				throw new NoSuchElementException("Column not found: " + columnName.toString());
-			}
+			throw new NoSuchElementException("Column not found: " + columnName.toString());
 		}
 	}
-	
-	public DoubleMatrix1D getRow (R rowName){
+
+	public DoubleMatrix1D getRow(R rowName) {
 		Integer row = hashRows.get(rowName);
-		if (row != null){
+		if (row != null) {
 			return matrix.viewRow(row);
 		} else {
 			throw new NoSuchElementException("Row not found: " + rowName.toString());
@@ -689,12 +686,52 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return matrix.get(row, column);
 	}
-	
-	public boolean containsRow(R rowId){
+
+	public boolean containsRow(R rowId) {
 		return hashRows.containsKey(rowId);
 	}
-	
-	public boolean containsCol(C colId){
+
+	public boolean containsCol(C colId) {
 		return hashCols.containsKey(colId);
 	}
+
+	/**
+	 * Creates a new view to this dataset with a subset of rows and columns.
+	 * 
+	 * New order of rows and cols is based on input
+	 * 
+	 * @param rowsToView
+	 * @param colsToView
+	 * @return 
+	 */
+	public DoubleMatrixDataset<R, C> viewSelection(LinkedHashSet<R> rowsToView, LinkedHashSet<C> colsToView) {
+
+		int[] rowNrs = new int[rowsToView.size()];
+		int[] colNrs = new int[colsToView.size()];
+
+		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
+		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
+
+		int i = 0;
+		for (R row : rowsToView) {
+			
+			rowNrs[i] = hashRows.get(row);
+			newHashRows.put(row, i++);
+			
+		}
+
+		i = 0;
+		for (C col : colsToView) {
+			
+			colNrs[i] = newHashCols.get(col);
+			newHashCols.put(col, i++);
+			
+		}
+
+		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, colNrs), newHashRows, newHashCols);
+		
+	}
+	
+	
+
 }

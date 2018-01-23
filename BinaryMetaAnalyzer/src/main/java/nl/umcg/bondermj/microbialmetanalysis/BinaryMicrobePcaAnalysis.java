@@ -132,8 +132,8 @@ public class BinaryMicrobePcaAnalysis {
             }
 
             // run analysis
-            System.out.println("Cis-analysis: " + settings.isCis());
-            System.out.println("Trans-analysis: " + settings.isTrans());
+            System.out.println("Cis-analysis: " + settings.getAnalysisType());
+            
             System.out.println("Cis-window: " + settings.getCisdistance());
             System.out.println("Trans-window: " + settings.getTransdistance());
 
@@ -175,7 +175,7 @@ public class BinaryMicrobePcaAnalysis {
                 Correlation.correlationToZScore(totalSampleSize + 10);
 
                 Set<MetaQTL4MetaTrait> cisProbes = null;
-                if (!settings.isCis()) {
+                if (!settings.getAnalysisType().equals(BinaryMetaAnalysisSettings.Analysis.CISTRANS)) {
                     // do not test the cis probes
                     cisProbes = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getTransdistance());
                 }
