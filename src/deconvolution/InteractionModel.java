@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.exception.DimensionMismatchException;
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
 /*
  * InteractionModel contains the information (observed values, pvalue, regression parameter values etc)
@@ -33,6 +32,7 @@ public class InteractionModel {
 	private double[] estimatedRegressionParametersStandardError;
 	private double estimatedStandardError;
 	private double[] predictedValues;
+	private String celltypeName;
 	
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
@@ -239,43 +239,6 @@ public class InteractionModel {
 		setResiduals(residuals);
 		setPredictedValues(predictedValues);
 	}
-	
-
-
-	/**
-	 * Calculate the sum of squares, using Ordinary Linear Regression, given a y expression vector with y ~
-	 * model. Remove of the intercept (equivalent to y ~ model -1 in R) is hard-code in
-	 * 
-	 * @param model An InteractionModel object including the y vector expression values and ObservedValues (model)
-	 * Such that
-	 * test_trait ~ geno_A + lymph% + geno_A:geno_B it can be for one QTL
-	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
-	 * [0, 51.5, 0] [0, 48.7, 0]]
-	 * @param expressionValues Vector of expression values to use
-	 * @return A regression object
-	 */
-	public void calculateSumOfSquaresOLS(double[] expressionValues, boolean estimateErrors) throws IOException, IllegalAccessException {
-		// OLS = Ordinary Least Squares
-		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(true);
-		try{
-			regression.newSampleData(expressionValues, this.getObservedValues());
-		}
-		catch (DimensionMismatchException e){
-			DeconvolutionLogger.log.info(String.format("Length of expression and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
-					expressionValues.length, this.getNumberOfTerms()));
-			throw(e);
-		}
-		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
-		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
-		setResiduals(regression.estimateResiduals());
-		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
-		if(estimateErrors){
-			setEstimatedRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
-			setEstimatedStandardError(regression.estimateRegressionStandardError());
-		}
-	}
 
 	public void setAICdelta(double comparativeAIC) {
 		// if comparateAIC < this.getAIC(): comparativeAIC = better
@@ -306,6 +269,14 @@ public class InteractionModel {
 		if(removePredictedValues){
 			this.predictedValues = null;
 		}
+	}
+
+	public void setCelltypeName(String celltypeName) {
+		this.celltypeName = celltypeName;
+	}
+	
+	public String getCelltypeName(){
+		return(this.celltypeName);
 	}
 }
 

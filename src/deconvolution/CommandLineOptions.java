@@ -33,9 +33,9 @@ public class CommandLineOptions {
 	private Boolean skipGenotypes = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
-	private Boolean useNNLS = false;
 	private Boolean outputPredictedExpression = false;
 	private String genotypeConfigurationType = "all";
+	private Boolean useBaseModel = false;
 	
 	/**
 	 * Standard command line parsing.
@@ -91,6 +91,8 @@ public class CommandLineOptions {
 				.desc("Tab delimited file with first column gene name, second column SNP name. Need to match with names from genotype and expression files.").build();
 		Option doTestRun = Option.builder("t").required(false).longOpt("test_run")
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
+		Option useBaseModelOption = Option.builder("u").required(false).longOpt("useBaseModel")
+				.desc("Compare each celltype against base model").build();
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		options.addOption(onlyOutputSignificantOption);
@@ -116,6 +118,7 @@ public class CommandLineOptions {
 		options.addOption(useNNLSOption);
 		options.addOption(outputPredictedExpressionOption);
 		options.addOption(genotypeConfigurationTypeOption);
+		options.addOption(useBaseModelOption);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
 			CommandLine cmdLine = cmdLineParser.parse(options, args);
@@ -146,10 +149,6 @@ public class CommandLineOptions {
 		
 		if(cmdLine.hasOption("genotypeConfigurationTypeOption")){
 			
-		}
-		
-		if (cmdLine.hasOption("use_NNLS")){
-			useNNLS = !useNNLS;
 		}
 		
 		if (cmdLine.hasOption("round_dosage")) {
@@ -220,6 +219,10 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("outputPredictedExpression")){
 			outputPredictedExpression = !outputPredictedExpression;
 		}
+
+		if(cmdLine.hasOption("useBaseModel")){
+			useBaseModel = !useBaseModel;
+		}
 	}
 	
 
@@ -245,7 +248,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 0.1.6, compiled 24-DEC-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 0.2.0, compiled 24-DEC-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
@@ -253,7 +256,6 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("SNPs to test file (-sn): %s", snpsToTestFile));
 		DeconvolutionLogger.log.info(String.format("Outfolder (-o): %s", outfolder));
 		DeconvolutionLogger.log.info(String.format("Outfile (-of): %s", outfile));
-		DeconvolutionLogger.log.info(String.format("Use non negative least squares(-n): %s", useNNLS));
 		DeconvolutionLogger.log.info(String.format("Round dosage (-r): %s", roundDosage));
 		DeconvolutionLogger.log.info(String.format("Filter out QTLs where not all dosages are present in at least 1 sample (-ad): %s", allDosages));
 		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
@@ -266,7 +268,7 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
 		DeconvolutionLogger.log.info(String.format("Write predicted expression to output file (-oe): %s", outputPredictedExpression));
 		DeconvolutionLogger.log.info(String.format("Genotype configuration to use (-gc): %s", genotypeConfigurationType));
-		
+		DeconvolutionLogger.log.info(String.format("Use the base model for comparison (-u): %s", useBaseModel));
 		DeconvolutionLogger.log.info("=================================================");
 	}
 	public String getExpressionFile(){
@@ -325,15 +327,17 @@ public class CommandLineOptions {
 	public Boolean getWholeBloodQTL(){
 		return(wholeBloodQTL);
 	}
-	public Boolean getUseNNLS(){
-		return(useNNLS);
-	}
+
 	public Boolean getOutputPredictedExpression(){
 		return outputPredictedExpression;
 	}
 
 	public String getGenotypeConfigurationType() {
 		return genotypeConfigurationType;
+	}
+	
+	public Boolean getUseBaseModel(){
+		return useBaseModel;
 	}
 }
 

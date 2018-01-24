@@ -58,6 +58,7 @@ public class Deconvolution {
 		String genotypeFile = commandLineOptions.getGenotypeFile();
 		DeconvolutionLogger.log.info(String.format("Parse genotype data from %s",genotypeFile));
 		GenotypeData genotypeData = new GenotypeData(genotypeFile);
+
 		DeconvolutionLogger.log.info("Done");
 		if (!Utils.equalLists(expressionData.getSampleNames(), genotypeData.getSampleNames())){
 			Set<String> expressionSamplesSet1 = new HashSet<String>(expressionData.getSampleNames());
@@ -97,9 +98,12 @@ public class Deconvolution {
 				try{
 					++QTLsTotal;
 					try{
+						double[] dosages = genotypeData.getGenotypes().get(genotype);
+						if(dosages == null){
+							throw new RuntimeException(String.format("SNP %s not in genotype file, is your snpsToTest file correct?", genotype));
+						}
 						DeconvolutionResult deconResult = deconvolution(geneExpressionLevels.get(gene), 
-																		genotypeData.getGenotypes().get(genotype), 
-																		qtlName);
+								dosages, qtlName);
 						deconvolutionResults.add(deconResult);
 					}
 					catch(IllegalAccessException e){
@@ -158,17 +162,25 @@ public class Deconvolution {
 	private static void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
 		String header = "\t"+Utils.listToTabSeparatedString(cellCounts.getAllCelltypes(), "_pvalue");
 		
-		header += "\tAIC_fullModel";
-		for(String celltype : cellCounts.getAllCelltypes()){
-			header += "\tAIC_diff_"+celltype;
-		}
+		if(!commandLineOptions.getUseBaseModel()){
+			header += "\tAIC_fullModel";
 		
+			for(String celltype : cellCounts.getAllCelltypes()){
+				header += "\tAIC_diff_"+celltype;
+			}
+		}
 		DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
 		// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
 		InteractionModelCollection firstInteractionModelCollection = deconvolutionResults.get(0).getInteractionModelCollection();
 		InteractionModel bestFullModelForHeaderOnly = firstInteractionModelCollection.getBestFullModel();
-		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; ++i){
+		if(commandLineOptions.getUseBaseModel()){
+			header += "\tBeta1\tBeta2\tBeta3\tBeta4\tBeta5\tBeta6";
+		}
+		
+		else{
+			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; ++i){
 				header += "\tBeta" + Integer.toString(i) +"_"+bestFullModelForHeaderOnly.getIndependentVariableNames().get(i-1);
+			}
 		}
 		for(String celltype : cellCounts.getAllCelltypes()){
 			header += "\teffectDirectionDosage2_"+celltype;
@@ -182,18 +194,11 @@ public class Deconvolution {
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
 
-		if(!commandLineOptions.getUseNNLS()){
-			for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; ++i){
-				header += "\tBeta" + Integer.toString(i) +"_"+bestFullModelForHeaderOnly.getIndependentVariableNames().get(i-1)+"_StandardError";
-			}
-		}
-
 		header += "\tStandardError";
 		List<String> output = new ArrayList<String>();
 		output.add(header);
 		for(DeconvolutionResult deconvolutionResult : deconvolutionResults){
 			InteractionModelCollection interationModelCollection = deconvolutionResult.getInteractionModelCollection();
-			InteractionModel bestFullModel = interationModelCollection.getBestFullModel();
 			if(commandLineOptions.getOnlyOutputSignificant() && commandLineOptions.getFilterSamples()){
 				if(Collections.min(deconvolutionResult.getPvalues()) > 0.05){
 					++QTLsFiltered;
@@ -203,15 +208,35 @@ public class Deconvolution {
 			}
 			String results = "";
 			results += deconvolutionResult.getQtlName()+"\t"+Utils.listToTabSeparatedString(deconvolutionResult.getPvalues());
-			double bestFullModelAIC = bestFullModel.getAIC();
-			results += "\t"+bestFullModelAIC;
+			InteractionModel bestFullModel = null;
+			if(!commandLineOptions.getUseBaseModel()){
+				bestFullModel = interationModelCollection.getBestFullModel();
+				double bestFullModelAIC = bestFullModel.getAIC();
+				results += "\t"+bestFullModelAIC;
+			}
 			for(String celltype : cellCounts.getAllCelltypes()){
 				//System.out.println(celltype);
-				String modelName = deconvolutionResult.getInteractionModelCollection().getCtModelSameGenotypeConfigurationAsBestFullModel(celltype);
-				results += "\t"+interationModelCollection.getInteractionModel(modelName).getAICdelta();
+				String modelName = deconvolutionResult.getInteractionModelCollection()
+													.getCtModelSameGenotypeConfigurationAsBestFullModel(celltype, 
+																										commandLineOptions.getUseBaseModel());
+				if(!commandLineOptions.getUseBaseModel()){
+					results += "\t"+interationModelCollection.getInteractionModel(modelName).getAICdelta();
+				}
+				if(commandLineOptions.getUseBaseModel()){
+					InteractionModel bestFullModelOfCurrentCelltype = interationModelCollection.getBestFullModel(celltype);
+					/*
+					 *  when using base model, because the model is
+					 *  	y ~ cc + (100-cc) + cc:GT + (100-cc):GT
+					 *  the beta is always 3rd (index=2) term
+					 * 
+					 */
+					results += "\t"+bestFullModelOfCurrentCelltype.getEstimateRegressionParameters()[2];
+				}
 			}
 
-			results += "\t"+Utils.listToTabSeparatedString(bestFullModel.getEstimateRegressionParameters());
+			if(!commandLineOptions.getUseBaseModel()){
+				results += "\t"+Utils.listToTabSeparatedString(bestFullModel.getEstimateRegressionParameters());
+			}
 
 			// check what the genotype configuration is and the beta of the interaction term. 
 			// If genotype configuration == 0 and beta == positive, dosage2 effect = positive
@@ -219,8 +244,18 @@ public class Deconvolution {
 			// else is negative
 			int numberOfCelltypes = cellCounts.getNumberOfCelltypes();
 			for(int i = 0; i < numberOfCelltypes; ++i){
-				char genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(i);
-				double estimatedRegressionParameter = bestFullModel.getEstimateRegressionParameters()[i+numberOfCelltypes];
+				char genotypeConfiguration = 0;
+				double estimatedRegressionParameter;
+
+				if(commandLineOptions.getUseBaseModel()){
+					bestFullModel = interationModelCollection.getBestFullModel(cellCounts.getCelltype(i));
+					genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(0);
+					estimatedRegressionParameter = bestFullModel.getEstimateRegressionParameters()[2];
+				}
+				else{
+					estimatedRegressionParameter = bestFullModel.getEstimateRegressionParameters()[i+numberOfCelltypes];
+					genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(i);
+				}
 				if (genotypeConfiguration == '0'){
 					// add cellCounts.getNumberOfCelltypes() to get the regression parameter for the interaction term (first ones are indepent effect betas)
 					if(estimatedRegressionParameter < 0){
@@ -253,10 +288,6 @@ public class Deconvolution {
 				results += "\t"+deconvolutionResult.getWholeBloodQTLpvalue();
 			}
 			
-			// TODO: Don't know how to get standard error for NNLS so only doing this for OLS, need to implement for NNLS as well
-			if(!commandLineOptions.getUseNNLS()){
-				results += "\t"+Utils.listToTabSeparatedString(bestFullModel.getEstimatedRegressionParametersStandardErrors());				
-			}
 			results += "\t"+bestFullModel.getEstimatedStandardError();
 			output.add(results);	
 		}
@@ -468,7 +499,9 @@ public class Deconvolution {
 				}}
 		}
 
-		InteractionModelCollection interactionModelCollection = new InteractionModelCollection(cellCounts, commandLineOptions.getUseNNLS(), commandLineOptions.getGenotypeConfigurationType());
+		InteractionModelCollection interactionModelCollection = new InteractionModelCollection(cellCounts, 
+																								commandLineOptions.getGenotypeConfigurationType(),
+																								commandLineOptions.getUseBaseModel());
 		interactionModelCollection.setQtlName(qtlName);
 		interactionModelCollection.setGenotypes(genotypes);
 		interactionModelCollection.setExpressionValues(expression);
@@ -489,9 +522,9 @@ public class Deconvolution {
 		 * 
 		 */
 		interactionModelCollection.createObservedValueMatricesFullModel();
-		interactionModelCollection.findBestFullModel();		
+		interactionModelCollection.findBestFullModel(commandLineOptions.getUseBaseModel());		
 		interactionModelCollection.createObservedValueMatricesCtModels();
-		interactionModelCollection.findBestCtModel();
+		interactionModelCollection.findBestCtModel(commandLineOptions.getUseBaseModel());
 
 		calculateDeconvolutionPvalue(interactionModelCollection);
 
@@ -503,7 +536,9 @@ public class Deconvolution {
 			wholeBloodQTLpvalue = Statistics.calculateSpearmanTwoTailedPvalue(wholeBloodQTL, cellCounts.getNumberOfSamples());
 		}
 		DeconvolutionResult deconResult =  new DeconvolutionResult();
-		interactionModelCollection.setAIC();
+		if(!commandLineOptions.getUseBaseModel()){
+			interactionModelCollection.setAIC(commandLineOptions.getUseBaseModel());
+		}
 		interactionModelCollection.cleanUp(!commandLineOptions.getOutputPredictedExpression());
 		deconResult = new DeconvolutionResult(interactionModelCollection, wholeBloodQTL, wholeBloodQTLpvalue);
 		return deconResult;
@@ -521,7 +556,14 @@ public class Deconvolution {
 	private static void calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection) 
 			throws IllegalAccessException, IOException {
 		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); ++modelIndex) {
-			InteractionModel fullModel = interactionModelCollection.getBestFullModel();
+			String celltypeName = cellCounts.getCelltype(modelIndex);
+			InteractionModel fullModel;
+			if(commandLineOptions.getUseBaseModel()){
+				fullModel = interactionModelCollection.getBestFullModel(celltypeName);
+			}
+			else{
+				fullModel = interactionModelCollection.getBestFullModel();
+			}
 
 			int expressionLength = interactionModelCollection.getExpessionValues().length;
 			if (expressionLength != fullModel.getModelLength()) {
@@ -529,11 +571,13 @@ public class Deconvolution {
 						+ expressionLength + "\nfullModel: " + fullModel.getModelLength());
 			}
 
-			InteractionModel ctModel = interactionModelCollection.getBestCtModel(cellCounts.getCelltype(modelIndex));
-			double pval = anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), fullModel.getDegreesOfFreedom(), ctModel.getDegreesOfFreedom(), true);
+			InteractionModel ctModel = interactionModelCollection.getBestCtModel(celltypeName);
+			double pval = anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), 
+								fullModel.getDegreesOfFreedom(),ctModel.getDegreesOfFreedom(), true);
 			ctModel.setPvalue(pval);
-			interactionModelCollection.setPvalue(pval, interactionModelCollection.getCelltypeOfModel(ctModel.getModelName()));
-			interactionModelCollection.setPvalue(pval,interactionModelCollection.getBestCtModel(cellCounts.getCelltype(modelIndex)).getModelName());
+			interactionModelCollection.setPvalue(pval, ctModel.getCelltypeName());
+			interactionModelCollection.setPvalue(pval,interactionModelCollection
+														.getBestCtModel(cellCounts.getCelltype(modelIndex)).getModelName());
 
 		}
 	}
