@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -36,10 +37,6 @@ import umcg.genetica.text.Strings;
  * @author Harm-Jan
  */
 public class BinaryMetaAnalysis {
-	
-	
-	private final boolean usetmp;
-	private String tempDir;
 	
 	public static void main(String[] args) {
 		
@@ -64,14 +61,25 @@ public class BinaryMetaAnalysis {
 		
 	}
 	
+	
+	boolean DEBUG = false;
+	
+	boolean fullpermutationoutput = false;
+	private final String replaceTextWith;
+	
+	private final String textToReplace;
+	private final String settingsFile;
+	
 	private MetaQTL4TraitAnnotation probeAnnotation;
 	private BinaryMetaAnalysisDataset[] datasets = new BinaryMetaAnalysisDataset[0];
 	private int[][] snpIndex;
 	private String[] snpList;
-	private final BinaryMetaAnalysisSettings settings;
+	private BinaryMetaAnalysisSettings settings;
 	private String[] snpChr;
 	private int[] snpPositions;
 	private Integer[][] probeIndex;
+	private boolean usetmp;
+	private String tempDir;
 	
 	private QTL[] finalEQTLs;
 	private boolean bufferHasOverFlown;
@@ -80,32 +88,38 @@ public class BinaryMetaAnalysis {
 	private int locationToStoreResult;
 	private MetaQTL4MetaTrait[][] snpprobeCombos;
 	
-	TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = new TObjectIntHashMap<MetaQTL4MetaTrait>();
+	TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = null;
 	MetaQTL4MetaTrait[] traitList = null;
 	
+	public class QTLPair {
+		int snpid;
+		MetaQTL4MetaTrait trait;
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			
+			QTLPair qtlPair = (QTLPair) o;
+			
+			if (snpid != qtlPair.snpid) return false;
+			return trait != null ? trait.equals(qtlPair.trait) : qtlPair.trait == null;
+		}
+		
+		@Override
+		public int hashCode() {
+			int result = snpid;
+			result = 31 * result + (trait != null ? trait.hashCode() : 0);
+			return result;
+		}
+	}
 	
 	public BinaryMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith, boolean usetmp) {
-		// initialize settings
-		settings = new BinaryMetaAnalysisSettings();
-		this.usetmp =  usetmp;
 		
-		if (usetmp) {
-			String property = "java.io.tmpdir";
-			this.tempDir = System.getProperty(property);
-			System.out.println("Found temp dir here: " + tempDir);
-		}
-		settings.parse(settingsFile, textToReplace, replaceTextWith);
+		this.settingsFile = settingsFile;
+		this.textToReplace = textToReplace;
+		this.replaceTextWith = replaceTextWith;
 		
-		int maxResults = settings.getFinalEQTLBufferMaxLength();
-		int tmpbuffersize = (maxResults / 10);
-		
-		if (tmpbuffersize == 0) {
-			tmpbuffersize = 10;
-		} else if (tmpbuffersize > 250000) {
-			tmpbuffersize = 250000;
-		}
-		
-		finalEQTLs = new QTL[(maxResults + tmpbuffersize)];
 		try {
 			
 			run();
@@ -121,29 +135,58 @@ public class BinaryMetaAnalysis {
 		
 	}
 	
+	public void initialize() {
+		// initialize settings
+		
+		settings = new BinaryMetaAnalysisSettings();
+		
+		
+		settings.parse(settingsFile, textToReplace, replaceTextWith);
+		
+		DEBUG = settings.debug;
+		if (DEBUG) {
+			System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  DEBUG MODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		}
+		
+		this.usetmp = settings.usetmp;
+		this.fullpermutationoutput = settings.fullpermutationoutput;
+		
+		if (usetmp) {
+			String property = "java.io.tmpdir";
+			this.tempDir = System.getProperty(property);
+			System.out.println("Found temp dir here: " + tempDir);
+		}
+		
+		
+		int maxResults = settings.getFinalEQTLBufferMaxLength();
+		int tmpbuffersize = (maxResults / 10);
+		
+		if (tmpbuffersize == 0) {
+			tmpbuffersize = 10;
+		} else if (tmpbuffersize > 250000) {
+			tmpbuffersize = 250000;
+		}
+		
+		finalEQTLs = new QTL[(maxResults + tmpbuffersize)];
+		maxSavedPvalue = -Double.MAX_VALUE;
+		locationToStoreResult = 0;
+	}
+	
+	
 	public void run() throws IOException {
+		initialize();
+		loadProbeAnnotation();
 		
 		String outdir = settings.getOutput();
 		if (usetmp) {
 			outdir = tempDir;
 		}
 		
-		
 		System.out.println("Placing output here: " + outdir);
 		outdir = Gpio.formatAsDirectory(outdir);
 		Gpio.createDir(outdir);
 		
-		// load probe annotation and index
-		// this particular probe annotation can take multiple probes for a single location into account.
-		System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
-		loadProbeAnnotation();
-		
 		System.out.println("Permutations: " + settings.getStartPermutations() + " until " + settings.getNrPermutations());
-		
-		if (traitList.length == 0) {
-			System.err.println("Error: no annotation loaded.");
-			System.exit(-1);
-		}
 		
 		String zscoretableheader = null;
 		if (settings.isMakezscoretable()) {
@@ -155,8 +198,37 @@ public class BinaryMetaAnalysis {
 			zscoretableheader = builder.toString();
 		}
 		
+		int availableProcessors = Runtime.getRuntime().availableProcessors();
+		int cores = settings.getNrThreads();
+		if (cores < 1) {
+			cores = 1;
+		} else if (cores > availableProcessors) {
+			cores = availableProcessors;
+		}
+		
+		System.out.println("Will try to make use of " + cores + " CPU cores");
+		System.out.println();
+		
+		HashSet<QTLPair> prevSet = null;
 		for (int permutation = settings.getStartPermutations(); permutation <= settings.getNrPermutations(); permutation++) {
-			clearResultsBuffer();
+			// load probe annotation and index
+			// this particular probe annotation can take multiple probes for a single location into account.
+			
+			HashSet<QTLPair> set = new HashSet<>();
+			
+			Descriptives.initializeZScoreToPValue();
+			
+			// re-intialize for each permutation, just to be sure
+			if (permutation > settings.getStartPermutations()) {
+				initialize();
+				System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
+				loadProbeAnnotation();
+				if (traitList.length == 0) {
+					System.err.println("Error: no annotation loaded.");
+					System.exit(-1);
+				}
+			}
+			//			clearResultsBuffer();
 			
 			// create dataset objects
 			System.out.println("Running permutation " + permutation);
@@ -187,11 +259,11 @@ public class BinaryMetaAnalysis {
 			// make index of snp/probe combinations, if any specified
 			createSNPProbeCombos(outdir);
 			
-			// if snp probe selection is set, make combinations here..
-			if (snpChr == null) {
-				System.out.println("Loading SNP annotation from " + settings.getSNPAnnotationFile());
-				loadSNPAnnotation();
-			}
+			// load SNP annotation for SNPs present in dataset
+//			if (snpChr == null) {
+			System.out.println("Loading SNP annotation from " + settings.getSNPAnnotationFile());
+			loadSNPAnnotation();
+//			}
 			
 			
 			// run analysis
@@ -219,25 +291,13 @@ public class BinaryMetaAnalysis {
 				zscoreTableTfNrSamples.writeln(zscoretableheader);
 			}
 			
-			Descriptives.initializeZScoreToPValue();
-			
-			int availableProcessors = Runtime.getRuntime().availableProcessors();
-			int cores = settings.getNrThreads();
-			if (cores < 1) {
-				cores = 1;
-			} else if (cores > availableProcessors) {
-				cores = availableProcessors;
-			}
-			
-			System.out.println("Will try to make use of " + cores + " CPU cores");
-			System.out.println();
-			
 			ExecutorService threadPool = Executors.newFixedThreadPool(cores);
 			CompletionService<Triple<ArrayList<QTL>, String, String>> pool = new ExecutorCompletionService<Triple<ArrayList<QTL>, String, String>>(threadPool);
 			
 			System.out.println("Starting meta-analysis");
 			ProgressBar pb = new ProgressBar(snpList.length);
 			int returned = 0;
+			ArrayList<Future> futures = new ArrayList<>();
 			for (int snp = 0; snp < snpList.length; snp++) {
 				// this can go in different threads..
 				BinaryMetaAnalysisTask t = new BinaryMetaAnalysisTask(settings,
@@ -251,37 +311,16 @@ public class BinaryMetaAnalysis {
 						snpprobeCombos,
 						traitMap,
 						traitList,
-						snp);
-				pool.submit(t);
-				if (snp % (cores * 4) == 0) {
-					while (returned < snp) {
-						try {
-							Future<Triple<ArrayList<QTL>, String, String>> threadfuture = pool.take();
-							if (threadfuture != null) {
-								Triple<ArrayList<QTL>, String, String> result = threadfuture.get();
-								
-								for (QTL q : result.getLeft()) {
-									addEQTL(q);
-								}
-								if (settings.isMakezscoretable()) {
-									zscoreTableTf.writeln(result.getMiddle());
-									zscoreTableTfNrSamples.writeln(result.getRight());
-									
-								}
-								
-								result = null;
-								returned++;
-								pb.iterate();
-							}
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						} catch (ExecutionException e) {
-							e.printStackTrace();
-						}
-					}
-				}
+						snp,
+						DEBUG,
+						fullpermutationoutput);
+				futures.add(pool.submit(t));
 			}
 			
+			// give the threadpool the signal to shutdown
+			threadPool.shutdown();
+			
+			int addcalled = 0;
 			while (returned < snpList.length) {
 				try {
 					Future<Triple<ArrayList<QTL>, String, String>> threadfuture = pool.take();
@@ -289,15 +328,32 @@ public class BinaryMetaAnalysis {
 						Triple<ArrayList<QTL>, String, String> result = threadfuture.get();
 						
 						for (QTL q : result.getLeft()) {
-							addEQTL(q);
+							if (!DEBUG) {
+								addEQTL(q);
+							}
+							if (DEBUG) {
+//								int snpid = q.getSNPId();
+//								MetaQTL4MetaTrait trait = q.getMetaTrait();
+
+//								QTLPair combo = new QTLPair();
+//								combo.snpid = snpid;
+//								combo.trait = trait;
+//								set.add(combo);
+								
+							}
+							
+							addcalled++;
 						}
 						if (settings.isMakezscoretable()) {
 							zscoreTableTf.writeln(result.getMiddle());
+							
 							zscoreTableTfNrSamples.writeln(result.getRight());
 						}
+						result = null;
 						returned++;
 						pb.iterate();
 					}
+					threadfuture = null;
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				} catch (ExecutionException e) {
@@ -305,7 +361,23 @@ public class BinaryMetaAnalysis {
 				}
 			}
 			pb.close();
-			threadPool.shutdown();
+			
+			if (DEBUG) {
+				if (prevSet != null) {
+					// compare sets
+					TextFile tf = new TextFile(outdir + "debug-p" + permutation + ".txt", TextFile.W);
+					for (QTLPair p : prevSet) {
+						if (!set.contains(p)) {
+							tf.writeln(snpList[p.snpid] + "\t" + p.trait.getMetaTraitName());
+						}
+					}
+					tf.close();
+				}
+				prevSet = set;
+			}
+			
+			System.out.println("snps returned: " + returned + "\tnr of snps submitted: " + snpList.length + "\tnr of eQTLs added: " + addcalled);
+			
 			if (settings.isMakezscoretable()) {
 				zscoreTableTf.close();
 				zscoreTableTfNrSamples.close();
@@ -315,18 +387,21 @@ public class BinaryMetaAnalysis {
 				dataset.close();
 			}
 			
-			writeBuffer(outdir, permutation);
+			if (!DEBUG) {
+				writeBuffer(outdir, permutation);
+				
+			}
 		}
-		if (usetmp) {
-			
-			// move contents of tmp dir to final directory
-			File source = new File(tempDir);
-			File dest = new File(settings.getOutput());
-			FileUtils.copyDirectory(source, dest);
-			
-			FileUtils.cleanDirectory(source);
-			
-		}
+//		if (usetmp) {
+//
+//			// move contents of tmp dir to final directory
+//			File source = new File(tempDir);
+//			File dest = new File(settings.getOutput());
+//			FileUtils.copyDirectory(source, dest);
+//
+//			FileUtils.cleanDirectory(source);
+//
+//		}
 	}
 	
 	private void createSNPProbeCombos(String outdir) throws IOException {
@@ -525,6 +600,8 @@ public class BinaryMetaAnalysis {
 		
 		traitList = new MetaQTL4MetaTrait[probeAnnotation.getMetatraits().size()];
 		
+		traitMap = new TObjectIntHashMap<MetaQTL4MetaTrait>();
+		
 		int q = 0;
 		for (MetaQTL4MetaTrait t : probeAnnotation.getMetatraits()) {
 			traitList[q] = t;
@@ -631,9 +708,9 @@ public class BinaryMetaAnalysis {
 			int platformId = probeAnnotation.getPlatformId(datasets[d].getPlatform());
 			
 			HashMap<String, MetaQTL4MetaTrait> traitHashForPlatform = probeAnnotation.getTraitHashForPlatform(platformId);
-			System.out.println(probeAnnotation.getTraitHashPerPlatform().size());
-			
-			System.out.println(datasets[d].getName() + "\t" + platformId + "\t" + datasets[d].getPlatform() + "\t" + traitHashForPlatform.size());
+//			System.out.println(probeAnnotation.getTraitHashPerPlatform().size());
+//
+//			System.out.println(datasets[d].getName() + "\t" + platformId + "\t" + datasets[d].getPlatform() + "\t" + traitHashForPlatform.size());
 			for (int p = 0; p < probes.length; p++) {
 				
 				MetaQTL4MetaTrait t = traitHashForPlatform.get(probes[p]);
@@ -683,7 +760,7 @@ public class BinaryMetaAnalysis {
 		double pval = q.getPvalue();
 		
 		// sort every 1E7 results
-		if (locationToStoreResult % 1E7 == 0) {
+		if (locationToStoreResult > 0 && locationToStoreResult % 1E7 == 0) {
 //			System.out.println("Sorting intermediate output.");
 			Arrays.parallelSort(finalEQTLs, 0, locationToStoreResult);
 //			System.out.println("Done sorting...");
@@ -720,6 +797,11 @@ public class BinaryMetaAnalysis {
 		}
 	}
 	
+	public enum FileFormat {
+		
+		LARGE, REDUCED
+	}
+	
 	private void writeBuffer(String outdir, int permutation) throws IOException {
 		
 		// sort the finalbuffer for a last time
@@ -728,12 +810,19 @@ public class BinaryMetaAnalysis {
 		}
 		
 		String outfilename = outdir + "eQTLs.txt.gz";
+		FileFormat outformat = FileFormat.LARGE;
 		if (permutation > 0) {
 			outfilename = outdir + "PermutedEQTLsPermutationRound" + permutation + ".txt.gz";
+			if (!fullpermutationoutput) {
+				outformat = FileFormat.REDUCED;
+			}
 		}
 		
+		String tab = "\t";
+		String newline = "\n";
 		
 		TextFile output = new TextFile(outfilename, TextFile.W, 10 * 1048576);
+		
 		String header = "PValue\t"
 				+ "SNPName\t"
 				+ "SNPChr\t"
@@ -755,7 +844,9 @@ public class BinaryMetaAnalysis {
 				+ "Meta-Beta (SE)\t"
 				+ "Beta (SE)\t"
 				+ "FoldChange";
-		
+		if (outformat.equals(FileFormat.REDUCED)) {
+			header = "PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore";
+		}
 		output.writeln(header);
 // PValue	SNPName	SNPChr	SNPChrPos	ProbeName	ProbeChr	ProbeCenterChrPos	CisTrans	SNPType	AlleleAssessed	OverallZScore	DatasetsWhereSNPProbePairIsAvailableAndPassesQC	DatasetsZScores	DatasetsNrSamples	IncludedDatasetsMeanProbeExpression	IncludedDatasetsProbeExpressionVariance	HGNCName	IncludedDatasetsCorrelationCoefficient	Meta-Beta (SE)	Beta (SE)	FoldChange	FDR
 		
@@ -768,101 +859,147 @@ public class BinaryMetaAnalysis {
 				ctr++;
 			}
 		}
-		System.out.println("There are " + ctr + " results in the buffer. ");
+		int totalctr = 0;
+		for (int i = 0; i < finalEQTLs.length; i++) {
+			if (finalEQTLs[i] != null) {
+				totalctr++;
+			}
+		}
+		System.out.println("There are " + ctr + " results in the buffer to write. " + totalctr + " QTLs are in memory at the moment.");
 		ProgressBar pb = new ProgressBar(ctr, "Writing: " + outfilename);
+		
+		String cistr = "Cis";
+		String transtr = "Trans";
+		String greyz = "Greyzone";
+		
 		for (int i = 0; i < settings.getFinalEQTLBufferMaxLength(); i++) {
 			QTL q = finalEQTLs[i];
 			if (q != null) {
-				StringBuilder sb = new StringBuilder(4096);
-				
-				if (q.getPvalue() < 1E-4) {
-					sb.append(smallFormat.format(q.getPvalue()));
-				} else {
-					sb.append(format.format(q.getPvalue()));
-				}
-				
-				sb.append("\t");
-				int snpId = q.getSNPId();
-				sb.append(snpList[snpId]);
-				sb.append("\t");
-				sb.append(snpChr[snpId]);
-				sb.append("\t");
-				sb.append(snpPositions[snpId]);
-				sb.append("\t");
-				MetaQTL4MetaTrait t = q.getMetaTrait();
-				sb.append(t.getMetaTraitName());
-				sb.append("\t");
-				sb.append(t.getChr());
-				sb.append("\t");
-				sb.append(t.getChrMidpoint());
-				sb.append("\t");
-				int dist = Math.abs(t.getChrMidpoint() - snpPositions[snpId]);
-				boolean sameChr = t.getChr().equals(snpChr[snpId]);
-				if (sameChr && dist < settings.getCisdistance()) {
-					sb.append("Cis");
-				} else if (sameChr && dist < settings.getTransdistance()) {
-					sb.append("Greyzone");
-				} else {
-					sb.append("Trans");
-				}
-				
-				sb.append("\t");
-				sb.append(q.getAlleles());
-				sb.append("\t");
-				sb.append(q.getAlleleAssessed());
-				sb.append("\t");
-				sb.append(format.format(q.getZscore()));
-				
-				float[] datasetZScores = q.getDatasetZScores();
-				String[] dsBuilder = new String[datasets.length];
-				String[] dsNBuilder = new String[datasets.length];
-				String[] dsZBuilder = new String[datasets.length];
-				
-				for (int d = 0; d < datasetZScores.length; d++) {
-					
-					if (!Float.isNaN(datasetZScores[d])) {
-						String str = format.format(datasetZScores[d]);
-						
-						dsBuilder[d] = settings.getDatasetnames().get(d);
-						dsNBuilder[d] = "" + q.getDatasetSampleSizes()[d];
-						dsZBuilder[d] = str;
+//				StringBuilder sb = new StringBuilder(4096);
+				if (outformat.equals(FileFormat.LARGE)) {
+					if (q.getPvalue() < 1E-4) {
+						output.append(smallFormat.format(q.getPvalue()));
 					} else {
-						dsBuilder[d] = "-";
-						dsNBuilder[d] = "-";
-						dsZBuilder[d] = "-";
+						output.append(format.format(q.getPvalue()));
 					}
+					output.append(tab);
+					int snpId = q.getSNPId();
+					output.append(snpList[snpId]);
+					output.append(tab);
+					output.append(snpChr[snpId]);
+					output.append(tab);
+					output.append("" + snpPositions[snpId]);
+					output.append(tab);
+					MetaQTL4MetaTrait t = q.getMetaTrait();
+					output.append(t.getMetaTraitName());
+					output.append(tab);
+					output.append(t.getChr());
+					output.append(tab);
+					output.append("" + t.getChrMidpoint());
+					output.append(tab);
+					int dist = Math.abs(t.getChrMidpoint() - snpPositions[snpId]);
+					boolean sameChr = t.getChr().equals(snpChr[snpId]);
+					if (sameChr && dist < settings.getCisdistance()) {
+						output.append(cistr);
+					} else if (sameChr && dist < settings.getTransdistance()) {
+						output.append(greyz);
+					} else {
+						output.append(transtr);
+					}
+					
+					output.append(tab);
+					output.append(q.getAlleles());
+					output.append(tab);
+					output.append(q.getAlleleAssessed());
+					output.append(tab);
+					output.append(format.format(q.getZscore()));
+					
+					float[] datasetZScores = q.getDatasetZScores();
+					String[] dsBuilder = new String[datasets.length];
+					String[] dsNBuilder = new String[datasets.length];
+					String[] dsZBuilder = new String[datasets.length];
+					
+					for (int d = 0; d < datasetZScores.length; d++) {
+						
+						if (!Float.isNaN(datasetZScores[d])) {
+							String str = format.format(datasetZScores[d]);
+							
+							dsBuilder[d] = settings.getDatasetnames().get(d);
+							dsNBuilder[d] = "" + q.getDatasetSampleSizes()[d];
+							dsZBuilder[d] = str;
+						} else {
+							dsBuilder[d] = "-";
+							dsNBuilder[d] = "-";
+							dsZBuilder[d] = "-";
+						}
+					}
+					
+					output.append(tab);
+					output.append(Strings.concat(dsBuilder, Strings.semicolon));
+					
+					output.append(tab);
+					output.append(Strings.concat(dsZBuilder, Strings.semicolon));
+					
+					output.append(tab);
+					output.append(Strings.concat(dsNBuilder, Strings.semicolon));
+					output.append("\t-\t-\t");
+					
+					output.append(t.getAnnotation());
+					output.append("\t-\t-\t-\t-");
+					output.append(newline);
+					
+				} else {
+//					header = "PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore";
+					
+					int snpId = q.getSNPId();
+					MetaQTL4MetaTrait t = q.getMetaTrait();
+					
+					if (q.getPvalue() < 1E-4) {
+						output.append(smallFormat.format(q.getPvalue()));
+					} else {
+						output.append(format.format(q.getPvalue()));
+					}
+					output.append(tab);
+					output.append(snpList[snpId]);
+					output.append(tab);
+					output.append(t.getMetaTraitName());
+					output.append(tab);
+					output.append(t.getAnnotation());
+					output.append(tab);
+					output.append(q.getAlleles());
+					output.append(tab);
+					output.append(q.getAlleleAssessed());
+					output.append(tab);
+					output.append(format.format(q.getZscore()));
+					output.append(newline);
 				}
 				
-				sb.append("\t");
-				sb.append(Strings.concat(dsBuilder, Strings.semicolon));
-				
-				sb.append("\t");
-				sb.append(Strings.concat(dsZBuilder, Strings.semicolon));
-				
-				sb.append("\t");
-				sb.append(Strings.concat(dsNBuilder, Strings.semicolon));
-				sb.append("\t-\t-\t");
-				
-				sb.append(t.getAnnotation());
-				sb.append("\t-\t-\t-\t-");
-				
-				output.writeln(sb.toString());
 				pb.iterate();
 			}
+			finalEQTLs[i] = null; // trash it immediately
 		}
 		
 		pb.close();
 		output.close();
 		
-		System.out.println(
-				"Done.");
-	}
-	
-	private void clearResultsBuffer() {
-		Arrays.fill(finalEQTLs, null);
-		bufferHasOverFlown = false;
-		locationToStoreResult = 0;
-		maxSavedPvalue = -Double.MAX_VALUE;
+		if (usetmp) {
+			
+			String filename = "eQTLs.txt.gz";
+			if (permutation > 0) {
+				filename = "PermutedEQTLsPermutationRound" + permutation + ".txt.gz";
+			}
+			File source = new File(tempDir + filename);
+			File dest = new File(settings.getOutput() + filename);
+			if (dest.exists()) {
+				System.out.println("Destination file: " + dest.getAbsolutePath() + " exists already.. Deleting!");
+				dest.delete();
+			}
+			System.out.println("Moving file: " + tempDir + filename + " --> " + settings.getOutput() + filename);
+			FileUtils.moveFile(source, dest);
+			
+		}
+		
+		System.out.println("Done.");
 	}
 	
 	private class SNPProbePair implements Comparable<SNPProbePair> {

@@ -77,14 +77,23 @@ public class QTLFileFilter {
 			System.out.println(snpgenes.size() + " SNP/Gene combinations");
 		}
 		
-		TextFile tf = new TextFile(in, TextFile.R, 1048576);
-		TextFile tfo = new TextFile(out, TextFile.W, 1048576);
-		tfo.writeln(tf.readLine());
+		TextFile tf = new TextFile(in, TextFile.R, 16 * 1048576);
+		TextFile tfo = new TextFile(out, TextFile.W, 16 * 1048576);
+		String header = tf.readLine();
+		String[] headerElems = header.split("\t");
+		boolean reducedFileFormat = false;
+		if (headerElems.length <= 8) {
+			reducedFileFormat = true;
+			System.out.println("WARNING: Reduced file format detected.\nWill not be able to perform filtering for number of cohorts.\nFor #cohort filtering, use SNP/Gene filter instead");
+		}
+		tfo.writeln(header);
 		
 		String ln = tf.readLine();
 		int ctr = 0;
 		HashSet<String> genesFound = new HashSet<>();
 		HashSet<String> snpsFound = new HashSet<>();
+		
+		
 		int written = 0;
 		while (ln != null) {
 			String substr = null;
@@ -93,25 +102,35 @@ public class QTLFileFilter {
 			} else {
 				substr = ln;
 			}
+			
+			int snpcol = 1;
+			int genecol = 4;
+			
+			if (reducedFileFormat) {
+				snpcol = 1;
+				genecol = 2;
+			}
+			
 			boolean write = true;
 			String[] elems = substr.split("\t");
-			if (snps != null && !snps.contains(elems[1])) {
+			if (snps != null && !snps.contains(elems[snpcol])) {
 				write = false;
 			} else {
 				snpsFound.add(elems[1]);
 			}
-			if (genes != null && !genes.contains(elems[4])) {
+			if (genes != null && !genes.contains(elems[genecol])) {
 				write = false;
 			} else {
 				genesFound.add(elems[4]);
 			}
 			if (snpgenes != null && write) {
-				Pair<String, String> s = new Pair<String, String>(elems[1], elems[4]);
+				Pair<String, String> s = new Pair<String, String>(elems[snpcol], elems[genecol]);
 				if (!snpgenes.contains(s)) {
 					write = false;
 				}
 			}
-			if (minimalNrOfCohorts > 1) {
+			
+			if (!reducedFileFormat && minimalNrOfCohorts > 1) {
 				// check number of cohorts
 				String[] lnelems = Strings.subsplit(ln, Strings.tab, 11, 12);
 				String datasets = lnelems[0];
@@ -122,6 +141,7 @@ public class QTLFileFilter {
 					write = false;
 				}
 			}
+			
 			if (write) {
 				tfo.writeln(ln);
 				written++;

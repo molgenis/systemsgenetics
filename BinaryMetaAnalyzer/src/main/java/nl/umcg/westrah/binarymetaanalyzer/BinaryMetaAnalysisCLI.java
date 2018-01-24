@@ -49,6 +49,12 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("comparepermute")
+				.desc("Compare QTL permutation datasets")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("zmeanandvar")
 				.desc("Determine Z-score mean and variance per gene/probe and per permutation")
 				.build();
@@ -130,6 +136,13 @@ public class BinaryMetaAnalysisCLI {
 				.longOpt("in")
 				.hasArg()
 				.desc("SettingsCreator: input dataset definition file")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("in2")
+				.hasArg()
+				.desc("Second input")
 				.build();
 		OPTIONS.addOption(option);
 		
@@ -259,8 +272,12 @@ public class BinaryMetaAnalysisCLI {
 			CommandLineParser parser = new DefaultParser();
 			final CommandLine cmd = parser.parse(OPTIONS, args, false);
 			
-			
-			if (cmd.hasOption("meta")) {
+			if (cmd.hasOption("comparepermute")) {
+				
+				Delta d = new Delta();
+				d.run(cmd.getOptionValue("in"),cmd.getOptionValue("in2"),cmd.getOptionValue("out"));
+				
+			} else if (cmd.hasOption("meta")) {
 				String settings = null;
 				String texttoreplace = null;
 				String replacewith = null;

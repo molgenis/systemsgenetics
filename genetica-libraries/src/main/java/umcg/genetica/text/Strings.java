@@ -34,87 +34,82 @@ public class Strings {
 	public static final Pattern dash = Pattern.compile("-");
 	
 	public static String concat(String[] s, Pattern t) {
+		String sepstr = t.toString();
+		int len = 0;
+		for (int i = 0; i < s.length; i++) {
+			if (s[i] != null) {
+				len += s[i].length();
+			} else {
+				len += 4;
+			}
+		}
+		len += ((s.length - 1) * sepstr.length());
 		
-		StringBuilder output = new StringBuilder();
+		StringBuilder output = new StringBuilder(len);
 		for (int i = 0; i < s.length; i++) {
 			if (i == 0) {
 				output.append(s[i]);
 			} else {
-				output.append(t.toString()).append(s[i]);
+				output.append(sepstr).append(s[i]);
 			}
 		}
 		return output.toString();
 	}
 	
 	public static String concat(Object[] s, Pattern t) {
+		String sepstr = t.toString();
+		int len = 0;
+		for (int i = 0; i < s.length; i++) {
+			if (s[i] != null) {
+				len += s[i].toString().length();
+			} else {
+				len += 4;
+			}
+		}
+		len += ((s.length - 1) * t.toString().length());
 		
-		StringBuilder output = new StringBuilder();
+		
+		StringBuilder output = new StringBuilder(len);
 		for (int i = 0; i < s.length; i++) {
 			if (i == 0) {
 				output.append(s[i].toString());
 			} else {
-				output.append(t.toString()).append(s[i].toString());
+				output.append(sepstr).append(s[i].toString());
 			}
 		}
 		return output.toString();
 	}
 	
 	public static String concat(double[] s, Pattern t) {
-		
-		StringBuilder output = new StringBuilder();
+		String[] str = new String[s.length];
 		for (int i = 0; i < s.length; i++) {
-			if (i == 0) {
-				output.append(s[i]);
-			} else {
-				output.append(t.toString()).append(s[i]);
-			}
+			str[i] = "" + s[i];
 		}
-		return output.toString();
+		return concat(str, t);
 	}
 	
 	public static String concat(double[] s, DecimalFormat f, Pattern t) {
-		
-		StringBuilder output = new StringBuilder();
+		String[] str = new String[s.length];
 		for (int i = 0; i < s.length; i++) {
-			if (i == 0) {
-				output.append(f.format(s[i]));
-			} else {
-				output.append(t.toString()).append(f.format(s[i]));
-			}
+			str[i] = "" + f.format(s[i]);
 		}
-		return output.toString();
+		return concat(str, t);
 	}
 	
 	public static String concat(float[] s, DecimalFormat f, Pattern t) {
-		
-		StringBuilder output = new StringBuilder();
+		String[] str = new String[s.length];
 		for (int i = 0; i < s.length; i++) {
-			float floatVal = s[i];
-			String str = f.format(floatVal);
-			if (Float.isNaN(floatVal)) {
-				str = "NaN";
-			}
-			
-			if (i == 0) {
-				output.append(str);
-			} else {
-				output.append(t.toString()).append(str);
-			}
+			str[i] = "" + f.format(s[i]);
 		}
-		return output.toString();
+		return concat(str, t);
 	}
 	
 	public static String concat(int[] s, Pattern t) {
-		
-		StringBuilder output = new StringBuilder();
+		String[] str = new String[s.length];
 		for (int i = 0; i < s.length; i++) {
-			if (i == 0) {
-				output.append(s[i]);
-			} else {
-				output.append(t.toString()).append(s[i]);
-			}
+			str[i] = "" + s[i];
 		}
-		return output.toString();
+		return concat(str, t);
 	}
 	
 	public static String concat(List<String> s, Pattern t) {

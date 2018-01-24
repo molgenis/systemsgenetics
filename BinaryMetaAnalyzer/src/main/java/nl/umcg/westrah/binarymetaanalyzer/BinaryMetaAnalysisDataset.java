@@ -274,6 +274,7 @@ public class BinaryMetaAnalysisDataset {
 	
 	public void close() throws IOException {
 		raf.close();
+		
 	}
 	
 	public String getName() {
