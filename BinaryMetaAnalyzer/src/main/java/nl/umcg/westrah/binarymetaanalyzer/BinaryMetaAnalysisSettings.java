@@ -20,7 +20,7 @@ public class BinaryMetaAnalysisSettings {
 	
 	@Override
 	public String toString() {
-		return "BinaryMetaAnalysisSettings{" +
+		return "BinaryMetaAnalysisSettings{\n" +
 				"nrPermutations\t" + nrPermutations + "\n" +
 				"startPermutations\t" + startPermutations + "\n" +
 				"useAbsoluteZscore\t" + useAbsoluteZscore + "\n" +

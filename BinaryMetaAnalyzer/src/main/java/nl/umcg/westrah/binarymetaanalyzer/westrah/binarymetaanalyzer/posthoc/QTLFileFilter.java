@@ -116,12 +116,12 @@ public class QTLFileFilter {
 			if (snps != null && !snps.contains(elems[snpcol])) {
 				write = false;
 			} else {
-				snpsFound.add(elems[1]);
+				snpsFound.add(elems[snpcol]);
 			}
 			if (genes != null && !genes.contains(elems[genecol])) {
 				write = false;
 			} else {
-				genesFound.add(elems[4]);
+				genesFound.add(elems[genecol]);
 			}
 			if (snpgenes != null && write) {
 				Pair<String, String> s = new Pair<String, String>(elems[snpcol], elems[genecol]);
@@ -160,7 +160,7 @@ public class QTLFileFilter {
 		
 		tf.close();
 		tfo.close();
-		
+		System.out.println();
 		System.out.println("Done.");
 	}
 	

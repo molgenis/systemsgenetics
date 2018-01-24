@@ -7,10 +7,9 @@ import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.text.Strings;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Set;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, String, String>> {
@@ -442,7 +441,8 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 			if (settings.isMakezscoretable()) {
 				String snpName = snpList[snp];
 				// get alleles
-				zscoreTableTf = snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscoretableoutput, Strings.tab);
+				DecimalFormat format = new DecimalFormat("###.###", new DecimalFormatSymbols(Locale.US));
+				zscoreTableTf = snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscoretableoutput, format, Strings.tab);
 				zscoreTableTfNrSamples = snpName + "\t" + alleles + "\t" + alleleAssessed + "\t" + Strings.concat(zscorenrsamplestableoutput, Strings.tab);
 			}
 			return new Triple<>(qtlOutput, zscoreTableTf, zscoreTableTfNrSamples);

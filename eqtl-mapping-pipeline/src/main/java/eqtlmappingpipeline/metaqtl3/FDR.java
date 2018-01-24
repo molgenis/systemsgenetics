@@ -132,22 +132,24 @@ public class FDR {
 		Executor ex = Executors.newWorkStealingPool();
 		ExecutorCompletionService<TDoubleIntHashMap> service = new ExecutorCompletionService<>(ex);
 		int submit = 0;
-//		MultiThreadProgressBar pb = new MultiThreadProgressBar(nrPermutationsFDR);
+		MultiThreadProgressBar pb = new MultiThreadProgressBar(nrPermutationsFDR);
 		for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
 			// run files in parallel
 			// String permutationDir, int permutationRound, FileFormat f, int maxNrMostSignificantEQTLs, FDRMethod m
-			ReadPermutationFile t = new ReadPermutationFile(permutationDir, permutationRound, f, maxNrMostSignificantEQTLs, m, null);
+			ReadPermutationFile t = new ReadPermutationFile(permutationDir, permutationRound, f, maxNrMostSignificantEQTLs, m, pb);
 			service.submit(t);
 			submit++;
 		}
-//		while (!pb.allCompleted()) {
-//			pb.display();
-//			try {
-//				Thread.sleep(2000);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-//		}
+		
+		while (!pb.allCompleted()) {
+			pb.display();
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		System.out.println();
 		int returned = 0;
 		while (returned < submit) {
@@ -323,6 +325,7 @@ public class FDR {
 				
 				if (itr > 0 && lastEqtlPvalue > eQtlPvalue) {
 					System.err.println("Sorted P-Value list is not perfectly sorted!!!!");
+					System.out.println("Last p: " + lastEqtlPvalue + "\tCurrent: " + eQtlPvalue);
 					System.exit(-1);
 				}
 				

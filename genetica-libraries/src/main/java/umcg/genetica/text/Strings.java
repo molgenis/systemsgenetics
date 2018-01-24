@@ -91,7 +91,12 @@ public class Strings {
 	public static String concat(double[] s, DecimalFormat f, Pattern t) {
 		String[] str = new String[s.length];
 		for (int i = 0; i < s.length; i++) {
-			str[i] = "" + f.format(s[i]);
+			if (Double.isNaN(s[i])) {
+				str[i] = "" + Double.NaN;
+			} else {
+				str[i] = "" + f.format(s[i]);
+			}
+			
 		}
 		return concat(str, t);
 	}
