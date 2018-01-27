@@ -1,10 +1,13 @@
 package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
 
+import gnu.trove.map.hash.TDoubleDoubleHashMap;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.text.Strings;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class ApplyFDR {
@@ -34,8 +37,7 @@ public class ApplyFDR {
 		System.out.println("FDR col:\t" + reffdr);
 		
 		String ln = ref.readLine();
-		LinkedList<Double> pvals = new LinkedList<Double>();
-		LinkedList<Double> fdrs = new LinkedList<Double>();
+		TDoubleDoubleHashMap thresholds = new TDoubleDoubleHashMap();
 		
 		int lnctr = 1;
 		while (ln != null) {
@@ -52,22 +54,31 @@ public class ApplyFDR {
 			}
 			
 			
-			
 			double fdrd = Double.parseDouble(fdr[0]);
 			if (onlywritesignificant && fdrd > threshold) {
 				break;
 			}
-			pvals.add(Double.parseDouble(pval[0]));
-			fdrs.add(fdrd);
 			
+			
+			thresholds.put(Double.parseDouble(pval[0]), fdrd);
+			if (fdrd >= 0.999) {
+				System.out.println("Found FDR of " + fdrd + ": maximum reached. Breaking!");
+				break;
+			}
 			
 			lnctr++;
+			if (lnctr % 100000 == 0) {
+				System.out.print(lnctr + " lines parsed. " + thresholds.size() + " unique pvalues spotted. Current FDR: " + pval[0] + " --> " + fdrd + ".\r");
+			}
 			ln = ref.readLine();
 		}
 		ref.close();
+		System.out.println();
+		System.out.println(lnctr + " lines parsed in total.");
+		System.out.println(thresholds.size() + " unique p-values");
 		
 		ref.close();
-		TextFile tf = new TextFile(in, TextFile.R, 1048576);
+		TextFile tf = new TextFile(in, TextFile.R, 10 * 1048576);
 		String[] header = tf.readLineElems(TextFile.tab);
 		boolean hasFDRCol = false;
 		int fdrcol = -1;
@@ -98,21 +109,88 @@ public class ApplyFDR {
 		}
 		
 		
-		double currentPVal = pvals.get(0);
-		int currentPvalIndex = 0;
-		double currentFDR = fdrs.get(0);
+		class DoublePair implements Comparable<DoublePair> {
+			double a;
+			double b;
+			
+			public DoublePair(double a, double b) {
+				this.a = a;
+				this.b = b;
+			}
+			
+			@Override
+			public boolean equals(Object o) {
+				if (this == o) return true;
+				if (o == null || getClass() != o.getClass()) return false;
+				
+				DoublePair that = (DoublePair) o;
+				
+				if (Double.compare(that.a, a) != 0) return false;
+				return Double.compare(that.b, b) == 0;
+			}
+			
+			@Override
+			public int hashCode() {
+				int result;
+				long temp;
+				temp = Double.doubleToLongBits(a);
+				result = (int) (temp ^ (temp >>> 32));
+				temp = Double.doubleToLongBits(b);
+				result = 31 * result + (int) (temp ^ (temp >>> 32));
+				return result;
+			}
+			
+			
+			@Override
+			public int compareTo(DoublePair o) {
+				if (this.equals(o)) {
+					return 0;
+				} else if (this.a > o.a) {
+					return 1;
+				} else {
+					return -1;
+				}
+			}
+		}
 		
+		// put pvals back to array
+		double[] uniquepvals = thresholds.keys();
+		ArrayList<DoublePair> pvalpairs = new ArrayList<>();
+		for (double p : uniquepvals) {
+			DoublePair z = new DoublePair(p, thresholds.get(p));
+			pvalpairs.add(z);
+		}
+		Collections.sort(pvalpairs);
+		
+		System.out.println("Sort order: ");
+		for (int q = 0; q < pvalpairs.size(); q++) {
+			if (q < 10) {
+				System.out.println(q + "\t" + pvalpairs.get(q).a);
+			}
+			if (q > 0 && pvalpairs.get(q).a < pvalpairs.get(q - 1).a) {
+				System.out.println("Not correctly sorted!");
+				System.out.println("Current pval: " + pvalpairs.get(q).a + " prev " + pvalpairs.get(q - 1).a);
+				System.exit(-1);
+			}
+		}
+		
+		double currentPVal = pvalpairs.get(0).a;
+		int currentPvalIndex = 0;
+		double currentFDR = pvalpairs.get(0).b;
+		
+		System.out.println("Will replace FDRs now");
 		String inln = tf.readLine();
 		int ctr = 0;
+		int significant = 0;
 		while (inln != null) {
 			String[] pvale = Strings.subsplit(inln, Strings.tab, 0, 1);
 			Double pval = Double.parseDouble(pvale[0]);
 			
 			// check the pvalue against the next fdr value threshold
 			while (pval > currentPVal) {
-				if (currentPvalIndex < pvals.size()) {
-					currentPVal = pvals.get(currentPvalIndex);
-					currentFDR = fdrs.get(currentPvalIndex);
+				if (currentPvalIndex < pvalpairs.size()) {
+					currentPVal = pvalpairs.get(currentPvalIndex).a;
+					currentFDR = pvalpairs.get(currentPvalIndex).b;
 				} else {
 					currentPVal = 2;
 					currentFDR = 1d;
@@ -123,14 +201,15 @@ public class ApplyFDR {
 			
 			if (hasFDRCol) {
 				String[] elems = Strings.tab.split(inln);
-				
 				// replace fdr value
 				elems[fdrcol] = "" + currentFDR;
+				inln = Strings.concat(elems, Strings.tab);
 			} else {
 				inln += "\t" + currentFDR;
 			}
 			
 			if (currentFDR < threshold) {
+				significant++;
 				tfosig.writeln(inln);
 			}
 			if (!onlywritesignificant) {
@@ -142,13 +221,14 @@ public class ApplyFDR {
 			}
 			ctr++;
 			if (ctr % 10000 == 0) {
-				System.out.print(ctr + " lines parsed.\r");
+				System.out.print(ctr + " lines parsed... " + significant + "significant\r");
 			}
 			inln = tf.readLine();
 		}
 		
 		System.out.println();
 		System.out.println();
+		System.out.print("Done. w" + ctr + " lines parsed in total. " + significant + "significant\r");
 		
 		tfosig.close();
 		if (!onlywritesignificant) {

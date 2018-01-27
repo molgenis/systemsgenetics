@@ -87,6 +87,17 @@ public class SettingsFileCreator {
 		}
 		input.close();
 		
+		if (snpprobelimit == null) {
+			snpprobelimit = "";
+		}
+		if (snplimit == null) {
+			snplimit = "";
+		}
+		if (probelimit == null) {
+			probelimit = "";
+		}
+		
+		
 		String output = "<settings>\n" +
 				"\t<defaults>\n" +
 				"\t<permutations>" + nrpermutations + "</permutations>\n" +
@@ -110,9 +121,9 @@ public class SettingsFileCreator {
 				"\t\t<threads>" + nrthreads + "</threads>\n" +
 				"\t\t<cis>false</cis>\n" +
 				"\t\t<trans>true</trans>\n" +
-				"\t\t<probeselection>"+snpprobelimit+"</probeselection>\n" +
+				"\t\t<probeselection>" + snpprobelimit + "</probeselection>\n" +
 				"\t\t<snpselection>" + snplimit + "</snpselection>\n" +
-				"\t\t<snpprobeselection>"+probelimit+"</snpprobeselection>\n" +
+				"\t\t<snpprobeselection>" + probelimit + "</snpprobeselection>\n" +
 				"\t</defaults>\n";
 		
 		output += "\t<datasets>\n";
