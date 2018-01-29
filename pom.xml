@@ -85,5 +85,6 @@
 		<module>javaPoCA</module>
                 <module>cellTypeSpecificAlleleSpecificExpression</module>
     <module>MetaGenomicDataProcessing</module>
-  </modules>
+	 <module>GeneNetworkBackend</module>
+	</modules>
 </project>
