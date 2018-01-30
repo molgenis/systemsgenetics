@@ -257,6 +257,12 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		
+		option = Option.builder()
+				.longOpt("cismatrixconvert")
+				.desc("Convert FHS cis data to BinaryMatrix")
+				.build();
+		OPTIONS.addOption(option);
+		
 		//
 		//
 		
@@ -272,10 +278,17 @@ public class BinaryMetaAnalysisCLI {
 			CommandLineParser parser = new DefaultParser();
 			final CommandLine cmd = parser.parse(OPTIONS, args, false);
 			
-			if (cmd.hasOption("comparepermute")) {
+			
+			if (cmd.hasOption("cismatrixconvert")) {
+				MatrixConverterCis c = new MatrixConverterCis();
+				String in = cmd.getOptionValue("in");
+				String in2 = cmd.getOptionValue("in2");
+				String out = cmd.getOptionValue("out");
+				c.run(in, in2, out);
+			} else if (cmd.hasOption("comparepermute")) {
 				
 				Delta d = new Delta();
-				d.run(cmd.getOptionValue("in"),cmd.getOptionValue("in2"),cmd.getOptionValue("out"));
+				d.run(cmd.getOptionValue("in"), cmd.getOptionValue("in2"), cmd.getOptionValue("out"));
 				
 			} else if (cmd.hasOption("meta")) {
 				String settings = null;

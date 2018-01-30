@@ -29,7 +29,7 @@ public class SettingsFileCreator {
 
 
 //			s.createBinaryMeta(10, snpAnnotationfile, 200000000, probetranslation, outputdir, 32, directoryfile, shellout);
-			
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

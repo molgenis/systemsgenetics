@@ -124,7 +124,7 @@ public class ResultProcessorThread extends Thread {
                         metaAnalysisFileName += "-PermutationRound-" + m_permutationround;
                     }
                     zScoreMetaAnalysisFile = new BinaryFile(metaAnalysisFileName + ".dat", BinaryFile.W);
-                    // write magic number
+                    // write magic number (1 if this is a cis dataset)
                     if (m_cisOnly) {
                         zScoreMetaAnalysisFile.writeInt(1);
                     } else {

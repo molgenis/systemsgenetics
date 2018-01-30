@@ -4,6 +4,9 @@
  */
 package umcg.genetica.text;
 
+import gnu.trove.map.hash.THashMap;
+
+import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -231,5 +234,24 @@ public class Strings {
 			ctr++;
 		}
 		return ctr;
+	}
+	
+	private static THashMap<String, String> cache;
+	
+	public synchronized static String cache(String s) {
+		if (cache == null) {
+			cache = new THashMap<>(1000000);
+		}
+		if (!cache.containsKey(s)) {
+			try {
+				String str = new String(s.getBytes("UTF-8"));
+				cache.put(str, str);
+				return str;
+			} catch (UnsupportedEncodingException e) {
+				return s;
+			}
+		} else {
+			return cache.get(s);
+		}
 	}
 }

@@ -88,7 +88,7 @@ public class BinaryMetaAnalysisDataset {
 		System.out.println("SNPFile: " + snpFile);
 		System.out.println("ProbeFile: " + probeFile);
 		if (isCisDataset) {
-			System.out.println("This dataset is a cis- dataset.");
+			System.out.println("This dataset is a CIS dataset.");
 		} else {
 			System.out.println("This dataset is a full size dataset.");
 		}
