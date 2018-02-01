@@ -1,3 +1,5 @@
+package nl.systemsgenetics.genenetworkbackend;
+
 
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
@@ -11,6 +13,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -21,7 +25,7 @@ import java.util.HashSet;
  *
  * @author patri
  */
-public class convertHpoToMatrix {
+public class ConvertHpoToMatrix {
 
 	/**
 	 * @param args the command line arguments
@@ -44,7 +48,21 @@ public class convertHpoToMatrix {
 		System.out.println("Total HPO terms: " + hpoToGenes.size());
 		System.out.println("Genes in order file: " + geneOrder.size());
 		
+		DoubleMatrixDataset<String, String> hpoMatrix = new DoubleMatrixDataset(geneOrder, hpoToGenes.keySet());
 		
+		for(Map.Entry<String, HashSet<String>> hpoToGenesEntry : hpoToGenes.entrySet()){
+			
+			String hpo = hpoToGenesEntry.getKey();
+			
+			for(String gene : hpoToGenesEntry.getValue()){
+				
+				hpoMatrix.setElement(gene, hpo, 1);
+				
+			}
+			
+		}
+		
+		hpoMatrix.save(outputFile);
 
 	}
 

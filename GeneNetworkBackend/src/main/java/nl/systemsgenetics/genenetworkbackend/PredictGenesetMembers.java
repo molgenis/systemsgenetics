@@ -1,3 +1,5 @@
+package nl.systemsgenetics.genenetworkbackend;
+
 /**
  *
  * @author Patrick Deelen
