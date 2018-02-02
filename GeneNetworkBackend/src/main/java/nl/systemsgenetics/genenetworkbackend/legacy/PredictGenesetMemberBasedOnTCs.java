@@ -5,18 +5,16 @@ import cern.jet.random.tdouble.engine.DRand;
 import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
 import java.util.*;
-import java.io.*;
 
 public class PredictGenesetMemberBasedOnTCs {
 
-    public PredictGenesetMemberBasedOnTCs() {
-        predictGenesetMemberBasedOnTCs();
-	}
-	
-    public void predictGenesetMemberBasedOnTCs() {
+    public static void main(String[] args) {
         
+		final String eigenVectorPath = args[0];
+		final String pathwayMatrixPath = args[1];
+		
         //Load the matrix with the eigenvectors (rows = genes, columns = components, missing values are coded as NaN, components from multiple species can be combined)
-        String filenameEigenvector = "/Users/lude/Documents/Genetica/Data/HumanUCSC/PCAOverAllProbesGPL570/GPL570-GPL96-GPL1261-GPL1355CombinedEigenvectorsENSGOnlyCollapsedAndNormalized.txt.binary";
+        String filenameEigenvector = eigenVectorPath;
         DoubleRandomEngine randomEngine = new DRand();
         ExpressionDataset dataset = new ExpressionDataset(filenameEigenvector);
         ExpressionDataset datasetTransposed = new ExpressionDataset(dataset.fileName);
@@ -45,24 +43,23 @@ public class PredictGenesetMemberBasedOnTCs {
         }
 
         //Load the matrix with genesets (rows = genes, columns = genesets, rows should be identical to rows filenameEigenvector, coding = 1 or 0):
-        String filenameGenesets = "Genesets.txt";
-        ExpressionDataset datasetGeneset = new ExpressionDataset(filenameGenesets);
+        ExpressionDataset datasetGeneset = new ExpressionDataset(pathwayMatrixPath);
 
         //Load the Ensembl to HGNC annotation:
-        HashMap hashEnsemblToHGNC = new HashMap();
-        HashMap hashHGNCToEnsembl = new HashMap();
-        try {
-           java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File("EnsemblToHGNCAnnotation.txt")));
-           String str = in.readLine();
-           while ((str = in.readLine()) != null) {
-               String[] data = str.split("\t");
-                hashEnsemblToHGNC.put(data[0],data[1]);
-                hashHGNCToEnsembl.put(data[1],data[0]);
-            }
-        } catch (Exception e) {
-            System.out.println("Error:\t" + e.getMessage());
-            e.printStackTrace();
-        }        
+//        HashMap hashEnsemblToHGNC = new HashMap();
+//        HashMap hashHGNCToEnsembl = new HashMap();
+//        try {
+//           java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(new File("EnsemblToHGNCAnnotation.txt")));
+//           String str = in.readLine();
+//           while ((str = in.readLine()) != null) {
+//               String[] data = str.split("\t");
+//                hashEnsemblToHGNC.put(data[0],data[1]);
+//                hashHGNCToEnsembl.put(data[1],data[0]);
+//            }
+//        } catch (Exception e) {
+//            System.out.println("Error:\t" + e.getMessage());
+//            e.printStackTrace();
+//        }        
         
         //Now process each of the genesets:
         String[] queryGenesets = datasetGeneset.sampleNames;
@@ -142,7 +139,7 @@ public class PredictGenesetMemberBasedOnTCs {
                 }
 
                 System.out.println("\n\n");
-                System.out.println("ProbeIndex\tEnsemblGene\tHGNC\tCorrelation\tP-Value\tZ-Score\tGeneInGenesetInput");
+                System.out.println("ProbeIndex\tEnsemblGene\tCorrelation\tP-Value\tZ-Score\tGeneInGenesetInput");
                 double[] zScoresIndividualGenes = new double[dataset.nrProbes];
                 for (int p=0; p<dataset.nrProbes; p++) {
 
@@ -252,7 +249,7 @@ public class PredictGenesetMemberBasedOnTCs {
                     pValue*=2;
 
                     zScoresIndividualGenes[p] = zScore;
-                    System.out.println(p + "\t" + dataset.probeNames[p] + "\t" + (String) hashEnsemblToHGNC.get(dataset.probeNames[p]) + "\t" + correlation + "\t" + pValue + "\t" + zScore + "\t" + datasetGeneset.rawData[p][geneset]);
+                    System.out.println(p + "\t" + dataset.probeNames[p] + "\t" + correlation + "\t" + pValue + "\t" + zScore + "\t" + datasetGeneset.rawData[p][geneset]);
                 }
 
                 System.out.println("\n\n");
@@ -291,7 +288,7 @@ public class PredictGenesetMemberBasedOnTCs {
 
     }
     
-    private double mean(double[] v) {
+    private static double mean(double[] v) {
        double sum = 0;
        for (int k = 0; k < v.length; k++) {
            sum += v[k];
@@ -299,7 +296,7 @@ public class PredictGenesetMemberBasedOnTCs {
        return (sum / (double) v.length);
    }
 
-   private double variance(double[] v, double mean) {
+   private static double variance(double[] v, double mean) {
        double ans = 0.0;
        for (int i = 0; i < v.length; i++) {
            ans += (v[i] - mean) * (v[i] - mean);

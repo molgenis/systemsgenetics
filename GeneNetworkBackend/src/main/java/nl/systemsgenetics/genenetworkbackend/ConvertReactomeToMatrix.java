@@ -32,9 +32,9 @@ public class ConvertReactomeToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\geneOrder.txt");
-		final File outputFile = new File(pathwayFile.getAbsolutePath() + "_matrix.txt");
+		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\Ensembl2Reactome_All_Levels.txt");
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA\\genes.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA\\PathwayMatrix\\reactome_matrix.txt");
 
 		HashMap<String, HashSet<String>> pathwayToGenes = readPathwayFile(pathwayFile);
 
@@ -51,7 +51,9 @@ public class ConvertReactomeToMatrix {
 
 			for (String gene : pathwayToGenesEntry.getValue()) {
 
-				pathwayMatrix.setElement(gene, pathway, 1);
+				if (pathwayMatrix.containsRow(gene)) {
+					pathwayMatrix.setElement(gene, pathway, 1);
+				}
 
 			}
 
@@ -83,7 +85,7 @@ public class ConvertReactomeToMatrix {
 				}
 
 				pathwayGenes.add(ensgId);
-				
+
 			}
 		}
 
