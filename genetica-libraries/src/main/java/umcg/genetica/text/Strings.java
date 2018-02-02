@@ -213,7 +213,7 @@ public class Strings {
 			// last element
 			String substr = ln.substring(prevsta, ln.length());
 //			System.out.println("outer loop " + ctr2 + "\t" + substr);
-			output[output.length - 1] = substr;
+			output[ctr2] = substr;
 			ctr2++;
 		}
 //		System.out.println("end ctr2: " + ctr2);
