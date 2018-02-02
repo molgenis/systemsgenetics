@@ -26,8 +26,10 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * @author patri
  */
 public class ConvertGoToMatrix {
-	
-	private enum GoType {F, P, C};
+
+	private static enum GoType {
+		F, P, C
+	};
 
 	/**
 	 * @param args the command line arguments
@@ -39,34 +41,40 @@ public class ConvertGoToMatrix {
 		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
 		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\geneOrder.txt");
 		final File uniPortToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
-		final File outputFile = new File(pathwayFile.getAbsolutePath() + "_matrix.txt");
+		
 
 		HashMap<String, ArrayList<String>> uniProtToEnsgMap = loadUniProtToEnsgMap(uniPortToEnsgMapFile);
 
-		EnumMap<GoType, HashMap<String, HashSet<String>>> pathwayToGenes = readPathwayFile(pathwayFile, uniProtToEnsgMap);
+		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = readPathwayFile(pathwayFile, uniProtToEnsgMap);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
 
 		//System.out.println("Total genesets: " + pathwayToGenes.size());
 		System.out.println("Genes in order file: " + geneOrder.size());
 
-		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
+		for (GoType goType : GoType.values()) {
 
-		HashMap<String, HashSet<String>>> pathwayToGenes;
-		
-		for (Map.Entry<String, HashSet<String>> pathwayToGenesEntry : pathwayToGenes.entrySet()) {
+			final File outputFile = new File(pathwayFile.getAbsolutePath() + "_" + goType.toString() + "_matrix.txt");
+			
+			HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(goType);
+			
+			DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
 
-			String pathway = pathwayToGenesEntry.getKey();
+			for (Map.Entry<String, HashSet<String>> pathwayToGenesEntry : pathwayToGenes.entrySet()) {
 
-			for (String gene : pathwayToGenesEntry.getValue()) {
+				String pathway = pathwayToGenesEntry.getKey();
 
-				pathwayMatrix.setElement(gene, pathway, 1);
+				for (String gene : pathwayToGenesEntry.getValue()) {
+
+					pathwayMatrix.setElement(gene, pathway, 1);
+
+				}
 
 			}
 
+			pathwayMatrix.save(outputFile);
+			
 		}
-
-		pathwayMatrix.save(outputFile);
 
 	}
 
@@ -75,7 +83,11 @@ public class ConvertGoToMatrix {
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(pathwayFile))).withSkipLines(0).withCSVParser(parser).build();
 
-		EnumMap<GoType, HashMap<String, HashSet<String>>> pathwayToGenes = new HashMap<>();
+		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = new EnumMap<>(GoType.class);
+
+		for (GoType goType : GoType.values()) {
+			goTypePathwayToGenes.put(goType, new HashMap<>());
+		}
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
@@ -86,7 +98,7 @@ public class ConvertGoToMatrix {
 
 			//Exclude special tuples like empty
 			if (nextLine[4].isEmpty()) {
-				
+
 				String uniProtId = nextLine[1];
 				String pathway = nextLine[0];
 
@@ -95,6 +107,9 @@ public class ConvertGoToMatrix {
 				if (ensgIds == null) {
 					System.err.println("Missing mapping for gene: " + uniProtId + " " + nextLine[1]);
 				} else {
+					
+					HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(GoType.valueOf(nextLine[3]));
+					
 					HashSet<String> pathwayGenes = pathwayToGenes.get(pathway);
 					if (pathwayGenes == null) {
 						pathwayGenes = new HashSet<>();
@@ -111,7 +126,7 @@ public class ConvertGoToMatrix {
 
 		}
 
-		return pathwayToGenes;
+		return goTypePathwayToGenes;
 
 	}
 
@@ -162,7 +177,5 @@ public class ConvertGoToMatrix {
 		return uniProtToEnsgMap;
 
 	}
-	
-	
 
 }
