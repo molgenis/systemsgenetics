@@ -40,7 +40,7 @@ public class ConvertGoToMatrix {
 
 		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
 		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\geneOrder.txt");
-		final File uniPortToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
+		final File uniPortToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgUniProtId.txt");
 		
 
 		HashMap<String, ArrayList<String>> uniProtToEnsgMap = loadUniProtToEnsgMap(uniPortToEnsgMapFile);
@@ -49,7 +49,7 @@ public class ConvertGoToMatrix {
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
 
-		//System.out.println("Total genesets: " + pathwayToGenes.size());
+		
 		System.out.println("Genes in order file: " + geneOrder.size());
 
 		for (GoType goType : GoType.values()) {
@@ -57,6 +57,8 @@ public class ConvertGoToMatrix {
 			final File outputFile = new File(pathwayFile.getAbsolutePath() + "_" + goType.toString() + "_matrix.txt");
 			
 			HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(goType);
+			
+			System.out.println("Total genesets of" + goType.toString() + ": " + pathwayToGenes.size());
 			
 			DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
 
