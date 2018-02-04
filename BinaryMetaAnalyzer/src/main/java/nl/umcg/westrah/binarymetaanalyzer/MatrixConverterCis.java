@@ -170,7 +170,7 @@ A1BG IL3872817 rs767575 C T -1.01
 			System.out.println("Done");
 			
 			// now comes the trickier part
-			BinaryFile bf = new BinaryFile(out + filenameDat, BinaryFile.W, 1048576);
+			BinaryFile bf = new BinaryFile(out + filenameDat, BinaryFile.W, 10*1048576);
 			bf.writeInt(1); // this will be a cis- dataset
 			TextFile out2 = new TextFile(out + filenameRows, TextFile.W, 1048576);
 			
@@ -188,8 +188,12 @@ A1BG IL3872817 rs767575 C T -1.01
 				// write the SNP index
 				// SNP     Alleles MinorAllele     AlleleAssessed  NrCalled        Maf     HWE     CallRate
 				// rs78311930      C/T     T       T       2767    0.07878568847126854     0.8956349159520639      1.0     4       ENSG00000151093 ENSG00000151092 ENSG00000077097 ENSG00000077092
+				
+				// Variant major minor
+				
 				String snpstr = s.name
 						+ "\t" + s.nonRiskAllele + "/" + s.riskAllele
+						+ "\t" + s.riskAllele
 						+ "\t" + s.riskAllele
 						+ "\t" + NR_CALLED
 						+ "\t" + MAF
