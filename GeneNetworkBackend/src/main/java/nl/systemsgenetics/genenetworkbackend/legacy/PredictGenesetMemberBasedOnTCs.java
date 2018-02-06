@@ -139,7 +139,7 @@ public class PredictGenesetMemberBasedOnTCs {
                 }
 
                 System.out.println("\n\n");
-                System.out.println("ProbeIndex\tEnsemblGene\tCorrelation\tP-Value\tZ-Score\tGeneInGenesetInput");
+                //System.out.println("ProbeIndex\tEnsemblGene\tCorrelation\tP-Value\tZ-Score\tGeneInGenesetInput");
                 double[] zScoresIndividualGenes = new double[eigenVectorDataset.nrProbes];
                 for (int p=0; p<eigenVectorDataset.nrProbes; p++) {
 
@@ -249,7 +249,7 @@ public class PredictGenesetMemberBasedOnTCs {
                     pValue*=2;
 
                     zScoresIndividualGenes[p] = zScore;
-                    System.out.println(p + "\t" + eigenVectorDataset.probeNames[p] + "\t" + correlation + "\t" + pValue + "\t" + zScore + "\t" + datasetGeneset.rawData[p][geneset]);
+                   // System.out.println(p + "\t" + eigenVectorDataset.probeNames[p] + "\t" + correlation + "\t" + pValue + "\t" + zScore + "\t" + datasetGeneset.rawData[p][geneset]);
                 }
 
                 System.out.println("\n\n");
