@@ -791,5 +791,16 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return new DoubleMatrixDataset<>(correlationMatrix, hashCols, hashCols);
 		
 	}
+	
+	/**
+	 * 
+	 * @return Covariance matrix on columns
+	 */
+	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix(){
+		
+		DoubleMatrix2D covarianceMatrix = DoubleStatistic.covariance(this.matrix);
+		return new DoubleMatrixDataset<>(covarianceMatrix, hashCols, hashCols);
+		
+	}
 
 }
