@@ -6,8 +6,10 @@ package umcg.genetica.math.matrix2;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.DoubleStatistic;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
+import com.sun.org.glassfish.external.statistics.Statistic;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -440,6 +441,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	//Getters and setters
+	
+	/**
+	 * 
+	 * @return Number of rows
+	 */
 	public int rows() {
 		return matrix.rows();
 	}
@@ -674,6 +680,23 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new NoSuchElementException("Row not found: " + rowName.toString());
 		}
 	}
+	
+	public DoubleMatrix1D getRow(int row) {
+			return matrix.viewRow(row);
+	}
+	
+	public DoubleMatrix1D getCol(C colName) {
+		Integer col = hashRows.get(colName);
+		if (col != null) {
+			return matrix.viewColumn(col);
+		} else {
+			throw new NoSuchElementException("Col not found: " + colName.toString());
+		}
+	}
+	
+	public DoubleMatrix1D getCol(int col) {
+		return matrix.viewColumn(col);
+	}
 
 	/**
 	 * Get specific element.
@@ -755,6 +778,17 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 		
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
+		
+	}
+	
+	/**
+	 * 
+	 * @return Correlation matrix on columns
+	 */
+	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix(){
+		
+		DoubleMatrix2D correlationMatrix = DoubleStatistic.correlation(DoubleStatistic.covariance(this.matrix));
+		return new DoubleMatrixDataset<>(correlationMatrix, hashCols, hashCols);
 		
 	}
 
