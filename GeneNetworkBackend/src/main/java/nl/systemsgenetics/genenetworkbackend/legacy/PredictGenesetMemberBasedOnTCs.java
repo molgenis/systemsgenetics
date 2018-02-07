@@ -4,6 +4,8 @@ import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
 import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.array.TDoubleArrayList;
 import java.util.*;
 
 public class PredictGenesetMemberBasedOnTCs {
@@ -45,9 +47,11 @@ public class PredictGenesetMemberBasedOnTCs {
 		}
 
 		//Load the matrix with genesets (rows = genes, columns = genesets, rows should be identical to rows filenameEigenvector, coding = 1 or 0):
-		ExpressionDataset datasetGeneset = new ExpressionDataset(pathwayMatrixPath);
-		ExpressionDataset datasetGenesetT = new ExpressionDataset(pathwayMatrixPath);
+		ExpressionDatasetBool datasetGeneset = new ExpressionDatasetBool(pathwayMatrixPath);
+		ExpressionDatasetBool datasetGenesetT = new ExpressionDatasetBool(pathwayMatrixPath);
 		datasetGenesetT.transposeDataset();
+		
+		ExpressionDataset result = new ExpressionDataset(pathwayMatrixPath);
 
 		//Load the Ensembl to HGNC annotation:
 //        HashMap hashEnsemblToHGNC = new HashMap();
@@ -78,7 +82,7 @@ public class PredictGenesetMemberBasedOnTCs {
 				int nrGenesAvailable = 0;
 				for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
 					if (!Double.isNaN(eigenVectorDatasetTransposed.rawData[strataStartColumn[s]][gene])) {
-						if (datasetGeneset.rawData[gene][geneset] == 1) {
+						if (datasetGeneset.rawData[gene][geneset]) {
 							nrGenesAvailable++;
 							nrGenesInGenesetPerStrata[s]++;
 						} else {
@@ -103,7 +107,7 @@ public class PredictGenesetMemberBasedOnTCs {
 						int vals2Itr = 0;
 						for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
 							if (!Double.isNaN(eigenVectorDatasetTransposed.rawData[tc + strataStartColumn[s]][gene])) {
-								if (datasetGeneset.rawData[gene][geneset] == 1) {
+								if (datasetGeneset.rawData[gene][geneset]) {
 									vals1[vals1Itr] = eigenVectorDatasetTransposed.rawData[tc + strataStartColumn[s]][gene];
 									vals1Itr++;
 								} else {
@@ -123,8 +127,8 @@ public class PredictGenesetMemberBasedOnTCs {
 						double df = ((var1 / n1 + var2 / n2) * (var1 / n1 + var2 / n2)) / (((var1 / n1) * (var1 / n1)) / (n1 - 1) + ((var2 / n2) * (var2 / n2)) / (n2 - 1));
 
 						StudentT tDist = new StudentT(df, randomEngine);
-						double pValue = 1;
-						double zScore = 0;
+						double pValue;
+						double zScore;
 						if (t < 0) {
 							pValue = tDist.cdf(t);
 							if (pValue < 2.0E-323) {
@@ -157,6 +161,8 @@ public class PredictGenesetMemberBasedOnTCs {
 				long timeinPreventOverfitB = 0;
 				long timeinPreventOverfitBb = 0;
 				long timeinPreventOverfitC = 0;
+				long timeinPreventOverfitCb = 0;
+				long timeinPreventOverfitCc = 0;
 				long timeinPreventOverfitD = 0;
 
 				long timeStart;
@@ -170,16 +176,18 @@ public class PredictGenesetMemberBasedOnTCs {
 						System.out.println(" - Time in prefent overfit B: " + timeinPreventOverfitB);
 						System.out.println(" - Time in prefent overfit Bb: " + timeinPreventOverfitBb);
 						System.out.println(" - Time in prefent overfit C: " + timeinPreventOverfitC);
+						System.out.println(" - Time in prefent overfit Cb: " + timeinPreventOverfitCb);
+						System.out.println(" - Time in prefent overfit Cc: " + timeinPreventOverfitCc);
 						System.out.println(" - Time in prefent overfit D: " + timeinPreventOverfitD);
 						System.out.println(" - Time in vector: " + timeInVector);
 						System.out.println(" - Time in Cor: " + timeInCor);
 						System.out.println(" - Time in T: " + timeinT);
 					}
 
-					double[] zScoreProfileToUse = null;
+					double[] zScoreProfileToUse;
 
 					//Prevent overfitting:
-					if (datasetGeneset.rawData[p][geneset] == 1) {
+					if (datasetGeneset.rawData[p][geneset]) {
 
 						timeStart = System.currentTimeMillis();
 
@@ -191,7 +199,7 @@ public class PredictGenesetMemberBasedOnTCs {
 							for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
 								if (p != gene) {
 									if (!Double.isNaN(eigenVectorDatasetTransposed.rawData[strataStartColumn[s]][gene])) {
-										if (datasetGeneset.rawData[gene][geneset] == 1) {
+										if (datasetGeneset.rawData[gene][geneset]) {
 											nrGenesInGenesetPerStrataToUse[s]++;
 										} else {
 											nrGenesNotInGenesetPerStrataToUse[s]++;
@@ -212,7 +220,7 @@ public class PredictGenesetMemberBasedOnTCs {
 								timeStart = System.currentTimeMillis();
 
 								double[] x = eigenVectorDatasetTransposed.rawData[tc + strataStartColumn[s]];
-								double[] y = datasetGenesetT.rawData[geneset];
+								boolean[] y = datasetGenesetT.rawData[geneset];
 								
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitB += (timeStop - timeStart);
@@ -226,14 +234,10 @@ public class PredictGenesetMemberBasedOnTCs {
 								for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
 									if (p != gene) {
 										//if (!Double.isNaN(x[gene])) {
-											if (y[gene] > 0) {
-												vals1[vals1Itr] = x[gene];
-												//dummy = x[gene];
-												vals1Itr++;
+											if (y[gene]) {
+												vals1[vals1Itr++] = x[gene];
 											} else {
-												vals2[vals2Itr] = x[gene];
-												//dummy = x[gene];
-												vals2Itr++;
+												vals2[vals2Itr++] = x[gene];
 											}
 										//}
 									}
@@ -251,18 +255,30 @@ public class PredictGenesetMemberBasedOnTCs {
 								double mean2 = mean(vals2);
 								double var1 = variance(vals1, mean1);
 								double var2 = variance(vals2, mean2);
-								double t = (mean1 - mean2) / Math.sqrt(var1 / n1 + var2 / n2);
-								double df = ((var1 / n1 + var2 / n2) * (var1 / n1 + var2 / n2)) / (((var1 / n1) * (var1 / n1)) / (n1 - 1) + ((var2 / n2) * (var2 / n2)) / (n2 - 1));
 								
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitC += (timeStop - timeStart);
 								
 								timeStart = System.currentTimeMillis();
 								
+								double t = (mean1 - mean2) / Math.sqrt(var1 / n1 + var2 / n2);
+								
+								timeStop = System.currentTimeMillis();
+								timeinPreventOverfitCb += (timeStop - timeStart);
+								
+								timeStart = System.currentTimeMillis();
+								
+								double df = ((var1 / n1 + var2 / n2) * (var1 / n1 + var2 / n2)) / (((var1 / n1) * (var1 / n1)) / (n1 - 1) + ((var2 / n2) * (var2 / n2)) / (n2 - 1));
+								
+								timeStop = System.currentTimeMillis();
+								timeinPreventOverfitCc += (timeStop - timeStart);
+								
+								timeStart = System.currentTimeMillis();
+								
 								//double df = n1 + n2 - 2;
 								StudentT tDist = new StudentT(df, randomEngine);
-								double pValue = 1;
-								double zScore = 0;
+								double pValue;
+								double zScore;
 								if (t < 0) {
 									pValue = tDist.cdf(t);
 									if (pValue < 2.0E-323) {
@@ -291,8 +307,8 @@ public class PredictGenesetMemberBasedOnTCs {
 
 					timeStart = System.currentTimeMillis();
 
-					Vector vec1 = new Vector();
-					Vector vec2 = new Vector();
+					TDoubleList vec1 = new TDoubleArrayList();
+					TDoubleList vec2 = new TDoubleArrayList();
 					for (int tc = 0; tc < eigenVectorDataset.nrSamples; tc++) {
 						if (!Double.isNaN(eigenVectorDataset.rawData[p][tc])) {
 							vec1.add(eigenVectorDataset.rawData[p][tc]);
@@ -302,10 +318,10 @@ public class PredictGenesetMemberBasedOnTCs {
 					double[] vals1 = new double[vec1.size() * 2];
 					double[] vals2 = new double[vec2.size() * 2];
 					for (int v = 0; v < vec1.size(); v++) {
-						vals1[v * 2] = ((Double) vec1.get(v)).doubleValue();
-						vals2[v * 2] = ((Double) vec2.get(v)).doubleValue();
-						vals1[v * 2 + 1] = -((Double) vec1.get(v)).doubleValue();
-						vals2[v * 2 + 1] = -((Double) vec2.get(v)).doubleValue();
+						vals1[v * 2] = vec1.get(v);
+						vals2[v * 2] = vec2.get(v);
+						vals1[v * 2 + 1] = -vec1.get(v);
+						vals2[v * 2 + 1] = -vec2.get(v);
 					}
 
 					timeStop = System.currentTimeMillis();
@@ -322,8 +338,8 @@ public class PredictGenesetMemberBasedOnTCs {
 
 					StudentT tDistColt = new StudentT(vals1.length / 2 - 2, randomEngine);
 					double t = correlation / (Math.sqrt((1 - correlation * correlation) / (double) (vals1.length / 2 - 2)));
-					double pValue = 1;
-					double zScore = 0;
+					double pValue;
+					double zScore;
 					if (t < 0) {
 						pValue = tDistColt.cdf(t);
 						if (pValue < 2.0E-323) {
@@ -349,10 +365,10 @@ public class PredictGenesetMemberBasedOnTCs {
 				System.out.println("Done with genes");
 
 				System.out.println("\n\n");
-				Vector vecInGeneset = new Vector();
-				Vector vecNotInGeneset = new Vector();
+				TDoubleList vecInGeneset = new TDoubleArrayList();
+				TDoubleList vecNotInGeneset = new TDoubleArrayList();
 				for (int p = 0; p < eigenVectorDataset.nrProbes; p++) {
-					if (datasetGeneset.rawData[p][geneset] == 1) {
+					if (datasetGeneset.rawData[p][geneset]) {
 						vecInGeneset.add(zScoresIndividualGenes[p]);
 					} else {
 						vecNotInGeneset.add(zScoresIndividualGenes[p]);
@@ -360,11 +376,11 @@ public class PredictGenesetMemberBasedOnTCs {
 				}
 				double[] vals1 = new double[vecInGeneset.size()];
 				for (int v = 0; v < vals1.length; v++) {
-					vals1[v] = ((Double) vecInGeneset.get(v)).doubleValue();
+					vals1[v] = vecInGeneset.get(v);
 				}
 				double[] vals2 = new double[vecNotInGeneset.size()];
 				for (int v = 0; v < vals2.length; v++) {
-					vals2[v] = ((Double) vecNotInGeneset.get(v)).doubleValue();
+					vals2[v] = vecNotInGeneset.get(v);
 				}
 
 				System.out.println("Starting wilcox test");
@@ -375,14 +391,14 @@ public class PredictGenesetMemberBasedOnTCs {
 				System.out.println();
 				//Replace the 1 or 0 values with the Z-Scores:
 				for (int p = 0; p < eigenVectorDataset.nrProbes; p++) {
-					datasetGeneset.rawData[p][geneset] = zScoresIndividualGenes[p];
+					result.rawData[p][geneset] = zScoresIndividualGenes[p];
 				}
 
 			}
 
 		}
 
-		datasetGeneset.save(datasetGeneset.fileName + ".GenesetZScores.binary");
+		result.save(datasetGeneset.fileName + ".GenesetZScores.binary");
 
 	}
 
