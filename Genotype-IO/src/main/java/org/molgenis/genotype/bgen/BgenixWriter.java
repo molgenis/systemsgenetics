@@ -33,7 +33,7 @@ public class BgenixWriter {
 		}
 
 		try {
-			dbConnection = DriverManager.getConnection("jdbc:sqlite: " + bgenixFile.getPath());
+			dbConnection = DriverManager.getConnection("jdbc:sqlite:" + bgenixFile.getPath());
 			dbConnection.setAutoCommit(false);
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to create bgenix file. Error: " + ex.getMessage(), ex);
