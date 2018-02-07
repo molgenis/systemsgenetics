@@ -170,19 +170,19 @@ public class PredictGenesetMemberBasedOnTCs {
 
 				for (int p = 0; p < eigenVectorDataset.nrProbes; p++) {
 
-					if (p % 1000 == 0) {
-						System.out.println("Processed: " + p + " genes of which " + countPreventedOverwfitting + " used overfitting protection");
-						System.out.println(" - Time in prefent overfit A: " + timeinPreventOverfitA);
-						System.out.println(" - Time in prefent overfit B: " + timeinPreventOverfitB);
-						System.out.println(" - Time in prefent overfit Bb: " + timeinPreventOverfitBb);
-						System.out.println(" - Time in prefent overfit C: " + timeinPreventOverfitC);
-						System.out.println(" - Time in prefent overfit Cb: " + timeinPreventOverfitCb);
-						System.out.println(" - Time in prefent overfit Cc: " + timeinPreventOverfitCc);
-						System.out.println(" - Time in prefent overfit D: " + timeinPreventOverfitD);
-						System.out.println(" - Time in vector: " + timeInVector);
-						System.out.println(" - Time in Cor: " + timeInCor);
-						System.out.println(" - Time in T: " + timeinT);
-					}
+//					if (p % 1000 == 0) {
+//						System.out.println("Processed: " + p + " genes of which " + countPreventedOverwfitting + " used overfitting protection");
+//						System.out.println(" - Time in prefent overfit A: " + timeinPreventOverfitA);
+//						System.out.println(" - Time in prefent overfit B: " + timeinPreventOverfitB);
+//						System.out.println(" - Time in prefent overfit Bb: " + timeinPreventOverfitBb);
+//						System.out.println(" - Time in prefent overfit C: " + timeinPreventOverfitC);
+//						System.out.println(" - Time in prefent overfit Cb: " + timeinPreventOverfitCb);
+//						System.out.println(" - Time in prefent overfit Cc: " + timeinPreventOverfitCc);
+//						System.out.println(" - Time in prefent overfit D: " + timeinPreventOverfitD);
+//						System.out.println(" - Time in vector: " + timeInVector);
+//						System.out.println(" - Time in Cor: " + timeInCor);
+//						System.out.println(" - Time in T: " + timeinT);
+//					}
 
 					double[] zScoreProfileToUse;
 
@@ -315,13 +315,13 @@ public class PredictGenesetMemberBasedOnTCs {
 							vec2.add(zScoreProfileToUse[tc]);
 						}
 					}
-					double[] vals1 = new double[vec1.size() * 2];
-					double[] vals2 = new double[vec2.size() * 2];
+					double[] vals1 = new double[vec1.size()];
+					double[] vals2 = new double[vec2.size()];
 					for (int v = 0; v < vec1.size(); v++) {
-						vals1[v * 2] = vec1.get(v);
-						vals2[v * 2] = vec2.get(v);
-						vals1[v * 2 + 1] = -vec1.get(v);
-						vals2[v * 2 + 1] = -vec2.get(v);
+						vals1[v] = vec1.get(v);
+						vals2[v] = vec2.get(v);
+						//vals1[v * 2 + 1] = -vec1.get(v);
+						//vals2[v * 2 + 1] = -vec2.get(v);
 					}
 
 					timeStop = System.currentTimeMillis();
