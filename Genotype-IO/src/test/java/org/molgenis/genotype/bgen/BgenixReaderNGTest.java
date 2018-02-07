@@ -75,7 +75,6 @@ public class BgenixReaderNGTest extends ResourceTest {
 //			System.out.print(result.getString("size_in_bytes"));
 //			System.out.println();
 //		}
-
 		//assertEquals(result, expResult);
 		// TODO review the generated test code and remove the default call to fail.
 		//fail("The test case is a prototype.");
@@ -162,16 +161,16 @@ public class BgenixReaderNGTest extends ResourceTest {
 	@Test
 	public void testGetMetadata() throws Exception {
 		File bgenixFile = getTestResourceFile("/bgenExamples/complex.bgen.bgi");
-		
+
 		BgenixReader bgenixReader = new BgenixReader(bgenixFile);
-		
+
 		BgenixMetadata metaData = bgenixReader.getMetadata();
-		
+
 		assertEquals(metaData.getFileName(), "complex.bgen");
 		assertEquals(metaData.getFileSize(), 835);
 		assertEquals(metaData.getIndexCreationTime(), 2017);
 		assertEquals(metaData.getLastWriteTime(), 1464771094);
-				
+
 	}
 
 }
