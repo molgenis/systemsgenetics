@@ -43,7 +43,7 @@ public class BgenixWriter {
 
 			dbConnection.createStatement().execute("CREATE TABLE Variant ( chromosome TEXT NOT NULL, position INT NOT NULL, rsid TEXT NOT NULL, number_of_alleles INT NOT NULL, allele1 TEXT NOT NULL, allele2 TEXT NULL, file_start_position INT NOT NULL, size_in_bytes INT NOT NULL, PRIMARY KEY (chromosome, position, rsid, allele1, allele2, file_start_position )) WITHOUT ROWID;");
 
-			addVariantStatement = dbConnection.prepareStatement("INSERT INTO Metadata(chromosome, position, rsid, number_of_alleles, allele1, allele2, file_start_position, size_in_bytes) VALUES(?,?,?,?,?,?,?,?)");
+			addVariantStatement = dbConnection.prepareStatement("INSERT INTO Variant(chromosome, position, rsid, number_of_alleles, allele1, allele2, file_start_position, size_in_bytes) VALUES(?,?,?,?,?,?,?,?)");
 
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to initialize bgenix file. Error: " + ex.getMessage(), ex);
