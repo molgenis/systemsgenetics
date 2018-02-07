@@ -36,9 +36,9 @@ public class BgenGenotypeDataTest extends ResourceTest {
 
 	@Test
 	public void testReader_1_2() throws URISyntaxException, IOException {
-		File bgenixFile = getTestResourceFile("/bgenExamples/complex.bgen");
-		genotypeData = new BgenGenotypeData(bgenixFile, null);
-		bgenixFile = getTestResourceFile("/bgenExamples/example.16bits.bgen");
+		//File bgenixFile = getTestResourceFile("/bgenExamples/complex.bgen");
+		//genotypeData = new BgenGenotypeData(bgenixFile, null);
+		File bgenixFile = getTestResourceFile("/bgenExamples/example.16bits.bgen");
 		genotypeData = new BgenGenotypeData(bgenixFile, null);
 	}
 
