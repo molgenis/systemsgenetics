@@ -59,7 +59,7 @@ public class BgenixWriter {
 	 * @param sizeInBytesInBgenFile
 	 * @param variantId variant ID as is written to bgen file. Variant ID is
 	 * requered by bgen so might be different from the null ID that can be
-	 * sorted in Genetic variant object
+	 * stored in Genetic variant object
 	 */
 	public synchronized void addVariantToIndex(GeneticVariant variant, long startPos, int sizeInBytesInBgenFile, String variantId) {
 
@@ -138,8 +138,8 @@ public class BgenixWriter {
 			metadataStatement.setInt(2, metadata.getFileSize());
 			metadataStatement.setInt(3, metadata.getLastWriteTime());
 			metadataStatement.setBytes(4, metadata.getFirst1000bytes());
-			metadataStatement.setInt(3, metadata.getIndexCreationTime());
-
+			metadataStatement.setInt(5, metadata.getIndexCreationTime());
+			
 			metadataStatement.executeUpdate();
 
 			dbConnection.commit();
