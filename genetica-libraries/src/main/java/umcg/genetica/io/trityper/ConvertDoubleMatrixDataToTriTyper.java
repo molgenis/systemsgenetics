@@ -56,7 +56,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 // initialise the member variable
                 outputFolder = cmd.getOptionValue("OutputFile");
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necesarray information: output loc");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }
@@ -64,7 +64,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 // initialise the member variable
                 dataMatrix = cmd.getOptionValue("dataMatrix");
             } else {
-                System.out.println("Missing necesarray information");
+                System.out.println("Missing necessary information: data matrix");
                 formatter.printHelp("ant", options);
                 System.exit(0);
             }

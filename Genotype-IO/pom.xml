@@ -77,6 +77,12 @@
 			<version>3.20.1</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.facebook.presto</groupId>
+			<artifactId>presto-orc</artifactId>
+			<version>0.188-SNAPSHOT</version>
+		 <type>jar</type>
+		</dependency>
 	</dependencies>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
