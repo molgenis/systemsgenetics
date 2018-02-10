@@ -939,6 +939,7 @@ public class Normalizer {
 //            DoubleMatrixDataset<String, String> covariateDataset = new DoubleMatrixDataset<String, String>(covariateValues, dataset.rowObjects, covariateNames);
 //            return new Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>>(covariateDataset, dataset);
 //        } else {
+
 		System.out.println("Your covariate corrected dataset will have " + sampleCtr + " samples, after removing samples with missing covariate values.");
 		double[][] rawData = dataset.getRawData();
 		double[][] newRawData = new double[rawData.length][sampleCtr];

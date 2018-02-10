@@ -175,7 +175,7 @@ public class UtilConsoleGUI {
 				gte = val;
 			} else if (args[i].equals("--annot")) {
 				annot = val;
-			} else if (args[i].equals("--FdrMethod")) {
+			} else if (args[i].equals("--fdrmethod")) {
 				val = val.toLowerCase();
 				if (val.equals("probe")) {
 					fdrMethod = FDRMethod.PROBELEVEL;
@@ -183,6 +183,8 @@ public class UtilConsoleGUI {
 					fdrMethod = FDRMethod.GENELEVEL;
 				} else if (val.equals("snp")) {
 					fdrMethod = FDRMethod.SNPLEVEL;
+				} else if (val.equals("full")) {
+					fdrMethod = FDRMethod.FULL;
 				}
 			} else if (args[i].equals("--stringentFDR")) {
 				stringentFDR = true;
@@ -558,7 +560,8 @@ public class UtilConsoleGUI {
 				+ "--splitpheno\t\tSplits phenotype file by chromosome\n"
 				+ "--splitTT\t\tSplit trityper folder into chromosome chunks\n"
 				+ "--mergeqtlfile\t\tMerge QTL files (and sort them)\n"
-				+ "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n");
+				+ "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n"
+				+ "--fdrmethod\t\tEither probe, gene, snp or full\n");
 		System.out.println("");
 
 //        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);

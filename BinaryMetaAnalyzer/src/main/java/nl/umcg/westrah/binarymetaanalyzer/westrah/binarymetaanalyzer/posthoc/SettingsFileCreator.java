@@ -29,7 +29,7 @@ public class SettingsFileCreator {
 
 
 //			s.createBinaryMeta(10, snpAnnotationfile, 200000000, probetranslation, outputdir, 32, directoryfile, shellout);
-			
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -87,6 +87,17 @@ public class SettingsFileCreator {
 		}
 		input.close();
 		
+		if (snpprobelimit == null) {
+			snpprobelimit = "";
+		}
+		if (snplimit == null) {
+			snplimit = "";
+		}
+		if (probelimit == null) {
+			probelimit = "";
+		}
+		
+		
 		String output = "<settings>\n" +
 				"\t<defaults>\n" +
 				"\t<permutations>" + nrpermutations + "</permutations>\n" +
@@ -110,9 +121,9 @@ public class SettingsFileCreator {
 				"\t\t<threads>" + nrthreads + "</threads>\n" +
 				"\t\t<cis>false</cis>\n" +
 				"\t\t<trans>true</trans>\n" +
-				"\t\t<probeselection>"+snpprobelimit+"</probeselection>\n" +
+				"\t\t<probeselection>" + snpprobelimit + "</probeselection>\n" +
 				"\t\t<snpselection>" + snplimit + "</snpselection>\n" +
-				"\t\t<snpprobeselection>"+probelimit+"</snpprobeselection>\n" +
+				"\t\t<snpprobeselection>" + probelimit + "</snpprobeselection>\n" +
 				"\t</defaults>\n";
 		
 		output += "\t<datasets>\n";
@@ -219,14 +230,14 @@ public class SettingsFileCreator {
 					"#SBATCH --time=3:00:00\n" +
 					"#SBATCH --constraint=tmp03\n" +
 					"#SBATCH --cpus-per-task=12\n" +
-					"#SBATCH --mem=20gb\n" +
+					"#SBATCH --mem=50gb\n" +
 					"#SBATCH --nodes=1\n" +
 					"#SBATCH --open-mode=append\n" +
 					"#SBATCH --export=NONE\n" +
 					"#SBATCH --get-user-env=L\n" +
 					"\n" +
 					"" +
-					"java -Xmx19g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
+					"java -XX:StringTableSize=1000003 -Xmx49g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + ctr + ".xml";
 			tf.writeln(shellout);
 			tf.close();
 			
@@ -243,13 +254,13 @@ public class SettingsFileCreator {
 				"#SBATCH --time=4:00:00\n" +
 				"#SBATCH --constraint=tmp03\n" +
 				"#SBATCH --cpus-per-task=12\n" +
-				"#SBATCH --mem=20gb\n" +
+				"#SBATCH --mem=50gb\n" +
 				"#SBATCH --nodes=1\n" +
 				"#SBATCH --open-mode=append\n" +
 				"#SBATCH --export=NONE\n" +
 				"#SBATCH --get-user-env=L\n" +
 				"\n" +
-				"java -Xmx19g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
+				"java -XX:StringTableSize=1000003 -Xmx49g -jar  " + toollocserver + " --internalmeta \\\n--settings " + settingslocserver + "$SLURM_ARRAY_TASK_ID.xml";
 		tf.writeln(shellout);
 		tf.close();
 		

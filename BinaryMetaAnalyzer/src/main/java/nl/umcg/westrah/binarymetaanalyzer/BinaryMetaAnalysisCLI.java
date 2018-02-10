@@ -1,8 +1,6 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.CheckZScoreMeanAndVariance;
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.MetaAnalysisQC;
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.SettingsFileCreator;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.*;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -13,21 +11,16 @@ public class BinaryMetaAnalysisCLI {
 	
 	static {
 		OPTIONS = new Options();
-
-//		Option option = Option.builder().longOpt("gwas").build();
-//		OPTIONS.addOption(option);
-
-//		option = Option.builder()
-//				.longOpt("meta")
-//				.hasArg()
-//				.desc("Run second iteration conditional on a set of predefined variants. Specify file in format: region iter variant pval")
-//				.build();
-//		OPTIONS.addOption(option);
-		
 		
 		Option option = Option.builder()
 				.longOpt("meta")
 				.desc("Run meta-analysis")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("applyfdr")
+				.desc("Apply the FDR values of one file on another")
 				.build();
 		OPTIONS.addOption(option);
 		
@@ -52,6 +45,12 @@ public class BinaryMetaAnalysisCLI {
 		option = Option.builder()
 				.longOpt("compareeffectsize")
 				.desc("Compare QTL effect sizes between (groups of) datasets")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("comparepermute")
+				.desc("Compare QTL permutation datasets")
 				.build();
 		OPTIONS.addOption(option);
 		
@@ -141,6 +140,13 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("in2")
+				.hasArg()
+				.desc("Second input")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("averagingmethod")
 				.hasArg()
 				.desc("SettingsCreator: Averaging method for internal meta")
@@ -226,11 +232,39 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("minnrofcohorts")
+				.hasArg()
+				.desc("Minimum number of cohorts (for QTL filter)")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("usetmp")
 				.desc("Use tmp dir for temporary storage")
 				.build();
 		OPTIONS.addOption(option);
 		
+		option = Option.builder()
+				.longOpt("filtereqtl")
+				.desc("Use tmp dir for temporary storage")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("onlyoutputsignificant")
+				.desc("Only output signifciant results when applying FDR")
+				.build();
+		OPTIONS.addOption(option);
+		
+		
+		option = Option.builder()
+				.longOpt("cismatrixconvert")
+				.desc("Convert FHS cis data to BinaryMatrix")
+				.build();
+		OPTIONS.addOption(option);
+		
+		//
+		//
 		
 	}
 	
@@ -245,7 +279,18 @@ public class BinaryMetaAnalysisCLI {
 			final CommandLine cmd = parser.parse(OPTIONS, args, false);
 			
 			
-			if (cmd.hasOption("meta")) {
+			if (cmd.hasOption("cismatrixconvert")) {
+				MatrixConverterCis c = new MatrixConverterCis();
+				String in = cmd.getOptionValue("in");
+				String in2 = cmd.getOptionValue("in2");
+				String out = cmd.getOptionValue("out");
+				c.run(in, in2, out);
+			} else if (cmd.hasOption("comparepermute")) {
+				
+				Delta d = new Delta();
+				d.run(cmd.getOptionValue("in"), cmd.getOptionValue("in2"), cmd.getOptionValue("out"));
+				
+			} else if (cmd.hasOption("meta")) {
 				String settings = null;
 				String texttoreplace = null;
 				String replacewith = null;
@@ -258,8 +303,9 @@ public class BinaryMetaAnalysisCLI {
 				if (cmd.hasOption("rtw")) {
 					replacewith = cmd.getOptionValue("rtw");
 				}
+				
 				boolean usetmp = false;
-				if(cmd.hasOption("usetmp")){
+				if (cmd.hasOption("usetmp")) {
 					usetmp = true;
 				}
 				
@@ -332,6 +378,41 @@ public class BinaryMetaAnalysisCLI {
 				} else {
 					c.createInternalMeta(input, outputdir, averagingmethod, nrpermutations, scriptloclocal, scriptlocserver, tool);
 				}
+			} else if (cmd.hasOption("applyfdr")) {
+				
+				ApplyFDR f = new ApplyFDR();
+				String input = null;
+				if (cmd.hasOption("in")) {
+					input = cmd.getOptionValue("in");
+				}
+				
+				String output = null;
+				if (cmd.hasOption("out")) {
+					output = cmd.getOptionValue("out");
+				}
+				
+				String ref = null;
+				
+				if (cmd.hasOption("e")) {
+					ref = cmd.getOptionValue("e");
+				}
+				
+				double threshold = 0.05;
+				if (cmd.hasOption("threshold")) {
+					threshold = Double.parseDouble(cmd.getOptionValue("threshold"));
+				}
+				
+				boolean onlywritesignificant = false;
+				if (cmd.hasOption("onlyoutputsignificant")) {
+					onlywritesignificant = true;
+				}
+				if (input == null || output == null || ref == null) {
+					System.out.println("Use --in --out and --eqtls");
+				} else {
+					f.apply(input, output, threshold, onlywritesignificant, ref);
+				}
+				
+				
 			} else if (cmd.hasOption("createsettingsbinarymeta")) {
 				SettingsFileCreator c = new SettingsFileCreator();
 				
@@ -464,6 +545,45 @@ public class BinaryMetaAnalysisCLI {
 					);
 				}
 				
+			} else if (cmd.hasOption("filtereqtl")) {
+				String input = null;
+				String output = null;
+				String snp = null;
+				String gene = null;
+				String snpgene = null;
+				
+				QTLFileFilter f = new QTLFileFilter();
+				
+				
+				if (cmd.hasOption("e")) {
+					input = cmd.getOptionValue("e");
+				}
+				if (cmd.hasOption("o")) {
+					output = cmd.getOptionValue("o");
+				}
+				int minNrOfCohorts = -1;
+				if (cmd.hasOption("minnrofcohorts")) {
+					minNrOfCohorts = Integer.parseInt(cmd.getOptionValue("minnrofcohorts"));
+				}
+				if (cmd.hasOption("o")) {
+					output = cmd.getOptionValue("o");
+				}
+				if (cmd.hasOption("snpconfine")) {
+					snp = cmd.getOptionValue("snpconfine");
+				}
+				if (cmd.hasOption("probeconfine")) {
+					gene = cmd.getOptionValue("probeconfine");
+				}
+				if (cmd.hasOption("snpprobeconfine")) {
+					snpgene = cmd.getOptionValue("snpprobeconfine");
+				}
+				
+				if (input == null || output == null) {
+					System.out.println("Use at least -e and -o for --filtereqtl");
+					System.out.println("Optional: --snpconfine, --probeconfine, --snpprobeconfine");
+				} else {
+					f.filter(snp, gene, snpgene, input, minNrOfCohorts, output);
+				}
 			} else if (cmd.hasOption("zscorematcheck")) {
 				String input = null;
 				String output = null;
@@ -478,6 +598,7 @@ public class BinaryMetaAnalysisCLI {
 				if (cmd.hasOption("t")) {
 					nrperm = cmd.getOptionValue("t");
 				}
+				
 				CheckZScoreMeanAndVariance v = new CheckZScoreMeanAndVariance();
 				v.checkZScoreTable(input, output, Integer.parseInt(nrperm));
 				
