@@ -225,7 +225,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			BgenixWriter b = new BgenixWriter(bgenixFile);
 			createBgenixFile(bgenFile, b, lastSnpStart, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
 			b.finalizeIndex();
-			throw new GenotypeDataException("Currently only bgen genotype data indexed using bgenix is supported.");
 		}
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
@@ -251,22 +250,22 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //		if (fileLayout.equals(layout.layOut_1)) {
 //			stepToNextVariant += 4;
 //		}
-		
-		while ((pointerFirstSnp) < bgenFile.length()) {
+		long startSize = pointerFirstSnp;
+		while ((startSize) < bgenFile.length()) {
 			//Loop through variants.
 //			long currentStart = pointerFirstSnp + stepToNextVariant;
-			long startSize = pointerFirstSnp;
-			GeneticVariant var = readSnpInfo(bgen, nSamples, fileLayout, pointerFirstSnp);
+			
+			GeneticVariant var = readSnpInfo(bgen, nSamples, fileLayout, startSize);
 			long currentPointer= this.bgenFile.getFilePointer();
 			long stepSize = DetermineStepSize(currentPointer, fileLayout, fileBlockRepresentation, nSamples);
 			
 			if(fileLayout.equals(fileLayout.layOut_2)){
 				stepSize+=4;
 			}
-
+//			this.bgenFile.seek(currentPointer);
+			startSize=currentPointer+stepSize;
+			
 			b.addVariantToIndex(var, pointerFirstSnp, (int) stepSize, var.getVariantId().getPrimairyId());
-
-			this.bgenFile.seek(currentPointer);
 		}
 	}
 	
