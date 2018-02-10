@@ -12,6 +12,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
@@ -88,10 +89,11 @@ public class InternalMetaAnalysisDataset {
 		} else {
 			System.out.println("This dataset is a full size dataset.");
 		}
-		loadSNPs(snpFile);
-		System.out.println(snps.length + " SNPs loaded");
 		loadProbes(probeFile);
 		System.out.println(probeList.length + " probes loaded");
+		loadSNPs(snpFile);
+		System.out.println(snps.length + " SNPs loaded");
+		
 		
 		// get size of matrix
 		long filesize = Gpio.getFileSize(matrix);
@@ -105,7 +107,7 @@ public class InternalMetaAnalysisDataset {
 	
 	private void loadSNPs(String snpFile) throws IOException {
 		// get nr of lines
-		TextFile tf = new TextFile(snpFile, TextFile.R);
+		TextFile tf = new TextFile(snpFile, TextFile.R, 1048576 * 10);
 		tf.readLine(); // skip header
 		int nrSNPs = tf.countLines();
 		tf.close();
@@ -122,7 +124,6 @@ public class InternalMetaAnalysisDataset {
 		mafs = new double[nrSNPs];
 		
 		if (isCisDataset) {
-			
 			// jagged array, hurrah
 			snpCisProbeMap = new String[nrSNPs][0];
 		}
@@ -133,7 +134,9 @@ public class InternalMetaAnalysisDataset {
 		int ln = 0;
 		
 		snps = new String[nrSNPs];
+		
 		snpBytes[0] = 4; // account for magic number.
+//		ProgressBar pb = new ProgressBar(snps.length, "Loading SNP annotation");
 		while (elems != null) {
 			String snp = new String(elems[0].getBytes("UTF-8")).intern();
 			String allelesStr = new String(elems[1].getBytes("UTF-8")).intern();
@@ -193,15 +196,17 @@ public class InternalMetaAnalysisDataset {
 					
 					String probe = elems[e];
 					// System.out.println(snp+"\t"+elems[e]);
-					snpProbeList[e - 9] = probe;
+					snpProbeList[e - 9] = new String(probe.getBytes("UTF-8")).intern();
 				}
 				
 				snpCisProbeMap[ln] = snpProbeList;
 			}
 			
 			elems = tf.readLineElems(TextFile.tab);
+//			pb.iterate();
 			ln++;
 		}
+//		pb.close();
 		tf.close();
 		
 	}
@@ -212,9 +217,12 @@ public class InternalMetaAnalysisDataset {
 //        tf.close();
 //
 //        tf.open();
-		ArrayList<String> allProbes = tf.readAsArrayList();
+		ArrayList<String> allProbestmp = tf.readAsArrayList();
+		probeList = new String[allProbestmp.size()];
+		for (int p = 0; p < allProbestmp.size(); p++) {
+			probeList[p] = new String(allProbestmp.get(p).getBytes("UTF-8")).intern();
+		}
 		tf.close();
-		probeList = allProbes.toArray(new String[0]);
 	}
 	
 	public String[] getCisProbes(int snp) {
@@ -239,9 +247,12 @@ public class InternalMetaAnalysisDataset {
 			outOfBounds = true;
 		}
 		
+		int buffersize = 1000; // nr of snps to buffer
+		if (isCisDataset) {
+			buffersize = 50000;
+		}
 		
 		if (mappedRAF == null || outOfBounds) {
-			int buffersize = 1000; // nr of snps to buffer
 			currentSeekLoc = snpBytePos;
 			if (snp + buffersize > snpBytes.length) {
 				currentEndSeekLoc = raf.length();

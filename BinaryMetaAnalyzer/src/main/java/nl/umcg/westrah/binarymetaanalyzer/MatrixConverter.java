@@ -81,14 +81,14 @@ public class MatrixConverter {
 	
 	private void writeColumnFile(String[] genes) throws IOException {
 		geneCount = genes.length;
-		for (String gene :genes) columnFile.writeln(gene);
+		for (String gene : genes) columnFile.writeln(gene);
 		columnFile.close();
 	}
 	
 	private void writeSnpLine(String[] splitLine) throws IOException {
 		
 		String snpName = splitLine[0];
-		String alleles = splitLine[1] + "/" + splitLine [2];
+		String alleles = splitLine[1] + "/" + splitLine[2];
 		String minorAllele = splitLine[2];
 		String geneCount = Integer.toString(this.geneCount);
 		

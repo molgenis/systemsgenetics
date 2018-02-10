@@ -18,8 +18,41 @@ import umcg.genetica.io.Gpio;
  */
 public class BinaryMetaAnalysisSettings {
 	
+	@Override
+	public String toString() {
+		return "BinaryMetaAnalysisSettings{\n" +
+				"nrPermutations\t" + nrPermutations + "\n" +
+				"startPermutations\t" + startPermutations + "\n" +
+				"useAbsoluteZscore\t" + useAbsoluteZscore + "\n" +
+				"finalEQTLBufferMaxLength\t" + finalEQTLBufferMaxLength + "\n" +
+				"includeSNPsWithoutProperMapping\t" + includeSNPsWithoutProperMapping + "\n" +
+				"includeProbesWithoutProperMapping\t" + includeProbesWithoutProperMapping +
+				"analysisType\t" + analysisType + "\n" +
+				"cisdistance\t" + cisdistance + "\n" +
+				"transdistance\t" + transdistance + "\n" +
+				"makezscoreplot\t" + makezscoreplot + "\n" +
+				"probetranslationfile\t'" + probetranslationfile + '\'' + "\n" +
+				"output\t'" + output + '\'' + "\n" +
+				"makezscoretable\t" + makezscoretable + "\n" +
+				"confineSNPs\t" + confineSNPs + "\n" +
+				"probeDatasetPresenceThreshold\t" + probeDatasetPresenceThreshold + "\n" +
+				"snpDatasetPresenceThreshold\t" + snpDatasetPresenceThreshold + "\n" +
+				"probeAndSNPPresenceFilterSampleThreshold\t" + probeAndSNPPresenceFilterSampleThreshold + "\n" +
+				"runonlypermutation\t" + runonlypermutation + "\n" +
+				"nrThreads\t" + nrThresds + "\n" +
+				"probeselection\t'" + probeselection + '\'' + "\n" +
+				"snpselection\t'" + snpselection + '\'' + "\n" +
+				"snpprobeselection\t'" + snpprobeselection + '\'' + "\n" +
+				"snpAnnotationFile\t'" + snpAnnotationFile + '\'' + "\n" +
+				"minimalNumberOfDatasets\t" + minimalNumberOfDatasets + "\n" +
+				"debug\t" + debug + "\n" +
+				"fullpermutationoutput\t" + fullpermutationoutput + "\n" +
+				"usetmp\t" + usetmp + "\n" +
+				'}';
+	}
+	
 	private int nrPermutations = 10;
-	private int startPermutations = 00;
+	private int startPermutations = 0;
 	private boolean useAbsoluteZscore = false;
 	private int finalEQTLBufferMaxLength = 1000000;
 	private int nrOfBins = 100;
@@ -52,6 +85,10 @@ public class BinaryMetaAnalysisSettings {
 	private String snpprobeselection;
 	
 	private String snpAnnotationFile;
+	public int minimalNumberOfDatasets = 1;
+	public boolean debug = false;
+	public boolean fullpermutationoutput = false;
+	public boolean usetmp = false;
 	
 	public Analysis getAnalysisType() {
 		return analysisType;
@@ -66,7 +103,7 @@ public class BinaryMetaAnalysisSettings {
 		CIS, TRANS, CISTRANS
 	}
 	
-	public void parse(String settings, String texttoreplace, String replacetextwith)  {
+	public void parse(String settings, String texttoreplace, String replacetextwith) {
 		try {
 			config = new XMLConfiguration(settings);
 			
@@ -83,6 +120,29 @@ public class BinaryMetaAnalysisSettings {
 			makezscoretable = config.getBoolean("defaults.makezscoretable", false);
 			confineSNPs = config.getBoolean("defaults.confineSNPsToSNPsPresentInAllDatasets", false);
 			probetranslationfile = config.getString("defaults.probetranslationfile");
+			
+			try {
+				usetmp = config.getBoolean("defaults.usetmp", false);
+			} catch (Exception e) {
+			
+			}
+			try {
+				fullpermutationoutput = config.getBoolean("defaults.fullpermutationoutput", false);
+			} catch (Exception e) {
+			
+			}
+			try {
+				debug = config.getBoolean("defaults.debug", false);
+			} catch (Exception e) {
+			
+			}
+			
+			try {
+				minimalNumberOfDatasets = config.getInt("defaults.minimalNumberOfDatasets", 1);
+			} catch (Exception e) {
+			
+			}
+			
 			output = config.getString("defaults.output");
 			if (!Gpio.exists(output)) {
 				try {
@@ -160,10 +220,15 @@ public class BinaryMetaAnalysisSettings {
 				i++;
 			}
 			
+			summarize();
 			// parse datasets
 		} catch (ConfigurationException e) {
-		
+			e.printStackTrace();
 		}
+	}
+	
+	private void summarize() {
+		System.out.println(this.toString());
 	}
 	
 	public int getStartPermutations() {
