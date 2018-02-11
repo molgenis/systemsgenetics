@@ -222,7 +222,8 @@ public class BinaryMetaAnalysisSettings {
 					String featureOccuranceScaleMap = config.getString("datasets.dataset(" + i + ").featureOccuranceScaleMap");
 					if (featureOccuranceScaleMap != null && featureOccuranceScaleMap.trim().length() == 0) {
 						featureOccuranceScaleMap = null;
-					} else {
+					}
+					if(featureOccuranceScaleMap!=null){
 						System.out.println("Feature rescaling values: " + featureOccuranceScaleMap);
 						rescalingOfSampleSize = true;
 					}
