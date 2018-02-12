@@ -35,7 +35,7 @@ public class ConvertHpoToMatrix {
 
 		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\geneOrder.txt");
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA\\genes.txt");
 		final File outputFile = new File(hpoFile.getAbsolutePath() + "_matrix.txt");
 
 		HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
@@ -55,7 +55,9 @@ public class ConvertHpoToMatrix {
 
 			for (String gene : hpoToGenesEntry.getValue()) {
 
-				hpoMatrix.setElement(gene, hpo, 1);
+				if(hpoMatrix.containsRow(gene)){
+					hpoMatrix.setElement(gene, hpo, 1);
+				}				
 
 			}
 
@@ -85,6 +87,7 @@ public class ConvertHpoToMatrix {
 			ArrayList<String> ncbiEnsgIds = ncbiToEnsgMap.get(ncbiId);
 			if (ncbiEnsgIds == null) {
 				ncbiEnsgIds = new ArrayList<>();
+				ncbiToEnsgMap.put(ncbiId, ncbiEnsgIds);
 			}
 
 			ncbiEnsgIds.add(nextLine[0]);

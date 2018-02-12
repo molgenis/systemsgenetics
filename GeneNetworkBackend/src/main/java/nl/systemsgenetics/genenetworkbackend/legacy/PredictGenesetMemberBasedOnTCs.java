@@ -92,6 +92,9 @@ public class PredictGenesetMemberBasedOnTCs {
 				}
 				minNrGenesPerStrata = Math.min(nrGenesAvailable, minNrGenesPerStrata);
 			}
+			
+			System.out.println("Inventorizing geneset:\t" + queryGenesets[q] + "\t" + geneset + "\t" + minNrGenesPerStrata);
+			
 			if (minNrGenesPerStrata >= 10) {
 
 				System.out.println("Processing geneset:\t" + queryGenesets[q] + "\t" + geneset + "\t" + minNrGenesPerStrata);
@@ -398,7 +401,7 @@ public class PredictGenesetMemberBasedOnTCs {
 
 		}
 
-		result.save(datasetGeneset.fileName + ".GenesetZScores.binary");
+		result.save(datasetGeneset.fileName + ".GenesetZScores.txt");
 
 	}
 
