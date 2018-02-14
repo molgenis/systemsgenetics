@@ -6,14 +6,32 @@ import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
-import java.util.*;
+import nl.systemsgenetics.genenetworkbackend.PredictGenesetMembersOptions;
+import org.apache.commons.cli.ParseException;
 
 public class PredictGenesetMemberBasedOnTCs {
 
 	public static void main(String[] args) {
 
-		final String eigenVectorPath = args[0];
-		final String pathwayMatrixPath = args[1];
+		PredictGenesetMembersOptions options;
+		
+		if(args.length == 0){
+			PredictGenesetMembersOptions.printHelp();
+			return;
+		}
+		
+		try {
+			options = new PredictGenesetMembersOptions(args);
+		} catch (ParseException ex) {
+			System.err.println("Error parsing commandline: " + ex.getMessage());
+			PredictGenesetMembersOptions.printHelp();
+			return;
+		}
+		
+		options.printOptions();
+		
+		final String eigenVectorPath = options.getEigenVectorFile().getAbsolutePath();
+		final String pathwayMatrixPath = options.getPathwayMatrixFile().getAbsolutePath();
 
 		//Load the matrix with the eigenvectors (rows = genes, columns = components, missing values are coded as NaN, components from multiple species can be combined)
 		String filenameEigenvector = eigenVectorPath;
@@ -401,7 +419,7 @@ public class PredictGenesetMemberBasedOnTCs {
 
 		}
 
-		result.save(datasetGeneset.fileName + ".GenesetZScores.txt");
+		result.save(options.getPredictionsFile().getAbsolutePath());
 
 	}
 
