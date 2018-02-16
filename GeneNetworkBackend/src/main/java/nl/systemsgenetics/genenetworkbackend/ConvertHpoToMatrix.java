@@ -5,9 +5,11 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,10 +35,12 @@ public class ConvertHpoToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
+		//final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
+		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_FREQUENT_FEATURES_diseases_to_genes_to_phenotypes.txt");
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA\\genes.txt");
-		final File outputFile = new File(hpoFile.getAbsolutePath() + "_matrix.txt");
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_matrix.txt");
+		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_genesInPathways.txt");
 
 		HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 
@@ -49,13 +53,21 @@ public class ConvertHpoToMatrix {
 
 		DoubleMatrixDataset<String, String> hpoMatrix = new DoubleMatrixDataset(geneOrder, hpoToGenes.keySet());
 
+		HashSet<String> genesWithHpo = new HashSet<>(10000);
+		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
+		
 		for (Map.Entry<String, HashSet<String>> hpoToGenesEntry : hpoToGenes.entrySet()) {
 
 			String hpo = hpoToGenesEntry.getKey();
 
 			for (String gene : hpoToGenesEntry.getValue()) {
-
+				
 				if(hpoMatrix.containsRow(gene)){
+					if(genesWithHpo.add(gene)){
+						//add to genes file if not already done
+						geneWriter.write(gene);
+						geneWriter.write('\n');
+					}
 					hpoMatrix.setElement(gene, hpo, 1);
 				}				
 
@@ -63,8 +75,11 @@ public class ConvertHpoToMatrix {
 
 		}
 
+		geneWriter.close();
 		hpoMatrix.save(outputFile);
 
+		System.out.println("Genes in pathway: " + genesWithHpo.size());
+		
 	}
 
 	private static HashMap<String, ArrayList<String>> loadNcbiToEnsgMap(File ncbiToEnsgMapFile) throws FileNotFoundException, IOException, Exception {

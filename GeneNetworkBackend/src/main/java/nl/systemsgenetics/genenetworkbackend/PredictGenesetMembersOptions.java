@@ -64,12 +64,12 @@ public class PredictGenesetMembersOptions {
 		CommandLineParser parser = new PosixParser();
 		final CommandLine commandLine = parser.parse(OPTIONS, args, false);
 		
-		eigenVectorFile = new File(commandLine.getOptionValue("-e"));
-		pathwayMatrixFile = new File(commandLine.getOptionValue("-p"));
+		eigenVectorFile = new File(commandLine.getOptionValue("e"));
+		pathwayMatrixFile = new File(commandLine.getOptionValue("p"));
 		
-		predictionsFile = new File(commandLine.getOptionValue("-o", eigenVectorFile.getPath() + ".GenesetZScores.txt"));
+		predictionsFile = new File(commandLine.getOptionValue("o", eigenVectorFile.getPath() + ".GenesetZScores.txt"));
 		
-		backgroudGenesFile = commandLine.hasOption("b") ? new File(commandLine.getOptionValue("-b")) : null;
+		backgroudGenesFile = commandLine.hasOption("b") ? new File(commandLine.getOptionValue("b")) : null;
 
 	}
 	

@@ -6,20 +6,26 @@ import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
 import nl.systemsgenetics.genenetworkbackend.PredictGenesetMembersOptions;
 import org.apache.commons.cli.ParseException;
 
 public class PredictGenesetMemberBasedOnTCs {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
 		PredictGenesetMembersOptions options;
-		
-		if(args.length == 0){
+
+		if (args.length == 0) {
 			PredictGenesetMembersOptions.printHelp();
 			return;
 		}
-		
+
 		try {
 			options = new PredictGenesetMembersOptions(args);
 		} catch (ParseException ex) {
@@ -27,18 +33,24 @@ public class PredictGenesetMemberBasedOnTCs {
 			PredictGenesetMembersOptions.printHelp();
 			return;
 		}
-		
+
 		options.printOptions();
-		
+
 		final String eigenVectorPath = options.getEigenVectorFile().getAbsolutePath();
 		final String pathwayMatrixPath = options.getPathwayMatrixFile().getAbsolutePath();
+		
+		final HashMap genesToInclude = options.getBackgroudGenesFile() == null ? null : readFileLinesToHashMap(options.getBackgroudGenesFile());
 
 		//Load the matrix with the eigenvectors (rows = genes, columns = components, missing values are coded as NaN, components from multiple species can be combined)
 		String filenameEigenvector = eigenVectorPath;
 		DoubleRandomEngine randomEngine = new DRand();
-		ExpressionDataset eigenVectorDataset = new ExpressionDataset(filenameEigenvector);
-		ExpressionDataset eigenVectorDatasetTransposed = new ExpressionDataset(eigenVectorDataset.fileName);
+		ExpressionDataset eigenVectorDataset = new ExpressionDataset(filenameEigenvector, "\t", genesToInclude);
+		ExpressionDataset eigenVectorDatasetTransposed = new ExpressionDataset(eigenVectorDataset.fileName, "\t", genesToInclude);
 		eigenVectorDatasetTransposed.transposeDataset();
+		
+		if(genesToInclude != null && eigenVectorDataset.nrProbes != genesToInclude.size()){
+			System.err.println("Not all genes in background file found in eigenvector matrix" );
+		}
 
 		//Identify strata in the dataset (mix of different species, that cause different missing values per species):
 		int nrStrata = 0;
@@ -65,9 +77,13 @@ public class PredictGenesetMemberBasedOnTCs {
 		}
 
 		//Load the matrix with genesets (rows = genes, columns = genesets, rows should be identical to rows filenameEigenvector, coding = 1 or 0):
-		ExpressionDatasetBool datasetGeneset = new ExpressionDatasetBool(pathwayMatrixPath);
-		ExpressionDatasetBool datasetGenesetT = new ExpressionDatasetBool(pathwayMatrixPath);
+		ExpressionDatasetBool datasetGeneset = new ExpressionDatasetBool(pathwayMatrixPath, "\t", genesToInclude);
+		ExpressionDatasetBool datasetGenesetT = new ExpressionDatasetBool(pathwayMatrixPath, "\t", genesToInclude);
 		datasetGenesetT.transposeDataset();
+
+		if(genesToInclude != null && datasetGeneset.nrProbes != genesToInclude.size()){
+			System.err.println("Not all genes in background file found in pathway matrix" );
+		}
 		
 		ExpressionDataset result = new ExpressionDataset(pathwayMatrixPath);
 
@@ -110,9 +126,9 @@ public class PredictGenesetMemberBasedOnTCs {
 				}
 				minNrGenesPerStrata = Math.min(nrGenesAvailable, minNrGenesPerStrata);
 			}
-			
+
 			System.out.println("Inventorizing geneset:\t" + queryGenesets[q] + "\t" + geneset + "\t" + minNrGenesPerStrata);
-			
+
 			if (minNrGenesPerStrata >= 10) {
 
 				System.out.println("Processing geneset:\t" + queryGenesets[q] + "\t" + geneset + "\t" + minNrGenesPerStrata);
@@ -204,7 +220,6 @@ public class PredictGenesetMemberBasedOnTCs {
 //						System.out.println(" - Time in Cor: " + timeInCor);
 //						System.out.println(" - Time in T: " + timeinT);
 //					}
-
 					double[] zScoreProfileToUse;
 
 					//Prevent overfitting:
@@ -242,60 +257,58 @@ public class PredictGenesetMemberBasedOnTCs {
 
 								double[] x = eigenVectorDatasetTransposed.rawData[tc + strataStartColumn[s]];
 								boolean[] y = datasetGenesetT.rawData[geneset];
-								
+
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitB += (timeStop - timeStart);
-								
+
 								timeStart = System.currentTimeMillis();
 
-								
 								//double dummy;
 								int vals1Itr = 0;
 								int vals2Itr = 0;
 								for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
 									if (p != gene) {
 										//if (!Double.isNaN(x[gene])) {
-											if (y[gene]) {
-												vals1[vals1Itr++] = x[gene];
-											} else {
-												vals2[vals2Itr++] = x[gene];
-											}
+										if (y[gene]) {
+											vals1[vals1Itr++] = x[gene];
+										} else {
+											vals2[vals2Itr++] = x[gene];
+										}
 										//}
 									}
 								}
-								
+
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitBb += (timeStop - timeStart);
-								
+
 								timeStart = System.currentTimeMillis();
 
-								
 								double n1 = vals1.length;
 								double n2 = vals2.length;
 								double mean1 = mean(vals1);
 								double mean2 = mean(vals2);
 								double var1 = variance(vals1, mean1);
 								double var2 = variance(vals2, mean2);
-								
+
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitC += (timeStop - timeStart);
-								
+
 								timeStart = System.currentTimeMillis();
-								
+
 								double t = (mean1 - mean2) / Math.sqrt(var1 / n1 + var2 / n2);
-								
+
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitCb += (timeStop - timeStart);
-								
+
 								timeStart = System.currentTimeMillis();
-								
+
 								double df = ((var1 / n1 + var2 / n2) * (var1 / n1 + var2 / n2)) / (((var1 / n1) * (var1 / n1)) / (n1 - 1) + ((var2 / n2) * (var2 / n2)) / (n2 - 1));
-								
+
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitCc += (timeStop - timeStart);
-								
+
 								timeStart = System.currentTimeMillis();
-								
+
 								//double df = n1 + n2 - 2;
 								StudentT tDist = new StudentT(df, randomEngine);
 								double pValue;
@@ -314,7 +327,7 @@ public class PredictGenesetMemberBasedOnTCs {
 									zScore = -Probability.normalInverse(pValue);
 								}
 								zScoreProfileToUse[tc + strataStartColumn[s]] = zScore;
-								
+
 								timeStop = System.currentTimeMillis();
 								timeinPreventOverfitD += (timeStop - timeStart);
 
@@ -437,6 +450,27 @@ public class PredictGenesetMemberBasedOnTCs {
 			ans += (v[i] - mean) * (v[i] - mean);
 		}
 		return ans / (v.length - 1);
+	}
+
+	/**
+	 * HashMap construction to be compatible with old Lude matrix
+	 *
+	 * @param file
+	 * @return
+	 */
+	private static HashMap readFileLinesToHashMap(File file) throws FileNotFoundException, IOException {
+
+		HashMap fileContent = new HashMap();
+
+		BufferedReader reader = new BufferedReader(new FileReader(file));
+
+		String line;
+		while ((line = reader.readLine()) != null) {
+			fileContent.put(line, line);
+		}
+
+		return fileContent;
+
 	}
 
 }
