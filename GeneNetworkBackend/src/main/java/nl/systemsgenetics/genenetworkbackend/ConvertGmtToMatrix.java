@@ -5,9 +5,11 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,10 +35,11 @@ public class ConvertGmtToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File gmtFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
+		final File gmtFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\KEGG\\c2.cp.kegg.v6.1.entrez.gmt");
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\geneOrder.txt");
-		final File outputFile = new File(gmtFile.getAbsolutePath() + "_matrix.txt");
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + gmtFile.getName() + "_matrix.txt.gz");
+		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + gmtFile.getName() + "_genesInPathways.txt");
 
 		HashMap<String, String> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 
@@ -49,19 +52,33 @@ public class ConvertGmtToMatrix {
 
 		DoubleMatrixDataset<String, String> gmtMatrix = new DoubleMatrixDataset(geneOrder, gmtPathwayToGenes.keySet());
 
+		HashSet<String> genesWithPathway = new HashSet<>(10000);
+		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
+
 		for (Map.Entry<String, HashSet<String>> gmtPathwayToGenesEntry : gmtPathwayToGenes.entrySet()) {
 
 			String gmtPathway = gmtPathwayToGenesEntry.getKey();
 
 			for (String gene : gmtPathwayToGenesEntry.getValue()) {
 
-				gmtMatrix.setElement(gene, gmtPathway, 1);
+				if (gmtMatrix.containsRow(gene)) {
 
+					if (genesWithPathway.add(gene)) {
+						//add to genes file if not already done
+						geneWriter.write(gene);
+						geneWriter.write('\n');
+					}
+
+					gmtMatrix.setElement(gene, gmtPathway, 1);
+				}
 			}
 
 		}
 
 		gmtMatrix.save(outputFile);
+		geneWriter.close();
+
+		System.out.println("Genes in pathway: " + genesWithPathway.size());
 
 	}
 

@@ -44,11 +44,11 @@ public class PredictGenesetMemberBasedOnTCs {
 		//Load the matrix with the eigenvectors (rows = genes, columns = components, missing values are coded as NaN, components from multiple species can be combined)
 		String filenameEigenvector = eigenVectorPath;
 		DoubleRandomEngine randomEngine = new DRand();
-		ExpressionDataset eigenVectorDataset = new ExpressionDataset(filenameEigenvector, "\t", genesToInclude);
+		ExpressionDataset eigenVectorDataset = new ExpressionDataset(filenameEigenvector, "\t");
 		ExpressionDataset eigenVectorDatasetTransposed = new ExpressionDataset(eigenVectorDataset.fileName, "\t", genesToInclude);
 		eigenVectorDatasetTransposed.transposeDataset();
 		
-		if(genesToInclude != null && eigenVectorDataset.nrProbes != genesToInclude.size()){
+		if(genesToInclude != null && eigenVectorDatasetTransposed.nrSamples != genesToInclude.size()){
 			System.err.println("Not all genes in background file found in eigenvector matrix" );
 		}
 
@@ -78,8 +78,11 @@ public class PredictGenesetMemberBasedOnTCs {
 
 		//Load the matrix with genesets (rows = genes, columns = genesets, rows should be identical to rows filenameEigenvector, coding = 1 or 0):
 		ExpressionDatasetBool datasetGeneset = new ExpressionDatasetBool(pathwayMatrixPath, "\t", genesToInclude);
+		ExpressionDatasetBool datasetGeneset2 = new ExpressionDatasetBool(pathwayMatrixPath, "\t");
 		ExpressionDatasetBool datasetGenesetT = new ExpressionDatasetBool(pathwayMatrixPath, "\t", genesToInclude);
 		datasetGenesetT.transposeDataset();
+		
+		eigenVectorDatasetTransposed.recalculateHashMaps();
 
 		if(genesToInclude != null && datasetGeneset.nrProbes != genesToInclude.size()){
 			System.err.println("Not all genes in background file found in pathway matrix" );
@@ -109,12 +112,12 @@ public class PredictGenesetMemberBasedOnTCs {
 			System.out.println("Inventorizing geneset:\t" + queryGenesets[q] + "\t" + geneset);
 
 			//Check whether there are at least 10 genes for each TC with data for this geneset:
-			int minNrGenesPerStrata = eigenVectorDataset.nrProbes;
+			int minNrGenesPerStrata = eigenVectorDatasetTransposed.nrSamples;
 			int[] nrGenesInGenesetPerStrata = new int[nrStrata];
 			int[] nrGenesNotInGenesetPerStrata = new int[nrStrata];
 			for (int s = 0; s < nrStrata; s++) {
 				int nrGenesAvailable = 0;
-				for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
+				for (int gene = 0; gene < eigenVectorDatasetTransposed.nrSamples; gene++) {
 					if (!Double.isNaN(eigenVectorDatasetTransposed.rawData[strataStartColumn[s]][gene])) {
 						if (datasetGeneset.rawData[gene][geneset]) {
 							nrGenesAvailable++;
@@ -142,7 +145,7 @@ public class PredictGenesetMemberBasedOnTCs {
 					for (int tc = 0; tc < nrTCsPerStrata[s]; tc++) {
 						int vals1Itr = 0;
 						int vals2Itr = 0;
-						for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
+						for (int gene = 0; gene < eigenVectorDatasetTransposed.nrSamples; gene++) {
 							if (!Double.isNaN(eigenVectorDatasetTransposed.rawData[tc + strataStartColumn[s]][gene])) {
 								if (datasetGeneset.rawData[gene][geneset]) {
 									vals1[vals1Itr] = eigenVectorDatasetTransposed.rawData[tc + strataStartColumn[s]][gene];
@@ -206,7 +209,7 @@ public class PredictGenesetMemberBasedOnTCs {
 				long timeStop;
 
 				for (int p = 0; p < eigenVectorDataset.nrProbes; p++) {
-
+					
 //					if (p % 1000 == 0) {
 //						System.out.println("Processed: " + p + " genes of which " + countPreventedOverwfitting + " used overfitting protection");
 //						System.out.println(" - Time in prefent overfit A: " + timeinPreventOverfitA);
@@ -223,8 +226,10 @@ public class PredictGenesetMemberBasedOnTCs {
 					double[] zScoreProfileToUse;
 
 					//Prevent overfitting:
-					if (datasetGeneset.rawData[p][geneset]) {
+					if (datasetGeneset2.rawData[p][geneset]) {
 
+						int p2 = (int) eigenVectorDatasetTransposed.hashSamples.get(eigenVectorDataset.probeNames[p]);
+						
 						timeStart = System.currentTimeMillis();
 
 						++countPreventedOverwfitting;
@@ -232,8 +237,8 @@ public class PredictGenesetMemberBasedOnTCs {
 						int[] nrGenesInGenesetPerStrataToUse = new int[nrStrata];
 						int[] nrGenesNotInGenesetPerStrataToUse = new int[nrStrata];
 						for (int s = 0; s < nrStrata; s++) {
-							for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
-								if (p != gene) {
+							for (int gene = 0; gene < eigenVectorDatasetTransposed.nrSamples; gene++) {
+								if (p2 != gene) {
 									if (!Double.isNaN(eigenVectorDatasetTransposed.rawData[strataStartColumn[s]][gene])) {
 										if (datasetGeneset.rawData[gene][geneset]) {
 											nrGenesInGenesetPerStrataToUse[s]++;
@@ -266,8 +271,8 @@ public class PredictGenesetMemberBasedOnTCs {
 								//double dummy;
 								int vals1Itr = 0;
 								int vals2Itr = 0;
-								for (int gene = 0; gene < eigenVectorDataset.nrProbes; gene++) {
-									if (p != gene) {
+								for (int gene = 0; gene < eigenVectorDatasetTransposed.nrSamples; gene++) {
+									if (p2 != gene) {
 										//if (!Double.isNaN(x[gene])) {
 										if (y[gene]) {
 											vals1[vals1Itr++] = x[gene];
@@ -402,7 +407,7 @@ public class PredictGenesetMemberBasedOnTCs {
 				TDoubleList vecInGeneset = new TDoubleArrayList();
 				TDoubleList vecNotInGeneset = new TDoubleArrayList();
 				for (int p = 0; p < eigenVectorDataset.nrProbes; p++) {
-					if (datasetGeneset.rawData[p][geneset]) {
+					if (datasetGeneset2.rawData[p][geneset]) {
 						vecInGeneset.add(zScoresIndividualGenes[p]);
 					} else {
 						vecNotInGeneset.add(zScoresIndividualGenes[p]);

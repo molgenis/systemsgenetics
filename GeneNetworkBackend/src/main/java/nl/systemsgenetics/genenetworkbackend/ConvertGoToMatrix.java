@@ -5,9 +5,11 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -38,29 +40,34 @@ public class ConvertGoToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\geneOrder.txt");
-		final File uniPortToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgUniProtId.txt");
-		
+		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\GO\\goa_human.gaf");
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
+		final File uniPortToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgUniProtId4.txt");
+		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
+		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\");
 
 		HashMap<String, ArrayList<String>> uniProtToEnsgMap = loadUniProtToEnsgMap(uniPortToEnsgMapFile);
+		HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
 
-		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = readPathwayFile(pathwayFile, uniProtToEnsgMap);
+		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = readPathwayFile(pathwayFile, uniProtToEnsgMap, hgncToEnsgMap);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
 
-		
 		System.out.println("Genes in order file: " + geneOrder.size());
 
 		for (GoType goType : GoType.values()) {
 
-			final File outputFile = new File(pathwayFile.getAbsolutePath() + "_" + goType.toString() + "_matrix.txt");
-			
+			final File outputFile = new File(outputFolder, pathwayFile.getName() + "_" + goType.toString() + "_matrix.txt.gz");
+			final File outputFile2 = new File(outputFolder, pathwayFile.getName() + "_" + goType.toString() + "_genesInPathways.txt");
+
 			HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(goType);
-			
-			System.out.println("Total genesets of" + goType.toString() + ": " + pathwayToGenes.size());
-			
+
+			System.out.println("Total genesets of " + goType.toString() + ": " + pathwayToGenes.size());
+
 			DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
+
+			HashSet<String> genesWithPathway = new HashSet<>(10000);
+			BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
 
 			for (Map.Entry<String, HashSet<String>> pathwayToGenesEntry : pathwayToGenes.entrySet()) {
 
@@ -68,24 +75,37 @@ public class ConvertGoToMatrix {
 
 				for (String gene : pathwayToGenesEntry.getValue()) {
 
-					pathwayMatrix.setElement(gene, pathway, 1);
+					if (pathwayMatrix.containsRow(gene)) {
+
+						if (genesWithPathway.add(gene)) {
+							//add to genes file if not already done
+							geneWriter.write(gene);
+							geneWriter.write('\n');
+						}
+
+						pathwayMatrix.setElement(gene, pathway, 1);
+					}
 
 				}
 
 			}
 
 			pathwayMatrix.save(outputFile);
-			
+			geneWriter.close();
+
+			System.out.println("Genes in " + goType.toString() + " pathway: " + genesWithPathway.size());
+
 		}
 
 	}
 
-	private static EnumMap<GoType, HashMap<String, HashSet<String>>> readPathwayFile(File pathwayFile, HashMap<String, ArrayList<String>> uniProtToEnsgMap) throws Exception {
+	private static EnumMap<GoType, HashMap<String, HashSet<String>>> readPathwayFile(File pathwayFile, HashMap<String, ArrayList<String>> uniProtToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap) throws Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(pathwayFile))).withSkipLines(0).withCSVParser(parser).build();
 
-		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = new EnumMap<>(GoType.class);
+		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = new EnumMap<>(GoType.class
+		);
 
 		for (GoType goType : GoType.values()) {
 			goTypePathwayToGenes.put(goType, new HashMap<>());
@@ -99,19 +119,24 @@ public class ConvertGoToMatrix {
 			}
 
 			//Exclude special tuples like empty
-			if (nextLine[4].isEmpty()) {
+			if (nextLine[3].isEmpty()) {
 
 				String uniProtId = nextLine[1];
-				String pathway = nextLine[0];
+				String hgcnId = nextLine[2];
+				String pathway = nextLine[4];
 
 				ArrayList<String> ensgIds = uniProtToEnsgMap.get(uniProtId);
 
+				if(ensgIds == null){
+					ensgIds = hgncToEnsgMap.get(hgcnId);
+				}
+				
 				if (ensgIds == null) {
-					System.err.println("Missing mapping for gene: " + uniProtId + " " + nextLine[1]);
+					System.err.println("Missing mapping for gene: " + uniProtId + " " + nextLine[2]);
 				} else {
-					
-					HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(GoType.valueOf(nextLine[3]));
-					
+
+					HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(GoType.valueOf(nextLine[8]));
+
 					HashSet<String> pathwayGenes = pathwayToGenes.get(pathway);
 					if (pathwayGenes == null) {
 						pathwayGenes = new HashSet<>();
@@ -157,19 +182,23 @@ public class ConvertGoToMatrix {
 
 		String[] nextLine = reader.readNext();
 
-		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("UniProtKB Gene Name ID")) {
-			throw new Exception("Header of ncbi to ensg map should be: \"Gene stable ID[tab]UniProtKB Gene Name ID\"");
+//		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("Transcript stable ID") || !nextLine[2].equals("UniProtKB Gene Name ID") || !nextLine[3].equals("UniProtKB/Swiss-Prot ID") || !nextLine[4].equals("UniProtKB/TrEMBL ID")) {
+//			throw new Exception("Header of uniprot to ensg map should be: \"Gene stable ID[tab]Transcript stable ID[tab]UniProtKB Gene Name ID[tab]UniProtKB/Swiss-Prot ID[tab]UniProtKB/TrEMBL ID\"");
+//		}
+		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("Transcript stable ID") || !nextLine[2].equals("UniProtKB/Swiss-Prot ID")) {
+			throw new Exception("Header of uniprot to ensg map should be: \"Gene stable ID[tab]Transcript stable ID[tab]UniProtKB/Swiss-Prot ID\"");
 		}
 
 		HashMap<String, ArrayList<String>> uniProtToEnsgMap = new HashMap<>(70000);
 
 		while ((nextLine = reader.readNext()) != null) {
 
-			String uniProtId = nextLine[1];
+			String uniProtId = nextLine[2];
 
 			ArrayList<String> uniProtEnsgIds = uniProtToEnsgMap.get(uniProtId);
 			if (uniProtEnsgIds == null) {
 				uniProtEnsgIds = new ArrayList<>();
+				uniProtToEnsgMap.put(uniProtId, uniProtEnsgIds);
 			}
 
 			uniProtEnsgIds.add(nextLine[0]);
@@ -177,6 +206,40 @@ public class ConvertGoToMatrix {
 		}
 
 		return uniProtToEnsgMap;
+
+	}
+	
+	private static HashMap<String, ArrayList<String>> loadHgncToEnsgMap(File map) throws FileNotFoundException, IOException, Exception {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+
+		String[] nextLine = reader.readNext();
+
+//		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("Transcript stable ID") || !nextLine[2].equals("UniProtKB Gene Name ID") || !nextLine[3].equals("UniProtKB/Swiss-Prot ID") || !nextLine[4].equals("UniProtKB/TrEMBL ID")) {
+//			throw new Exception("Header of uniprot to ensg map should be: \"Gene stable ID[tab]Transcript stable ID[tab]UniProtKB Gene Name ID[tab]UniProtKB/Swiss-Prot ID[tab]UniProtKB/TrEMBL ID\"");
+//		}
+		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("HGNC symbol")) {
+			throw new Exception("Header of hgnc to ensg map should be: \"Gene stable ID[tab]HGNC symbol\"");
+		}
+
+		HashMap<String, ArrayList<String>> hgncToEnsgMap = new HashMap<>(70000);
+
+		while ((nextLine = reader.readNext()) != null) {
+
+			String hgncId = nextLine[1];
+
+			ArrayList<String> hgncEnsgIds = hgncToEnsgMap.get(hgncId);
+			if (hgncEnsgIds == null) {
+				hgncEnsgIds = new ArrayList<>();
+				hgncToEnsgMap.put(hgncId, hgncEnsgIds);
+			}
+
+			hgncEnsgIds.add(nextLine[0]);
+
+		}
+
+		return hgncToEnsgMap;
 
 	}
 
