@@ -67,5 +67,10 @@
 			<artifactId>genetica-libraries</artifactId>
 			<version>1.0.9-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.biojava</groupId>
+			<artifactId>biojava-ontology</artifactId>
+			<version>4.2.11</version>
+		</dependency>
 	</dependencies>
 </project>
