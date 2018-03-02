@@ -9,7 +9,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DoubleStatistic;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
-import com.sun.org.glassfish.external.statistics.Statistic;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -441,9 +440,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	//Getters and setters
-	
 	/**
-	 * 
+	 *
 	 * @return Number of rows
 	 */
 	public int rows() {
@@ -680,11 +678,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new NoSuchElementException("Row not found: " + rowName.toString());
 		}
 	}
-	
+
 	public DoubleMatrix1D getRow(int row) {
-			return matrix.viewRow(row);
+		return matrix.viewRow(row);
 	}
-	
+
 	public DoubleMatrix1D getCol(C colName) {
 		Integer col = hashRows.get(colName);
 		if (col != null) {
@@ -693,7 +691,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new NoSuchElementException("Col not found: " + colName.toString());
 		}
 	}
-	
+
 	public DoubleMatrix1D getCol(int col) {
 		return matrix.viewColumn(col);
 	}
@@ -720,12 +718,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Creates a new view to this dataset with a subset of rows and columns.
-	 * 
+	 *
 	 * New order of rows and cols is based on input order.
-	 * 
+	 *
 	 * @param rowsToView
 	 * @param colsToView
-	 * @return 
+	 * @return
 	 */
 	public DoubleMatrixDataset<R, C> viewSelection(LinkedHashSet<R> rowsToView, LinkedHashSet<C> colsToView) {
 
@@ -737,31 +735,31 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		int i = 0;
 		for (R row : rowsToView) {
-			
+
 			rowNrs[i] = hashRows.get(row);
 			newHashRows.put(row, i++);
-			
+
 		}
 
 		i = 0;
 		for (C col : colsToView) {
-			
+
 			colNrs[i] = newHashCols.get(col);
 			newHashCols.put(col, i++);
-			
+
 		}
 
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, colNrs), newHashRows, newHashCols);
-		
+
 	}
-	
+
 	/**
 	 * Creates a new view to this dataset with a subset of rows.
-	 * 
+	 *
 	 * New order of rows is based on input order.
-	 * 
+	 *
 	 * @param rowsToView
-	 * @return 
+	 * @return
 	 */
 	public DoubleMatrixDataset<R, C> viewRowSelection(LinkedHashSet<R> rowsToView) {
 
@@ -771,36 +769,66 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		int i = 0;
 		for (R row : rowsToView) {
-			
+
 			rowNrs[i] = hashRows.get(row);
 			newHashRows.put(row, i++);
-			
+
 		}
-		
+
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
-		
+
 	}
-	
+
 	/**
-	 * 
+	 * Creates a new view to this dataset with a subset of rows.
+	 *
+	 * New order of rows is based on input order.
+	 *
+	 * @param colsToView
+	 * @return
+	 */
+	public DoubleMatrixDataset<R, C> viewColSelection(LinkedHashSet<C> colsToView) {
+
+		int[] colNrs = new int[colsToView.size()];
+
+		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
+
+		int i = 0;
+		for (C col : colsToView) {
+
+			colNrs[i] = hashCols.get(col);
+			newHashCols.put(col, i++);
+
+		}
+
+		return new DoubleMatrixDataset<>(matrix.viewSelection(null, colNrs), hashRows, newHashCols);
+
+	}
+
+	public DoubleMatrix1D viewRow(R row) {
+		return matrix.viewRow(hashRows.get(row));
+	}
+
+	/**
+	 *
 	 * @return Correlation matrix on columns
 	 */
-	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix(){
-		
+	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix() {
+
 		DoubleMatrix2D correlationMatrix = DoubleStatistic.correlation(DoubleStatistic.covariance(this.matrix));
 		return new DoubleMatrixDataset<>(correlationMatrix, hashCols, hashCols);
-		
+
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return Covariance matrix on columns
 	 */
-	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix(){
-		
+	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix() {
+
 		DoubleMatrix2D covarianceMatrix = DoubleStatistic.covariance(this.matrix);
 		return new DoubleMatrixDataset<>(covarianceMatrix, hashCols, hashCols);
-		
+
 	}
 
 }

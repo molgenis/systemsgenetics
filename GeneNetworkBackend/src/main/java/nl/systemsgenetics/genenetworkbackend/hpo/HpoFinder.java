@@ -52,12 +52,9 @@ public class HpoFinder {
 		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo.txt");
 		final double fdr = 0.05;
 
-		Map<String, PredictionInfo> predictionInfo = loadPredictionInfo(hpoPredictionInfoFile);
+		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
-		OboParser parser = new OboParser();
-
-		BufferedReader oboFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(hpoOboFile)));
-		Ontology hpoOntology = parser.parseOBO(oboFileReader, "HPO", "HPO");
+		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
 
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 
@@ -132,6 +129,13 @@ public class HpoFinder {
 
 	}
 
+	public static Ontology loadHpoOntology(final File hpoOboFile) throws FileNotFoundException, IOException, ParseException {
+		OboParser parser = new OboParser();
+		BufferedReader oboFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(hpoOboFile)));
+		Ontology hpoOntology = parser.parseOBO(oboFileReader, "HPO", "HPO");
+		return hpoOntology;
+	}
+
 	public HpoFinder(Ontology hpoOntology, Map<String, PredictionInfo> predictionInfo) {
 		this.hpoOntology = hpoOntology;
 		this.predictionInfo = predictionInfo;
@@ -143,7 +147,7 @@ public class HpoFinder {
 
 	}
 
-	private static Map<String, PredictionInfo> loadPredictionInfo(File hpoPredictionInfoFile) throws FileNotFoundException, IOException {
+	public static Map<String, PredictionInfo> loadPredictionInfo(File hpoPredictionInfoFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoPredictionInfoFile))).withSkipLines(1).withCSVParser(parser).build();
@@ -176,9 +180,9 @@ public class HpoFinder {
 		if (info == null || info.getFdr() > fdr) {
 
 			if (info == null) {
-				System.out.println("No predictions for: " + queryTerm.getName());
+				//System.out.println("No predictions for: " + queryTerm.getName());
 			} else {
-				System.out.println("Bad predictions for: " + queryTerm.getName() + " P-value: " + info.getpValue() + " AUC: " + info.getAuc() + " FDR: " + info.getFdr());
+				//System.out.println("Bad predictions for: " + queryTerm.getName() + " P-value: " + info.getpValue() + " AUC: " + info.getAuc() + " FDR: " + info.getFdr());
 			}
 
 			result = new ArrayList<>();
