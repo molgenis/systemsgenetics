@@ -13,6 +13,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -48,12 +49,17 @@ public class HpoGenePrioritisation {
 		ArrayList<String> genes = hpoPredictionMatrix.getRowObjects();
 
 		System.out.println("Done loading data");
+
+		BufferedWriter sampleFileWriter = new BufferedWriter(new FileWriter(new File(outputFolder, "samples.txt")));
 		
 		for (Map.Entry<String, LinkedHashSet<String>> caseHpoEntry : caseHpo.entrySet()) {
 
 			String caseId = caseHpoEntry.getKey();
 			LinkedHashSet<String> hpo = caseHpoEntry.getValue();
 			double zSum = 0;
+			
+			sampleFileWriter.append(caseId);
+			sampleFileWriter.append('\n');
 			
 			System.out.println("Processing: " + caseId);
 			
@@ -113,6 +119,8 @@ public class HpoGenePrioritisation {
 			writer.close();
 
 		}
+		
+		sampleFileWriter.close();
 
 	}
 
