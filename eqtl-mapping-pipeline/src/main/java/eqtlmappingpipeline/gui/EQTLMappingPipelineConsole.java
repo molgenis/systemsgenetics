@@ -30,7 +30,6 @@ import eqtlmappingpipeline.util.ModuleEqtlGeuvadisReplication;
 import eqtlmappingpipeline.util.ModuleEqtlNeutrophilReplication;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.QTLFileCompare;
-import eqtlmappingpipeline.util.QTLmeQTLCompare;
 
 import java.util.Arrays;
 
@@ -96,8 +95,6 @@ public class EQTLMappingPipelineConsole {
 				NormalizationConsoleGUI p = new NormalizationConsoleGUI(args);
 			} else if (mode.equals("compare")) {
 				QTLFileCompare r = new QTLFileCompare(args);
-			} else if (mode.equals("compareM")) {
-				QTLmeQTLCompare r = new QTLmeQTLCompare(args);
 			} else if (mode.equals("chryplot")) {
 				ChrYExpressionPlotConsoleGUI r = new ChrYExpressionPlotConsoleGUI(args);
 			} else if (mode.equals("pcaoptimum")) {

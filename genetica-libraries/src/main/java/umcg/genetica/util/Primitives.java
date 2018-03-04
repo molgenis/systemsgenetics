@@ -239,4 +239,12 @@ public class Primitives {
 	public static double[] toPrimitiveArr(ArrayList<Double> selectZ) {
 		return toPrimitiveArr(selectZ.toArray(new Double[0]));
 	}
+	
+	public static double[] toDoubleArr(byte[] genotypes) {
+		double[] out = new double[genotypes.length];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = genotypes[i];
+		}
+		return out;
+	}
 }
