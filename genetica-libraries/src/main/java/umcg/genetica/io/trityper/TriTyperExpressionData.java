@@ -721,33 +721,36 @@ public class TriTyperExpressionData {
 		RankArray r = new RankArray();
 //        setVarianceAndMean();
 		
+		
 		for (int p = 0; p < probes.length; ++p) {
 			double[] probeData = getProbeData(p);
 			
 			if (probeVariance[p] == 0) {
-				System.out.println("Excluding probe that has no variance in expression:\t" + probes[p] + "\t" + annotation[p]);
-				if (probes[p].equals("M33877_2015_24816252_hg18_hg19.txt.gz_P5.0E-8")) {
-					
-					System.out.println(Strings.concat(getProbeData(p), Strings.space));
-					
-					
-					System.out.println("Found it!");
-					System.out.println(probeMean[p]);
-					System.out.println(probeVariance[p]);
-					
-					new Exception().printStackTrace();
-					
-					System.exit(-1);
-				}
+				System.out.println("Excluding probe that has no variance in expression:\t" + probes[p] + "\t" + annotation[p] + "\tMean: " + probeMean[p] + "\t Variance: " + probeVariance[p]);
+				
 			} else {
 				if (Double.isNaN(probeMean[p]) || Double.isNaN(probeVariance[p])) {
-					System.out.println("Error ranking expression data: probe mean or variance is NaN!:\t" + p + "\t" + probes[p] + "\t" + probeMean[p] + "\t" + probeVariance[p]);
+					System.out.println("Error ranking expression data: probe mean or variance is NaN!:\t" + p + "\t" + probes[p] + "\tMean: " + probeMean[p] + "\tVariance: " + probeVariance[p]);
 					System.exit(-1);
 				} else {
 					probeData = r.rank(probeData, rankWithTies);
 					setProbeData(p, probeData);
 					probeMean[p] = Descriptives.mean(probeData);
 					probeVariance[p] = Descriptives.variance(probeData, probeMean[p]);
+					
+//					if (probes[p].equals("TB_trait36_2013_24074872_hg19.txt.gz_P5.0E-8")) {
+//
+//						System.out.println(Strings.concat(getProbeData(p), Strings.space));
+//
+//						System.out.println("Found it!");
+//						System.out.println(probeMean[p]);
+//						System.out.println(probeVariance[p]);
+//
+//						new Exception().printStackTrace();
+//
+//
+//						System.exit(-1);
+//					}
 				}
 			}
 		}
