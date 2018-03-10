@@ -707,6 +707,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return matrix.get(row, column);
 	}
+	
+	/**
+	 * Get specific element. Fast but no check if query is in range
+	 *
+	 * @param row
+	 * @param column
+	 * @return
+	 */
+	public double getElementQuick(int row, int column) {
+
+		return matrix.getQuick(row, column);
+	}
 
 	public boolean containsRow(R rowId) {
 		return hashRows.containsKey(rowId);

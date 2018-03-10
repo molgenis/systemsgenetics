@@ -50,6 +50,10 @@ public class CalculateGenePredictability {
 			return;
 		}
 		
+		MannWhitneyUTest2 uTest = new MannWhitneyUTest2();
+		
+		double[] genePredictabilityZscores = new double[predictionMatrixSignificant.rows()];
+		
 		for(int g = 0; g < predictionMatrixSignificant.rows() ; g++){
 			
 			DoubleMatrix1D geneAnnotations = annotationMatrixSignificant.getRow(g);
@@ -57,11 +61,28 @@ public class CalculateGenePredictability {
 			int geneAnnotationCount = geneAnnotations.cardinality();
 			
 			if(geneAnnotationCount >= 10){
-				//MannWhitneyUTest
-				//WilcoxonMannWhitney wmw = new WilcoxonMannWhitney();
-				//double pValue = wmw.returnWilcoxonMannWhitneyPValue(vals1, vals2);
 				
+				double[] zScoresAnnotatedPathways = new double[geneAnnotationCount];
+				double[] zScoresOtherPathways = new double[annotationMatrixSignificant.columns() - geneAnnotationCount];
+				
+				int x = 0;
+				int y = 0;
+				
+				for(int p = 0 ; p < geneAnnotations.size() ; p++){
+					if(geneAnnotations.getQuick(p) != 0){
+						zScoresAnnotatedPathways[x++] = predictionMatrix.getElementQuick(g, p);
+					} else {
+						zScoresOtherPathways[x++] = predictionMatrix.getElementQuick(g, p);
+					}
+				}
+				
+				uTest.setData(zScoresAnnotatedPathways, zScoresOtherPathways);
+				genePredictabilityZscores[g] = uTest.getZ();
+				
+			} else {
+				genePredictabilityZscores[g] = Double.NaN;
 			}
+			
 			
 		}
 		
