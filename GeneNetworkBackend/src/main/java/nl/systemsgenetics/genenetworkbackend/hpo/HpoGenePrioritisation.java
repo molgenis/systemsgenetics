@@ -48,82 +48,80 @@ public class HpoGenePrioritisation {
 		DoubleMatrixDataset<String, String> hpoPredictionMatrix = DoubleMatrixDataset.loadDoubleData(hpoPredictionMatrixFile.getAbsolutePath());
 		ArrayList<String> genes = hpoPredictionMatrix.getRowObjects();
 
-		System.out.println(hpoPredictionMatrix.getElement("ENSG00000006016", "HP:0025031"));
-		System.out.println(hpoPredictionMatrix.getElement("ENSG00000006016", "HP:0002086"));
 
-//		System.out.println("Done loading data");
-//
-//		BufferedWriter sampleFileWriter = new BufferedWriter(new FileWriter(new File(outputFolder, "samples.txt")));
-//
-//		for (Map.Entry<String, LinkedHashSet<String>> caseHpoEntry : caseHpo.entrySet()) {
-//
-//			String caseId = caseHpoEntry.getKey();
-//			LinkedHashSet<String> hpo = caseHpoEntry.getValue();
-//			double zSum = 0;
-//
-//			sampleFileWriter.append(caseId);
-//			sampleFileWriter.append('\n');
-//
-//			System.out.println("Processing: " + caseId);
-//
-//			for (String term : hpo) {
-//				if (!hpoPredictionMatrix.containsCol(term)) {
-//					System.err.println("Missing HPO: " + term);
-//				}
-//			}
-//
-//			DoubleMatrixDataset<String, String> predictionCaseTerms = hpoPredictionMatrix.viewColSelection(hpo);
-//			DoubleMatrix2D predictionCaseTermsMatrix = predictionCaseTerms.getMatrix();
-//			GenePrioritisationResult[] geneResults = new GenePrioritisationResult[genes.size()];
-//
-//			double denominator = Math.sqrt(hpo.size());
-//
-//			for (int g = 0; g < predictionCaseTermsMatrix.rows(); ++g) {
-//				String gene = genes.get(g);
-//				String symbol = ensgSymbolMapping.get(gene);
-//				if (symbol == null) {
-//					symbol = "";
-//				}
-//				double geneScore = predictionCaseTermsMatrix.viewRow(g).zSum() / denominator;
-//
-//				geneResults[g] = new GenePrioritisationResult(gene, symbol, geneScore);
-//
-//			}
-//
-//			Arrays.sort(geneResults);
-//
-//			CSVWriter writer = new CSVWriter(new FileWriter(new File(outputFolder, caseId + ".txt")), '\t', '\0', '\0', "\n");
-//
-//			String[] outputLine = new String[4 + hpo.size()];
-//			int c = 0;
-//			outputLine[c++] = "Ensg";
-//			outputLine[c++] = "Hgnc";
-//			outputLine[c++] = "Rank";
-//			outputLine[c++] = "Zscore";
-//			for (String term : hpo) {
-//				outputLine[c++] = term;
-//			}
-//			writer.writeNext(outputLine);
-//
-//			int rank = 1;
-//			for (GenePrioritisationResult geneResult : geneResults) {
-//				c = 0;
-//				outputLine[c++] = geneResult.getEnsg();
-//				outputLine[c++] = geneResult.getSymbol();
-//				outputLine[c++] = String.valueOf(rank++);
-//				outputLine[c++] = String.valueOf(geneResult.getGeneScore());
-//				DoubleMatrix1D geneZs = predictionCaseTerms.viewRow(geneResult.getEnsg());
-//				for (int i = 0; i < hpo.size(); i++) {
-//					outputLine[c++] = String.valueOf(geneZs.getQuick(i));
-//				}
-//				writer.writeNext(outputLine);
-//			}
-//
-//			writer.close();
-//
-//		}
-//
-//		sampleFileWriter.close();
+		System.out.println("Done loading data");
+
+		BufferedWriter sampleFileWriter = new BufferedWriter(new FileWriter(new File(outputFolder, "samples.txt")));
+
+		for (Map.Entry<String, LinkedHashSet<String>> caseHpoEntry : caseHpo.entrySet()) {
+
+			String caseId = caseHpoEntry.getKey();
+			LinkedHashSet<String> hpo = caseHpoEntry.getValue();
+			double zSum = 0;
+
+			sampleFileWriter.append(caseId);
+			sampleFileWriter.append('\n');
+
+			System.out.println("Processing: " + caseId);
+
+			for (String term : hpo) {
+				if (!hpoPredictionMatrix.containsCol(term)) {
+					System.err.println("Missing HPO: " + term);
+				}
+			}
+
+			DoubleMatrixDataset<String, String> predictionCaseTerms = hpoPredictionMatrix.viewColSelection(hpo);
+			DoubleMatrix2D predictionCaseTermsMatrix = predictionCaseTerms.getMatrix();
+			GenePrioritisationResult[] geneResults = new GenePrioritisationResult[genes.size()];
+
+			double denominator = Math.sqrt(hpo.size());
+
+			for (int g = 0; g < predictionCaseTermsMatrix.rows(); ++g) {
+				String gene = genes.get(g);
+				String symbol = ensgSymbolMapping.get(gene);
+				if (symbol == null) {
+					symbol = "";
+				}
+				double geneScore = predictionCaseTermsMatrix.viewRow(g).zSum() / denominator;
+
+				geneResults[g] = new GenePrioritisationResult(gene, symbol, geneScore);
+
+			}
+
+			Arrays.sort(geneResults);
+
+			CSVWriter writer = new CSVWriter(new FileWriter(new File(outputFolder, caseId + ".txt")), '\t', '\0', '\0', "\n");
+
+			String[] outputLine = new String[4 + hpo.size()];
+			int c = 0;
+			outputLine[c++] = "Ensg";
+			outputLine[c++] = "Hgnc";
+			outputLine[c++] = "Rank";
+			outputLine[c++] = "Zscore";
+			for (String term : hpo) {
+				outputLine[c++] = term;
+			}
+			writer.writeNext(outputLine);
+
+			int rank = 1;
+			for (GenePrioritisationResult geneResult : geneResults) {
+				c = 0;
+				outputLine[c++] = geneResult.getEnsg();
+				outputLine[c++] = geneResult.getSymbol();
+				outputLine[c++] = String.valueOf(rank++);
+				outputLine[c++] = String.valueOf(geneResult.getGeneScore());
+				DoubleMatrix1D geneZs = predictionCaseTerms.viewRow(geneResult.getEnsg());
+				for (int i = 0; i < hpo.size(); i++) {
+					outputLine[c++] = String.valueOf(geneZs.getQuick(i));
+				}
+				writer.writeNext(outputLine);
+			}
+
+			writer.close();
+
+		}
+
+		sampleFileWriter.close();
 
 	}
 
