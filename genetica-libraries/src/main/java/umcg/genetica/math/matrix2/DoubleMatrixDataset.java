@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.lang.StringUtils;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -40,9 +41,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	static final IOException doubleMatrixDatasetNonUniqueHeaderException = new IOException("Tried to use a non-unique header set in an identifier HashMap");
 	static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
 
-	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String expressionDataPath, char c) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
 	protected DoubleMatrix2D matrix;
 	protected LinkedHashMap<R, Integer> hashRows;
 	protected LinkedHashMap<C, Integer> hashCols;
@@ -105,7 +103,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
 		if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
-			return loadDoubleTextData(fileName, "\t");
+			return loadDoubleTextData(fileName, '\t');
 		} else if (fileName.endsWith(".binary")) {
 			return loadDoubleBinaryData(fileName);
 		} else {
@@ -113,18 +111,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 	}
 
-	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, String delimiter) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
 		}
 
-		Pattern splitPatern = Pattern.compile(delimiter);
+		//Pattern splitPatern = Pattern.compile(delimiter);
 
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
-		String[] data = splitPatern.split(str);
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
 		int tmpCols = (data.length - columnOffset);
 
@@ -161,7 +159,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		boolean correctData = true;
 		while ((str = in.readLine()) != null) {
-			data = splitPatern.split(str);
+			data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
 			if (!rowMap.containsKey(data[0])) {
 				rowMap.put(data[0], row);
@@ -193,20 +191,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return dataset;
 	}
 
-	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {
 			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
 
 		LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
 
-		Pattern splitPatern = Pattern.compile(delimiter);
+		//Pattern splitPatern = Pattern.compile(delimiter);
 
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
-		String[] data = splitPatern.split(str);
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
 		int tmpCols = (data.length - columnOffset);
 
@@ -231,7 +229,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int totalRows = 0;
 		//System.out.println(desiredRows.toString());
 		while ((str = in.readLine()) != null) {
-			String[] info = splitPatern.split(str);
+			String[] info = StringUtils.splitPreserveAllTokens(str, delimiter);
 			if (desiredRows == null || desiredRows.contains(info[0]) || desiredRows.isEmpty()) {
 				rowsToStore++;
 				desiredRowPos.add(totalRows);
@@ -257,7 +255,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		while ((str = in.readLine()) != null) {
 
 			if (desiredRowPos.contains(totalRows)) {
-				data = splitPatern.split(str);
+				data = StringUtils.splitPreserveAllTokens(str, delimiter);
 				if (!rowMap.containsKey(data[0])) {
 					rowMap.put(data[0], storingRow);
 					int storingCol = 0;
