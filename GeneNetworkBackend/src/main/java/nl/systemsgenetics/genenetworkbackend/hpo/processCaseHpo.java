@@ -89,7 +89,7 @@ public class processCaseHpo {
 					Term hpoTerm = hpoOntology.getTerm(hpo);
 					PredictionInfo info = predictionInfo.get(hpo);
 
-					if (info == null || info.getFdr() > fdr) {
+					if (info == null || info.getCorrectedP() > fdr) {
 						//in case of no prediction or bad prediction
 
 						List<Term> alternativeTerms = hpoFinder.getPredictableTerms(hpoTerm, fdr);

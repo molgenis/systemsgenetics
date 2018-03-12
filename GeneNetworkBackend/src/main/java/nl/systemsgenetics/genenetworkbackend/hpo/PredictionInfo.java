@@ -14,13 +14,13 @@ public class PredictionInfo {
 	final String hpo;
 	final double pValue;
 	final double auc;
-	final double fdr;
+	final double correctedP;
 
-	public PredictionInfo(String hpo, double pValue, double auc, double fdr) {
+	public PredictionInfo(String hpo, double pValue, double auc, double correctedP) {
 		this.hpo = hpo;
 		this.pValue = pValue;
 		this.auc = auc;
-		this.fdr = fdr;
+		this.correctedP = correctedP;
 	}
 
 	public String getHpo() {
@@ -35,8 +35,8 @@ public class PredictionInfo {
 		return auc;
 	}
 
-	public double getFdr() {
-		return fdr;
+	public double getCorrectedP() {
+		return correctedP;
 	}
 	
 }

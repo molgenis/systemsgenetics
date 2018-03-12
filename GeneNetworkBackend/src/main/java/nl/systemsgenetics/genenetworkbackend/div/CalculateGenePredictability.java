@@ -28,10 +28,16 @@ public class CalculateGenePredictability {
 	 */
 	public static void main(String[] args) throws IOException {
 
-		File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\reactome_predictions.txt.gz");
-		File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_matrix.txt.gz");
-		File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\reactome_predictions_bonSigTerms.txt");
-		File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\reactome_predictions_genePredictability.txt");
+//		File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\reactome_predictions.txt.gz");
+//		File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_matrix.txt.gz");
+//		File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\reactome_predictions_bonSigTerms.txt");
+//		File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\reactome_predictions_genePredictability.txt");
+
+		File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions.txt.gz");
+		File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
+		File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_bonSigTerms.txt");
+		File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_genePredictability.txt");
+
 
 		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
 
@@ -54,12 +60,15 @@ public class CalculateGenePredictability {
 		MannWhitneyUTest2 uTest = new MannWhitneyUTest2();
 
 		double[] genePredictabilityZscores = new double[predictionMatrixSignificant.rows()];
+		int[] pathwayCount = new int[predictionMatrixSignificant.rows()];
 
 		for (int g = 0; g < predictionMatrixSignificant.rows(); g++) {
 
 			DoubleMatrix1D geneAnnotations = annotationMatrixSignificant.getRow(g);
 
 			int geneAnnotationCount = geneAnnotations.cardinality();
+			
+			pathwayCount[g] = geneAnnotationCount;
 
 			if (geneAnnotationCount >= 10) {
 
@@ -88,10 +97,11 @@ public class CalculateGenePredictability {
 
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 
-		String[] outputLine = new String[2];
+		String[] outputLine = new String[3];
 		int c = 0;
 		outputLine[c++] = "Gene";
 		outputLine[c++] = "Z-score";
+		outputLine[c++] = "Annoted_pathways";
 		writer.writeNext(outputLine);
 
 		ArrayList<String> geneNames = predictionMatrixSignificant.getRowObjects();
@@ -99,6 +109,7 @@ public class CalculateGenePredictability {
 			c = 0;
 			outputLine[c++] = geneNames.get(g);
 			outputLine[c++] = String.valueOf(genePredictabilityZscores[g]);
+			outputLine[c++] = String.valueOf(pathwayCount[g]);
 			writer.writeNext(outputLine);
 		}
 		
@@ -106,7 +117,7 @@ public class CalculateGenePredictability {
 
 	}
 
-	private static LinkedHashSet<String> loadSignificantTerms(File significantTermsFile) throws IOException {
+	public static LinkedHashSet<String> loadSignificantTerms(File significantTermsFile) throws IOException {
 
 		LinkedHashSet<String> significantTerms = new LinkedHashSet<>();
 

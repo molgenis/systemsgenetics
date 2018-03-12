@@ -47,10 +47,10 @@ public class HpoFinder {
 	public static void main(String[] args) throws IOException, ParseException {
 
 		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
-		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_fdr.txt");
+		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_bonferroni.txt");
 		final File queryFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\originalHpo.txt");
 		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo.txt");
-		final double fdr = 0.05;
+		final double correctedPCutoff = 0.05;
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
@@ -80,7 +80,7 @@ public class HpoFinder {
 			if (hpoOntology.containsTerm(queryHpo)) {
 				Term queryHpoTerm = hpoOntology.getTerm(queryHpo);
 
-				List<Term> alternativeTerms = hpoFinder.getPredictableTerms(queryHpoTerm, fdr);
+				List<Term> alternativeTerms = hpoFinder.getPredictableTerms(queryHpoTerm, correctedPCutoff);
 
 				for (Term alternativeTerm : alternativeTerms) {
 
@@ -157,7 +157,7 @@ public class HpoFinder {
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			PredictionInfo info = new PredictionInfo(nextLine[0], Double.parseDouble(nextLine[1]), Double.parseDouble(nextLine[2]), Double.parseDouble(nextLine[3]));
+			PredictionInfo info = new PredictionInfo(nextLine[0], Double.parseDouble(nextLine[2]), Double.parseDouble(nextLine[3]), Double.parseDouble(nextLine[4]));
 			predictionInfo.put(info.getHpo(), info);
 
 		}
@@ -166,7 +166,11 @@ public class HpoFinder {
 
 	}
 
-	public List<Term> getPredictableTerms(Term queryTerm, double fdr) {
+	public List<Term> getPredictableTerms(String queryName, double correctedPCutoff) {
+		return getPredictableTerms(hpoOntology.getTerm(queryName), correctedPCutoff);
+	}
+
+	public List<Term> getPredictableTerms(Term queryTerm, double correctedPCutoff) {
 
 		List<Term> result;
 
@@ -177,7 +181,7 @@ public class HpoFinder {
 
 		PredictionInfo info = predictionInfo.get(queryTerm.getName());
 
-		if (info == null || info.getFdr() > fdr) {
+		if (info == null || info.getCorrectedP() > correctedPCutoff) {
 
 			if (info == null) {
 				//System.out.println("No predictions for: " + queryTerm.getName());
@@ -188,7 +192,7 @@ public class HpoFinder {
 			result = new ArrayList<>();
 
 			hpoOntology.getTriples(queryTerm, null, is_a).forEach((parentTriple) -> {
-				result.addAll(getPredictableTerms(parentTriple.getObject(), fdr));
+				result.addAll(getPredictableTerms(parentTriple.getObject(), correctedPCutoff));
 			});
 
 		} else {
@@ -198,6 +202,17 @@ public class HpoFinder {
 
 		return result;
 
+	}
+	
+	public List<String> getTermsToNames(List<Term> terms){
+		ArrayList<String> termNames = new ArrayList<>();
+		
+		terms.forEach((term) -> {
+			termNames.add(term.getName());
+		});
+		
+		return termNames;
+		
 	}
 
 }

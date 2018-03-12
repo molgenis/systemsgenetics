@@ -841,4 +841,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
+	public int getRowIndex(R gene) {
+		return this.hashRows.get(gene);
+	}
+
 }
