@@ -122,16 +122,16 @@ public class MannWhitneyUTest2 {
 	public void setData(final double[] x, final double[] y)
 			throws NullArgumentException, NoDataException {
 
-		isPset=false;
-		p=Double.NaN;
-		
+		isPset = false;
+		p = Double.NaN;
+
 		ensureDataConformance(x, y);
 
 		final double[] xy = concatenateSamples(x, y);
 		final double[] ranks = naturalRanking.rank(xy);
 
 		double sumRankX = 0;
-		
+
 		n1 = x.length;
 		n2 = y.length;
 
@@ -147,24 +147,23 @@ public class MannWhitneyUTest2 {
          * U1 = R1 - (n1 * (n1 + 1)) / 2 where R1 is sum of ranks for sample 1,
          * e.g. x, n1 is the number of observations in sample 1.
 		 */
-		u1 = sumRankX - (n1 * (n1 + 1)) / 2;
+		u1 = sumRankX - ((long) n1 * (n1 + 1)) / 2;
 
 		final long n1n2prod = (long) n1 * n2;
-		
+
 		/*
          * It can be shown that U1 + U2 = n1 * n2
 		 */
 		u2 = n1n2prod - u1;
-		
-		u = FastMath.max(u1, u2);
 
+		u = FastMath.max(u1, u2);
 
 		// http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation
 		final double EU = n1n2prod / 2.0;
 		final double VarU = n1n2prod * (n1 + n2 + 1) / 12.0;
 
 		z = (u2 - EU) / FastMath.sqrt(VarU);
-		
+
 		auc = u1 / n1n2prod;
 
 	}
@@ -180,9 +179,22 @@ public class MannWhitneyUTest2 {
 	public double getP() {
 		if (!isPset) {
 			// No try-catch or advertised exception because args are valid
-			final NormalDistribution standardNormal = new NormalDistribution(0, 1);
+//			final NormalDistribution standardNormal = new NormalDistribution(0, 1);
 
-			p = 2 * standardNormal.cumulativeProbability(-FastMath.abs(z));
+//			p = 2 * standardNormal.cumulativeProbability(-FastMath.abs(z));
+			double x = FastMath.abs(z);
+			double[] b = {0.319381530, -0.356563782, 1.781477937, -1.821255978, 1.330274429};
+			double p = 0.2316419;
+			double t = 1 / (1 + p * x);
+			double fact = t;
+			double sum = 0;
+			for (int i = 0; i <= b.length - 1; i++) {
+				sum += b[i] * fact;
+				fact *= t;
+			}
+			p = 2d * sum * Math.exp(-x * x / 2.0d) / (Math.sqrt(2d * Math.PI));
+			this.p = p;
+
 		}
 		return p;
 	}
@@ -210,5 +222,5 @@ public class MannWhitneyUTest2 {
 	public double getAuc() {
 		return auc;
 	}
-	
+
 }

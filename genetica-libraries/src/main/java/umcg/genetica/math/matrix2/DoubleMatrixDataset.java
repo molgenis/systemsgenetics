@@ -682,7 +682,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public DoubleMatrix1D getCol(C colName) {
-		Integer col = hashRows.get(colName);
+		Integer col = hashCols.get(colName);
 		if (col != null) {
 			return matrix.viewColumn(col);
 		} else {

@@ -37,11 +37,11 @@ public class processCaseHpo {
 	public static void main(String[] args) throws IOException, FileNotFoundException, ParseException {
 
 		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
-		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_fdr.txt");
+		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_bonferroni.txt");
 		final File updatedIdFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\updatedHpoId.txt");
 		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalCaseHpo.txt");
 		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo.txt");
-		final double fdr = 0.05;
+		final double correctedPCutoff = 0.05;
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
@@ -89,10 +89,10 @@ public class processCaseHpo {
 					Term hpoTerm = hpoOntology.getTerm(hpo);
 					PredictionInfo info = predictionInfo.get(hpo);
 
-					if (info == null || info.getCorrectedP() > fdr) {
+					if (info == null || info.getCorrectedP() > correctedPCutoff) {
 						//in case of no prediction or bad prediction
 
-						List<Term> alternativeTerms = hpoFinder.getPredictableTerms(hpoTerm, fdr);
+						List<Term> alternativeTerms = hpoFinder.getPredictableTerms(hpoTerm, correctedPCutoff);
 
 						if(alternativeTerms.isEmpty()){
 							System.out.println("Warning no alternative found for: " + hpo);
