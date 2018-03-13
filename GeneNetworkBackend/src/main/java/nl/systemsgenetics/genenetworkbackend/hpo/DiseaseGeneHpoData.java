@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -29,11 +30,13 @@ public class DiseaseGeneHpoData {
 	
 	private final HashMap<String, HashSet<String>> geneToHpos;
 	private final HashMap<String, HashSet<String>> diseaseToGenes;
+	private final HashMap<DiseaseGene, HashSet<String>> diseaseGeneToHpos; // disease_gene
 
 	public DiseaseGeneHpoData(final File diseaseGeneHpoFile, HashMap<String, ArrayList<String>> ncbiToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap, HashSet<String> exludedHpo ) throws FileNotFoundException, IOException {
 		
 		geneToHpos = new HashMap<>();
 		diseaseToGenes = new HashMap<>();
+		diseaseGeneToHpos = new HashMap<>();
 		
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(diseaseGeneHpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
@@ -68,7 +71,7 @@ public class DiseaseGeneHpoData {
 				}
 				
 				geneHpos.add(hpo);
-				
+								
 				HashSet<String> diseaseGenes = diseaseToGenes.get(disease);
 				if(diseaseGenes == null){
 					diseaseGenes = new HashSet<>();
@@ -76,6 +79,15 @@ public class DiseaseGeneHpoData {
 				}
 				diseaseGenes.add(ensgId);
 
+				DiseaseGene diseaseGene = new DiseaseGene(disease, ensgId);
+				
+				HashSet<String> diseaseGeneHpos = diseaseGeneToHpos.get(diseaseGene);
+				if(diseaseGeneHpos == null){
+					diseaseGeneHpos = new HashSet<>();
+					diseaseGeneToHpos.put(diseaseGene, diseaseGeneHpos);
+				}
+				diseaseGeneHpos.add(hpo);
+				
 			}
 
 		}
@@ -108,6 +120,10 @@ public class DiseaseGeneHpoData {
 		return Collections.unmodifiableSet(diseaseToGenes.keySet());
 	}
 	
+	public Set<DiseaseGene> getDiseaseGeneHpos(){
+		return Collections.unmodifiableSet(diseaseGeneToHpos.keySet());
+	}
+	
 	/**
 	 * Returns null if no disease genes are found
 	 * 
@@ -122,6 +138,80 @@ public class DiseaseGeneHpoData {
 		} else {
 			return Collections.unmodifiableSet(diseaseGenes);
 		}
+	}
+	
+	/**
+	 * Returns null if no phenotypes associated
+	 * 
+	 * @param diseaseGene disease_gene
+	 * @return 
+	 */
+	public Set<String> getDiseaseEnsgHpos(DiseaseGene diseaseGene){
+		
+		HashSet<String> hpos = diseaseGeneToHpos.get(diseaseGene);
+		
+		if(hpos == null){
+			return null;
+		} else {
+			return Collections.unmodifiableSet(hpos);
+		}
+		
+	}
+	
+	public class DiseaseGene {
+		
+		private final String disease;
+		private final String gene;
+
+		public DiseaseGene(String disease, String gene) {
+			this.disease = disease;
+			this.gene = gene;
+		}
+
+		public String getDisease() {
+			return disease;
+		}
+
+		public String getGene() {
+			return gene;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 3;
+			hash = 97 * hash + Objects.hashCode(this.disease);
+			hash = 97 * hash + Objects.hashCode(this.gene);
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final DiseaseGene other = (DiseaseGene) obj;
+			if (!Objects.equals(this.disease, other.disease)) {
+				return false;
+			}
+			if (!Objects.equals(this.gene, other.gene)) {
+				return false;
+			}
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return disease + "_" + gene;
+		}
+		
+		
+			
 	}
 	
 }

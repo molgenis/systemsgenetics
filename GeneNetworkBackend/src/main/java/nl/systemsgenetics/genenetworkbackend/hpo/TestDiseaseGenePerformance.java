@@ -73,21 +73,25 @@ public class TestDiseaseGenePerformance {
 
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 
-		String[] outputLine = new String[4];
+		String[] outputLine = new String[5];
 		int c = 0;
+		outputLine[c++] = "Disease";
 		outputLine[c++] = "Gene";
 		outputLine[c++] = "Rank";
 		outputLine[c++] = "HPO_count";
 		outputLine[c++] = "HPO_terms";
 		writer.writeNext(outputLine);
 
-		for (String gene : diseaseGeneHpoData.getDiseaseGenes()) {
+		for ( DiseaseGeneHpoData.DiseaseGene diseaseGene : diseaseGeneHpoData.getDiseaseGeneHpos()) {
 
+			String gene = diseaseGene.getGene();
+			String disease = diseaseGene.getDisease();
+			
 			if (!predictionMatrixSignificant.containsRow(gene)) {
 				continue;
 			}
 
-			Set<String> geneHpos = diseaseGeneHpoData.getEnsgHpos(gene);
+			Set<String> geneHpos = diseaseGeneHpoData.getDiseaseEnsgHpos(diseaseGene);
 
 			LinkedHashSet<String> geneHposPredictable = new LinkedHashSet<>();
 
@@ -117,8 +121,8 @@ public class TestDiseaseGenePerformance {
 
 			double rank = (totalGenes - geneRanks[diseaseGeneIndex]) + 1;
 
-			outputLine = new String[4];
 			c = 0;
+			outputLine[c++] = disease;
 			outputLine[c++] = gene;
 			outputLine[c++] = String.valueOf(rank);
 			outputLine[c++] = String.valueOf(geneHpos.size());
