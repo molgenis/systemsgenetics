@@ -29,6 +29,7 @@ public class MannWhitneyUTest2 {
 	double z = Double.NaN;
 	int n1 = 0;
 	int n2 = 0;
+	double auc = 0;
 
 	/**
 	 * Ranking algorithm.
@@ -148,14 +149,15 @@ public class MannWhitneyUTest2 {
 		 */
 		u1 = sumRankX - (n1 * (n1 + 1)) / 2;
 
+		final long n1n2prod = (long) n1 * n2;
+		
 		/*
          * It can be shown that U1 + U2 = n1 * n2
 		 */
-		u2 = n1 * n2 - u1;
+		u2 = n1n2prod - u1;
 		
 		u = FastMath.max(u1, u2);
 
-		final long n1n2prod = (long) n1 * n2;
 
 		// http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U#Normal_approximation
 		final double EU = n1n2prod / 2.0;
@@ -163,6 +165,7 @@ public class MannWhitneyUTest2 {
 
 		z = (u2 - EU) / FastMath.sqrt(VarU);
 		
+		auc = u1 / n1n2prod;
 
 	}
 
@@ -204,6 +207,8 @@ public class MannWhitneyUTest2 {
 		return u;
 	}
 
-	
+	public double getAuc() {
+		return auc;
+	}
 	
 }
