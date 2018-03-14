@@ -287,7 +287,7 @@ public class BinaryMetaAnalysisCLI {
 				c.run(in, in2, out);
 			} else if (cmd.hasOption("comparepermute")) {
 				
-				Delta d = new Delta();
+				CompareSNPProbeCombosBetweenFiles d = new CompareSNPProbeCombosBetweenFiles();
 				d.run(cmd.getOptionValue("in"), cmd.getOptionValue("in2"), cmd.getOptionValue("out"));
 				
 			} else if (cmd.hasOption("meta")) {

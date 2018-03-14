@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 public class Benchmark {
 	
 	enum MODE {
-		CORRELATE, PARSELOG, COMBINE, EXTRACT, FILTER
+		CORRELATE, PARSELOG, COMBINE, EXTRACT, CONCATLOG, FILTER
 	}
 	
 	public static void main(String[] args) {
@@ -31,7 +31,7 @@ public class Benchmark {
 		Options options = new Options();
 		
 		Option fileOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location (folder) for the output.").withLongOpt("output").create("o");
-		Option mode = OptionBuilder.withArgName("path").hasArg().withDescription("Set mode (filter | correlate | parselog | combine | extract)").withLongOpt("mode").create("m");
+		Option mode = OptionBuilder.withArgName("path").hasArg().withDescription("Set mode (filter | correlate | parselog | concatlog | combine | extract)").withLongOpt("mode").create("m");
 		Option fileIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location (folder) for the input.").withLongOpt("input").create("i");
 		Option fileIn2 = OptionBuilder.withArgName("path").hasArg().withDescription("Location (folder) for the input 2.").withLongOpt("input2").create("i2");
 		Option genotypeIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data.").withLongOpt("genotypes").create("g");
@@ -72,6 +72,8 @@ public class Benchmark {
 					m = MODE.COMBINE;
 				} else if (modestr.equals("extract")) {
 					m = MODE.EXTRACT;
+				} else if (modestr.equals("concatlog")) {
+					m = MODE.CONCATLOG;
 				}
 			}
 			if (cmd.hasOption("i")) {
@@ -106,6 +108,8 @@ public class Benchmark {
 				b.combinefiles(in, in2, out);
 			} else if (m.equals(MODE.EXTRACT)) {
 				b.extractSNP(gt, in, out);
+			} else if (m.equals(MODE.CONCATLOG)) {
+				b.logconcat(in, in2, out);
 			}
 			
 		} catch (ParseException ex) {
@@ -113,6 +117,46 @@ public class Benchmark {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void logconcat(String logdir, String traitlist, String out) throws IOException {
+		TextFile tf = new TextFile(traitlist, TextFile.R);
+		ArrayList<String> listoftraits = tf.readAsArrayList();
+		tf.close();
+		
+		TextFile outf = new TextFile(out, TextFile.W);
+		int tctr = 0;
+		for (String t : listoftraits) {
+			ArrayList<String> snpids = new ArrayList<>();
+			
+			for (int c = 1; c < 23; c++) {
+				String logfile = logdir + t + "Chr" + c + ".log";
+				if (Gpio.exists(logfile)) {
+					System.out.print(tctr + "/" + listoftraits.size() + "\t" + logfile + "\r");
+					TextFile tfl = new TextFile(logfile, TextFile.R);
+					String ln = tfl.readLine();
+					while (ln != null) {
+						if (ln.startsWith("rs")) {
+							String[] logelems = ln.split("\t");
+							String rs = logelems[0];
+							snpids.add(rs);
+						}
+						ln = tfl.readLine();
+					}
+					tfl.close();
+				}
+				
+			}
+			String snpstr = "NA";
+			if (!snpids.isEmpty()) {
+				snpstr = Strings.concat(snpids, Strings.semicolon);
+			}
+			
+			outf.writeln(t + "\t" + snpids.size() + "\t" + snpstr);
+			
+			tctr++;
+		}
+		outf.close();
 	}
 	
 	public void logparser(String traitToSNPCoupling, String logdir, String out) throws IOException {

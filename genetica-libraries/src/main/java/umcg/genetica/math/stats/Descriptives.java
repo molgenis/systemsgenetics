@@ -194,4 +194,12 @@ public class Descriptives {
 		}
 		return (summedDistance / sum);
 	}
+	
+	public static int sum(int[] ints) {
+		int sum = 0;
+		for (int i : ints) {
+			sum += i;
+		}
+		return sum;
+	}
 }

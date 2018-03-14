@@ -224,10 +224,12 @@ public class Primitives {
 		return arr;
 	}
 	
-	public static int[] toPrimitiveArr(Integer[] toArray) {
-		int[] arr = new int[toArray.length];
-		for (int i = 0; i < toArray.length; i++) {
-			arr[i] = toArray[i];
+	public static int[] toPrimitiveArr(Integer[] fromArr) {
+		int[] arr = new int[fromArr.length];
+		for (int i = 0; i < fromArr.length; i++) {
+			if (fromArr[i] != null) {
+				arr[i] = fromArr[i];
+			}
 		}
 		return arr;
 	}
