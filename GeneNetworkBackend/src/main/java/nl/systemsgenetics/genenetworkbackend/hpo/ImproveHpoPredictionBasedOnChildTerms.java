@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import org.apache.commons.math3.util.FastMath;
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 import org.biojava.nbio.ontology.Triple;
@@ -120,11 +121,13 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 
 	private HashMap<String, UpdatedPredictionInfo> run() {
 
+		int nextReport = 100;
 
 		for (String hpo : annotationMatrix.getColObjects()) {
 			predict(hpo);
-			if (checkedHpo.size() % 100 == 0) {
+			if (checkedHpo.size() >= nextReport) {
 				System.out.println("Processed " + checkedHpo.size() + " HPO terms");
+				nextReport += 100;
 			}
 		}
 
@@ -133,6 +136,10 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 
 	private void predict(String hpo) {
 
+		if(checkedHpo.containsKey(hpo)){
+			return;
+		}
+		
 		final Term hpoTerm = hpoOntology.getTerm(hpo);
 		final HashSet<String> hpoChildern = new HashSet<>();
 
@@ -164,7 +171,7 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 		double originalAuc = uTest.getAuc();
 		double originalP = uTest.getP();
 
-		ArrayList<String> usableChildern = new ArrayList<String>();
+		ArrayList<String> usableChildern = new ArrayList<>();
 		for (String hpoChild : hpoChildern) {
 
 			if (!predictionMatrix.containsCol(hpoChild)) {
@@ -175,9 +182,9 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 				predict(hpoChild);
 			}
 
-			if (checkedHpo.get(hpoChild).isIsSignificant()) {
+			//if (checkedHpo.get(hpoChild).isIsSignificant()) {
 				usableChildern.add(hpoChild);
-			}
+			//}
 
 		}
 
@@ -185,26 +192,43 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 		double updatedP;
 
 		final double[] alternativeGeneZscores = new double[annotationMatrix.rows()];
-		if (usableChildern.size() >= 2) {
+		if (usableChildern.size() >= 1) {
 
+			int sumSquareOfWeigths = 0;
+			
 			for (String hpoChild : usableChildern) {
 
 				DoubleMatrix1D childGeneZ = predictionMatrix.getCol(hpoChild);
 
+				int hpoChildGeneCount = checkedHpo.get(hpoChild).geneCount;
+				sumSquareOfWeigths += hpoChildGeneCount;
+				double weight = FastMath.sqrt(hpoChildGeneCount);
+				
 				for (int i = 0; i < alternativeGeneZscores.length; i++) {
-					alternativeGeneZscores[i] += childGeneZ.getQuick(i);
+					alternativeGeneZscores[i] += (weight * childGeneZ.getQuick(i));
 				}
 
 			}
+			
+			double weight = FastMath.sqrt(hpoAnnotationCount);
+			sumSquareOfWeigths += hpoAnnotationCount;
+			for (int i = 0; i < alternativeGeneZscores.length; i++) {
+				alternativeGeneZscores[i] += (weight * hpoAnnotations.getQuick(i));
+			}
 
-			double denominator = Math.sqrt(usableChildern.size());
+			double denominator = Math.sqrt(sumSquareOfWeigths);
 
 			for (int i = 0; i < alternativeGeneZscores.length; i++) {
-				alternativeGeneZscores[i] += alternativeGeneZscores[i] / denominator;
+				alternativeGeneZscores[i] = (alternativeGeneZscores[i] / denominator);
 				if (Double.isNaN(alternativeGeneZscores[i])) {
 					alternativeGeneZscores[i] = 0;
 				}
 			}
+			
+			if(hpo.equals("HP:0001324")){
+				System.out.println("HP:0001324 - RAPSN: " + alternativeGeneZscores[predictionMatrix.getHashRows().get("ENSG00000165917")]);
+			}
+			
 
 			zScoresAnnotatedGenes = new double[hpoAnnotationCount];
 			zScoresOtherGenes = new double[annotationMatrix.rows() - hpoAnnotationCount];
