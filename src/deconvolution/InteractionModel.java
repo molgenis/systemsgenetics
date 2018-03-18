@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.exception.DimensionMismatchException;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
 /*
  * InteractionModel contains the information (observed values, pvalue, regression parameter values etc)
@@ -33,7 +34,8 @@ public class InteractionModel {
 	private double estimatedStandardError;
 	private double[] predictedValues;
 	private String celltypeName;
-	
+	private String restModel;
+
 	/**
 	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
@@ -43,23 +45,39 @@ public class InteractionModel {
 	 * @ param numberOfTerms number of terms that the interaction model has
 	 */
 	public InteractionModel( int sampleSize, int numberOfTerms){
-	    this.observedValues = new double[sampleSize][numberOfTerms];
-	    this.numberOfTerms = numberOfTerms;
-	  }
-	
+		this.observedValues = new double[sampleSize][numberOfTerms];
+		this.numberOfTerms = numberOfTerms;
+	}
+
 	public void addObservedValue( double observedValue, int sampleIndex, int termIndex){
-	    this.observedValues[sampleIndex][termIndex] = observedValue;
-	  }
-	
+		this.observedValues[sampleIndex][termIndex] = observedValue;
+	}
+
+	/*
+	 * Set the restModel. The restModel only exists when using the cc% + 100-cc% model, and is the one that is
+	 * cc% + 100-cc% + cc%*GT (normal ct model is cc% + 100-cc% + 100-cc%*GT)  
+	 */
+	public void setRestModel(String restModel){
+		this.restModel = restModel;
+	}
+
+	/*
+	 * Get the restModel. The restModel only exists when using the cc% + 100-cc% model, and is the one that is
+	 * cc% + 100-cc% + cc%*GT (normal ct model is cc% + 100-cc% + 100-cc%*GT)  
+	 */
+	public String getRestModel(){
+		return this.restModel;
+	}
+
 	/**
 	 * Get the observed values. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
 	 * [mono%, neut%, mono% * GT]
 	 */
 	public double[][] getObservedValues() throws IllegalAccessException{
-	    return(this.observedValues);
-	  }
-	
+		return(this.observedValues);
+	}
+
 	/**
 	 * Add the index of the celltype variables of the linear model e.g.
 	 * the index of the celltype% and celltype%:GT of the model. If 
@@ -69,8 +87,8 @@ public class InteractionModel {
 	 */
 	public void addCelltypeVariablesIndex(int[] values){
 		celltypeVariablesIndex.add(values);
-	  }
-	
+	}
+
 	/**
 	 * Get the index of the celltype variables of the linear model e.g.
 	 * the index of the celltype% and celltype%:GT of the model. If 
@@ -79,39 +97,39 @@ public class InteractionModel {
 	 * This can be used to sum up the Beta * variable per cell type  
 	 */
 	public List<int[]> getCelltypeVariablesIndex() throws IllegalAccessException{
-	    return (this.celltypeVariablesIndex);
-	  }
-	
+		return (this.celltypeVariablesIndex);
+	}
+
 	/** 
 	 * Add the name of the independent variable name at the end of the existing list
 	 * of independent variables.  
 	 */
 	public void addIndependentVariableName(String independentVariables){
-	    this.independentVariableNames.add(independentVariables);
-	  }
-	
+		this.independentVariableNames.add(independentVariables);
+	}
+
 	/**
 	 * Add the name of the independent variable name at <index> of the existing list
 	 * of independent variables.  
 	 */
 	public void addIndependentVariableName(int index, String independentVariables){
-	    this.independentVariableNames.add(index, independentVariables);
-	  }
-	
+		this.independentVariableNames.add(index, independentVariables);
+	}
+
 	/** 
 	 * Get a list of the independent variables of the interaction model e.g.
 	 * 		[neut%, mono%, neut%:GT]
 	 */
 	public List<String> getIndependentVariableNames() throws IllegalAccessException{
-	    return(this.independentVariableNames);
-	  }
-	
+		return(this.independentVariableNames);
+	}
+
 	public void setModelName(String modelName){
-	    this.modelName = modelName;
-	  }
-	
+		this.modelName = modelName;
+	}
+
 	public String getModelName() throws IllegalAccessException{
-	    return(this.modelName);
+		return(this.modelName);
 	}	
 
 	public void setPvalue(double pvalue){
@@ -139,7 +157,7 @@ public class InteractionModel {
 	public void setModelLength(){
 		this.modelLength = this.observedValues.length;
 	}
-	
+
 	public int getModelLength() throws IllegalAccessException {
 		return this.modelLength;
 	}
@@ -147,16 +165,16 @@ public class InteractionModel {
 	public void setSumOfSquares(double sumOfSquares) {
 		this.sumOfSquares = sumOfSquares;
 	}
-	
+
 	public double getSumOfSquares() throws IllegalAccessException {
 		return(this.sumOfSquares);
 	}
-	
+
 	public void setAIC() {
 		// +1 because error term is also a parameter
 		this.AIC = Statistics.AIC(this.residuals, this.getNumberOfTerms()+1);
 	}
-	
+
 	public double getAIC() {
 		return(this.AIC);
 	}
@@ -167,27 +185,27 @@ public class InteractionModel {
 	public int getDegreesOfFreedom() throws IllegalAccessException {
 		return(this.degreesOfFreedom);
 	}
-	
+
 	public int getNumberOfTerms(){
 		return this.numberOfTerms;
 	}
-	
-	
+
+
 	public void setEstimatedRegressionParameters(double[] estimatedRegressionParamters){
 		this.estimatedRegressionParameters = estimatedRegressionParamters;
 	}
-	
+
 	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
 		return(this.estimatedRegressionParameters);
 	}
-	
+
 	private void setResiduals(double[] residuals) {
 		this.residuals = residuals;
 	}
 	public double[] getResiduals() {
 		return(this.residuals);
 	}
-	
+
 	private void setPredictedValues(double[] predictedValues) {
 		this.predictedValues = predictedValues;
 	}
@@ -213,7 +231,6 @@ public class InteractionModel {
 	 */
 	public void calculateSumOfSquaresNNLS(double[] expressionValues) throws IOException, IllegalAccessException {
 		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares();
-		
 		try{
 			nnls.newSampleData(expressionValues, this.getObservedValues());
 		}
@@ -222,22 +239,22 @@ public class InteractionModel {
 					expressionValues.length, this.getNumberOfTerms()));
 			throw(e);
 		}
-		
+
 		// results contain:
 		// normsqr: sqroot of the norm error vector
 		// x: the parameters
 		// For more, check out the Class documentation
 		double[] estimatedRegressionParameters = nnls.estimateRegressionParameters();
 		setEstimatedRegressionParameters(estimatedRegressionParameters);
-		
+
 		setSumOfSquares(nnls.calculateResidualSumOfSquares());
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
-		
-		double[] predictedValues = nnls.getPredictedExpressionValues();
+
+		//double[] predictedValues = nnls.getPredictedExpressionValues();
 		double[] residuals = nnls.estimateResiduals();
 		//setEstimatedStandardError(nnls.estimateRegressionStandardError());
 		setResiduals(residuals);
-		setPredictedValues(predictedValues);
+		//setPredictedValues(predictedValues);
 	}
 
 	public void setAICdelta(double comparativeAIC) {
@@ -255,7 +272,7 @@ public class InteractionModel {
 	public double[] getEstimatedRegressionParametersStandardErrors() {
 		return this.estimatedRegressionParametersStandardError;
 	}
-	
+
 	public void setEstimatedStandardError(double estimatedStandardError){
 		this.estimatedStandardError = estimatedStandardError;
 	}
@@ -274,9 +291,43 @@ public class InteractionModel {
 	public void setCelltypeName(String celltypeName) {
 		this.celltypeName = celltypeName;
 	}
-	
+
 	public String getCelltypeName(){
 		return(this.celltypeName);
+	}
+
+	/* Calculate the sum of squares, using Ordinary Linear Regression, given a y expression vector with y ~
+	 * model. Remove of the intercept (equivalent to y ~ model -1 in R) is hard-code in
+	 * 
+	 * @param model An InteractionModel object including the y vector expression values and ObservedValues (model)
+	 * Such that
+	 * test_trait ~ geno_A + lymph% + geno_A:geno_B it can be for one QTL
+	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
+	 * [0, 51.5, 0] [0, 48.7, 0]]
+	 * @param expressionValues Vector of expression values to use
+	 * @return A regression object
+	 */
+	public void calculateSumOfSquaresOLS(double[] expressionValues, boolean estimateErrors) throws IOException, IllegalAccessException {
+		// OLS = Ordinary Least Squares
+		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
+		regression.setNoIntercept(true);
+		try{
+			regression.newSampleData(expressionValues, this.getObservedValues());
+		}
+		catch (DimensionMismatchException e){
+			DeconvolutionLogger.log.info(String.format("Length of expression and genotype data not the same\nexpression length: %d\nobserved values length: %d\n", 
+					expressionValues.length, this.getNumberOfTerms()));
+			throw(e);
+		}
+		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
+		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
+		setResiduals(regression.estimateResiduals());
+		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
+		if(estimateErrors){
+			setEstimatedRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
+			setEstimatedStandardError(regression.estimateRegressionStandardError());
+		}
 	}
 }
 
