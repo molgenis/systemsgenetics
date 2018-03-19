@@ -25,6 +25,18 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("replicationtable")
+				.desc("Make a table for easy comparison of multiple qtl files")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("bhfdr")
+				.desc("Calculate Benjamini Hochberg FDR on an eQTL file")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("internalmeta")
 				.desc("Run internal meta-analysis")
 				.build();
@@ -39,12 +51,6 @@ public class BinaryMetaAnalysisCLI {
 		option = Option.builder()
 				.longOpt("createsettingsbinarymeta")
 				.desc("SettingsCreator: create settings file for BinaryMetaAnalyzer")
-				.build();
-		OPTIONS.addOption(option);
-		
-		option = Option.builder()
-				.longOpt("compareeffectsize")
-				.desc("Compare QTL effect sizes between (groups of) datasets")
 				.build();
 		OPTIONS.addOption(option);
 		
@@ -263,8 +269,13 @@ public class BinaryMetaAnalysisCLI {
 				.build();
 		OPTIONS.addOption(option);
 		
-		//
-		//
+		option = Option.builder()
+				.longOpt("names")
+				.hasArg()
+				.desc("Dataset names")
+				.build();
+		OPTIONS.addOption(option);
+		
 		
 	}
 	
@@ -278,8 +289,54 @@ public class BinaryMetaAnalysisCLI {
 			CommandLineParser parser = new DefaultParser();
 			final CommandLine cmd = parser.parse(OPTIONS, args, false);
 			
-			
-			if (cmd.hasOption("cismatrixconvert")) {
+			if (cmd.hasOption("replicationtable")) {
+				
+				if (!cmd.hasOption("in") || !cmd.hasOption("in2") || !cmd.hasOption("names") || !cmd.hasOption("out")) {
+					System.out.println("Options for replicationtable:");
+					System.out.println("--in");
+					System.out.println("--out");
+					System.out.println("--in2");
+					System.out.println("--names");
+					System.out.println("[--onlyoutputsignificant]");
+					System.out.println("[--threshold]");
+					System.out.println("[--minnrofcohorts]");
+					
+				} else {
+					QTLReplicationTable qt = new QTLReplicationTable();
+					String ref = cmd.getOptionValue("in");
+					String other = cmd.getOptionValue("in2");
+					String othernames = cmd.getOptionValue("names");
+					String outputloc = cmd.getOptionValue("out");
+					boolean includenonsignificant = true;
+					if (cmd.hasOption("onlyoutputsignificant")) {
+						includenonsignificant = false;
+					}
+					double fdrthreshold = 0.05;
+					if (cmd.hasOption("threshold")) {
+						String fdrthresholdstr = cmd.getOptionValue("threshold");
+						fdrthreshold = Double.parseDouble(fdrthresholdstr);
+					}
+					
+					int minnroverlap = 0;
+					if (cmd.hasOption("minnrofcohorts")) {
+						String minoverlapstr = cmd.getOptionValue("minnrofcohorts");
+						minnroverlap = Integer.parseInt(minoverlapstr);
+					}
+					
+					qt.run(ref, other, othernames, outputloc, includenonsignificant, minnroverlap, fdrthreshold);
+				}
+				
+				
+			} else if (cmd.hasOption("bhfdr")) {
+				BHFDR f = new BHFDR();
+				String in = cmd.getOptionValue("in");
+				double threshold = 0.05;
+				if (cmd.hasOption("threshold")) {
+					threshold = Double.parseDouble(cmd.getOptionValue("threshold"));
+				}
+				String out = cmd.getOptionValue("out");
+				f.run(in, threshold, out);
+			} else if (cmd.hasOption("cismatrixconvert")) {
 				MatrixConverterCis c = new MatrixConverterCis();
 				String in = cmd.getOptionValue("in");
 				String in2 = cmd.getOptionValue("in2");
@@ -496,11 +553,11 @@ public class BinaryMetaAnalysisCLI {
 					System.out.println("Specify output file name with -o");
 				}
 				if (r) {
-					MetaAnalysisQC q = new MetaAnalysisQC();
+					CompareQTLEffectSizes q = new CompareQTLEffectSizes();
 					q.leaveOneOut(in, out);
 				}
 			} else if (cmd.hasOption("compareeffectsize")) {
-				MetaAnalysisQC q = new MetaAnalysisQC();
+				CompareQTLEffectSizes q = new CompareQTLEffectSizes();
 				String eqtlfile = null;
 				String groupdefinition = null;
 				String outfile = null;

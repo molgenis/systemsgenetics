@@ -21,7 +21,7 @@ public class QTLReplicationTable {
 					String otherFilesNames,
 					String outputloc,
 					boolean includenonSignificanteffects,
-					boolean onlyoutputQTLThatOverlapAllOtherFiles,
+					int minNrDatasetsOverlap,
 					double fdrthreshold) throws IOException {
 		
 		
@@ -34,7 +34,7 @@ public class QTLReplicationTable {
 		int ctr = 0;
 		ArrayList<EQTL> referenceQTL = new ArrayList<EQTL>();
 		for (EQTL e : referenceQTLArr) {
-			if (e.getFDR() < fdrthreshold) {
+			if (e.getFDR() < fdrthreshold || includenonSignificanteffects) {
 				snpGeneToQTL.put(e.getRsName() + "_" + e.getProbe(), ctr);
 				referenceQTL.add(e);
 				ctr++;
@@ -43,8 +43,8 @@ public class QTLReplicationTable {
 		
 		DetermineLD d = new DetermineLD();
 		
-		String[] files = otherFiles.split(";");
-		String[] filenames = otherFilesNames.split(";");
+		String[] files = otherFiles.split(",");
+		String[] filenames = otherFilesNames.split(",");
 		EQTL[][] output = new EQTL[referenceQTL.size()][files.length];
 		
 		for (int f = 0; f < files.length; f++) {
@@ -53,13 +53,13 @@ public class QTLReplicationTable {
 			t2.close();
 			
 			for (EQTL e : qtl2) {
-				if (e.getFDR() < fdrthreshold) {
-					String query = e.getRsName() + "_" + e.getProbe();
-					Integer id = snpGeneToQTL.get(query);
-					if (id != null) {
-						output[id][f] = e;
-					}
+//				if (e.getFDR() < fdrthreshold || includenonSignificanteffects) {
+				String query = e.getRsName() + "_" + e.getProbe();
+				Integer id = snpGeneToQTL.get(query);
+				if (id != null) {
+					output[id][f] = e;
 				}
+//				}
 			}
 		}
 		
@@ -105,12 +105,16 @@ public class QTLReplicationTable {
 			header2 += "\t" + filenames[f]
 					+ "\t"
 					+ "\t"
+					+ "\t"
 					+ "\t";
 			header += "\tZ" +
 					"\tRSq" +
+					"\tP(differentEffectSize)" +
 					"\tP" +
 					"\tFDR";
 		}
+		header += "\tNrDatasetsTested";
+		header += "\tNrDatasetsWithP(differentEffectSize)<0.05";
 		
 		TextFile out = new TextFile(outputloc, TextFile.W);
 		out.writeln(header2);
@@ -121,7 +125,7 @@ public class QTLReplicationTable {
 			EQTL reference = referenceQTL.get(e);
 			
 			int n = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
-			
+			double r = ZScores.zToR(reference.getZscore(), n);
 			String ln = reference.getProbe()
 					+ "\t" + reference.getProbeChr()
 					+ "\t" + reference.getProbeChrPos()
@@ -131,35 +135,72 @@ public class QTLReplicationTable {
 					+ "\t" + reference.getAlleles()
 					+ "\t" + reference.getAlleleAssessed()
 					+ "\t" + reference.getZscore()
-					+ "\t" + ZScores.zToR(reference.getZscore(), n)
+					+ "\t" + (r * r)
 					+ "\t" + reference.getPvalue()
 					+ "\t" + reference.getFDR();
 			
+			int nroverlap = 0;
+			int nroverlapsignificant = 0;
 			for (int f = 0; f < files.length; f++) {
 				EQTL other = output[e][f];
 				if (other == null) {
 					ln += "\t-"
 							+ "\t-"
 							+ "\t-"
+							+ "\t-"
 							+ "\t-";
 				} else {
-					Boolean flip = BaseAnnot.flipalleles(reference.getAlleles(), reference.getAlleleAssessed(), other.getAlleles(), other.getAlleleAssessed());
-					if (flip != null) {
-						int nother = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
-						double z = other.getZscore();
-						if (flip) {
-							z *= -1;
+					
+					if (!(other.getFDR() < fdrthreshold || includenonSignificanteffects)) {
+						ln += "\tNS"
+								+ "\tNS"
+								+ "\tNS"
+								+ "\tNS"
+								+ "\tNS";
+					} else {
+						nroverlap++;
+						Boolean flip = BaseAnnot.flipalleles(reference.getAlleles(), reference.getAlleleAssessed(), other.getAlleles(), other.getAlleleAssessed());
+						if (flip != null) {
+							int nother = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
+							double z = other.getZscore();
+							if (flip) {
+								z *= -1;
+							}
+							
+							double rother = ZScores.zToR(z, nother);
+							
+							double rzref = zFromCorr(r);
+							double rzother = zFromCorr(rother);
+							double se = Math.sqrt((1 / (n - 3d)) + (1 / (nother - 3d)));
+							double zDiff = (rzother - rzref) / se;
+							double rp = cern.jet.stat.Probability.normal(-Math.abs(zDiff)) * 2d;
+							
+							if (rp < 0.05) {
+								nroverlapsignificant++;
+							}
+							
+							ln += "\t" + z
+									+ "\t" + rother
+									+ "\t" + (rp * rp)
+									+ "\t" + other.getPvalue()
+									+ "\t" + other.getFDR();
 						}
-						ln += "\t" + z
-								+ "\t" + ZScores.zToR(z, nother)
-								+ "\t" + other.getPvalue()
-								+ "\t" + other.getFDR();
 					}
 				}
 			}
-			out.writeln(ln);
+			if (nroverlap >= minNrDatasetsOverlap) {
+				ln += "\t" + nroverlap + "\t" + nroverlapsignificant;
+				
+				out.writeln(ln);
+			}
 		}
 		out.close();
 	}
 	
+	private double zFromCorr(double corr1) {
+		double raplus = 1 * corr1 + 1;
+		double raminus = 1 - corr1;
+		double z = (Math.log(raplus) - Math.log(raminus)) / 2;
+		return z;
+	}
 }
