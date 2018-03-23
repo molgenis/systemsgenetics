@@ -78,10 +78,7 @@ public class TestDiseaseGenePerformance {
 		final HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
 		final HashSet<String> exludedHpo = loadHpoExclude(hposToExcludeFile);
 
-		DiseaseGeneHpoData diseaseGeneHpoData = new DiseaseGeneHpoData(diseaseGeneHpoFile, ncbiToEnsgMap, hgncToEnsgMap, exludedHpo);
-		if (randomize) {
-			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes);
-		}
+		
 
 		final SkewnessInfo skewnessInfo = new SkewnessInfo(skewnessFile);
 
@@ -90,6 +87,15 @@ public class TestDiseaseGenePerformance {
 		DoubleMatrixDataset<String, String> predictionMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixFile.getAbsolutePath());
 		DoubleMatrixDataset<String, String> predictionMatrixSignificant = predictionMatrix.viewColSelection(significantTerms);
 
+		DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix = predictionMatrixSignificant.calculateCorrelationMatrix();
+		
+		System.out.println("Done with correlation matrix");
+		
+		DiseaseGeneHpoData diseaseGeneHpoData = new DiseaseGeneHpoData(diseaseGeneHpoFile, ncbiToEnsgMap, hgncToEnsgMap, exludedHpo);
+		if (randomize) {
+			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes, predictionMatrixSignificantCorrelationMatrix, 0.5);
+		}
+		
 		DoubleMatrixDataset<String, String> annotationnMatrix = DoubleMatrixDataset.loadDoubleData(annotationMatrixFile.getAbsolutePath());
 		DoubleMatrixDataset<String, String> annotationMatrixSignificant = annotationnMatrix.viewColSelection(significantTerms);
 

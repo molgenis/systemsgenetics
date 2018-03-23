@@ -19,6 +19,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import org.biojava.nbio.ontology.Term;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -34,24 +37,36 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class HpoGenePrioritisation {
 
+	private static final NumberFormat Z_FORMAT = new DecimalFormat("#0.0##");
+
 	public static void main(String[] args) throws IOException, ParseException {
 
 		final File hpoPredictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions.txt");
-		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
 		final File ensgSymbolMappingFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
-		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo1604.txt");
+		final File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_bonSigTerms.txt");
+		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
+		final double minZscoreOtherCandidates = 5;
+
+		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo2.txt");
+		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
+//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_termen_Linda_processed.txt");
+//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
 
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
 		HashMap<String, LinkedHashSet<String>> caseHpo = loadCaseHpo(caseHpoFile);
 
-		DoubleMatrixDataset<String, String> hpoPredictionMatrix = DoubleMatrixDataset.loadDoubleData(hpoPredictionMatrixFile.getAbsolutePath());
-		ArrayList<String> genes = hpoPredictionMatrix.getRowObjects();
+		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
 
+		HpoOntology HpoOntology = new HpoOntology(hpoOboFile);
+
+		DoubleMatrixDataset<String, String> hpoPredictionMatrix = DoubleMatrixDataset.loadDoubleData(hpoPredictionMatrixFile.getAbsolutePath());
+		DoubleMatrixDataset<String, String> hpoPredictionMatrixSignificant = hpoPredictionMatrix.viewColSelection(significantTerms);
+		ArrayList<String> genes = hpoPredictionMatrixSignificant.getRowObjects();
 
 		System.out.println("Done loading data");
 
-		BufferedWriter sampleFileWriter = new BufferedWriter(new FileWriter(new File(outputFolder, "samples1604.txt")));
+		BufferedWriter sampleFileWriter = new BufferedWriter(new FileWriter(new File(outputFolder, "samples.txt")));
 
 		for (Map.Entry<String, LinkedHashSet<String>> caseHpoEntry : caseHpo.entrySet()) {
 
@@ -65,12 +80,12 @@ public class HpoGenePrioritisation {
 			System.out.println("Processing: " + caseId);
 
 			for (String term : hpo) {
-				if (!hpoPredictionMatrix.containsCol(term)) {
+				if (!hpoPredictionMatrixSignificant.containsCol(term)) {
 					System.err.println("Missing HPO: " + term);
 				}
 			}
 
-			DoubleMatrixDataset<String, String> predictionCaseTerms = hpoPredictionMatrix.viewColSelection(hpo);
+			DoubleMatrixDataset<String, String> predictionCaseTerms = hpoPredictionMatrixSignificant.viewColSelection(hpo);
 			DoubleMatrix2D predictionCaseTermsMatrix = predictionCaseTerms.getMatrix();
 			GenePrioritisationResult[] geneResults = new GenePrioritisationResult[genes.size()];
 
@@ -92,7 +107,7 @@ public class HpoGenePrioritisation {
 
 			CSVWriter writer = new CSVWriter(new FileWriter(new File(outputFolder, caseId + ".txt")), '\t', '\0', '\0', "\n");
 
-			String[] outputLine = new String[4 + hpo.size()];
+			String[] outputLine = new String[5 + hpo.size()];
 			int c = 0;
 			outputLine[c++] = "Ensg";
 			outputLine[c++] = "Hgnc";
@@ -101,6 +116,7 @@ public class HpoGenePrioritisation {
 			for (String term : hpo) {
 				outputLine[c++] = term;
 			}
+			outputLine[c++] = "PossibleAdditionalHpos";
 			writer.writeNext(outputLine);
 
 			int rank = 1;
@@ -109,11 +125,14 @@ public class HpoGenePrioritisation {
 				outputLine[c++] = geneResult.getEnsg();
 				outputLine[c++] = geneResult.getSymbol();
 				outputLine[c++] = String.valueOf(rank++);
-				outputLine[c++] = String.valueOf(geneResult.getGeneScore());
+				outputLine[c++] = Z_FORMAT.format(geneResult.getGeneScore());
 				DoubleMatrix1D geneZs = predictionCaseTerms.viewRow(geneResult.getEnsg());
 				for (int i = 0; i < hpo.size(); i++) {
-					outputLine[c++] = String.valueOf(geneZs.getQuick(i));
+					outputLine[c++] = Z_FORMAT.format(geneZs.getQuick(i));
 				}
+
+				outputLine[c++] = getOtherPossibleHpoTerms(geneResult.getEnsg(), hpo, hpoPredictionMatrixSignificant, minZscoreOtherCandidates, HpoOntology);
+
 				writer.writeNext(outputLine);
 			}
 
@@ -167,6 +186,85 @@ public class HpoGenePrioritisation {
 		}
 
 		return Collections.unmodifiableMap(mapping);
+
+	}
+
+	public static LinkedHashSet<String> loadSignificantTerms(File significantTermsFile) throws IOException {
+
+		LinkedHashSet<String> significantTerms = new LinkedHashSet<>();
+
+		BufferedReader reader = new BufferedReader(new FileReader(significantTermsFile));
+
+		String line;
+		while ((line = reader.readLine()) != null) {
+			significantTerms.add(line);
+		}
+
+		return significantTerms;
+
+	}
+
+	private static String getOtherPossibleHpoTerms(String ensg, LinkedHashSet<String> annotatedHpo, DoubleMatrixDataset<String, String> hpoPredictionMatrixSignificant, double minZscoreOtherCandidates, HpoOntology hpoOntology) {
+
+		StringBuilder result = new StringBuilder();
+		boolean notFirstResult = false;
+
+		DoubleMatrix1D geneZscores = hpoPredictionMatrixSignificant.getRow(ensg);
+		ArrayList<String> hpos = hpoPredictionMatrixSignificant.getColObjects();
+
+		ArrayList<Term> patientHpoTerms = new ArrayList<>();
+		for (String patientHpo : annotatedHpo) {
+			patientHpoTerms.add(hpoOntology.nameToTerm(patientHpo));
+		}
+
+		for (int p = 0; p < hpos.size(); p++) {
+			if (geneZscores.get(p) >= minZscoreOtherCandidates) {
+
+				String potentialOtherHpo = hpos.get(p);
+
+				if (potentialOtherHpo.equals(hpos)) {
+					continue;
+				}
+
+				Term potentialOtherHpoTerm = hpoOntology.nameToTerm(potentialOtherHpo);
+
+				//Only report if not parent or child of patient hpo
+				boolean childOrParent = false;
+				for (Term patientTerm : patientHpoTerms) {
+
+					if (hpoOntology.isTermABelowTermB(patientTerm, potentialOtherHpoTerm)) {
+						childOrParent = true;
+						break;
+					}
+
+					if (hpoOntology.isTermABelowTermB(potentialOtherHpoTerm, patientTerm)) {
+						childOrParent = true;
+						break;
+					}
+				}
+
+				if (!childOrParent) {
+
+					//here with have a term that is not child or parent of already annotated HPO terms but has strong Z-score
+					String potentialOtherHpoDescription = potentialOtherHpoTerm.getDescription();
+
+					if (notFirstResult) {
+						result.append('\t');
+					}
+					notFirstResult = true;
+
+					result.append(Z_FORMAT.format(geneZscores.get(p)));
+					result.append(';');
+					result.append(potentialOtherHpo);
+					result.append(';');
+					result.append(potentialOtherHpoDescription);
+
+				}
+
+			}
+		}
+
+		return result.toString();
 
 	}
 

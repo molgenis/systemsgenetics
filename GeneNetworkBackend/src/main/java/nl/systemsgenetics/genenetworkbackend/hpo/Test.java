@@ -6,8 +6,7 @@
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
 import java.io.File;
-import java.io.IOException;
-import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import org.biojava.nbio.ontology.Term;
 
 /**
  *
@@ -18,13 +17,27 @@ public class Test {
 	/**
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) throws IOException {
-		final File updatedPredictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_improved.txt.gz");
+	public static void main(String[] args) throws Exception {
+//		final File updatedPredictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_improved.txt.gz");
+//		
+//		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleData(updatedPredictionMatrixFile.getAbsolutePath());
+//		
+//		System.out.println(matrix.getElement("ENSG00000165917", "HP:0001324"));
+//		
+
+		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
+
+		HpoOntology hpoOntology = new HpoOntology(hpoOboFile);
+
+		String a = "HP:0001639";
+		String b = "HP:0011663";
 		
-		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleData(updatedPredictionMatrixFile.getAbsolutePath());
+		Term termA = hpoOntology.nameToTerm(a);
+		Term termB = hpoOntology.nameToTerm(b);
 		
-		System.out.println(matrix.getElement("ENSG00000165917", "HP:0001324"));
-		
+		System.out.println(hpoOntology.isTermABelowTermB(termA, termB));
+		System.out.println(hpoOntology.isTermABelowTermB(termB, termA));
+
 	}
-	
+
 }
