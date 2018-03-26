@@ -40,6 +40,7 @@
 
 package deconvolution;
 
+import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
@@ -171,7 +172,13 @@ public class NonNegativeLeastSquares
     	this.measuredValues = y;
     	this.observedValues = x;
 		// cloning y and x so that those values are kept for later use
-		b = y.clone();
+    	try{
+    		b = y.clone();
+		}
+		catch (NullPointerException e){
+			DeconvolutionLogger.log.info("ERROR: Expression values are not read in correctly, check if input files are correct.");
+			throw(e);
+		}
 		a = new double[x.length][];
 		for(int z = 0; z < x.length; ++z)
 			a[z] = x[z].clone();
