@@ -28,14 +28,12 @@ public class CommandLineOptions {
 	private Boolean allDosages = false;
 	private Boolean filterSamples = false;
 	private Boolean removeConstraintViolatingSamples = false;
-	private Boolean onlyOutputSignificant = false;
 	private Boolean testRun = false;
 	private Boolean skipGenotypes = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
 	private Boolean outputPredictedExpression = false;
 	private String genotypeConfigurationType = "all";
-	private Boolean useBaseModel = false;
 	
 	/**
 	 * Standard command line parsing.
@@ -66,13 +64,6 @@ public class CommandLineOptions {
 		Option minimumSamplesPerGenotype = Option.builder("m").required(false).hasArg().longOpt("minimum_samples_per_genotype")
 				.desc("The minimum amount of samples need for each genotype of a QTL for the QTL to be included in the results")
 				.argName("int").build();
-		Option multipleTestCorrectionMethod = Option.builder("mt").required(false).hasArg().longOpt("multiple_testing_correction_method")
-				.desc("Method used for doing multiple testing correction (currently only bonferonni)").build();
-		Option forceNormalCellcount = Option.builder("nc").required(false).hasArg().longOpt("force_normal_cellcount")
-				.desc("Force normal on the expression data").build();
-		Option forceNormalExpression = Option.builder("ne").required(false).longOpt("force_normal_expression")
-				.desc("Force normal on the expression data").build();
-		Option useNNLSOption = Option.builder("n").required(false).longOpt("use_NNLS").desc("Use non-negative least squares").build();
 		Option noConsoleOption = Option.builder("no").required(false).longOpt("no_console")
 				.desc("Do not output logging info to the console").build();
 		Option outfolder = Option.builder("o").required(true).hasArg().longOpt("outfolder").desc("Path to folder to write output to")
@@ -91,8 +82,6 @@ public class CommandLineOptions {
 				.desc("Tab delimited file with first column gene name, second column SNP name. Need to match with names from genotype and expression files.").build();
 		Option doTestRun = Option.builder("t").required(false).longOpt("test_run")
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
-		Option useBaseModelOption = Option.builder("u").required(false).longOpt("useBaseModel")
-				.desc("Compare each celltype against base model").build();
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		options.addOption(onlyOutputSignificantOption);
@@ -104,21 +93,16 @@ public class CommandLineOptions {
 		options.addOption(cellcount);
 		options.addOption(roundDosage);
 		options.addOption(minimumSamplesPerGenotype);
-		options.addOption(forceNormalExpression);
-		options.addOption(forceNormalCellcount);
 		options.addOption(allDosages);
 		options.addOption(outfolder);
 		options.addOption(useRelativeCellCountsOption);
 		options.addOption(doTestRun);
-		options.addOption(multipleTestCorrectionMethod);
 		options.addOption(snpsToTestOption);
 		options.addOption(skipGenotypes);
 		options.addOption(wholeBloodQTL);
 		options.addOption(noConsoleOption);
-		options.addOption(useNNLSOption);
 		options.addOption(outputPredictedExpressionOption);
 		options.addOption(genotypeConfigurationTypeOption);
-		options.addOption(useBaseModelOption);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
 			CommandLine cmdLine = cmdLineParser.parse(options, args);
@@ -139,16 +123,9 @@ public class CommandLineOptions {
 	}
 	
 	private void parseOptions(CommandLine cmdLine) throws FileNotFoundException{
-		if(cmdLine.hasOption("output_significant_only")){
-			onlyOutputSignificant = !onlyOutputSignificant;
-		}
 
 		if(cmdLine.hasOption("remove_constraint_violating_samples")){
 			removeConstraintViolatingSamples = !removeConstraintViolatingSamples;
-		}
-		
-		if(cmdLine.hasOption("genotypeConfigurationTypeOption")){
-			
 		}
 		
 		if (cmdLine.hasOption("round_dosage")) {
@@ -220,9 +197,6 @@ public class CommandLineOptions {
 			outputPredictedExpression = !outputPredictedExpression;
 		}
 
-		if(cmdLine.hasOption("useBaseModel")){
-			useBaseModel = !useBaseModel;
-		}
 	}
 	
 
@@ -248,7 +222,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 0.2.0, compiled 24-DEC-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 0.8.1, compiled 28-MAR-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
@@ -261,14 +235,12 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
 		DeconvolutionLogger.log.info(String.format("Filter samples from output (-f): %s", filterSamples));
 		DeconvolutionLogger.log.info(String.format("Remove constraint violating samples (-rc): %s", removeConstraintViolatingSamples));
-		DeconvolutionLogger.log.info(String.format("Only output significant results (-s): %s", onlyOutputSignificant));
 		DeconvolutionLogger.log.info(String.format("test run doing only 100 QTL (-t): %s", testRun));
 		DeconvolutionLogger.log.info(String.format("Skipping genotypes that are in SNP-gene pair file but not in genotype file (-sg): %s", skipGenotypes));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
 		DeconvolutionLogger.log.info(String.format("Write predicted expression to output file (-oe): %s", outputPredictedExpression));
 		DeconvolutionLogger.log.info(String.format("Genotype configuration to use (-gc): %s", genotypeConfigurationType));
-		DeconvolutionLogger.log.info(String.format("Use the base model for comparison (-u): %s", useBaseModel));
 		DeconvolutionLogger.log.info("=================================================");
 	}
 	public String getExpressionFile(){
@@ -314,10 +286,6 @@ public class CommandLineOptions {
 		return(removeConstraintViolatingSamples);
 	}
 
-	public Boolean getOnlyOutputSignificant(){
-		return(onlyOutputSignificant);
-	}
-
 	public Boolean getTestRun(){
 		return(testRun);
 	}
@@ -336,9 +304,6 @@ public class CommandLineOptions {
 		return genotypeConfigurationType;
 	}
 	
-	public Boolean getUseBaseModel(){
-		return useBaseModel;
-	}
 }
 
 

@@ -229,7 +229,7 @@ public class InteractionModel {
 		// For more, check out the Class documentation
 		double[] estimatedRegressionParameters = nnls.estimateRegressionParameters();
 		setEstimatedRegressionParameters(estimatedRegressionParameters);
-		
+
 		setSumOfSquares(nnls.calculateResidualSumOfSquares());
 		setDegreesOfFreedom(expressionValues.length - (getNumberOfTerms() + 1));
 		
