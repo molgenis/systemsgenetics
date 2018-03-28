@@ -168,7 +168,6 @@ public class Deconvolution {
 	private static void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
 		List<String> celltypes = cellCounts.getAllCelltypes();
 		String header = "\t"+Utils.listToTabSeparatedString(celltypes, "_pvalue");
-		header += "\t"+Utils.listToTabSeparatedString(celltypes, "_AIC_delta");
 
 		DeconvolutionLogger.log.info("Getting decon result with full model info for writing the header");
 		// celltypes.size()*2 because there are twice as many betas as celltypes (CC% & CC%:GT)
@@ -201,17 +200,6 @@ public class Deconvolution {
 			InteractionModel bestFullModel = null;
 
 			bestFullModel = interactionModelCollection.getBestFullModel();
-			//double bestFullModelAIC = bestFullModel.getAIC();
-			//results += "\t"+bestFullModelAIC;
-
-			for(String celltype : cellCounts.getAllCelltypes()){
-				//System.out.println(celltype);
-				String modelName = deconvolutionResult.getInteractionModelCollection()
-						.getCtModelSameGenotypeConfigurationAsBestFullModel(celltype);
-
-				results += "\t"+interactionModelCollection.getInteractionModel(modelName).getAICdelta();
-
-			}
 
 
 			results += "\t"+Utils.listToTabSeparatedString(bestFullModel.getEstimateRegressionParameters());
@@ -506,7 +494,6 @@ public class Deconvolution {
 			wholeBloodQTLpvalue = Statistics.calculateSpearmanTwoTailedPvalue(wholeBloodQTL, cellCounts.getNumberOfSamples());
 		}
 		DeconvolutionResult deconResult =  new DeconvolutionResult();
-		interactionModelCollection.setAIC();
 
 		interactionModelCollection.cleanUp(!commandLineOptions.getOutputPredictedExpression());
 		deconResult = new DeconvolutionResult(interactionModelCollection, wholeBloodQTL, wholeBloodQTLpvalue);

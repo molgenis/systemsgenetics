@@ -29,8 +29,6 @@ public class InteractionModelCollection {
 	private List<String> genotypeConfigurationsFullModel = new ArrayList<String> ();
 	private List<String> genotypeConfigurationsCtModel = new ArrayList<String> ();
 	private HashMap<String, HashMap<String,String>> ctModelByGenotypeConfiguration = new HashMap<String, HashMap<String, String>>();
-	private Double fullModelAIC;
-	private HashMap<String, Double> ctModelAICs = new HashMap<String, Double>();
 	private HashMap<String, String> ctModelsSameGenotypeConfigurationBestFullModel = new HashMap<String, String>();
 	private HashMap<String, String> modelCelltype = new HashMap<String, String>();
 	private HashMap<String, ArrayList<String>> genotypeConfigMap = new HashMap<String, ArrayList<String>>();
@@ -192,41 +190,6 @@ public class InteractionModelCollection {
 		return(this.getInteractionModel(this.bestCtModel.get(celltype)));
 	}
 
-	private HashMap<String, String> getCtModelsWithConfiguration(String genotypConfiguration) throws IllegalAccessException{
-		return(this.ctModelByGenotypeConfiguration.get(this.getBestFullModel().getGenotypeConfiguration()));
-	}
-
-	/*
-	 * Set the AIC of full model and ct model, also calculate the delta between the two
-	 */
-	public void setAIC() throws IllegalAccessException{
-		InteractionModel bestFullModel = null;
-		HashMap<String, String> cellTypeCtModel = new HashMap<String, String>();
-		bestFullModel = getBestFullModel();
-		bestFullModel.setAIC();
-		this.fullModelAIC = bestFullModel.getAIC();
-		cellTypeCtModel = getCtModelsWithConfiguration(bestFullModel.getGenotypeConfiguration());
-
-		for(String celltype : this.getCellCount().getAllCelltypes()){
-
-			String modelName = cellTypeCtModel.get(celltype);
-
-			InteractionModel ctModel = this.getInteractionModel(modelName);
-			ctModel.setAIC();
-			this.ctModelAICs.put(modelName,ctModel.getAIC());
-			ctModel.setAICdelta(bestFullModel.getAIC());
-		}
-	}
-
-	public double getFullModelAIC() throws IllegalAccessException{
-		return(fullModelAIC);
-	}
-
-	public double getCtModelAIC(String ctModelName) throws IllegalAccessException{
-		return(ctModelAICs.get(ctModelName));
-	}
-
-
 	/*
 	 * Add interaction model to the collections
 	 */
@@ -293,14 +256,6 @@ public class InteractionModelCollection {
 				if (ctSumOfSquares <= sumOfSquares){
 					sumOfSquares = ctSumOfSquares;
 					setBestCtModel(ctModel.getCelltypeName(), ctModel.getModelName());
-				}
-				else{
-					// if the interaction model name of the full model is not the same as the model name of the 
-					// CT model, we want to remove the ct model data to preserve RAM. If it is the same,
-					// we keep it so that AIC can be calculated
-					if(!ctModel.getModelName().equals(this.getCtModelSameGenotypeConfigurationAsBestFullModel(celltype))){
-						removeInteractionModel(ctModel.getModelName());
-					}
 				}
 			}
 		}

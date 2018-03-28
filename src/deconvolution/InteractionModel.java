@@ -26,9 +26,7 @@ public class InteractionModel {
 	private Integer modelLength;
 	private Integer numberOfTerms;
 	private double[] estimatedRegressionParameters;
-	private Double AIC;
 	private double[] residuals;
-	private double AICdelta;
 	private double[] estimatedRegressionParametersStandardError;
 	private double estimatedStandardError;
 	private double[] predictedValues;
@@ -151,15 +149,6 @@ public class InteractionModel {
 	public double getSumOfSquares() throws IllegalAccessException {
 		return(this.sumOfSquares);
 	}
-	
-	public void setAIC() {
-		// +1 because error term is also a parameter
-		this.AIC = Statistics.AIC(this.residuals, this.getNumberOfTerms()+1);
-	}
-	
-	public double getAIC() {
-		return(this.AIC);
-	}
 
 	public void setDegreesOfFreedom(int degreesOfFreedom) {
 		this.degreesOfFreedom  = degreesOfFreedom;
@@ -238,14 +227,6 @@ public class InteractionModel {
 		//setEstimatedStandardError(nnls.estimateRegressionStandardError());
 		setResiduals(residuals);
 		setPredictedValues(predictedValues);
-	}
-
-	public void setAICdelta(double comparativeAIC) {
-		// if comparateAIC < this.getAIC(): comparativeAIC = better
-		this.AICdelta = comparativeAIC - this.getAIC();
-	}
-	public double getAICdelta() {
-		return this.AICdelta;
 	}
 
 	public void setEstimatedRegressionParametersStandardErrors(double[] estimatedRegressionParametersStandardErrors) {
