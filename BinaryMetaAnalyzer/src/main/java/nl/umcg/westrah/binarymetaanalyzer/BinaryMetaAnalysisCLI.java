@@ -31,6 +31,12 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("replicationtablegtex")
+				.desc("Make a table for easy comparison of multiple qtl files using a custom pvaluethreshold")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("bhfdr")
 				.desc("Calculate Benjamini Hochberg FDR on an eQTL file")
 				.build();
@@ -324,6 +330,45 @@ public class BinaryMetaAnalysisCLI {
 					}
 					
 					qt.run(ref, other, othernames, outputloc, includenonsignificant, minnroverlap, fdrthreshold);
+				}
+				
+				
+			}
+			if (cmd.hasOption("replicationtablegtex")) {
+				
+				if (!cmd.hasOption("in") || !cmd.hasOption("in2") || !cmd.hasOption("names") || !cmd.hasOption("out")) {
+					System.out.println("Options for replicationtable:");
+					System.out.println("--in");
+					System.out.println("--out");
+					System.out.println("--in2");
+					System.out.println("--names");
+					System.out.println("[--onlyoutputsignificant]");
+					System.out.println("[--threshold]");
+					System.out.println("[--minnrofcohorts]");
+					
+				} else {
+					QTLReplicationTable qt = new QTLReplicationTable();
+					String ref = cmd.getOptionValue("in");
+					String other = cmd.getOptionValue("in2");
+					String othernames = cmd.getOptionValue("names");
+					String outputloc = cmd.getOptionValue("out");
+					boolean includenonsignificant = true;
+					if (cmd.hasOption("onlyoutputsignificant")) {
+						includenonsignificant = false;
+					}
+					double fdrthreshold = 0.05;
+					if (cmd.hasOption("threshold")) {
+						String fdrthresholdstr = cmd.getOptionValue("threshold");
+						fdrthreshold = Double.parseDouble(fdrthresholdstr);
+					}
+					
+					int minnroverlap = 0;
+					if (cmd.hasOption("minnrofcohorts")) {
+						String minoverlapstr = cmd.getOptionValue("minnrofcohorts");
+						minnroverlap = Integer.parseInt(minoverlapstr);
+					}
+					
+					qt.rungtex(ref, other, othernames, outputloc, includenonsignificant, minnroverlap, fdrthreshold);
 				}
 				
 				
