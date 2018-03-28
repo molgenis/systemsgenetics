@@ -222,7 +222,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 0.8.1, compiled 28-MAR-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 0.9.0, src last changed at 28-MAR-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
