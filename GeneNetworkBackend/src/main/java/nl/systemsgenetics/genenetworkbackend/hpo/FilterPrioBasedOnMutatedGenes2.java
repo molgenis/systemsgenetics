@@ -60,7 +60,7 @@ public class FilterPrioBasedOnMutatedGenes2 {
 			System.out.println("Prio: " + prioFile.getAbsolutePath());
 			System.out.println("Ranking: " + rankingFile.getAbsolutePath());
 
-			HashSet<String> genesWithMutation = getMutatedGenes(genoFile, 0,0);
+			HashSet<String> genesWithMutation = getMutatedGenes(genoFile, 8,1);
 
 			final CSVReader prioFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(prioFile))).withSkipLines(0).withCSVParser(parser).build();
 

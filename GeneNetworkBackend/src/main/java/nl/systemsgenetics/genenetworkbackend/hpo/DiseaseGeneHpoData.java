@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -22,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.apache.commons.math3.util.FastMath;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -33,6 +36,7 @@ public class DiseaseGeneHpoData {
 	private final HashMap<String, HashSet<String>> geneToHpos;
 	private final HashMap<String, HashSet<String>> diseaseToGenes;
 	private final HashMap<DiseaseGene, HashSet<String>> diseaseGeneToHpos; // disease_gene
+	private final SimpleRegression regression = new SimpleRegression();
 
 	public DiseaseGeneHpoData(final File diseaseGeneHpoFile, HashMap<String, ArrayList<String>> ncbiToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap, HashSet<String> exludedHpo) throws FileNotFoundException, IOException {
 
@@ -192,31 +196,34 @@ public class DiseaseGeneHpoData {
 	}
 
 	public DiseaseGeneHpoData getPermutation() {
-		return getPermutation(new Random(), null, null, 0);
+		return getPermutation(new Random(), null, null, 0, null, 0);
 	}
 
 	public DiseaseGeneHpoData getPermutation(long seed) {
-		return getPermutation(new Random(seed), null, null, 0);
+		return getPermutation(new Random(seed), null, null, 0, null, 0);
 	}
-	
+
 	public DiseaseGeneHpoData getPermutation(long seed, ArrayList<String> backgroundGenes) {
-		return getPermutation(new Random(seed), backgroundGenes, null, 0);
+		return getPermutation(new Random(seed), backgroundGenes, null, 0, null, 0);
 	}
-	
+
 	public DiseaseGeneHpoData getPermutation(ArrayList<String> backgroundGenes) {
-		return getPermutation(new Random(), backgroundGenes, null, 0);
+		return getPermutation(new Random(), backgroundGenes, null, 0, null, 0);
+	}
+
+	public DiseaseGeneHpoData getPermutation(long seed, ArrayList<String> backgroundGenes, DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix, double minCorrelationTomatch) {
+		return getPermutation(new Random(seed), backgroundGenes, predictionMatrixSignificantCorrelationMatrix, minCorrelationTomatch, null, 0);
 	}
 	
-	public DiseaseGeneHpoData getPermutation(long seed, ArrayList<String> backgroundGenes, DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix, double minCorrelationTomatch) {
-		return getPermutation(new Random(seed), backgroundGenes, null, 0);
+	public DiseaseGeneHpoData getPermutation(long seed, ArrayList<String> backgroundGenes, DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix, double minCorrelationTomatch, DoubleMatrixDataset<String, String> predictionMatrixSignificant, double minCorrelationToMatchGenes) {
+		return getPermutation(new Random(seed), backgroundGenes, predictionMatrixSignificantCorrelationMatrix, minCorrelationTomatch, predictionMatrixSignificant, minCorrelationToMatchGenes);
 	}
 
-	private DiseaseGeneHpoData getPermutation(Random random, ArrayList<String> backgroundGenes, DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix, double minCorrelationTomatch) {
+	private DiseaseGeneHpoData getPermutation(Random random, ArrayList<String> backgroundGenes, DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix, double minCorrelationToMatchTerms, DoubleMatrixDataset<String, String> predictionMatrixSignificant, double minCorrelationToMatchGenes) {
 
-		if(backgroundGenes == null){
+		if (backgroundGenes == null) {
 			backgroundGenes = new ArrayList(geneToHpos.keySet());
 		}
-		
 
 		HashMap<DiseaseGene, HashSet<String>> randomDiseaseGeneToHpos = new HashMap<>();
 
@@ -226,6 +233,11 @@ public class DiseaseGeneHpoData {
 			HashSet<String> hpos = diseaseGeneToHposEntry.getValue();
 
 			String disease = diseaseGene.getDisease();
+			String gene = diseaseGene.getGene();
+			
+			if(predictionMatrixSignificant != null && !predictionMatrixSignificant.containsRow(gene)){
+				continue;
+			}
 
 			HashSet<String> knownGenesForDisease = this.diseaseToGenes.get(disease);
 
@@ -233,56 +245,81 @@ public class DiseaseGeneHpoData {
 			DiseaseGene randomDiseaseGene = null;
 			boolean hpoOverlap;
 			boolean hpoCorrelated;
-			
+			boolean genePredictionsCorrelated;
+
 			int i = 0;
 			boolean noRandomFound = false;
-			
+
+			findRandomMatch:
 			do {
-				
-				if(i++ >= 50000){
+
+				if (i++ >= 50000) {
 					System.err.println("No random match found");
 					noRandomFound = true;
 					break;
 				}
-				
+
+				hpoOverlap = false;
+				hpoCorrelated = false;
+				genePredictionsCorrelated = false;
+
 				randomReplacementGene = backgroundGenes.get(random.nextInt(backgroundGenes.size()));
 				randomDiseaseGene = new DiseaseGene(disease, randomReplacementGene);
 				HashSet<String> knownHposForRandomGene = this.geneToHpos.get(randomReplacementGene);
-				hpoOverlap = false;
+
 				if (knownHposForRandomGene != null) {
 					for (String hpo : hpos) {
 						if (knownHposForRandomGene.contains(hpo)) {
 							hpoOverlap = true;
-							break;
+							continue findRandomMatch;
 						}
 					}
 				}
-				hpoCorrelated = false;
-				if(!hpoOverlap && predictionMatrixSignificantCorrelationMatrix != null && knownHposForRandomGene != null){
+
+				if (predictionMatrixSignificantCorrelationMatrix != null && knownHposForRandomGene != null) {
 					//if already hpo overlap no need to do this
-					
+
 					hposLoop:
 					for (String hpo : hpos) {
-						
-						for(String randomHpo : knownHposForRandomGene){
-							
-							if(predictionMatrixSignificantCorrelationMatrix.getElement(hpo, randomHpo) >= minCorrelationTomatch){
-								hpoCorrelated = true;
-								break hposLoop;
+
+						if (predictionMatrixSignificantCorrelationMatrix.containsCol(hpo)) {
+
+							for (String randomHpo : knownHposForRandomGene) {
+
+								if (predictionMatrixSignificantCorrelationMatrix.containsCol(randomHpo) && predictionMatrixSignificantCorrelationMatrix.getElement(hpo, randomHpo) >= minCorrelationToMatchTerms) {
+									hpoCorrelated = true;
+									continue findRandomMatch;
+								}
+
 							}
-							
 						}
-						
+					}
+
+				}
+
+				if (predictionMatrixSignificant != null) {
+
+					if(!predictionMatrixSignificant.containsRow(randomReplacementGene)){
+						genePredictionsCorrelated = true;//put to true to force selecting other gene
+						continue findRandomMatch;
 					}
 					
+					DoubleMatrix1D realGenePredictions = predictionMatrixSignificant.getRow(gene);
+					DoubleMatrix1D randomGenePredictions = predictionMatrixSignificant.getRow(randomReplacementGene);
+					
+					for(int j = 0 ; j < realGenePredictions.size() ; j++){
+						regression.addData(realGenePredictions.get(j), randomGenePredictions.get(j));
+					}
+					
+					genePredictionsCorrelated = FastMath.abs(regression.getR()) > minCorrelationToMatchGenes;
 					
 				}
-			} while (hpoCorrelated | hpoOverlap | knownGenesForDisease.contains(randomReplacementGene) | randomDiseaseGeneToHpos.containsKey(randomDiseaseGene));
 
-			if(!noRandomFound){
+			} while (genePredictionsCorrelated | hpoCorrelated | hpoOverlap | knownGenesForDisease.contains(randomReplacementGene) | randomDiseaseGeneToHpos.containsKey(randomDiseaseGene));
+
+			if (!noRandomFound) {
 				randomDiseaseGeneToHpos.put(randomDiseaseGene, hpos);
 			}
-			
 
 		}
 

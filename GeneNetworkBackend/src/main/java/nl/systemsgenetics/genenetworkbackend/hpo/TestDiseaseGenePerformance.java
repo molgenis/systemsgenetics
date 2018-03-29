@@ -7,6 +7,10 @@ package nl.systemsgenetics.genenetworkbackend.hpo;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,6 +18,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -45,17 +50,21 @@ public class TestDiseaseGenePerformance {
 		final File diseaseGeneHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
 		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
+		final File ensgSymbolMappingFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
 		final File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions.txt.gz");
+		final File predictionMatrixCorrelationFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_pathwayCorrelation.txt");
 		final File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_bonSigTerms.txt");
 		final double correctedPCutoff = 0.05;
 		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
 		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_bonferroni.txt");
 		final File hposToExcludeFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoToExclude.txt");
 		final File skewnessFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\skewnessSummary.txt");
-		final boolean randomize = true;
+		final boolean randomize = false;
 		final File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
 		final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_genesInPathways.txt");
 		final boolean randomizeCustomBackground = true;
+
+		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
 		final File outputFile;
 		final ArrayList<String> backgroundGenes;
@@ -78,8 +87,6 @@ public class TestDiseaseGenePerformance {
 		final HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
 		final HashSet<String> exludedHpo = loadHpoExclude(hposToExcludeFile);
 
-		
-
 		final SkewnessInfo skewnessInfo = new SkewnessInfo(skewnessFile);
 
 		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
@@ -87,15 +94,13 @@ public class TestDiseaseGenePerformance {
 		DoubleMatrixDataset<String, String> predictionMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixFile.getAbsolutePath());
 		DoubleMatrixDataset<String, String> predictionMatrixSignificant = predictionMatrix.viewColSelection(significantTerms);
 
-		DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix = predictionMatrixSignificant.calculateCorrelationMatrix();
-		
-		System.out.println("Done with correlation matrix");
-		
+		DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixCorrelationFile.getAbsolutePath());
+
 		DiseaseGeneHpoData diseaseGeneHpoData = new DiseaseGeneHpoData(diseaseGeneHpoFile, ncbiToEnsgMap, hgncToEnsgMap, exludedHpo);
 		if (randomize) {
-			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes, predictionMatrixSignificantCorrelationMatrix, 0.5);
+			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes, predictionMatrixSignificantCorrelationMatrix, 0.01, predictionMatrixSignificant, 0.01);
 		}
-		
+
 		DoubleMatrixDataset<String, String> annotationnMatrix = DoubleMatrixDataset.loadDoubleData(annotationMatrixFile.getAbsolutePath());
 		DoubleMatrixDataset<String, String> annotationMatrixSignificant = annotationnMatrix.viewColSelection(significantTerms);
 
@@ -113,10 +118,11 @@ public class TestDiseaseGenePerformance {
 
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 
-		String[] outputLine = new String[11];
+		String[] outputLine = new String[12];
 		int c = 0;
 		outputLine[c++] = "Disease";
 		outputLine[c++] = "Gene";
+		outputLine[c++] = "Hgnc";
 		outputLine[c++] = "Rank";
 		outputLine[c++] = "Z-score";
 		outputLine[c++] = "HPO_skewness";
@@ -203,9 +209,15 @@ public class TestDiseaseGenePerformance {
 				hpoPhenotypicMatchScore = hpoPhenotypicMatchScore / usedHpos;
 			}
 
+			String symbol = ensgSymbolMapping.get(gene);
+			if (symbol == null) {
+				symbol = "";
+			}
+
 			c = 0;
 			outputLine[c++] = disease;
 			outputLine[c++] = gene;
+			outputLine[c++] = symbol;
 			outputLine[c++] = String.valueOf(rank);
 			outputLine[c++] = String.valueOf(zscore);
 			outputLine[c++] = String.valueOf(skewnessInfo.getHpoSkewness(gene));
@@ -302,6 +314,24 @@ public class TestDiseaseGenePerformance {
 		}
 
 		return genes;
+
+	}
+
+	private static Map<String, String> loadEnsgToHgnc(File mappingFile) throws IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
+
+		HashMap<String, String> mapping = new HashMap<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			mapping.put(nextLine[0], nextLine[1]);
+
+		}
+
+		return Collections.unmodifiableMap(mapping);
 
 	}
 

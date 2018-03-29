@@ -47,10 +47,10 @@ public class HpoGenePrioritisation {
 		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
 		final double minZscoreOtherCandidates = 5;
 
-		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo2.txt");
-		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_termen_Linda_processed.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
+//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo2.txt");
+//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
+		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_5GPM_processed.txt");
+		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
 
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
@@ -58,7 +58,7 @@ public class HpoGenePrioritisation {
 
 		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
 
-		HpoOntology HpoOntology = new HpoOntology(hpoOboFile);
+		HpoOntology hpoOntology = new HpoOntology(hpoOboFile);
 
 		DoubleMatrixDataset<String, String> hpoPredictionMatrix = DoubleMatrixDataset.loadDoubleData(hpoPredictionMatrixFile.getAbsolutePath());
 		DoubleMatrixDataset<String, String> hpoPredictionMatrixSignificant = hpoPredictionMatrix.viewColSelection(significantTerms);
@@ -131,7 +131,7 @@ public class HpoGenePrioritisation {
 					outputLine[c++] = Z_FORMAT.format(geneZs.getQuick(i));
 				}
 
-				outputLine[c++] = getOtherPossibleHpoTerms(geneResult.getEnsg(), hpo, hpoPredictionMatrixSignificant, minZscoreOtherCandidates, HpoOntology);
+				outputLine[c++] = getOtherPossibleHpoTerms(geneResult.getEnsg(), hpo, hpoPredictionMatrixSignificant, minZscoreOtherCandidates, hpoOntology);
 
 				writer.writeNext(outputLine);
 			}
