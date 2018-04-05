@@ -742,6 +742,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
 		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
+		
+		System.out.println("");
 
 		int i = 0;
 		for (R row : rowsToView) {
@@ -754,7 +756,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		i = 0;
 		for (C col : colsToView) {
 
-			colNrs[i] = newHashCols.get(col);
+			colNrs[i] = hashCols.get(col);
 			newHashCols.put(col, i++);
 
 		}

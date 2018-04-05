@@ -227,6 +227,10 @@ public class PredictGenesetMemberBasedOnTCs {
 
 					//Prevent overfitting:
 					if (datasetGeneset2.rawData[p][geneset]) {
+						
+						if(!eigenVectorDatasetTransposed.hashSamples.containsKey(eigenVectorDataset.probeNames[p])){
+							System.out.println("Missing gene: " + eigenVectorDataset.probeNames[p]);
+						}
 
 						int p2 = (int) eigenVectorDatasetTransposed.hashSamples.get(eigenVectorDataset.probeNames[p]);
 						

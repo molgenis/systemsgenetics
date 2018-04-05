@@ -157,7 +157,7 @@ public class ConvertGoToMatrix {
 
 	}
 
-	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
+	public static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();

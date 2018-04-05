@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import static nl.systemsgenetics.genenetworkbackend.ConvertHpoToMatrix.loadHgncToEnsgMap;
 import static nl.systemsgenetics.genenetworkbackend.ConvertHpoToMatrix.loadNcbiToEnsgMap;
@@ -59,9 +60,10 @@ public class TestDiseaseGenePerformance {
 		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_bonferroni.txt");
 		final File hposToExcludeFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoToExclude.txt");
 		final File skewnessFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\skewnessSummary.txt");
-		final boolean randomize = false;
+		final boolean randomize = true;
 		final File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
 		final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_genesInPathways.txt");
+		//final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\expressedReactomeGenes.txt");
 		final boolean randomizeCustomBackground = true;
 
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
@@ -92,18 +94,19 @@ public class TestDiseaseGenePerformance {
 		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
 
 		DoubleMatrixDataset<String, String> predictionMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixFile.getAbsolutePath());
-		DoubleMatrixDataset<String, String> predictionMatrixSignificant = predictionMatrix.viewColSelection(significantTerms);
+		DoubleMatrixDataset<String, String> predictionMatrixSignificant = predictionMatrix.viewSelection(new LinkedHashSet<>(backgroundGenes), significantTerms);
+
 
 		DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixCorrelationFile.getAbsolutePath());
 
 		DiseaseGeneHpoData diseaseGeneHpoData = new DiseaseGeneHpoData(diseaseGeneHpoFile, ncbiToEnsgMap, hgncToEnsgMap, exludedHpo);
 		if (randomize) {
-			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes, predictionMatrixSignificantCorrelationMatrix, 0.01, predictionMatrixSignificant, 0.01);
+			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes);
 		}
 
 		DoubleMatrixDataset<String, String> annotationnMatrix = DoubleMatrixDataset.loadDoubleData(annotationMatrixFile.getAbsolutePath());
-		DoubleMatrixDataset<String, String> annotationMatrixSignificant = annotationnMatrix.viewColSelection(significantTerms);
-
+		DoubleMatrixDataset<String, String> annotationMatrixSignificant = annotationnMatrix.viewSelection(new LinkedHashSet<>(backgroundGenes), significantTerms);
+		
 		HashMap<String, MeanSd> hpoMeanSds = calculatePathayMeansOfAnnotatedGenes(predictionMatrixSignificant, annotationMatrixSignificant);
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
@@ -134,6 +137,8 @@ public class TestDiseaseGenePerformance {
 		outputLine[c++] = "HPO_terms_match_score";
 		writer.writeNext(outputLine);
 
+		Random random = new Random(1);
+		
 		for (DiseaseGeneHpoData.DiseaseGene diseaseGene : diseaseGeneHpoData.getDiseaseGeneHpos()) {
 
 			String gene = diseaseGene.getGene();
@@ -153,6 +158,12 @@ public class TestDiseaseGenePerformance {
 
 			if (geneHposPredictable.isEmpty()) {
 				continue;
+			}
+			
+			if(geneHposPredictable.size() > 1){
+				String hpoSelected = geneHposPredictable.toArray(new String[geneHposPredictable.size()])[random.nextInt(geneHposPredictable.size())];
+				geneHposPredictable = new LinkedHashSet<>(1);
+				geneHposPredictable.add(hpoSelected);
 			}
 
 			DoubleMatrixDataset<String, String> predictionCaseTerms = predictionMatrixSignificant.viewColSelection(geneHposPredictable);
@@ -179,11 +190,7 @@ public class TestDiseaseGenePerformance {
 			boolean notFirst = false;
 			int usedHpos = 0;
 
-			for (String hpo : geneHpos) {
-
-				if (!predictionMatrixSignificant.containsCol(hpo)) {
-					continue;
-				}
+			for (String hpo : geneHposPredictable) {
 
 				usedHpos++;
 
@@ -193,10 +200,12 @@ public class TestDiseaseGenePerformance {
 
 				double hpoPredictionOutlierScore = ((hpoPredictionZ - hpoMeanSd.getMean()) / hpoMeanSd.getSd());
 
+				
 				if (notFirst) {
-					notFirst = true;
 					individualMatchScore.append(';');
 				}
+				notFirst = true;
+				
 				individualMatchScore.append(hpoPredictionOutlierScore);
 
 				hpoPhenotypicMatchScore += hpoPredictionOutlierScore;
