@@ -94,6 +94,10 @@ public class TooManyIterationsException
 	/**
 	 * Construct a new too-many-iterations exception with the given detail
 	 * message and the given cause.
+	 * 
+	 * @param message	Detail message to give when error is thrown
+	 * 
+	 * @param cause	Throwable error
 	 */
 	public TooManyIterationsException
 		(String message,

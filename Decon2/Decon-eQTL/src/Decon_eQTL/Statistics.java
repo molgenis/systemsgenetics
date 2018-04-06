@@ -19,6 +19,8 @@ public class Statistics
 	 * Takes the log10 of all values in vector data and returns the vector of logged values
 	 * 
 	 * @param data Vector to calculate log10 for
+	 * 
+	 * @return log10 of input vector
 	 */    
     public double[] log10(double[] data){
     	for (int i = 0; i < data.length; i++){
@@ -31,6 +33,8 @@ public class Statistics
 	 * Take log of absolute value, put back sign
 	 * 
 	 * @param value value to take log modulus of
+	 * 
+	 * @return Log modulus of value
 	 */
     static public double logmodulus(double value){
 		Boolean negative = false;
@@ -50,6 +54,7 @@ public class Statistics
 	 * 
 	 * @param data vector to normalize
 	 * 
+	 * @return Normalized vector
 	 */
     static public double[] normalize(double[] data){
     	double std = getStdDev(data);
@@ -64,6 +69,8 @@ public class Statistics
 	 * Normalize an arraylist
 	 * 
 	 * @param data Arraylist top normalize
+	 * 
+	 * @return Normalized ArrayList
 	 */
     static public ArrayList<Double> normalize(ArrayList<Double> data){
     	double std = getStdDev(data);
@@ -76,6 +83,10 @@ public class Statistics
     
 	/**
 	 * Normalize vector, reinsert the mean
+	 * 
+	 * @param expression	Vctor of expression values
+	 * 
+	 * @return Normalized vector with mean reinserted
 	 */
     public double[] normalizeKeepMean(double[] expression){
     	double mean = getMean(expression);
@@ -145,6 +156,8 @@ public class Statistics
 	 * Calculate median of a vector
 	 * 
 	 * @param data Vector to calculate median for
+	 * 
+	 * @return median of vector
 	 */
     public double median(double[] data){
 	    Arrays.sort(data);
@@ -161,6 +174,8 @@ public class Statistics
 	 * Transpose a matrix
 	 * 
 	 * @param cellcountTable Matrix to transpose
+	 * 
+	 * @return Transposed Matrix
 	 */
     public static List<List<String>> transposeStringMatrix(List<List<String>> cellcountTable){
         List<List<String>> temp = new ArrayList<List<String>>();
@@ -174,6 +189,8 @@ public class Statistics
 	 * Transpose a matrix
 	 * 
 	 * @param cellcountTable Matrix to transpose
+	 * 
+	 * @return Transposed matrix
 	 */
     public static List<List<Double>> transposeDoubleMatrix(List<List<Double>> cellcountTable){
         List<List<Double>> temp = new ArrayList<List<Double>>();
@@ -190,6 +207,8 @@ public class Statistics
 	 * @param spearmanCorrelation Spearman correlation from SpearmansCorrelation()
 	 * 
 	 * @param sampleSize Number of samples used to calculate correlation
+	 * 
+	 * @return Spearman two-tailed p-value from correlation
 	 */
     public static double calculateSpearmanTwoTailedPvalue(double spearmanCorrelation, int sampleSize){
     	double z = Math.sqrt((sampleSize-3)/1.06) * atanh(spearmanCorrelation);

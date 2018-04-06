@@ -2,6 +2,8 @@ package Decon_eQTL;
 
 import Decon_eQTL.Qtl;
 import Decon_eQTL.CellCount;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -14,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import JSci.maths.statistics.FDistribution;
@@ -34,9 +37,11 @@ public class Deconvolution {
 	 * 
 	 * @param args List of command line arguments
 	 * 
-	 * TODO: Crashes if output folder does not exist, either add clear error message or make output folder 
+	 * @throws ParseException	If cellcount file is not in right format to be parsed correctly
+	 * @throws IllegalAccessException	If outfolder can not be retrieved from commandLineOptions
+	 * @throws IOException	If cellcounts file can not be found or read
 	 */
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws ParseException, IllegalAccessException, IOException {
 
 		commandLineOptions.parseCommandLine(args);
 		outputFolder = commandLineOptions.getOutfolder();
@@ -337,6 +342,8 @@ public class Deconvolution {
 	 * 
 	 * @param degreesOfFreedomB A 2D list with for all samples the different
 	 * cell counts
+	 * 
+	 * @param no_intercept	If intercept was removed to calculate the sum of squares
 	 * 
 	 * @return The p-value result from comparing two linear models with the
 	 * the Anova test

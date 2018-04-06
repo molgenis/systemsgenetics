@@ -17,6 +17,7 @@ data/
 test-output/
 nbactions*.xml
 *~
+.DS_Store
 
 nb-configuration.xml
 
