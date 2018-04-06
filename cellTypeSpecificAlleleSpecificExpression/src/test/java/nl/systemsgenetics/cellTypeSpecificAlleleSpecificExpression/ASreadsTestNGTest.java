@@ -21,11 +21,8 @@ import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
 
 
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+
 import java.util.ArrayList;
-import java.util.Scanner;
 import junit.framework.Assert;
 
 
@@ -102,10 +99,25 @@ public class ASreadsTestNGTest {
         
         MainEntryPoint.main("-A", "1", "-G", genotypeLoc, "-O", outputLoc, "-C", couplingLoc, "-B", bamLoc);
         
-        //Check md5sum of the output file.
-        String md5sumResult = md5StringFromFile(outputLoc);
-        Assert.assertEquals("4b0fc0077637dacc9806da1574459cd9", md5sumResult);
-    
+        String[] ref = {"1	1249187	rs12142199	G	A	21	12	0	[G, A]",
+                        "1	778745	rs1055606	A	G	0	2	0	[A, G]",
+                        "1	1342612	rs2275915	C	G	17	21	0	[C, G]",
+                        "1	787135	rs28753393	A	G	0	0	0	[A, G]",
+                        "1	787399	rs2905055	T	G	5	0	0	[T, G]",
+                        "1	787262	rs56108613	G	C	0	0	0	[G, C]",
+                        "1	1375810	rs4590	G	C	2	11	0	[G, C]" };
+
+        
+       ArrayList<String> calculated =  UtilityMethods.readFileIntoStringArrayList(outputLoc);
+       
+       Assert.assertEquals(calculated.size(),7 );
+       
+       for(int i = 0; i < calculated.size(); i++){
+          Assert.assertEquals(calculated.contains(ref[i]), true);
+       }
+        
+        
+        
     }
     
  
@@ -157,26 +169,4 @@ public class ASreadsTestNGTest {
       
     
 
-    
-    public String md5StringFromFile(String filename) throws FileNotFoundException, NoSuchAlgorithmException{
-        
-        // Seems to work in the same way as the md5sum program in bash.
-        // Got this off stackoverflow I believe
-        
-        String content = new Scanner(new File(filename)).useDelimiter("\\Z").next() + "\n" ; 
-        
-        MessageDigest m = MessageDigest.getInstance("MD5");
-        m.reset();
-        m.update(content.getBytes());
-        byte[] digest = m.digest();
-        BigInteger bigInt = new BigInteger(1,digest);
-        String hashtext = bigInt.toString(16);
-        // Now we need to zero pad it if you actually want the full 32 chars.
-        while(hashtext.length() < 32 ){
-          hashtext = "0"+hashtext;
-        }
-    
-        return hashtext;
-    }
-    
 }

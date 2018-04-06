@@ -27,7 +27,8 @@ class BetaBinomialTest {
     private final String snpName;
     private final String chromosome;
     private final String position;
-
+    private String genotype;
+    
     //Information about the input data
     private final int numberOfHets;
     
@@ -41,7 +42,12 @@ class BetaBinomialTest {
     String RegionName;
     int startOfRegion = -1;
     int endOfRegion = -1;
+        
+    public int testRegionStart = -1;
+    public int testRegionEnd = -1;
     
+    
+    int totalTestSNPs = -1;
     
     //Names of individuals for easy reference
     
@@ -74,6 +80,7 @@ class BetaBinomialTest {
     double chiSq;
     double pVal;
     
+
     
     public BetaBinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
         boolean debug=true;
@@ -81,9 +88,10 @@ class BetaBinomialTest {
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
+        genotype = all_individuals.get(0).genotype;
         
         ArrayList<IndividualSnpData> het_individuals;
-        het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+        het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
     
         numberOfHets = het_individuals.size();
         
@@ -246,7 +254,7 @@ class BetaBinomialTest {
     }
 
     //constructor method didn't work, so doing it like this.
-    public static  BetaBinomialTest phasedBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion) throws Exception{
+    public static  BetaBinomialTest phasedBetaBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion, int testSNPs) throws Exception{
         
         BetaBinomialTest t = new BetaBinomialTest(all_individuals);
         
@@ -256,10 +264,22 @@ class BetaBinomialTest {
         t.startOfRegion = thisRegion.getStartPosition();
         t.endOfRegion = thisRegion.getEndPosition();
         
+        t.testRegionStart = thisRegion.getTestStart();
+        t.testRegionEnd   = thisRegion.getTestEnd();
+        
+        
+        t.totalTestSNPs = testSNPs;
+        
+        
         return t;
     
     }
     
+    
+    public static String writeHeader(){
+       String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tbinomRatio\tnullLogLik\taltLogLik\talphaParam\tbetaParam";
+       return header;
+    } 
     
 
     public String writeTestStatistics(boolean all_data) {
@@ -284,36 +304,7 @@ class BetaBinomialTest {
             out += Double.toString(alphaParam) + "\t";
             out += Double.toString(betaParam);
             
-            if(outPutAllData){
-                String samples_string="";
-                String ref_string="";
-                String alt_string="";                
-                String no_string="";
-                String disp_string="";
-                
-                for(int i=0; i < hetSampleNames.size(); i++){
-                    
-                    //samples_string += hetSampleNames.get(i) + ";";
-                    ref_string += Integer.toString(asRef.get(i)) + ";";
-                    alt_string += Integer.toString(asAlt.get(i)) + ";";
-                    no_string += Integer.toString(asNo.get(i)) + ";";
-                    disp_string += Double.toString(dispersion.get(i)) + ";";
-                }
-                
-                //remove last delimiter
-                //samples_string = samples_string.substring(0, samples_string.length()-1);
-                ref_string = ref_string.substring(0, ref_string.length()-1);
-                alt_string = alt_string.substring(0, alt_string.length()-1);
-                no_string = no_string.substring(0, no_string.length()-1);
-                disp_string = disp_string.substring(0, disp_string.length()-1);
-                
-                //out += "\t" + samples_string + "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-                out += "\t" + ref_string + "\t" + alt_string + "\t" + no_string  + "\t" + disp_string;
-
-
-            }
-
-
+            
         } else {
             //when no testing is done, will only output snp name and position, and NA.
             //Make sure this is still correct.
@@ -322,12 +313,7 @@ class BetaBinomialTest {
                 out += "NA\t";
             
             }
-            if(outPutAllData){
-                for(int i=0; i < 5; i++ ){
-                    out += "NA\t";
 
-                }
-            }
             out += "NA";
         
         }
@@ -424,6 +410,20 @@ class BetaBinomialTest {
         additionalNames.add(snpName);
         additionalPositions.add(snpPos);
     
+    }
+
+    /**
+     * @return the genotype
+     */
+    public String getGenotype() {
+        return genotype;
+    }
+
+    /**
+     * @param genotype the genotype to set
+     */
+    public void setGenotype(String genotype) {
+        this.genotype = genotype;
     }
     
 }

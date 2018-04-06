@@ -25,7 +25,7 @@ import org.apache.commons.math3.optim.univariate.SearchInterval;
  */
 public class BetaBinomOverdispInSample {
     
-    private final String sampleName;
+    private String sampleName;
     private double[] overdispersion = new double[1];
     
     
@@ -53,7 +53,7 @@ public class BetaBinomOverdispInSample {
         fr.close();
         
         ArrayList<IndividualSnpData> hets;
-        hets = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnps);
+        hets = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(allSnps);
         
         int numOfHets = hets.size();
        
@@ -104,6 +104,13 @@ public class BetaBinomOverdispInSample {
 
     }
     
+    
+     public BetaBinomOverdispInSample(String sampleName, double[] dispersion ){
+         this.sampleName = sampleName;
+         this.overdispersion = dispersion;
+     }
+    
+    
 
     /**
      * @return the sampleName
@@ -118,6 +125,7 @@ public class BetaBinomOverdispInSample {
     public double[] getOverdispersion() {
         return overdispersion;
     }
+
 
     
 

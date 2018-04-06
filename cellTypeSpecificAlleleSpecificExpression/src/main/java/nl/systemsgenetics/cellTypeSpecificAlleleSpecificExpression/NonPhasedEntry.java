@@ -18,7 +18,7 @@ import org.jdom.IllegalDataException;
 public class NonPhasedEntry {
     
     
-    public NonPhasedEntry(String asLocations, String phenoTypeLocation, String outputLocation) throws IOException, Exception {
+    public NonPhasedEntry(String asLocations, String phenoTypeLocation, String dispersionLocation, String outputLocation) throws IOException, Exception {
     
         //This is the entry used for non-phased tests.
         
@@ -32,18 +32,27 @@ public class NonPhasedEntry {
 
         
         
-        
-        for(String sampleName : allFiles){
-            dispersionParameters.add(new BetaBinomOverdispInSample(sampleName));
-        }
-        
+        if(dispersionLocation == null){
+            for(String sampleName : allFiles){
+                dispersionParameters.add(new BetaBinomOverdispInSample(sampleName));
+            }
+        }else{
+            ArrayList<String> DispersionLines = UtilityMethods.readFileIntoStringArrayList(dispersionLocation);
+            //remove first Dispersion
+            DispersionLines.remove(0);
+            for(String Line : DispersionLines){
+                String sampleName = Line.split("\t")[0];
+                double[] dispersion;
+                dispersion = new double[] { Double.parseDouble(Line.split("\t")[1]) };
 
-        // use this to save the dispersionvalues
-        
-        String dispersionOutput = FilenameUtils.getFullPath(outputLocation) + 
-                                  FilenameUtils.getBaseName(outputLocation) +
-                                  "_dispersionFile.txt";
-        
+                //the file is later checked for correctness in when writing the values back.
+                BetaBinomOverdispInSample fillerForDispersion = new BetaBinomOverdispInSample(sampleName, dispersion);
+                dispersionParameters.add(fillerForDispersion);
+                
+            }
+        }
+
+
         String binomialOutput  = FilenameUtils.getFullPath(outputLocation) + 
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_BinomialResults.txt";
@@ -52,7 +61,13 @@ public class NonPhasedEntry {
                                     FilenameUtils.getBaseName(outputLocation) +
                                     "_BetaBinomialResults.txt";
         
+        
         //for ease of use initializing here.
+        String CTSlinearRegressionOutput  = FilenameUtils.getFullPath(outputLocation) + 
+                                  FilenameUtils.getBaseName(outputLocation) +
+                                  "_CTSLinearRegressionResults.txt";
+        
+        
         String CTSbinomialOutput  = FilenameUtils.getFullPath(outputLocation) + 
                                   FilenameUtils.getBaseName(outputLocation) +
                                   "_CTSBinomialResults.txt";
@@ -63,32 +78,61 @@ public class NonPhasedEntry {
         
         
         
-        
-        
-        PrintWriter writer = new PrintWriter(dispersionOutput, "UTF-8");       
-        
-        //header for dispersion
-        writer.write("Filename\tdispersion");        
-        
+        PrintWriter writer;
+        int i = 0; 
+        double[] dispersionVals = new double[dispersionParameters.size()]; 
+        if(dispersionLocation == null){
+            // use this to save the dispersionvalues
+            String dispersionOutput = FilenameUtils.getFullPath(outputLocation) + 
+                          FilenameUtils.getBaseName(outputLocation) +
+                          "_dispersionFile.txt";
+            writer = new PrintWriter(dispersionOutput, "UTF-8");       
 
-        double[] dispersionVals = new double[dispersionParameters.size()];  
-        int i = 0;     
-        
-        for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
-            dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
-            
-            //do a check to make sure ordering is correct.
-            if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
-                System.out.println(sampleDispersion.getSampleName());
-                throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
+            //header for dispersion
+            writer.write("Filename\tdispersion\n");
+
+            for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
+                dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
+
+                //do a check to make sure ordering is correct.
+                if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
+                    System.out.println(sampleDispersion.getSampleName());
+                    throw new IllegalDataException("ERROR! ordering is not correct filenames for overdispersion");
+                }
+                writer.printf("%s\t%.6f\n", sampleDispersion.getSampleName(), sampleDispersion.getOverdispersion()[0] );
+
+                i++;
             }
-            writer.printf("%s\t%.6f\n", sampleDispersion.getSampleName(), sampleDispersion.getOverdispersion()[0] );
-            
-            i++;
+
+            writer.close();
+        }else{
+
+            for(BetaBinomOverdispInSample sampleDispersion : dispersionParameters){
+                dispersionVals[i] = sampleDispersion.getOverdispersion()[0];
+                
+               
+                    
+                
+                //do a check to make sure ordering is correct. especially important when adding a dispersion file.
+                if(!(sampleDispersion.getSampleName().equals(allFiles.get(i)))){
+                    System.out.println("dispersion sample name");
+                    System.out.println(sampleDispersion.getSampleName());
+                    System.out.println("AS file name.");
+                    System.out.println(allFiles.get(i));
+                    
+                    throw new IllegalDataException("ERROR! ordering is not correct for filenames for overdispersion");
+                }
+                i++;
+            }
+            if(GlobalVariables.verbosity >= 10){
+                System.out.println("-------------------------");
+                System.out.println("Using dispersion data from a previously entered file");
+                System.out.println("-------------------------");
+            }
         }
-        
-        writer.close();
-        
+
+
+
         
         //This is  only done when there is a correct location of the pheno file
         double[] cellProp = new double[] {-1.0};
@@ -106,26 +150,37 @@ public class NonPhasedEntry {
             cellProp = new double[phenoString.size()];
             for(String samplePheno : phenoString){
                 cellProp[i] = Double.parseDouble(samplePheno);
+                if(cellProp[i] > 1 || cellProp[i] < 0){
+                    throw new IllegalDataException("The phenotype file contains values that are parsed as higher than one (1) or lower than zero (0)");
+                }
                 i++;
             }
         }
         
         //PART 4. Read the as files one line at a time.
         
-        //Will create three types of 
-        
+        //Will create a file and write a header
         PrintWriter binomWriter = new PrintWriter(binomialOutput, "UTF8");
+        binomWriter.println(BinomialTest.writeHeader());
+        
         PrintWriter betaBinomWriter = new PrintWriter(betaBinomialOutput, "UTF8");
-
+        betaBinomWriter.println(BetaBinomialTest.writeHeader());
         
         
-        //CTS stuff.
-        PrintWriter CTSBinomWriter = null; 
+        //CTS files if available.
+        //CTS binomial was prone to FP, and a performance sink, therefore commented here.
+        //PrintWriter CTSBinomWriter = null; 
         PrintWriter CTSBetaBinomWriter = null;
-        
+        PrintWriter CTSlinearRegressionWriter = null;
         if(phenoTypeLocation != null){
-            CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
+            CTSlinearRegressionWriter = new PrintWriter(CTSlinearRegressionOutput, "UTF-8");
+            CTSlinearRegressionWriter.println(CTSlinearRegression.writeHeader());
+            
+//            CTSBinomWriter = new PrintWriter(CTSbinomialOutput, "UTF8");
+//            CTSBinomWriter.println(CTSbinomialTest.writeHeader());
+  
             CTSBetaBinomWriter = new PrintWriter(CTSbetaBinomialOutput, "UTF-8");
+            CTSBetaBinomWriter.println(CTSBetaBinomialTest.writeHeader());
         }
         
         
@@ -159,7 +214,7 @@ public class NonPhasedEntry {
             }
             
             ArrayList<IndividualSnpData> het_individuals;
-            het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(allSnpData);
+            het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(allSnpData);
     
             int numberOfHets = het_individuals.size();
             int totalOverlap = 0;
@@ -243,20 +298,23 @@ public class NonPhasedEntry {
                 }
                 
                 
-                
                 // do the CTS tests if data is available.
 
                 if(phenoTypeLocation != null){
                     //do the CTS beta binomial test:
                     
-                    CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData);
-                    CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData);
+                    CTSlinearRegression CTSlinearRegressionResults = new CTSlinearRegression(allSnpData);
+                    
+                    //the binomial test was removed because it was really slow, took about 70% of processing time, and was very false positive prone
+//                    CTSbinomialTest CTSbinomialResults = new CTSbinomialTest(allSnpData, CTSlinearRegressionResults);
+                    CTSBetaBinomialTest CTSbetaBinomResults = new CTSBetaBinomialTest(allSnpData, CTSlinearRegressionResults);
                     
 
                     // Write the results to the out_file, assuming both of them were done.
                     if (CTSbetaBinomResults.isTestPerformed()) {
-
-                       CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
+                        
+                       CTSlinearRegressionWriter.println(CTSlinearRegressionResults.writeTestStatistics(true));
+//                       CTSBinomWriter.println(CTSbinomialResults.writeTestStatistics(true));
                        CTSBetaBinomWriter.println(CTSbetaBinomResults.writeTestStatistics(true));
                          
                     }
@@ -272,7 +330,7 @@ public class NonPhasedEntry {
         
         
         if(phenoTypeLocation != null){    
-            CTSBinomWriter.close();
+            //CTSBinomWriter.close();
             CTSBetaBinomWriter.close();
         }
         

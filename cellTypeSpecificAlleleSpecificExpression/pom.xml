@@ -1,67 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                    <executions>
-                      <execution>
-                        <phase>package</phase>
-                        <goals>
-                          <goal>single</goal>
-                        </goals>
-                      </execution>
-                    </executions>
-                    <configuration>
-                        <archive>
-                            <manifest>
-                                <mainClass>nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.mainEntryPoint</mainClass>
-                            </manifest>
-                        </archive>
-                      <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                      </descriptorRefs>
-                    </configuration>
-           </plugin>
-        </plugins>
-    </build>
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>systemsgenetics</artifactId>
-        <version>1.0.2-SNAPSHOT</version>
+        <version>1.0.3-SNAPSHOT</version>
     </parent>
+    
+    <name>(Covariate Specific) Allele Specific Expression</name>
+    <version>0.1</version>
+    
     <artifactId>cellTypeSpecificAlleleSpecificExpression</artifactId>
     <packaging>jar</packaging>
+   
     <dependencies>
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>Genotype-IO</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
+            <version>1.0.6-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.github.samtools</groupId>
             <artifactId>htsjdk</artifactId>
             <version>1.129</version>
-        </dependency>
-        <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>cell_type_specific_ase</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>eqtl-functional-enrichment</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>nl.systemsgenetics</groupId>
-            <artifactId>BinaryMetaAnalyzer</artifactId>
-            <version>1.0.4-SNAPSHOT</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.googlecode.efficient-java-matrix-library</groupId>
@@ -82,7 +44,51 @@
             <scope>test</scope>
             <type>jar</type>
         </dependency>
-        
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>jdom</groupId>
+            <artifactId>jdom</artifactId>
+            <version>1.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>nl.systemsgenetics</groupId>
+            <artifactId>genetica-libraries</artifactId>
+            <version>1.0.9-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
-    <name>cellTypeSpecificAlleleSpecificExpression</name>
+
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.MainEntryPoint</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
 </project>

@@ -55,7 +55,7 @@ public class MixupMapper extends MetaQTL3 {
             System.out.println("Could not find eQTL file. Will therefore perform eQTL mapping first.");
 
             out = initialOutputdir + "Cis-eQTLs/";
-            initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, maxNrResults, regressouteqtls, snpprobecombofile, true, true, null, 0.05d);
+            initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, maxNrResults, regressouteqtls, snpprobecombofile, true, true, null, 0.05d, null);
             mapEQTLs();
             inputeQTLs = m_settings.outputReportsDir + "eQTLProbesFDR0.05.txt";
 

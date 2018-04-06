@@ -43,7 +43,7 @@ public class Aligner {
 	 * @return
 	 * @throws LdCalculatorException
 	 */
-	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile) throws LdCalculatorException, IOException, GenotypeAlignmentException {
+	public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile, boolean matchRefAllele) throws LdCalculatorException, IOException, GenotypeAlignmentException {
 
 		ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
 
@@ -191,7 +191,10 @@ public class Aligner {
 
 
 
-			if (updateId && refVariant.getPrimaryVariantId() != null && (studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
+			if (
+                    updateId && 
+                    !(refVariant.getPrimaryVariantId() == null && studyVariant.getPrimaryVariantId() == null) && 
+                    (refVariant.getPrimaryVariantId() == null || studyVariant.getPrimaryVariantId() == null || !studyVariant.getPrimaryVariantId().equals(refVariant.getPrimaryVariantId()))) {
 				snpUpdateWriter.append(studyVariant.getSequenceName());
 				snpUpdateWriter.append('\t');
 				snpUpdateWriter.append(String.valueOf(studyVariant.getStartPos()));
@@ -209,7 +212,7 @@ public class Aligner {
 			if (!studyVariant.isAtOrGcSnp()) {
 
 				++nonGcNonAtSnpsEncountered;
-				//Non ambiguous SNP. We can just swap asses the strand of the reference data to determine if we need to swap
+				//Non ambiguous SNP. We can just swap assess the strand of the reference data to determine if we need to swap
 
 				if (!studyVariant.getVariantAlleles().sameAlleles(refVariant.getVariantAlleles())) {
 					++nonGcNonAtSnpsSwapped;
@@ -221,7 +224,9 @@ public class Aligner {
 //						LOGGER.debug("Swapped strand of non AT and non GC SNP: " + studyVariant.getPrimaryVariantId() + " based on non ambiguous alleles. After swap study maf: " + studyVariant.getMinorAlleleFrequency() + " (" + studyVariant.getMinorAllele() + ") ref maf: " + refVariant.getMinorAlleleFrequency() + " (" + refVariant.getMinorAllele() + ")");
 //					}
 				}
-
+				if(matchRefAllele){
+                    studyVariant.updateRefAllele(refVariant.getRefAllele());
+                }
 			}
 
 			//Create list with the study variants
@@ -305,7 +310,7 @@ public class Aligner {
 						continue;
 					}
 				}
-
+				
 			}
 
 			LOGGER.info("Iteration 2 - Completed, non A/T and non G/C SNPs are LD checked");
@@ -414,7 +419,9 @@ public class Aligner {
 				} else if (LOGGER.isDebugEnabled()) {
 					snpLogWriter.addToLog(studyVariant, SnpLogWriter.Actions.MAINTAINED, "Based on LD. Pos cor " + hapCor.getPosCor() + " neg cor " + hapCor.getNegCor() + " MAF study: " + studyVariant.getMinorAlleleFrequency() + "(" + studyVariant.getMinorAllele() + ")" + " MAF reference: " + refVariant.getMinorAlleleFrequency() + "(" + refVariant.getMinorAllele() + ")");
 				}
-
+				if(matchRefAllele){
+                    studyVariant.updateRefAllele(refVariant.getRefAllele());
+                }
 				//No need for LD check here. If it would not have matched it would have gotten in the swapping part.
 				//LD is checked again after swapping if requested.
 

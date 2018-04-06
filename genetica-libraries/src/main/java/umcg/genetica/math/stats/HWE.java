@@ -25,9 +25,9 @@ public class HWE {
         double[] het_probs = new double[rare_copies + 1];
 
         int i;
-        for (i = 0; i <= rare_copies; i++) {
-            het_probs[i] = 0.0;
-        }
+//        for (i = 0; i <= rare_copies; i++) {
+//            het_probs[i] = 0.0;
+//        }
 
         /* start at midpoint */
         int mid = rare_copies * (2 * l_genotypes - rare_copies) / (2 * l_genotypes);

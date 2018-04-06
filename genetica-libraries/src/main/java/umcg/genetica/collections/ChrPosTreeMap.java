@@ -2,8 +2,11 @@ package umcg.genetica.collections;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import edu.ufl.cise.colamd.tdouble.Colamd_Col;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import org.molgenis.genotype.util.ChrPos;
 
@@ -82,6 +85,18 @@ public class ChrPosTreeMap<E> implements Iterable<E>{
 		} else {
 			return chrElements.keySet();
 		}
+	}
+	
+	
+	public NavigableMap<Integer,E> getChrRange(String chr, Integer fromKey, boolean fromInclusive, Integer toKey, boolean toInclusive){
+		
+		TreeMap<Integer, E> chrElements = data.get(chr);
+		if(chrElements == null){
+			return Collections.emptyNavigableMap();
+		} else {
+			return chrElements.subMap(fromKey, fromInclusive, toKey, toInclusive);
+		}
+		
 	}
 	
 	/**

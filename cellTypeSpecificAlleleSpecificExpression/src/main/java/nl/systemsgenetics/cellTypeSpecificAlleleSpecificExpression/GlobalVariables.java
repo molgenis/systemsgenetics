@@ -25,7 +25,7 @@ public class GlobalVariables {
     public static int verbosity = 10;
     
     
-    public static int maximumIterations = 20000;
+    public static int maximumIterations = 2000;
     
     public static double simplexThreshold  = 1e-8;
     
@@ -39,7 +39,9 @@ public class GlobalVariables {
     //TESTING SPECIFIC PARAMETERS
     public static int minReads = 1;
     public static int minHets  = 1;
-    
+
+    public static double minHetReads = 0.0; 
+            
     
     
     //I have some fully phased data and this is what wasp comes up with.
@@ -48,4 +50,9 @@ public class GlobalVariables {
     
     //vcf minimum probability:
     public static double variantProb = 0.99;
+    
+    //Make scatter plots
+    public static String plotDir = "";
+    
+    
 }

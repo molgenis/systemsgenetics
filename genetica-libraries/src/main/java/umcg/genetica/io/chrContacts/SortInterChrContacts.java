@@ -23,7 +23,7 @@ import umcg.genetica.io.text.TextFile;
 public class SortInterChrContacts {
     
     public static void readNonSortedWriteSorted(String fileToReads, String fileToWrite){
-        ArrayList<InterChrContact> contacts = null;
+        ArrayList<ChrContact> contacts = null;
         try {
             contacts = readRawInterContactInformation(fileToReads);
         } catch (IOException ex) {
@@ -39,8 +39,8 @@ public class SortInterChrContacts {
         
     }
     
-    private static ArrayList<InterChrContact> readRawInterContactInformation(String fileToReads) throws IOException {
-        ArrayList<InterChrContact> chrContactInfo = new ArrayList<InterChrContact>();
+    private static ArrayList<ChrContact> readRawInterContactInformation(String fileToReads) throws IOException {
+        ArrayList<ChrContact> chrContactInfo = new ArrayList<ChrContact>();
 
         BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(fileToReads), "UTF-8"));
 
@@ -52,25 +52,21 @@ public class SortInterChrContacts {
             int posChr1 = Integer.parseInt(parts[0]);
             int posChr2 = Integer.parseInt(parts[1]);
             double contact = Double.parseDouble(parts[2]);
-            chrContactInfo.add(new InterChrContact(posChr1, posChr2, contact));
+            chrContactInfo.add(new ChrContact(posChr1, posChr2, contact));
         }
         input.close();
         return chrContactInfo;
 
     }
     
-    private static ArrayList<InterChrContact> writeRawInterContactInformation(ArrayList<InterChrContact> contacts, String fileToWrite) throws IOException {
-        ArrayList<InterChrContact> chrContactInfo = new ArrayList<InterChrContact>();
+    public static void writeRawInterContactInformation(ArrayList<ChrContact> contacts, String fileToWrite) throws IOException {
 
         TextFile outWriter = new TextFile(fileToWrite, TextFile.W);
 
-        String row;
-
-        for(InterChrContact contact : contacts){
+        for(ChrContact contact : contacts){
             outWriter.writeln(contact.getChrLocationSmaller()+"\t"+contact.getChrLocationLarger()+"\t"+contact.getContactValue());
         }
         outWriter.close();
-        return chrContactInfo;
 
     }
 }

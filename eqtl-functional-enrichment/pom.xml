@@ -3,23 +3,23 @@
 	<parent>
 		<groupId>nl.systemsgenetics</groupId>
 		<artifactId>systemsgenetics</artifactId>
-		<version>1.0.2-SNAPSHOT</version>
+		<version>1.0.3-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>eqtl-functional-enrichment</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.4-SNAPSHOT</version>
 	<name>eqtl-functional-enrichment</name>
 	<packaging>jar</packaging>
 	<dependencies>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>Genotype-IO</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.6-SNAPSHOT</version>
 		</dependency> 		
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>genetica-libraries</artifactId>
-			<version>1.0.2</version>
+			<version>1.0.9-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>
@@ -51,6 +51,8 @@
 				<version>2.3.2</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
+				 <source>1.7</source>
+				 <target>1.7</target>
 				</configuration>
 			</plugin>
 			<plugin>

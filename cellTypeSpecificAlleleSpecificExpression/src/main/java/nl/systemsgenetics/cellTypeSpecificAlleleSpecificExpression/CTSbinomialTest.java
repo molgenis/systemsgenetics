@@ -69,14 +69,14 @@ class CTSbinomialTest {
     boolean testConverged  = false;
     
     
-    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals) throws Exception{
+    public CTSbinomialTest(ArrayList<IndividualSnpData> all_individuals, CTSlinearRegression CTSlinearRegressionResults) throws Exception{
         
         //basic information, get the zero instance.
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
         
-       ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateHeterozygotesFromIndividualSnpData(all_individuals);
+       ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
         
         
         numberOfHets = het_individuals.size();
@@ -188,11 +188,13 @@ class CTSbinomialTest {
                     
                     ArrayList<double[]> StartingValueList = new ArrayList<double[]>();
                     //These are the starting values to try
-                    StartingValueList.add(new double[] {0.5 , 0.0 });
-                    StartingValueList.add(new double[] {0.5 , 0.5 });
-                    StartingValueList.add(new double[] {0.0 , 0.0 });
-                    StartingValueList.add(new double[] {0.75, 0.0 });
-                    StartingValueList.add(new double[] {0.0 , 0.75});
+                    
+                StartingValueList.add(new double[] {0.0  , nullProp});
+                StartingValueList.add(new double[] {CTSlinearRegressionResults.slope , CTSlinearRegressionResults.intercept});
+
+//                StartingValueList.add(new InitialGuess(new double[] {0.5  , 0.1       }));
+//                StartingValueList.add(new InitialGuess(new double[] {-0.01, 0.7       }));
+//                StartingValueList.add(new InitialGuess(new double[] {0.25 , 0.5       }));
                     
                     
                     for(double[] startingValue :StartingValueList ){
@@ -277,7 +279,14 @@ class CTSbinomialTest {
         
     
     }
-
+    
+    public static String writeHeader(){
+        String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tcellTypeRatio\tresidualRatio\tnullLogLik\taltLogLik";
+        return header;
+    }
+    
+    
+    
     public String writeTestStatistics(boolean all_data) {
         
         String out = "";
@@ -297,37 +306,9 @@ class CTSbinomialTest {
             out += Double.toString(MLEratioCellType) + "\t";
             out += Double.toString(MLEratioResidual) + "\t";
             out += Double.toString(nullLogLik) + "\t";
-            out += Double.toString(altLogLik) + "\t";
+            out += Double.toString(altLogLik);
 
             
-            if(outPutAllData){
-                String samples_string="";
-                String ref_string="";
-                String alt_string="";                
-                String no_string="";
-                String disp_string="";
-                
-                for(int i=0; i < hetSampleNames.size(); i++){
-                    
-                    //samples_string += hetSampleNames.get(i) + ";";
-                    ref_string += Integer.toString(asRef.get(i)) + ";";
-                    alt_string += Integer.toString(asAlt.get(i)) + ";";
-                    no_string += Integer.toString(asNo.get(i)) + ";";
-                    disp_string += Double.toString(cellProp.get(i)) + ";";
-                }
-                
-                //remove last delimiter
-                //samples_string = samples_string.substring(0, samples_string.length()-1);
-                ref_string = ref_string.substring(0, ref_string.length()-1);
-                alt_string = alt_string.substring(0, alt_string.length()-1);
-                no_string = no_string.substring(0, no_string.length()-1);
-                disp_string = disp_string.substring(0, disp_string.length()-1);
-                
-                //out += "\t" + samples_string + "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-                out += "\t" + ref_string + "\t" + alt_string + "\t" + no_string  + "\t" + disp_string;
-
-
-            }
 
 
         } else {
@@ -338,12 +319,7 @@ class CTSbinomialTest {
                 out += "NA\t";
             
             }
-            if(outPutAllData){
-                for(int i=0; i < 5; i++ ){
-                    out += "NA\t";
-
-                }
-            }
+           
             out += "NA";
         
         }

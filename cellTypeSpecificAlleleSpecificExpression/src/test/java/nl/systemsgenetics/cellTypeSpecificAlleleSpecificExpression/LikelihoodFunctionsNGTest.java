@@ -33,7 +33,7 @@ public class LikelihoodFunctionsNGTest {
         Assert.assertEquals(testValue1.compareTo(0.6931471805599453), 0);
         
         Double testValue2 = LikelihoodFunctions.BinomLogLik(1, 100, 0);
-        Assert.assertEquals(testValue2, -0.0);
+        Assert.assertEquals(testValue2, 0.0);
         
         Double testValue3 = LikelihoodFunctions.BinomLogLik(1, 100, 1);
         Assert.assertEquals(testValue3, Double.POSITIVE_INFINITY);
@@ -126,8 +126,38 @@ public class LikelihoodFunctionsNGTest {
     }
 
     
+    @Test
+    public void BetaBinomTestInfinityProbability() throws Exception{
+        
+        //Encountered a bug where log likelihood may or may not be infinity.
+        //The following data was used:
+        
+        
+        int[] asRefList =  { 525,  923,  647,  976,  509,  394,  253,   12,  184,  596,  226,  966,  663,  300,  385,  948,  509,   95,  718, 1071,  977,  337, 1396,  784,  602,  406,  163,  628,  647,  823,  383,  720,  443, 1050,  533,  680,  585,  701,  824,  853,  746,  654,  784, 1209,  234,   87,  304,  201,  795};
+        int[] asAltList =  {279,  322,  301,  619,  254,  236,  151,   29,  785,  393, 1234,  450,  302,  165,  203,  325,  307,  654,  367,  325,  290,  150,  387,  460,  235,  216, 1268,  318,  337,  450,  218,  314,  256,  408,  269,  296,  261,  366,  376,  269,  413,  413,  221,  406,  858,  608,  132,  681,  441 };
+        
+        Double[] dispersionList =  {0.3502, 0.3630, 0.3740, 0.3668, 0.3578, 0.3750, 0.3606, 0.4299, 0.3942, 0.3689, 0.3724, 0.3667, 0.3865, 0.3683, 0.3721, 0.3698, 0.3831, 0.3575, 0.3618, 0.3789, 0.4053, 0.3505, 0.3750, 0.3698, 0.3772, 0.3650, 0.3766, 0.3800, 0.3730, 0.3623, 0.3628, 0.3752, 0.3718, 0.4531, 0.3727, 0.3521, 0.3651, 0.3784, 0.4299, 0.3668, 0.3447, 0.3710, 0.3593, 0.3729, 0.3948, 0.3804, 0.3655, 0.3953, 0.3750 };
 
+        //Make sure that the error and the hetprobability is correct:
+        GlobalVariables.hetProb  = 1;
+        GlobalVariables.seqError = 0;
 
+       
+        int totalReads = 0;
+        int totalRef  = 0;
+        for(int i = 0; i< 49; i++){
+
+           totalRef += asRefList[i];
+           totalReads += asRefList[i] + asAltList[i];
+           
+           
+        }
+
+        //this should work now, before it didn't
+        Double altBinomLogLik  = LikelihoodFunctions.BinomLogLik((1.0 * totalRef) /  (1.0* totalReads) , asRefList, asAltList);
+        
+        //This test should run.
+        Assert.assertEquals( 4100.131682188601, altBinomLogLik );
+        
+    }
 }
-        
-        

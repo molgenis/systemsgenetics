@@ -7,6 +7,10 @@ import org.molgenis.genotype.variant.GeneticVariant;
 public class Ld
 {
 
+    public static double calculateRsquare(GeneticVariant var1, GeneticVariant var2) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 	private final GeneticVariant variant1;
 	private final GeneticVariant variant2;
 	private final double r2;

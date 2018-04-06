@@ -31,6 +31,7 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
+import org.molgenis.genotype.plink.readers.FamFileReader;
 import org.molgenis.genotype.util.CalledDosageConvertor;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.ProbabilitiesConvertor;
@@ -132,8 +133,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 		this.cacheSize = cacheSize;
 
 		sampleAnnotations = PlinkSampleAnnotations.getSampleAnnotations();
-		samples = new ArrayList<Sample>();
-		readFamFile(famFile);
+		samples = FamFileReader.readFamFile(famFile);
 
 		phasing = Collections.unmodifiableList(Collections.nCopies((int) samples.size(), false));
 

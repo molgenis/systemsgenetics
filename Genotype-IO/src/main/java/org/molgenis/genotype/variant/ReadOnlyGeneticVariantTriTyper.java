@@ -84,7 +84,7 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 
     @Override
     public Allele getRefAllele() {
-        return null;
+        return this.getVariantAlleles().get(0);
     }
 
     @Override
@@ -215,4 +215,12 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
 		return sampleVariantsProvider.getSampleGenotypeRecords(this);
 	}
+	
+	@Override
+	public Alleles getAlternativeAlleles() {
+		ArrayList<Allele> altAlleles = new ArrayList<>(this.getVariantAlleles().getAlleles());
+		altAlleles.remove(this.getRefAllele());
+		return Alleles.createAlleles(altAlleles);
+	}
+	
 }

@@ -159,7 +159,8 @@ public class DescriptivesNGTest {
     public void testConvertZscoreToPvalue() {
         double Zscore1 = 2;
         double pValue1 = 0.0455003;
-//        
+//
+        Descriptives.initializeZScoreToPValue();
         assertEquals(Descriptives.convertZscoreToPvalue(Zscore1), pValue1, 0.0000001);
         
         double Zscore2 = 36.65;

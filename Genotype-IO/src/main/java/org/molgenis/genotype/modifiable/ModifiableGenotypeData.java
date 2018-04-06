@@ -3,6 +3,7 @@ package org.molgenis.genotype.modifiable;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -144,5 +145,7 @@ public interface ModifiableGenotypeData extends RandomAccessGenotypeData
 	 * @return excluded variant count
 	 */
 	int getExcludedVariantCount();
+	
+	public boolean isSwapped(GeneticVariant geneticVariant);
 
 }

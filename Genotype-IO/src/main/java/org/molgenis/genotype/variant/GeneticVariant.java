@@ -84,6 +84,12 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 * @return String
 	 */
 	public Allele getRefAllele();
+	
+	/**
+	 * Gets the alternative alleles
+	 * 
+	 */
+	public Alleles getAlternativeAlleles();
 
 	/**
 	 * Returns list sample variants.

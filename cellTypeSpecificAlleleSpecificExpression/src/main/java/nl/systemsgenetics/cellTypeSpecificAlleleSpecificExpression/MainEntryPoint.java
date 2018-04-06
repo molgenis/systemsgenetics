@@ -5,6 +5,8 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import static nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression.ReadGenoAndAsFromIndividual.readGenoAndAsFromIndividual;
 import org.apache.commons.cli.CommandLine;
@@ -54,7 +56,7 @@ public class MainEntryPoint {
 				.withDescription("Determine what to do in this program, currently the following options are available:\n"+
                                                  "\t1\tDetermine Allele specific reads per SNP: ASreads\n\n" +  
                                                  "\t2\tASE test per SNP                         ASEperSNP\n" + 
-                                                 "\t3\tBeta binomial based on phasing           ASEperRegion\n\n" +
+                                                 "\t3\tASE test per region                      ASEperRegion\n\n" +
                                                  "Please Run an option based on the number in the first column, or through the name in the third column."
                                                 )
 				.withLongOpt("action")
@@ -128,6 +130,16 @@ public class MainEntryPoint {
 		OPTIONS.addOption(option);
                 
                 
+                option = OptionBuilder.withArgName("string")
+				.hasArgs()
+				.withDescription("Path to a file with genome regions. Tab delimited file, per column\n "
+                                               + "1. unique region name, 2. chromosome name, 3. start of gene region, 4. end of gene region"
+                                               + "Required when you want Cell type specific results in ASreads.")                                                
+				.withLongOpt("region_file")
+				.create('R');
+		OPTIONS.addOption(option);
+                
+                
                 /*
                     fully optional arguments
                 */
@@ -147,7 +159,7 @@ public class MainEntryPoint {
 				.hasArgs()
 				.withDescription("Integer specifying how many heterozygotes should present before to run an AS test.\n"
                                                + "Default setting is 1, minimum should be 0 but is not checked.\n"
-                                               + "Used when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
+                                               + "Used when action is: ASEperSNP and ASEperRegion")                                                
 				.withLongOpt("minimum_heterozygotes")
 				.create("minimum_hets");
 		OPTIONS.addOption(option);                
@@ -157,10 +169,51 @@ public class MainEntryPoint {
 				.hasArgs()
 				.withDescription("Integer specifying how many reads should be overlapping before to run an AS test.\n"
                                                + "Default setting is 10, minimum should be 0 but is not checked.\n"
-                                               + "Used when action is: BINOMTEST, BETABINOMTEST, CTSBINOMTEST, CTSBETABINOMTEST.")                                                
+                                               + "Used when action is: ASEperSNP and ASEperRegion")                                                
 				.withLongOpt("minimum_reads")
 				.create("minimum_reads");
 		OPTIONS.addOption(option);                
+
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("Integer specifying the minimum percentge of reads that overlaps both alleles"
+                                               + "before running an AS test.\n"
+                                               + "Default setting is 0, maximum is 50.\n"
+                                               + "Used when action is: ASEperSNP and ASEperRegion")                                                
+				.withLongOpt("minimum_het_reads")
+				.create("minimum_het_reads");
+		OPTIONS.addOption(option);                
+
+
+                
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("The location of the dispersion file. same format as output by the file"
+                                               + "When not specified, the dispersion is calculated from the ASfiles themselves"
+                                               + "Used when action is: ASEperSNP and ASEperRegion")                                           
+				.withLongOpt("dispersion_file")
+				.create('D');
+		OPTIONS.addOption(option);                
+                
+                
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("The amount of verbosity required, standard is 10. "
+                                        + "anything higher may be used for debugging."
+                                        + "Will be parsed as an integer, but will mostly use values in the power of ten: 1, 10, 100, 1000"
+                                        + "Anything higher than 10 should be used for debugging.")                                           
+				.withLongOpt("verbosity")
+				.create('V');
+		OPTIONS.addOption(option);
+                
+                option = OptionBuilder.withArgName("String")
+				.hasArgs()
+				.withDescription("Plotting directory. "
+                                        + "Will output for every test a plot in this director. "
+                                        + "Be warned, may take quite some space")                                           
+				.withLongOpt("plot_directory")
+				.create("plot_directory");
+		OPTIONS.addOption(option);
                 
                 
                 
@@ -177,13 +230,17 @@ public class MainEntryPoint {
         String couplingLocation = new String();
         String genotypeLocation = new String();
         String snpsLocation = new String();
-        
+        String regionLocation = new String();
                 
         //BINOMTEST and BETABINOMTEST specific arguments
         String asFile = new String();
 
         //Cell type specific locations
         String phenoTypeLocation = new String();
+        String dispersionLocation = new String();
+        
+        
+        
         
         try {
             CommandLineParser parser = new PosixParser();
@@ -200,6 +257,18 @@ public class MainEntryPoint {
                 
                 // Optional arguments that are not passed to the Entry constructors
                 // But are saved in the GlobalVariables class.
+                
+                if(commandLine.hasOption("verbosity")){ 
+                    try{
+                        GlobalVariables.verbosity = Integer.parseInt(commandLine.getOptionValue("verbosity"));
+                        //Check if this is bigger than 0, otherwise exit 
+                        if(GlobalVariables.verbosity <= 0){
+                            throw new IllegalDataException("verbosity should not be negative");
+                        }
+                    }catch(Exception e){
+                        System.err.println("verbosity should be parsable as an int, continueing with verbosity at 10");
+                    }    
+                }
                 
                 if(commandLine.hasOption("minimum_hets")){
                     GlobalVariables.minHets = Integer.parseInt(commandLine.getOptionValue("minimum_hets"));
@@ -219,11 +288,35 @@ public class MainEntryPoint {
                                          + "Exitting");
                     }
                 }
+
+                if(commandLine.hasOption("minimum_het_reads")){
+                    GlobalVariables.minHetReads = (double)Integer.parseInt(commandLine.getOptionValue("minimum_het_reads")) / 100.0;
+                    //Check if this is bigger than 0, otherwise exit 
+                    
+                    
+                    if(GlobalVariables.minHets < 0){
+                        throw new IllegalDataException("Minimum Number of het reads percentage cannot be smaller than one for AS testing\n"
+                                         + "Exitting");
+                    }
+                    if(GlobalVariables.minHets > 50){
+                        throw new IllegalDataException("Minimum Number of het reads percentage cannot be bigger than 50 (%) AS testing\n"
+                                         + "Exitting");
+                    }
+                    
+                }
+
+                
+                if(commandLine.hasOption("plot_directory")){
+                    GlobalVariables.plotDir = commandLine.getOptionValue("plot_directory");
+                    if(!Files.isDirectory(Paths.get(GlobalVariables.plotDir))){
+                        throw new IllegalDataException("The plotting directory needs to be an existing directory.");
+                    }
+                }
                 
                 if(commandLine.hasOption('A')){
                     String programAction = commandLine.getOptionValue('A').toUpperCase();
                     
-                    if(programAction.equals("ASreads") || programAction.equals("1")){
+                    if(programAction.equals("ASREADS") || programAction.equals("1")){
         
                         //Do the AS determination part of the program
                         
@@ -261,7 +354,7 @@ public class MainEntryPoint {
                         readGenoAndAsFromIndividual(bamFile, genotypeLocation, couplingLocation, outputLocation, snpsLocation);
                         
                     
-                    }else if(programAction.equals("ASEperSNP") || programAction.equals("2")){
+                    }else if(programAction.equals("ASEPERSNP") || programAction.equals("2")){
                         
 
                         if(commandLine.hasOption('L')){
@@ -274,15 +367,21 @@ public class MainEntryPoint {
                         } else{
                             phenoTypeLocation = null;
                         }
+                        if(commandLine.hasOption('D')){
+                            dispersionLocation = commandLine.getOptionValue('D');
+                        } else{
+                            dispersionLocation = null;
+                        }
+                        
                         
                        
                         /*
                             START BINOMIAL CELL TYPE SPECIFIC TEST
                         */
                         
-                        NonPhasedEntry a =  new NonPhasedEntry(asFile, phenoTypeLocation,  outputLocation);
+                        NonPhasedEntry a =  new NonPhasedEntry(asFile, phenoTypeLocation, dispersionLocation , outputLocation);
                         
-                    }else if(programAction.equals("ASEperRegion") || programAction.equals("3")){
+                    }else if(programAction.equals("ASEPERREGION") || programAction.equals("3")){
                         
                         if(commandLine.hasOption('L')){
                             asFile = commandLine.getOptionValue('L');
@@ -305,7 +404,19 @@ public class MainEntryPoint {
                             throw new ParseException("Required command line input --genotype_Location when --action is ASEperRegion");
                         }
                         
-                       PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, genotypeLocation);
+                        if(commandLine.hasOption('R')){
+                             regionLocation = commandLine.getOptionValue('R');
+                        } else {
+                            throw new ParseException("Required command line input --region_file when --action is ASEperRegion");
+                        }
+                        
+                        if(commandLine.hasOption('D')){
+                            dispersionLocation = commandLine.getOptionValue('D');
+                        } else{
+                            dispersionLocation = null;
+                        }
+                        
+                        PhasedEntry a = new PhasedEntry(asFile, couplingLocation, outputLocation, phenoTypeLocation, dispersionLocation, genotypeLocation, regionLocation);
                         
                         
                     }else{

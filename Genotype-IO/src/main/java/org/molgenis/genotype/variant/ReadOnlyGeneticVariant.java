@@ -278,4 +278,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 		return sampleVariantsProvider.getSampleGenotypeRecords(this);
 	}
 	
+	@Override
+	public Alleles getAlternativeAlleles() {
+		ArrayList<Allele> altAlleles = new ArrayList<>(this.getVariantAlleles().getAlleles());
+		altAlleles.remove(this.getRefAllele());
+		return Alleles.createAlleles(altAlleles);
+	}
+	
 }

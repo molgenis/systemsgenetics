@@ -3,18 +3,18 @@
 	<parent>
 		<groupId>nl.systemsgenetics</groupId>
 		<artifactId>systemsgenetics</artifactId>
-		<version>1.0.2-SNAPSHOT</version>
+		<version>1.0.3-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>Genotype-Harmonizer</artifactId>
-	<version>1.4.16-SNAPSHOT</version>
+	<version>1.4.20-SNAPSHOT</version>
 	<name>Genotype Harmonizer</name>
 	<packaging>jar</packaging>
 	<dependencies>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>Genotype-IO</artifactId>
-			<version>1.0.2-SNAPSHOT</version>
+			<version>1.0.6-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>

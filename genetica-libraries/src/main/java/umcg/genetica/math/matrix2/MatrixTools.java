@@ -5,6 +5,12 @@
 package umcg.genetica.math.matrix2;
 
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import no.uib.cipr.matrix.DenseMatrix;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.math.stats.Descriptives;
 
@@ -112,5 +118,28 @@ public class MatrixTools {
             }
         }
         return null;
+    }
+
+    public static DenseDoubleMatrix2D toDenseDoubleMatrix(DenseMatrix matrix) {
+        DenseDoubleMatrix2D matrix2D = new DenseDoubleMatrix2D(matrix.numRows(), matrix.numColumns());
+        
+        for(int c = 0; c<matrix.numColumns(); c++){
+            for(int r = 0; r<matrix.numRows(); r++){
+                matrix2D.setQuick(r,c, matrix.get(r, c));
+            }
+        }
+        
+        return matrix2D;
+    }
+
+    public static void rankColumns(DoubleMatrix2D matrix) {
+        RankingAlgorithm COV_RANKER_TIE = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
+        
+        for (int c = 0; c < matrix.columns(); c++) {
+            double[] rank = COV_RANKER_TIE.rank(matrix.viewColumn(c).toArray());
+            for (int r = 0; r < matrix.rows(); r++) {
+                matrix.set(r, c, (rank[r]));
+            }
+        }
     }
 }

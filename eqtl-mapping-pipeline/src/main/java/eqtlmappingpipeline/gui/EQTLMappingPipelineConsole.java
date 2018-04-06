@@ -25,60 +25,63 @@ import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
+import eqtlmappingpipeline.util.ModuleEqtWestraReplication;
+import eqtlmappingpipeline.util.ModuleEqtlGeuvadisReplication;
+import eqtlmappingpipeline.util.ModuleEqtlNeutrophilReplication;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.QTLFileCompare;
 import eqtlmappingpipeline.util.QTLmeQTLCompare;
+
 import java.util.Arrays;
+
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.pileup.PileupToVcf;
 
 /**
- *
  * @author harmjan
- *
  */
 public class EQTLMappingPipelineConsole {
-
+	
 	public void main(String[] args) throws Exception {
-
+		
 		if (args == null || args.length == 0) {
-
+			
 			printHeader();
 			printUsage();
 			System.out.println("\nERROR: Please supply --mode\n");
 			return;
 		}
-
+		
 		String mode = null;
-
+		
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			String val = null;
-
+			
 			if (i + 1 < args.length) {
 				val = args[i + 1];
 			}
-
+			
 			if (arg.equals("--imputationtool")) {
-
+				
 				imputationtool.ImputationTool.main(args);
 			}
-
+			
 			if (arg.equals("--metamode")) {
 				eqtlmappingpipeline.binarymeta.Main.main(args);
 				System.exit(0);
 			}
-
+			
 			if (arg.equals("--utilmode")) {
 				UtilConsoleGUI g = new UtilConsoleGUI(args);
 				System.exit(0);
 			}
-
+			
 			if (arg.equals("--mode")) {
 				mode = val;
 			}
 		}
-
+		
 		if (mode == null) {
 			System.out.println("ERROR: Please supply --mode");
 			printUsage();
@@ -138,6 +141,15 @@ public class EQTLMappingPipelineConsole {
 			} else if (mode.equals("pileupToVcf")) {
 				PileupToVcf.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
+			} else if (mode.equals("moduleReplication")) {
+				ModuleEqtlGeuvadisReplication.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("moduleNeutrophilReplication")) {
+				ModuleEqtlNeutrophilReplication.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("moduleestralReplication")) {
+				ModuleEqtWestraReplication.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
 			} else if (mode.equals("aseSnpEff")) {
 				AnnotateAseWithSnpEffVcf.annotateAseWithSnpEffVcf(args[2], args[3], args[4]);
 				return;
@@ -145,12 +157,12 @@ public class EQTLMappingPipelineConsole {
 				printUsage();
 			}
 		}
-
+		
 		System.out.println(ConsoleGUIElems.DOUBLELINE);
 	}
-
+	
 	private void printHeader() {
-
+		
 		//Note: Version is null when running from netbeans but will be set when buidling a jar
 		System.out.println("\n"
 				+ ConsoleGUIElems.DOUBLELINE
@@ -160,7 +172,7 @@ public class EQTLMappingPipelineConsole {
 				+ "Harm-Jan Westra, Patrick Deelen, Marc Jan Bonder, Dasha Zhernakova and Lude Franke\n"
 				+ ConsoleGUIElems.DOUBLELINE + "\n");
 	}
-
+	
 	/*
 	 * prints usage
 	 */
@@ -179,9 +191,11 @@ public class EQTLMappingPipelineConsole {
 				+ "       ase\t\tAllele Specific Expression mapping\n"
 				+ "       binaryMeta\t\tDo interaction meta analysis on binary files\n"
 				+ "       queryInteraction\t\tQuery binary interaction file\n"
-				+ "       pileupToVcf\tConvert a pileup file to vcf for usage in ASE mapping");
+				+ "       pileupToVcf\tConvert a pileup file to vcf for usage in ASE mapping\n"
+				+ "       compare\tCompare QTL files\n"
+				+ "       compareM\tCompare eQTL and eQTM files\n");
 		System.out.println("");
 		System.out.println("More information: www.molgenis.org/systemsgenetics/QTL-mapping-pipeline");
-
+		
 	}
 }

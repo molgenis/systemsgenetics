@@ -5,7 +5,6 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import java.util.ArrayList;
 import org.jdom.IllegalDataException;
 
 /**

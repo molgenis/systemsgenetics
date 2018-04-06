@@ -37,6 +37,7 @@ public class MetaQTL3ConsoleGUI {
 
         Double outputPlotThresold = null;
         Double maf = null;
+        Double hwe = null;
         Integer nrEQTLsToOutput = null;
 
         String snpprobecombofile = null;
@@ -117,7 +118,14 @@ public class MetaQTL3ConsoleGUI {
                 try {
                     maf = Double.parseDouble(val);
                 } catch (NumberFormatException e) {
-                    System.out.println("Please supply an integer for --perm");
+                    System.out.println("Please supply an integer for --maf");
+                }
+            }  else if (arg.equals(
+                    "--hwe")) {
+                try {
+                    hwe = Double.parseDouble(val);
+                } catch (NumberFormatException e) {
+                    System.out.println("Please supply an integer for --hwe");
                 }
             } else if (arg.equals(
                     "--threads")) {
@@ -160,7 +168,7 @@ public class MetaQTL3ConsoleGUI {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed, maf);
+                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed, maf, hwe);
                 
                 if(outputPlotThresold!=null){
                     m.setOutputPlotThreshold(outputPlotThresold);
@@ -193,6 +201,7 @@ public class MetaQTL3ConsoleGUI {
                 + "--trans\t\t\t\t\tPerform trans-eQTL analysis\n"
                 + "--perm\t\t\tint\t\tNumber of permutations to perform\n"
                 + "--maf\t\t\tint\tMinimal minor allel frequency to take SNP in the analysis\n"
+                + "--hwe\t\t\tint\tHardy weinberg equilibrium for SNP selection during the analysis\n"
                 + "--text\t\t\t\t\tOutput results in text format\n"
                 + "--binary\t\t\t\tOutput results in binary format\n"
                 + "--inexp\t\t\tstring\t\tLocation of expression data\n"

@@ -20,6 +20,7 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
     private Double[]  cellProp;
     
     public CTSbetaBinomialAltLikelihoodVersion2(Integer[] asRef1, Integer[] asAlt1, Double[] dispersion1, Double[] cellProp1){
+        
         asRef = asRef1;
         asAlt = asAlt1;
         dispersion = dispersion1;
@@ -41,30 +42,12 @@ public class CTSbetaBinomialAltLikelihoodVersion2 implements Function {
             throw new RuntimeException("Function requires 2 inputs!");
         }
         
-        //Make sure the value is always positive
+        //Make sure the value is within bounds
         double CellTypeProp = t[0];
         double ResidualProp  = t[1];
         
-        if(CellTypeProp > 1 || CellTypeProp < 0 ){
-            return Double.MAX_VALUE;
-        }
-        if(ResidualProp > 1 || ResidualProp < 0 ){
-            return Double.MAX_VALUE;
-        }
-
-        
-        // Just some check to make sure everythign is good, but the math is not
-        // right at the moment, so I need to check if I can change it.
-      
-        
-        
-        
         for(int i=0; i < asRef.length; i++ ){
             
-            
-            //JUST SOMETHING I'm Trying!! VERY MUCH SOMETHING NOT FINAL!!
-            //MATH IS PROPABLY NOT CORRECT.
-            //NEED TO CHECK.
             
             double fullProp = CellTypeProp  * cellProp[i] + ResidualProp;
             

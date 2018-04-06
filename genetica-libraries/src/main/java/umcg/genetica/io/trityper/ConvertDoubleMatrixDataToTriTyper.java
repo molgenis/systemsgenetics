@@ -11,6 +11,13 @@ import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.util.RankArray;
@@ -21,17 +28,64 @@ import umcg.genetica.util.RankArray;
  */
 public class ConvertDoubleMatrixDataToTriTyper {
 
-    private static Pattern SPLIT_ON_TAB = Pattern.compile("\t");
+    private static final Pattern SPLIT_ON_TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws IOException {
+        
+        CommandLineParser parser = new GnuParser();
+        Options options = new Options();
 
-        String mappingFile = args[0];
-        String dataMatrix = args[1];
-        String outputFolder = args[2];
-        String option1 = args[3];
+        Option datMatrix = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the input file. Needs to be a tab seperated file with samples on the columns and traits on the rows.").withLongOpt("dataMatrix").create("d");
+        Option mapFile = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the mapping file describing the chromosomal locations of the traits.").withLongOpt("mappingFile").create("m");
+        Option folderOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location and name of the output TriTyper folder.").withLongOpt("OutputFile").create("o");
+        Option ranking = OptionBuilder.withArgName("boolean").withDescription("If set first rank the input data, before scaling.").create("r");
+        Option removeNan = OptionBuilder.withArgName("boolean").withDescription("If set first remove full non-numeric rows.").create("R");
+        options.addOption(folderOut).addOption(datMatrix).addOption(mapFile).addOption(ranking).addOption(removeNan);
+
+        String dataMatrix = null;
+        String outputFolder = null;
+        String mappingFile = null;
+        boolean rank = false;
+        boolean removeNanRow = false;
+        CommandLine cmd;
+        try {
+            cmd = parser.parse(options, args);
+            HelpFormatter formatter = new HelpFormatter();
+
+            if (cmd.hasOption("OutputFile") || cmd.hasOption("o")) {
+                // initialise the member variable
+                outputFolder = cmd.getOptionValue("OutputFile");
+            } else {
+                System.out.println("Missing necesarray information: output loc");
+                formatter.printHelp("ant", options);
+                System.exit(0);
+            }
+            if (cmd.hasOption("dataMatrix") || cmd.hasOption("d")) {
+                // initialise the member variable
+                dataMatrix = cmd.getOptionValue("dataMatrix");
+            } else {
+                System.out.println("Missing necessary information: data matrix");
+                formatter.printHelp("ant", options);
+                System.exit(0);
+            }
+            
+            if (cmd.hasOption("mappingFile") || cmd.hasOption("m")) {
+                // initialise the member variable
+                mappingFile = cmd.getOptionValue("mappingFile");
+            }
+            rank = cmd.hasOption("r");
+            removeNanRow = cmd.hasOption("R");
+
+        } catch (org.apache.commons.cli.ParseException ex) {
+            Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
 
         if (!(new File(outputFolder).exists())) {
             Gpio.createDir(outputFolder);
+        } else if(!(new File(outputFolder).isDirectory())) {
+            System.out.println("Error file is already there but not a directory!");
+            System.exit(0);
         }
 
         HashSet<String> hashCpGSites = new HashSet<String>();
@@ -53,6 +107,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
         } catch (Exception e) {
             System.out.println("Error:\t" + e.getMessage());
             e.printStackTrace();
+            System.exit(0);
         }
 
         DoubleMatrixDataset<String, String> dataset = null;
@@ -62,14 +117,15 @@ public class ConvertDoubleMatrixDataToTriTyper {
             Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
             System.exit(0);
         }
+        
+        
+        
+        
         if (dataset != null && !dataset.getHashCols().isEmpty() && !dataset.getHashRows().isEmpty()) {
-//            if(args.length > 3 && args[3].equals("scale")){
-//                ConvertBetaAndMvalues.transformMToBetavalue(dataset.getMatrix());
-//            }
-            if (args[3].equals("rank")) {
-                rankRows(dataset.getMatrix());
+            if (rank) {
+                dataset.setMatrix(rankRows(dataset.getMatrix()));
             }
-            rescaleValue(dataset.getMatrix(), null);
+            dataset.setMatrix(rescaleValue(dataset.getMatrix(), 200.0d));
 
             try {
                 System.out.println("\nWriting SNPs.txt to file:");
@@ -81,6 +137,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
             } catch (Exception e) {
                 System.out.println("Error:\t" + e.getMessage());
                 e.printStackTrace();
+                System.exit(0);
             }
 
             try {
@@ -96,6 +153,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
             } catch (Exception e) {
                 System.out.println("Error:\t" + e.getMessage());
                 e.printStackTrace();
+                System.exit(0);
             }
 
             int nrSNPs = dataset.rows();
@@ -109,6 +167,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
 
             for (int snp = 0; snp < nrSNPs; snp++) {
                 DoubleMatrix1D snpRow = dataset.getMatrix().viewRow(snp);
+                
                 byte[] allele1 = new byte[nrSamples];
                 byte[] allele2 = new byte[nrSamples];
                 byte[] dosageValues = new byte[nrSamples];
@@ -135,7 +194,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
         System.out.println("Finished.");
     }
 
-    public static void rescaleValue(DoubleMatrix2D matrix, Double multiplier) {
+    public static DoubleMatrix2D rescaleValue(DoubleMatrix2D matrix, Double multiplier) {
         if (multiplier != null) {
             for (int p = 0; p < matrix.rows(); p++) {
                 double min = matrix.viewRow(p).getMinLocation()[0];
@@ -153,17 +212,19 @@ public class ConvertDoubleMatrixDataToTriTyper {
                 }
             }
         }
-
+        return matrix;
     }
 
-    private static void rankRows(DoubleMatrix2D matrix) {
+    public static DoubleMatrix2D rankRows(DoubleMatrix2D matrix) {
+        
         RankArray rda = new RankArray();
         for (int p = 0; p < matrix.rows(); p++) {
-            double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), false);
+            double[] rankedValues = rda.rank(matrix.viewRow(p).toArray(), true);
             for (int s = 0; s < matrix.columns(); s++) {
                 matrix.setQuick(p, s, rankedValues[s]);
             }
         }
+        return matrix;
     }
 
 }

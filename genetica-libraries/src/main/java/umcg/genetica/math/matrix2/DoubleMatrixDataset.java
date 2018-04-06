@@ -193,8 +193,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz"))) {
-			throw new IllegalArgumentException("File type must be .txt when delimiter is given (given filename: " + fileName + ")");
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {
+			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
 
 		LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
@@ -353,10 +353,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return rowMap;
 	}
 
-	public void save(File file) throws IOException {
+	public void save(File file, String rowDescriptor) throws IOException {
 		TextFile out = new TextFile(file, TextFile.W);
 
-		out.append('-');
+		out.append(rowDescriptor);
 		for (C col : hashCols.keySet()) {
 
 			out.append('\t');
@@ -377,13 +377,32 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public void save(String fileName) throws IOException {
-		save(new File(fileName));
+		save(new File(fileName), "-");
 	}
-
-	public void saveDice(String fileName) throws IOException {
+        public void save(File fileName) throws IOException {
+		save(fileName, "-");
+	}
+        
+        public void save(String fileName, String rowDescriptor) throws IOException {
+		save(new File(fileName) , rowDescriptor);
+	}
+        
+        public void saveDice(String fileName) throws IOException {
+            saveDice(new File(fileName), "-");
+        }
+        
+        public void saveDice(File fileName) throws IOException {
+            saveDice(fileName, "-");
+        }
+        
+        public void saveDice(String fileName, String rowDescriptor) throws IOException {
+		saveDice(new File(fileName) , rowDescriptor);
+	}
+        
+	public void saveDice(File fileName, String rowDescriptor) throws IOException {
 		TextFile out = new TextFile(fileName, TextFile.W);
 
-		out.append('-');
+		out.append(rowDescriptor);
 		for (R row : hashRows.keySet()) {
 			out.append('\t');
 			out.append(row.toString());

@@ -27,6 +27,7 @@ import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
+import org.molgenis.genotype.variantFilter.VariantFilterAmbigousSnp;
 import org.molgenis.genotype.variantFilter.VariantFilterMachR2;
 import org.molgenis.genotype.variantFilter.VariantFilterSeq;
 import org.molgenis.genotype.variantFilter.VariantFilterSeqPos;
@@ -41,8 +42,8 @@ import org.molgenis.genotype.variantFilter.VariantQcChecker;
 class GenotypeHarmonizer {
 
     private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
-    private static final String HEADER =
-            "  /---------------------------------------\\\n"
+    private static final String HEADER
+            = "  /---------------------------------------\\\n"
             + "  |          Genotype Harmonizer          |\n"
             + "  |                                       |\n"
             + "  |             Patrick Deelen            |\n"
@@ -50,10 +51,10 @@ class GenotypeHarmonizer {
             + "  |                                       |\n"
             + "  | Harm-Jan Westra, Joeri van der Velde, |\n"
             + "  |    Marc Jan Bonder, Erwin Winder,     |\n"
-			+ "  |           Dennis Hendriksen           |\n"
+            + "  |           Dennis Hendriksen           |\n"
             + "  |      Lude Franke, Morris Swertz       |\n"
             + "  |                                       |\n"
-            + "  |     Genomics Coordication Center      |\n"
+            + "  |     Genomics Coordination Center      |\n"
             + "  |  University Medical Center Groningen  |\n"
             + "  \\---------------------------------------/";
     private static final Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
@@ -63,7 +64,7 @@ class GenotypeHarmonizer {
      */
     protected static final int MIN_MIN_VARIANTS_TO_ALIGN_ON = 1;
     private static final Pattern CHR_POS_SPLITTER = Pattern.compile("\\s+|:");
-	public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
+    public static final NumberFormat DEFAULT_NUMBER_FORMATTER = NumberFormat.getInstance();
 
     /**
      * @param args
@@ -109,7 +110,6 @@ class GenotypeHarmonizer {
                 System.exit(1);
             }
         }
-
 
         try {
             FileAppender logAppender = new FileAppender(new SimpleLayout(), paramaters.getLogFile().getCanonicalPath(), false);
@@ -163,13 +163,13 @@ class GenotypeHarmonizer {
             System.exit(1);
             return;
         }
-		
-		if(paramaters.getMinCallRate() > 1){
-			LOGGER.fatal("The specified call rate is > 1. This will result in exclusion of all variants.");
+
+        if (paramaters.getMinCallRate() > 1) {
+            LOGGER.fatal("The specified call rate is > 1. This will result in exclusion of all variants.");
             System.err.println("The specified call rate is > 1. This will result in exclusion of all variants.");
             System.exit(1);
             return;
-		}
+        }
 
         if (paramaters.getForceSeqName() != null && paramaters.getInputType() != RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && paramaters.getInputType() != RandomAccessGenotypeDataReaderFormats.GEN) {
             System.err.println("Error cannot force sequence name of: " + paramaters.getInputType().getName());
@@ -180,7 +180,7 @@ class GenotypeHarmonizer {
 
         VariantCombinedFilter varFilter = null;
 
-        if ((paramaters.getMinCallRate() != 0.0F) || (paramaters.getMinMAF() != 0.0F) || (paramaters.getMinHwePvalue() != 0.0D) || (paramaters.getVariantFilterListFile() != null) || (paramaters.getSeqFilterIn() != null) || (paramaters.getVariantPosFilterListFile() != null) || paramaters.getMinMachR2() != 0.0d) {
+        if ((paramaters.getMinCallRate() != 0.0F) || (paramaters.getMinMAF() != 0.0F) || (paramaters.getMinHwePvalue() != 0.0D) || (paramaters.getVariantFilterListFile() != null) || (paramaters.getSeqFilterIn() != null) || (paramaters.getVariantPosFilterListFile() != null) || paramaters.getMinMachR2() != 0.0d || paramaters.filterOnAmbiguousSnps() ) {
             varFilter = new VariantCombinedFilter();
             if (paramaters.getVariantFilterListFile() != null) {
                 try {
@@ -240,9 +240,12 @@ class GenotypeHarmonizer {
                 VariantFilterSeq seqFilter = new VariantFilterSeq(paramaters.getSeqFilterIn());
                 varFilter.add(seqFilter);
             }
-			if(paramaters.getMinMachR2() != 0.0d){
-				varFilter.add(new VariantFilterMachR2(paramaters.getMinMachR2()));
-			}
+            if (paramaters.getMinMachR2() != 0.0d) {
+                varFilter.add(new VariantFilterMachR2(paramaters.getMinMachR2()));
+            }
+            if(paramaters.filterOnAmbiguousSnps()){
+                varFilter.add(new VariantFilterAmbigousSnp());
+            }
         }
 
         SampleIdIncludeFilter sampleFilter = null;
@@ -295,18 +298,18 @@ class GenotypeHarmonizer {
             System.exit(1);
             return;
         }
-		
-		if(inputData.getSamples().isEmpty()){
-			if(sampleFilter != null){
-				System.err.println("Error reading input data: No samples left after sample filter");
-				LOGGER.fatal("Error reading input data: No samples left after sample filter");
-			} else {
-				System.err.println("Error reading input data: No samples are loaded");
-				LOGGER.fatal("Error reading input data: No samples are loaded");
-			}
+
+        if (inputData.getSamples().isEmpty()) {
+            if (sampleFilter != null) {
+                System.err.println("Error reading input data: No samples left after sample filter");
+                LOGGER.fatal("Error reading input data: No samples left after sample filter");
+            } else {
+                System.err.println("Error reading input data: No samples are loaded");
+                LOGGER.fatal("Error reading input data: No samples are loaded");
+            }
             System.exit(1);
             return;
-		}
+        }
 
         System.out.println(
                 "Input data loaded");
@@ -352,7 +355,7 @@ class GenotypeHarmonizer {
 
             try {
                 System.out.println("Beginning alignment");
-                aligedInputData = aligner.alignToRef(inputData, refData, paramaters.getMinLdToIncludeAlign(), paramaters.getMinSnpsToAlignOn(), paramaters.getFlankSnpsToConsider(), paramaters.isLdCheck(), paramaters.isUpdateId(), paramaters.isKeep(), paramaters.getSnpUpdateFile(), paramaters.getMaxMafForMafAlignment(), paramaters.getSnpLogFile());
+                aligedInputData = aligner.alignToRef(inputData, refData, paramaters.getMinLdToIncludeAlign(), paramaters.getMinSnpsToAlignOn(), paramaters.getFlankSnpsToConsider(), paramaters.isLdCheck(), paramaters.isUpdateId(), paramaters.isKeep(), paramaters.getSnpUpdateFile(), paramaters.getMaxMafForMafAlignment(), paramaters.getSnpLogFile(), paramaters.getMatchRefAllele());
             } catch (LdCalculatorException e) {
                 System.err.println("Error in LD calculation: " + e.getMessage());
                 LOGGER.fatal("Error in LD calculation: " + e.getMessage(), e);
@@ -368,7 +371,7 @@ class GenotypeHarmonizer {
                 LOGGER.fatal("Error in alignment: " + e.getMessage(), e);
                 System.exit(1);
                 return;
-            }catch (IOException e) {
+            } catch (IOException e) {
                 System.err.println("Error in alignment: " + e.getMessage());
                 LOGGER.fatal("Error in alignment: " + e.getMessage(), e);
                 System.exit(1);
@@ -408,12 +411,10 @@ class GenotypeHarmonizer {
 
         }
 
-
         System.out.println(
                 "Writing results");
         LOGGER.info(
                 "Writing results");
-
 
         try {
             GenotypeWriter inputDataWriter = paramaters.getOutputType().createGenotypeWriter(aligedInputData == null ? inputData : aligedInputData);
@@ -429,7 +430,6 @@ class GenotypeHarmonizer {
             System.exit(1);
             return;
         }
-
 
         try {
             inputData.close();

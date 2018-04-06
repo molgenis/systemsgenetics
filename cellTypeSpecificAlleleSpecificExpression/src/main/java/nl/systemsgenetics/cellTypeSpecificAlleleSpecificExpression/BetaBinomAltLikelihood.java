@@ -4,7 +4,6 @@
  * and open the template in the editor.
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
-
 import org.ejml.simple.SimpleMatrix;
 
 /**

@@ -18,7 +18,7 @@ public class BinomialTest {
     private String snpName;
     private String chromosome;
     private String position;
-
+    private String genotype;
     
     //sometimes multiple test snps have the same results.    
     private boolean TestUsedInPhasing = false;
@@ -28,6 +28,13 @@ public class BinomialTest {
     String RegionName;
     int startOfRegion = -1;
     int endOfRegion = -1;
+    int totalTestSNPs = -1;
+    
+    public int testRegionStart = -1;
+    public int testRegionEnd = -1;
+     
+    
+    
     
     //Information about the input data
     private int numberOfHets;
@@ -47,9 +54,11 @@ public class BinomialTest {
     
     private BinomTest testStatistics;
     private boolean testPerformed = false; 
+    double binomRatio;
     
     
     private boolean outPutAllData = false;
+    
     
     
     
@@ -65,9 +74,9 @@ public class BinomialTest {
         snpName = all_individuals.get(0).getSnpName();
         chromosome = all_individuals.get(0).getChromosome();
         position = all_individuals.get(0).getPosition();
-        
+        genotype = all_individuals.get(0).genotype;
         //Isolate heterozygotes:
-        ArrayList<IndividualSnpData> het_individuals = isolateHeterozygotes(all_individuals);
+        ArrayList<IndividualSnpData> het_individuals = UtilityMethods.isolateValidHeterozygotesFromIndividualSnpData(all_individuals);
         
         numberOfHets = het_individuals.size();
         
@@ -126,7 +135,7 @@ public class BinomialTest {
             
             //binomial_test perfomed, will now set test performed to true
             testPerformed = true;
-            
+            binomRatio = testStatistics.getBinomRatio();
         } else{
             // there is no data to do the binomial test,
             // Will not set variables.
@@ -134,7 +143,7 @@ public class BinomialTest {
     }
     
     //constructor method didn't work, so doing it like this.
-    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion){
+    public static  BinomialTest phasedBinomialTest(ArrayList<IndividualSnpData> all_individuals, GenomicRegion thisRegion, int testSNPs){
         
         BinomialTest t = new BinomialTest(all_individuals);
         
@@ -144,32 +153,21 @@ public class BinomialTest {
         t.startOfRegion = thisRegion.getStartPosition();
         t.endOfRegion = thisRegion.getEndPosition();
         
+        t.testRegionStart = thisRegion.getTestStart();
+        t.testRegionEnd   = thisRegion.getTestEnd();
+        
+        
+        t.totalTestSNPs = testSNPs;
+        
         return t;
     
-    }
+    } 
     
-    private ArrayList<IndividualSnpData> isolateHeterozygotes(ArrayList<IndividualSnpData> all_individuals) {
-        
-        ArrayList<IndividualSnpData> hets;
-        hets = new ArrayList<IndividualSnpData>();
-        
-        for(IndividualSnpData sample : all_individuals){
-            
-            String genotype = sample.getGenotype();
-            
-            //assuming the genotype is formatted as: "[C, A]"
-            
-            char charOne = genotype.charAt(1);
-            char charTwo = genotype.charAt(4);
-            
-            if(charOne != charTwo){
-                hets.add(sample);
-            }       
-        }
-        
-        return hets;
-    }
-
+   public static String writeHeader(){
+       String header = "chr\tpos\tsnpName\tnumHets\tpVal\tchiSq\tbinomRatio\tnullLogLik\taltLogLik";
+       return header;
+   } 
+    
    public String writeTestStatistics(boolean outPutAllData){
         
         String out = "";
@@ -190,32 +188,7 @@ public class BinomialTest {
             out += Double.toString(testStatistics.getNullLogLik()) + "\t";
             out += Double.toString(testStatistics.getAltLogLik());
 
-            if(outPutAllData){
-                
-                String samples_string="";
-                String ref_string="";
-                String alt_string="";
-                String no_string="";
-
-                for(int i=0; i < hetSampleNames.size(); i++){
-                    
-                    //samples_string += hetSampleNames.get(i) + ";";
-                    ref_string += Integer.toString(asRef.get(i)) + ";";
-                    alt_string += Integer.toString(asAlt.get(i)) + ";";
-                    no_string += Integer.toString(asNo.get(i)) + ";";
-                }
-                
-                //remove last delimiter
-                //samples_string = samples_string.substring(0, samples_string.length()-1);
-                ref_string = ref_string.substring(0, ref_string.length()-1);
-                alt_string = alt_string.substring(0, alt_string.length()-1);
-                no_string = no_string.substring(0, no_string.length()-1);
-                
-                //out += "\t" + samples_string + "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-                out += "\t" + ref_string + "\t" + alt_string + "\t" + no_string;
-
-
-            }
+            
 
 
         } else {
@@ -224,12 +197,7 @@ public class BinomialTest {
                 out += "NA\t";
             
             }
-            if(outPutAllData){
-                for(int i=0; i < 4; i++ ){
-                    out += "NA\t";
-
-                }
-            }
+            
             out += "NA";
         
         }
@@ -338,6 +306,20 @@ public class BinomialTest {
 
     void setSnpName(String snpName1) {
         snpName = snpName1 ;
+    }
+
+    /**
+     * @return the genotype
+     */
+    public String getGenotype() {
+        return genotype;
+    }
+
+    /**
+     * @param genotype the genotype to set
+     */
+    public void setGenotype(String genotype) {
+        this.genotype = genotype;
     }
     
 }

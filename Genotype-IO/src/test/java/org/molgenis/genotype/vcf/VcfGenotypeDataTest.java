@@ -84,6 +84,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 		assertEquals(variant.getPrimaryVariantId(), "rs4908464");
 		assertEquals(variant.getStartPos(), 7569187);
 		assertEquals(variant.getRefAllele().getAlleleAsString(), "G");
+		assertEquals(variant.getAlternativeAlleles(), Alleles.createAlleles(Allele.C));
 		assertEquals(variant.getSequenceName(), "2");
 		assertEquals(variant.isSnp(), true);
 
@@ -145,7 +146,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 
 		GeneticVariant variant = variants.get(0);
 		assertNotNull(variant.getAnnotationValues());
-		assertEquals(variant.getAnnotationValues().size(), 7);
+		assertEquals(variant.getAnnotationValues().size(), 9);//9 because of filter and qual field
 
 		Object annotationValue = variant.getAnnotationValues().get("NS");
 		assertNotNull(annotationValue);
@@ -166,6 +167,10 @@ public class VcfGenotypeDataTest extends ResourceTest
 		List<String> strings = (List<String>) annotationValue;
 		assertEquals(strings.size(), 1);
 		assertEquals(strings.get(0), "INT");
+		
+		assertEquals(variant.getAnnotationValues().get("VCF_Filter"), "flt");
+		assertNull(variant.getAnnotationValues().get("VCF_Qual"));
+
 	}
 
 	@Test

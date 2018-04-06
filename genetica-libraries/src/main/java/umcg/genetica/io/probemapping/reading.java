@@ -422,7 +422,7 @@ public class reading {
                     probeInfo.put(String.valueOf(entryId), t);
                     entryId++;
                 } else if (storingId == -2) {
-                    probeInfo.put(strParts[0]+"-"+strParts[1]+"-"+strParts[22], t);
+                    probeInfo.put(strParts[0]+"-"+strParts[1]+"-"+strParts[28], t);
                     entryId++;
                 }else {
                     probeInfo.put(strParts[storingId], t);

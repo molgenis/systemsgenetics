@@ -5,8 +5,6 @@
  */
 package nl.systemsgenetics.cellTypeSpecificAlleleSpecificExpression;
 
-import static java.lang.Math.log;
-
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.special.Beta;
@@ -23,7 +21,8 @@ public class LikelihoodFunctions {
         int total = asRef + asAlt;
         //determine likelihood here.
         BinomialDistribution binomDist = new BinomialDistribution(total, d);
-        return -1.0 * log(binomDist.probability(asRef));
+        Double logDensity = binomDist.logProbability(asRef);
+        return -1.0 * logDensity;
     }
     
     static double BinomLogLik(double d, int[] asRef, int[] asAlt) {
@@ -40,26 +39,29 @@ public class LikelihoodFunctions {
     
     
      static double BetaBinomLogLik(double sigma, double alpha, double beta, int asRef, int asAlt){
-
-        int AS1   = asRef;
-        int AS2   = asAlt;
+        //Note, hetp and error are taken from WASP, van de Geijn et al. (2015)
+        int AS1      = asRef;
+        int AS2      = asAlt;
         double hetp  = GlobalVariables.hetProb;
         double error = GlobalVariables.seqError;
 
         double a;
         double b;
 
-        a = Math.exp( (Math.log(alpha) - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-        b = Math.exp( (Math.log(beta)  - Math.log(alpha + beta)) + Math.log((1.0 / Math.pow(sigma, 2)) - 1.0));
-
+        a = (alpha) /(alpha + beta) *  (1.0 / Math.pow(sigma, 2) - 1.0);
+        b = (beta)  /(alpha + beta) *  (1.0 / Math.pow(sigma, 2) - 1.0);
+        
+        
         double part1 = 0.0;
         part1 += Beta.logBeta(AS1 + a, AS2 + b);
         part1 -= Beta.logBeta(a, b);
+        
         
         if(GlobalVariables.hetProb == 1.0){
             return -1.0 * part1;
         }
         
+        //Below is unused in our case. hetProb is always 1.0
         double e1 = Math.log(error) * AS1 + Math.log(1.0 - error) * AS2;
         double e2 = Math.log(error) * AS2 + Math.log(1.0 - error) * AS1;
         
@@ -106,6 +108,8 @@ public class LikelihoodFunctions {
             //probably due to floating point errors.
             //throws an exception if the negative value is far from 0
             if(chiSq < -0.00001){
+                //This was done because Freerk encountered this error.
+                System.err.println(Double.toString(chiSq));
                 throw new IllegalDataException("ChiSq value is lower than 1.");
             }
             chiSq = 0.0;

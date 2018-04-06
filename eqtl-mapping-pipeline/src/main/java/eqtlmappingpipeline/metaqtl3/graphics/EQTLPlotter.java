@@ -158,7 +158,7 @@ public class EQTLPlotter {
             logPValueString = "0" + logPValueString;
         }
 
-        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_").replace(";", "_") + ".pdf";
+        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_").replace(";", "_").replace("|", "").replace("__","_") + ".pdf";
 //        fileName = m_outputDir + "" + logPValueString + "-" + snpName + "-" + probeName + ".pdf";
         File file = new File(fileName);
 
