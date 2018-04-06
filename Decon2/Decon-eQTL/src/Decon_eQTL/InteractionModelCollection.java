@@ -1,4 +1,4 @@
-package deconvolution;
+package Decon_eQTL;
 
 import java.io.IOException;
 import java.util.ArrayList;

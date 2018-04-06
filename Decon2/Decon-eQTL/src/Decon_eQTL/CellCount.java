@@ -1,9 +1,9 @@
-package deconvolution;
+package Decon_eQTL;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import deconvolution.Utils;
+import Decon_eQTL.Utils;
 
 public class CellCount {
 

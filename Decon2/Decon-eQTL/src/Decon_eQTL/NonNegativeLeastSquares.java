@@ -38,9 +38,8 @@
 //
 //******************************************************************************
 
-package deconvolution;
+package Decon_eQTL;
 
-import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
