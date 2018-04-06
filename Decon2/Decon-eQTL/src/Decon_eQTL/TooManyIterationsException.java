@@ -38,7 +38,7 @@
 //
 //******************************************************************************
 
-package deconvolution;
+package Decon_eQTL;
 
 /**
  * Class TooManyIterationsException is an unchecked runtime exception thrown if

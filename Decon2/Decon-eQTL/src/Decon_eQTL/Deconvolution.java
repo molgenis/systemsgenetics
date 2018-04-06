@@ -1,7 +1,7 @@
-package deconvolution;
+package Decon_eQTL;
 
-import deconvolution.Qtl;
-import deconvolution.CellCount;
+import Decon_eQTL.Qtl;
+import Decon_eQTL.CellCount;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;

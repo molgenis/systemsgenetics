@@ -1,4 +1,4 @@
-package deconvolution;
+package Decon_eQTL;
 
 import java.util.ArrayList;
 import java.util.HashMap;

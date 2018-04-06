@@ -1,4 +1,4 @@
-package deconvolution;
+package Decon_eQTL;
 
 public class NotEnoughSamplesPerGenotypeException extends Exception {
 	private static final long serialVersionUID = 7189762595398313333L;
