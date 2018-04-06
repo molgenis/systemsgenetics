@@ -83,8 +83,8 @@
 		<module>BinaryMetaAnalyzer</module>
 		<module>eQTLInteractionAnalyser</module>
 		<module>javaPoCA</module>
-        <module>cellTypeSpecificAlleleSpecificExpression</module>
-        <module>MetaGenomicDataProcessing</module>
-        <module>Decon-eQTL</module>
-    </modules>
+		<module>cellTypeSpecificAlleleSpecificExpression</module>
+		<module>MetaGenomicDataProcessing</module>
+		<module>Decon-eQTL</module>
+	</modules>
 </project>
