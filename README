@@ -1,6 +1,31 @@
-usage: deconvolution [-ad] -c <file> [-cc] -e <file> [-f] -g <file> [-gc
-       <arg>] [-help] [-m <int>] [-no] -o <path> [-oe] [-of <file>] [-r]
-       [-s] [-sg] -sn <file> [-t] [-w]
+---
+title: "Decon-eQTL"
+author: "Raúl Aguirre-Gamboa and Niek de Klein"
+---
+
+## Introduction 
+Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples [(Decon-cell)](https://github.com/raguirreg/DeconCell) and consecutive deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.
+
+
+## Requirements
+`Java version 1.8 or higher` (Tested using `1.8.0_121`)
+Decon-eQTL.jar
+
+### For compiling
+commons-cli v1.3.1
+commons-csv v1.2
+commons-io v2.4
+commons-lang3 v3.4
+commons-math3 v3.6
+jsci-core
+jsci-mathmlimpl
+jsci-sci
+
+## minimal usage example
+    
+    java -jar deconvolution -c <file containing cellcounts> -e <file containing expression data> -g <file containing genotypes>  -o <output directory> -sn <file with SNP and gene combination to test>
+    
+## Options overview
  -ad,--all_dosages                         Filter out QTLs where not all
                                            dosages are present in at least
                                            1 sample
