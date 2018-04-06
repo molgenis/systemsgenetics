@@ -1,0 +1,8 @@
+bin/
+deconvolution.jar
+.Rhistory
+.classpath
+.project
+/deconvolution/
+*.jar
+*.class
