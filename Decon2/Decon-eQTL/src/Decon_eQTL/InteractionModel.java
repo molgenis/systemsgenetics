@@ -1,6 +1,5 @@
 package Decon_eQTL;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +36,8 @@ public class InteractionModel {
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
 	 * [mono%, neut%, mono% * GT]
 	 * 
-	 * @ param sampleSize number of samples
-	 * @ param numberOfTerms number of terms that the interaction model has
+	 * @param sampleSize 	number of samples
+	 * @param numberOfTerms 	number of terms that the interaction model has
 	 */
 	public InteractionModel( int sampleSize, int numberOfTerms){
 	    this.observedValues = new double[sampleSize][numberOfTerms];
@@ -53,8 +52,10 @@ public class InteractionModel {
 	 * Get the observed values. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
 	 * [mono%, neut%, mono% * GT]
+	 * 
+	 * @return Matrix of observed values
 	 */
-	public double[][] getObservedValues() throws IllegalAccessException{
+	public double[][] getObservedValues(){
 	    return(this.observedValues);
 	  }
 	
@@ -64,6 +65,8 @@ public class InteractionModel {
 	 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
 	 *    celltypeTerms = [[0,3],[1],[2,4]
 	 * This can be used to sum up the Beta * variable per cell type  
+	 * 
+	 * @param values	The index of the celltype variables of the linear model
 	 */
 	public void addCelltypeVariablesIndex(int[] values){
 		celltypeVariablesIndex.add(values);
@@ -75,22 +78,30 @@ public class InteractionModel {
 	 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
 	 *    celltypeTerms = [[0,3],[1],[2,4]
 	 * This can be used to sum up the Beta * variable per cell type  
+	 * 
+	 * @return	The indices of the celltype variables of the linear model
 	 */
-	public List<int[]> getCelltypeVariablesIndex() throws IllegalAccessException{
+	public List<int[]> getCelltypeVariablesIndex(){
 	    return (this.celltypeVariablesIndex);
 	  }
 	
 	/** 
 	 * Add the name of the independent variable name at the end of the existing list
-	 * of independent variables.  
+	 * of independent variables.
+	 * 
+	 * @param independentVariables	Variable name to add to independentVariableNames list
 	 */
 	public void addIndependentVariableName(String independentVariables){
 	    this.independentVariableNames.add(independentVariables);
 	  }
 	
 	/**
-	 * Add the name of the independent variable name at <index> of the existing list
-	 * of independent variables.  
+	 * Add the name of the independent variable name at index of the existing list
+	 * of independent variables. 
+	 * 
+	 * @param index	Index of list at which to add the variable name
+	 * 
+	 * @param independentVariables	Variable name to add
 	 */
 	public void addIndependentVariableName(int index, String independentVariables){
 	    this.independentVariableNames.add(index, independentVariables);
@@ -99,8 +110,10 @@ public class InteractionModel {
 	/** 
 	 * Get a list of the independent variables of the interaction model e.g.
 	 * 		[neut%, mono%, neut%:GT]
+	 * 
+	 * @return List of independent variable names
 	 */
-	public List<String> getIndependentVariableNames() throws IllegalAccessException{
+	public List<String> getIndependentVariableNames(){
 	    return(this.independentVariableNames);
 	  }
 	
@@ -108,14 +121,14 @@ public class InteractionModel {
 	    this.modelName = modelName;
 	  }
 	
-	public String getModelName() throws IllegalAccessException{
+	public String getModelName(){
 	    return(this.modelName);
 	}	
 
 	public void setPvalue(double pvalue){
 		this.pvalue = pvalue;
 	}
-	public double getPvalue() throws IllegalAccessException{
+	public double getPvalue(){
 		return this.pvalue;
 	}
 	public void setAlltIndependentVariableNames(List<String> list){
@@ -191,16 +204,11 @@ public class InteractionModel {
 	 * This uses NNLS from Rochester Institute of technology. Documention here: https://www.cs.rit.edu/~ark/pj/doc/edu/rit/numeric/NonNegativeLeastSquares.html
 	 * Can download JAR from: https://www.cs.rit.edu/~ark/pj.shtml#installed
 	 * 
-	 * @param model An InteractionModel object including the y vector expression values and ObservedValues (model)
-	 * Such that
-	 * test_trait ~ geno_A + lymph% + geno_A:geno_B it can be for one QTL
-	 * [[2, 43.4, 86.8], [2, 40.3, 80.6]], for another QTL [[0, 46.7, 0],
-	 * [0, 51.5, 0] [0, 48.7, 0]]
-	 * @return 
+	 * @param expressionValues	Vector of expression values
 	 * 
-	 *  @return An nnls object
+	 * @throws IllegalAccessException	Exception thrown when observed values can't be retrieved	
 	 */
-	public void calculateSumOfSquaresNNLS(double[] expressionValues) throws IOException, IllegalAccessException {
+	public void calculateSumOfSquaresNNLS(double[] expressionValues) throws IllegalAccessException {
 		NonNegativeLeastSquares nnls = new NonNegativeLeastSquares();
 		
 		try{

@@ -10,7 +10,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.junit.Before;
 import org.junit.Test;
-import deconvolution.Deconvolution;
+import Decon_eQTL.Deconvolution;
 
 public class DeconvolutionTest {
 	private double [] y;
