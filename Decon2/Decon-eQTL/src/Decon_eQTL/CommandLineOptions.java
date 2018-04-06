@@ -1,4 +1,4 @@
-package deconvolution;
+package Decon_eQTL;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -222,7 +222,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 0.9.0, src last changed at 28-MAR-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.0, src last changed at 06-APR-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));

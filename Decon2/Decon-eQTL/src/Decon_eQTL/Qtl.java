@@ -1,4 +1,4 @@
-package deconvolution;
+package Decon_eQTL;
 
 
 public class Qtl {

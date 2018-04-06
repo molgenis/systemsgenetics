@@ -1,4 +1,4 @@
-package deconvolution;
+package Decon_eQTL;
 
 public class NotEnoughGenotypesException extends Exception {
 	private static final long serialVersionUID = -2137984747579058008L;
