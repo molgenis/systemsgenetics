@@ -3,7 +3,6 @@ package Decon_eQTL;
 import Decon_eQTL.Qtl;
 import Decon_eQTL.CellCount;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -42,7 +41,7 @@ public class Deconvolution {
 	 * @throws IOException	If cellcounts file can not be found or read
 	 */
 	public static void main(String[] args) throws ParseException, IllegalAccessException, IOException {
-
+		
 		commandLineOptions.parseCommandLine(args);
 		outputFolder = commandLineOptions.getOutfolder();
 		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
