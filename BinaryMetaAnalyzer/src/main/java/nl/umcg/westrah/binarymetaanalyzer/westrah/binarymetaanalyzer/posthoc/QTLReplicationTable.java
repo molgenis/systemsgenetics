@@ -116,6 +116,10 @@ public class QTLReplicationTable {
 		}
 		header += "\tNrDatasetsTested";
 		header += "\tNrDatasetsWithP(differentEffectSize)<0.05";
+		header += "\tNrDatasetsWithFDR<" + fdrthreshold;
+		header += "\tNrDatasetsWithFDR<" + fdrthreshold + "AndSameDirection";
+		header += "\tNrDatasetsWithSameDirection";
+		
 		
 		TextFile out = new TextFile(outputloc, TextFile.W);
 		out.writeln(header2);
@@ -141,7 +145,10 @@ public class QTLReplicationTable {
 					+ "\t" + reference.getFDR();
 			
 			int nroverlap = 0;
-			int nroverlapsignificant = 0;
+			int nrSignificantDifferentEffectSize = 0;
+			int nrSignificantFDR = 0;
+			int nrSignificantFDRSameDirection = 0;
+			int nrSameDirection = 0;
 			for (int f = 0; f < files.length; f++) {
 				EQTL other = output[e][f];
 				if (other == null) {
@@ -152,13 +159,15 @@ public class QTLReplicationTable {
 							+ "\t-";
 				} else {
 					
+					
 					if (!(other.getFDR() >= fdrthreshold || includenonSignificanteffects)) {
-						ln += "\tNS"
-								+ "\tNS"
-								+ "\tNS"
-								+ "\tNS"
-								+ "\tNS";
+						ln += "\tNOTSIGNIFICANT"
+								+ "\tNOTSIGNIFICANT"
+								+ "\tNOTSIGNIFICANT"
+								+ "\tNOTSIGNIFICANT"
+								+ "\tNOTSIGNIFICANT";
 					} else {
+						
 						nroverlap++;
 						Boolean flip = BaseAnnot.flipalleles(reference.getAlleles(), reference.getAlleleAssessed(), other.getAlleles(), other.getAlleleAssessed());
 						if (flip != null) {
@@ -177,20 +186,37 @@ public class QTLReplicationTable {
 							double rp = cern.jet.stat.Probability.normal(-Math.abs(zDiff)) * 2d;
 							
 							if (rp < 0.05) {
-								nroverlapsignificant++;
+								nrSignificantDifferentEffectSize++;
 							}
 							
 							ln += "\t" + z
-									+ "\t" + rother
-									+ "\t" + (rp * rp)
+									+ "\t" + (rother * rother)
+									+ "\t" + rp
 									+ "\t" + other.getPvalue()
 									+ "\t" + other.getFDR();
+							boolean samedirection = false;
+							if ((z > 0 && reference.getZscore() > 0) || (z < 0 && reference.getZscore() < 0)) {
+								samedirection = true;
+								nrSameDirection++;
+							}
+							if (other.getFDR() < fdrthreshold) {
+								nrSignificantFDR++;
+								if (samedirection) {
+									nrSignificantFDRSameDirection++;
+								}
+							}
+						} else {
+							ln += "\tINCOMPATIBLEALLELES"
+									+ "\tINCOMPATIBLEALLELES"
+									+ "\tINCOMPATIBLEALLELES"
+									+ "\tINCOMPATIBLEALLELES"
+									+ "\tINCOMPATIBLEALLELES";
 						}
 					}
 				}
 			}
 			if (nroverlap >= minNrDatasetsOverlap) {
-				ln += "\t" + nroverlap + "\t" + nroverlapsignificant;
+				ln += "\t" + nroverlap + "\t" + nrSignificantDifferentEffectSize + "\t" + nrSignificantFDR + "\t" + nrSignificantFDRSameDirection + "\t" + nrSameDirection;
 				
 				out.writeln(ln);
 			}
@@ -244,6 +270,7 @@ public class QTLReplicationTable {
 //				}
 			}
 		}
+		
 		
 		
 		

@@ -333,8 +333,7 @@ public class BinaryMetaAnalysisCLI {
 				}
 				
 				
-			}
-			if (cmd.hasOption("replicationtablegtex")) {
+			} else if (cmd.hasOption("replicationtablegtex")) {
 				
 				if (!cmd.hasOption("in") || !cmd.hasOption("in2") || !cmd.hasOption("names") || !cmd.hasOption("out")) {
 					System.out.println("Options for replicationtable:");
