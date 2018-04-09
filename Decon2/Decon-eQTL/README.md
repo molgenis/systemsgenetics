@@ -9,6 +9,10 @@ Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts
 `Java version 1.8 or higher` (Tested using `1.8.0_121`)  
 Decon-eQTL.jar
 
+## Download
+
+The latest .jar build can be downloaded from www.molgenis.org/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/.
+
 ### For compiling
 commons-cli v1.3.1  
 commons-csv v1.2  
