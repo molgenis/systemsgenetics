@@ -6,3 +6,4 @@ deconvolution.jar
 /deconvolution/
 *.jar
 *.class
+fake_genotypes.py
