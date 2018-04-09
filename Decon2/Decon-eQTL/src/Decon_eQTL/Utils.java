@@ -57,6 +57,8 @@ public class Utils {
 	 * 
 	 * @return A 2D array with each array being one column from filepath except first column
 	 * 		   and a 1D array with the first column (without header)
+	 * 
+	 * @throws IOException	If file at filepath can not be read
 	 */
 	public static Object[] readTabDelimitedColumns(String filepath) throws IOException {
 		List<List<String>> allColumns = new ArrayList<List<String>>();
@@ -157,8 +159,13 @@ public class Utils {
 	/**
 	 * Turn list into tab separated string
 	 * 
-	 *  @param list Each element will be separated by a tab
+	 *  @param <T> List type paramaeter
+	 *  
+	 *  @param list	List to separate into tabs
+	 *  
 	 *  @param append String to be added at end of each element
+	 *  
+	 *  @return Tab separated string
 	 */
 	public static <T> String listToTabSeparatedString(List<T> list, String append)
 	{
@@ -250,8 +257,12 @@ public class Utils {
 	 * 00, 10, 01, 11
 	 * 
 	 * @param soFar The string that will contain the binary permutation. Should be empty when given to the function (used in the recursion)
+	 * 
 	 * @param iterations The length of the binary string
+	 * 
 	 * @param permutations List that contains all the permutations of the binary string. Should be given empty (used to save the recursion results)
+	 * 
+	 * @return List of permutations of 0's and 1's of given length
 	 */
 		public static ArrayList<String> binaryPermutations(String soFar, double iterations, ArrayList<String> permutations) {
 		    if(iterations == 0) {

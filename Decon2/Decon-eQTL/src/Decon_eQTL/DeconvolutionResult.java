@@ -24,7 +24,8 @@ public class DeconvolutionResult {
 	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
 	 * 
 	 * @param wholeBloodQTLpvalue pvalue of the pearman correlation of genotypes and expression levels
-	 * @throws IllegalAccessException 
+	 * 
+	 * @throws IllegalAccessException	QTL name or pvalue can not be retrieved from interactionModelCollection
 	 */
 	public DeconvolutionResult( InteractionModelCollection interactionModelCollection, double wholeBloodQTL, 
 								double wholeBloodQTLpvalue) throws IllegalAccessException{
@@ -52,6 +53,10 @@ public class DeconvolutionResult {
 	 * @param pvalues The pvalues from the deconvolution model
 	 * 
 	 * @param fullModel Interaction model containing information of all celltypes
+	 * 
+	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
+	 * 
+	 * @param wholeBloodQTLpvalue pvalue of the pearman correlation of genotypes and expression levels
 	 */
 	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues,InteractionModel fullModel,
 								double wholeBloodQTL,double wholeBloodQTLpvalue){
@@ -77,6 +82,8 @@ public class DeconvolutionResult {
 	 * @param pvalues The pvalues from the deconvolution model
 	 * 
 	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
+	 * 
+	 * @param wholeBloodQTLpvalue The p-value for whole blood QTL
 	 */
 	public DeconvolutionResult( List<String> celltypes, String qtlName, List<Double> pvalues, double wholeBloodQTL,double wholeBloodQTLpvalue){
 		this.celltypes = celltypes;
@@ -104,6 +111,10 @@ public class DeconvolutionResult {
 	
 	/** 
 	 * Get a list of all the celltypes given as input
+	 * 
+	 * @return List of celltypes
+	 * 
+	 * @throws IllegalAccessException	Celltypes not set for current model
 	 */
 	public List<String> getCelltypes() throws IllegalAccessException{
 		if(this.celltypes == null){

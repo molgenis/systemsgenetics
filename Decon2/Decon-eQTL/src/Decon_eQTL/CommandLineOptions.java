@@ -38,11 +38,11 @@ public class CommandLineOptions {
 	/**
 	 * Standard command line parsing.
 	 * 
-	 * @param args A string vector of all arguments given to the command
-	 * line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
+	 * @param args A string vector of all arguments given to the command line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
 	 * 
-	 * @return A CommandLine object that includes all the options given to
-	 * the command line
+	 * @throws ParseException	If command line options can not be parsed
+	 * 
+	 * @throws FileNotFoundException	If deconvolution log file can't be written
 	 */
 	public void parseCommandLine(String[] args) throws ParseException, FileNotFoundException {
 		Options options = new Options();
@@ -222,7 +222,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.0, src last changed at 06-APR-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.1, src last changed at 06-APR-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));

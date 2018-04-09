@@ -150,9 +150,6 @@ public class NonNegativeLeastSquares
 	 * fields a, b, x, and index are
 	 * allocated with the proper sizes but are not filled in.
 	 *
-	 * @param  originalA See solve() method documentation for description
-	 * @param  originalB See solve() method documentation for description
-	 *
 	 * @exception  IllegalArgumentException
 	 *     (unchecked exception) Thrown if M &lt;= 0 or N
 	 *     &lt;= 0.

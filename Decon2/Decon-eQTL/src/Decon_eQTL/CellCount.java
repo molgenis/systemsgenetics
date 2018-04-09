@@ -17,8 +17,10 @@ public class CellCount {
 	/**
 	 * Read in cellcount file 
 	 * 
-	 * @param cellcountFile File with cellcount percentages, 
-	 * 		   with columns = celltype, rows is samples (includes column headers and row names)   
+	 * @param cellCountFile File with cellcount percentages, 
+	 * 		   with columns = celltype, rows is samples (includes column headers and row names)
+	 *
+	 * @throws IOException	If cellcount file can not be read
 	 */
 	@SuppressWarnings("unchecked")
 	public CellCount( String cellCountFile) throws IOException{

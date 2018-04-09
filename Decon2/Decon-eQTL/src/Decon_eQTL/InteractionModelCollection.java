@@ -85,27 +85,31 @@ public class InteractionModelCollection {
 	}	
 	/** 
 	 * Set the expression values (y) for all the interaction models. 
+	 * 
+	 * @param expression	Expression vector
 	 */
 	public void setExpressionValues(double[] expression){
 		this.expressionValues = expression;
 	}
 	/** 
 	 * Get the expression values (y) of all the interaction models. 
+	 * 
+	 * @return Expression vector
 	 */
-	public double[] getExpessionValues() throws IllegalAccessException{
+	public double[] getExpessionValues(){
 		return(this.expressionValues);
 	}
 	/*
 	 * Get the genotypes of all the interaction models
 	 */
-	public double[] getGenotypes() throws IllegalAccessException {
+	public double[] getGenotypes(){
 		return this.genotypes;
 	}
 
 	/*
 	 * Get the genotypes of all the interaction models
 	 */
-	public double[] getSwappedGenotypes() throws IllegalAccessException {
+	public double[] getSwappedGenotypes(){
 		return this.swappedGenotypes;	
 	}
 
@@ -316,9 +320,11 @@ public class InteractionModelCollection {
 
 	/**
 	 * Construct the observed value matrices that are used for calculating the regression for the full model.
-	 * Add all permutations of genotypes/swappedGenotypes (swappedGenotypes -> 0=2, 2=0)
+	 * Add all permutations of genotypes/swappedGenotypes (swappedGenotypes 0=2, 2=0)
 	 * 
 	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesCtModel
+	 * 
+	 * @throws IllegalAccessException	If cellcounts file can not be read
 	 */
 	public void createObservedValueMatricesFullModel() 
 			throws IllegalAccessException{
@@ -403,12 +409,10 @@ public class InteractionModelCollection {
 
 	/**
 	 * Construct the observed value matrices that are used for calculating the regression
-	 * @param genotypeOrder 
-	 * 
-	 * @param InteractionModelCollection Collection of InteractionModel objects for saving the results
-	 * @param genotypeOrder The order of genotypes to use, e.g. 010 means non swapped genotypes celltype 1, swapped genotypes celltype 2, non swapped genotypes celltype 3
 	 * 
 	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesFullModel
+	 * 
+	 * @throws IllegalAccessException	If cellcounts file can not be read
 	 */
 	public void createObservedValueMatricesCtModels() 
 			throws IllegalAccessException{
