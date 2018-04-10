@@ -56,11 +56,10 @@ for(i in 1:number_of_samples) {
 # For every gene sample from same mean and SD as vignette samples
 # with expression >= 0
 new_count_table <- data.frame(t(apply(
-									means_and_SD, 1, function(x) 
-										rtruncnorm(number_of_samples, a=0,
-												   mean=x[['mean']], 
-												   sd=x[['SD']]))
-									))
+	means_and_SD, 1, function(x) rtruncnorm(number_of_samples, a=0,
+	                                        mean=x[['mean']],
+	                                        sd=x[['SD']]))
+	))
 colnames(new_count_table) <- sampleNames
 
 # set NA's to 0
@@ -96,11 +95,11 @@ In R
 ```r
 # select relevant cell types
 predicted.cellcounts <- prediction$dCell.prediction[,c('Granulocytes',
-													  'B cells (CD19+)',
-													  'CD4+ T cells',
-													  'CD8+ T cells',
-													  'NK cells (CD3- CD56+)',
-													  'Monocytes (CD14+)')]
+                                                       'B cells (CD19+)',
+                                                       'CD4+ T cells',
+                                                       'CD8+ T cells',
+                                                       'NK cells (CD3- CD56+)',
+                                                       'Monocytes (CD14+)')]
 # scale to sum to 100
 predicted.cellcounts.scaled <- (predicted.cellcounts/rowSums(predicted.cellcounts))*100
 
