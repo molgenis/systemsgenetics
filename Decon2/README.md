@@ -122,3 +122,11 @@ java -jar Decon-eQTL-v1.0.1-jar-with-dependencies.jar \
 	--snpsToTest example_data/gene_snp_file.txt \
 	--outfolder example_output/
 ```
+
+A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the celltypes, the middle 6 columns are the beta (effect size) of the cell type - genotype interaction effect, and the last 6 columns are the direction of the effect relative to the allele that is coded as 2 in the genotype file.
+
+
+|	|Granulocytes_pvalue	|B cells (CD19+)_pvalue	|CD4+ T cells_pvalue	|CD8+ T cells_pvalue	|NK cells (CD3- CD56+)_pvalue	|Monocytes (CD14+)_pvalue	|Beta1_Granulocytes	|Beta2_B cells (CD19+)	|Beta3_CD4+ T cells	|Beta4_CD8+ T cells	|Beta5_NK cells (CD3- CD56+)	|Beta6_Monocytes (CD14+)	|Beta7_Granulocytes:GT	|Beta8_B cells (CD19+):GT	|Beta9_CD4+ T cells:GT	|Beta10_CD8+ T cells:GT	|Beta11_NK cells (CD3- CD56+):GT	|Beta12_Monocytes (CD14+):GT	|effectDirectionDosage2_Granulocytes	|effectDirectionDosage2_B cells (CD19+)	|effectDirectionDosage2\_CD4+ T cells	|effectDirectionDosage2_CD8+ T cells	|effectDirectionDosage2_NK cells (CD3- CD56+)	|effectDirectionDosage2_Monocytes (CD14+)
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
+ENSG00000103855\_snp_244	|0.8754191650343855	|1.0	|0.9855839296645753	|1.0	|0.8801056746139749	|1.0	|0.0	|0.0	|0.0	|0.0	|0.19545183472374217	|0.0	|0.008312507740549976	|0.0	|0.0014092158690805837	|0.0	|0.05818753733261271	|0.0	|-	|-	|-	|-	|+	|-
+
