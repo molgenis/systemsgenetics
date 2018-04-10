@@ -51,8 +51,6 @@ public class CommandLineOptions {
 				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
 		Option cellcount = Option.builder("c").required(true).hasArg().longOpt("cellcount").desc("Cellcount file name")
 				.argName("file").build();
-		Option useRelativeCellCountsOption = Option.builder("cc").required(false).longOpt("use_relative_cellcounts")
-				.desc("Calculate ratio between cellcount and cellcount average, use that as cellcount in the model").build();
 		Option expression = Option.builder("e").required(true).hasArg().longOpt("expression")
 				.desc("Expression file name").argName("file").build();
 		Option filterSamplesOption =  Option.builder("f").required(false).longOpt("filter_samples")
@@ -74,8 +72,6 @@ public class CommandLineOptions {
 				.argName("file").build();
 		Option roundDosage = Option.builder("r").required(false).longOpt("round_dosage")
 				.desc("Round the dosage to the closest int").build();
-		Option onlyOutputSignificantOption = Option.builder("s").required(false).longOpt("output_significant_only")
-				.desc("Only output results that are significant in at least one celltype.").build();
 		Option skipGenotypes = Option.builder("sg").required(false).longOpt("skip_genotypes")
 				.desc("Skip genotypes that are in the GeneSNP pair file but not in the genotype file.").build();
 		Option snpsToTestOption = Option.builder("sn").required(true).hasArg().longOpt("snpsToTest").argName("file")
@@ -84,7 +80,6 @@ public class CommandLineOptions {
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
-		options.addOption(onlyOutputSignificantOption);
 		options.addOption(filterSamplesOption);
 		options.addOption(help);
 		options.addOption(outfile);
@@ -95,7 +90,6 @@ public class CommandLineOptions {
 		options.addOption(minimumSamplesPerGenotype);
 		options.addOption(allDosages);
 		options.addOption(outfolder);
-		options.addOption(useRelativeCellCountsOption);
 		options.addOption(doTestRun);
 		options.addOption(snpsToTestOption);
 		options.addOption(skipGenotypes);
