@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,8 +8,8 @@ import java.util.List;
 
 /*
  *  Collection of all the interaction models and their shared data (genotypes, expression etc)
- *  There are n + 1 interaction models, where n = the number of celltypes. One full model 
- *  with all celltypes, and for each celltype one model with the interaction term for that
+ *  There are n + 1 interaction models, where n = the number of cell types. One full model 
+ *  with all cell types, and for each cell type one model with the interaction term for that
  *  model removed
  */
 public class InteractionModelCollection {
@@ -45,11 +45,11 @@ public class InteractionModelCollection {
 	}
 
 	public String getCtModelName(String celltype){
-		return(ctModelName.get(celltype));
+		return ctModelName.get(celltype);
 	}
 
 	public List<String> getAllCelltypes(){
-		return(celltypes);
+		return celltypes;
 	}	
 
 	public HashMap<String, String> getCtModelsByGenotypeConfiguration(String genotypeConfiguration){
@@ -61,7 +61,7 @@ public class InteractionModelCollection {
 	 */
 	public InteractionModel getInteractionModel(String modelName) throws IllegalAccessException{
 		InteractionModel interactionModel = this.interactionModels.get(modelName);
-		return(interactionModel);
+		return interactionModel;
 	}
 
 	/*
@@ -97,7 +97,7 @@ public class InteractionModelCollection {
 	 * @return Expression vector
 	 */
 	public double[] getExpessionValues(){
-		return(this.expressionValues);
+		return this.expressionValues;
 	}
 	/*
 	 * Get the genotypes of all the interaction models
@@ -134,7 +134,7 @@ public class InteractionModelCollection {
 	}
 
 	public String getQtlName() throws IllegalAccessException{
-		return(this.qtlName);
+		return this.qtlName;
 	}
 
 	/*
@@ -146,7 +146,7 @@ public class InteractionModelCollection {
 
 	public Double getPvalue(String modelName) throws IllegalAccessException{
 		Double pvalue = this.pvalues.get(modelName);
-		return(pvalue);
+		return pvalue;
 	}
 
 	public ArrayList<String> getFullModelNames() throws IllegalAccessException{
@@ -161,12 +161,12 @@ public class InteractionModelCollection {
 	}
 
 	public InteractionModel getBestFullModel() throws IllegalAccessException{
-		return(this.getInteractionModel(this.bestFullModelName));
+		return this.getInteractionModel(this.bestFullModelName);
 	}
 
 	public InteractionModel getBestFullModel(String celltype) throws IllegalAccessException{
 		String bestFullModel = bestFullModelPerCelltype.get(celltype);
-		return(this.getInteractionModel(bestFullModel));
+		return this.getInteractionModel(bestFullModel);
 	}
 
 	private void setCtModelSameGenotypeConfigurationAsBestFullModel(String celltype, String modelName){
@@ -182,16 +182,16 @@ public class InteractionModelCollection {
 			setCtModelSameGenotypeConfigurationAsBestFullModel(celltype, ctModel);
 
 		}
-		return(this.ctModelsSameGenotypeConfigurationBestFullModel.get(celltype));
+		return this.ctModelsSameGenotypeConfigurationBestFullModel.get(celltype);
 	}
 
 	private void setBestCtModel(String celltype, String modelName){
 		this.bestCtModel.put(celltype, modelName);
 	}
 
-	// per celltype there is one best Ct model
+	// per cell type there is one best Ct model
 	public InteractionModel getBestCtModel(String celltype) throws IllegalAccessException{
-		return(this.getInteractionModel(this.bestCtModel.get(celltype)));
+		return this.getInteractionModel(this.bestCtModel.get(celltype));
 	}
 
 	/*
@@ -216,7 +216,7 @@ public class InteractionModelCollection {
 	 * select the model with the highest R2 as the new full model
 	 */
 	public void findBestFullModel() throws IllegalAccessException, IOException{
-		// set to -1 so that first loop can be initialized
+		// set to -1 so that first loop can be initialised
 		double sumOfSquares = -1;
 		for (String modelName : getFullModelNames()){
 			InteractionModel fullModel = getInteractionModel(modelName);
@@ -236,11 +236,11 @@ public class InteractionModelCollection {
 	}
 
 	/*
-	 * Go through all ct models, calculate the regression statistics and select the model with the highest R2 as the new ct model
+	 * Go through all cell type models, calculate the regression statistics and select the model with the highest R2 as the new cell type model
 	 * TODO: merge with findBestFullModel()
 	 */
 	public void findBestCtModel() throws IllegalAccessException, IOException{
-		// set to -1 so that first loop can be initialized
+		// set to -1 so that first loop can be initialised
 		for(String celltype : celltypes){
 			double sumOfSquares = -1;
 			for (String modelName : getCtModelNames(celltype)){
@@ -324,7 +324,7 @@ public class InteractionModelCollection {
 	 * 
 	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesCtModel
 	 * 
-	 * @throws IllegalAccessException	If cellcounts file can not be read
+	 * @throws IllegalAccessException	If cell counts file can not be read
 	 */
 	public void createObservedValueMatricesFullModel() 
 			throws IllegalAccessException{
@@ -359,7 +359,7 @@ public class InteractionModelCollection {
 			for (int sampleIndex = 0; sampleIndex <= numberOfSamples-1; ++sampleIndex) {
 				for (int celltypeIndex = 0; celltypeIndex < numberOfCelltypes; ++celltypeIndex) {
 
-					double celltypePerc = cellCount.getCellcountPercentages()[sampleIndex][celltypeIndex];
+					double celltypePerc = cellCount.getCellCountPercentages()[sampleIndex][celltypeIndex];
 					// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
 					fullModel.addObservedValue(celltypePerc, sampleIndex, celltypeIndex);
 					// Have permutation of (2**number of celltypes) as binary ( so 00, 10, 01, 11 ), when 0 do normal genotype, 1 do swapped genotype
@@ -412,7 +412,7 @@ public class InteractionModelCollection {
 	 * 
 	 * TODO: Move this to InteractionModel class. Also, merge overlapping code with createObservedValueMatricesFullModel
 	 * 
-	 * @throws IllegalAccessException	If cellcounts file can not be read
+	 * @throws IllegalAccessException	If cell counts file can not be read
 	 */
 	public void createObservedValueMatricesCtModels() 
 			throws IllegalAccessException{
@@ -442,7 +442,7 @@ public class InteractionModelCollection {
 						// where numberOfSamples = 1 and numberOfCellTypes = 4 with celltypePerc = 0.3, 0.4, 0.2, and 0.1 and genotype = 2
 						// for each cell type is 1 model, celltype% * genotype without 1 celltype.
 						// j+1 because j==0 is header
-						double celltype_perc = cellCount.getCellcountPercentages()[sampleIndex][celltypeIndex];
+						double celltype_perc = cellCount.getCellCountPercentages()[sampleIndex][celltypeIndex];
 						ctModel.addObservedValue(celltype_perc, sampleIndex, celltypeIndex);
 						if(sampleIndex == 0){
 							// add the celltype name at position i so that it gets in front of the celltype:GT, but once

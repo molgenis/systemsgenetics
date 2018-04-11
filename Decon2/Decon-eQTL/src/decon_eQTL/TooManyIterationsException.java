@@ -38,7 +38,7 @@
 //
 //******************************************************************************
 
-package Decon_eQTL;
+package decon_eQTL;
 
 /**
  * Class TooManyIterationsException is an unchecked runtime exception thrown if

@@ -1,7 +1,4 @@
-package Decon_eQTL;
-
-import Decon_eQTL.Qtl;
-import Decon_eQTL.CellCount;
+package decon_eQTL;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -19,6 +16,8 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import JSci.maths.statistics.FDistribution;
+import decon_eQTL.CellCount;
+import decon_eQTL.Qtl;
 
 public class Deconvolution {
 	private static CommandLineOptions commandLineOptions = new CommandLineOptions(); 
@@ -30,15 +29,15 @@ public class Deconvolution {
 
 
 	/**
-	 * Deconvolutes a set of QTLs given the expression levels, genotypes,
+	 * Deconvolute a set of QTLs given the expression levels, genotypes,
 	 * and cell counts. Calculates the p-values for the deconvoluted QTLs
-	 * and writes them to an outfile
+	 * and writes them to an out file
 	 * 
 	 * @param args List of command line arguments
 	 * 
-	 * @throws ParseException	If cellcount file is not in right format to be parsed correctly
-	 * @throws IllegalAccessException	If outfolder can not be retrieved from commandLineOptions
-	 * @throws IOException	If cellcounts file can not be found or read
+	 * @throws ParseException	If cell count file is not in right format to be parsed correctly
+	 * @throws IllegalAccessException	If out folder can not be retrieved from commandLineOptions
+	 * @throws IOException	If cell counts file can not be found or read
 	 */
 	public static void main(String[] args) throws ParseException, IllegalAccessException, IOException {
 		
@@ -311,7 +310,7 @@ public class Deconvolution {
 		InteractionModel dummyModel = new InteractionModel();
 		dummyModel.setModelName("dummy");
 		dummyModel.setAlltIndependentVariableNames(cellCounts.getAllCelltypes());
-		return(new DeconvolutionResult(cellCounts.getAllCelltypes(), qtlName, pvalues, dummyModel, 0, 1));
+		return new DeconvolutionResult(cellCounts.getAllCelltypes(), qtlName, pvalues, dummyModel, 0, 1);
 	}
 
 
@@ -382,7 +381,7 @@ public class Deconvolution {
 		FDistribution Fdist = new FDistribution(degreesOfFreedomDifference, degreesOfFreedomB);
 		/*** Calculate 1 - the probability of observing a lower Fvalue **/
 		double pval = 1 - Fdist.cumulative(Fval);
-		return (pval);
+		return pval;
 	}
 
 	public static DeconvolutionResult deconvolution(Qtl qtl) throws RuntimeException, IllegalAccessException, 

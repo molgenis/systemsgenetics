@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +26,7 @@ public class Statistics
     	for (int i = 0; i < data.length; i++){
     		data[i] = Math.log10(data[i]);
     	}
-    	return(data);
+    	return data;
     }
 
 	/** log modulus transformation, so that negative numbers are preserved
@@ -46,7 +46,7 @@ public class Statistics
 			// if original value was negative, put sign b ack
 			logValue *= -1;
 		}
-		return(logValue);
+		return logValue;
     }
     
 	/**
@@ -62,7 +62,7 @@ public class Statistics
     	for(int i = 0; i < data.length; i++){
     		data[i] = (data[i]-mean)/std;
     	}
-    	return(data);
+    	return data;
     }
     
 	/**
@@ -78,13 +78,13 @@ public class Statistics
     	for(int i = 0; i < data.size(); i++){
     		data.set(i, (data.get(i)-mean)/std);
     	}
-    	return(data);
+    	return data;
     }
     
 	/**
 	 * Normalize vector, reinsert the mean
 	 * 
-	 * @param expression	Vctor of expression values
+	 * @param expression	Vector of expression values
 	 * 
 	 * @return Normalized vector with mean reinserted
 	 */
@@ -95,7 +95,7 @@ public class Statistics
     	for(int i = 0; i < normalizedData.length; i++){
     		normalizedData[i] = normalizedData[i] + mean;
     	}
-    	return(expression);
+    	return expression;
     }
     
     public double[] normalizeKeepExponential(double[] expression){
@@ -104,7 +104,7 @@ public class Statistics
     	for(int i = 0; i < normalizedData.length; i++){
     		normalizedData[i] = Math.pow(normalizedData[i], 2);
     	}
-    	return(expression);
+    	return expression;
     }
     
     static double getMean(double[] data)
@@ -218,7 +218,7 @@ public class Statistics
     	if (Double.isNaN(p)){
     		p = 1;
     	}
-    	return(p);
+    	return p;
     }
     
 	/**
@@ -244,18 +244,18 @@ public class Statistics
 		logSummedResiduals = Math.log(logSummedResiduals);
 			
 		double logLikelihood = 0.5 * (0 - residuals.length * (Math.log(2 * Math.PI) + 1 - Math.log(residuals.length)+logSummedResiduals));
-		return(logLikelihood);
+		return logLikelihood;
 	}
 	
 	/*
-	 * Calculate Akaike's ‘An Information Criterion’ with k = 2 (same is AIC in R)
+	 * Calculate Akaike's "An Information Criterion" with k = 2 (same is AIC in R)
 	 * 
 	 * @param residuals residuals of linear model
 	 * @param npar represents the number of parameters in the fitted model
 	 */
 	public static double AIC(double[] residuals, int npar){
 		int k=2;
-		return(-2*logLik(residuals) + k*npar);
+		return -2*logLik(residuals) + k*npar;
 	}
 }
 

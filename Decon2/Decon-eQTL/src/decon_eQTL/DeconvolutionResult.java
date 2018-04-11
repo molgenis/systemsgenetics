@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,9 +23,9 @@ public class DeconvolutionResult {
 	 * 
 	 * @param wholeBloodQTL Spearman correlation of genotypes and expression levels
 	 * 
-	 * @param wholeBloodQTLpvalue pvalue of the pearman correlation of genotypes and expression levels
+	 * @param wholeBloodQTLpvalue p-value of the spearman correlation of genotypes and expression levels
 	 * 
-	 * @throws IllegalAccessException	QTL name or pvalue can not be retrieved from interactionModelCollection
+	 * @throws IllegalAccessException	QTL name or p-value can not be retrieved from interactionModelCollection
 	 */
 	public DeconvolutionResult( InteractionModelCollection interactionModelCollection, double wholeBloodQTL, 
 								double wholeBloodQTLpvalue) throws IllegalAccessException{
@@ -106,21 +106,21 @@ public class DeconvolutionResult {
 		if(this.qtlName == null){
 			throw new IllegalAccessException("QTL name not set for this model");
 		}
-		return(this.qtlName);
+		return this.qtlName;
 	}
 	
 	/** 
-	 * Get a list of all the celltypes given as input
+	 * Get a list of all the cell types given as input
 	 * 
-	 * @return List of celltypes
+	 * @return List of cell types
 	 * 
-	 * @throws IllegalAccessException	Celltypes not set for current model
+	 * @throws IllegalAccessException	Cell types not set for current model
 	 */
 	public List<String> getCelltypes() throws IllegalAccessException{
 		if(this.celltypes == null){
 			throw new IllegalAccessException("celltypes not set for this model");
 		}
-		return(this.celltypes);
+		return this.celltypes;
 	}
 	
 	public void setPvalues(List<Double> pvalues){
@@ -131,7 +131,7 @@ public class DeconvolutionResult {
 		if(this.pvalues == null){
 			throw new IllegalAccessException("pvalues not set for this model");
 		}
-		return(this.pvalues);
+		return this.pvalues;
 	}
 	
 	public InteractionModel getModel(String modelName) throws IllegalAccessException{
@@ -139,14 +139,14 @@ public class DeconvolutionResult {
 		if(interationModel == null){
 			throw new IllegalAccessException(String.format("model not set for %s", modelName));
 		}
-		return(interationModel);
+		return interationModel;
 	}
 	
 	public InteractionModelCollection getInteractionModelCollection() throws IllegalAccessException{
 		if(this.interactionModelCollection == null){
 			throw new IllegalAccessException("interactionModelCollection not set");
 		}
-		return(this.interactionModelCollection);
+		return this.interactionModelCollection;
 	}
 		
 		
@@ -154,13 +154,13 @@ public class DeconvolutionResult {
 		if(this.pvaluePerCelltype == null){
 			throw new IllegalAccessException("pvaluePerCelltype not set for this model");
 		}
-		return(this.pvaluePerCelltype);
+		return this.pvaluePerCelltype;
 	}
 
 	public double  getWholeBloodQTL() throws IllegalAccessException{
-		return(this.wholeBloodQTL);
+		return this.wholeBloodQTL;
 	}
 	public double  getWholeBloodQTLpvalue() throws IllegalAccessException{
-		return(this.wholeBloodQTLpvalue);
+		return this.wholeBloodQTLpvalue;
 	}
 }

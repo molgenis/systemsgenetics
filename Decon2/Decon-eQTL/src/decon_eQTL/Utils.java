@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.io.File;
 import java.io.FileReader;

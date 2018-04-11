@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 
 public class Qtl {
@@ -20,7 +20,7 @@ public class Qtl {
 		swapGenotypes();
 	}
 	/** 
-	 * Get a list of all the celltypes given as input
+	 * Get a list of all the cell types given as input
 	 */
 	private void swapGenotypes(){
 		this.swappedGenotypes = this.genotypes.clone();
@@ -39,16 +39,16 @@ public class Qtl {
 
 	
 	public double[] getExpressionVector(){
-		return(expression);
+		return expression;
 	}
 	public double[] getGenotypeVector(){
-		return(genotypes);
+		return genotypes;
 	}
 	public CellCount getCellCounts(){
-		return(cellCounts);
+		return cellCounts;
 	}
 	public String getQtlName(){
-		return(qtlName);
+		return qtlName;
 	}
 	/*
 	 * Get the genotypes of all the interaction models
