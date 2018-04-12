@@ -105,6 +105,7 @@ public class Deconvolution {
 							throw new RuntimeException(String.format("SNP %s not in genotype file, is your snpsToTest file correct?", genotype));
 						}
 						double[] expressionLevels = geneExpressionLevels.get(gene);
+
 						if(expressionLevels != null){
 							DeconvolutionResult deconResult = deconvolution(expressionLevels, 
 									dosages, qtlName);
@@ -255,8 +256,9 @@ public class Deconvolution {
 			//results += "\t"+bestFullModel.getEstimatedStandardError();
 			output.add(results);	
 		}
-
-		Path file = Paths.get(outputFolder+commandLineOptions.getOutfile());
+		
+		// add / in case the filepath was given without it
+		Path file = Paths.get(outputFolder+"/"+commandLineOptions.getOutfile());
 		Files.write(file, output, Charset.forName("UTF-8"));
 
 		Boolean writePredictedExpression = commandLineOptions.getOutputPredictedExpression(); 

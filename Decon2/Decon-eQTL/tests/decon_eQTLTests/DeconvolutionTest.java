@@ -17,7 +17,7 @@ public class DeconvolutionTest {
     public void init() {
     	// Read in the example data
     }
-    
+        
 	@Test
 	public void mainTest() throws Exception {
 		File counts = new File("tests/resources/cellcounts.txt");
@@ -27,7 +27,7 @@ public class DeconvolutionTest {
 		String[] args = {"-o","tests/resources/decovolutionTestResult","-c",counts.getAbsolutePath(),"-e",
 						 expTable.getAbsolutePath(), "-g", dsgTable.getAbsolutePath(), "-sn", geneSnpList.getAbsolutePath()};
 		Deconvolution.main(args);
-		LineIterator deconResults = FileUtils.lineIterator(new File("tests/resources/decovolutionTestResult/deconvolutionResult.txt"), "UTF-8");
+		LineIterator deconResults = FileUtils.lineIterator(new File("tests/resources/decovolutionTestResult/deconvolutionResults.csv"), "UTF-8");
 		LineIterator deconExpected = FileUtils.lineIterator(new File("tests/resources/deconExpected.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",deconExpected.next(),deconResults.next());
