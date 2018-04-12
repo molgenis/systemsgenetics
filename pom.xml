@@ -85,10 +85,6 @@
 		<module>javaPoCA</module>
 		<module>cellTypeSpecificAlleleSpecificExpression</module>
 		<module>MetaGenomicDataProcessing</module>
-<<<<<<< HEAD
-=======
-		
->>>>>>> 678fad4f8a1bad8087a2137061d40725f27d7f35
 		<module>Decon2/Decon-eQTL</module>
 	</modules>
 </project>

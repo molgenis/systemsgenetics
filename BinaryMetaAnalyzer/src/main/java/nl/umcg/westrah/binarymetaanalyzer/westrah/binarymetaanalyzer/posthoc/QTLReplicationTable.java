@@ -125,6 +125,11 @@ public class QTLReplicationTable {
 		out.writeln(header2);
 		out.writeln(header);
 		
+		ArrayList<ArrayList<Double>> allzscores = new ArrayList<>();
+		for (int f = 0; f < filenames.length; f++) {
+			allzscores.add(new ArrayList<>());
+		}
+		
 		for (int e = 0; e < output.length; e++) {
 			
 			EQTL reference = referenceQTL.get(e);
@@ -168,15 +173,21 @@ public class QTLReplicationTable {
 								+ "\tNOTSIGNIFICANT";
 					} else {
 						
+						
 						nroverlap++;
 						Boolean flip = BaseAnnot.flipalleles(reference.getAlleles(), reference.getAlleleAssessed(), other.getAlleles(), other.getAlleleAssessed());
 						if (flip != null) {
+							
+							
 							int nother = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
 							double z = other.getZscore();
 							if (flip) {
 								z *= -1;
 							}
 							
+							
+							ArrayList<Double> zscoresforeqtlfile = allzscores.get(f);
+							zscoresforeqtlfile.add(z * z);
 							double rother = ZScores.zToR(z, nother);
 							
 							double rzref = zFromCorr(r);
@@ -222,6 +233,23 @@ public class QTLReplicationTable {
 			}
 		}
 		out.close();
+		
+		
+		// determine lambdas
+		TextFile outf2 = new TextFile(outputloc + "-lambdas.txt", TextFile.W);
+		outf2.writeln("Tissue/CellType\tNrEQTLs\tLambda(MedianChiSquared)");
+		for (int f = 0; f < filenames.length; f++) {
+			ArrayList<Double> zscoresforeqtlfile = allzscores.get(f);
+			
+			double[] z = Primitives.toPrimitiveArr(zscoresforeqtlfile);
+			
+			double zmed = JSci.maths.ArrayMath.median(z);
+			String ln = filenames[f] + "\t" + zscoresforeqtlfile.size() + "\t" + zmed;
+			outf2.writeln(ln);
+		}
+		
+		outf2.close();
+		
 	}
 	
 	public void rungtex(String referenceFile,

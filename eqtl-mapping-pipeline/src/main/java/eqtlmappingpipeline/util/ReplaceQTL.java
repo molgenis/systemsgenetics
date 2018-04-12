@@ -32,6 +32,14 @@ public class ReplaceQTL {
 			e.printStackTrace();
 		}
 		
+		meqtl = "D:\\Sync\\SyncThing\\Postdoc2\\2017-11-eQTLMeta\\data\\2018-04-10-Replication\\2017-04-10-trans-meqtl-transrepl-FDR0.05.txt.gz";
+		out = "D:\\Sync\\SyncThing\\Postdoc2\\2017-11-eQTLMeta\\data\\2018-04-10-Replication\\2017-04-10-trans-meqtl-transrepl-snpgenepairs-FDR0.05.txt.gz";
+		try {
+			q.convertUsingLinkFile(eqtm, meqtl, out, false, true);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	
