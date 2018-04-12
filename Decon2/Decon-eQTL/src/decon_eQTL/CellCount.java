@@ -31,14 +31,11 @@ public class CellCount {
 		sampleNames = (ArrayList<String>) cellCountData[0];
 		cellCountTable = (List<List<String>>) cellCountData[1];
 		numberOfCelltypes = cellCountTable.size();
-		System.out.println(cellTypes);
 		DeconvolutionLogger.log.info(String.format("Cell types to use:"));
 		for(int i = 0; i < numberOfCelltypes; i++){
-			System.out.println(cellCountTable.get(i).get(0));
 			cellTypes.add(cellCountTable.get(i).get(0));
 			DeconvolutionLogger.log.info(cellCountTable.get(i).get(0));
 		}
-		System.out.println(cellTypes);
 		DeconvolutionLogger.log.info(String.format("Number of cell types: %d", numberOfCelltypes));
 		
 		// minus one because the size includes the cell type header

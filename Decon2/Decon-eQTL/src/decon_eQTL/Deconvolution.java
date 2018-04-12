@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import JSci.maths.statistics.FDistribution;
@@ -25,32 +24,17 @@ public class Deconvolution {
 	private static List<String> filteredQTLsOutput = new ArrayList<String>();
 	private static int QTLsFiltered = 0;
 	private static String outputFolder;
-	// factory method for making static variable that can throw an exception
 
-
-	/**
-	 * Deconvolute a set of QTLs given the expression levels, genotypes,
-	 * and cell counts. Calculates the p-values for the deconvoluted QTLs
-	 * and writes them to an out file
-	 * 
-	 * @param args List of command line arguments
-	 * 
-	 * @throws ParseException	If cell count file is not in right format to be parsed correctly
-	 * @throws IllegalAccessException	If out folder can not be retrieved from commandLineOptions
-	 * @throws IOException	If cell counts file can not be found or read
-	 */
-	public static void main(String[] args) throws ParseException, IllegalAccessException, IOException {
-		
-		commandLineOptions.parseCommandLine(args);
-		outputFolder = commandLineOptions.getOutfolder();
-		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
-		runDeconPerGeneSnpPair();
-	}
 
 	/**
 	 * For each of the gene-SNP pair in the SnpsToTestFile run deconvolution
+	 * @param commandLineOptions2 
 	 */
-	private static void runDeconPerGeneSnpPair() throws IOException, IllegalAccessException, RuntimeException{
+	public void runDeconPerGeneSnpPair(CommandLineOptions commandLineOptions) throws IOException, IllegalAccessException, RuntimeException{
+		Deconvolution.commandLineOptions = commandLineOptions;
+		outputFolder = commandLineOptions.getOutfolder();
+		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
+		
 		HashMap<String,ArrayList<String>> geneSnpPairs = Utils.parseSnpPerGeneFile(commandLineOptions.getSnpsToTestFile());
 		String expressionFile = commandLineOptions.getExpressionFile();
 		DeconvolutionLogger.log.info(String.format("Parse expression data from %s",expressionFile));
@@ -256,7 +240,6 @@ public class Deconvolution {
 			output.add(results);	
 		}
 		
-		// add "/"
 		Path file = Paths.get(outputFolder+"/"+commandLineOptions.getOutfile());
 		Files.write(file, output, Charset.forName("UTF-8"));
 
