@@ -34,4 +34,4 @@ Decon-eQTL-v1.0.1-jar-with-dependencies.jar
 count.table.simulated.txt
 example_output/
 DeconvolutionLog*txt
-decovolutionTestResult/
+deconvolutionTestResults/

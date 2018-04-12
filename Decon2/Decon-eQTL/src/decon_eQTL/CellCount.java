@@ -8,12 +8,12 @@ import decon_eQTL.Utils;
 
 public class CellCount {
 
-	private static List<String> cellTypes = new ArrayList<String> ();
-	private static List<String> sampleNames = new ArrayList<String> ();
-	private static double[][] cellCountPercentages;
-	private static List<List<String>> cellCountTable;
-	private static int numberOfCelltypes;
-	private static int numberOfSamples;
+	private List<String> cellTypes = new ArrayList<String> ();
+	private List<String> sampleNames = new ArrayList<String> ();
+	private double[][] cellCountPercentages;
+	private List<List<String>> cellCountTable;
+	private int numberOfCelltypes;
+	private int numberOfSamples;
 	public CellCount() {};
 	/**
 	 * Read in cell count file 
@@ -31,12 +31,14 @@ public class CellCount {
 		sampleNames = (ArrayList<String>) cellCountData[0];
 		cellCountTable = (List<List<String>>) cellCountData[1];
 		numberOfCelltypes = cellCountTable.size();
+		System.out.println(cellTypes);
 		DeconvolutionLogger.log.info(String.format("Cell types to use:"));
 		for(int i = 0; i < numberOfCelltypes; i++){
+			System.out.println(cellCountTable.get(i).get(0));
 			cellTypes.add(cellCountTable.get(i).get(0));
 			DeconvolutionLogger.log.info(cellCountTable.get(i).get(0));
 		}
-		
+		System.out.println(cellTypes);
 		DeconvolutionLogger.log.info(String.format("Number of cell types: %d", numberOfCelltypes));
 		
 		// minus one because the size includes the cell type header

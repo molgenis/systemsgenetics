@@ -44,7 +44,6 @@ public class Deconvolution {
 		commandLineOptions.parseCommandLine(args);
 		outputFolder = commandLineOptions.getOutfolder();
 		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
-
 		runDeconPerGeneSnpPair();
 	}
 
@@ -257,7 +256,7 @@ public class Deconvolution {
 			output.add(results);	
 		}
 		
-		// add / in case the filepath was given without it
+		// add "/"
 		Path file = Paths.get(outputFolder+"/"+commandLineOptions.getOutfile());
 		Files.write(file, output, Charset.forName("UTF-8"));
 
