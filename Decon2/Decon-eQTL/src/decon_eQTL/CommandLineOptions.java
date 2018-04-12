@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,7 +19,7 @@ import org.apache.commons.cli.ParseException;
 public class CommandLineOptions {
 	private String expressionFile;
 	private String genotypeFile;
-	private String cellcountFile;
+	private String cellCountFile;
 	private String snpsToTestFile;
 	private String outfile = "deconvolutionResults.csv";
 	private String outfolder;
@@ -150,7 +150,7 @@ public class CommandLineOptions {
 
 		expressionFile = cmdLine.getOptionValue("expression");
 		genotypeFile = cmdLine.getOptionValue("genotype");
-		cellcountFile = cmdLine.getOptionValue("cellcount");
+		cellCountFile = cmdLine.getOptionValue("cellcount");
 		snpsToTestFile = cmdLine.getOptionValue("snpsToTest");
 		// check if all input files exist before starting the program to return error as early as possible
 		if(!new File(expressionFile).exists() || new File(expressionFile).isDirectory()) { 
@@ -159,8 +159,8 @@ public class CommandLineOptions {
 		if(!new File(genotypeFile).exists() || new File(genotypeFile).isDirectory()) { 
 		    throw new FileNotFoundException(genotypeFile+" does not exist");
 		}
-		if(!new File(cellcountFile).exists() || new File(cellcountFile).isDirectory()) { 
-		    throw new FileNotFoundException(cellcountFile+" does not exist");
+		if(!new File(cellCountFile).exists() || new File(cellCountFile).isDirectory()) { 
+		    throw new FileNotFoundException(cellCountFile+" does not exist");
 		}
 		if(!new File(snpsToTestFile).exists() || new File(snpsToTestFile).isDirectory()) { 
 		    throw new FileNotFoundException(snpsToTestFile+" does not exist");
@@ -220,7 +220,7 @@ public class CommandLineOptions {
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
-		DeconvolutionLogger.log.info(String.format("Cellcount file (-c): %s", cellcountFile));
+		DeconvolutionLogger.log.info(String.format("Cellcount file (-c): %s", cellCountFile));
 		DeconvolutionLogger.log.info(String.format("SNPs to test file (-sn): %s", snpsToTestFile));
 		DeconvolutionLogger.log.info(String.format("Outfolder (-o): %s", outfolder));
 		DeconvolutionLogger.log.info(String.format("Outfile (-of): %s", outfile));
@@ -244,50 +244,50 @@ public class CommandLineOptions {
 		return (snpsToTestFile);
 	}	
 	public String getGenotypeFile(){
-		return(genotypeFile);
+		return genotypeFile;
 	}
 	public String getCellcountFile(){
-		return(cellcountFile);
+		return cellCountFile;
 	}
 	public String getOutfile(){
-		return(outfile);
+		return outfile;
 	}
 
 	public int getMinimumSamplesPerGenotype(){
-		return(minimumSamplesPerGenotype);
+		return minimumSamplesPerGenotype;
 	}
 	public Boolean getRoundDosage(){
-		return(roundDosage);
+		return roundDosage;
 	}
 
 	public Boolean getAllDosages(){
-		return(allDosages);
+		return allDosages;
 	}
 	public String getOutfolder() throws IllegalAccessException{
 		if(this.outfolder == null){
 			throw new IllegalAccessException("Outfolder has not been set");
 		}
-		return(outfolder);
+		return outfolder;
 	}
 
 	public void setOutfolder(String newOutfolder){
 		outfolder = newOutfolder;
 	}
 	public Boolean getFilterSamples(){
-		return(filterSamples);
+		return filterSamples;
 	}
 	public Boolean getRemoveConstraintViolatingSamples(){
-		return(removeConstraintViolatingSamples);
+		return removeConstraintViolatingSamples;
 	}
 
 	public Boolean getTestRun(){
-		return(testRun);
+		return testRun;
 	}
 	public Boolean getSkipGenotypes(){
-		return(skipGenotypes);
+		return skipGenotypes;
 	}
 	public Boolean getWholeBloodQTL(){
-		return(wholeBloodQTL);
+		return wholeBloodQTL;
 	}
 
 	public Boolean getOutputPredictedExpression(){
