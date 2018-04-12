@@ -8,7 +8,7 @@
 	</parent>
 	<groupId>nl.systemsgenetics</groupId>
 	<artifactId>systemsgenetics</artifactId>
-	<version>1.0.4-SNAPSHOT</version>
+	<version>1.0.3-SNAPSHOT</version>
 	<packaging>pom</packaging>	
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -85,6 +85,10 @@
 		<module>javaPoCA</module>
 		<module>cellTypeSpecificAlleleSpecificExpression</module>
 		<module>MetaGenomicDataProcessing</module>
+<<<<<<< HEAD
+=======
+		
+>>>>>>> 678fad4f8a1bad8087a2137061d40725f27d7f35
 		<module>Decon2/Decon-eQTL</module>
 	</modules>
 </project>

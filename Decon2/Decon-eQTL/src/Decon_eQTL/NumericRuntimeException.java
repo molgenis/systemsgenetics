@@ -94,6 +94,9 @@ public class NumericRuntimeException
 	/**
 	 * Construct a new numeric runtime exception with the given detail message
 	 * and the given cause.
+	 * 
+	 * @param message 	Detail message.
+	 * @param  cause  Cause.
 	 */
 	public NumericRuntimeException
 		(String message,

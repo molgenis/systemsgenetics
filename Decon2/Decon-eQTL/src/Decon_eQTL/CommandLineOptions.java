@@ -38,11 +38,11 @@ public class CommandLineOptions {
 	/**
 	 * Standard command line parsing.
 	 * 
-	 * @param args A string vector of all arguments given to the command
-	 * line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
+	 * @param args A string vector of all arguments given to the command line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
 	 * 
-	 * @return A CommandLine object that includes all the options given to
-	 * the command line
+	 * @throws ParseException	If command line options can not be parsed
+	 * 
+	 * @throws FileNotFoundException	If deconvolution log file can't be written
 	 */
 	public void parseCommandLine(String[] args) throws ParseException, FileNotFoundException {
 		Options options = new Options();
@@ -51,8 +51,6 @@ public class CommandLineOptions {
 				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
 		Option cellcount = Option.builder("c").required(true).hasArg().longOpt("cellcount").desc("Cellcount file name")
 				.argName("file").build();
-		Option useRelativeCellCountsOption = Option.builder("cc").required(false).longOpt("use_relative_cellcounts")
-				.desc("Calculate ratio between cellcount and cellcount average, use that as cellcount in the model").build();
 		Option expression = Option.builder("e").required(true).hasArg().longOpt("expression")
 				.desc("Expression file name").argName("file").build();
 		Option filterSamplesOption =  Option.builder("f").required(false).longOpt("filter_samples")
@@ -74,8 +72,6 @@ public class CommandLineOptions {
 				.argName("file").build();
 		Option roundDosage = Option.builder("r").required(false).longOpt("round_dosage")
 				.desc("Round the dosage to the closest int").build();
-		Option onlyOutputSignificantOption = Option.builder("s").required(false).longOpt("output_significant_only")
-				.desc("Only output results that are significant in at least one celltype.").build();
 		Option skipGenotypes = Option.builder("sg").required(false).longOpt("skip_genotypes")
 				.desc("Skip genotypes that are in the GeneSNP pair file but not in the genotype file.").build();
 		Option snpsToTestOption = Option.builder("sn").required(true).hasArg().longOpt("snpsToTest").argName("file")
@@ -84,7 +80,6 @@ public class CommandLineOptions {
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
-		options.addOption(onlyOutputSignificantOption);
 		options.addOption(filterSamplesOption);
 		options.addOption(help);
 		options.addOption(outfile);
@@ -95,7 +90,6 @@ public class CommandLineOptions {
 		options.addOption(minimumSamplesPerGenotype);
 		options.addOption(allDosages);
 		options.addOption(outfolder);
-		options.addOption(useRelativeCellCountsOption);
 		options.addOption(doTestRun);
 		options.addOption(snpsToTestOption);
 		options.addOption(skipGenotypes);
@@ -222,7 +216,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.0, src last changed at 06-APR-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.1, src last changed at 06-APR-2017");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
