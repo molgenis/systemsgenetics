@@ -34,7 +34,7 @@ public class Deconvolution {
 		Deconvolution.commandLineOptions = commandLineOptions;
 		outputFolder = commandLineOptions.getOutfolder();
 		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
-		
+
 		HashMap<String,ArrayList<String>> geneSnpPairs = Utils.parseSnpPerGeneFile(commandLineOptions.getSnpsToTestFile());
 		String expressionFile = commandLineOptions.getExpressionFile();
 		DeconvolutionLogger.log.info(String.format("Parse expression data from %s",expressionFile));
@@ -82,41 +82,22 @@ public class Deconvolution {
 				String qtlName = gene+'_'+genotype;
 				try{
 					++QTLsTotal;
-					try{
-						double[] dosages = genotypeData.getGenotypes().get(genotype);
-						if(dosages == null){
-							throw new RuntimeException(String.format("SNP %s not in genotype file, is your snpsToTest file correct?", genotype));
-						}
-						double[] expressionLevels = geneExpressionLevels.get(gene);
-
-						if(expressionLevels != null){
-							DeconvolutionResult deconResult = deconvolution(expressionLevels, 
-									dosages, qtlName);
-							deconvolutionResults.add(deconResult);
-						}
-						else{
-							DeconvolutionLogger.log.info(String.format("Error: Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
-							throw new RuntimeException(String.format("Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
-						}
+					double[] dosages = genotypeData.getGenotypes().get(genotype);
+					if(dosages == null){
+						throw new RuntimeException(String.format("SNP %s not in genotype file, is your snpsToTest file correct?", genotype));
 					}
-					catch(IllegalAccessException e){
-						if(commandLineOptions.getSkipGenotypes()){
-							++skippedGenotypeGeneCombinations;
-							continue;
-						}
-						else{
-							double[] genes = geneExpressionLevels.get(gene);
-							double[] genotypes = genotypeData.getGenotypes().get(genotype);
-							if (genes == null) {
-								DeconvolutionLogger.log.info(String.format("gene %s in SNP-gene pair file but not in expression data file",gene));
-							}
+					double[] expressionLevels = geneExpressionLevels.get(gene);
 
-							if (genotypes == null) {
-								DeconvolutionLogger.log.info(String.format("genotype %s in SNP-gene pair file but not in genotype data file",genotype));
-							}
-							throw e;
-						}
+					if(expressionLevels != null){
+						DeconvolutionResult deconResult = deconvolution(expressionLevels, 
+								dosages, qtlName);
+						deconvolutionResults.add(deconResult);
 					}
+					else{
+						DeconvolutionLogger.log.info(String.format("Error: Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
+						throw new RuntimeException(String.format("Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
+					}
+
 				}
 				// If there are not enough samples per genotype, skip this QTL
 				catch(NotEnoughGenotypesException e){
@@ -239,7 +220,7 @@ public class Deconvolution {
 			//results += "\t"+bestFullModel.getEstimatedStandardError();
 			output.add(results);	
 		}
-		
+
 		Path file = Paths.get(outputFolder+"/"+commandLineOptions.getOutfile());
 		Files.write(file, output, Charset.forName("UTF-8"));
 

@@ -3,7 +3,7 @@
   <groupId>Decon-eQTL</groupId>
   <artifactId>Decon-eQTL</artifactId>
   <packaging>jar</packaging>
-  <version>v1.0.1</version>
+  <version>v1.0.2</version>
   <name>Decon-eQTL</name>
   <description>Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples (Decon-cell) and consecutive deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.</description>
   <build>

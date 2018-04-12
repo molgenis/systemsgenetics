@@ -60,7 +60,7 @@ public class DeconvolutionTest {
 		File expTable = new File("tests/resources/expression_levels_wrong_names.txt");
 		File dsgTable = new File("tests/resources/genotype_dosages.txt");
 		File geneSnpList = new File("tests/resources/gene_snp_list.txt");
-		String[] args = {"-o",outputDir+"deconvolutionTestResultsWrongNames","-c",counts.getAbsolutePath(),"-e",
+		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts.getAbsolutePath(),"-e",
 				expTable.getAbsolutePath(), "-g", dsgTable.getAbsolutePath(), 
 				"-sn", geneSnpList.getAbsolutePath()};
 
@@ -105,7 +105,7 @@ public class DeconvolutionTest {
 		File expTable = new File("tests/resources/expression_levels.txt");
 		File dsgTable = new File("tests/resources/genotype_dosages.txt");
 		File geneSnpList = new File("tests/resources/gene_snp_list_non_existing_genotype.txt");
-		String[] args = {"-o",outputDir+"deconvolutionTestResultsWrongGenotype","-c",counts.getAbsolutePath(),"-e",
+		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts.getAbsolutePath(),"-e",
 				expTable.getAbsolutePath(), "-g", dsgTable.getAbsolutePath(), 
 				"-sn", geneSnpList.getAbsolutePath(),
 		"-t"};
@@ -118,6 +118,55 @@ public class DeconvolutionTest {
 		}
 	}
 
+	/*
+	 *  I should refractor the code because the only way I can run theses tests is by running from main method
+	 *  But for now rather have tests methods than waiting until I have it refractored. So technically not 
+	 *  unittests
+	 */
+	@Test
+	public void runDeconPerGeneSnpPairNotExistingGeneTest() throws Exception {
+		File counts = new File("tests/resources/cellcounts.txt");
+		File expTable = new File("tests/resources/expression_levels.txt");
+		File dsgTable = new File("tests/resources/genotype_dosages.txt");
+		File geneSnpList = new File("tests/resources/gene_snp_list_non_existing_gene.txt");
+		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts.getAbsolutePath(),"-e",
+				expTable.getAbsolutePath(), "-g", dsgTable.getAbsolutePath(), 
+				"-sn", geneSnpList.getAbsolutePath(),
+		"-t"};
+
+		try {
+			Main.main(args);
+			fail( "My method didn't throw when I expected it to" );
+		} catch (RuntimeException expectedException) {
+			assertThat(expectedException.getMessage(), CoreMatchers.containsString("included in gene/snp combinations to test, but not available in the expression file"));
+		}
+	}
+	
+	
+	/*
+	 *  I should refractor the code because the only way I can run theses tests is by running from main method
+	 *  But for now rather have tests methods than waiting until I have it refractored. So technically not 
+	 *  unittests
+	 */
+	@Test
+	public void runDeconPerGeneSnpPairGeneNotInExpressionFileTest() throws Exception {
+		File counts = new File("tests/resources/cellcounts.txt");
+		File expTable = new File("tests/resources/expression_levels.txt");
+		File dsgTable = new File("tests/resources/genotype_dosages.txt");
+		File geneSnpList = new File("tests/resources/gene_snp_list_non_existing_gene.txt");
+		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts.getAbsolutePath(),"-e",
+				expTable.getAbsolutePath(), "-g", dsgTable.getAbsolutePath(), 
+				"-sn", geneSnpList.getAbsolutePath(),
+		"-t"};
+
+		try {
+			Main.main(args);
+			fail( "My method didn't throw when I expected it to" );
+		} catch (RuntimeException expectedException) {
+			assertThat(expectedException.getMessage(), CoreMatchers.containsString("included in gene/snp combinations to test, but not available in the expression file"));
+		}
+	}
+	
 	protected void tearDown() throws Exception {
 		deleteDir(new File(outputDir));
 	}	
