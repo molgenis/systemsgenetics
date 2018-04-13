@@ -38,7 +38,7 @@
 //
 //******************************************************************************
 
-package Decon_eQTL;
+package decon_eQTL;
 
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -244,7 +244,7 @@ public class NonNegativeLeastSquares
 		// Keep count of iterations.
 		int iter = 0;
 
-		// Initialize the arrays index and x.
+		// Initialise the arrays index and x.
 		// index[0] through index[nsetp-1] = set P.
 		// index[nsetp] through index[N-1] = set Z.
 		for (i = 0; i < N; ++ i)

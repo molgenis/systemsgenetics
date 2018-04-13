@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 
 /*
- * InteractionModel contains the information (observed values, pvalue, regression parameter values etc)
+ * InteractionModel contains the information (observed values, p-value, regression parameter values etc)
  * of one single interaction model. All the InteractionModels that are used in the deconvolution are collected 
  * in InteractionModelCollection
  */
@@ -18,7 +18,7 @@ public class InteractionModel {
 	private String modelName;
 	public InteractionModel(){};
 	private String genotypeConfiguration;
-	// initialize with number so that we can test if it has been set
+	// Initialise with number so that we can test if it has been set
 	private Double sumOfSquares;
 	private Double pvalue;
 	private Integer degreesOfFreedom;
@@ -32,7 +32,7 @@ public class InteractionModel {
 	private String celltypeName;
 	
 	/**
-	 * Initialize object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
+	 * Initialise object by setting the observed values size. Per QTL for each sample the observed values are each term of the 
 	 * linear model. E.g. if the model is y = mono% + neut% + mono%:GT, the observedValues are
 	 * [mono%, neut%, mono% * GT]
 	 * 
@@ -56,7 +56,7 @@ public class InteractionModel {
 	 * @return Matrix of observed values
 	 */
 	public double[][] getObservedValues(){
-	    return(this.observedValues);
+	    return this.observedValues;
 	  }
 	
 	/**
@@ -82,7 +82,7 @@ public class InteractionModel {
 	 * @return	The indices of the celltype variables of the linear model
 	 */
 	public List<int[]> getCelltypeVariablesIndex(){
-	    return (this.celltypeVariablesIndex);
+	    return this.celltypeVariablesIndex;
 	  }
 	
 	/** 
@@ -114,7 +114,7 @@ public class InteractionModel {
 	 * @return List of independent variable names
 	 */
 	public List<String> getIndependentVariableNames(){
-	    return(this.independentVariableNames);
+	    return this.independentVariableNames;
 	  }
 	
 	public void setModelName(String modelName){
@@ -122,7 +122,7 @@ public class InteractionModel {
 	  }
 	
 	public String getModelName(){
-	    return(this.modelName);
+	    return this.modelName;
 	}	
 
 	public void setPvalue(double pvalue){
@@ -201,7 +201,7 @@ public class InteractionModel {
 	 * model.
 	 * Remove of the intercept (equivalent to y ~ model -1 in R) is hard-code in
 	 * 
-	 * This uses NNLS from Rochester Institute of technology. Documention here: https://www.cs.rit.edu/~ark/pj/doc/edu/rit/numeric/NonNegativeLeastSquares.html
+	 * This uses NNLS from Rochester Institute of technology. Documentation here: https://www.cs.rit.edu/~ark/pj/doc/edu/rit/numeric/NonNegativeLeastSquares.html
 	 * Can download JAR from: https://www.cs.rit.edu/~ark/pj.shtml#installed
 	 * 
 	 * @param expressionValues	Vector of expression values
@@ -265,7 +265,7 @@ public class InteractionModel {
 	}
 	
 	public String getCelltypeName(){
-		return(this.celltypeName);
+		return this.celltypeName;
 	}
 }
 

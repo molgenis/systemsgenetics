@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +22,14 @@ public class DeconvolutionLogger {
 		DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 		Date date = new Date();
 		File file = new File(outputDir+"/DeconvolutionLog_"+dateFormat.format(date)+".txt");
+	
+		File parent = file.getParentFile();
+		if (!parent.exists() && !parent.mkdirs()) {
+		    throw new IllegalStateException("Couldn't create dir: " + parent);
+		}
+		
 		Files.deleteIfExists(file.toPath());
+		
 		setOutfilePath(new FileHandler(outputDir+"/DeconvolutionLog_"+dateFormat.format(date)+".txt"));
 		CustomRecordFormatter customFormatter = new CustomRecordFormatter();
 		ConsoleHandler consoleHandler = new ConsoleHandler();

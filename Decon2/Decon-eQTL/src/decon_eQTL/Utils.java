@@ -1,14 +1,15 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -42,8 +43,8 @@ public class Utils {
 		}
 		return allColumns;
 	}
-	
-	
+
+
 	/**
 	 * Reads tab delimited file and returns them as list of list, with [x] =
 	 * colummn and [x][y] is value in column. Needed for reading counts
@@ -130,7 +131,7 @@ public class Utils {
 		double[] doubles = new double[vectorLength-start];
 		// start at 1 because first element is sampleName
 		for (int i = start; i < vectorLength; i++) {
-				doubles[i-start] = Double.parseDouble(vector[i]);
+			doubles[i-start] = Double.parseDouble(vector[i]);
 		}
 		return doubles;
 	}
@@ -209,27 +210,7 @@ public class Utils {
 		}
 		return ret;
 	}
-
-	static boolean equalLists(List<String> one, List<String> two){     
-		if (one == null && two == null){
-			return true;
-		}
-
-		if((one == null && two != null) 
-				|| one != null && two == null
-				|| one.size() != two.size()){
-			return false;
-		}
-
-		//to avoid messing the order of the lists we will use a copy
-		//as noted in comments by A. R. S.
-		one = new ArrayList<String>(one); 
-		two = new ArrayList<String>(two);   
-
-		Collections.sort(one);
-		Collections.sort(two);      
-		return one.equals(two);
-	}
+	
 	public static HashMap<String, ArrayList<String>> parseSnpPerGeneFile(String snpsToTestFile) throws IOException {
 		LineIterator snpGenePairIterator = FileUtils.lineIterator(new File(snpsToTestFile), "UTF-8");
 		HashMap<String, ArrayList<String>> geneSnpPairs = new HashMap<String, ArrayList<String>>();
@@ -251,7 +232,7 @@ public class Utils {
 
 		return geneSnpPairs;
 	}
-	
+
 	/**
 	 * Create permutations of binary numbers of length iterations. E.g. if iterations == 2, would give
 	 * 00, 10, 01, 11
@@ -264,14 +245,40 @@ public class Utils {
 	 * 
 	 * @return List of permutations of 0's and 1's of given length
 	 */
-		public static ArrayList<String> binaryPermutations(String soFar, double iterations, ArrayList<String> permutations) {
-		    if(iterations == 0) {
-		    	permutations.add(soFar);
-		    }
-		    else {
-		    	binaryPermutations(soFar + "0", iterations - 1, permutations);
-		        binaryPermutations(soFar + "1", iterations - 1, permutations);
-		    }
-			return permutations;
+	public static ArrayList<String> binaryPermutations(String soFar, double iterations, ArrayList<String> permutations) {
+		if(iterations == 0) {
+			permutations.add(soFar);
 		}
+		else {
+			binaryPermutations(soFar + "0", iterations - 1, permutations);
+			binaryPermutations(soFar + "1", iterations - 1, permutations);
+		}
+		return permutations;
+	}
+
+	/**
+	 * Find the differences between two lists
+	 * 
+	 * @param list1	Set 1 to compare
+	 * 
+	 * @param list2	Set 2 to compare
+	 * 
+	 * @return The differences between list1 and list2. element 0 = list1 not in list2, element 1 = list2 not in list1
+	 * 
+	 */
+	public static ArrayList<String> getDifferencesBetweenLists(ArrayList<String> list1, ArrayList<String> list2) {
+		Set<String> set1a = new HashSet<String>(list1);
+		// use 2 times list1 because do inplace replacement, so 
+		// when removing from list2 set need a new list1 set
+		Set<String> set1b = new HashSet<String>(list1);
+		Set<String> set2 = new HashSet<String>(list2);
+		set1a.removeAll(set2);
+		set2.removeAll(set1b);
+		String expressionSamples = Arrays.toString(set1a.toArray());
+		String genotypeSamples = Arrays.toString(set2.toArray());
+		ArrayList<String> toReturn = new ArrayList<String>();
+		toReturn.add(expressionSamples);
+		toReturn.add(genotypeSamples);
+		return toReturn;
+	}
 }
