@@ -16,9 +16,6 @@ public class CellCount {
 	private int numberOfSamples;
 	public CellCount() {};
 
-	public CellCount( String cellCountFile) throws IOException{
-	}
-
 	/**
 	 * Read in cell count file 
 	 * 
@@ -53,17 +50,10 @@ public class CellCount {
 		}
 	}
 	
-	public void emptyCellCountPercentages(){
-		cellCountPercentages = null;
-	}
-	
 	public List<String> getSampleNames(){
 		return sampleNames;
 	}
 	
-	public List<List<String>> getCellCountTable(){
-		return cellCountTable;
-	}	
 	public List<String> getAllCelltypes(){
 		return cellTypes;
 	}	

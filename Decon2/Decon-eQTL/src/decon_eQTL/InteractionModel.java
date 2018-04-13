@@ -16,7 +16,6 @@ public class InteractionModel {
 	private List<int[]> celltypeVariablesIndex = new ArrayList <int[]>();
 	private double[][] observedValues;
 	private String modelName;
-	public InteractionModel(){};
 	private String genotypeConfiguration;
 	// Initialise with number so that we can test if it has been set
 	private Double sumOfSquares;
@@ -26,7 +25,6 @@ public class InteractionModel {
 	private Integer numberOfTerms;
 	private double[] estimatedRegressionParameters;
 	private double[] residuals;
-	private double[] estimatedRegressionParametersStandardError;
 	private double estimatedStandardError;
 	private double[] predictedValues;
 	private String celltypeName;
@@ -70,19 +68,6 @@ public class InteractionModel {
 	 */
 	public void addCelltypeVariablesIndex(int[] values){
 		celltypeVariablesIndex.add(values);
-	  }
-	
-	/**
-	 * Get the index of the celltype variables of the linear model e.g.
-	 * the index of the celltype% and celltype%:GT of the model. If 
-	 *    y = neut% + mono% + eos% + neut%:GT + eos%:GT
-	 *    celltypeTerms = [[0,3],[1],[2,4]
-	 * This can be used to sum up the Beta * variable per cell type  
-	 * 
-	 * @return	The indices of the celltype variables of the linear model
-	 */
-	public List<int[]> getCelltypeVariablesIndex(){
-	    return this.celltypeVariablesIndex;
 	  }
 	
 	/** 
@@ -235,14 +220,6 @@ public class InteractionModel {
 		//setEstimatedStandardError(nnls.estimateRegressionStandardError());
 		setResiduals(residuals);
 		setPredictedValues(predictedValues);
-	}
-
-	public void setEstimatedRegressionParametersStandardErrors(double[] estimatedRegressionParametersStandardErrors) {
-		this.estimatedRegressionParametersStandardError = estimatedRegressionParametersStandardErrors;
-	}
-
-	public double[] getEstimatedRegressionParametersStandardErrors() {
-		return this.estimatedRegressionParametersStandardError;
 	}
 	
 	public void setEstimatedStandardError(double estimatedStandardError){

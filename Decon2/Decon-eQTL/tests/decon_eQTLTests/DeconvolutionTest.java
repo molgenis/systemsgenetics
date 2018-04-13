@@ -18,6 +18,7 @@ import org.junit.Test;
 import decon_eQTL.CommandLineOptions;
 import decon_eQTL.Deconvolution;
 import decon_eQTL.DeconvolutionResult;
+import decon_eQTL.Main;
 
 public class DeconvolutionTest {
 	String outputDir = "tests/resources/deconvolutionTestResults/";
@@ -45,28 +46,13 @@ public class DeconvolutionTest {
 		//deleteDir(new File(outputDir));
 	}	
 	
-	/*
-	 *  This is more like an integration test because it runs the whole program!
-	 */
-	/*@Test
+	@Test
 	public void mainTest() throws Exception {
-		String[] args = {"-o",outputDir+"deconvolutionTestResultsMain/","-c",counts,"-e",
-						 expTable, "-g", dsgTable, "-sn", geneSnpList};
+		String[] args = {"-o",outputDir+"deconvolutionTestResultsTestRun","-c",counts,
+						 "-e",expression, "-g",genotypes, "-sn", geneSnpList};
+
 		Main.main(args);
-
-		LineIterator deconResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionTestResultsMain/deconvolutionResults.csv"), "UTF-8");
-		LineIterator deconExpected = FileUtils.lineIterator(new File("tests/resources/expected/deconExpected.txt"), "UTF-8");
-		//test if header is same
-		assertEquals("File header the same",deconExpected.next(),deconResults.next());
-		while (deconResults.hasNext() && deconExpected.hasNext()){
-			ArrayList<String> deconResultsStringVector = new ArrayList<String>(Arrays.asList(deconResults.next().split("\t")));
-			ArrayList<String> deconExpectedStringVector = new ArrayList<String>(Arrays.asList(deconExpected.next().split("\t")));
-			assertEquals("Deconresult same as expected", deconExpectedStringVector, deconResultsStringVector);
-			assertEquals("QTL name the same", deconExpectedStringVector.remove(0), deconResultsStringVector.remove(0));
-		}
-	}*/
-
-	/*
+	}
 	
 	/*
 	 * Give error when expression and genotype file have different names
