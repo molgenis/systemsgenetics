@@ -10,9 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
-import JSci.maths.statistics.FDistribution;
 import decon_eQTL.CellCount;
-import decon_eQTL.Qtl;
 
 public class Deconvolution {
 	private int QTLsFiltered = 0;
@@ -231,10 +229,6 @@ public class Deconvolution {
 		DeconvolutionLogger.log.info(String.format("predicted expression written to %s", file.toAbsolutePath()));
 	}
 
-	
-	public DeconvolutionResult deconvolution(Qtl qtl) throws RuntimeException, IllegalAccessException, IOException {
-		return deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getQtlName());
-	}
 
 	/**
 	 * Make the linear regression models and then do an Anova of the sum of
@@ -263,14 +257,9 @@ public class Deconvolution {
 	 */
 	private DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, IllegalAccessException, 
 																											  IOException {
-
-
 		/** 
 		 * If roundDosage option is selected on the command line, round of the dosage to closest integer -> 0.49 = 0, 0.51 = 1, 1.51 = 2. 
-		 * If minimumSamplesPerGenotype is selected on the command line, check for current QTL if for each dosage (in case they are not round
-		 * the dosages are binned in same way as with roundDosage option) there are at least <minimumSamplesPerGenotype> samples that have it.
 		 */
-
 		if (commandLineOptions.getRoundDosage()) {
 			for (int i = 0; i < genotypes.length; ++i) {
 				if (commandLineOptions.getRoundDosage()){
@@ -333,12 +322,6 @@ public class Deconvolution {
 			InteractionModel fullModel;
 
 			fullModel = interactionModelCollection.getBestFullModel();
-
-			int expressionLength = interactionModelCollection.getExpessionValues().length;
-			if (expressionLength != fullModel.getModelLength()) {
-				throw new RuntimeException("expression vector and fullModel have different number of samples.\nexpression: "
-						+ expressionLength + "\nfullModel: " + fullModel.getModelLength());
-			}
 
 			InteractionModel ctModel = interactionModelCollection.getBestCtModel(celltypeName);
 			double pval = Statistics.anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), 
