@@ -6,80 +6,67 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
-import JSci.maths.statistics.FDistribution;
 import decon_eQTL.CellCount;
-import decon_eQTL.Qtl;
 
 public class Deconvolution {
-	private static CommandLineOptions commandLineOptions = new CommandLineOptions(); 
-	private static CellCount cellCounts;
-	private static List<String> filteredQTLsOutput = new ArrayList<String>();
-	private static int QTLsFiltered = 0;
-	private static String outputFolder;
-	// factory method for making static variable that can throw an exception
+	private int QTLsFiltered = 0;
+	private String outputFolder;
+	public CellCount cellCounts;
+	public ExpressionData expressionData;
+	public HashMap<String,ArrayList<String>> geneSnpPairs;
+	private CommandLineOptions commandLineOptions;
+	public GenotypeData genotypeData;
 
+	public Deconvolution(CommandLineOptions commandLineOptions) {
+		this.commandLineOptions = commandLineOptions;
+	}
 
-	/**
-	 * Deconvolute a set of QTLs given the expression levels, genotypes,
-	 * and cell counts. Calculates the p-values for the deconvoluted QTLs
-	 * and writes them to an out file
+	/*
+	 * Read all the input data
 	 * 
-	 * @param args List of command line arguments
-	 * 
-	 * @throws ParseException	If cell count file is not in right format to be parsed correctly
-	 * @throws IllegalAccessException	If out folder can not be retrieved from commandLineOptions
-	 * @throws IOException	If cell counts file can not be found or read
+	 * @throw IllegalAccessException	If file can't be accessed
+	 * @throw IOException	If file can not be read
 	 */
-	public static void main(String[] args) throws ParseException, IllegalAccessException, IOException {
-		
-		commandLineOptions.parseCommandLine(args);
+	public void readInputData() throws IllegalAccessException, IOException {
 		outputFolder = commandLineOptions.getOutfolder();
-		cellCounts = new CellCount(commandLineOptions.getCellcountFile());
+		cellCounts = new CellCount();
+		cellCounts.readCellCountData(commandLineOptions.getCellcountFile());
+		
+		geneSnpPairs = Utils.parseSnpPerGeneFile(commandLineOptions.getSnpsToTestFile());
+		String expressionFile = commandLineOptions.getExpressionFile();
+		DeconvolutionLogger.log.info(String.format("Parse expression data from %s",expressionFile));
+		expressionData = new ExpressionData(expressionFile);
+		DeconvolutionLogger.log.info("Done");
+		String genotypeFile = commandLineOptions.getGenotypeFile();
+		DeconvolutionLogger.log.info(String.format("Parse genotype data from %s",genotypeFile));
+		genotypeData = new GenotypeData(genotypeFile);
 
-		runDeconPerGeneSnpPair();
+		DeconvolutionLogger.log.info("Done");
+		if (!expressionData.getSampleNames().equals(genotypeData.getSampleNames())){
+			ArrayList<String> differences = Utils.getDifferencesBetweenLists(expressionData.getSampleNames(), genotypeData.getSampleNames());
+			throw new RuntimeException(String.format("Samplenames not the same in expression and genotype file, or not in the same order."+
+					"\nexpression samples not in genotypes (%d): %s\ngenotype samples not in expression (%d): %s\n",
+					differences.get(0).length(), differences.get(0), 
+					differences.get(1).length(), differences.get(1)));
+		}
 	}
 
 	/**
 	 * For each of the gene-SNP pair in the SnpsToTestFile run deconvolution
+	 * 
+	 * @param commandLineOptions	commandLineOptions to run it with 
+	 * 
+	 * @return Deconvolution results
+	 * 
+	 * @throws RuntimeException
+	 * @throws IllegalAccessException 
+	 * @throws IOException 
 	 */
-	private static void runDeconPerGeneSnpPair() throws IOException, IllegalAccessException, RuntimeException{
-		HashMap<String,ArrayList<String>> geneSnpPairs = Utils.parseSnpPerGeneFile(commandLineOptions.getSnpsToTestFile());
-		String expressionFile = commandLineOptions.getExpressionFile();
-		DeconvolutionLogger.log.info(String.format("Parse expression data from %s",expressionFile));
-		ExpressionData expressionData = new ExpressionData(expressionFile);
-		DeconvolutionLogger.log.info("Done");
-		String genotypeFile = commandLineOptions.getGenotypeFile();
-		DeconvolutionLogger.log.info(String.format("Parse genotype data from %s",genotypeFile));
-		GenotypeData genotypeData = new GenotypeData(genotypeFile);
-
-		DeconvolutionLogger.log.info("Done");
-		if (!Utils.equalLists(expressionData.getSampleNames(), genotypeData.getSampleNames())){
-			Set<String> expressionSamplesSet1 = new HashSet<String>(expressionData.getSampleNames());
-			// use 2 times expresionSampleSet because do inplace replacement, so when removing from genotypeSamples set need a new expressionSamples set
-			Set<String> expressionSamplesSet2 = new HashSet<String>(expressionData.getSampleNames());
-			Set<String> genotypeSamplesSet = new HashSet<String>(genotypeData.getSampleNames());
-			expressionSamplesSet1.removeAll(genotypeSamplesSet);
-			genotypeSamplesSet.removeAll(expressionSamplesSet2);
-			int numberSamplesMissingExpression = expressionSamplesSet1.size();
-			int numbeSamplesrMissingGenotype = genotypeSamplesSet.size();
-			String expressionSamples = Arrays.toString(expressionSamplesSet1.toArray());
-			String genotypeSamples = Arrays.toString(genotypeSamplesSet.toArray());
-			throw new RuntimeException(String.format("Samplenames not the same in expression and genotype file.\nexpression samples not in genotypes (%d): %s\ngenotype samples not in expression (%d): %s\n",
-					numberSamplesMissingExpression, expressionSamples, numbeSamplesrMissingGenotype, genotypeSamples));
-		}
-		//file to write all samples in that got filtered out
-		Path filteredQTLsFile = Paths.get(outputFolder+"filteredQTLs.csv");
-		filteredQTLsOutput.add("QTL\treason");
-
+	public List<DeconvolutionResult> runDeconPerGeneSnpPair() throws RuntimeException, IllegalAccessException, IOException{
 		int whileIndex = 0;
 		long time = System.currentTimeMillis();
 		List<DeconvolutionResult> deconvolutionResults = new ArrayList<DeconvolutionResult>();
@@ -97,78 +84,36 @@ public class Deconvolution {
 				}
 				++whileIndex;
 				String qtlName = gene+'_'+genotype;
-				try{
-					++QTLsTotal;
-					try{
-						double[] dosages = genotypeData.getGenotypes().get(genotype);
-						if(dosages == null){
-							throw new RuntimeException(String.format("SNP %s not in genotype file, is your snpsToTest file correct?", genotype));
-						}
-						double[] expressionLevels = geneExpressionLevels.get(gene);
-						if(expressionLevels != null){
-							DeconvolutionResult deconResult = deconvolution(expressionLevels, 
-									dosages, qtlName);
-							deconvolutionResults.add(deconResult);
-						}
-						else{
-							DeconvolutionLogger.log.info(String.format("Error: Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
-							throw new RuntimeException(String.format("Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
-						}
-					}
-					catch(IllegalAccessException e){
-						if(commandLineOptions.getSkipGenotypes()){
-							++skippedGenotypeGeneCombinations;
-							continue;
-						}
-						else{
-							double[] genes = geneExpressionLevels.get(gene);
-							double[] genotypes = genotypeData.getGenotypes().get(genotype);
-							if (genes == null) {
-								DeconvolutionLogger.log.info(String.format("gene %s in SNP-gene pair file but not in expression data file",gene));
-							}
+				++QTLsTotal;
+				double[] dosages = genotypeData.getGenotypes().get(genotype);
+				if(dosages == null){
+					DeconvolutionLogger.log.info(String.format("Error: Genotype %s included in gene/snp combinations to test, but not available in the expression file!",genotype));
+					throw new RuntimeException(String.format("Error: Genotype %s included in gene/snp combinations to test, but not available in the expression file!",genotype));
+				}
+				double[] expressionLevels = geneExpressionLevels.get(gene);
 
-							if (genotypes == null) {
-								DeconvolutionLogger.log.info(String.format("genotype %s in SNP-gene pair file but not in genotype data file",genotype));
-							}
-							throw e;
-						}
-					}
+				if(expressionLevels == null){
+					DeconvolutionLogger.log.info(String.format("Error: Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
+					throw new RuntimeException(String.format("Gene %s included in gene/snp combinations to test, but not available in the expression file!",gene));
+
 				}
-				// If there are not enough samples per genotype, skip this QTL
-				catch(NotEnoughGenotypesException e){
-					if(!commandLineOptions.getFilterSamples()){
-						deconvolutionResults.add(setPvaluesNA(qtlName));
-					}
-					else{
-						++QTLsFiltered;
-					}
-					filteredQTLsOutput.add(qtlName+"\tNot enough genotypes (e.g. AA and AB but no BB)");
-				}
-				catch(NotEnoughSamplesPerGenotypeException e){
-					if(!commandLineOptions.getFilterSamples()){
-						deconvolutionResults.add(setPvaluesNA(qtlName));
-					}
-					else{
-						++QTLsFiltered;
-					}
-					filteredQTLsOutput.add(qtlName+"\tNot enough samples per genotype");
-				}
+				DeconvolutionResult deconResult = deconvolution(expressionLevels, dosages, qtlName);
+				deconvolutionResults.add(deconResult);
 			}
 		}
-		writeDeconvolutionResults(deconvolutionResults);
 		DeconvolutionLogger.log.info(String.format("Skipped %d gene-SNP combinations (because genotype in SNP-pair file but not in genotype file)",skippedGenotypeGeneCombinations));
 		DeconvolutionLogger.log.info(String.format("QTLs passed: %d", QTLsTotal-(QTLsFiltered+skippedGenotypeGeneCombinations)));
 		DeconvolutionLogger.log.info(String.format("QTLs filtered: %d", QTLsFiltered));
 		DeconvolutionLogger.log.info(String.format("Total: %d",QTLsTotal-skippedGenotypeGeneCombinations));
-		Files.write(filteredQTLsFile, filteredQTLsOutput, Charset.forName("UTF-8"));
+		return deconvolutionResults;
 	}
 
 	/**
-	 * Write the deconfolution results
+	 * Write the deconvolution results
 	 * 
-	 * @param deconvolutionResult The deconvolutionresult
+	 * @param deconvolutionResult The deconvolution result
 	 */
-	private static void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
+	public void writeDeconvolutionResults(List<DeconvolutionResult> deconvolutionResults) throws IllegalAccessException, IOException{
 		List<String> celltypes = cellCounts.getAllCelltypes();
 		String header = "\t"+Utils.listToTabSeparatedString(celltypes, "_pvalue");
 
@@ -214,27 +159,12 @@ public class Deconvolution {
 			int numberOfCelltypes = cellCounts.getNumberOfCelltypes();
 			for(int i = 0; i < numberOfCelltypes; ++i){
 				char genotypeConfiguration = 0;
-				double estimatedRegressionParameter;
 
-
-				estimatedRegressionParameter = bestFullModel.getEstimateRegressionParameters()[i+numberOfCelltypes];
 				genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(i);
-
 				if (genotypeConfiguration == '0'){
-					// add cellCounts.getNumberOfCelltypes() to get the regression parameter for the interaction term (first ones are indepent effect betas)
-					if(estimatedRegressionParameter < 0){
-						results += "\t-";			
-					}
-					else{
 						results += "\t+";
-					}
 				}else if(genotypeConfiguration == '1'){
-					if(estimatedRegressionParameter < 0){
-						results += "\t+";			
-					}
-					else{
 						results += "\t-";
-					}
 				}
 				else{
 					throw new RuntimeException(String.format("Genotype configuration should be 0 or 1, not %s", genotypeConfiguration));
@@ -256,7 +186,7 @@ public class Deconvolution {
 			output.add(results);	
 		}
 
-		Path file = Paths.get(outputFolder+commandLineOptions.getOutfile());
+		Path file = Paths.get(outputFolder+"/"+commandLineOptions.getOutfile());
 		Files.write(file, output, Charset.forName("UTF-8"));
 
 		Boolean writePredictedExpression = commandLineOptions.getOutputPredictedExpression(); 
@@ -272,7 +202,7 @@ public class Deconvolution {
 	 * 
 	 * @param deconvolutionResult The deconvolutionresult
 	 */
-	private static void writePredictedExpression(List<DeconvolutionResult> deconvolutionResults) throws IOException, IllegalAccessException{
+	private void writePredictedExpression(List<DeconvolutionResult> deconvolutionResults) throws IOException, IllegalAccessException{
 		DeconvolutionResult deconResult = deconvolutionResults.get(0);
 		String header = "";
 		for(String sampleName : deconResult.getInteractionModelCollection().getSampleNames()){
@@ -299,96 +229,6 @@ public class Deconvolution {
 		DeconvolutionLogger.log.info(String.format("predicted expression written to %s", file.toAbsolutePath()));
 	}
 
-	/*
-	 * Incase p-values have to be written as NA (e.g. when they should be filtered)
-	 */
-	private static DeconvolutionResult setPvaluesNA(String qtlName) throws IllegalAccessException{
-		List<Double> pvalues = new ArrayList<Double>();
-		for (int i = 0; i < cellCounts.getNumberOfCelltypes(); ++i){
-			pvalues.add(333.0);
-		}
-		InteractionModel dummyModel = new InteractionModel();
-		dummyModel.setModelName("dummy");
-		dummyModel.setAlltIndependentVariableNames(cellCounts.getAllCelltypes());
-		return new DeconvolutionResult(cellCounts.getAllCelltypes(), qtlName, pvalues, dummyModel, 0, 1);
-	}
-
-
-	/**
-	 * Compare and return the p-value of two linear models being
-	 * significantly different
-	 *
-	 * From Joris Meys: http://stackoverflow.com/a/35458157/651779 1.
-	 * calculate MSE for the largest model by dividing the Residual Sum of
-	 * Squares (RSS) by the degrees of freedom (df) 2. calculate the
-	 * MSEdifference by substracting the RSS of both models (result is
-	 * "Sum of Sq." in the R table), substracting the df for both models
-	 * (result is "Df" in the R table), and divide these numbers. 3. Divide
-	 * 2 by 1 and you have the F value 4. calculate the p-value using the F
-	 * value in 3 and for df the df-difference in the numerator and df of
-	 * the largest model in the denominator. For more info:
-	 * http://www.bodowinter.com/tutorial/bw_anova_general.pdf
-	 * 
-	 * @param sumOfSquaresModelA A vector with the genotype of all samples
-	 * for *one* eQTL-gene pair
-	 * 
-	 * @param sumOfSquaresModelB A vector with the expression levels of all
-	 * samples for *one* eQTL-gene pair
-	 * 
-	 * @param degreesOfFreedomA A 2D list with for all samples the different
-	 * cell counts
-	 * 
-	 * @param degreesOfFreedomB A 2D list with for all samples the different
-	 * cell counts
-	 * 
-	 * @param no_intercept	If intercept was removed to calculate the sum of squares
-	 * 
-	 * @return The p-value result from comparing two linear models with the
-	 * the Anova test
-	 */
-	public static double anova(double sumOfSquaresModelA, double sumOfSquaresModelB, int degreesOfFreedomA,
-			int degreesOfFreedomB, Boolean no_intercept) {
-		if (no_intercept) {
-			// removing the intercept will give another degree of freedom
-			++degreesOfFreedomA;
-			++degreesOfFreedomB;
-		}
-		// Within-group Variance
-		double meanSquareError = sumOfSquaresModelA / degreesOfFreedomA;
-
-		int degreesOfFreedomDifference = Math.abs(degreesOfFreedomB - degreesOfFreedomA);
-		// Between-group Variance
-		// 234111286.801326
-		double meanSquareErrorDiff = Math.abs((sumOfSquaresModelA - sumOfSquaresModelB) / (degreesOfFreedomDifference));
-
-		/**
-		 * F = Between-group Variance / Within-group Variance <- high value if
-		 * variance between the models is high, and variance within the models
-		 * is low
-		 **/
-		if(meanSquareError == 0){
-			throw new RuntimeException("meanSquareError should not be 0");
-		}
-		double Fval = meanSquareErrorDiff / meanSquareError;
-		/***
-		 * Make an F distribution with degrees of freedom as parameter. If full
-		 * model and ctModel have the same number of samples, difference in df
-		 * is 1 and degreesOfFreedomB are all the terms of the ctModel (so neut%
-		 * + eos% + ... + neut% * GT + eos% * GT With 4 cell types and 1891
-		 * samples the dfs are 1883 and 1884, giving the below distribution
-		 * http://keisan.casio.com/exec/system/1180573186
-		 **/
-		FDistribution Fdist = new FDistribution(degreesOfFreedomDifference, degreesOfFreedomB);
-		/*** Calculate 1 - the probability of observing a lower Fvalue **/
-		double pval = 1 - Fdist.cumulative(Fval);
-		return pval;
-	}
-
-	public static DeconvolutionResult deconvolution(Qtl qtl) throws RuntimeException, IllegalAccessException, 
-	NotEnoughGenotypesException, IOException, 
-	NotEnoughSamplesPerGenotypeException {
-		return deconvolution(qtl.getExpressionVector(), qtl.getGenotypeVector(), qtl.getQtlName());
-	}
 
 	/**
 	 * Make the linear regression models and then do an Anova of the sum of
@@ -415,53 +255,17 @@ public class Deconvolution {
 	 * @return A list with for each celltype a p-value for the celltype
 	 * specific eQTL for one eQTL
 	 */
-	private static DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, NotEnoughGenotypesException, IllegalAccessException, 
-	IOException, NotEnoughSamplesPerGenotypeException {
-
-
+	private DeconvolutionResult deconvolution(double[] expression, double[] genotypes, String qtlName) throws RuntimeException, IllegalAccessException, 
+																											  IOException {
 		/** 
 		 * If roundDosage option is selected on the command line, round of the dosage to closest integer -> 0.49 = 0, 0.51 = 1, 1.51 = 2. 
-		 * If minimumSamplesPerGenotype is selected on the command line, check for current QTL if for each dosage (in case they are not round
-		 * the dosages are binned in same way as with roundDosage option) there are at least <minimumSamplesPerGenotype> samples that have it.
 		 */
-
-		if (commandLineOptions.getRoundDosage() || commandLineOptions.getMinimumSamplesPerGenotype() > 0 || commandLineOptions.getAllDosages()) {
-			int dosage_ref = 0;
-			int dosage_heterozygote = 0;
-			int dosage_alt = 0;
+		if (commandLineOptions.getRoundDosage()) {
 			for (int i = 0; i < genotypes.length; ++i) {
 				if (commandLineOptions.getRoundDosage()){
 					genotypes[i] = Math.round(genotypes[i]);
 				}
-				if (commandLineOptions.getMinimumSamplesPerGenotype() > 0 || commandLineOptions.getAllDosages()){
-					if(genotypes[i] < 0){
-						throw new RuntimeException("Genotype dosage can not be negative, check your dosage input file");
-					}
-					if(genotypes[i] < 0.5){
-						++dosage_ref;
-					}
-					else if(genotypes[i] < 1.5){
-						++dosage_heterozygote;
-					}
-					else if (genotypes[i] <= 2){
-						++dosage_alt;
-					}
-					else{
-						throw new RuntimeException("Genotype dosage can not be larger than 2, check your dosage input file");
-					}
-				}
 			}
-			if(commandLineOptions.getAllDosages()){
-				// check that all dosages have at least one sample
-				if(dosage_ref == 0 || dosage_heterozygote == 0 || dosage_alt == 0){
-					throw new NotEnoughGenotypesException("Not all dosages present for this eQTL");
-				}
-			}
-			if(commandLineOptions.getMinimumSamplesPerGenotype() > 0){
-				// Check that each genotype has enough samples (AA >= minimum_samples_per_genotype, AB >= minimum_samples_per_genotype, BB >= minimum_samples_per_genotype)
-				if(!(dosage_ref >= commandLineOptions.getMinimumSamplesPerGenotype() && dosage_heterozygote >= commandLineOptions.getMinimumSamplesPerGenotype() && dosage_alt >= commandLineOptions.getMinimumSamplesPerGenotype())){
-					throw new NotEnoughSamplesPerGenotypeException("Not enough samples for each genotype");
-				}}
 		}
 
 		InteractionModelCollection interactionModelCollection = new InteractionModelCollection(cellCounts, 
@@ -511,7 +315,7 @@ public class Deconvolution {
 	 * 
 	 * @param interactionModelCollection InteractionModelCollection object that has fullModel and ctModels for ANOVA comparison
 	 */
-	private static void calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection) 
+	private void calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection) 
 			throws IllegalAccessException, IOException {
 		for (int modelIndex = 0; modelIndex < cellCounts.getNumberOfCelltypes(); ++modelIndex) {
 			String celltypeName = cellCounts.getCelltype(modelIndex);
@@ -519,14 +323,8 @@ public class Deconvolution {
 
 			fullModel = interactionModelCollection.getBestFullModel();
 
-			int expressionLength = interactionModelCollection.getExpessionValues().length;
-			if (expressionLength != fullModel.getModelLength()) {
-				throw new RuntimeException("expression vector and fullModel have different number of samples.\nexpression: "
-						+ expressionLength + "\nfullModel: " + fullModel.getModelLength());
-			}
-
 			InteractionModel ctModel = interactionModelCollection.getBestCtModel(celltypeName);
-			double pval = anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), 
+			double pval = Statistics.anova(fullModel.getSumOfSquares(), ctModel.getSumOfSquares(), 
 					fullModel.getDegreesOfFreedom(),ctModel.getDegreesOfFreedom(), 
 					true);
 

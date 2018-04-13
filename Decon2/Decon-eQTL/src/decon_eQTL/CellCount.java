@@ -8,13 +8,14 @@ import decon_eQTL.Utils;
 
 public class CellCount {
 
-	private static List<String> cellTypes = new ArrayList<String> ();
-	private static List<String> sampleNames = new ArrayList<String> ();
-	private static double[][] cellCountPercentages;
-	private static List<List<String>> cellCountTable;
-	private static int numberOfCelltypes;
-	private static int numberOfSamples;
+	private List<String> cellTypes = new ArrayList<String> ();
+	private List<String> sampleNames = new ArrayList<String> ();
+	private double[][] cellCountPercentages;
+	private List<List<String>> cellCountTable;
+	private int numberOfCelltypes;
+	private int numberOfSamples;
 	public CellCount() {};
+
 	/**
 	 * Read in cell count file 
 	 * 
@@ -23,8 +24,8 @@ public class CellCount {
 	 *
 	 * @throws IOException	If cell count file can not be read
 	 */
-	@SuppressWarnings("unchecked")
-	public CellCount( String cellCountFile) throws IOException{
+	@SuppressWarnings("unchecked") 
+	public void readCellCountData(String cellCountFile) throws IOException {
 		// the cell type names are the first row of cell count file, extract for
 		// later printing is now saved as table of strings
 		Object[] cellCountData = Utils.readTabDelimitedColumns(cellCountFile);
@@ -36,7 +37,6 @@ public class CellCount {
 			cellTypes.add(cellCountTable.get(i).get(0));
 			DeconvolutionLogger.log.info(cellCountTable.get(i).get(0));
 		}
-		
 		DeconvolutionLogger.log.info(String.format("Number of cell types: %d", numberOfCelltypes));
 		
 		// minus one because the size includes the cell type header
@@ -49,18 +49,11 @@ public class CellCount {
 			}
 		}
 	}
-
-	public void emptyCellCountPercentages(){
-		cellCountPercentages = null;
-	}
 	
 	public List<String> getSampleNames(){
 		return sampleNames;
 	}
 	
-	public List<List<String>> getCellCountTable(){
-		return cellCountTable;
-	}	
 	public List<String> getAllCelltypes(){
 		return cellTypes;
 	}	
