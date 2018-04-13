@@ -18,6 +18,7 @@ import org.junit.Test;
 import decon_eQTL.CommandLineOptions;
 import decon_eQTL.Deconvolution;
 import decon_eQTL.DeconvolutionResult;
+import decon_eQTL.Main;
 
 public class DeconvolutionTest {
 	String outputDir = "tests/resources/deconvolutionTestResults/";
@@ -44,6 +45,14 @@ public class DeconvolutionTest {
 	public void tearDown() throws Exception {
 		//deleteDir(new File(outputDir));
 	}	
+	
+	@Test
+	public void mainTest() throws Exception {
+		String[] args = {"-o",outputDir+"deconvolutionTestResultsTestRun","-c",counts,
+						 "-e",expression, "-g",genotypes, "-sn", geneSnpList};
+
+		Main.main(args);
+	}
 	
 	/*
 	 * Give error when expression and genotype file have different names

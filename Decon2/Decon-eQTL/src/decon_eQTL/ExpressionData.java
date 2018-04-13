@@ -44,16 +44,11 @@ public class ExpressionData {
 			geneExpression.put(geneName, expressionValues);
 		}
 	}
-	
-	public void setSampleNames(ArrayList<String> sampleNames){
-		this.sampleNames = sampleNames;
-	}
+
 	public ArrayList<String> getSampleNames(){
 		return this.sampleNames;
 	}
-	public void setGeneExpression(HashMap<String, double[]> geneExpression){
-		this.geneExpression = geneExpression;
-	}
+
 	public HashMap<String, double[]>  getGeneExpression() throws IllegalAccessException{
 		if(this.geneExpression == null){
 			throw new IllegalAccessException("geneExpression not set ExpressionData");

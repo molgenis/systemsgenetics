@@ -22,19 +22,16 @@ public class InteractionModelCollection {
 	private ArrayList<String> fullModelNames = new ArrayList<String>();
 	private HashMap<String, ArrayList<String>> ctModelNames = new HashMap<String, ArrayList<String>>();
 	private HashMap<String, ArrayList<String>> fullModelNamesByCelltype = new HashMap<String, ArrayList<String>>();
-	private HashMap<String, String> ctModelName = new HashMap<String, String>();
 	private String bestFullModelName;
 	private HashMap<String, String> bestCtModel = new HashMap<String, String>();
 	private CellCount cellCount; 
 	private List<String> genotypeConfigurationsFullModel = new ArrayList<String> ();
 	private List<String> genotypeConfigurationsCtModel = new ArrayList<String> ();
 	private HashMap<String, HashMap<String,String>> ctModelByGenotypeConfiguration = new HashMap<String, HashMap<String, String>>();
-	private HashMap<String, String> ctModelsSameGenotypeConfigurationBestFullModel = new HashMap<String, String>();
 	private HashMap<String, String> modelCelltype = new HashMap<String, String>();
 	private HashMap<String, ArrayList<String>> genotypeConfigMap = new HashMap<String, ArrayList<String>>();
 	private List<String> celltypes = new ArrayList<String>();
 	private List<String> sampleNames = new ArrayList<String>();
-	private HashMap<String, String> bestFullModelPerCelltype = new HashMap<String, String>();
 
 	/*
 	 * Have to initialize instance with if NNLS or OLS will be used, and for that we need cellCounts
@@ -44,17 +41,9 @@ public class InteractionModelCollection {
 		makeConfigurations(genotypeConfigurationType);
 	}
 
-	public String getCtModelName(String celltype){
-		return ctModelName.get(celltype);
-	}
-
 	public List<String> getAllCelltypes(){
 		return celltypes;
 	}	
-
-	public HashMap<String, String> getCtModelsByGenotypeConfiguration(String genotypeConfiguration){
-		return(this.ctModelByGenotypeConfiguration.get(genotypeConfiguration));
-	}
 
 	/*
 	 * Get interaction model with modelName 
@@ -162,27 +151,6 @@ public class InteractionModelCollection {
 
 	public InteractionModel getBestFullModel() throws IllegalAccessException{
 		return this.getInteractionModel(this.bestFullModelName);
-	}
-
-	public InteractionModel getBestFullModel(String celltype) throws IllegalAccessException{
-		String bestFullModel = bestFullModelPerCelltype.get(celltype);
-		return this.getInteractionModel(bestFullModel);
-	}
-
-	private void setCtModelSameGenotypeConfigurationAsBestFullModel(String celltype, String modelName){
-		this.ctModelsSameGenotypeConfigurationBestFullModel.put(celltype, modelName);
-	}
-
-	public String getCtModelSameGenotypeConfigurationAsBestFullModel(String celltype) throws IllegalAccessException{
-		if(!this.ctModelsSameGenotypeConfigurationBestFullModel.containsKey(celltype)){
-			InteractionModel bestFullModel;
-
-			bestFullModel = this.getBestFullModel();
-			String ctModel =  this.getCtModelsByGenotypeConfiguration(bestFullModel.getGenotypeConfiguration()).get(celltype);
-			setCtModelSameGenotypeConfigurationAsBestFullModel(celltype, ctModel);
-
-		}
-		return this.ctModelsSameGenotypeConfigurationBestFullModel.get(celltype);
 	}
 
 	private void setBestCtModel(String celltype, String modelName){
@@ -371,14 +339,9 @@ public class InteractionModelCollection {
 					} else{
 						genotypes = getSwappedGenotypes();
 					}
-					try {
-						fullModel.addObservedValue(celltypePerc * genotypes[sampleIndex], 
-								sampleIndex, numberOfCelltypes + celltypeIndex);					
-					} catch (ArrayIndexOutOfBoundsException error) {
-						throw new RuntimeException(
-								"The counts file and expression and/or genotype file do not have equal number of samples or QTLs",
-								error);
-					}
+
+					fullModel.addObservedValue(celltypePerc * genotypes[sampleIndex], 
+							sampleIndex, numberOfCelltypes + celltypeIndex);					
 				}
 			}
 			fullModel.setModelLength();
@@ -395,17 +358,6 @@ public class InteractionModelCollection {
 			ctModelByGenotypeConfiguration.putIfAbsent(bestFullModelgenotypeConfiguration, cellTypeCtModelName);			
 		}
 	}
-
-	public void setCtModel() throws IllegalAccessException{		
-		InteractionModel bestFullModel = this.getBestFullModel();
-		String bestFullModelgenotypeConfiguration = bestFullModel.getGenotypeConfiguration();
-		HashMap<String, String> cellTypeCtModelName = new HashMap<String, String>();
-		for(String ctModelName : genotypeConfigMap.get(bestFullModelgenotypeConfiguration)){
-			cellTypeCtModelName.put(ctModelName.split("ctModel_")[1].split("_")[0], ctModelName);
-			ctModelByGenotypeConfiguration.putIfAbsent(bestFullModelgenotypeConfiguration, cellTypeCtModelName);			
-		}
-	}
-
 
 	/**
 	 * Construct the observed value matrices that are used for calculating the regression
@@ -470,27 +422,22 @@ public class InteractionModelCollection {
 								// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
 								// it is explicit. Don't know if better.
 							}
-							try {
-								double genotype = 0;
-								// because the genotype configuration is of length (number of celltypes - 1), when a model is skipped we need to 
-								// adjust all celltype indices from that point forward
-								char genotypeOrderAtCelltype = genotypeConfiguration.charAt(configurationIndex);
-								configurationIndex++;
-								if(genotypeOrderAtCelltype == '0'){
-									genotype = getGenotypes()[sampleIndex];
-								}
-								else if(genotypeOrderAtCelltype == '1'){
-									genotype = getSwappedGenotypes()[sampleIndex];
-								}
-								else{
-									throw new RuntimeException(String.format("Genotype order should be 0 or 1, was: %s", genotypeOrderAtCelltype));
-								}
-								ctModel.addObservedValue(celltype_perc * genotype, sampleIndex, genotypeCounter);
-
-							} catch (ArrayIndexOutOfBoundsException error) {
-								DeconvolutionLogger.log.info("ERROR: The counts file and expression and/or genotype file do not have equal number of samples or QTLs");
-								throw error;
+							double genotype = 0;
+							// because the genotype configuration is of length (number of celltypes - 1), when a model is skipped we need to 
+							// adjust all celltype indices from that point forward
+							char genotypeOrderAtCelltype = genotypeConfiguration.charAt(configurationIndex);
+							configurationIndex++;
+							if(genotypeOrderAtCelltype == '0'){
+								genotype = getGenotypes()[sampleIndex];
 							}
+							else if(genotypeOrderAtCelltype == '1'){
+								genotype = getSwappedGenotypes()[sampleIndex];
+							}
+							else{
+								throw new RuntimeException(String.format("Genotype order should be 0 or 1, was: %s", genotypeOrderAtCelltype));
+							}
+							ctModel.addObservedValue(celltype_perc * genotype, sampleIndex, genotypeCounter);
+
 							genotypeCounter++;
 						}
 						// if i==m there is not celltype:GT interaction term so only one index added to CelltypeVariables

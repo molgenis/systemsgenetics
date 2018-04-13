@@ -41,8 +41,6 @@
 package decon_eQTL;
 
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealVector;
 
 /**
  * 
@@ -268,11 +266,8 @@ public class NonNegativeLeastSquares
 				sm = 0.0;
 				for (l = nsetp; l < M; ++ l)
 				{
-					try{
-						sm += a[l][j]*b[l];
-					} catch (NullPointerException e){
-						throw e;
-					}
+					sm += a[l][j]*b[l];
+
 				}
 				w[j] = sm;
 			}
@@ -401,7 +396,7 @@ public class NonNegativeLeastSquares
 				// If all new constrained coefficients are feasible then alpha
 				// will still be 2. If so, exit from secondary loop to main
 				// loop.
-				if (alpha == 2.0) break secondaryloop;
+				if (Math.abs(alpha- 2.0) < 0.000000000000000000000000001) break secondaryloop;
 
 				// Otherwise, use alpha (which will be between 0 and 1) to
 				// interpolate between the old x and the new zz.
@@ -796,13 +791,6 @@ public class NonNegativeLeastSquares
 			double y)
 	{
 		return y >= 0.0 ? x : -x;
-	}
-
-
-	protected RealVector calculateBeta() {
-		this.solve();
-		RealVector xRealVector = new ArrayRealVector(x);
-		return xRealVector;
 	}
 
 	protected double calculateResidualSumOfSquares(){
