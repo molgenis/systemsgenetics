@@ -1,13 +1,7 @@
 package decon_eQTL;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.math3.distribution.NormalDistribution;
-
 import JSci.maths.statistics.FDistribution;
-
 import java.lang.Math;
 
 /**
@@ -15,12 +9,12 @@ import java.lang.Math;
  */
 public class Statistics 
 {
-    public Statistics(){}   
-	
-   
 	/**
 	 * based on https://www.researchgate.net/post/How_do_you_calculate_a_p_value_for_spearmans_rank_correlation
 	 * and https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient#Determining_significance
+	 * 
+	 * this is an approximation, so won't give exactly same results as R cor.test(), but with many samples and
+	 * when there is a correlation they approximate eachother
 	 * 
 	 * @param spearmanCorrelation Spearman correlation from SpearmansCorrelation()
 	 * 
@@ -33,7 +27,10 @@ public class Statistics
     	NormalDistribution normalDistribution = new NormalDistribution();
     	double p = 2*normalDistribution.cumulativeProbability(-Math.abs(z));
 
-    	if (Double.isNaN(p)){
+    	if (Double.isNaN(z)){
+    		p = 0;
+    	}
+    	if (Double.isNaN(spearmanCorrelation)){
     		p = 1;
     	}
     	return p;
@@ -102,7 +99,7 @@ public class Statistics
 		 * is low
 		 **/
 		if(meanSquareError == 0){
-			throw new RuntimeException("meanSquareError should not be 0");
+			throw new RuntimeException("meanSquareError should not be 0, no variance in the data?");
 		}
 		double Fval = meanSquareErrorDiff / meanSquareError;
 		/***
