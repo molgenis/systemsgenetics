@@ -15,6 +15,10 @@ public class CellCount {
 	private int numberOfCelltypes;
 	private int numberOfSamples;
 	public CellCount() {};
+
+	public CellCount( String cellCountFile) throws IOException{
+	}
+
 	/**
 	 * Read in cell count file 
 	 * 
@@ -23,8 +27,8 @@ public class CellCount {
 	 *
 	 * @throws IOException	If cell count file can not be read
 	 */
-	@SuppressWarnings("unchecked")
-	public CellCount( String cellCountFile) throws IOException{
+	@SuppressWarnings("unchecked") 
+	public void readCellCountData(String cellCountFile) throws IOException {
 		// the cell type names are the first row of cell count file, extract for
 		// later printing is now saved as table of strings
 		Object[] cellCountData = Utils.readTabDelimitedColumns(cellCountFile);
@@ -48,7 +52,7 @@ public class CellCount {
 			}
 		}
 	}
-
+	
 	public void emptyCellCountPercentages(){
 		cellCountPercentages = null;
 	}

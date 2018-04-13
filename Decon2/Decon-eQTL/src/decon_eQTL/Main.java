@@ -1,12 +1,11 @@
 package decon_eQTL;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.cli.ParseException;
 
 public class Main {
-
-
 	/**
 	 * Deconvolute a set of QTLs given the expression levels, genotypes,
 	 * and cell counts. Calculates the p-values for the deconvoluted QTLs
@@ -19,10 +18,13 @@ public class Main {
 	 * @throws IOException	If cell counts file can not be found or read
 	 */
 	public static void main(String[] args) throws ParseException, IllegalAccessException, IOException {
-		CommandLineOptions commandLineOptions = new CommandLineOptions(); 
-		Deconvolution deconvolution = new Deconvolution();
+		CommandLineOptions commandLineOptions = new CommandLineOptions();
 		commandLineOptions.parseCommandLine(args);
-		deconvolution.runDeconPerGeneSnpPair(commandLineOptions);
+		Deconvolution deconvolution = new Deconvolution(commandLineOptions);
+		deconvolution.readInputData();
+		List<DeconvolutionResult> deconvolutionResults = deconvolution.runDeconPerGeneSnpPair();
+		deconvolution.writeDeconvolutionResults(deconvolutionResults);
+
 	}
 
 }

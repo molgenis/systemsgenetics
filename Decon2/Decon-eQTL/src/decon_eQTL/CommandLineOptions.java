@@ -23,11 +23,7 @@ public class CommandLineOptions {
 	private String snpsToTestFile;
 	private String outfile = "deconvolutionResults.csv";
 	private String outfolder;
-	private int minimumSamplesPerGenotype = 0;
 	private Boolean roundDosage = false;
-	private Boolean allDosages = false;
-	private Boolean filterSamples = false;
-	private Boolean removeConstraintViolatingSamples = false;
 	private Boolean testRun = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
@@ -53,7 +49,7 @@ public class CommandLineOptions {
 		Option expression = Option.builder("e").required(true).hasArg().longOpt("expression")
 				.desc("Expression file name").argName("file").build();
 		Option filterSamplesOption =  Option.builder("f").required(false).longOpt("filter_samples")
-				.desc("If set, remove samples that are filtered out because of -m, -nn or -ad. By default p-values of these are set to 333.0").build();
+				.desc("If set, remove samples that are filtered out because of -m or -ad. By default p-values of these are set to 333.0").build();
 		Option genotype = Option.builder("g").required(true).hasArg().longOpt("genotype").desc("Genotype file name")
 				.argName("file").build();
 		Option genotypeConfigurationTypeOption = Option.builder("gc").required(false).hasArg().longOpt("genotypeConfigurationType")
@@ -113,26 +109,10 @@ public class CommandLineOptions {
 	}
 	
 	private void parseOptions(CommandLine cmdLine) throws FileNotFoundException{
-
-		if(cmdLine.hasOption("remove_constraint_violating_samples")){
-			removeConstraintViolatingSamples = !removeConstraintViolatingSamples;
-		}
-		
 		if (cmdLine.hasOption("round_dosage")) {
 			roundDosage = !roundDosage;
 		}
-
-		if (cmdLine.hasOption("all_dosages")){
-			allDosages = !allDosages;
-		}
 	
-		if (cmdLine.hasOption("minimum_samples_per_genotype")) {
-			minimumSamplesPerGenotype = Integer.parseInt(cmdLine.getOptionValue("minimum_samples_per_genotype"));
-			if(minimumSamplesPerGenotype < 0){
-				minimumSamplesPerGenotype = 0;
-			}
-		}
-		
 		if(cmdLine.hasOption("genotypeConfigurationType")){
 			genotypeConfigurationType = cmdLine.getOptionValue("genotypeConfigurationType");
 			
@@ -163,14 +143,12 @@ public class CommandLineOptions {
 			outfile = cmdLine.getOptionValue("outfile");
 		}
 		
-		outfolder = cmdLine.getOptionValue("outfolder");
+		outfolder = cmdLine.getOptionValue("outfolder")+"/";
 		
 		if (cmdLine.hasOption("no_console")) {
 			noConsole = !noConsole;
 		}
-		if (cmdLine.hasOption("filter_samples")){
-			filterSamples = !filterSamples;
-		}
+
 
 		if (cmdLine.hasOption("test_run")) {
 			testRun = !testRun;
@@ -209,7 +187,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.2, src last changed at 12-APR-2017");
+	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.3");
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));
@@ -218,10 +196,6 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Outfolder (-o): %s", outfolder));
 		DeconvolutionLogger.log.info(String.format("Outfile (-of): %s", outfile));
 		DeconvolutionLogger.log.info(String.format("Round dosage (-r): %s", roundDosage));
-		DeconvolutionLogger.log.info(String.format("Filter out QTLs where not all dosages are present in at least 1 sample (-ad): %s", allDosages));
-		DeconvolutionLogger.log.info(String.format("Minimum samples per genotype (-m): %s", minimumSamplesPerGenotype));
-		DeconvolutionLogger.log.info(String.format("Filter samples from output (-f): %s", filterSamples));
-		DeconvolutionLogger.log.info(String.format("Remove constraint violating samples (-rc): %s", removeConstraintViolatingSamples));
 		DeconvolutionLogger.log.info(String.format("test run doing only 100 QTL (-t): %s", testRun));
 		DeconvolutionLogger.log.info(String.format("Add whole blood eQTL (pearson correlation genotypes and expression) (-w): %s",wholeBloodQTL));
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
@@ -245,16 +219,10 @@ public class CommandLineOptions {
 		return outfile;
 	}
 
-	public int getMinimumSamplesPerGenotype(){
-		return minimumSamplesPerGenotype;
-	}
 	public Boolean getRoundDosage(){
 		return roundDosage;
 	}
 
-	public Boolean getAllDosages(){
-		return allDosages;
-	}
 	public String getOutfolder() throws IllegalAccessException{
 		if(this.outfolder == null){
 			throw new IllegalAccessException("Outfolder has not been set");
@@ -264,12 +232,6 @@ public class CommandLineOptions {
 
 	public void setOutfolder(String newOutfolder){
 		outfolder = newOutfolder;
-	}
-	public Boolean getFilterSamples(){
-		return filterSamples;
-	}
-	public Boolean getRemoveConstraintViolatingSamples(){
-		return removeConstraintViolatingSamples;
 	}
 
 	public Boolean getTestRun(){
