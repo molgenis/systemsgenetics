@@ -9,7 +9,6 @@ public class DeconvolutionResult {
 	private List<String> celltypes;
 	private String qtlName;
 	private List<Double> pvalues = new ArrayList<Double>();
-	private Map<String, Double> pvaluePerCelltype = new HashMap<String, Double>();
 	private InteractionModelCollection interactionModelCollection;
 	private double wholeBloodQTL;
 	private double wholeBloodQTLpvalue;
@@ -36,7 +35,6 @@ public class DeconvolutionResult {
 			String modelName = celltypes.get(i);
 			Double pvalue = interactionModelCollection.getPvalue(modelName);
 			this.pvalues.add(pvalue);
-			pvaluePerCelltype.put(modelName, pvalue);
 		}
 		this.interactionModelCollection = interactionModelCollection;
 		this.wholeBloodQTL = wholeBloodQTL;
@@ -63,9 +61,6 @@ public class DeconvolutionResult {
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
-		for (int i = 0; i < celltypes.size(); i++){
-			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
-		}
 
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
@@ -89,9 +84,6 @@ public class DeconvolutionResult {
 		this.celltypes = celltypes;
 		this.qtlName = qtlName;
 		this.pvalues = pvalues;
-		for (int i = 0; i < celltypes.size(); i++){
-			pvaluePerCelltype.put(celltypes.get(i), pvalues.get(i));
-		}
 
 		this.wholeBloodQTL = wholeBloodQTL;
 		this.wholeBloodQTLpvalue = wholeBloodQTLpvalue;
@@ -147,14 +139,6 @@ public class DeconvolutionResult {
 			throw new IllegalAccessException("interactionModelCollection not set");
 		}
 		return this.interactionModelCollection;
-	}
-		
-		
-	public Map<String, Double>  getPvaluePerCelltype() throws IllegalAccessException{
-		if(this.pvaluePerCelltype == null){
-			throw new IllegalAccessException("pvaluePerCelltype not set for this model");
-		}
-		return this.pvaluePerCelltype;
 	}
 
 	public double  getWholeBloodQTL() throws IllegalAccessException{

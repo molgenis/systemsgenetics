@@ -69,12 +69,6 @@ public class Deconvolution {
 	 * @throws IOException 
 	 */
 	public List<DeconvolutionResult> runDeconPerGeneSnpPair() throws RuntimeException, IllegalAccessException, IOException{
-
-		//file to write all samples in that got filtered out
-		Path filteredQTLsFile = Paths.get(outputFolder+"/filteredQTLs.csv");
-		List<String> filteredQTLsOutput = new ArrayList<String>();
-		filteredQTLsOutput.add("QTL\treason");
-
 		int whileIndex = 0;
 		long time = System.currentTimeMillis();
 		List<DeconvolutionResult> deconvolutionResults = new ArrayList<DeconvolutionResult>();
@@ -113,7 +107,6 @@ public class Deconvolution {
 		DeconvolutionLogger.log.info(String.format("QTLs passed: %d", QTLsTotal-(QTLsFiltered+skippedGenotypeGeneCombinations)));
 		DeconvolutionLogger.log.info(String.format("QTLs filtered: %d", QTLsFiltered));
 		DeconvolutionLogger.log.info(String.format("Total: %d",QTLsTotal-skippedGenotypeGeneCombinations));
-		Files.write(filteredQTLsFile, filteredQTLsOutput, Charset.forName("UTF-8"));
 		return deconvolutionResults;
 	}
 
@@ -175,20 +168,9 @@ public class Deconvolution {
 				genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(i);
 
 				if (genotypeConfiguration == '0'){
-					// add cellCounts.getNumberOfCelltypes() to get the regression parameter for the interaction term (first ones are indepent effect betas)
-					if(estimatedRegressionParameter < 0){
-						results += "\t-";			
-					}
-					else{
 						results += "\t+";
-					}
 				}else if(genotypeConfiguration == '1'){
-					if(estimatedRegressionParameter < 0){
-						results += "\t+";			
-					}
-					else{
 						results += "\t-";
-					}
 				}
 				else{
 					throw new RuntimeException(String.format("Genotype configuration should be 0 or 1, not %s", genotypeConfiguration));
