@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -38,12 +40,19 @@ public class DiseaseGeneHpoData {
 	private final HashMap<DiseaseGene, HashSet<String>> diseaseGeneToHpos; // disease_gene
 	private final SimpleRegression regression = new SimpleRegression();
 
-	public DiseaseGeneHpoData(final File diseaseGeneHpoFile, HashMap<String, ArrayList<String>> ncbiToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap, HashSet<String> exludedHpo) throws FileNotFoundException, IOException {
+	public DiseaseGeneHpoData(final File diseaseGeneHpoFile, HashMap<String, ArrayList<String>> ncbiToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap, HashSet<String> exludedHpo, HashSet<String> includeGenes, String diseasePrefix) throws FileNotFoundException, IOException {
 
 		geneToHpos = new HashMap<>();
 		diseaseToGenes = new HashMap<>();
 		diseaseGeneToHpos = new HashMap<>();
 
+		Predicate<String> diseasePattern;
+		if(diseasePrefix != null){
+			diseasePattern = Pattern.compile("^" + diseasePrefix).asPredicate();
+		} else {
+			diseasePattern = null;
+		}
+		
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(diseaseGeneHpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
 
@@ -53,6 +62,10 @@ public class DiseaseGeneHpoData {
 			String hgcnId = nextLine[1];
 			String ncbiId = nextLine[2];
 			String hpo = nextLine[3];
+			
+			if(diseasePattern != null && !diseasePattern.test(disease)){
+				continue;
+			}
 
 			if (exludedHpo != null && exludedHpo.contains(hpo)) {
 				continue;
@@ -66,6 +79,8 @@ public class DiseaseGeneHpoData {
 				System.err.println("Missing mapping for gene: " + ncbiId + " " + hgcnId);
 			} else if (ensgIds.size() > 1) {
 				System.err.println("Skipping becasue multiple ENSG IDs for gene: " + ncbiId + " " + hgcnId);
+			} else if (!includeGenes.contains(ensgIds.get(0))) {
+				System.err.println("Skipping becasue gene not in include list: " + ncbiId + " " + hgcnId);
 			} else {
 
 				String ensgId = ensgIds.get(0);
@@ -254,8 +269,14 @@ public class DiseaseGeneHpoData {
 			findRandomMatch:
 			do {
 
-				if (i++ >= 50000) {
+				if (i++ >= 500000) {
 					System.err.println("No random match found");
+					noRandomFound = true;
+					break;
+				}
+				
+				if(backgroundGenes.isEmpty()){
+					System.err.println("No background genes left");
 					noRandomFound = true;
 					break;
 				}
@@ -265,7 +286,7 @@ public class DiseaseGeneHpoData {
 				genePredictionsCorrelated = false;
 
 				randomElement = random.nextInt(backgroundGenes.size());
-				
+
 				randomReplacementGene = backgroundGenes.get(randomElement);
 				randomDiseaseGene = new DiseaseGene(disease, randomReplacementGene);
 				HashSet<String> knownHposForRandomGene = this.geneToHpos.get(randomReplacementGene);
@@ -320,9 +341,7 @@ public class DiseaseGeneHpoData {
 
 			} while (genePredictionsCorrelated | hpoCorrelated | hpoOverlap | knownGenesForDisease.contains(randomReplacementGene) | randomDiseaseGeneToHpos.containsKey(randomDiseaseGene));
 			//geneToHpos.keySet().contains(randomReplacementGene) 
-			
-			
-			
+
 			if (!noRandomFound) {
 				//backgroundGenes.remove(randomElement);
 				randomDiseaseGeneToHpos.put(randomDiseaseGene, hpos);

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import nl.systemsgenetics.genenetworkbackend.ConvertGoToMatrix;
 import static nl.systemsgenetics.genenetworkbackend.ConvertGoToMatrix.readGenes;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -65,7 +64,7 @@ public class ConvertTfDataUrmoToMatrix {
 				String pathway = pathwayToGenesEntry.getKey();
 
 				for (String gene : pathwayToGenesEntry.getValue()) {
-
+					
 					if (pathwayMatrix.containsRow(gene)) {
 
 						if (genesWithPathway.add(gene)) {

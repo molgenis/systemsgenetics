@@ -18,6 +18,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import static nl.systemsgenetics.genenetworkbackend.ConvertHpoToMatrix.loadNcbiT
 import static nl.systemsgenetics.genenetworkbackend.div.CalculateGenePredictability.loadSignificantTerms;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.Variance;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
@@ -64,7 +66,7 @@ public class TestDiseaseGenePerformance {
 		final File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
 		final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_genesInPathways.txt");
 		//final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\expressedReactomeGenes.txt");
-		final boolean randomizeCustomBackground = true;
+		final boolean randomizeCustomBackground = false;
 
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
@@ -73,8 +75,9 @@ public class TestDiseaseGenePerformance {
 		if (randomize) {
 
 			if (randomizeCustomBackground) {
-				backgroundGenes = loadBackgroundGenes(backgroundForRandomize);
-				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomizedCustomBackground.txt");
+				System.err.println("First need to fix so ranking list contains all genes in background list");
+//				backgroundGenes = loadBackgroundGenes(backgroundForRandomize);
+//				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomizedCustomBackground.txt");
 			} else {
 				backgroundGenes = null;
 				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomized.txt");
@@ -94,19 +97,38 @@ public class TestDiseaseGenePerformance {
 		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
 
 		DoubleMatrixDataset<String, String> predictionMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixFile.getAbsolutePath());
-		DoubleMatrixDataset<String, String> predictionMatrixSignificant = predictionMatrix.viewSelection(new LinkedHashSet<>(backgroundGenes), significantTerms);
-
+		DoubleMatrixDataset<String, String> predictionMatrixSignificant = predictionMatrix.viewColSelection(significantTerms);
 
 		DoubleMatrixDataset<String, String> predictionMatrixSignificantCorrelationMatrix = DoubleMatrixDataset.loadDoubleData(predictionMatrixCorrelationFile.getAbsolutePath());
 
-		DiseaseGeneHpoData diseaseGeneHpoData = new DiseaseGeneHpoData(diseaseGeneHpoFile, ncbiToEnsgMap, hgncToEnsgMap, exludedHpo);
+		DiseaseGeneHpoData diseaseGeneHpoData = new DiseaseGeneHpoData(diseaseGeneHpoFile, ncbiToEnsgMap, hgncToEnsgMap, exludedHpo, new HashSet(predictionMatrix.getHashRows().keySet()), "OMIM");
+		
+		//NOTE if one would use a differnt background this needs to be updated
+		HashSet<String> diseaseGenes = new HashSet<>(diseaseGeneHpoData.getDiseaseGenes());
+		
 		if (randomize) {
 			diseaseGeneHpoData = diseaseGeneHpoData.getPermutation(1, backgroundGenes);
 		}
 
-		DoubleMatrixDataset<String, String> annotationnMatrix = DoubleMatrixDataset.loadDoubleData(annotationMatrixFile.getAbsolutePath());
-		DoubleMatrixDataset<String, String> annotationMatrixSignificant = annotationnMatrix.viewSelection(new LinkedHashSet<>(backgroundGenes), significantTerms);
 		
+
+		for (String gene : diseaseGenes) {
+			if (!predictionMatrixSignificant.containsRow(gene)) {
+				throw new Exception("Error: " + gene);
+			}
+		}
+
+		int[] mapGeneIndexToDiseaseGeneIndex = new int[predictionMatrix.rows()];
+		ArrayList<String> predictedGenes = predictionMatrix.getRowObjects();
+
+		int g2 = 0;
+		for (int g = 0; g < predictedGenes.size(); ++g) {
+			mapGeneIndexToDiseaseGeneIndex[g] = diseaseGenes.contains(predictedGenes.get(g)) ? g2++ : -1;
+		}
+
+		DoubleMatrixDataset<String, String> annotationnMatrix = DoubleMatrixDataset.loadDoubleData(annotationMatrixFile.getAbsolutePath());
+		DoubleMatrixDataset<String, String> annotationMatrixSignificant = annotationnMatrix.viewColSelection(significantTerms);
+
 		HashMap<String, MeanSd> hpoMeanSds = calculatePathayMeansOfAnnotatedGenes(predictionMatrixSignificant, annotationMatrixSignificant);
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
@@ -116,29 +138,38 @@ public class TestDiseaseGenePerformance {
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 
 		final int totalGenes = predictionMatrixSignificant.rows();
+		final int totalDiseaseGenes = diseaseGenes.size();
 		final double[] geneScores = new double[totalGenes];
+		final double[] geneScoresDiseaseGenes = new double[totalDiseaseGenes];
 		final NaturalRanking naturalRanking = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.MAXIMUM);
 
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 
-		String[] outputLine = new String[12];
+		String[] outputLine = new String[16];
 		int c = 0;
 		outputLine[c++] = "Disease";
 		outputLine[c++] = "Gene";
 		outputLine[c++] = "Hgnc";
 		outputLine[c++] = "Rank";
+		outputLine[c++] = "RankAmongDiseaseGenes";
 		outputLine[c++] = "Z-score";
 		outputLine[c++] = "HPO_skewness";
 		outputLine[c++] = "Other_mean_skewness";
 		outputLine[c++] = "Other_max_skewness";
 		outputLine[c++] = "HPO_phenotypic_match_score";
 		outputLine[c++] = "HPO_count";
+		outputLine[c++] = "HPO_sum_auc";
+		outputLine[c++] = "HPO_mean_auc";
+		outputLine[c++] = "HPO_median_auc";
 		outputLine[c++] = "HPO_terms";
 		outputLine[c++] = "HPO_terms_match_score";
 		writer.writeNext(outputLine);
 
 		Random random = new Random(1);
-		
+
+		Mean meanCalculator = new Mean();
+		Median medianCalculator = new Median();
+
 		for (DiseaseGeneHpoData.DiseaseGene diseaseGene : diseaseGeneHpoData.getDiseaseGeneHpos()) {
 
 			String gene = diseaseGene.getGene();
@@ -159,13 +190,12 @@ public class TestDiseaseGenePerformance {
 			if (geneHposPredictable.isEmpty()) {
 				continue;
 			}
-			
-			if(geneHposPredictable.size() > 1){
-				String hpoSelected = geneHposPredictable.toArray(new String[geneHposPredictable.size()])[random.nextInt(geneHposPredictable.size())];
-				geneHposPredictable = new LinkedHashSet<>(1);
-				geneHposPredictable.add(hpoSelected);
-			}
 
+//			if(geneHposPredictable.size() > 1){
+//				String hpoSelected = geneHposPredictable.toArray(new String[geneHposPredictable.size()])[random.nextInt(geneHposPredictable.size())];
+//				geneHposPredictable = new LinkedHashSet<>(1);
+//				geneHposPredictable.add(hpoSelected);
+//			}
 			DoubleMatrixDataset<String, String> predictionCaseTerms = predictionMatrixSignificant.viewColSelection(geneHposPredictable);
 			DoubleMatrix2D predictionCaseTermsMatrix = predictionCaseTerms.getMatrix();
 
@@ -176,20 +206,33 @@ public class TestDiseaseGenePerformance {
 				if (Double.isNaN(geneScores[g])) {
 					geneScores[g] = 0;
 				}
+
+				g2 = mapGeneIndexToDiseaseGeneIndex[g];
+				if (g2 >= 0) {
+					geneScoresDiseaseGenes[g2] = geneScores[g];
+				}
+
 			}
 
 			double[] geneRanks = naturalRanking.rank(geneScores);
-
 			int diseaseGeneIndex = predictionMatrixSignificant.getRowIndex(gene);
+
+			double[] geneRanksDiseaseGenes = naturalRanking.rank(geneScoresDiseaseGenes);
+			int diseaseGeneIndexInDiseaseGenesOnly = mapGeneIndexToDiseaseGeneIndex[diseaseGeneIndex];
 
 			double zscore = geneScores[diseaseGeneIndex];
 			double rank = (totalGenes - geneRanks[diseaseGeneIndex]) + 1;
+			double rankAmongDiseaseGenes = (totalDiseaseGenes - geneRanksDiseaseGenes[diseaseGeneIndexInDiseaseGenesOnly]) + 1;
 
 			double hpoPhenotypicMatchScore = 0;
 			StringBuilder individualMatchScore = new StringBuilder();
 			boolean notFirst = false;
 			int usedHpos = 0;
-
+			
+			double[] aucs = new double[geneHposPredictable.size()];
+			double sumAucs = 0;
+			
+			int i = 0;
 			for (String hpo : geneHposPredictable) {
 
 				usedHpos++;
@@ -200,17 +243,22 @@ public class TestDiseaseGenePerformance {
 
 				double hpoPredictionOutlierScore = ((hpoPredictionZ - hpoMeanSd.getMean()) / hpoMeanSd.getSd());
 
-				
 				if (notFirst) {
 					individualMatchScore.append(';');
 				}
 				notFirst = true;
-				
+
 				individualMatchScore.append(hpoPredictionOutlierScore);
 
 				hpoPhenotypicMatchScore += hpoPredictionOutlierScore;
+				
+				aucs[i++] = predictionInfo.get(hpo).getAuc();
+				sumAucs += predictionInfo.get(hpo).getAuc();
 
 			}
+			
+			double meanAuc = meanCalculator.evaluate(aucs);
+			double medianAuc = medianCalculator.evaluate(aucs);
 
 			if (usedHpos == 0) {
 				hpoPhenotypicMatchScore = Double.NaN;
@@ -228,13 +276,17 @@ public class TestDiseaseGenePerformance {
 			outputLine[c++] = gene;
 			outputLine[c++] = symbol;
 			outputLine[c++] = String.valueOf(rank);
+			outputLine[c++] = String.valueOf(rankAmongDiseaseGenes);
 			outputLine[c++] = String.valueOf(zscore);
 			outputLine[c++] = String.valueOf(skewnessInfo.getHpoSkewness(gene));
 			outputLine[c++] = String.valueOf(skewnessInfo.getMeanSkewnessExHpo(gene));
 			outputLine[c++] = String.valueOf(skewnessInfo.getMaxSkewnessExHpo(gene));
 			outputLine[c++] = String.valueOf(hpoPhenotypicMatchScore);
-			outputLine[c++] = String.valueOf(geneHpos.size());
-			outputLine[c++] = String.join(";", geneHpos);
+			outputLine[c++] = String.valueOf(geneHposPredictable.size());
+			outputLine[c++] = String.valueOf(sumAucs);
+			outputLine[c++] = String.valueOf(meanAuc);
+			outputLine[c++] = String.valueOf(medianAuc);
+			outputLine[c++] = String.join(";", geneHposPredictable);
 			outputLine[c++] = individualMatchScore.toString();
 			writer.writeNext(outputLine);
 

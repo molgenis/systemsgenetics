@@ -28,11 +28,16 @@ public class FilterPrioBasedOnMutatedGenes {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) throws FileNotFoundException, IOException {
+//
+//		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\samplesWithGeno.txt");
+//		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\gavinRes\\");
+//		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
+//		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\rankingCandidateGenes");
 
-		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\samplesWithGeno.txt");
-		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\gavinRes\\");
-		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
-		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\rankingCandidateGenes");
+		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\samplesWithGeno.txt");
+		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\gavinRes\\");
+		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm");
+		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\rankingCandidateGenes");
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
@@ -41,12 +46,12 @@ public class FilterPrioBasedOnMutatedGenes {
 		while ((nextLine = sampleFileReader.readNext()) != null) {
 
 			String sample = nextLine[0];
-			
+
 			String genoSampleName = new File(nextLine[1]).getName();
-			if(!genoSampleName.endsWith(".txt")){
+			if (!genoSampleName.endsWith(".txt")) {
 				genoSampleName += ".txt";
 			}
-			
+
 			File genoFile = new File(genoFolder, genoSampleName);
 			File prioFile = new File(prioFolder, sample + ".txt");
 			File rankingFile = new File(resultFolder, sample + ".txt");
@@ -65,18 +70,18 @@ public class FilterPrioBasedOnMutatedGenes {
 
 			String[] outputLine = prioFileReader.readNext();
 			writer.writeNext(outputLine);
-			
+
 			while ((outputLine = prioFileReader.readNext()) != null) {
-				
-				if(genesWithMutation.contains(outputLine[1])){
+
+				if (genesWithMutation.contains(outputLine[1])) {
 					writer.writeNext(outputLine);
 				}
-				
+
 			}
-			
+
 			writer.close();
 			prioFileReader.close();
-			
+
 		}
 
 	}

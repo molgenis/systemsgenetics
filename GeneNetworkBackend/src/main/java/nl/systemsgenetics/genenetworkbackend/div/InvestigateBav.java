@@ -56,6 +56,10 @@ public class InvestigateBav {
 				double zscore = Double.parseDouble(line[3]);
 				String otherHpos = line[5];
 
+				if(zscore > 5){
+					System.out.println(sample + " " + gene + " " + zscore);
+				}
+				
 				geneZscore.put(gene, zscore);
 				geneCount.adjustOrPutValue(gene, 1, 1);
 				geneOtherHpo.put(gene, otherHpos);
