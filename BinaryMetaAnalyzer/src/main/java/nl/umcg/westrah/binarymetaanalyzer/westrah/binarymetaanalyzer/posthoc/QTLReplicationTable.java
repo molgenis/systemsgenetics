@@ -7,11 +7,13 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.io.trityper.util.DetermineLD;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.ZScores;
+import umcg.genetica.text.Strings;
 import umcg.genetica.util.Primitives;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class QTLReplicationTable {
 	
@@ -443,6 +445,102 @@ public class QTLReplicationTable {
 		out.close();
 	}
 	
+	public void calculateLambdaForPerm(String ref, String folder, String name, int nrPerm, String out) throws IOException {
+		
+		HashSet<String> eqtlfilter = new HashSet<String>();
+		TextFile tfr = new TextFile(ref, TextFile.R);
+		tfr.readLine();
+		String[] refelems = tfr.readLineElems(TextFile.tab);
+		while (refelems != null) {
+			if (refelems.length > 4) {
+				String id = refelems[1] + "_" + refelems[4];
+				eqtlfilter.add(id);
+			} else if(refelems.length==2){
+				String id = refelems[0] + "_" + refelems[1];
+				eqtlfilter.add(id);
+			}
+			refelems = tfr.readLineElems(TextFile.tab);
+		}
+		tfr.close();
+		
+		
+		System.out.println(eqtlfilter.size() + " eqtls as reference. ");
+		
+		String[] namesplit = name.split(",");
+		String[] filesplit = folder.split(",");
+		
+		TextFile tfo = new TextFile(out, TextFile.W);
+		
+		
+		String ln = "Name\tNrEQTLs\tNrSamples";
+		for (int p = 0; p < nrPerm + 1; p++) {
+			if (p == 0) {
+				ln += "\tNotPermuted";
+			} else {
+				ln += "\tPerm" + p;
+			}
+			
+		}
+		tfo.writeln(ln);
+		
+		for (int f = 0; f < filesplit.length; f++) {
+			String outln = namesplit[f];
+			System.out.println(namesplit[f]);
+			for (int p = 0; p < nrPerm + 1; p++) {
+				String file = filesplit[f] + "PermutedEQTLsPermutationRound" + p + ".txt.gz";
+				
+				if (p == 0) {
+					file = filesplit[f] + "eQTLs.txt.gz";
+				}
+				System.out.println(file);
+				TextFile tfin = new TextFile(file, TextFile.R);
+				tfin.readLine();
+				String[] elems = tfin.readLineElems(TextFile.tab);
+				ArrayList<Double> zs = new ArrayList<>();
+				Integer nrsamples = null;
+				while (elems != null) {
+					if (elems.length > 10) {
+						
+						EQTL e = EQTL.fromString(elems, "-", Strings.semicolon);
+						
+						String id = e.getRsName() + "_" + e.getProbe();
+						if (eqtlfilter.contains(id)) {
+							
+							if (nrsamples == null) {
+								Integer[] samples = e.getDatasetsSamples();
+								int tmpsum = 0;
+								for (Integer s : samples) {
+									if (s != null) {
+										tmpsum += s;
+									}
+								}
+								nrsamples = tmpsum;
+							}
+							Double z = e.getZscore();
+							zs.add(z * z);
+						}
+					}
+					elems = tfin.readLineElems(TextFile.tab);
+				}
+				tfin.close();
+				
+				System.out.println(zs.size() + " qtls.");
+				
+				double[] z = Primitives.toPrimitiveArr(zs);
+				
+				double zmed = JSci.maths.ArrayMath.median(z);
+				if (p == 0) {
+					outln += "\t" + z.length + "\t" + nrsamples + "\t" + zmed;
+				} else {
+					outln += "\t" + zmed;
+				}
+				
+			}
+			tfo.writeln(outln);
+		}
+		tfo.close();
+		
+	}
 	
 	private double zFromCorr(double corr1) {
 		double raplus = 1 * corr1 + 1;

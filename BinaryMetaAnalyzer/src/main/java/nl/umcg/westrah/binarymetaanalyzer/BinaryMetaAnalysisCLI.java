@@ -276,11 +276,19 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		option = Option.builder()
+				.longOpt("replicationdeterminalambda")
+				.desc("Determine lambda inflation for folder with eQTL results")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
 				.longOpt("names")
 				.hasArg()
 				.desc("Dataset names")
 				.build();
 		OPTIONS.addOption(option);
+		
+		
 		
 		
 	}
@@ -295,7 +303,25 @@ public class BinaryMetaAnalysisCLI {
 			CommandLineParser parser = new DefaultParser();
 			final CommandLine cmd = parser.parse(OPTIONS, args, false);
 			
-			if (cmd.hasOption("replicationtable")) {
+			if (cmd.hasOption("replicationdeterminalambda")) {
+				if (!cmd.hasOption("in") || !cmd.hasOption("out") || !cmd.hasOption("names") || !cmd.hasOption("nrperm")) {
+					System.out.println("Options for replicationdeterminalambda:");
+					System.out.println("--in");
+					System.out.println("--in2");
+					System.out.println("--out");
+					System.out.println("--nrperm");
+					System.out.println("--names");
+					
+				} else {
+					QTLReplicationTable t = new QTLReplicationTable();
+					String in = cmd.getOptionValue("in");
+					String in2 = cmd.getOptionValue("in2");
+					String out = cmd.getOptionValue("out");
+					String names = cmd.getOptionValue("names");
+					Integer nrperm = Integer.parseInt(cmd.getOptionValue("nrperm"));
+					t.calculateLambdaForPerm(in, in2, names, nrperm, out);
+				}
+			} else if (cmd.hasOption("replicationtable")) {
 				
 				if (!cmd.hasOption("in") || !cmd.hasOption("in2") || !cmd.hasOption("names") || !cmd.hasOption("out")) {
 					System.out.println("Options for replicationtable:");
