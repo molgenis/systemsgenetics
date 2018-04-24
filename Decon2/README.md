@@ -5,7 +5,7 @@ Decon2 is a statistical framework for estimating cell counts using molecular pro
 deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.  
 See DeconCell/ and Decon-eQTL/ for their documentation.
 
-# Instalation
+# Installation
 
 For DeconCell, in R do
 

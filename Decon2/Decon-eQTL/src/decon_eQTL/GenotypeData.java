@@ -1,4 +1,4 @@
-package Decon_eQTL;
+package decon_eQTL;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +20,7 @@ public class GenotypeData {
 		this.sampleNames.removeAll(Arrays.asList("", null));
 		int rowNumber = 0;
 		while (genotypeIterator.hasNext()) {
-			rowNumber++;
+			++rowNumber;
 			if(rowNumber % 5000 == 0){
 				DeconvolutionLogger.log.info(String.format("Processed %d lines", rowNumber));
 			}

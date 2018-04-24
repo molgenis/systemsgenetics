@@ -38,7 +38,7 @@
 //
 //******************************************************************************
 
-package Decon_eQTL;
+package decon_eQTL;
 
 /**
  * Class NumericRuntimeException is the base class for an unchecked runtime
