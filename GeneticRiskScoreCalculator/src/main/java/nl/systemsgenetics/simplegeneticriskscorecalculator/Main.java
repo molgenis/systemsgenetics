@@ -331,7 +331,6 @@ public class Main {
         }
 
         geneticRiskScoreMatrix.setMatrix(ConvertDoubleMatrixDataToTriTyper.rankRows(geneticRiskScoreMatrix.getMatrix()));
-
         geneticRiskScoreMatrix.setMatrix(ConvertDoubleMatrixDataToTriTyper.rescaleValue(geneticRiskScoreMatrix.getMatrix(), 200.0d));
 
         try {
