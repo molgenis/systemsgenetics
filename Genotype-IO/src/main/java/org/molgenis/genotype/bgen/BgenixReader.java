@@ -133,10 +133,10 @@ public class BgenixReader {
 
 			String fileName = metaDataResultSet.getString("filename");
 			int fileSize = metaDataResultSet.getInt("file_size");
-			int lastWriteTime = metaDataResultSet.getInt("last_write_time");
+			long lastWriteTime = metaDataResultSet.getLong("last_write_time");
 			byte[] first1000bytes = new byte[1000];
 			metaDataResultSet.getBinaryStream("first_1000_bytes").read(first1000bytes);
-			int indexCreationTime = metaDataResultSet.getInt("index_creation_time");
+			long indexCreationTime = metaDataResultSet.getLong("index_creation_time");
 
 			return new BgenixMetadata(fileName, fileSize, lastWriteTime, first1000bytes, indexCreationTime);
 

@@ -13,11 +13,11 @@ public class BgenixMetadata {
 	
 	private final String fileName;
 	private final int fileSize;
-	private final int lastWriteTime;
+	private final long lastWriteTime;
 	private final byte[] first1000bytes;
 	private final long indexCreationTime;
 
-	public BgenixMetadata(String fileName, int fileSize, int lastWriteTime, byte[] first1000bytes, long indexCreationTime) {
+	public BgenixMetadata(String fileName, int fileSize, long lastWriteTime, byte[] first1000bytes, long indexCreationTime) {
 		this.fileName = fileName;
 		this.fileSize = fileSize;
 		this.lastWriteTime = lastWriteTime;
@@ -33,7 +33,7 @@ public class BgenixMetadata {
 		return fileSize;
 	}
 
-	public int getLastWriteTime() {
+	public long getLastWriteTime() {
 		return lastWriteTime;
 	}
 
