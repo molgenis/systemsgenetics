@@ -59,6 +59,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final layout fileLayout;
 	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 	private final SampleVariantsProvider sampleVariantProvider;
+	private final BgenixReader bgenixReader;
 
 	public BgenGenotypeData(File bgenFile, File sampleFile) throws IOException {
 		this(bgenFile, sampleFile, 1000);
@@ -201,32 +202,33 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		long lastSnpStart = snpOffset + 4;
 
-		if (bgenixFile.exists()) {
-			BgenixReader indexInformation = new BgenixReader(bgenixFile);
-			BgenixMetadata metadata = indexInformation.getMetadata();
-			if (metadata != null) {
-				if (!metadata.getFileName().equals(bgenFile.getName())) {
-					throw new GenotypeDataException("Sample name between bgenix and bgen is not equal. Invalid Bgen and Bgenix combination.");
-				}
-
-				if (metadata.getFileSize() != bgenFile.length()) {
-					throw new GenotypeDataException("Number of expected bytes is different to the numer of observed bytes. Invalid Bgen and Bgenix combination.");
-				}
-
-				this.bgenFile.seek(0);
-				byte[] firstBytes = new byte[1000];
-				this.bgenFile.read(firstBytes, 0, 1000);
-				if (!Arrays.equals(metadata.getFirst1000bytes(), firstBytes)) {
-					throw new GenotypeDataException("First 1000 bytes of meta data and actual data are not equal. Invalid Bgen and Bgenix combination.");
-				}
-			}
-		} else {
-
-			System.out.println("path: "+bgenixFile);
+		if (!bgenixFile.exists()) {
+			LOGGER.info("Creating bgenix file at: " + bgenixFile.getAbsolutePath());
 			BgenixWriter b = new BgenixWriter(bgenixFile);
 			createBgenixFile(bgenFile, b, lastSnpStart, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
 			b.finalizeIndex();
 		}
+		
+		bgenixReader = new BgenixReader(bgenixFile);
+		BgenixMetadata metadata = bgenixReader.getMetadata();
+		if (metadata != null) {
+			if (!metadata.getFileName().equals(bgenFile.getName())) {
+				throw new GenotypeDataException("Sample name between bgenix and bgen is not equal. Invalid Bgen and Bgenix combination.");
+			}
+
+			if (metadata.getFileSize() != bgenFile.length()) {
+				throw new GenotypeDataException("Number of expected bytes is different to the numer of observed bytes. Invalid Bgen and Bgenix combination.");
+			}
+
+			this.bgenFile.seek(0);
+			byte[] firstBytes = new byte[1000];
+			this.bgenFile.read(firstBytes, 0, 1000);
+			if (!Arrays.equals(metadata.getFirst1000bytes(), firstBytes)) {
+				throw new GenotypeDataException("First 1000 bytes of meta data and actual data are not equal. Invalid Bgen and Bgenix combination.");
+			}
+		}
+		
+		
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
 		} else {
@@ -492,6 +494,12 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	}
 	
+	private GeneticVariant createGeneticVariant(BgenixVariantData bgenixVariant){
+		
+		
+		
+	}
+	
 	private Long DetermineStepSize(long filePointer, layout currentFileLayout, blockRepresentation currentBlockRepresentation, int sampleCount) throws IOException {
 		this.bgenFile.seek(filePointer);
 		
@@ -548,7 +556,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public boolean isOnlyContaingSaveProbabilityGenotypes() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return true;
 	}
 
 	@Override
@@ -573,7 +581,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		BgenixVariantQueryResult bgenixVariants = bgenixReader.getVariantsChromosome(seqName);	
+		
+		return null;
 	}
 
 	@Override
