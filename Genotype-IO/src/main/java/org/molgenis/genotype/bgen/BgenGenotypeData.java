@@ -243,7 +243,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		this.bgenFile.read(firstBytes, 0, 1000);
 
 		//Add current time in int.
-		BgenixMetadata m = new BgenixMetadata(bgen.getName(), (int) this.bgenFile.length(), (int) bgen.lastModified(), firstBytes, 100000);
+		System.out.println((System.currentTimeMillis() / 1000L));
+		BgenixMetadata m = new BgenixMetadata(bgen.getName(), (int) this.bgenFile.length(), (int) (bgen.lastModified()/1000L), firstBytes, (System.currentTimeMillis() / 1000L));
 		b.writeMetadata(m);
 
 		//Loop through the start of the file
@@ -296,10 +297,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //		System.out.println(snpId);
 		snpInfoBufferPos += fieldLength; // skip id length and snp id
 		
-		if(snpId.length()!=0){
-			snpIds.add(snpId);
-		}
-		
+
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp RS length " + fieldLength);
 
@@ -307,16 +305,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		String snpRs = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
 //		System.out.println(snpRs);
 		snpInfoBufferPos += fieldLength;		
-	
-		if(snpRs.length()!=0){
-			if(snpIds.size()==1){
-				if(snpIds.get(0).equals(snpRs)){
-					snpIds.add(snpRs);
-				}
-			} else {
-				snpIds.add(snpRs);
-			}
-		}
+		snpIds.add(snpRs);
+		snpIds.add(snpId);
 		
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		snpInfoBufferPos += 2;
