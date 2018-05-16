@@ -221,6 +221,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				}
 			}
 		} else {
+
 			System.out.println("path: "+bgenixFile);
 			BgenixWriter b = new BgenixWriter(bgenixFile);
 			createBgenixFile(bgenFile, b, lastSnpStart, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
@@ -290,20 +291,33 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		ArrayList<String> snpIds = new ArrayList<>();
 		int fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp ID length " + fieldLength);
+		snpInfoBufferPos += 2;
 		String snpId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
 //		System.out.println(snpId);
-		snpInfoBufferPos += 2 + fieldLength; // skip id length and snp id
-
+		snpInfoBufferPos += fieldLength; // skip id length and snp id
+		
+		if(snpId.length()!=0){
+			snpIds.add(snpId);
+		}
+		
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp RS length " + fieldLength);
 
 		snpInfoBufferPos += 2;
-		snpId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
-//		System.out.println(snpId);
+		String snpRs = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
+//		System.out.println(snpRs);
+		snpInfoBufferPos += fieldLength;		
+	
+		if(snpRs.length()!=0){
+			if(snpIds.size()==1){
+				if(snpIds.get(0).equals(snpRs)){
+					snpIds.add(snpRs);
+				}
+			} else {
+				snpIds.add(snpRs);
+			}
+		}
 		
-		snpIds.add(snpId);
-		snpInfoBufferPos += fieldLength;
-
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		snpInfoBufferPos += 2;
 		String seqName = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
@@ -339,12 +353,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			alleles.add(a);
 		}
 
-		StringBuilder alleleBuffer = new StringBuilder();
-		for (int i = 0; i < alleles.size(); i++) {
-			alleleBuffer.append(alleles.get(i));
-			alleleBuffer.append('/');
-		}
-//		System.out.println(alleleBuffer.toString());
+//		System.out.println(alleles.toString());
 
 //			System.out.println("Location where genotypes start: "+this.bgenFile.getFilePointer());
 		this.bgenFile.seek(snpInfoBufferPos + lastSnpStart);
