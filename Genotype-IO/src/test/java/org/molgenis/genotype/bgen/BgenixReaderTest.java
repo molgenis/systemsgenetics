@@ -100,7 +100,20 @@ public class BgenixReaderTest extends ResourceTest {
 		assertEquals(variant.getNumber_of_alleles(), 2);
 		assertEquals(variant.getAllele1(), "A");
 		assertEquals(variant.getAllele2(), "G");
+		
+		assertEquals(variantsRange.hasNext(), false);
 
+		BgenixVariantQueryResult variantsPostion = bgenix.getVariantsPostion("01", 92001);
+		variant = variantsPostion.next();
+		assertEquals(variant.getChromosome(), "01");
+		assertEquals(variant.getRsid(), "RSID_192");
+		assertEquals(variant.getPosition(), 92001);
+		assertEquals(variant.getNumber_of_alleles(), 2);
+		assertEquals(variant.getAllele1(), "A");
+		assertEquals(variant.getAllele2(), "G");
+		
+		assertEquals(variantsPostion.hasNext(), false);
+		
 	}
 
 }
