@@ -469,33 +469,25 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private void readCompleteGeneticVariant(File bgen, long lastSnpStart, int sampleCount, layout currentFileLayout, blockRepresentation currentBlockRepresentation) throws IOException {
 		//Binary index writer.
 //		for (int snpI = 0; snpI < variantCount; ++snpI) {
-		
-		GeneticVariant var = readSnpInfo(bgen, sampleCount, currentFileLayout, lastSnpStart);
 
-		System.out.println(var.getAllIds().get(0));
-		
 		long currentPointer= this.bgenFile.getFilePointer();
+		long stepSize=0L;
 		
-		System.out.println("Location where genotypes start: " + this.bgenFile.getFilePointer());
-		long stepSize = DetermineStepSize(currentPointer, currentFileLayout, currentBlockRepresentation, sampleCount);
-		if(currentFileLayout.equals(fileLayout.layOut_2)){
-			stepSize+=4;
-		}
-		this.bgenFile.seek(currentPointer);
-		//Here we can process actual genotype info.
-		System.out.println("Step to skip, to next variant: " + (int) stepSize);
 		while((currentPointer+stepSize)<bgen.length()){
-			var = readSnpInfo(bgen, sampleCount, currentFileLayout, (currentPointer+stepSize));
+			GeneticVariant var = readSnpInfo(bgen, sampleCount, currentFileLayout, (currentPointer+stepSize));
 			System.out.println(var.getAllIds().get(0));
 			currentPointer= this.bgenFile.getFilePointer();
 			
 			stepSize = DetermineStepSize(currentPointer, currentFileLayout, currentBlockRepresentation, sampleCount);
-			if(currentFileLayout.equals(fileLayout.layOut_2)){
+			if(currentFileLayout.equals(layout.layOut_2)){
 				stepSize+=4;
 			}
 			this.bgenFile.seek(currentPointer);
 			//Here we can process actual genotype info.
+			
+			
 //			System.out.println(bgen.length() - (currentPointer+stepSize));
+			System.out.println("Step to skip, to next variant: " + (int) stepSize);
 		}
 
 	}
