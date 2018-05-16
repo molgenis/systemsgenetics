@@ -9,7 +9,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DoubleStatistic;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
-import com.sun.org.glassfish.external.statistics.Statistic;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,7 +26,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
+import org.apache.commons.lang.StringUtils;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -41,9 +40,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	static final IOException doubleMatrixDatasetNonUniqueHeaderException = new IOException("Tried to use a non-unique header set in an identifier HashMap");
 	static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
 
-	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String expressionDataPath, char c) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
 	protected DoubleMatrix2D matrix;
 	protected LinkedHashMap<R, Integer> hashRows;
 	protected LinkedHashMap<C, Integer> hashCols;
@@ -106,7 +102,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
 		if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
-			return loadDoubleTextData(fileName, "\t");
+			return loadDoubleTextData(fileName, '\t');
 		} else if (fileName.endsWith(".binary")) {
 			return loadDoubleBinaryData(fileName);
 		} else {
@@ -114,18 +110,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 	}
 
-	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, String delimiter) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
 		}
 
-		Pattern splitPatern = Pattern.compile(delimiter);
+		//Pattern splitPatern = Pattern.compile(delimiter);
 
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
-		String[] data = splitPatern.split(str);
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
 		int tmpCols = (data.length - columnOffset);
 
@@ -162,7 +158,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		boolean correctData = true;
 		while ((str = in.readLine()) != null) {
-			data = splitPatern.split(str);
+			data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
 			if (!rowMap.containsKey(data[0])) {
 				rowMap.put(data[0], row);
@@ -194,20 +190,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return dataset;
 	}
 
-	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, String delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {
 			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
 
 		LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
 
-		Pattern splitPatern = Pattern.compile(delimiter);
+		//Pattern splitPatern = Pattern.compile(delimiter);
 
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
-		String[] data = splitPatern.split(str);
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
 		int tmpCols = (data.length - columnOffset);
 
@@ -232,7 +228,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int totalRows = 0;
 		//System.out.println(desiredRows.toString());
 		while ((str = in.readLine()) != null) {
-			String[] info = splitPatern.split(str);
+			String[] info = StringUtils.splitPreserveAllTokens(str, delimiter);
 			if (desiredRows == null || desiredRows.contains(info[0]) || desiredRows.isEmpty()) {
 				rowsToStore++;
 				desiredRowPos.add(totalRows);
@@ -258,7 +254,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		while ((str = in.readLine()) != null) {
 
 			if (desiredRowPos.contains(totalRows)) {
-				data = splitPatern.split(str);
+				data = StringUtils.splitPreserveAllTokens(str, delimiter);
 				if (!rowMap.containsKey(data[0])) {
 					rowMap.put(data[0], storingRow);
 					int storingCol = 0;
@@ -441,9 +437,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	//Getters and setters
-	
 	/**
-	 * 
+	 *
 	 * @return Number of rows
 	 */
 	public int rows() {
@@ -680,20 +675,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new NoSuchElementException("Row not found: " + rowName.toString());
 		}
 	}
-	
+
 	public DoubleMatrix1D getRow(int row) {
-			return matrix.viewRow(row);
+		return matrix.viewRow(row);
 	}
-	
+
 	public DoubleMatrix1D getCol(C colName) {
-		Integer col = hashRows.get(colName);
+		Integer col = hashCols.get(colName);
 		if (col != null) {
 			return matrix.viewColumn(col);
 		} else {
 			throw new NoSuchElementException("Col not found: " + colName.toString());
 		}
 	}
-	
+
 	public DoubleMatrix1D getCol(int col) {
 		return matrix.viewColumn(col);
 	}
@@ -709,6 +704,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return matrix.get(row, column);
 	}
+	
+	/**
+	 * Get specific element. Fast but no check if query is in range
+	 *
+	 * @param row
+	 * @param column
+	 * @return
+	 */
+	public double getElementQuick(int row, int column) {
+
+		return matrix.getQuick(row, column);
+	}
 
 	public boolean containsRow(R rowId) {
 		return hashRows.containsKey(rowId);
@@ -720,12 +727,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Creates a new view to this dataset with a subset of rows and columns.
-	 * 
+	 *
 	 * New order of rows and cols is based on input order.
-	 * 
+	 *
 	 * @param rowsToView
 	 * @param colsToView
-	 * @return 
+	 * @return
 	 */
 	public DoubleMatrixDataset<R, C> viewSelection(LinkedHashSet<R> rowsToView, LinkedHashSet<C> colsToView) {
 
@@ -734,34 +741,36 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
 		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
+		
+		System.out.println("");
 
 		int i = 0;
 		for (R row : rowsToView) {
-			
+
 			rowNrs[i] = hashRows.get(row);
 			newHashRows.put(row, i++);
-			
+
 		}
 
 		i = 0;
 		for (C col : colsToView) {
-			
-			colNrs[i] = newHashCols.get(col);
+
+			colNrs[i] = hashCols.get(col);
 			newHashCols.put(col, i++);
-			
+
 		}
 
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, colNrs), newHashRows, newHashCols);
-		
+
 	}
-	
+
 	/**
 	 * Creates a new view to this dataset with a subset of rows.
-	 * 
+	 *
 	 * New order of rows is based on input order.
-	 * 
+	 *
 	 * @param rowsToView
-	 * @return 
+	 * @return
 	 */
 	public DoubleMatrixDataset<R, C> viewRowSelection(LinkedHashSet<R> rowsToView) {
 
@@ -771,36 +780,70 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		int i = 0;
 		for (R row : rowsToView) {
-			
+
 			rowNrs[i] = hashRows.get(row);
 			newHashRows.put(row, i++);
-			
+
 		}
-		
+
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
-		
+
 	}
-	
+
 	/**
-	 * 
+	 * Creates a new view to this dataset with a subset of rows.
+	 *
+	 * New order of rows is based on input order.
+	 *
+	 * @param colsToView
+	 * @return
+	 */
+	public DoubleMatrixDataset<R, C> viewColSelection(LinkedHashSet<C> colsToView) {
+
+		int[] colNrs = new int[colsToView.size()];
+
+		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
+
+		int i = 0;
+		for (C col : colsToView) {
+
+			colNrs[i] = hashCols.get(col);
+			newHashCols.put(col, i++);
+
+		}
+
+		return new DoubleMatrixDataset<>(matrix.viewSelection(null, colNrs), hashRows, newHashCols);
+
+	}
+
+	public DoubleMatrix1D viewRow(R row) {
+		return matrix.viewRow(hashRows.get(row));
+	}
+
+	/**
+	 *
 	 * @return Correlation matrix on columns
 	 */
-	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix(){
-		
+	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix() {
+
 		DoubleMatrix2D correlationMatrix = DoubleStatistic.correlation(DoubleStatistic.covariance(this.matrix));
 		return new DoubleMatrixDataset<>(correlationMatrix, hashCols, hashCols);
-		
+
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return Covariance matrix on columns
 	 */
-	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix(){
-		
+	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix() {
+
 		DoubleMatrix2D covarianceMatrix = DoubleStatistic.covariance(this.matrix);
 		return new DoubleMatrixDataset<>(covarianceMatrix, hashCols, hashCols);
-		
+
+	}
+
+	public int getRowIndex(R gene) {
+		return this.hashRows.get(gene);
 	}
 
 }

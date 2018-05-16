@@ -209,11 +209,11 @@ public class InteractionAnalysisDetermineDirection {
 
 		System.out.println("Genotype data loaded for " + genotypeData.getSampleNames().length + " individuals");
 
-		final DoubleMatrixDataset<String, String> expressionData = DoubleMatrixDataset.loadDoubleTextData(expressionDataPath, "\t");
+		final DoubleMatrixDataset<String, String> expressionData = DoubleMatrixDataset.loadDoubleTextData(expressionDataPath, '\t');
 
 		System.out.println("Loaded expression data for: " + expressionData.rows() + " genes and " + expressionData.columns() + " individuals");
 
-		final DoubleMatrixDataset<String, String> covariatesData = DoubleMatrixDataset.loadDoubleTextData(covariateDataPath, "\t");
+		final DoubleMatrixDataset<String, String> covariatesData = DoubleMatrixDataset.loadDoubleTextData(covariateDataPath, '\t');
 
 		System.out.println("Loaded covariate data for: " + expressionData.rows() + " genes and " + expressionData.columns() + " individuals");
 

@@ -7,7 +7,7 @@
 		<version>1.0.3-SNAPSHOT</version>
 	</parent>
 	<artifactId>GeneNetworkBackend</artifactId>
-	<version>1.0.4-SNAPSHOT</version>
+	<version>1.0.6-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<build>
 		<plugins>
@@ -20,7 +20,7 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
-			<plugin>
+						<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
 					<descriptorRefs>
@@ -29,6 +29,29 @@
 					<archive>
 						<manifest>
 							<mainClass>nl.systemsgenetics.genenetworkbackend.legacy.PredictGenesetMemberBasedOnTCs</mainClass>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+							<addDefaultSpecificationEntries>truze</addDefaultSpecificationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+<!--			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<archive>
+						<manifest>
+							<mainClass>nl.systemsgenetics.genenetworkbackend.div.CalculateGenePredictability</mainClass>
 							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 						</manifest>
@@ -42,7 +65,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>	
+			</plugin>	-->
 		</plugins>
 	</build>
 	<dependencies>
@@ -67,5 +90,21 @@
 			<artifactId>genetica-libraries</artifactId>
 			<version>1.0.9-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.biojava</groupId>
+			<artifactId>biojava-ontology</artifactId>
+			<version>4.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.trove4j</groupId>
+			<artifactId>trove4j</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+
 	</dependencies>
 </project>

@@ -5,8 +5,10 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,9 +35,10 @@ public class ConvertReactomeToMatrix {
 	public static void main(String[] args) throws IOException, Exception {
 
 		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\Ensembl2Reactome_All_Levels.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA\\genes.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA\\PathwayMatrix\\reactome_matrix.txt");
-
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + pathwayFile.getName() + "_matrix.txt");
+		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + pathwayFile.getName() + "_genesInPathways.txt");
+		
 		HashMap<String, HashSet<String>> pathwayToGenes = readPathwayFile(pathwayFile);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
@@ -44,6 +47,9 @@ public class ConvertReactomeToMatrix {
 		System.out.println("Genes in order file: " + geneOrder.size());
 
 		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
+		
+		HashSet<String> genesWithPathway = new HashSet<>(10000);
+		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
 
 		for (Map.Entry<String, HashSet<String>> pathwayToGenesEntry : pathwayToGenes.entrySet()) {
 
@@ -52,6 +58,13 @@ public class ConvertReactomeToMatrix {
 			for (String gene : pathwayToGenesEntry.getValue()) {
 
 				if (pathwayMatrix.containsRow(gene)) {
+					
+					if(genesWithPathway.add(gene)){
+						//add to genes file if not already done
+						geneWriter.write(gene);
+						geneWriter.write('\n');
+					}
+					
 					pathwayMatrix.setElement(gene, pathway, 1);
 				}
 
@@ -59,8 +72,11 @@ public class ConvertReactomeToMatrix {
 
 		}
 
+		geneWriter.close();
 		pathwayMatrix.save(outputFile);
 
+		System.out.println("Genes in pathway: " + genesWithPathway.size());
+		
 	}
 
 	private static HashMap<String, HashSet<String>> readPathwayFile(File pathwayFile) throws Exception {
