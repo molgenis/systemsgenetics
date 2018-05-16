@@ -1,7 +1,6 @@
 package org.molgenis.genotype.bgen;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -21,6 +20,8 @@ public class BgenixReader {
 	private final PreparedStatement queryByChromosome;
 	private final PreparedStatement queryByPosition;
 	private final PreparedStatement queryByRange;
+	private final PreparedStatement queryAll;
+	private final PreparedStatement countAll;
 
 	public BgenixReader(File bgenixFile) {
 		this(createNewConnection(bgenixFile));
@@ -30,9 +31,11 @@ public class BgenixReader {
 		this.dbConnection = dbConnection;
 
 		try {
-			queryByChromosome = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ?");
+			queryByChromosome = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ?");//ORDER BY position ASC
 			queryByPosition = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ? AND position = ?");
 			queryByRange = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ? AND (position BETWEEN ? AND ?)");
+			queryAll = dbConnection.prepareStatement("SELECT * FROM Variant");
+			countAll = dbConnection.prepareStatement("SELECT count(*) FROM Variant");
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to load bgenix file. Error: " + ex.getMessage(), ex);
 		}
@@ -83,6 +86,24 @@ public class BgenixReader {
 			queryByRange.setInt(2, from);
 			queryByRange.setInt(3, to);
 			return new BgenixVariantQueryResult(queryByRange.executeQuery());
+		} catch (SQLException ex) {
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
+		}
+	}
+	
+	public synchronized BgenixVariantQueryResult getVariants() {
+		try {
+			return new BgenixVariantQueryResult(queryAll.executeQuery());
+		} catch (SQLException ex) {
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
+		}
+	}
+	
+	public synchronized int getVariantCount() {
+		try {
+			ResultSet countResult = countAll.executeQuery();
+			countResult.next();
+			return countResult.getInt(1);
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
