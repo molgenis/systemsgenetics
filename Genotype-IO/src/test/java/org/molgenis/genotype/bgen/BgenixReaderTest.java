@@ -53,8 +53,9 @@ public class BgenixReaderTest extends ResourceTest {
 		bgenReader.read(snpInfoBuffer, 0, snpInfoBuffer.length);
 		assertEquals(bgenixMeta.getFirst1000bytes(), snpInfoBuffer);
 
-		assertEquals(bgenixMeta.getIndexCreationTime(), 2017);
-		assertEquals(bgenixMeta.getLastWriteTime(), 1447060800);
+		//We can't test this since this is flexible.
+//		assertEquals(bgenixMeta.getIndexCreationTime(), 2017);
+		assertEquals(bgenixMeta.getLastWriteTime(), (bgenFile.lastModified()/1000L));
 
 		System.out.println(bgenix.getVariantCount());
 
