@@ -7,7 +7,6 @@ package org.molgenis.genotype.bgen;
 
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.sql.Connection;
 import org.molgenis.genotype.ResourceTest;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
