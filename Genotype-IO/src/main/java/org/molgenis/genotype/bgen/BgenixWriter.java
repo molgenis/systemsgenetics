@@ -138,7 +138,7 @@ public class BgenixWriter {
 			metadataStatement.setInt(2, metadata.getFileSize());
 			metadataStatement.setInt(3, metadata.getLastWriteTime());
 			metadataStatement.setBytes(4, metadata.getFirst1000bytes());
-			metadataStatement.setInt(5, metadata.getIndexCreationTime());
+			metadataStatement.setLong(5, metadata.getIndexCreationTime());
 			
 			metadataStatement.executeUpdate();
 

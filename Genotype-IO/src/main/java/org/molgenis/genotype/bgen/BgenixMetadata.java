@@ -15,9 +15,9 @@ public class BgenixMetadata {
 	private final int fileSize;
 	private final int lastWriteTime;
 	private final byte[] first1000bytes;
-	private final int indexCreationTime;
+	private final long indexCreationTime;
 
-	public BgenixMetadata(String fileName, int fileSize, int lastWriteTime, byte[] first1000bytes, int indexCreationTime) {
+	public BgenixMetadata(String fileName, int fileSize, int lastWriteTime, byte[] first1000bytes, long indexCreationTime) {
 		this.fileName = fileName;
 		this.fileSize = fileSize;
 		this.lastWriteTime = lastWriteTime;
@@ -41,7 +41,7 @@ public class BgenixMetadata {
 		return first1000bytes;
 	}
 
-	public int getIndexCreationTime() {
+	public long getIndexCreationTime() {
 		return indexCreationTime;
 	}
 	
