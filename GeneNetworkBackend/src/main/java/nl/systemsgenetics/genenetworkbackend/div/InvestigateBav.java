@@ -32,8 +32,8 @@ public class InvestigateBav {
 	public static void main(String[] args) throws IOException {
 
 		final File rankFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\rankingCandidateGenes");
-		final File samplesFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\BavSamples.txt");
-		final File mutationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\MutationMatrix.txt");
+		final File samplesFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\AtaxiaSamples.txt");
+		final File mutationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\MutationMatrixAtaxia.txt");
 
 		ArrayList<String> samples = loadLines(samplesFile);
 
@@ -47,6 +47,12 @@ public class InvestigateBav {
 		for (String sample : samples) {
 
 			File sampleFile = new File(rankFolder, sample + ".txt");
+			
+			if(!sampleFile.exists()){
+				System.out.println("Skipping: " + sample );
+				continue;
+			}
+			
 			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
 
 			for (int i = 0; i < 20; i++) {
@@ -56,7 +62,7 @@ public class InvestigateBav {
 				double zscore = Double.parseDouble(line[3]);
 				String otherHpos = line[5];
 
-				if(zscore > 5){
+				if(zscore > 3){
 					System.out.println(sample + " " + gene + " " + zscore);
 				}
 				
@@ -79,11 +85,12 @@ public class InvestigateBav {
 
 			if (count > 1) {
 
-				if (geneZscore.get(gene) > 2) {
+				if (geneZscore.get(gene) > 3) {
 					recurrentGenes.add(gene);
+					System.out.println(gene + "\t" + count + "\t" + geneZscore.get(gene) + "\t" + geneOtherHpo.get(gene) + "\t" + String.join(";", geneMutatedSamples.get(gene)));
 				}
 
-				System.out.println(gene + "\t" + count + "\t" + geneZscore.get(gene) + "\t" + geneOtherHpo.get(gene) + "\t" + String.join(";", geneMutatedSamples.get(gene)));
+				
 			}
 		}
 
@@ -92,6 +99,13 @@ public class InvestigateBav {
 		for (String sample : samples) {
 
 			File sampleFile = new File(rankFolder, sample + ".txt");
+			
+			if(!sampleFile.exists()){
+				System.out.println("Skipping: " + sample );
+				continue;
+			}
+			
+			
 			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
 
 			String[] nextLine;

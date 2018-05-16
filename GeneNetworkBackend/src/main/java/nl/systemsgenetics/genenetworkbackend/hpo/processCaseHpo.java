@@ -41,8 +41,11 @@ public class processCaseHpo {
 		final File updatedIdFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\updatedHpoId.txt");
 //		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalCaseHpo.txt");
 //		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo.txt");
-		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\unsolvedDcmHpo.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\unsolvedDcmHpoSelected.txt");
+//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\unsolvedDcmHpo.txt");
+//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\unsolvedDcmHpoSelected.txt");
+		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalcasehpo_EditedSipko3_JanJongbloed.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalcasehpo_EditedSipko3_JanJongbloed_selected.txt");
+		
 //		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_5GPM.txt");
 //		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_5GPM_processed.txt");
 		final double correctedPCutoff = 0.05;
