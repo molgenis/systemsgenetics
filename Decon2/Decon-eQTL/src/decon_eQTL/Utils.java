@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -178,39 +177,6 @@ public class Utils {
 		return builder.toString().trim();
 	}
 
-	/**
-	 * Find the index of the top n values in array orig (from http://stackoverflow.com/a/17623521/651779)
-	 * 
-	 * @param orig Array of doubles to find highest values in
-	 * @param n Number of highest values to report
-	 */
-	static ArrayList<Integer> indexesOfTopElements(double[] orig, int n) {
-		double[] copy = Arrays.copyOf(orig,orig.length);
-		Arrays.sort(copy);
-		double[] honey = Arrays.copyOfRange(copy,copy.length - n, copy.length);
-		ArrayList<Integer> result = new ArrayList<Integer>();
-		for(int i = 0; i < orig.length; i++) {
-			double onTrial = orig[i];
-			int index = Arrays.binarySearch(honey,onTrial);
-			if(index < 0) continue;
-			result.add(i);
-		}
-		return result;
-	}
-
-	public static double[] convertDoubles(List<Double> doubles)
-	{
-		double[] ret = new double[doubles.size()];
-		Iterator<Double> iterator = doubles.iterator();
-		int i = 0;
-		while(iterator.hasNext())
-		{
-			ret[i] = iterator.next();
-			i++;
-		}
-		return ret;
-	}
-	
 	public static HashMap<String, ArrayList<String>> parseSnpPerGeneFile(String snpsToTestFile) throws IOException {
 		LineIterator snpGenePairIterator = FileUtils.lineIterator(new File(snpsToTestFile), "UTF-8");
 		HashMap<String, ArrayList<String>> geneSnpPairs = new HashMap<String, ArrayList<String>>();

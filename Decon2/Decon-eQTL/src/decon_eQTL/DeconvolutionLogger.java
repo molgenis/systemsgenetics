@@ -42,9 +42,7 @@ public class DeconvolutionLogger {
 		log.addHandler(outfilePath);
 
 	}
-	public static FileHandler getOutfilePath() {
-		return outfilePath;
-	}
+
 	public static void setOutfilePath(FileHandler outfilePath) {
 		DeconvolutionLogger.outfilePath = outfilePath;
 	}

@@ -37,25 +37,19 @@ public class GenotypeData {
 			try{
 				genotypeValues = Utils.StringVectorToDoubleArrayList(genotypeStringVector, 1);
 			}catch(NumberFormatException e){
-				DeconvolutionLogger.log.warning(String.format("SNP %s contains genotype values that can not be converted to Double, SKIPPING!", snpName));
+				DeconvolutionLogger.log.info(String.format("EROOR: SNP %s contains genotype values that can not be converted to Double!", snpName));
+				throw e;
 			}
 			
 			genotypes.put(snpName, genotypeValues);
 		}
 	}
-	public void setSampleNames(ArrayList<String> sampleNames){
-		this.sampleNames = sampleNames;
-	}
+
 	public ArrayList<String> getSampleNames(){
 		return this.sampleNames;
 	}
-	public void setGenotypes(HashMap<String, double[]> genotypes){
-		this.genotypes = genotypes;
-	}
+
 	public HashMap<String, double[]>  getGenotypes() throws IllegalAccessException{
-		if(this.genotypes == null){
-			throw new IllegalAccessException("genotypes not set GenotypesData");
-		}
 		return this.genotypes;
 	}
 }
