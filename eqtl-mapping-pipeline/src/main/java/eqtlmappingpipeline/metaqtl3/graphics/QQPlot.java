@@ -108,6 +108,7 @@ public class QQPlot {
             for (int permutationRound = 0; permutationRound < nrPermutationsFDR; permutationRound++) {
                 log10Null += permutedPValues[permutationRound][p];
             }
+            
             log10Null = -Math.log10(log10Null / ((double) nrPermutationsFDR));
             distLog10Null[p] = log10Null;
             if (log10Null > capLog) {

@@ -48,7 +48,7 @@ public class PCA {
         return eigenVector;
     }
 
-    public static double getEigenValueVar(double[] eigenValues, int pca) {
+    public static double  getEigenValueVar(double[] eigenValues, int pca) {
         double sumEigenvalues = 0.0;
         for (Double d : eigenValues) {
             sumEigenvalues += Math.abs(d);

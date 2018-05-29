@@ -12,7 +12,7 @@ For DeconCell, in R do
 ```
 library('devtools')
 # NOTE: This can take a few minutes:
-install_github("systemsgenetics/Decon2/DeconCell")
+install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
 For Decon-eQTL, download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar``` from [here: Decon-eQTL/lastBuild](http://molgenis50.gcc.rug.nl/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/).

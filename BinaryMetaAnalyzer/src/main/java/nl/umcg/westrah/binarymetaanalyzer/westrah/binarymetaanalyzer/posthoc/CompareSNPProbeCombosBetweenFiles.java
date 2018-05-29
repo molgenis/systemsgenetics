@@ -6,7 +6,7 @@ import javax.xml.soap.Text;
 import java.io.IOException;
 import java.util.HashSet;
 
-public class Delta {
+public class CompareSNPProbeCombosBetweenFiles {
 	
 	public void run(String f1, String f2, String fout) throws IOException {
 		TextFile tf = new TextFile(f1, TextFile.R, 10 * 1048576);

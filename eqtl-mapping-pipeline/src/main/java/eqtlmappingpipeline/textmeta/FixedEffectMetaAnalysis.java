@@ -5,20 +5,6 @@
 package eqtlmappingpipeline.textmeta;
 
 import eqtlmappingpipeline.util.QTLFileSorter;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -27,6 +13,14 @@ import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.text.Strings;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * @author harmjan
  */
@@ -34,7 +28,7 @@ public class FixedEffectMetaAnalysis {
 	
 	public void run(String filesDir, String output, Integer minimalNrDatasets, Integer minimalNrSamples) throws IOException {
 		if (filesDir == null || output == null) {
-			throw new IllegalArgumentException("Both input and output directory should be set!");
+			throw new IllegalArgumentException("Both input and output locations should be set!");
 		}
 		
 		if (minimalNrDatasets == null) {
@@ -44,33 +38,47 @@ public class FixedEffectMetaAnalysis {
 			minimalNrSamples = 0;
 		}
 		
-		filesDir = Gpio.formatAsDirectory(filesDir);
-		output = Gpio.formatAsDirectory(output);
-		
 		// do we need to convert the probe identifiers?
 		// no. do this before running this tool
 		// read each eQTL file, assess which eQTLs are in which files..
 		// load: z-score, alleles (+ assessed), sample size
-		if (!Gpio.exists(filesDir)) {
-			throw new IllegalArgumentException("Input directory does not seem to exist!");
-		}
-		
-		String[] filesInDir = Gpio.getListOfFiles(filesDir, "txt");
-		
-		if (filesInDir.length == 0) {
-			filesInDir = Gpio.getListOfFiles(filesDir, "gz");
+		String[] filesInDir = filesDir.split(",");
+		if (filesInDir.length == 1) {
+			if (!Gpio.exists(filesDir)) {
+				throw new IllegalArgumentException("Input directory does not seem to exist!");
+			}
+			
+			
+			// assume that the input is a directory
+			filesDir = Gpio.formatAsDirectory(filesDir);
+			
+			filesInDir = Gpio.getListOfFiles(filesDir, "txt");
+			
 			if (filesInDir.length == 0) {
-				System.err.println("No parseable files found in directory: " + filesDir);
-				System.exit(0);
+				filesInDir = Gpio.getListOfFiles(filesDir, "gz");
+				if (filesInDir.length == 0) {
+					System.err.println("No parseable files found in directory: " + filesDir);
+					System.exit(0);
+				}
+			}
+			
+			for (String s : filesInDir) {
+				System.out.println("Found text file:\t" + s);
+			}
+		} else {
+			boolean allfilesthere = true;
+			for (String f : filesInDir) {
+				if (!Gpio.exists(f)) {
+					System.out.println(f + " does not seem to exist!");
+					allfilesthere = false;
+				}
+				
+			}
+			if (!allfilesthere) {
+				System.exit(-1);
 			}
 		}
-		
-		for (String s : filesInDir) {
-			System.out.println("Found text file:\t" + s);
-		}
-		
-		Gpio.createDir(output);
-		
+//		Gpio.createDir(output);
 		
 		// obviously, we want to iterate through permuted files as well at some point,
 		// although for the current analysis this is left out.
@@ -146,7 +154,7 @@ public class FixedEffectMetaAnalysis {
 		
 		// iterate through all eQTLs
 		// and just assume that snp-probe combinations are unique for each dataset.
-		TextFile outfile = new TextFile(output + "eQTLs.txt", TextFile.W);
+		TextFile outfile = new TextFile(output, TextFile.W);
 		outfile.writeln(QTLTextFile.header);
 		int eqctr = 0;
 		
@@ -194,9 +202,9 @@ public class FixedEffectMetaAnalysis {
 		
 		System.out.println("Done. Now sorting results");
 		QTLFileSorter sorter = new QTLFileSorter();
-		sorter.run(output + "eQTLs.txt", output + "eQTLs_sorted.txt");
-		if (Gpio.exists(output + "eQTLs_sorted.txt")) {
-			Gpio.moveFile(output + "eQTLs_sorted.txt", output + "eQTLs.txt");
+		sorter.run(output, output + "tmp.txt.gz");
+		if (Gpio.exists(output + "tmp.txt.gz")) {
+			Gpio.moveFile(output + "tmp.txt.gz", output);
 		}
 		threadPool.shutdown();
 		
