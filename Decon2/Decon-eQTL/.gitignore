@@ -8,3 +8,4 @@ deconvolution.jar
 *.class
 fake_genotypes.py
 example_results/
+build/

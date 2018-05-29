@@ -32,7 +32,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>Decon_eQTL.Main</mainClass>
+              <mainClass>decon_eQTL.Main</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
