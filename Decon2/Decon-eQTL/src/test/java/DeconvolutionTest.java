@@ -1,4 +1,4 @@
-package decon_eQTLTests;
+package test.java;
 
 import static org.junit.Assert.*;
 import java.io.File;
@@ -15,10 +15,11 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import decon_eQTL.CommandLineOptions;
-import decon_eQTL.Deconvolution;
-import decon_eQTL.DeconvolutionResult;
-import decon_eQTL.Main;
+
+import main.java.decon_eQTL.CommandLineOptions;
+import main.java.decon_eQTL.Deconvolution;
+import main.java.decon_eQTL.DeconvolutionResult;
+import main.java.decon_eQTL.Main;
 
 public class DeconvolutionTest {
 	String outputDir = "tests/resources/deconvolutionTestResults/";

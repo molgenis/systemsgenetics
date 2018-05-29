@@ -1,4 +1,4 @@
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -29,6 +30,7 @@ public class CommandLineOptions {
 	private Boolean noConsole = false;
 	private Boolean outputPredictedExpression = false;
 	private String genotypeConfigurationType = "all";
+	private String programVersion;
 	
 	/**
 	 * Standard command line parsing.
@@ -36,10 +38,13 @@ public class CommandLineOptions {
 	 * @param args A string vector of all arguments given to the command line, e.g. for `java -jar Deconvolution.jar -o` args = ["-o"]
 	 * 
 	 * @throws ParseException	If command line options can not be parsed
-	 * 
-	 * @throws FileNotFoundException	If deconvolution log file can't be written
+	 * @throws IOException 
 	 */
-	public void parseCommandLine(String[] args) throws ParseException, FileNotFoundException {
+	public void parseCommandLine(String[] args) throws ParseException, IOException {
+		// load the properties file so that version can be printed
+		Properties properties = new Properties();
+		properties.load(this.getClass(). getClassLoader().getResourceAsStream("project.properties"));
+		programVersion = properties.getProperty("artifactId")+"_"+properties.getProperty("version");
 		Options options = new Options();
 		Option help = new Option("help", "print this message");
 		Option allDosages = Option.builder("ad").required(false).longOpt("all_dosages")
@@ -73,6 +78,8 @@ public class CommandLineOptions {
 				.desc("Only run deconvolution for 100 QTLs for quick test run").build();
 		Option wholeBloodQTL = Option.builder("w").required(false).longOpt("whole_blood_qtl")
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
+		Option version = Option.builder("v").required(false).longOpt("version")
+				.desc("Print the version of the program").build();
 		options.addOption(filterSamplesOption);
 		options.addOption(help);
 		options.addOption(outfile);
@@ -89,6 +96,7 @@ public class CommandLineOptions {
 		options.addOption(noConsoleOption);
 		options.addOption(outputPredictedExpressionOption);
 		options.addOption(genotypeConfigurationTypeOption);
+		options.addOption(version);
 		CommandLineParser cmdLineParser = new DefaultParser();
 		try{
 			CommandLine cmdLine = cmdLineParser.parse(options, args);
@@ -108,7 +116,7 @@ public class CommandLineOptions {
 		}
 	}
 	
-	private void parseOptions(CommandLine cmdLine) throws FileNotFoundException{
+	private void parseOptions(CommandLine cmdLine) throws IOException{
 		if (cmdLine.hasOption("round_dosage")) {
 			roundDosage = !roundDosage;
 		}
@@ -161,7 +169,10 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("outputPredictedExpression")){
 			outputPredictedExpression = !outputPredictedExpression;
 		}
-
+		
+		if (cmdLine.hasOption("version")) {
+			DeconvolutionLogger.log.info("Version: "+programVersion);
+		}
 	}
 	
 
@@ -187,7 +198,7 @@ public class CommandLineOptions {
 	    Date date = new Date();
 	    DeconvolutionLogger.log.info("Starting deconvolution");
 	    DeconvolutionLogger.log.info(dateFormat.format(date));
-	    DeconvolutionLogger.log.info("Running deconvolution version 1.0.3");
+	    DeconvolutionLogger.log.info(String.format("Running deconvolution version: %s", programVersion));
 	    DeconvolutionLogger.log.info("======= DECONVOLUTION paramater settings =======");
 		DeconvolutionLogger.log.info(String.format("Expression file (-e): %s", expressionFile));
 		DeconvolutionLogger.log.info(String.format("Genotype file (-g): %s", genotypeFile));

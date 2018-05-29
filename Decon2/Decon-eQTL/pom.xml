@@ -3,7 +3,7 @@
   <groupId>Decon-eQTL</groupId>
   <artifactId>Decon-eQTL</artifactId>
   <packaging>jar</packaging>
-  <version>v1.0.3</version>
+  <version>v1.0.4</version>
   <name>Decon-eQTL</name>
   <description>Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples (Decon-cell) and consecutive deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.</description>
   <build>
@@ -17,6 +17,12 @@
         </excludes>
       </testResource>
     </testResources>
+    <resources>
+      <resource>
+    	<directory>src/main/resources</directory>
+    	<filtering>true</filtering>
+  	  </resource>
+  	</resources>
     <plugins>
       <plugin>
    		<groupId>org.apache.maven.plugins</groupId>
@@ -33,7 +39,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>decon_eQTL.Main</mainClass>
+              <mainClass>main.java.decon_eQTL.Main</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

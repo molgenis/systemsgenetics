@@ -1,4 +1,4 @@
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import java.io.IOException;
 import java.util.ArrayList;

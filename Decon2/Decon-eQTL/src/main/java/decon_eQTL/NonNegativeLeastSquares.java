@@ -38,7 +38,7 @@
 //
 //******************************************************************************
 
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 

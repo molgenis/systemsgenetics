@@ -1,4 +1,4 @@
-	package decon_eQTL;
+	package main.java.decon_eQTL;
 	
 	import java.io.PrintWriter;
 	import java.io.StringWriter;

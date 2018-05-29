@@ -1,10 +1,10 @@
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import decon_eQTL.Utils;
+import main.java.decon_eQTL.Utils;
 
 public class CellCount {
 

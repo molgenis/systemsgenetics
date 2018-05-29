@@ -1,4 +1,4 @@
-package decon_eQTLTests;
+package test.java;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -6,7 +6,8 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import decon_eQTL.Statistics;
+
+import main.java.decon_eQTL.Statistics;
 
 public class StatisticsTest {
 	Statistics statistics;

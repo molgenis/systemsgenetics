@@ -1,0 +1,2 @@
+gene	snp
+gene_1	genotype_NOT_EXISTING

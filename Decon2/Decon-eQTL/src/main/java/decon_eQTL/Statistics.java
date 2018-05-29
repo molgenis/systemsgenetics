@@ -1,4 +1,4 @@
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import JSci.maths.statistics.FDistribution;

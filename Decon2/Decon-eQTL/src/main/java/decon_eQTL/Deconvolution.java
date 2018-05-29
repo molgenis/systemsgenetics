@@ -1,4 +1,4 @@
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -10,7 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
-import decon_eQTL.CellCount;
+
+import main.java.decon_eQTL.CellCount;
 
 public class Deconvolution {
 	private int QTLsFiltered = 0;

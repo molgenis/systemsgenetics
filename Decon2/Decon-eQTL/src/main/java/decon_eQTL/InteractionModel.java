@@ -1,4 +1,4 @@
-package decon_eQTL;
+package main.java.decon_eQTL;
 
 import java.util.ArrayList;
 import java.util.List;
