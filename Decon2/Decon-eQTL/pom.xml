@@ -3,7 +3,7 @@
   <groupId>Decon-eQTL</groupId>
   <artifactId>Decon-eQTL</artifactId>
   <packaging>jar</packaging>
-  <version>v1.0.3</version>
+  <version>v1.0.4</version>
   <name>Decon-eQTL</name>
   <description>Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples (Decon-cell) and consecutive deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.</description>
   <build>
@@ -17,8 +17,15 @@
         </excludes>
       </testResource>
     </testResources>
+    <resources>
+      <resource>
+    	<directory>src/main/resources</directory>
+    	<filtering>true</filtering>
+  	  </resource>
+  	</resources>
     <plugins>
       <plugin>
+   		<groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
@@ -32,14 +39,33 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>decon_eQTL.Main</mainClass>
+              <mainClass>main.java.decon_eQTL.Main</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
         </configuration>
-      </plugin> 
+       </plugin> 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+        </configuration>
+      </plugin>
+      <plugin>
+	    <artifactId>maven-jar-plugin</artifactId>
+	    <version>3.1</version>
+	    <executions>
+	        <execution>
+	            <id>default-jar</id>
+	            <phase>none</phase>
+	        </execution>
+	    </executions>
+	  </plugin>
     </plugins>
   </build>
   <url>https://github.com/molgenis/systemsgenetics/tree/master/Decon2/Decon-eQTL</url>
