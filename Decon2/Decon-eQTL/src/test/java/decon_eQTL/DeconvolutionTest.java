@@ -1,4 +1,4 @@
-package test.java;
+package test.java.decon_eQTL;
 
 import static org.junit.Assert.*;
 import java.io.File;

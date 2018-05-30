@@ -1,4 +1,4 @@
-package test.java;
+package test.java.decon_eQTL;
 
 
 import org.junit.After;
