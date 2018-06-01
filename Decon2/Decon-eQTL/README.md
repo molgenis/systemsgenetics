@@ -12,7 +12,7 @@ Decon-eQTL-v*.*.*.jar
 
 ## Download
 
-The latest .jar build can be downloaded from www.molgenis.org/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/.
+The latest .jar build can be downloaded from www.molgenis.org/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/. Use Decon-eQTL-v*.*.*-jar-with-dependencies.jar.
 
 ### For compiling
 commons-cli v1.3.1  
