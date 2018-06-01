@@ -50,7 +50,7 @@ public class ConvertToChiSq {
 			
 			// replace column names
 			ArrayList<String> colnames = zmat.getColObjects();
-			LinkedHashMap<String, Integer> colHash = new LinkedHashMap();
+			LinkedHashMap<String, Integer> colHash = new LinkedHashMap<>();
 			for (int c = 0; c < colnames.size(); c++) {
 				String name = colnames.get(c);
 				name = name.split("_")[0];
