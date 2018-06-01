@@ -239,10 +239,8 @@ public class BinaryMetaAnalysis {
 			for (int d = 0; d < datasets.length; d++) {
 				datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d),
 						settings.getDatasetnames().get(d),
-						settings.getDatasetPrefix().get(d),
-						permutation,
-						settings.getDatasetannotations().get(d),
-						probeAnnotation);
+						settings.getDatasetPrefix().get(d), permutation,
+						settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d));
 			}
 			
 			System.out.println("Loaded " + datasets.length + " datasets");

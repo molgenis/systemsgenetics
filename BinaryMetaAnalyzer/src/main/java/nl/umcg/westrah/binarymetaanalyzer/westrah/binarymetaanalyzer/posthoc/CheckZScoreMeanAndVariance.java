@@ -215,7 +215,7 @@ public class CheckZScoreMeanAndVariance {
 						settings.getDatasetPrefix().get(d),
 						permutation,
 						settings.getDatasetannotations().get(d),
-						probeAnnotation);
+						probeAnnotation, null);
 				
 				String[] probeList = dataset.getProbeList();
 				String[] snpList = dataset.getSNPs();

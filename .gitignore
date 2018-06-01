@@ -28,6 +28,8 @@ eqtl-mapping-pipeline/nb-configuration.xml
 /eQTLInteractionAnalyser2/build/
 /eQTLInteractionAnalyser2/dist/
 /eQTLInteractionAnalyser2/nbproject/private/
+<<<<<<< HEAD
+/genetica-libraries/nbproject/
 
 
 Decon-eQTL-v1.0.1-jar-with-dependencies.jar

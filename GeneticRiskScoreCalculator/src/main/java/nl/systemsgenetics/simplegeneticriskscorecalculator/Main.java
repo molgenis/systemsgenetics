@@ -331,8 +331,10 @@ public class Main {
         }
 
         geneticRiskScoreMatrix.setMatrix(ConvertDoubleMatrixDataToTriTyper.rankRows(geneticRiskScoreMatrix.getMatrix()));
+ 707d628fc541160f14df6dc50e7311809592c342
         geneticRiskScoreMatrix.setMatrix(ConvertDoubleMatrixDataToTriTyper.rescaleValue(geneticRiskScoreMatrix.getMatrix(), 200.0d));
-
+		//geneticRiskScoreMatrix.save(outputF + File.separator + "Step2_ScoreMatrix.txt");
+		
         try {
             System.out.println("\nWriting Individuals.txt and Phenotype.txt to file:");
             BufferedWriter outIndNew = new BufferedWriter(new FileWriter(outputF + File.separator + "Individuals.txt"));

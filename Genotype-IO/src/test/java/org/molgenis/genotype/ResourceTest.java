@@ -5,7 +5,7 @@ import java.net.URISyntaxException;
 
 public class ResourceTest
 {
-	protected File getTestResourceFile(String name) throws URISyntaxException
+	public File getTestResourceFile(String name) throws URISyntaxException
 	{
 		return new File(this.getClass().getResource(name).toURI());
 	}

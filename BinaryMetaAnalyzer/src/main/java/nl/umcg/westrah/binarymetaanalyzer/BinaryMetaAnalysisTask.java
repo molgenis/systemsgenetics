@@ -79,6 +79,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 			
 			boolean printed = false;
 			int[] sampleSizes = new int[datasets.length];
+			double[] weights = new double[datasets.length];
 			Boolean[] flipZScores = new Boolean[datasets.length];
 			String alleles = null;
 			String alleleAssessed = null;
@@ -280,7 +281,12 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				
 				if (!settings.getAnalysisType().equals(BinaryMetaAnalysisSettings.Analysis.CISTRANS)) {
 					// do not test the cis probes if not cistrans
-					cisProbes = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getTransdistance());
+					if(settings.getTransdistance()!=0){
+						cisProbes = probeAnnotation.getMetatraits().getTraitInWindow(snpChr[snp], snpPositions[snp], settings.getTransdistance());
+					} else {
+						cisProbes = null;
+					}
+					
 					if (debug && printsnp) {
 						System.out.println("Stats: ");
 						System.out.println(cisProbes.size() + " cis probes...");
@@ -369,6 +375,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				
 				for (int probe = 0; probe < traitList.length; probe++) {
 					MetaQTL4MetaTrait t = traitList[probe];
+//					System.out.println(t.getMetaTraitId());
 					boolean write = true;
 					float[] datasetZScores = finalZScores[probe];
 					if (settings.minimalNumberOfDatasets > 1) {
@@ -382,10 +389,31 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 							write = false;
 						}
 					}
+					//Here we need to correct the sampleSizes.
 					
+					if(settings.getRescalingOfSampleSize()){
+						weights = new double[sampleSizes.length];
+						for(int d=0; d<datasetZScores.length;d++){
+							Double rescaleValue = datasets[d].getFeatureOccuranceScaleMap().get(t.getPlatformIds()[d]);
+							if(!Double.isFinite(rescaleValue)){
+								System.out.println("Warning for feature: "+ t.getPlatformIds()[d] + " no rescale value set for: " + datasets[d].getName()+"\n Defaulted to weight of 1.");
+								rescaleValue = 1.0d;
+							}
+							if(debug){
+								System.out.println("Weight for: "+t.getPlatformIds()[d]+" is: "+rescaleValue);
+							}
+							weights[d] = rescaleValue;
+						}
+//						System.out.println(settings.getFeatureOccuranceScaleMaps().size());
+					}
 					
 					if (write) {
-						double metaAnalysisZ = ZScores.getWeightedZ(datasetZScores, sampleSizes);
+						double metaAnalysisZ;
+						if(!settings.getRescalingOfSampleSize()){
+							metaAnalysisZ = ZScores.getWeightedZ(datasetZScores, sampleSizes);
+						} else {
+							metaAnalysisZ = ZScores.getWeightedZ(datasetZScores, sampleSizes, weights);
+						}
 						
 						if (debug && traitList[probe].getMetaTraitName().equals("ENSG00000132465")) {
 							boolean print = false;

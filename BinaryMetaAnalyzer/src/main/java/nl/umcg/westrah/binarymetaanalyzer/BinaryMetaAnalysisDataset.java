@@ -38,11 +38,12 @@ public class BinaryMetaAnalysisDataset {
 	private final MetaQTL4TraitAnnotation probeAnnotation;
 	private final int platformId;
 	private RandomAccessFile raf;
+	private HashMap<String,Double> featureOccuranceScaleMap = null;
 	
 	private String name = null;
 	private String platform = null;
 	
-	public BinaryMetaAnalysisDataset(String dir, String name, String prefix, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation) throws IOException {
+	public BinaryMetaAnalysisDataset(String dir, String name, String prefix, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation, String featureOccuranceScaleMapFile) throws IOException {
 		dir = Gpio.formatAsDirectory(dir);
 		String matrix = dir;
 		String probeFile = dir;
@@ -97,6 +98,16 @@ public class BinaryMetaAnalysisDataset {
 		
 		loadSNPs(snpFile);
 		System.out.println(snps.length + " SNPs loaded");
+		
+		if(featureOccuranceScaleMapFile!=null){
+			TextFile readScaleInfo = new TextFile(featureOccuranceScaleMapFile, TextFile.R);
+			HashMap<String,String> temporaryMap = new HashMap<>(readScaleInfo.readAsHashMap(0, 1));
+			readScaleInfo.close();
+			featureOccuranceScaleMap = new HashMap<>();
+			for(String k : temporaryMap.keySet()){
+				featureOccuranceScaleMap.put(k, Double.parseDouble(temporaryMap.get(k)));
+			}
+		}
 		
 		raf = new RandomAccessFile(matrix, "r");
 	}
@@ -283,6 +294,10 @@ public class BinaryMetaAnalysisDataset {
 	
 	public String getPlatform() {
 		return platform;
+	}
+	
+	public HashMap<String, Double> getFeatureOccuranceScaleMap() {
+		return featureOccuranceScaleMap;
 	}
 	
 }

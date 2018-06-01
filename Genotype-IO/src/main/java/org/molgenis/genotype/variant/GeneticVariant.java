@@ -177,6 +177,12 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 
 	public double getCallRate();
 
+	/**
+	 * Warning currently only HWE calculation for bi-allelic variants
+	 * Other variants will have HWE of NaN
+	 * 
+	 * @return 
+	 */
 	public double getHwePvalue();
 	
 	/**

@@ -72,7 +72,8 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 
 		List<GeneticVariant> variants = Utils.iteratorToList(genotypeData.getSequenceGeneticVariants(sequence.getName()).iterator());
 		assertNotNull(variants);
-		assertEquals(variants.size(), 8);
+		System.out.println(variants.toString());
+		assertEquals(variants.size(), 6);
 		GeneticVariant variant = variants.get(0);
 		assertEquals(variant.getPrimaryVariantId(), "rs11089130");
 		assertEquals(variant.getStartPos(), 14431347);
@@ -164,8 +165,8 @@ public class TriTyperGenotypeDataFilteredTest extends ResourceTest {
 		//Try to get excluded variant
 		assertNull(genotypeData.getSnpVariantByPos("22", 14432918));
 		
-		//now get another variant and do some reloading to test stability 
-		GeneticVariant variant2 = genotypeData.getSnpVariantByPos("22", 14433591);
+		//now get another variant and do some reloading to test stability. Replaced with other position. 
+		GeneticVariant variant2 = genotypeData.getSnpVariantByPos("22", 14431347);
 		variant2.getVariantAlleles();
 		variant2.getSampleVariants();
 		
