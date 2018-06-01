@@ -29,7 +29,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
 
 	@Test
 	public void testReader_1_1() throws URISyntaxException, IOException {
-		genotypeData = new BgenGenotypeData(getTest3Bgen(), getTest3Sample());
+		//genotypeData = new BgenGenotypeData(getTest3Bgen(), getTest3Sample());
 	}
 
 	@Test
