@@ -126,9 +126,9 @@ public class Deconvolution {
 		for(int i = 1; i < cellCounts.getNumberOfCelltypes()*2 + 1; ++i){
 			header += "\tBeta" + Integer.toString(i) +"_"+bestFullModelForHeaderOnly.getIndependentVariableNames().get(i-1);
 		}
-		for(String celltype : celltypes){
-			header += "\teffectDirectionDosage2_"+celltype;
-		}
+		//for(String celltype : celltypes){
+		//	header += "\teffectDirectionDosage2_"+celltype;
+		//}
 		//header += "\tgenotypeConfiguration";
 		//for(String celltype : cellCounts.getAllCelltypes()){
 		//	header += "\tgenotypeConfiguration_"+celltype;
@@ -151,21 +151,27 @@ public class Deconvolution {
 			bestFullModel = interactionModelCollection.getBestFullModel();
 
 
-			results += "\t"+Utils.listToTabSeparatedString(bestFullModel.getEstimateRegressionParameters());
+			double[] estimateRegressionParameters = bestFullModel.getEstimateRegressionParameters();
 
 			// check what the genotype configuration is and the beta of the interaction term. 
 			// If genotype configuration == 0 and beta == positive, dosage2 effect = positive
 			// If genotype configuration == 1 and beta == negative, dosage2 effect = positive
 			// else is negative
 			int numberOfCelltypes = cellCounts.getNumberOfCelltypes();
+			// first write out the beta of the cell proportion term
+			for(int i = 0; i < numberOfCelltypes; ++i){
+				results += "\t"+estimateRegressionParameters[i];
+			}
+			
+			// then write out cell proportion-genotype interaction term with correct sign
 			for(int i = 0; i < numberOfCelltypes; ++i){
 				char genotypeConfiguration = 0;
-
 				genotypeConfiguration = bestFullModel.getGenotypeConfiguration().charAt(i);
-				if (genotypeConfiguration == '0'){
-						results += "\t+";
+				double interactionTermCurrentCelltype = estimateRegressionParameters[i+numberOfCelltypes];
+				if (genotypeConfiguration == '0' || interactionTermCurrentCelltype == 0){
+					results += "\t"+interactionTermCurrentCelltype;
 				}else if(genotypeConfiguration == '1'){
-						results += "\t-";
+						results += "\t-"+interactionTermCurrentCelltype;
 				}
 				else{
 					throw new RuntimeException(String.format("Genotype configuration should be 0 or 1, not %s", genotypeConfiguration));
