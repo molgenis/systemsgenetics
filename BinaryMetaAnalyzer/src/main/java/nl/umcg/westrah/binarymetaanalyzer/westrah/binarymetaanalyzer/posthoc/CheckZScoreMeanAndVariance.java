@@ -151,7 +151,6 @@ public class CheckZScoreMeanAndVariance {
 			zMeans[permutation] = zmean;
 			zVars[permutation] = zvar;
 			zNs[permutation] = zn;
-			
 		}
 		
 		// write to disk
