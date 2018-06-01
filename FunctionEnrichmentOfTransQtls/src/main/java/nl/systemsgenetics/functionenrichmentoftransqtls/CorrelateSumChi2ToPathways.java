@@ -58,6 +58,8 @@ public class CorrelateSumChi2ToPathways {
 		StudentT tDistColt = new StudentT(sumChi2Matrix.rows() / 2 - 2, randomEngine);
 		
 		for (String trait : sumChi2Matrix.getColObjects()) {
+			
+			System.out.println("Trait: " + trait);
 
 			DoubleMatrix1D traitSumChi2 = sumChi2Matrix.getCol(trait);
 
