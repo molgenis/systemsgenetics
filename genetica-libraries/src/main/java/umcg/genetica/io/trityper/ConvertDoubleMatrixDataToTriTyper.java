@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
  * @author Lude, Marc Jan
  */
 public class ConvertDoubleMatrixDataToTriTyper {
+
 	
 	private static final Pattern SPLIT_ON_TAB = Pattern.compile("\t");
 	
