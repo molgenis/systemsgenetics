@@ -29,6 +29,8 @@ public class ConvertToChiSq {
 			}
 		}
 		
+		System.out.println(traitToSnp.size() + " traits loaded from: " + traitfile);
+		
 		// for each permutation
 		HashSet<String> colsToExclude = new HashSet<>();
 		colsToExclude.add("Alleles");
@@ -39,11 +41,13 @@ public class ConvertToChiSq {
 			
 			
 			String filename = zscoreloc + "ZScoreMatrix-Permutation" + perm + ".txt.gz";
-			String outpufilename = outputloc + "TraitChiSquareMatrix-Permutation" + perm + ".txt.gz";
+			String outputfilename = outputloc + "TraitChiSquareMatrix-Permutation" + perm + ".txt.gz";
 			if (perm == 0) {
 				filename = zscoreloc + "ZScoreMatrix.txt.gz";
-				outpufilename = outputloc + "TraitChiSquareMatrix.txt.gz";
+				outputfilename = outputloc + "TraitChiSquareMatrix.txt.gz";
 			}
+			System.out.println("Perm " + perm + " infile: " + filename);
+			System.out.println("Output "+outputfilename);
 			
 			// load z-score matrix
 			DoubleMatrixDataset<String, String> zmat = DoubleMatrixDataset.loadDoubleTextDoubleDataExlcudeCols(filename, '\t', colsToExclude);
@@ -74,6 +78,7 @@ public class ConvertToChiSq {
 			zmat.getMatrix().assign(square);
 			
 			DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(zmat.getHashCols(), traitindex);
+			
 			// combine trait snps into single column
 			for (Map.Entry<String, LinkedHashSet<String>> set : traitToSnp.entrySet()) {
 				String trait = set.getKey();
@@ -87,7 +92,7 @@ public class ConvertToChiSq {
 			}
 			
 			// write resulting matrix
-			output.save(outpufilename);
+			output.save(outputfilename);
 		}
 		
 	}
