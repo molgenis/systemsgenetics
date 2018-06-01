@@ -2,6 +2,8 @@ package nl.systemsgenetics.functionenrichmentoftransqtls;
 
 
 import cern.colt.function.tdouble.DoubleFunction;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.io.IOException;
 import java.util.*;
