@@ -22,7 +22,7 @@ import main.java.decon_eQTL.DeconvolutionResult;
 import main.java.decon_eQTL.Main;
 
 public class DeconvolutionTest {
-	String outputDir = "tests/resources/deconvolutionTestResults/";
+	String outputDir = "src/test/resources/deconvolutionTestResults/";
 	String counts;
 	String genotypes;
 	String geneSnpList;
@@ -32,10 +32,10 @@ public class DeconvolutionTest {
 	@Before
 	public void init() {
 		commandLineOptions = new CommandLineOptions();
-		File countsFile = new File("tests/resources/cellcount_files/cellcounts.txt");
-		File genotypesFile = new File("tests/resources/genotype_files/genotype_dosages.txt");
-		File geneSnpListFile = new File("tests/resources/gene_snp_list_files/gene_snp_list.txt");
-		File expressionFile = new File("tests/resources/expression_files/expression_levels.txt");
+		File countsFile = new File("src/test/resources/cellcount_files/cellcounts.txt");
+		File genotypesFile = new File("src/test/resources/genotype_files/genotype_dosages.txt");
+		File geneSnpListFile = new File("src/test/resources/gene_snp_list_files/gene_snp_list.txt");
+		File expressionFile = new File("src/test/resources/expression_files/expression_levels.txt");
 		counts = countsFile.getAbsolutePath();
 		genotypes = genotypesFile.getAbsolutePath();
 		geneSnpList = geneSnpListFile.getAbsolutePath();
@@ -60,7 +60,7 @@ public class DeconvolutionTest {
 	 */
 	@Test
 	public void readInputDataTest() throws Exception {
-		File cellCountsSmall = new File("tests/resources/cellcount_files/cellcounts_small.txt");
+		File cellCountsSmall = new File("src/test/resources/cellcount_files/cellcounts_small.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts,cellCountsSmall.getAbsolutePath(),
 						 "-e",expression, "-g", genotypes, 
 						 "-sn", geneSnpList};
@@ -78,7 +78,7 @@ public class DeconvolutionTest {
 	@Test
 	public void readInputDataWrongNamesTest() throws Exception {
 
-		File expTableWrongNames = new File("tests/resources/expression_files/expression_levels_wrong_names.txt");
+		File expTableWrongNames = new File("src/test/resources/expression_files/expression_levels_wrong_names.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts,"-e",
 						 expTableWrongNames.getAbsolutePath(), "-g", genotypes, 
 						 "-sn", geneSnpList};
@@ -94,7 +94,7 @@ public class DeconvolutionTest {
 	
 	@Test
 	public void runDeconPerGeneSnpPairTestRunTest() throws Exception {
-		File geneSnpListFile = new File("tests/resources/gene_snp_list_files/gene_snp_list_long.txt");
+		File geneSnpListFile = new File("src/test/resources/gene_snp_list_files/gene_snp_list_long.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResultsTestRun","-c",counts,
 						 "-e",expression, "-g",genotypes, "-sn", geneSnpListFile.getAbsolutePath(),
 						 "-t"};
@@ -111,7 +111,7 @@ public class DeconvolutionTest {
 
 	@Test
 	public void runDeconPerGeneSnpPairNotExistingGenotypeTest() throws Exception {
-		File geneSnpList = new File("tests/resources/gene_snp_list_files/gene_snp_list_non_existing_genotype.txt");
+		File geneSnpList = new File("src/test/resources/gene_snp_list_files/gene_snp_list_non_existing_genotype.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts,
 						 "-e",expression, "-g", genotypes, 
 						 "-sn", geneSnpList.getAbsolutePath()};
@@ -129,7 +129,7 @@ public class DeconvolutionTest {
 
 	@Test
 	public void runDeconPerGeneSnpPairNotExistingGeneTest() throws Exception {
-		File geneSnpList = new File("tests/resources/gene_snp_list_files/gene_snp_list_non_existing_gene.txt");
+		File geneSnpList = new File("src/test/resources/gene_snp_list_files/gene_snp_list_non_existing_gene.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts,
 						 "-e",expression, "-g", genotypes, 
 						 "-sn", geneSnpList.getAbsolutePath()};
@@ -146,7 +146,7 @@ public class DeconvolutionTest {
 	
 	@Test
 	public void runDeconPerGeneSnpPairGenotypeNotInGenotypeFileTest() throws Exception {
-		File geneSnpList = new File("tests/resources/gene_snp_list_files/gene_snp_list_non_existing_genotype.txt");
+		File geneSnpList = new File("src/test/resources/gene_snp_list_files/gene_snp_list_non_existing_genotype.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts,
 						 "-e",expression, "-g", genotypes,
 						 "-sn", geneSnpList.getAbsolutePath()};
@@ -164,7 +164,7 @@ public class DeconvolutionTest {
 		
 	@Test
 	public void runDeconPerGeneSnpPairGeneNotInExpressionFileTest() throws Exception {
-		File geneSnpList = new File("tests/resources/gene_snp_list_files/gene_snp_list_non_existing_gene.txt");
+		File geneSnpList = new File("src/test/resources/gene_snp_list_files/gene_snp_list_non_existing_gene.txt");
 		String[] args = {"-o",outputDir+"deconvolutionTestResults","-c",counts,
 						 "-e",expression, "-g", genotypes,
 						 "-sn", geneSnpList.getAbsolutePath()};
@@ -191,7 +191,7 @@ public class DeconvolutionTest {
 		deconvolution.writeDeconvolutionResults(deconvolutionResults);
 
 		LineIterator deconResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionSpearmanResults/deconvolutionResults.csv"), "UTF-8");
-		LineIterator deconExpected = FileUtils.lineIterator(new File("tests/resources/expected_results/deconSpearmanExpected.txt"), "UTF-8");
+		LineIterator deconExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/deconSpearmanExpected.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",deconExpected.next(),deconResults.next());
 		while (deconResults.hasNext() && deconExpected.hasNext()){
@@ -214,7 +214,7 @@ public class DeconvolutionTest {
 		deconvolution.writeDeconvolutionResults(deconvolutionResults);
 
 		LineIterator predictedResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionPredictedExpression/predictedExpressionLevels.txt"), "UTF-8");
-		LineIterator predictedExpected = FileUtils.lineIterator(new File("tests/resources/expected_results/expectedPredictedExpressionLevels.txt"), "UTF-8");
+		LineIterator predictedExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/expectedPredictedExpressionLevels.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",predictedExpected.next(),predictedResults.next());
 		while (predictedResults.hasNext() && predictedExpected.hasNext()){
@@ -237,7 +237,7 @@ public class DeconvolutionTest {
 		deconvolution.writeDeconvolutionResults(deconvolutionResults);
 
 		LineIterator deconResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionRoundedDosage/deconvolutionResults.csv"), "UTF-8");
-		LineIterator deconExpected = FileUtils.lineIterator(new File("tests/resources/expected_results/deconRoundDosageExpected.txt"), "UTF-8");
+		LineIterator deconExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/deconRoundDosageExpected.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",deconExpected.next(),deconResults.next());
 		while (deconResults.hasNext() && deconExpected.hasNext()){
