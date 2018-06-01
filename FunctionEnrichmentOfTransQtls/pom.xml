@@ -59,7 +59,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>nl.systemsgenetics.functionenrichmentoftransqtls</mainClass>
+                            <mainClass>nl.systemsgenetics.functionenrichmentoftransqtls.FunctionEnrichMain</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>truze</addDefaultSpecificationEntries>
                         </manifest>
