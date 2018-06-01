@@ -2,12 +2,13 @@
 Authors: Raúl Aguirre-Gamboa and Niek de Klein
 
 ## Introduction 
-Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples [(Decon-cell)](https://github.com/raguirreg/DeconCell) and consecutive deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.
+Decon-eQTL is part of Decon2, a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples 
+[(Decon-cell)](https://github.com/molgenis/systemsgenetics/tree/master/Decon2/DeconCell) and consecutive deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.
 
 
 ## Requirements
 `Java version 1.8 or higher` (Tested using `1.8.0_121`)  
-Decon-eQTL.jar
+Decon-eQTL-v*.*.*.jar
 
 ## Download
 
@@ -31,6 +32,8 @@ jsci-sci
                             -o <output directory> \
                             -sn <file with SNP and gene combination to test>
     
+For a full guide see [Decon2 manual](https://github.com/molgenis/systemsgenetics/tree/master/Decon2)
+
 ## Options overview
 
     -c,--cellcount <file>                     Cellcount file name

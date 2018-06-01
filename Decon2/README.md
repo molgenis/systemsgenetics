@@ -1,13 +1,13 @@
 Authors: Raúl Aguirre-Gamboa and Niek de Klein
 
 # Introduction 
-Decon2 is a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples (Decon-cell) and consecutive 
-deconvolution of expression quantitative trait loci (Decon-eQTL) into each cell subpopulation.  
-See DeconCell/ and Decon-eQTL/ for their documentation.
+Decon2 is a statistical framework for estimating cell counts using molecular profiling such as expression or methylation data from heterogeneous samples ([Decon-cell](DeconCell/)) and consecutive 
+deconvolution of expression quantitative trait loci ([Decon-eQTL](Decon-eQTL)) into each cell subpopulation.  
 
 # Installation
 
-For DeconCell, in R do
+## Decon-cell
+In R do
 
 ```
 library('devtools')
@@ -15,7 +15,9 @@ library('devtools')
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
-For Decon-eQTL, download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar``` from [here: Decon-eQTL/lastBuild](http://molgenis50.gcc.rug.nl/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/).
+##Decon-eQTL
+Download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar```.  
+Latest build can be found here: [Decon-eQTL/lastBuild](http://molgenis50.gcc.rug.nl/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/).
 
 
 # Example run
@@ -29,7 +31,7 @@ If you have measured cell types, you can skip to [Decon-eQTL](#decon-eqtl).
 
 ## Simulate count data
 
-We will use the samples from the DeconCell vignette to simulate expression data. In R, do:
+We will use the samples from the Decon-cell vignette to simulate expression data. In R, do:
 
 ```r
 library(matrixStats)
@@ -112,10 +114,11 @@ You now how scaled, predicted cell counts that can be used as input for Decon-eQ
 
 ## Decon-eQTL
 
-With the predicted cell counts you can now run Deco-eQTL. In your terminal, run:
+With the predicted cell counts you can now run Decon-eQTL. In your terminal, run:
 
 ```bash
-java -jar Decon-eQTL-v1.0.1-jar-with-dependencies.jar \
+# Change v*.*.* to the version you downloaded
+java -jar Decon-eQTL-v*.*.*-jar-with-dependencies.jar \
 	--cellcount example_data/predicted.cellcounts.scaled.txt \
 	--expression example_data/count.table.simulated.txt \
 	--genotype example_data/fake_genotype_dosages.txt \
@@ -123,10 +126,10 @@ java -jar Decon-eQTL-v1.0.1-jar-with-dependencies.jar \
 	--outfolder example_output/
 ```
 
-A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the celltypes, the middle 6 columns are the beta (effect size) of the cell type - genotype interaction effect, and the last 6 columns are the direction of the effect relative to the allele that is coded as 2 in the genotype file.
+A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the cell types, and the last 6 columns are the beta (effect size) of the cell type - genotype interaction effect, relative to the allele that is coded as 2 in the dosage file. So if `A/A = 0`, `A/T = `, and `T/T = 2`, a negative beta means that the `T` has allele has a negative effect on expression.
 
 
-|	|Granulocytes_pvalue	|B cells (CD19+)_pvalue	|CD4+ T cells_pvalue	|CD8+ T cells_pvalue	|NK cells (CD3- CD56+)_pvalue	|Monocytes (CD14+)_pvalue	|Beta1_Granulocytes	|Beta2_B cells (CD19+)	|Beta3_CD4+ T cells	|Beta4_CD8+ T cells	|Beta5_NK cells (CD3- CD56+)	|Beta6_Monocytes (CD14+)	|Beta7_Granulocytes:GT	|Beta8_B cells (CD19+):GT	|Beta9_CD4+ T cells:GT	|Beta10_CD8+ T cells:GT	|Beta11_NK cells (CD3- CD56+):GT	|Beta12_Monocytes (CD14+):GT	|effectDirectionDosage2_Granulocytes	|effectDirectionDosage2_B cells (CD19+)	|effectDirectionDosage2\_CD4+ T cells	|effectDirectionDosage2_CD8+ T cells	|effectDirectionDosage2_NK cells (CD3- CD56+)	|effectDirectionDosage2_Monocytes (CD14+)
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
-ENSG00000103855\_snp_244	|0.8754191650343855	|1.0	|0.9855839296645753	|1.0	|0.8801056746139749	|1.0	|0.0	|0.0	|0.0	|0.0	|0.19545183472374217	|0.0	|0.008312507740549976	|0.0	|0.0014092158690805837	|0.0	|0.05818753733261271	|0.0	|-	|-	|-	|-	|+	|-
+|	|Granulocytes_pvalue	|B cells (CD19+)_pvalue	|CD4+ T cells_pvalue	|CD8+ T cells_pvalue	|NK cells (CD3- CD56+)_pvalue	|Monocytes (CD14+)_pvalue	|Beta1_Granulocytes	|Beta2_B cells (CD19+)	|Beta3_CD4+ T cells	|Beta4_CD8+ T cells	|Beta5_NK cells (CD3- CD56+)	|Beta6_Monocytes (CD14+)	|Beta7_Granulocytes:GT	|Beta8_B cells (CD19+):GT	|Beta9_CD4+ T cells:GT	|Beta10_CD8+ T cells:GT	|Beta11_NK cells (CD3- CD56+):GT	|Beta12_Monocytes (CD14+):GT
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
+ENSG00000103855\_snp_244	|0.8754	|1.0	|0.9855	|1.0	|0.8801	|1.0	|0.0	|0.0	|0.0	|0.0	|0.1954	|0.0	|-0.0083	|0.0	|-0.0014	|0.0	|0.0581	|0.0
 
