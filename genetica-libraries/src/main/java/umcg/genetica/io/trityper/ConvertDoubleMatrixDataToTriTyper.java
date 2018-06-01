@@ -111,7 +111,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
 		
 		DoubleMatrixDataset<String, String> dataset = null;
 		try {
-			dataset = DoubleMatrixDataset.loadSubsetOfTextDoubleData(dataMatrix, "\t", hashCpGSites, null);
+			dataset = DoubleMatrixDataset.loadSubsetOfTextDoubleData(dataMatrix, '\t', hashCpGSites, null);
 		} catch (IOException ex) {
 			Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
 			System.exit(0);
