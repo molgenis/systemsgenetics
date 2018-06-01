@@ -47,7 +47,7 @@ public class ConvertToChiSq {
 				outputfilename = outputloc + "TraitChiSquareMatrix.txt.gz";
 			}
 			System.out.println("Perm " + perm + " infile: " + filename);
-			System.out.println("Output "+outputfilename);
+			System.out.println("Output " + outputfilename);
 			
 			// load z-score matrix
 			DoubleMatrixDataset<String, String> zmat = DoubleMatrixDataset.loadDoubleTextDoubleDataExlcudeCols(filename, '\t', colsToExclude);
@@ -84,7 +84,13 @@ public class ConvertToChiSq {
 				String trait = set.getKey();
 				int colindex = traitindex.get(trait);
 				LinkedHashSet<String> snps = set.getValue();
-				DoubleMatrixDataset subzmat = zmat.viewRowSelection(snps);
+				LinkedHashSet<String> snpselect = new LinkedHashSet<>();
+				for (String snp : snps) {
+					if (zmat.containsRow(snp)) {
+						snpselect.add(snp);
+					}
+				}
+				DoubleMatrixDataset subzmat = zmat.viewRowSelection(snpselect);
 				for (int col = 0; col < subzmat.columns(); col++) {
 					double sum = subzmat.getMatrix().viewColumn(col).zSum();
 					output.getMatrix().setQuick(col, colindex, sum);
