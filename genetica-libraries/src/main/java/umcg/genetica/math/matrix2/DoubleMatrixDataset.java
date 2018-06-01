@@ -288,6 +288,26 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
 		return dataset;
 	}
+	
+	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException{
+		
+		TextFile in = new TextFile(fileName, TextFile.R);
+		String str = in.readLine(); // header
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
+		
+		HashSet<String> desiredCols = new HashSet<>();
+		
+		for(String colName : data){
+			
+			if(!colsToExclude.contains(colName)){
+				desiredCols.add(colName);
+			}
+			
+		}
+		
+		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols);
+		
+	}
 
 	private static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
 		//First load the raw binary data:
