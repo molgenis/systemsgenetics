@@ -1,9 +1,10 @@
 package nl.systemsgenetics.functionenrichmentoftransqtls;
 
 import java.io.IOException;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class FunctionEnrichMain {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		ConvertToChiSq c = new ConvertToChiSq();
 		
 		if (args.length < 1) {
@@ -20,7 +21,11 @@ public class FunctionEnrichMain {
 					}
 				}
 			} else if (args[0].equals("correlatesum")) {
-			
+				if (args.length < 5) {
+					System.out.println("Usage: correlatesum pathwayMatrix sumChi2Matrix outputMatrix");
+				} else {
+					CorrelateSumChi2ToPathways.main(ArrayUtils.remove(args,0));
+				}
 			}
 		}
 	}
