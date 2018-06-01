@@ -76,6 +76,7 @@ public class TestDiseaseGenePerformance {
 
 			if (randomizeCustomBackground) {
 				System.err.println("First need to fix so ranking list contains all genes in background list");
+				return;
 //				backgroundGenes = loadBackgroundGenes(backgroundForRandomize);
 //				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomizedCustomBackground.txt");
 			} else {
