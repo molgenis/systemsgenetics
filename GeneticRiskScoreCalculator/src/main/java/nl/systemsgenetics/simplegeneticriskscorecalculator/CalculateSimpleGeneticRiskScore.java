@@ -292,7 +292,7 @@ class CalculateSimpleGeneticRiskScore {
                                     double or = riskE.getOr();
                                     boolean riskCodedAsTwo;
                                     if(sumRisk && or <0){
-                                        or = or*-1;
+                                        or = or*-1; // NOTE: please make sure we're using betas here, and not ORS
                                         riskCodedAsTwo = false;
                                         if (!(riskE.getAllele()==(var1RefAllele.getAlleleAsSnp()) || riskE.getAllele()==(var1RefAllele.getComplement().getAlleleAsSnp()))) {
                                             riskCodedAsTwo = true;
@@ -322,6 +322,7 @@ class CalculateSimpleGeneticRiskScore {
 //                                            Genos3.append(scores.getMatrix().getQuick(rowNr, sample)).append(",");
                                         }
                                     }
+                                    
                                     //I have now removed the conversion from 0 to 2 and vice versa from the calculations. Why is this needed?
 //                                    System.out.println("");
 //                                    System.out.println("SNP: "+riskE.getRsName());

@@ -16,13 +16,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class MetaAnalysisQC {
+public class CompareQTLEffectSizes {
 	
 	
 	public static void main(String[] args) {
 		// test this
 		
-		MetaAnalysisQC q = new MetaAnalysisQC();
+		CompareQTLEffectSizes q = new CompareQTLEffectSizes();
 		String efile = "C:\\Sync\\OneDrive\\Postdoc2\\2017-11-eQTLMeta\\Heterogeneity\\eqtl\\eQTLsFDR0.05-PrunedLevel_2CohortFilter_20170925.txt.gz";
 		String outfile = efile + "-AllComboComparison.txt";
 		

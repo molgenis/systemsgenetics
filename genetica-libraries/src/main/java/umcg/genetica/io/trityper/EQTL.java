@@ -4,6 +4,10 @@
  */
 package umcg.genetica.io.trityper;
 
+import umcg.genetica.io.trityper.util.ChrAnnotation;
+
+import java.util.regex.Pattern;
+
 /**
  * @author harmjan
  */
@@ -36,6 +40,155 @@ public class EQTL implements Comparable<EQTL> {
 	private boolean useAbsoluteZScore = false;
 	
 	public EQTL() {
+	}
+	
+	public static EQTL fromString(String[] elems, String nullStr, Pattern separator) {
+		
+		String[] subelems;
+		
+		EQTL e = new EQTL();
+		if (!elems[0].equals(nullStr)) {
+			e.setPvalue(Double.parseDouble(elems[0]));
+		}
+		
+		if (!elems[1].equals(nullStr)) {
+			e.setRsName(elems[1]);
+		}
+		
+		if (!elems[2].equals(nullStr)) {
+			e.setRsChr(ChrAnnotation.parseChr(elems[2]));
+		}
+		
+		if (!elems[3].equals(nullStr)) {
+			e.setRsChrPos(Integer.parseInt(elems[3]));
+		}
+		
+		if (!elems[4].equals(nullStr)) {
+			e.setProbe(elems[4]);
+		}
+		
+		if (!elems[5].equals(nullStr)) {
+			e.setProbeChr(ChrAnnotation.parseChr(elems[5]));
+		}
+		
+		if (!elems[6].equals(nullStr)) {
+			e.setProbeChrPos(Integer.parseInt(elems[6]));
+		}
+		
+		if (!elems[7].equals(nullStr)) {
+			e.setType(elems[7]);
+		}
+		
+		if (!elems[8].equals(nullStr)) {
+			e.setAlleles(elems[8]);
+		}
+		
+		if (!elems[9].equals(nullStr)) {
+			e.setAlleleAssessed(elems[9]);
+		}
+		
+		if (!elems[10].equals(nullStr)) {
+			e.setZscore(Double.parseDouble(elems[10]));
+		}
+		
+		if (!elems[11].equals(nullStr)) {
+			e.setDatasets(separator.split(elems[11]));
+		}
+		
+		if (!elems[12].equals(nullStr)) {
+			subelems = separator.split(elems[12]);
+			Double[] dsZScores = new Double[subelems.length];
+			for (int i = 0; i < subelems.length; i++) {
+				try {
+					dsZScores[i] = Double.parseDouble(subelems[i]);
+				} catch (NumberFormatException ex) {
+					dsZScores[i] = Double.NaN;
+				}
+			}
+			e.setDatasetZScores(dsZScores);
+		}
+		
+		if (!elems[13].equals(nullStr)) {
+			String[] samples = elems[13].split(";");
+			Integer[] sampleS = new Integer[samples.length];
+			for (int i = 0; i < samples.length; i++) {
+				try {
+					sampleS[i] = Integer.parseInt(samples[i]);
+				} catch (NumberFormatException ex) {
+					sampleS[i] = null;
+				}
+			}
+			
+			e.setDatasetsSamples(sampleS);
+			
+		}
+		
+		if (!elems[14].equals(nullStr)) {
+			subelems = separator.split(elems[14]);
+			Double[] dsPmeans = new Double[subelems.length];
+			for (int i = 0; i < subelems.length; i++) {
+				try {
+					dsPmeans[i] = Double.parseDouble(subelems[i]);
+				} catch (NumberFormatException ex) {
+					dsPmeans[i] = Double.NaN;
+				}
+			}
+			e.setProbeMeans(dsPmeans);
+		}
+		
+		if (!elems[15].equals(nullStr)) {
+			subelems = separator.split(elems[15]);
+			Double[] dsPvars = new Double[subelems.length];
+			for (int i = 0; i < subelems.length; i++) {
+				try {
+					dsPvars[i] = Double.parseDouble(subelems[i]);
+				} catch (NumberFormatException ex) {
+					dsPvars[i] = Double.NaN;
+				}
+			}
+			e.setProbeVariance(dsPvars);
+		}
+		
+		if (!elems[16].equals(nullStr)) {
+			e.setProbeHUGO(elems[16]);
+		}
+		
+		if (!elems[17].equals(nullStr)) {
+			subelems = separator.split(elems[17]);
+			Double[] dsCorrs = new Double[subelems.length];
+			for (int i = 0; i < subelems.length; i++) {
+				try {
+					dsCorrs[i] = Double.parseDouble(subelems[i]);
+				} catch (NumberFormatException ex) {
+					dsCorrs[i] = Double.NaN;
+				}
+			}
+			e.setCorrelations(dsCorrs);
+		}
+		
+		if (!elems[18].equals(nullStr)) {
+			e.setMetaBeta(elems[18]);
+		}
+		
+		if (!elems[19].equals(nullStr)) {
+			e.setBeta(elems[19]);
+		}
+		
+		if (elems.length > 20) {
+			if (!elems[20].equals(nullStr)) {
+				e.setFC(elems[20]);
+			}
+		}
+		
+		if (elems.length > 21 && !elems[21].equals(nullStr)) {
+			try {
+				e.setFDR(Double.parseDouble(elems[21]));
+			} catch (java.lang.NumberFormatException ex) {
+				//do nothing
+			}
+		}
+		
+		return e;
 	}
 	
 	/**
