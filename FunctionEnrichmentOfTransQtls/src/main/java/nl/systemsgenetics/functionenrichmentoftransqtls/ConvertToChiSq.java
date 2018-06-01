@@ -1,6 +1,5 @@
 package nl.systemsgenetics.functionenrichmentoftransqtls;
 
-
 import cern.colt.function.tdouble.DoubleFunction;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -10,15 +9,6 @@ import java.util.*;
 
 public class ConvertToChiSq {
 	
-	public static void main(String[] args) {
-		ConvertToChiSq c = new ConvertToChiSq();
-		
-		try {
-			c.run(args[0], args[1], args[2], Integer.parseInt(args[3]));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	public void run(String traitfile, String zscoreloc, String outputloc, int nrperm) throws IOException {
 		
