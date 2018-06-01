@@ -10,7 +10,9 @@ import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
 import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
@@ -28,12 +30,16 @@ public class CorrelateSumChi2ToPathways {
 	public static void main(String[] args) throws IOException {
 
 		final File pathwayMatrixFile = new File(args[0]);
-		final File sumChi2MatrixFile = new File(args[1]);
-		final File transQtlEnrichmentsMatrixFile = new File(args[2]);
-
+		final File significantTermsFile = new File(args[1]);
+		final File sumChi2MatrixFile = new File(args[2]);
+		final File transQtlEnrichmentsMatrixFile = new File(args[3]);
+		
 		System.out.println("Pathway file: " + pathwayMatrixFile.getPath());
+		System.out.println("Pathway significant terms file: " + significantTermsFile.getPath());
 		System.out.println("SumChi2 file: " + sumChi2MatrixFile.getPath());
 		System.out.println("Output file: " + transQtlEnrichmentsMatrixFile.getPath());
+		
+		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
 		
 		DoubleMatrixDataset<String, String> pathwayMatrix = DoubleMatrixDataset.loadDoubleData(pathwayMatrixFile.getPath());
 		DoubleMatrixDataset<String, String> sumChi2Matrix = DoubleMatrixDataset.loadDoubleData(sumChi2MatrixFile.getPath());
@@ -46,6 +52,8 @@ public class CorrelateSumChi2ToPathways {
 			}
 		}
 
+		pathwayMatrix = pathwayMatrix.viewColSelection(significantTerms);
+		
 		pathwayMatrix = pathwayMatrix.viewRowSelection(genesInBoth);
 		sumChi2Matrix = sumChi2Matrix.viewRowSelection(genesInBoth);
 
@@ -103,6 +111,21 @@ public class CorrelateSumChi2ToPathways {
 		}
 		
 		transQtlEnrichmentsMatrix.save(transQtlEnrichmentsMatrixFile);
+
+	}
+	
+	public static LinkedHashSet<String> loadSignificantTerms(File significantTermsFile) throws IOException {
+
+		LinkedHashSet<String> significantTerms = new LinkedHashSet<>();
+
+		BufferedReader reader = new BufferedReader(new FileReader(significantTermsFile));
+
+		String line;
+		while ((line = reader.readLine()) != null) {
+			significantTerms.add(line);
+		}
+
+		return significantTerms;
 
 	}
 
