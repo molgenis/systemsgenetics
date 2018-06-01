@@ -21,7 +21,7 @@ public class FunctionEnrichMain {
 					}
 				}
 			} else if (args[0].equals("correlatesum")) {
-				if (args.length < 5) {
+				if (args.length < 4) {
 					System.out.println("Usage: correlatesum pathwayMatrix sumChi2Matrix outputMatrix");
 				} else {
 					CorrelateSumChi2ToPathways.main(ArrayUtils.remove(args,0));
