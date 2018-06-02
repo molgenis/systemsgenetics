@@ -801,6 +801,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int i = 0;
 		for (R row : rowsToView) {
 
+			//Null pointer below probabli indicates looking for non existing row
 			rowNrs[i] = hashRows.get(row);
 			newHashRows.put(row, i++);
 
@@ -827,6 +828,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int i = 0;
 		for (C col : colsToView) {
 
+			//Null pointer below probabli indicates looking for non existing col
 			colNrs[i] = hashCols.get(col);
 			newHashCols.put(col, i++);
 
