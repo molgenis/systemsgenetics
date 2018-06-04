@@ -55,12 +55,13 @@ public class CorrelateSumChi2ToPathways {
 		pathwayMatrix = pathwayMatrix.viewColSelection(significantTerms);
 		
 		pathwayMatrix = pathwayMatrix.viewRowSelection(genesInBoth);
+		DoubleMatrixDataset<String, String> transQtlEnrichmentsMatrix = new DoubleMatrixDataset<String, String>(pathwayMatrix.getHashCols(), sumChi2Matrix.getHashCols());
 		sumChi2Matrix = sumChi2Matrix.viewRowSelection(genesInBoth);
 
 		System.out.println("Genes in both datasets: " + genesInBoth.size());
 
-		DoubleMatrixDataset<String, String> transQtlEnrichmentsMatrix = new DoubleMatrixDataset(pathwayMatrix.getHashCols(), sumChi2Matrix.getHashCols());
-
+		System.out.println("Pathways to test: " + pathwayMatrix.columns());
+		
 		final SimpleRegression regression = new SimpleRegression();
 		final DoubleRandomEngine randomEngine = new DRand();
 		StudentT tDistColt = new StudentT(sumChi2Matrix.rows() / 2 - 2, randomEngine);
@@ -79,12 +80,15 @@ public class CorrelateSumChi2ToPathways {
 
 				for (int i = 0; i < traitSumChi2.size(); ++i) {
 
+					//System.out.println(traitSumChi2.get(i) + " & " + pathwayScores.get(i));
+					
 					regression.addData(traitSumChi2.get(i), pathwayScores.get(i));
 
 				}
 
 				double r = regression.getR();
 
+				//System.out.println(trait + " " + pathway + " " + r);
 				
 				double t = r / (Math.sqrt((1 - r * r) / (double) (traitSumChi2.size() / 2 - 2)));
 				double pValue;
