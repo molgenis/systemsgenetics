@@ -356,6 +356,10 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			nrPermutationsFDR = numPermutations;
 		}
 		
+		try {
+			startWithPermutation = config.getInteger("defaults.multipletesting.startpermutation", null);
+		} catch (Exception e) {
+		}
 		
 		try {
 			fdrtype = config.getString("defaults.multipletesting.fdrtype", "all");

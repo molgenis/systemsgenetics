@@ -65,10 +65,11 @@ public class MetaQTL3 {
 		
 	}
 	
-	public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith, String texttoreplace2, String texttoreplace2with,
-						   String ingt, String inexp, String inexpplatform, String inexpannot,
-						   String gte, String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads, Integer maxNrResults,
-						   String regressouteqtls, String snpprobecombofile, boolean skipdotplot, boolean skipqqplot, Long rseed, Double maf, Double hwe) throws IOException, Exception {
+	public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith, String texttoreplace2,
+						   String texttoreplace2with, String ingt, String inexp, String inexpplatform, String inexpannot,
+						   String gte, String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout,
+						   String snpfile, Integer threads, Integer maxNrResults, String regressouteqtls, String snpprobecombofile,
+						   boolean skipdotplot, boolean skipqqplot, Long rseed, Double maf, Double hwe) throws IOException, Exception {
 		
 		if (m_settings == null && xmlSettingsFile == null && ingt != null) {
 			
