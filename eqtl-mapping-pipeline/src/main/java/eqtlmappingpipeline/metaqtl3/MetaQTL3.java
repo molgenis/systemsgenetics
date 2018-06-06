@@ -62,7 +62,6 @@ public class MetaQTL3 {
 	public void setOutputPlotThreshold(double d) {
 		m_settings.plotOutputPValueCutOff = d;
 		m_settings.plotOutputDirectory = m_settings.outputReportsDir;
-		
 	}
 	
 	public void initialize(String xmlSettingsFile, String texttoreplace, String texttoreplacewith, String texttoreplace2,

@@ -7,22 +7,17 @@ package eqtlmappingpipeline.metaqtl3.containers;
 import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import gnu.trove.set.hash.THashSet;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.regex.Pattern;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author harmjan
@@ -94,6 +89,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean displayWarnings = true;
 	public int numberOfVariantsToBuffer = 1000;
 	public boolean skipFDRCalculation = false;
+	public boolean usemd5hash = true;
 	
 	public Settings() {
 	}
@@ -175,6 +171,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			createDotPlot = config.getBoolean("defaults.analysis.createdotplot", true);
 		} catch (Exception e) {
 		}
+		
 		
 		try {
 			runOnlyPermutations = config.getBoolean("defaults.analysis.onlypermutations", false);
@@ -404,6 +401,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 				outdir = outdir.replace(settingsTextToReplace2, settingsTextReplace2With);
 			}
 		} catch (Exception e) {
+		}
+		
+		try {
+			usemd5hash = config.getBoolean("defaults.output.usemd5hashforbinaryoutput", true);
+		} catch (Exception e) {
+		
 		}
 		
 		if (outdir != null) {
