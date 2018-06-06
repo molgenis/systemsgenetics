@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import static org.molgenis.genotype.util.LdCalculator.calculateRsquare;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -95,17 +96,22 @@ class CalculateSimpleGeneticRiskScore {
                                         out.write(riskE.InfoToString() + "\n");
                                     }
                                     
+                                    Allele var1RefAllele = var1.getRefAllele();
+                                    if(var1RefAllele == null){
+                                        var1RefAllele = var1.getAlternativeAlleles().get(0);
+                                    }
+                                    
                                     double or = riskE.getOr();
                                     boolean riskCodedAsTwo;
                                     if(sumRisk && or <0){
                                         or = or*-1;
                                         riskCodedAsTwo = false;
-                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                        if (!(riskE.getAllele()==(var1RefAllele.getAlleleAsSnp()) || riskE.getAllele()==(var1RefAllele.getComplement().getAlleleAsSnp()))) {
                                             riskCodedAsTwo = true;
                                         }
                                     } else {
                                         riskCodedAsTwo = true;
-                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                        if (!(riskE.getAllele()==(var1RefAllele.getAlleleAsSnp()) || riskE.getAllele()==(var1RefAllele.getComplement().getAlleleAsSnp()))) {
                                             riskCodedAsTwo = false;
                                         }
                                     }
@@ -272,10 +278,15 @@ class CalculateSimpleGeneticRiskScore {
                             for (int snp = 0; snp < nrSNPsThisChr; snp++) {
                                 if (!excludeSNPs[snp]) {
                                     RiskEntry riskE = valueE2.get(snp);
-                                    //System.out.println(snpID + "\t" + c + "\t" + chrPos + "\t" + object.doubleValue);
+//                                    System.out.println(snpID + "\t" + c + "\t" + chrPos + "\t" + object.doubleValue);
                                     GeneticVariant var1 = genotypeData.getSnpVariantByPos(riskE.getChr(), riskE.getPos());
                                     if (debugMode) {
                                         out.write(riskE.InfoToString() + "\n");
+                                    }
+                                    
+                                    Allele var1RefAllele = var1.getRefAllele();
+                                    if(var1RefAllele == null){
+                                        var1RefAllele = var1.getAlternativeAlleles().get(0);
                                     }
                                     
                                     double or = riskE.getOr();
@@ -283,12 +294,12 @@ class CalculateSimpleGeneticRiskScore {
                                     if(sumRisk && or <0){
                                         or = or*-1; // NOTE: please make sure we're using betas here, and not ORS
                                         riskCodedAsTwo = false;
-                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                        if (!(riskE.getAllele()==(var1RefAllele.getAlleleAsSnp()) || riskE.getAllele()==(var1RefAllele.getComplement().getAlleleAsSnp()))) {
                                             riskCodedAsTwo = true;
                                         }
                                     } else {
                                         riskCodedAsTwo = true;
-                                        if (!(riskE.getAllele()==(var1.getRefAllele().getAlleleAsSnp()) || riskE.getAllele()==(var1.getRefAllele().getComplement().getAlleleAsSnp()))) {
+                                        if (!(riskE.getAllele()==(var1RefAllele.getAlleleAsSnp()) || riskE.getAllele()==(var1RefAllele.getComplement().getAlleleAsSnp()))) {
                                             riskCodedAsTwo = false;
                                         }
                                     }

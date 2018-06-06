@@ -37,15 +37,15 @@ public class VariantQcChecker implements VariantFilter {
     @Override
     public boolean doesVariantPassFilter(GeneticVariant variant) {
 
-        if (variant.getCallRate() < callRate) {
+        if (Double.isNaN(variant.getCallRate()) ||variant.getCallRate() < callRate) {
             return false;
         }
 
-        if (variant.getMinorAlleleFrequency() < maf) {
+        if (Double.isNaN(variant.getCallRate()) ||variant.getMinorAlleleFrequency() < maf) {
             return false;
         }
 
-        if (variant.getHwePvalue() < hwe) {
+		if (Double.isNaN(variant.getHwePvalue()) || variant.getHwePvalue() < hwe) {
             return false;
         }
 

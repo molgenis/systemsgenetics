@@ -113,7 +113,7 @@ public class BinaryMicrobePcaAnalysis {
 
             System.out.println("Loading datasets");
             for (int d = 0; d < datasets.length; d++) {
-                datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d), settings.getDatasetnames().get(d), settings.getDatasetPrefix().get(d), permutation, settings.getDatasetannotations().get(d), probeAnnotation);
+                datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d), settings.getDatasetnames().get(d), settings.getDatasetPrefix().get(d), permutation, settings.getDatasetannotations().get(d), probeAnnotation, null);
             }
             System.out.println("Loaded " + datasets.length + " datasets");
 

@@ -65,6 +65,8 @@ public class BinaryMetaAnalysisSettings {
 	private int transdistance = 5000000;
 	private boolean makezscoreplot = true;
 	private String probetranslationfile;
+	private boolean rescalingOfSampleSize = false;
+	private ArrayList<String> featureOccuranceScaleMaps;
 	private ArrayList<String> datasetnames;
 	private ArrayList<String> datasetPrefix;
 	private ArrayList<String> datasetlocations;
@@ -196,6 +198,7 @@ public class BinaryMetaAnalysisSettings {
 			datasetlocations = new ArrayList<String>();
 			datasetannotations = new ArrayList<String>();
 			datasetPrefix = new ArrayList<String>();
+			featureOccuranceScaleMaps = new ArrayList<String>();
 			
 			while (dataset != null) {
 				dataset = config.getString("datasets.dataset(" + i + ").name");  // see if a dataset is defined
@@ -216,6 +219,15 @@ public class BinaryMetaAnalysisSettings {
 					
 					datasetlocations.add(datasetlocation);
 					datasetannotations.add(datasetannotation);
+					String featureOccuranceScaleMap = config.getString("datasets.dataset(" + i + ").featureOccuranceScaleMap");
+					if (featureOccuranceScaleMap != null && featureOccuranceScaleMap.trim().length() == 0) {
+						featureOccuranceScaleMap = null;
+					}
+					if(featureOccuranceScaleMap!=null){
+						System.out.println("Feature rescaling values: " + featureOccuranceScaleMap);
+						rescalingOfSampleSize = true;
+					}
+					featureOccuranceScaleMaps.add(featureOccuranceScaleMap);
 				}
 				i++;
 			}
@@ -422,6 +434,27 @@ public class BinaryMetaAnalysisSettings {
 	 */
 	public ArrayList<String> getDatasetannotations() {
 		return datasetannotations;
+	}
+	
+	/**
+	 * @param featureOccuranceScaleMaps the featureOccuranceScaleMaps to set
+	 */
+	public void setFeatureOccuranceScaleMaps(ArrayList<String> featureOccuranceScaleMaps) {
+		this.featureOccuranceScaleMaps = featureOccuranceScaleMaps;
+	}
+	
+	/**
+	 * @return the featureOccuranceScaleMaps
+	 */
+	public ArrayList<String> getFeatureOccuranceScaleMaps() {
+		return featureOccuranceScaleMaps;
+	}
+	
+	/**
+	 * @return the rescalingOfSampleSize
+	 */
+	public boolean getRescalingOfSampleSize(){
+		return rescalingOfSampleSize;
 	}
 	
 	/**
