@@ -1,3 +1,5 @@
+![Decon2 workflow](GraphicalAbstractDecon2_v3.jpg?raw=true "Decon2 workflow")
+
 Authors: Raúl Aguirre-Gamboa and Niek de Klein
 
 # Introduction 
