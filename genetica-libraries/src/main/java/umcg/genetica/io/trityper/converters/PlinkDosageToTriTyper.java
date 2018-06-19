@@ -1,10 +1,7 @@
 package umcg.genetica.io.trityper.converters;
 
-import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
+import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.WGAFileMatrixGenotype;
-import umcg.genetica.io.trityper.WGAFileMatrixImputedDosage;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.text.Strings;
 
@@ -27,28 +24,7 @@ public class PlinkDosageToTriTyper {
 		System.out.println(vArrayListInd.size() + " individuals loaded");
 		
 		// make list of variants
-		System.out.println("Parsing file: " + dosefile);
-		ArrayList<String> variants = new ArrayList<>();
-		ArrayList<Pair<String, String>> alleles = new ArrayList<Pair<String, String>>();
-		TextFile tf = new TextFile(dosefile, TextFile.R);
-		String ln = tf.readLine();
-		while (ln != null) {
-			// chr22:16050036 C A 1.53739 1.53962
-			String[] elems = Strings.subsplit(ln, Strings.whitespace, 0, 4);
-			String variant = elems[0];
-			String allele0 = elems[1];
-			String allele1 = elems[2];
-			
-			
-			variants.add(variant);
-			if (variants.size() % 10000 == 0) {
-				System.out.print("\r" + variants.size() + " variants loaded so far");
-			}
-			ln = tf.readLine();
-		}
-		tf.close();
 		
-		System.out.println(variants.size() + " total");
 		
 		// write individuals
 		TextFile outPhe = new TextFile(output + "PhenotypeInformation.txt", TextFile.W);
@@ -64,22 +40,23 @@ public class PlinkDosageToTriTyper {
 		outinds.close();
 		outPhe.close();
 		
-		TextFile outsnps = new TextFile(output + "SNPs.txt.gz", TextFile.W);
-		for (String var : variants) {
-			outsnps.writeln(var);
-		}
-		outsnps.close();
+		
+		TextFile outsnps = new TextFile(output + "SNPs.txt.gz", TextFile.W, 100 * 1024);
 		
 		//Process genotypes:
 		System.out.println("");
 		File fileGenotypeMatrix = new File(output + "/GenotypeMatrix.dat");
-		WGAFileMatrixGenotype matrixGenotype = new WGAFileMatrixGenotype(variants.size(), vArrayListInd.size(), fileGenotypeMatrix, false);
+//		WGAFileMatrixGenotype matrixGenotype = new WGAFileMatrixGenotype(variants.size(), vArrayListInd.size(), fileGenotypeMatrix, false);
+		BinaryFile matrixGenotype = new BinaryFile(output + "/GenotypeMatrix.dat", BinaryFile.W, 100 * 1024, false);
 		File fileImputedDosageMatrix = new File(output + "/ImputedDosageMatrix.dat");
-		WGAFileMatrixImputedDosage matrixImputedDosage = new WGAFileMatrixImputedDosage(variants.size(), vArrayListInd.size(), fileImputedDosageMatrix, false);
-		tf = new TextFile(dosefile, TextFile.R);
+//		WGAFileMatrixImputedDosage matrixImputedDosage = new WGAFileMatrixImputedDosage(variants.size(), vArrayListInd.size(), fileImputedDosageMatrix, false);
+		BinaryFile matrixImputedDosage = new BinaryFile(output + "/ImputedDosageMatrix.dat", BinaryFile.W, 100 * 1024, false);
+		
+		System.out.println("Parsing file: " + dosefile);
+		TextFile tf = new TextFile(dosefile, TextFile.R, 1048576);
 		String[] elems = tf.readLineElems(Strings.whitespace);
 		int snpctr = 0;
-		ProgressBar pb = new ProgressBar(variants.size(), "Importing genotypes:");
+		int lnctr = 0;
 		while (elems != null) {
 			// chr22:16050036 C A 1.53739 1.53962
 			int nrinds = elems.length - 3;
@@ -92,50 +69,71 @@ public class PlinkDosageToTriTyper {
 			String allele1 = elems[2];
 			byte allele0b = BaseAnnot.toByte(allele0);
 			byte allele1b = BaseAnnot.toByte(allele1);
-			byte[] alleles0 = new byte[vArrayListInd.size()];
-			byte[] alleles1 = new byte[vArrayListInd.size()];
-			byte[] dosagevals = new byte[vArrayListInd.size()];
-			for (int e = 3; e < elems.length; e++) {
-				Double dosageval = Double.parseDouble(elems[e]);
-				byte indAllele0 = -1;
-				byte indAllele1 = -1;
-				if (dosageval < 0.5) {
-					indAllele0 = allele0b;
-					indAllele1 = allele0b;
-				} else if (dosageval > 1.5) {
-					indAllele0 = allele1b;
-					indAllele1 = allele1b;
-				} else {
-					indAllele0 = allele0b;
-					indAllele1 = allele1b;
+			
+			
+			int allele0ct = 0;
+			if (allele0b != 0 && allele1b != 0) {
+				byte[] alleles0 = new byte[vArrayListInd.size() * 2];
+				byte[] dosagevals = new byte[vArrayListInd.size()];
+				for (int e = 3; e < elems.length; e++) {
+					int ind = e - 3;
+					float dosageval = Float.parseFloat(elems[e]);
+					byte indAllele0 = -1;
+					byte indAllele1 = -1;
+					if (dosageval < 0.5) {
+						indAllele0 = allele0b;
+						indAllele1 = allele0b;
+						allele0ct += 2;
+					} else if (dosageval > 1.5) {
+						indAllele0 = allele1b;
+						indAllele1 = allele1b;
+					} else {
+						indAllele0 = allele0b;
+						indAllele1 = allele1b;
+						allele0ct++;
+					}
+					
+					int dosageInt = (int) Math.round(dosageval * 100d);
+					if (dosageInt < 0 || dosageInt > 200) {
+						System.out.println("Warning, incorrect dosage!:\t" + dosageInt + "\t" + snpctr + "\t" + elems[e]);
+						System.exit(-1);
+					}
+					byte dosageByte = (byte) (Byte.MIN_VALUE + dosageInt);
+					
+					
+					dosagevals[ind] = dosageByte;
+					alleles0[ind] = indAllele0;
+					alleles0[ind + vArrayListInd.size()] = indAllele1;
 				}
 				
 				
-				int dosageInt = (int) Math.round(dosageval * 100d);
-				if (dosageInt < 0 || dosageInt > 200) {
-					System.out.println("Warning, incorrect dosage!:\t" + dosageInt + "\t" + snpctr + "\t" + elems[e]);
-					System.exit(-1);
+				double af = (double) allele0ct / (vArrayListInd.size() * 2);
+				if (af > 0.5) {
+					af = 1 - af;
 				}
-				byte dosageByte = (byte) (Byte.MIN_VALUE + dosageInt);
-				
-				
-				dosagevals[e - 3] = dosageByte;
-				alleles0[e - 3] = indAllele0;
-				alleles1[e - 3] = indAllele1;
+				if (af > 0.01) {
+					String var = elems[0];
+					matrixGenotype.write(alleles0);
+					matrixImputedDosage.write(dosagevals);
+					outsnps.writeln(var);
+					snpctr++;
+					
+				}
 			}
 			
-			matrixGenotype.setAlleles(snpctr, alleles0, alleles1);
-			matrixImputedDosage.setDosages(snpctr, dosagevals);
-			snpctr++;
-			pb.iterate();
-			elems = tf.readLineElems(Strings.whitespace);
+			lnctr++;
+			if (lnctr % 1000 == 0) {
+				System.out.print("Read: " + lnctr + "Written: " + snpctr + "\r");
+			}
+			elems = tf.readLineElems(Strings.space);
 		}
 		tf.close();
-		pb.close();
+		
+		outsnps.close();
 		matrixGenotype.close();
 		matrixImputedDosage.close();
 		
-		System.out.println("done");
+		System.out.println("Done. " + snpctr + " total snps");
 	}
 	
 	public void loadFamFile(String file) throws IOException {

@@ -59,7 +59,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>imputation-tool</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.5-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>net.rforge</groupId>

@@ -5,15 +5,14 @@
 package umcg.genetica.io.trityper;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 /**
  * @author harmjan
@@ -142,9 +141,9 @@ public class TriTyperGenotypeData {
 		}
 		
 		if (Gpio.exists(loc + "SNPs.txt")) {
-			t = new TextFile(loc + "SNPs.txt", TextFile.R);
+			t = new TextFile(loc + "SNPs.txt", TextFile.R, 100 * 1024);
 		} else if (Gpio.exists(loc + "SNPs.txt.gz")) {
-			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R);
+			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R, 100 * 1024);
 		} else {
 			throw new FileNotFoundException("SNPs file not found");
 		}
@@ -152,7 +151,7 @@ public class TriTyperGenotypeData {
 		String line = t.readLine();
 		
 		ArrayList<String> tmpSNP = new ArrayList<String>();
-		
+		System.out.println("Reading: " + t.getFileName());
 		while (line != null) {
 			if (line.trim().length() > 0) {
 				tmpSNP.add(line.intern());
@@ -181,13 +180,14 @@ public class TriTyperGenotypeData {
 		}
 		
 		if (Gpio.exists(loc + "SNPMappings.txt")) {
-			t = new TextFile(loc + "SNPMappings.txt", TextFile.R);
+			t = new TextFile(loc + "SNPMappings.txt", TextFile.R, 100 * 1024);
 		} else if (Gpio.exists(loc + "SNPMappings.txt.gz")) {
-			t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R);
+			t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R, 100 * 1024);
 		} else {
 			throw new FileNotFoundException("SNPMappings not found");
 		}
 		
+		System.out.println("Reading: " + t.getFileName());
 		lineElems = t.readLineElemsReturnReference(TextFile.tab);
 		
 		chr = new byte[SNPs.length];
@@ -408,7 +408,7 @@ public class TriTyperGenotypeData {
 			long expectedfilesize = (long) (SNPs.length * 2) * (long) individuals.length;
 			long detectedsize = Gpio.getFileSize(genotypeFileName);
 			if (expectedfilesize != detectedsize) {
-				throw new IOException("Size of GenotypeMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
+				throw new IOException("Size of GenotypeMatrix.dat does not match size defined by Individuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
 			}
 		} else {
 			throw new IOException("GenotypeMatrix.dat not detected at location: " + genotypeFileName);

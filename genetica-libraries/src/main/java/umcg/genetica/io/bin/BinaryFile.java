@@ -228,4 +228,16 @@ public class BinaryFile {
 			return null;
 		}
 	}
+	
+	public int read(byte[] buffer) throws IOException {
+		return is.read(buffer);
+	}
+	
+	public void write(byte[] buffer, int i, int len) throws IOException {
+		os.write(buffer, i, len);
+	}
+	
+	public void write(byte[] alleles0) throws IOException {
+		os.write(alleles0);
+	}
 }
