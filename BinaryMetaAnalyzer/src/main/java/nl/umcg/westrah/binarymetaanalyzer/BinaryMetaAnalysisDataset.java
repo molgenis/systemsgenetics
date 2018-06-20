@@ -8,12 +8,15 @@ package nl.umcg.westrah.binarymetaanalyzer;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.util.Primitives;
 
 /**
  * @author Harm-Jan
@@ -29,16 +32,16 @@ public class BinaryMetaAnalysisDataset {
 	private String[] allelesAssessed;
 	private String[] minorAlleles;
 	private int[] n;
-	private double[] callrates;
-	private double[] hwes;
-	private double[] mafs;
+	private float[] callrates;
+	private float[] hwes;
+	private float[] mafs;
 	private String[] probeList;
 	
 	private String[] snps;
 	private final MetaQTL4TraitAnnotation probeAnnotation;
 	private final int platformId;
 	private RandomAccessFile raf;
-	private HashMap<String,Double> featureOccuranceScaleMap = null;
+	private HashMap<String, Double> featureOccuranceScaleMap = null;
 	
 	private String name = null;
 	private String platform = null;
@@ -99,12 +102,12 @@ public class BinaryMetaAnalysisDataset {
 		loadSNPs(snpFile);
 		System.out.println(snps.length + " SNPs loaded");
 		
-		if(featureOccuranceScaleMapFile!=null){
+		if (featureOccuranceScaleMapFile != null) {
 			TextFile readScaleInfo = new TextFile(featureOccuranceScaleMapFile, TextFile.R);
-			HashMap<String,String> temporaryMap = new HashMap<>(readScaleInfo.readAsHashMap(0, 1));
+			HashMap<String, String> temporaryMap = new HashMap<>(readScaleInfo.readAsHashMap(0, 1));
 			readScaleInfo.close();
 			featureOccuranceScaleMap = new HashMap<>();
-			for(String k : temporaryMap.keySet()){
+			for (String k : temporaryMap.keySet()) {
 				featureOccuranceScaleMap.put(k, Double.parseDouble(temporaryMap.get(k)));
 			}
 		}
@@ -114,52 +117,49 @@ public class BinaryMetaAnalysisDataset {
 	
 	private void loadSNPs(String snpFile) throws IOException {
 		// get nr of lines
-		TextFile tf = new TextFile(snpFile, TextFile.R);
-		tf.readLine(); // skip header
-		int nrSNPs = tf.countLines();
-		tf.close();
+		ArrayList<String> snpsAl = new ArrayList<>(10000000);
+		ArrayList<Long> snpbytesAl = new ArrayList<>(10000000);
+		ArrayList<String> allelesAl = new ArrayList<>(10000000);
+		ArrayList<String> allelesAssessedAl = new ArrayList<>(10000000);
+		ArrayList<String> minorAllelesAl = new ArrayList<>(10000000);
 		
-		System.out.println(snpFile + "\t has " + nrSNPs + " SNPs");
+		ArrayList<MetaQTL4MetaTrait[]> snpCisProbeMapAl = new ArrayList<>(10000000);
+		ArrayList<Float> mafsAl = new ArrayList<>(10000000);
+		ArrayList<Integer> nAl = new ArrayList<>(10000000);
+		ArrayList<Float> rCallRatesAl = new ArrayList<>(10000000);
+		ArrayList<Float> hwesAl = new ArrayList<>(10000000);
+//
+//		tf.readLine(); // skip header
+//		int nrSNPs = tf.countLines();
+//		tf.close();
 		
-		snpBytes = new long[nrSNPs];
-		alleles = new String[nrSNPs];
-		allelesAssessed = new String[nrSNPs];
-		minorAlleles = new String[nrSNPs];
-		n = new int[nrSNPs];
-		callrates = new double[nrSNPs];
-		hwes = new double[nrSNPs];
-		mafs = new double[nrSNPs];
 		
-		if (isCisDataset) {
-			
-			// jagged array, hurrah
-			snpCisProbeMap = new MetaQTL4MetaTrait[nrSNPs][0];
-		}
-		
-		tf.open();
+		TextFile tf = new TextFile(snpFile, TextFile.R, 1048576);
 		tf.readLine(); // skip header
 		String[] elems = tf.readLineElems(TextFile.tab);
 		int ln = 0;
 		
 		HashMap<String, MetaQTL4MetaTrait> traithash = probeAnnotation.getTraitHashForPlatform(platformId);
 		
-		snps = new String[nrSNPs];
-		snpBytes[0] = 4; // account for magic number.
+		snpbytesAl.add(4l);
 		while (elems != null) {
 			String snp = new String(elems[0].getBytes("UTF-8")).intern();
 			String allelesStr = new String(elems[1].getBytes("UTF-8")).intern();
 			String minorAlleleStr = new String(elems[2].getBytes("UTF-8")).intern();
 			String alleleAssessedStr = new String(elems[3].getBytes("UTF-8")).intern();
-			
-			snps[ln] = snp;
-			alleles[ln] = allelesStr;
-			allelesAssessed[ln] = alleleAssessedStr;
-			minorAlleles[ln] = minorAlleleStr;
+			snpsAl.add(snp);
+			allelesAl.add(allelesStr);
+			allelesAssessedAl.add(alleleAssessedStr);
+			minorAllelesAl.add(minorAlleleStr);
+//			snps[ln] = snp;
+//			alleles[ln] = allelesStr;
+//			allelesAssessed[ln] = alleleAssessedStr;
+//			minorAlleles[ln] = minorAlleleStr;
 			
 			int nrCalled = 0;
-			double maf = 0;
-			double cr = 0;
-			double hwe = 0;
+			float maf = 0;
+			float cr = 0;
+			float hwe = 0;
 			int nrZScores = 0;
 			
 			try {
@@ -168,17 +168,17 @@ public class BinaryMetaAnalysisDataset {
 				System.err.println("ERROR: nrCalled is not an int (input: " + elems[4] + ") for dataset: " + datasetLoc + " on line: " + ln);
 			}
 			try {
-				maf = Double.parseDouble(elems[5]);
+				maf = Float.parseFloat(elems[5]);
 			} catch (NumberFormatException e) {
 				System.err.println("ERROR: maf is not a double (" + elems[5] + ") for dataset: " + datasetLoc + " on line: " + ln);
 			}
 			try {
-				cr = Double.parseDouble(elems[6]);
+				cr = Float.parseFloat(elems[6]);
 			} catch (NumberFormatException e) {
 				System.err.println("ERROR: cr is not a double (" + elems[6] + ") for dataset: " + datasetLoc + " on line: " + ln);
 			}
 			try {
-				hwe = Double.parseDouble(elems[7]);
+				hwe = Float.parseFloat(elems[7]);
 			} catch (NumberFormatException e) {
 				System.err.println("ERROR: hwe is not a double (" + elems[7] + ") for dataset: " + datasetLoc + " on line: " + ln);
 			}
@@ -188,14 +188,21 @@ public class BinaryMetaAnalysisDataset {
 				System.err.println("ERROR: nrZScores is not an int (input: " + elems[8] + ") for dataset: " + datasetLoc + " on line: " + ln);
 			}
 			
-			n[ln] = nrCalled;
-			callrates[ln] = cr;
-			hwes[ln] = hwe;
-			mafs[ln] = maf;
-			
-			if (ln + 1 < nrSNPs) {
-				snpBytes[ln + 1] = snpBytes[ln] + (nrZScores * 4);
-			}
+			nAl.add(nrCalled);
+			rCallRatesAl.add(cr);
+			hwesAl.add(hwe);
+			mafsAl.add(maf);
+			snpbytesAl.add(snpbytesAl.get(ln) + (nrZScores * 4));
+
+//			n[ln] = nrCalled;
+//			callrates[ln] = cr;
+//			hwes[ln] = hwe;
+//			mafs[ln] = maf;
+
+//			if (ln + 1 < nrSNPs) {
+//
+//				snpBytes[ln + 1] = snpBytes[ln] + (nrZScores * 4);
+//			}
 			
 			if (isCisDataset) {
 				MetaQTL4MetaTrait[] snpProbeList = new MetaQTL4MetaTrait[(elems.length - 9)];
@@ -207,12 +214,38 @@ public class BinaryMetaAnalysisDataset {
 					snpProbeList[e - 9] = t;
 				}
 				
-				snpCisProbeMap[ln] = snpProbeList;
+				snpCisProbeMapAl.add(snpProbeList);
 			}
 			elems = tf.readLineElems(TextFile.tab);
+			if (ln % 10000 == 0) {
+				System.out.print(ln + " variants parsed\r");
+			}
 			ln++;
 		}
 		tf.close();
+		System.out.println();
+		System.out.println("Done loading: " + snpsAl.size() + " snps.");
+		
+		// copy data.
+		snps = snpsAl.toArray(new String[0]);
+		snpBytes = Primitives.toPrimitiveArr(snpbytesAl.toArray(new Long[0]));
+		alleles = allelesAl.toArray(new String[0]);
+		allelesAssessed = allelesAssessedAl.toArray(new String[0]);
+		minorAlleles = minorAllelesAl.toArray(new String[0]);
+		
+		n = Primitives.toPrimitiveArr(nAl.toArray(new Integer[0]));
+		callrates = Primitives.toPrimitiveArr(rCallRatesAl.toArray(new Float[0]));
+		hwes = Primitives.toPrimitiveArr(hwesAl.toArray(new Float[0]));
+		mafs = Primitives.toPrimitiveArr(mafsAl.toArray(new Float[0]));
+		
+		if (isCisDataset) {
+			// jagged array, hurrah
+			snpCisProbeMap = new MetaQTL4MetaTrait[snps.length][0];
+			for (int s = 0; s < snps.length; s++) {
+				snpCisProbeMap[s] = snpCisProbeMapAl.get(s);
+			}
+//
+		}
 		
 	}
 	
@@ -231,6 +264,12 @@ public class BinaryMetaAnalysisDataset {
 		return snpCisProbeMap[snp];
 	}
 	
+	
+	private MappedByteBuffer mappedzscorehandle = null;
+	long currentmapend;
+	byte[] bZs = null;
+	long currentmapstart;
+	
 	public synchronized float[] getZScores(int snp) throws IOException {
 		long snpBytePos = snpBytes[snp];
 		
@@ -240,22 +279,47 @@ public class BinaryMetaAnalysisDataset {
 		} else {
 			snpByteNextPos = snpBytes[snp + 1];
 		}
-
-//        
-//        if (snpCisProbeMap != null) {
-//            nrZ = snpCisProbeMap[snp].length;
-//        }
-//        System.out.println(snp + "\t" + snpBytePos + "\t" + snpByteNextPos);
-		raf.seek(snpBytePos);
+		
 		int readlen = (int) (snpByteNextPos - snpBytePos);
+		
+		System.out.println("pos: " + snpBytePos);
+		
+		if (mappedzscorehandle == null || snpBytePos > currentmapend || snpByteNextPos > currentmapend) {
+			
+			long nrBytesPerBuffer = 1048576 * 256; // 256 mb
+			if (snpBytePos + nrBytesPerBuffer > raf.length()) {
+				nrBytesPerBuffer = raf.length() - snpBytePos;
+			}
+			mappedzscorehandle = raf.getChannel().map(FileChannel.MapMode.READ_ONLY, snpBytePos, nrBytesPerBuffer);
+			mappedzscorehandle.load();
+			bZs = new byte[(int) nrBytesPerBuffer];
+			mappedzscorehandle.get(bZs);
+			
+			currentmapstart = snpBytePos;
+			currentmapend = currentmapstart + nrBytesPerBuffer;
+			System.out.println("New buffer: " + bZs.length + currentmapstart + "\t" + currentmapend);
+		}
+		
+		int offset = (int) (snpBytePos - currentmapstart);
+		System.out.println("offset " + offset + " len " + readlen);
 		byte[] bytesToRead = new byte[readlen];
-		raf.read(bytesToRead);
+		
+		System.arraycopy(bZs, offset, bytesToRead, 0, readlen);
+//
+////
+////        if (snpCisProbeMap != null) {
+////            nrZ = snpCisProbeMap[snp].length;
+////        }
+////        System.out.println(snp + "\t" + snpBytePos + "\t" + snpByteNextPos);
+//		raf.seek(snpBytePos);
+//
+
+//		raf.read(bytesToRead);
 		ByteBuffer bytebuffer = ByteBuffer.wrap(bytesToRead);
 		float[] output = new float[readlen / 4];
 		for (int i = 0; i < output.length; i++) {
 			output[i] = bytebuffer.getFloat();
 		}
-		
 		return output;
 	}
 	

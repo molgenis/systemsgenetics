@@ -42,6 +42,13 @@ public class BinaryMetaAnalysisCLI {
 				.build();
 		OPTIONS.addOption(option);
 		
+		
+		option = Option.builder()
+				.longOpt("convertsummarystats")
+				.desc("Concatenate summary stats over all datasets, per snp and gene")
+				.build();
+		OPTIONS.addOption(option);
+		
 		option = Option.builder()
 				.longOpt("internalmeta")
 				.desc("Run internal meta-analysis")
@@ -289,8 +296,6 @@ public class BinaryMetaAnalysisCLI {
 		OPTIONS.addOption(option);
 		
 		
-		
-		
 	}
 	
 	public static void main(String[] args) {
@@ -442,6 +447,35 @@ public class BinaryMetaAnalysisCLI {
 					printHelp();
 				} else {
 					BinaryMetaAnalysis bm = new BinaryMetaAnalysis(settings, texttoreplace, replacewith, usetmp);
+					bm.run();
+				}
+			} else if (cmd.hasOption("convertsummarystats")) {
+				
+				String settings = null;
+				String texttoreplace = null;
+				String replacewith = null;
+				if (cmd.hasOption("settings")) {
+					settings = cmd.getOptionValue("settings");
+				}
+				if (cmd.hasOption("rt")) {
+					texttoreplace = cmd.getOptionValue("rt");
+				}
+				if (cmd.hasOption("rtw")) {
+					replacewith = cmd.getOptionValue("rtw");
+				}
+				
+				boolean usetmp = false;
+				if (cmd.hasOption("usetmp")) {
+					usetmp = true;
+				}
+				
+				if (settings == null) {
+					System.err.println("Error: Please provide settings with --meta");
+					System.out.println();
+					printHelp();
+				} else {
+					ConvertSummaryStats bm = new ConvertSummaryStats(settings, texttoreplace, replacewith, usetmp);
+					bm.run();
 				}
 			} else if (cmd.hasOption("internalmeta")) {
 				

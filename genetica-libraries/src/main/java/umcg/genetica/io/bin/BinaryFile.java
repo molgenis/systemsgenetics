@@ -5,6 +5,7 @@
 package umcg.genetica.io.bin;
 
 import com.mastfrog.util.streams.HashingOutputStream;
+import umcg.genetica.containers.Triple;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
@@ -93,7 +94,7 @@ public class BinaryFile {
 	
 	public void writeString(String s) throws IOException {
 		if (writeable) {
-			os.writeChars(s);
+			os.writeUTF(s);
 		} else {
 			throw new IOException("File is read only.");
 		}
@@ -207,9 +208,6 @@ public class BinaryFile {
 		}
 	}
 	
-	public int read() throws IOException {
-		return is.read();
-	}
 	
 	public void write(int b) throws IOException {
 		os.write(b);

@@ -74,7 +74,7 @@ public class BinaryMicrobePcaAnalysis {
     MetaQTL4MetaTrait[] traitList = null;
 
     public BinaryMicrobePcaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
-        // initialize settings
+        // writeHeader settings
         settings = new BinaryMetaAnalysisSettings();
         settings.parse(settingsFile, textToReplace, replaceTextWith);
         int maxResults = settings.getFinalEQTLBufferMaxLength();
