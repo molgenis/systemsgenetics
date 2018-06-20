@@ -56,7 +56,10 @@ public class MetaQTL3 {
 	
 	public MetaQTL3(Settings settings) throws IOException, Exception {
 		m_settings = settings;
-		initialize(null, null, null, null, null, null, null, null, null, null, null, true, true, 0, true, false, null, null, null, null, null, false, false, null, null, null);
+		initialize(null, null, null, null, null,
+				null, null, null, null, null, null, true, true,
+				0, true, false, null, null, null, null,
+				null, false, false, null, null, null);
 	}
 	
 	public void setOutputPlotThreshold(double d) {
@@ -387,7 +390,10 @@ public class MetaQTL3 {
 					int chrPos1 = ds.getChrPos(snpId);
 					boolean excludeSNP = false;
 					
-					if (chr1 >= 24) {
+					if (chr1 <= 0) {
+						reason.append("\tSNP is not located on known chr (" + chr1 + ")");
+						excludeSNP = true;
+					} else if (chr1 >= 24) {
 						chrYSNPs.add(snpName);
 						reason.append("\tSNP is located on Y, MT, XY chromosome");
 						excludeSNP = true;
@@ -460,9 +466,9 @@ public class MetaQTL3 {
 						reason.append("\tSNP is not present in all datasets.");
 						excludeSNP = true;
 					}
-					if (chr1 == null) {
+					if (chr1 == null || chr1 <= 0) {
 						unknownchr.add(snpName);
-						reason.append("\tSNP has unknown chromosome");
+						reason.append("\tSNP has unknown chromosome (" + chr1 + ")");
 						excludeSNP = true;
 					} else if (chr1 >= 24) {
 						chrYSNPs.add(snpName);
@@ -552,6 +558,7 @@ public class MetaQTL3 {
 			}
 		}
 		
+		
 		System.out.println(m_snpList.length + " snps before sorting");
 		ArrayList<InSNP> snpsArr = new ArrayList<>();
 		for (int s = 0; s < m_snpList.length; s++) {
@@ -567,7 +574,9 @@ public class MetaQTL3 {
 			}
 			snpsArr.add(new InSNP(snp, chr, pos));
 		}
-		Collections.sort(snpsArr);
+		if (m_settings.sortsnps) {
+			Collections.sort(snpsArr);
+		}
 		System.out.println(snpsArr.size() + " snps after sorting");
 		m_snpList = new String[m_snpList.length];
 		for (int i = 0; i < m_snpList.length; i++) {
@@ -987,7 +996,8 @@ public class MetaQTL3 {
 		if (!m_settings.skipFDRCalculation || (!m_settings.runOnlyPermutations && hasResults)) {
 			if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
 				System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
-				FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs, m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType, m_settings.fullFdrOutput);
+				FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs,
+						m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType, m_settings.fullFdrOutput);
 				
 				if (m_settings.createDotPlot) {
 					EQTLDotPlot edp = new EQTLDotPlot();
@@ -1276,11 +1286,13 @@ public class MetaQTL3 {
 		} else {
 			System.out.println("- parametric (Pearson) correlation");
 		}
+		
 		System.out.println("- Mid-point distance:\t" + m_settings.ciseQTLAnalysMaxSNPProbeMidPointDistance);
 		System.out.println("- FDR cutoff:\t" + m_settings.fdrCutOff);
 		System.out.println("- Nr. permutations:\t" + m_settings.nrPermutationsFDR);
 		System.out.println("- Nr. Threads:\t" + m_settings.nrThreads);
 		System.out.println("- Max nr results:\t" + m_settings.maxNrMostSignificantEQTLs);
+		System.out.println("- SNP Buffer size:\t" + m_settings.numberOfVariantsToBuffer);
 		
 		if (m_settings.createBinaryOutputFiles) {
 			System.out.println("- creating BINARY output");

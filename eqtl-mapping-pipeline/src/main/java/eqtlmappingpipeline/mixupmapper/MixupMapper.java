@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.mixupmapper;
 
+import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -43,9 +44,9 @@ public class MixupMapper extends MetaQTL3 {
 				// check outdir for input
 				initialOutputdir = Gpio.formatAsDirectory(initialOutputdir);
 				out = initialOutputdir + "Cis-eQTLs/";
-				System.out.println("Looking for file: " + out + "eQTLProbesFDR0.05.txt");
-				if (Gpio.exists(out + "eQTLProbesFDR0.05.txt")) {
-					inputeQTLs = out + "eQTLProbesFDR0.05.txt";
+				System.out.println("Looking for file: " + out + "eQTLProbesFDR0.05.txt.gz");
+				if (Gpio.exists(out + "eQTLProbesFDR0.05.txt.gz")) {
+					inputeQTLs = out + "eQTLProbesFDR0.05.txt.gz";
 				}
 			}
 		}
@@ -55,10 +56,13 @@ public class MixupMapper extends MetaQTL3 {
 			System.out.println("Could not find eQTL file. Will therefore perform eQTL mapping first.");
 			
 			out = initialOutputdir + "Cis-eQTLs/";
-			initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, maxNrResults, regressouteqtls, snpprobecombofile, true, true, null, 0.05d, null);
-			m_settings.numberOfVariantsToBuffer = 10000;
+			initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null,
+					ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile,
+					threads, maxNrResults, regressouteqtls, snpprobecombofile, true, true, null, 0.05d, null);
+			m_settings.numberOfVariantsToBuffer = 1000000;
+			m_settings.fdrType = FDR.FDRMethod.FULL;
 			mapEQTLs();
-			inputeQTLs = m_settings.outputReportsDir + "eQTLProbesFDR0.05.txt";
+			inputeQTLs = m_settings.outputReportsDir + "eQTLProbesFDR0.05.txt.gz";
 			
 			// clear memory
 			m_gg = null;

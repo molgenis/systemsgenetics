@@ -5,10 +5,14 @@
 package eqtlmappingpipeline.util;
 
 import eqtlmappingpipeline.binarymeta.Main;
-import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
+import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
+import umcg.genetica.console.ConsoleGUIElems;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.trityper.util.ChrAnnotation;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,11 +21,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import umcg.genetica.console.ConsoleGUIElems;
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.trityper.util.ChrAnnotation;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
 /**
  * @author harmjan
@@ -82,7 +81,7 @@ public class UtilConsoleGUI {
 		boolean createQQPlot = true;
 		boolean createLargeFdrFile = true;
 		boolean stringentFDR = false;
-		
+		boolean sortsnps = true;
 		String sources = null;
 		String keyValuePairs = null;
 		String annotationIds = null;
@@ -198,6 +197,8 @@ public class UtilConsoleGUI {
 				perm = Integer.parseInt(val);
 			} else if (arg.equals("--nreqtls")) {
 				nreqtls = Integer.parseInt(val);
+			} else if (arg.equals("--dontsortsnps")) {
+				sortsnps = false;
 			} else if (arg.equals("--threshold")) {
 				threshold = Double.parseDouble(val);
 			} else if (arg.equals("--r2")) {
@@ -453,7 +454,7 @@ public class UtilConsoleGUI {
 					case NONGENETICPCACORRECTION:
 						
 						if (in == null || out == null || inexp == null || gte == null) {
-							System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte and --nreqtls");
+							System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --nreqtls and --dontsortsnps");
 						} else {
 							try {
 								PCAOptimum p = new PCAOptimum();
@@ -461,7 +462,9 @@ public class UtilConsoleGUI {
 								if (!out.endsWith(Gpio.getFileSeparator())) {
 									out += Gpio.getFileSeparator();
 								}
-								p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, perm, snpfile, threads);
+								
+								
+								p.alternativeInitialize(in, inexp, null, annot, gte, out, true, true, perm, snpfile, threads, sortsnps);
 								File file = new File(inexp);
 								
 								p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(inexp, out, file.getAbsoluteFile().getParent(), stepSize, max, nreqtls);
