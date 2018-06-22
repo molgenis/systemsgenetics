@@ -25,6 +25,7 @@ import java.util.Map;
  */
 public class BinaryMetaAnalysisDataset {
 	
+	private final int permutation;
 	private boolean isCisDataset = false;
 	private final String datasetLoc;
 	private MetaQTL4MetaTrait[][] snpCisProbeMap;
@@ -87,7 +88,7 @@ public class BinaryMetaAnalysisDataset {
 		
 		// TODO: if dataset is < 2gb, then just buffer the whole thing in memory.
 		
-		
+		this.permutation = permutation;
 		BinaryFile f = new BinaryFile(matrix, BinaryFile.R);
 		int firstInt = f.readInt();
 		f.close();
@@ -245,8 +246,8 @@ public class BinaryMetaAnalysisDataset {
 				snpCisProbeMapAl.add(snpProbeList);
 			}
 			elems = tf.readLineElems(TextFile.tab);
-			if (ln % 100000 == 0) {
-				System.out.print(ln + " variants parsed\r");
+			if (ln % 250000 == 0) {
+				System.out.print("Permutation " + permutation + ": " + ln + " variants parsed\n");
 			}
 			ln++;
 		}

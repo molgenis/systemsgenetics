@@ -6,6 +6,7 @@ package nl.umcg.westrah.binarymetaanalyzer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +49,7 @@ public class BinaryMetaAnalysisSettings {
 				"debug\t" + debug + "\n" +
 				"fullpermutationoutput\t" + fullpermutationoutput + "\n" +
 				"usetmp\t" + usetmp + "\n" +
+				"genetosnp\t" + genetosnp + "\n" +
 				'}';
 	}
 	
@@ -91,6 +93,7 @@ public class BinaryMetaAnalysisSettings {
 	public boolean debug = false;
 	public boolean fullpermutationoutput = false;
 	public boolean usetmp = false;
+	public String genetosnp = null;
 	
 	public Analysis getAnalysisType() {
 		return analysisType;
@@ -98,6 +101,10 @@ public class BinaryMetaAnalysisSettings {
 	
 	public void copyToOutputDir() throws ConfigurationException {
 		config.save(output + "settings.xml");
+	}
+	
+	public String getGeneToSNP() {
+		return genetosnp;
 	}
 	
 	
@@ -190,6 +197,13 @@ public class BinaryMetaAnalysisSettings {
 			} else {
 				System.out.println("SNP PROBE SELECTION: " + snpprobeselection);
 			}
+
+//			try {
+			genetosnp = config.getString("defaults.genetosnp");
+
+//			} catch (NoSuchElementException e) {
+//
+//			}
 			
 			int i = 0;
 			
@@ -223,7 +237,7 @@ public class BinaryMetaAnalysisSettings {
 					if (featureOccuranceScaleMap != null && featureOccuranceScaleMap.trim().length() == 0) {
 						featureOccuranceScaleMap = null;
 					}
-					if(featureOccuranceScaleMap!=null){
+					if (featureOccuranceScaleMap != null) {
 						System.out.println("Feature rescaling values: " + featureOccuranceScaleMap);
 						rescalingOfSampleSize = true;
 					}
@@ -453,7 +467,7 @@ public class BinaryMetaAnalysisSettings {
 	/**
 	 * @return the rescalingOfSampleSize
 	 */
-	public boolean getRescalingOfSampleSize(){
+	public boolean getRescalingOfSampleSize() {
 		return rescalingOfSampleSize;
 	}
 	

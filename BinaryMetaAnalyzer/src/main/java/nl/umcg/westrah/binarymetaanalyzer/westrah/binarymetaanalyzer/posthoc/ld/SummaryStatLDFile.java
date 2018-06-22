@@ -1,4 +1,4 @@
-package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
+package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld;
 
 import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysisDataset;
 import umcg.genetica.containers.Triple;

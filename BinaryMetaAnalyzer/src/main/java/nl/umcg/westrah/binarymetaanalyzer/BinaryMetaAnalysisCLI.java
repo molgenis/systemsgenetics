@@ -1,6 +1,8 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
 import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.*;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld.BinaryFileSorter;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld.ConvertSummaryStats;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -45,6 +47,12 @@ public class BinaryMetaAnalysisCLI {
 		
 		option = Option.builder()
 				.longOpt("convertsummarystats")
+				.desc("Concatenate summary stats over all datasets, per snp and gene")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("sortbinaryfile")
 				.desc("Concatenate summary stats over all datasets, per snp and gene")
 				.build();
 		OPTIONS.addOption(option);
@@ -475,6 +483,33 @@ public class BinaryMetaAnalysisCLI {
 					printHelp();
 				} else {
 					ConvertSummaryStats bm = new ConvertSummaryStats(settings, texttoreplace, replacewith, usetmp);
+					bm.run();
+				}
+			} else if (cmd.hasOption("sortbinaryfile")) {
+				String settings = null;
+				String texttoreplace = null;
+				String replacewith = null;
+				if (cmd.hasOption("settings")) {
+					settings = cmd.getOptionValue("settings");
+				}
+				if (cmd.hasOption("rt")) {
+					texttoreplace = cmd.getOptionValue("rt");
+				}
+				if (cmd.hasOption("rtw")) {
+					replacewith = cmd.getOptionValue("rtw");
+				}
+				
+				boolean usetmp = false;
+				if (cmd.hasOption("usetmp")) {
+					usetmp = true;
+				}
+				
+				if (settings == null) {
+					System.err.println("Error: Please provide settings with --meta");
+					System.out.println();
+					printHelp();
+				} else {
+					BinaryFileSorter bm = new BinaryFileSorter(settings, texttoreplace, replacewith, usetmp);
 					bm.run();
 				}
 			} else if (cmd.hasOption("internalmeta")) {

@@ -237,7 +237,8 @@ public class Strings {
 		if (cache == null) {
 			cache = new Object2ObjectOpenHashMap<>(1000000);
 		}
-		if (!cache.containsKey(s)) {
+		String output = cache.get(s);
+		if (output == null) {
 			try {
 				String str = new String(s.getBytes("UTF-8"));
 				cache.put(str, str);
@@ -246,7 +247,7 @@ public class Strings {
 				return s;
 			}
 		} else {
-			return cache.get(s);
+			return output;
 		}
 	}
 	

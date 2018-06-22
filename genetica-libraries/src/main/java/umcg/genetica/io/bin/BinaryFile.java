@@ -24,25 +24,7 @@ public class BinaryFile {
 	private final OutputStream osh;
 	
 	public BinaryFile(String loc, boolean mode) throws IOException {
-		if (loc.trim().length() == 0) {
-			throw new IOException("Could not find file: no file specified");
-		}
-		this.writeable = mode;
-		this.loc = loc;
-		
-		if (writeable) {
-			try {
-				is = null;
-				osh = new HashingOutputStream("md5", new FileOutputStream(loc));
-				os = new DataOutputStream(new BufferedOutputStream(osh, 32 * 1024));
-			} catch (NoSuchAlgorithmException ex) {
-				throw new RuntimeException(ex);
-			}
-		} else {
-			is = new DataInputStream(new BufferedInputStream(new FileInputStream(loc)));
-			os = null;
-			osh = null;
-		}
+		this(loc, mode, 32 * 1024, false);
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize) throws IOException {

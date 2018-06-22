@@ -1,8 +1,9 @@
-package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
+package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld;
 
 import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysis;
 import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysisSettings;
 import nl.umcg.westrah.binarymetaanalyzer.MetaQTL4MetaTrait;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld.SummaryStatLDFile;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.trityper.util.BaseAnnot;
