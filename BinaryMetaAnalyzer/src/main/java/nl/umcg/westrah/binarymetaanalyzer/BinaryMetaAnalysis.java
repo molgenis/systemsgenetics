@@ -6,31 +6,20 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-
+import org.apache.commons.io.FileUtils;
+import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Triple;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.text.Strings;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
-
-import org.apache.commons.io.FileUtils;
-import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
-import umcg.genetica.containers.Triple;
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
-
-import umcg.genetica.math.stats.Descriptives;
-import umcg.genetica.math.stats.ZScores;
-import umcg.genetica.text.Strings;
 
 
 /**
@@ -229,7 +218,7 @@ public class BinaryMetaAnalysis {
 			}
 			//			clearResultsBuffer();
 			
-			initdataset(permutation, outdir);
+			initdataset(permutation, outdir, true);
 			
 			
 			// run analysis
@@ -407,17 +396,19 @@ public class BinaryMetaAnalysis {
 		}
 	}
 	
-	protected void initdataset(int permutation, String outdir) throws IOException {
+	protected void initdataset(int permutation, String outdir, boolean loadsnpstats) throws IOException {
 		// create dataset objects
 		System.out.println("Running permutation " + permutation);
 		datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
 		
 		System.out.println("Loading datasets");
 		for (int d = 0; d < datasets.length; d++) {
+			System.out.println("Dataset " + d + "/" + datasets.length);
 			datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d),
 					settings.getDatasetnames().get(d),
 					settings.getDatasetPrefix().get(d), permutation,
-					settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d));
+					settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d),
+					loadsnpstats);
 		}
 		
 		System.out.println("Loaded " + datasets.length + " datasets");
@@ -745,7 +736,7 @@ public class BinaryMetaAnalysis {
 			String[] probes = datasets[d].getProbeList();
 			int platformId = probeAnnotation.getPlatformId(datasets[d].getPlatform());
 			
-			HashMap<String, MetaQTL4MetaTrait> traitHashForPlatform = probeAnnotation.getTraitHashForPlatform(platformId);
+			Map<String, MetaQTL4MetaTrait> traitHashForPlatform = probeAnnotation.getTraitHashForPlatform(platformId);
 //			System.out.println(probeAnnotation.getTraitHashPerPlatform().size());
 //
 //			System.out.println(datasets[d].getName() + "\t" + platformId + "\t" + datasets[d].getPlatform() + "\t" + traitHashForPlatform.size());

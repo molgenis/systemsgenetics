@@ -4,20 +4,15 @@
  */
 package umcg.genetica.text;
 
-import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
 
 /**
  * @author harmjan
@@ -236,11 +231,11 @@ public class Strings {
 		return ctr;
 	}
 	
-	private static THashMap<String, String> cache;
+	private static Map<String, String> cache;
 	
 	public synchronized static String cache(String s) {
 		if (cache == null) {
-			cache = new THashMap<>(1000000);
+			cache = new Object2ObjectOpenHashMap<>(1000000);
 		}
 		if (!cache.containsKey(s)) {
 			try {

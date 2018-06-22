@@ -46,7 +46,7 @@ public class BinaryFile {
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize) throws IOException {
-		this(loc, mode, buffersize, true);
+		this(loc, mode, buffersize, false);
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize, boolean useHash) throws IOException {

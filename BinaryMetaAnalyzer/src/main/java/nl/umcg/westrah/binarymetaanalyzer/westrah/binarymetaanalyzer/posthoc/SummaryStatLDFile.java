@@ -92,13 +92,13 @@ public class SummaryStatLDFile extends BinaryFile {
 	}
 	
 	public void writeHashes(String basefilename) throws IOException {
-		BinaryFile bf1 = new BinaryFile(basefilename + "-GeneList.dat", BinaryFile.W);
+		BinaryFile bf1 = new BinaryFile(basefilename + "-GeneList.dat", BinaryFile.W, 32 * 1024, false);
 		for (String gene : genelist) {
 			bf1.writeString(gene);
 		}
 		bf1.close();
 		
-		BinaryFile bf2 = new BinaryFile(basefilename + "-SNPList.dat", BinaryFile.W);
+		BinaryFile bf2 = new BinaryFile(basefilename + "-SNPList.dat", BinaryFile.W, 32 * 1024, false);
 		for (String snp : snplist) {
 			bf2.writeString(snp);
 		}
@@ -106,4 +106,7 @@ public class SummaryStatLDFile extends BinaryFile {
 	}
 	
 	
+	public synchronized void writesync(String snpname, String genename, float[] datasetZ) throws IOException {
+		this.write(snpname, genename, datasetZ);
+	}
 }

@@ -1,12 +1,18 @@
 package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
 
-import nl.umcg.westrah.binarymetaanalyzer.*;
+import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysis;
+import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysisSettings;
+import nl.umcg.westrah.binarymetaanalyzer.MetaQTL4MetaTrait;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConvertSummaryStats extends BinaryMetaAnalysis {
 	
@@ -64,16 +70,63 @@ public class ConvertSummaryStats extends BinaryMetaAnalysis {
 			//			clearResultsBuffer();
 			
 			
-			initdataset(permutation, outdir);
+			initdataset(permutation, outdir, false);
 			
 			System.out.println("Writing output here: " + settings.getOutput() + "Permutation-" + permutation + "-ZScores.dat");
-			SummaryStatLDFile lfo = new SummaryStatLDFile(settings.getOutput() + "Permutation-" + permutation + "-ZScores.dat", SummaryStatLDFile.W);
+			SummaryStatLDFile lfo = new SummaryStatLDFile(settings.getOutput() + "Permutation-" + permutation + "-ZScores.dat", SummaryStatLDFile.W, 1048576, false);
 			lfo.writeHeader(datasets);
 			
 			boolean debug = false;
-			ProgressBar pb = new ProgressBar(snpList.length, "Converting SNPs");
+			ExecutorService executor = Executors.newFixedThreadPool(cores);
+			System.out.println("Booting threadpool with " + cores + " threads");
+			AtomicInteger ctr = new AtomicInteger();
 			for (int snp = 0; snp < snpList.length; snp++) {
-				int[] sampleSizes = new int[datasets.length];
+				ConversionTask t = new ConversionTask(snp, lfo, ctr);
+				executor.submit(t);
+				
+			}
+			
+			int returned = ctr.get();
+			ProgressBar pb = new ProgressBar(snpList.length, "Converting SNPs");
+			while (returned < snpList.length) {
+				pb.set(returned);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				returned = ctr.get();
+			}
+			pb.close();
+			System.out.println("Writing hashes");
+			lfo.writeHashes(settings.getOutput() + "Permutation-" + permutation);
+			lfo.close();
+			
+			System.out.println("Done");
+			
+			System.out.println();
+//			}
+		
+		} // end iterate permutations
+		
+	}
+	
+	public class ConversionTask implements Runnable {
+		private final AtomicInteger jobctr;
+		boolean debug = false;
+		int snp;
+		SummaryStatLDFile lfo;
+		
+		public ConversionTask(int snp, SummaryStatLDFile lfo, AtomicInteger ctr) {
+			this.lfo = lfo;
+			this.snp = snp;
+			this.jobctr = ctr;
+		}
+		
+		@Override
+		public void run() {
+			try {
+				//				int[] sampleSizes = new int[datasets.length];
 				
 				Boolean[] flipZScores = new Boolean[datasets.length];
 				String alleles = null;
@@ -83,7 +136,7 @@ public class ConvertSummaryStats extends BinaryMetaAnalysis {
 				for (int d = 0; d < datasets.length; d++) {
 					int datasetSNPId = snpIndex[snp][d];
 					if (datasetSNPId != -9) {
-						sampleSizes[d] = datasets[d].getSampleSize(datasetSNPId);
+//						sampleSizes[d] = datasets[d].getSampleSize(datasetSNPId);
 						if (alleles == null) {
 							flipZScores[d] = false;
 							alleles = datasets[d].getAlleles(datasetSNPId);
@@ -118,6 +171,8 @@ public class ConvertSummaryStats extends BinaryMetaAnalysis {
 						if (debug) {
 							System.out.println(snpList[snp] + "\thas no probes");
 						}
+						
+						
 					} else {
 						if (debug) {
 							System.out.println(snpList[snp] + "\thas " + cisProbeArray.length + " probes");
@@ -126,7 +181,6 @@ public class ConvertSummaryStats extends BinaryMetaAnalysis {
 						
 						for (MetaQTL4MetaTrait cisProbe : cisProbeArray) {
 							cisProbeMap.put(cisProbe, ctr);
-							
 							ctr++;
 						}
 						
@@ -207,35 +261,24 @@ public class ConvertSummaryStats extends BinaryMetaAnalysis {
 									// now we've loaded the z-scores, we should be able to save them
 									String snpname = snpList[snp];
 									for (int p = 0; p < finalZScores.length; p++) {
-										float[] datasetZ = new float[datasets.length];
-										for (int q = 0; q < datasets.length; q++) {
-											datasetZ[q] = finalZScores[p][q];
-										}
+										float[] datasetZ = finalZScores[p];
 										
 										MetaQTL4MetaTrait cisProbe = cisProbeArray[p];
 										// write to disk
 										String genename = cisProbe.getMetaTraitName();
-										lfo.write(snpname, genename, datasetZ);
+										lfo.writesync(snpname, genename, datasetZ);
 									}
 								}
 							}
 						}
+						
 					}
 				}
-				pb.set(snp);
+				
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			
-			pb.close();
-			System.out.println("Writing hashes");
-			lfo.writeHashes(settings.getOutput() + "Permutation-" + permutation);
-			lfo.close();
-			
-			System.out.println("Done");
-			
-			System.out.println();
-//			}
-		
-		} // end iterate permutations
-		
+			jobctr.getAndIncrement();
+		}
 	}
 }

@@ -10,7 +10,8 @@ import umcg.genetica.util.Primitives;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -215,7 +216,7 @@ public class CheckZScoreMeanAndVariance {
 						settings.getDatasetPrefix().get(d),
 						permutation,
 						settings.getDatasetannotations().get(d),
-						probeAnnotation, null);
+						probeAnnotation, null, true);
 				
 				String[] probeList = dataset.getProbeList();
 				String[] snpList = dataset.getSNPs();

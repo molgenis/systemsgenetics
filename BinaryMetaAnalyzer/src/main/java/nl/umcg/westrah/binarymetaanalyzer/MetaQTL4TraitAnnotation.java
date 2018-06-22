@@ -4,14 +4,12 @@
  */
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import umcg.genetica.io.text.TextFile;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import umcg.genetica.io.text.TextFile;
+import java.util.*;
 
 /**
  * @author harmjan
@@ -19,7 +17,7 @@ import umcg.genetica.io.text.TextFile;
 public class MetaQTL4TraitAnnotation {
 	
 	private final String[] platforms;
-	private final ArrayList<HashMap<String, MetaQTL4MetaTrait>> traitHashPerPlatform;
+	private final ArrayList<Map<String, MetaQTL4MetaTrait>> traitHashPerPlatform;
 	private final HashMap<String, Integer> platformToId;
 	private final MetaQTL4MetaTraitTreeSet metatraits;
 	private final HashMap<String, MetaQTL4MetaTrait> metaTraitNameToObj;
@@ -48,14 +46,14 @@ public class MetaQTL4TraitAnnotation {
 		metaTraitNameToObj = new HashMap<String, MetaQTL4MetaTrait>();
 		platformToId = new HashMap<String, Integer>();
 		platforms = new String[nrPlatforms];
-		traitHashPerPlatform = new ArrayList<HashMap<String, MetaQTL4MetaTrait>>();
+		traitHashPerPlatform = new ArrayList<Map<String, MetaQTL4MetaTrait>>();
 		
 		int platformNr = 0;
 		for (int i = 0; i < header.length; i++) {
 			if (colsToInclude[i]) {
 				platforms[platformNr] = header[i];
 				platformToId.put(header[i], platformNr);
-				HashMap<String, MetaQTL4MetaTrait> probeToId = new HashMap<String, MetaQTL4MetaTrait>();
+				Map<String, MetaQTL4MetaTrait> probeToId = new Object2ObjectOpenHashMap<String, MetaQTL4MetaTrait>();
 				traitHashPerPlatform.add(probeToId);
 				platformNr++;
 			}
@@ -100,7 +98,7 @@ public class MetaQTL4TraitAnnotation {
 			for (int i = 5; i < elems.length; i++) {
 				if (colsToInclude[i]) {
 					platformIds[platformNr] = new String(elems[i].getBytes("UTF-8")).intern();
-					HashMap<String, MetaQTL4MetaTrait> probeToId = traitHashPerPlatform.get(platformNr);
+					Map<String, MetaQTL4MetaTrait> probeToId = traitHashPerPlatform.get(platformNr);
 					probeToId.put(elems[i], metaTraitObj);
 					platformNr++;
 				}
@@ -168,7 +166,7 @@ public class MetaQTL4TraitAnnotation {
 		return traitHashPerPlatform.get(platformId).get(platformTrait);
 	}
 	
-	public HashMap<String, MetaQTL4MetaTrait> getTraitHashForPlatform(Integer platformId) {
+	public Map<String, MetaQTL4MetaTrait> getTraitHashForPlatform(Integer platformId) {
 		return traitHashPerPlatform.get(platformId);
 	}
 	
@@ -176,7 +174,7 @@ public class MetaQTL4TraitAnnotation {
 		return platforms;
 	}
 	
-	public ArrayList<HashMap<String, MetaQTL4MetaTrait>> getTraitHashPerPlatform() {
+	public ArrayList<Map<String, MetaQTL4MetaTrait>> getTraitHashPerPlatform() {
 		return traitHashPerPlatform;
 	}
 	

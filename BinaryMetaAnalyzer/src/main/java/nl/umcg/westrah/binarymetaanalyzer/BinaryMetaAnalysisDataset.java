@@ -5,6 +5,12 @@
  */
 package nl.umcg.westrah.binarymetaanalyzer;
 
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.bin.BinaryFile;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.text.Strings;
+import umcg.genetica.util.Primitives;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -12,11 +18,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.bin.BinaryFile;
-import umcg.genetica.io.text.TextFile;
-import umcg.genetica.util.Primitives;
+import java.util.Map;
 
 /**
  * @author Harm-Jan
@@ -46,7 +48,9 @@ public class BinaryMetaAnalysisDataset {
 	private String name = null;
 	private String platform = null;
 	
-	public BinaryMetaAnalysisDataset(String dir, String name, String prefix, int permutation, String platform, MetaQTL4TraitAnnotation probeAnnotation, String featureOccuranceScaleMapFile) throws IOException {
+	public BinaryMetaAnalysisDataset(String dir, String name, String prefix, int permutation, String platform,
+									 MetaQTL4TraitAnnotation probeAnnotation, String featureOccuranceScaleMapFile,
+									 boolean loadsnpstats) throws IOException {
 		dir = Gpio.formatAsDirectory(dir);
 		String matrix = dir;
 		String probeFile = dir;
@@ -99,7 +103,7 @@ public class BinaryMetaAnalysisDataset {
 		loadProbes(probeFile);
 		System.out.println(probeList.length + " probes loaded");
 		
-		loadSNPs(snpFile);
+		loadSNPs(snpFile, loadsnpstats);
 		System.out.println(snps.length + " SNPs loaded");
 		
 		if (featureOccuranceScaleMapFile != null) {
@@ -113,9 +117,23 @@ public class BinaryMetaAnalysisDataset {
 		}
 		
 		raf = new RandomAccessFile(matrix, "r");
+		long nrBytesPerBuffer = 1048576 * 2024; // 2Gb
+		if (nrBytesPerBuffer > raf.length()) {
+			nrBytesPerBuffer = raf.length();
+		}
+		
+		mappedzscorehandle = raf.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, nrBytesPerBuffer);
+		mappedzscorehandle.load();
+		bZs = new byte[(int) nrBytesPerBuffer];
+		mappedzscorehandle.get(bZs);
+		
+		currentmapstart = 0;
+		currentmapend = currentmapstart + nrBytesPerBuffer;
+		System.out.println("File size: " + raf.length() + "\tNew buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
+				"\tlen: " + (currentmapend - currentmapstart) + "\tnrbytes: " + nrBytesPerBuffer);
 	}
 	
-	private void loadSNPs(String snpFile) throws IOException {
+	private void loadSNPs(String snpFile, boolean loadstats) throws IOException {
 		// get nr of lines
 		ArrayList<String> snpsAl = new ArrayList<>(10000000);
 		ArrayList<Long> snpbytesAl = new ArrayList<>(10000000);
@@ -124,29 +142,36 @@ public class BinaryMetaAnalysisDataset {
 		ArrayList<String> minorAllelesAl = new ArrayList<>(10000000);
 		
 		ArrayList<MetaQTL4MetaTrait[]> snpCisProbeMapAl = new ArrayList<>(10000000);
-		ArrayList<Float> mafsAl = new ArrayList<>(10000000);
-		ArrayList<Integer> nAl = new ArrayList<>(10000000);
-		ArrayList<Float> rCallRatesAl = new ArrayList<>(10000000);
-		ArrayList<Float> hwesAl = new ArrayList<>(10000000);
+
 //
 //		tf.readLine(); // skip header
 //		int nrSNPs = tf.countLines();
 //		tf.close();
-		
-		
+		ArrayList<Float> mafsAl = null;
+		ArrayList<Integer> nAl = null;
+		ArrayList<Float> rCallRatesAl = null;
+		ArrayList<Float> hwesAl = null;
+		if (loadstats) {
+			mafsAl = new ArrayList<>(10000000);
+			nAl = new ArrayList<>(10000000);
+			rCallRatesAl = new ArrayList<>(10000000);
+			hwesAl = new ArrayList<>(10000000);
+		}
 		TextFile tf = new TextFile(snpFile, TextFile.R, 1048576);
 		tf.readLine(); // skip header
 		String[] elems = tf.readLineElems(TextFile.tab);
 		int ln = 0;
 		
-		HashMap<String, MetaQTL4MetaTrait> traithash = probeAnnotation.getTraitHashForPlatform(platformId);
+		Map<String, MetaQTL4MetaTrait> traithash = probeAnnotation.getTraitHashForPlatform(platformId);
 		
 		snpbytesAl.add(4l);
 		while (elems != null) {
-			String snp = new String(elems[0].getBytes("UTF-8")).intern();
-			String allelesStr = new String(elems[1].getBytes("UTF-8")).intern();
-			String minorAlleleStr = new String(elems[2].getBytes("UTF-8")).intern();
-			String alleleAssessedStr = new String(elems[3].getBytes("UTF-8")).intern();
+			
+			String snp = Strings.cache(elems[0]);//new String(elems[0].getBytes("UTF-8")).intern();
+			String allelesStr = Strings.cache(elems[1]); //new String(elems[1].getBytes("UTF-8")).intern();
+			String minorAlleleStr = Strings.cache(elems[2]);//new String(elems[2].getBytes("UTF-8")).intern();
+			String alleleAssessedStr = Strings.cache(elems[3]); //new String(elems[3].getBytes("UTF-8")).intern();
+			
 			snpsAl.add(snp);
 			allelesAl.add(allelesStr);
 			allelesAssessedAl.add(alleleAssessedStr);
@@ -162,25 +187,31 @@ public class BinaryMetaAnalysisDataset {
 			float hwe = 0;
 			int nrZScores = 0;
 			
-			try {
-				nrCalled = Integer.parseInt(elems[4]);
-			} catch (NumberFormatException e) {
-				System.err.println("ERROR: nrCalled is not an int (input: " + elems[4] + ") for dataset: " + datasetLoc + " on line: " + ln);
-			}
-			try {
-				maf = Float.parseFloat(elems[5]);
-			} catch (NumberFormatException e) {
-				System.err.println("ERROR: maf is not a double (" + elems[5] + ") for dataset: " + datasetLoc + " on line: " + ln);
-			}
-			try {
-				cr = Float.parseFloat(elems[6]);
-			} catch (NumberFormatException e) {
-				System.err.println("ERROR: cr is not a double (" + elems[6] + ") for dataset: " + datasetLoc + " on line: " + ln);
-			}
-			try {
-				hwe = Float.parseFloat(elems[7]);
-			} catch (NumberFormatException e) {
-				System.err.println("ERROR: hwe is not a double (" + elems[7] + ") for dataset: " + datasetLoc + " on line: " + ln);
+			if (loadstats) {
+				try {
+					nrCalled = Integer.parseInt(elems[4]);
+				} catch (NumberFormatException e) {
+					System.err.println("ERROR: nrCalled is not an int (input: " + elems[4] + ") for dataset: " + datasetLoc + " on line: " + ln);
+				}
+				try {
+					maf = Float.parseFloat(elems[5]);
+				} catch (NumberFormatException e) {
+					System.err.println("ERROR: maf is not a double (" + elems[5] + ") for dataset: " + datasetLoc + " on line: " + ln);
+				}
+				try {
+					cr = Float.parseFloat(elems[6]);
+				} catch (NumberFormatException e) {
+					System.err.println("ERROR: cr is not a double (" + elems[6] + ") for dataset: " + datasetLoc + " on line: " + ln);
+				}
+				try {
+					hwe = Float.parseFloat(elems[7]);
+				} catch (NumberFormatException e) {
+					System.err.println("ERROR: hwe is not a double (" + elems[7] + ") for dataset: " + datasetLoc + " on line: " + ln);
+				}
+				hwesAl.add(hwe);
+				mafsAl.add(maf);
+				rCallRatesAl.add(cr);
+				nAl.add(nrCalled);
 			}
 			try {
 				nrZScores = Integer.parseInt(elems[8]);
@@ -188,10 +219,7 @@ public class BinaryMetaAnalysisDataset {
 				System.err.println("ERROR: nrZScores is not an int (input: " + elems[8] + ") for dataset: " + datasetLoc + " on line: " + ln);
 			}
 			
-			nAl.add(nrCalled);
-			rCallRatesAl.add(cr);
-			hwesAl.add(hwe);
-			mafsAl.add(maf);
+			
 			snpbytesAl.add(snpbytesAl.get(ln) + (nrZScores * 4));
 
 //			n[ln] = nrCalled;
@@ -208,7 +236,7 @@ public class BinaryMetaAnalysisDataset {
 				MetaQTL4MetaTrait[] snpProbeList = new MetaQTL4MetaTrait[(elems.length - 9)];
 				for (int e = 9; e < elems.length; e++) {
 					// get the list of probes for this particular SNP.
-					String probe = new String(elems[e].getBytes("UTF-8")).intern();
+					String probe = elems[e]; // Strings.cache(elems[e]); // new String(elems[e].getBytes("UTF-8")).intern();
 					MetaQTL4MetaTrait t = traithash.get(probe);
 					// System.out.println(snp+"\t"+elems[e]);
 					snpProbeList[e - 9] = t;
@@ -217,7 +245,7 @@ public class BinaryMetaAnalysisDataset {
 				snpCisProbeMapAl.add(snpProbeList);
 			}
 			elems = tf.readLineElems(TextFile.tab);
-			if (ln % 10000 == 0) {
+			if (ln % 100000 == 0) {
 				System.out.print(ln + " variants parsed\r");
 			}
 			ln++;
@@ -233,11 +261,12 @@ public class BinaryMetaAnalysisDataset {
 		allelesAssessed = allelesAssessedAl.toArray(new String[0]);
 		minorAlleles = minorAllelesAl.toArray(new String[0]);
 		
-		n = Primitives.toPrimitiveArr(nAl.toArray(new Integer[0]));
-		callrates = Primitives.toPrimitiveArr(rCallRatesAl.toArray(new Float[0]));
-		hwes = Primitives.toPrimitiveArr(hwesAl.toArray(new Float[0]));
-		mafs = Primitives.toPrimitiveArr(mafsAl.toArray(new Float[0]));
-		
+		if (loadstats) {
+			n = Primitives.toPrimitiveArr(nAl.toArray(new Integer[0]));
+			callrates = Primitives.toPrimitiveArr(rCallRatesAl.toArray(new Float[0]));
+			hwes = Primitives.toPrimitiveArr(hwesAl.toArray(new Float[0]));
+			mafs = Primitives.toPrimitiveArr(mafsAl.toArray(new Float[0]));
+		}
 		if (isCisDataset) {
 			// jagged array, hurrah
 			snpCisProbeMap = new MetaQTL4MetaTrait[snps.length][0];
@@ -281,12 +310,13 @@ public class BinaryMetaAnalysisDataset {
 		}
 		
 		int readlen = (int) (snpByteNextPos - snpBytePos);
+
+//		System.out.println("snp pos: " + snpBytePos);
 		
-		System.out.println("pos: " + snpBytePos);
-		
-		if (mappedzscorehandle == null || snpBytePos > currentmapend || snpByteNextPos > currentmapend) {
+		if (mappedzscorehandle == null || snpBytePos > currentmapend || snpByteNextPos > currentmapend || snpBytePos < currentmapstart) {
 			
-			long nrBytesPerBuffer = 1048576 * 256; // 256 mb
+			long nrBytesPerBuffer = 1048576 * 10; // 256 mb
+			
 			if (snpBytePos + nrBytesPerBuffer > raf.length()) {
 				nrBytesPerBuffer = raf.length() - snpBytePos;
 			}
@@ -297,11 +327,12 @@ public class BinaryMetaAnalysisDataset {
 			
 			currentmapstart = snpBytePos;
 			currentmapend = currentmapstart + nrBytesPerBuffer;
-			System.out.println("New buffer: " + bZs.length + currentmapstart + "\t" + currentmapend);
+			System.out.println("New buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
+					"\tlen: " + (currentmapend - currentmapstart) + "\tnrbytes: " + nrBytesPerBuffer);
 		}
 		
 		int offset = (int) (snpBytePos - currentmapstart);
-		System.out.println("offset " + offset + " len " + readlen);
+//		System.out.println("byte pos: " + snpBytePos + "\toffset " + offset + "\tlen " + readlen);
 		byte[] bytesToRead = new byte[readlen];
 		
 		System.arraycopy(bZs, offset, bytesToRead, 0, readlen);
