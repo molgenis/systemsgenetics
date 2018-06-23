@@ -5,7 +5,6 @@ import nl.umcg.westrah.binarymetaanalyzer.BinaryMetaAnalysisDataset;
 import nl.umcg.westrah.binarymetaanalyzer.MetaQTL4MetaTrait;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
-import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
@@ -13,13 +12,22 @@ import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.text.Strings;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.concurrent.*;
 
 public class BinaryFileSorter extends BinaryMetaAnalysis {
 	
 	public BinaryFileSorter(String settingsFile, String textToReplace, String replaceTextWith, boolean usetmp) {
 		super(settingsFile, textToReplace, replaceTextWith, usetmp);
+	}
+	
+	public String getFreeMemory() {
+		long free = Runtime.getRuntime().freeMemory();
+		long max = Runtime.getRuntime().maxMemory();
+		long use = max - free;
+		return "Usage: " + Gpio.humanizeFileSize(use) + ", free: " + Gpio.humanizeFileSize(free);
 	}
 	
 	public void run() throws IOException {
@@ -52,13 +60,16 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 		// load gene/snp combos
 		
 		ArrayList<Pair<MetaQTL4MetaTrait, String>> genesnpcombos = loadgenesnpcombos();
-		ExecutorService executor = Executors.newFixedThreadPool(cores);
-		ExecutorCompletionService<BinaryMetaAnalysisDataset> ex = new ExecutorCompletionService<>(executor);
-		System.out.println("Booting threadpool with " + cores + " threads");
+		
+		
+		
 		int nrdatasets = settings.getDatasetlocations().size();
 		System.out.println("About to process: " + nrdatasets + " datasets");
 		ConcurrentHashMap<String, Pair<String, String>> snpalleles = new ConcurrentHashMap<String, Pair<String, String>>();
 		for (int d = 0; d < nrdatasets; d++) {
+			System.out.println("Booting threadpool with " + cores + " threads");
+			ExecutorService executor = Executors.newFixedThreadPool(cores);
+			ExecutorCompletionService<BinaryMetaAnalysisDataset> ex = new ExecutorCompletionService<>(executor);
 			int submitted = 0;
 			String datasetname = settings.getDatasetnames().get(d);
 			System.out.println("Procesing dataset: " + datasetname);
@@ -97,6 +108,8 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			}
 			System.out.println();
 			System.out.println(perms.size() + " datasets returned.");
+			System.out.println(getFreeMemory());
+			ex = null;
 			
 			Integer[][] snpindex = new Integer[perms.size()][snpmap.size()];
 			for (int p = 0; p < perms.size(); p++) {
@@ -110,7 +123,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			
 			// Dataset loaded. Now iterate combos
 			TextFile out = new TextFile(settings.getOutput() + datasetname + "-combos.txt.gz", TextFile.W);
-			TextFile out2 = new TextFile(settings.getOutput() + datasetname + "-failedcombos.txt.gz", TextFile.W);
+//			TextFile out2 = new TextFile(settings.getOutput() + datasetname + "-failedcombos.txt.gz", TextFile.W);
 			SortedBinaryZScoreFile bf = new SortedBinaryZScoreFile(settings.getOutput() + datasetname + "-data.dat", BinaryFile.W); // gzip?
 			bf.writeHeader(perms.size());
 			
@@ -162,10 +175,11 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 								bf.writeZ(obj.outz);
 								totalwritten++;
 							} else {
-								out2.writeln(obj.outln);
+//								out2.writeln(obj.outln);
 							}
 						}
 						
+						System.out.println(getFreeMemory());
 						
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -208,7 +222,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 							bf.writeZ(obj.outz);
 							totalwritten++;
 						} else {
-							out2.writeln(obj.outln);
+//							out2.writeln(obj.outln);
 						}
 					}
 					
@@ -223,12 +237,15 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			bf.close();
 			pb.close();
 			out.close();
-			out2.close();
+//			out2.close();
+			System.out.println("Closing threads..");
+			executor.shutdown();
+			
 			System.out.println(totalwritten + " written out of " + genesnpcombos.size());
+			System.out.println(getFreeMemory());
 		}
 		
-		System.out.println("Closing threads..");
-		executor.shutdown();
+		
 		System.out.println("Done");
 		
 	}
@@ -412,7 +429,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			
 			output.add(new Pair<>(t, Strings.cache(elems[1])));
 			if (output.size() % 250000 == 0) {
-				System.out.print("\r" + output.size() + " combos read so far.");
+				System.out.print("\r" + output.size() + " combos read so far. "+getFreeMemory());
 			}
 			elems = tf.readLineElems(TextFile.tab);
 		}
