@@ -252,4 +252,12 @@ public class Strings {
 	}
 	
 	
+	public static String concat(float[] s, Pattern t) {
+		String[] str = new String[s.length];
+		for (int i = 0; i < s.length; i++) {
+			str[i] = "" + s[i];
+		}
+		return concat(str, t);
+		
+	}
 }

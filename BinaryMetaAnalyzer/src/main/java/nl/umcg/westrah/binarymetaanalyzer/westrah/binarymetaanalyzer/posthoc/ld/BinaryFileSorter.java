@@ -53,14 +53,15 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 		} else if (cores > availableProcessors) {
 			cores = availableProcessors;
 		}
-		
+		if (cores > 11) {
+			cores = 11;
+		}
 		System.out.println("Will try to make use of " + cores + " CPU cores");
 		System.out.println();
 		
 		// load gene/snp combos
 		
 		ArrayList<Pair<MetaQTL4MetaTrait, String>> genesnpcombos = loadgenesnpcombos();
-		
 		
 		
 		int nrdatasets = settings.getDatasetlocations().size();
@@ -73,15 +74,18 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			int submitted = 0;
 			String datasetname = settings.getDatasetnames().get(d);
 			System.out.println("Procesing dataset: " + datasetname);
-			for (int perm = 1; perm <= settings.getNrPermutations(); perm++) {
+			int nrperms = (settings.getNrPermutations() - settings.getStartPermutations()) + 1;
+			System.out.println(nrperms);
+			for (int perm = settings.getStartPermutations(); perm <= settings.getNrPermutations(); perm++) {
 				BinaryDatasetInitializerTask t = new BinaryDatasetInitializerTask(perm, d);
 				ex.submit(t);
 				submitted++;
 			}
-			System.out.println(submitted + " jobs submitted.");
+			System.out.println(submitted + " jobs submitted, " + nrperms + " permutations");
 			
 			int returned = 0;
-			ArrayList<BinaryMetaAnalysisDataset> perms = new ArrayList<>();
+			
+			BinaryMetaAnalysisDataset[] perms = new BinaryMetaAnalysisDataset[nrperms];
 			HashMap<String, Integer> snpmap = new HashMap<String, Integer>();
 			int snpctr = 0;
 			
@@ -89,8 +93,9 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 				try {
 					BinaryMetaAnalysisDataset ds = ex.take().get();
 					if (ds != null) {
+						int perm = ds.getPermutation();
+						perms[perm - settings.getStartPermutations()] = ds;
 						
-						perms.add(ds);
 						String[] snps = ds.getSNPs();
 						for (String snp : snps) {
 							if (!snpmap.containsKey(snp)) {
@@ -107,13 +112,13 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 				}
 			}
 			System.out.println();
-			System.out.println(perms.size() + " datasets returned.");
+			System.out.println(perms.length + " datasets returned.");
 			System.out.println(getFreeMemory());
 			ex = null;
 			
-			Integer[][] snpindex = new Integer[perms.size()][snpmap.size()];
-			for (int p = 0; p < perms.size(); p++) {
-				BinaryMetaAnalysisDataset ds = perms.get(p);
+			Integer[][] snpindex = new Integer[perms.length][snpmap.size()];
+			for (int p = 0; p < perms.length; p++) {
+				BinaryMetaAnalysisDataset ds = perms[p];
 				String[] snps = ds.getSNPs();
 				for (int s = 0; s < snps.length; s++) {
 					int snpid = snpmap.get(snps[s]);
@@ -125,7 +130,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			TextFile out = new TextFile(settings.getOutput() + datasetname + "-combos.txt.gz", TextFile.W);
 //			TextFile out2 = new TextFile(settings.getOutput() + datasetname + "-failedcombos.txt.gz", TextFile.W);
 			SortedBinaryZScoreFile bf = new SortedBinaryZScoreFile(settings.getOutput() + datasetname + "-data.dat", BinaryFile.W); // gzip?
-			bf.writeHeader(perms.size());
+			bf.writeHeader(perms.length);
 			
 			ProgressBar pb = new ProgressBar(genesnpcombos.size(), "Converting gene/snp combos dataset: " + (d + 1) + "/" + nrdatasets);
 			
@@ -285,13 +290,13 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 		
 		HashMap<String, Integer> snpmap;
 		ArrayList<Pair<MetaQTL4MetaTrait, String>> combos;
-		ArrayList<BinaryMetaAnalysisDataset> perms;
+		BinaryMetaAnalysisDataset[] perms;
 		ConcurrentHashMap<String, Pair<String, String>> snpalleles;
 		Integer[][] snpindex;
 		int i;
 		
 		public CombineTask(HashMap<String, Integer> snpmap, ArrayList<Pair<MetaQTL4MetaTrait, String>> combos,
-						   ArrayList<BinaryMetaAnalysisDataset> perms, ConcurrentHashMap<String, Pair<String, String>> snpalleles,
+						   BinaryMetaAnalysisDataset[] perms, ConcurrentHashMap<String, Pair<String, String>> snpalleles,
 						   Integer[][] snpindex, int i) {
 			this.snpmap = snpmap;
 			this.combos = combos;
@@ -313,12 +318,12 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			if (snpid != null) {
 				
 				// compare allelic directions (no idea why this would flip)
-				float[] outz = new float[perms.size()];
+				float[] outz = new float[perms.length];
 				Pair<String, String> refalleles = snpalleles.get(snp);
 				
-				for (int p = 0; p < perms.size(); p++) {
+				for (int p = 0; p < perms.length; p++) {
 					
-					BinaryMetaAnalysisDataset ds = perms.get(p);
+					BinaryMetaAnalysisDataset ds = perms[p];
 					
 					// get zscores
 					
@@ -363,7 +368,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 				}
 				
 				// only write when there's full data available
-				if (nrtested == perms.size()) {
+				if (nrtested == perms.length) {
 					
 					
 					String outln = gene.getMetaTraitName() + "\t" + snp + "\t" + refalleles.getLeft() + "\t" + refalleles.getRight();
@@ -429,7 +434,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			
 			output.add(new Pair<>(t, Strings.cache(elems[1])));
 			if (output.size() % 250000 == 0) {
-				System.out.print("\r" + output.size() + " combos read so far. "+getFreeMemory());
+				System.out.print("\r" + output.size() + " combos read so far. " + getFreeMemory());
 			}
 			elems = tf.readLineElems(TextFile.tab);
 		}

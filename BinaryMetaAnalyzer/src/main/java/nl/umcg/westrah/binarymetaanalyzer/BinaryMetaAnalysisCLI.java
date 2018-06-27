@@ -1,8 +1,8 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
 import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.*;
+import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld.BinaryFileLD;
 import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld.BinaryFileSorter;
-import nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld.ConvertSummaryStats;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -53,7 +53,13 @@ public class BinaryMetaAnalysisCLI {
 		
 		option = Option.builder()
 				.longOpt("sortbinaryfile")
-				.desc("Concatenate summary stats over all datasets, per snp and gene")
+				.desc("Sort binary cis-eQTL file given a set of snp/gene combos")
+				.build();
+		OPTIONS.addOption(option);
+		
+		option = Option.builder()
+				.longOpt("binaryfileld")
+				.desc("Calculate LD over files created with --sortbinaryfile")
 				.build();
 		OPTIONS.addOption(option);
 		
@@ -457,34 +463,6 @@ public class BinaryMetaAnalysisCLI {
 					BinaryMetaAnalysis bm = new BinaryMetaAnalysis(settings, texttoreplace, replacewith, usetmp);
 					bm.run();
 				}
-			} else if (cmd.hasOption("convertsummarystats")) {
-				
-				String settings = null;
-				String texttoreplace = null;
-				String replacewith = null;
-				if (cmd.hasOption("settings")) {
-					settings = cmd.getOptionValue("settings");
-				}
-				if (cmd.hasOption("rt")) {
-					texttoreplace = cmd.getOptionValue("rt");
-				}
-				if (cmd.hasOption("rtw")) {
-					replacewith = cmd.getOptionValue("rtw");
-				}
-				
-				boolean usetmp = false;
-				if (cmd.hasOption("usetmp")) {
-					usetmp = true;
-				}
-				
-				if (settings == null) {
-					System.err.println("Error: Please provide settings with --meta");
-					System.out.println();
-					printHelp();
-				} else {
-					ConvertSummaryStats bm = new ConvertSummaryStats(settings, texttoreplace, replacewith, usetmp);
-					bm.run();
-				}
 			} else if (cmd.hasOption("sortbinaryfile")) {
 				String settings = null;
 				String texttoreplace = null;
@@ -512,6 +490,25 @@ public class BinaryMetaAnalysisCLI {
 					BinaryFileSorter bm = new BinaryFileSorter(settings, texttoreplace, replacewith, usetmp);
 					bm.run();
 				}
+			} else if (cmd.hasOption("binaryfileld")) {
+				
+				if (!cmd.hasOption("in") || !cmd.hasOption("out") || !cmd.hasOption("geneannotation") || !cmd.hasOption("threads")) {
+					
+					System.out.println("Usage: --binaryfileld");
+					System.out.println("--in\tindir");
+					System.out.println("--out\toutdir");
+					System.out.println("--geneannotation\tlist of genes");
+					System.out.println("--threads\tnr threads to use");
+				} else {
+					String in = cmd.getOptionValue("in");
+					String in2 = cmd.getOptionValue("geneannotation");
+					String out = cmd.getOptionValue("out");
+					Integer nrthreads = Integer.parseInt(cmd.getOptionValue("threads"));
+					BinaryFileLD ld = new BinaryFileLD();
+					ld.run(in, in2, nrthreads, out);
+				}
+				
+				
 			} else if (cmd.hasOption("internalmeta")) {
 				
 				String settings = null;

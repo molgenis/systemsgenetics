@@ -396,4 +396,8 @@ public class BinaryMetaAnalysisDataset {
 		return featureOccuranceScaleMap;
 	}
 	
+	public int getPermutation() {
+		
+		return permutation;
+	}
 }
