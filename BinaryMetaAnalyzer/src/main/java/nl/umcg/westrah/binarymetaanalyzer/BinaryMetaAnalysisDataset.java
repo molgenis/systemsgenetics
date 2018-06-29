@@ -19,6 +19,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Harm-Jan
@@ -26,6 +27,7 @@ import java.util.Map;
 public class BinaryMetaAnalysisDataset {
 	
 	private final int permutation;
+	private final AtomicInteger snpctr;
 	private boolean isCisDataset = false;
 	private final String datasetLoc;
 	private MetaQTL4MetaTrait[][] snpCisProbeMap;
@@ -51,9 +53,10 @@ public class BinaryMetaAnalysisDataset {
 	
 	public BinaryMetaAnalysisDataset(String dir, String name, String prefix, int permutation, String platform,
 									 MetaQTL4TraitAnnotation probeAnnotation, String featureOccuranceScaleMapFile,
-									 boolean loadsnpstats) throws IOException {
+									 boolean loadsnpstats, AtomicInteger c) throws IOException {
 		dir = Gpio.formatAsDirectory(dir);
 		String matrix = dir;
+		this.snpctr = c;
 		String probeFile = dir;
 		String snpFile = dir;
 		this.platform = platform;
@@ -102,11 +105,13 @@ public class BinaryMetaAnalysisDataset {
 			System.out.println("This dataset is a full size dataset.");
 		}
 		loadProbes(probeFile);
-		System.out.println(probeList.length + " probes loaded");
+		
+		System.out.println("Permutation: " + permutation + "\t" + probeList.length + " probes loaded");
 		
 		loadSNPs(snpFile, loadsnpstats);
-		System.out.println(snps.length + " SNPs loaded");
-		
+		if (snpctr == null) {
+			System.out.println("Permutation: " + permutation + "\t" + snps.length + " SNPs loaded");
+		}
 		if (featureOccuranceScaleMapFile != null) {
 			TextFile readScaleInfo = new TextFile(featureOccuranceScaleMapFile, TextFile.R);
 			HashMap<String, String> temporaryMap = new HashMap<>(readScaleInfo.readAsHashMap(0, 1));
@@ -130,7 +135,7 @@ public class BinaryMetaAnalysisDataset {
 		
 		currentmapstart = 0;
 		currentmapend = currentmapstart + nrBytesPerBuffer;
-		System.out.println("File size: " + raf.length() + "\tNew buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
+		System.out.println("Permutation: " + permutation + "\t" + "File size: " + raf.length() + "\tNew buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
 				"\tlen: " + (currentmapend - currentmapstart) + "\tnrbytes: " + nrBytesPerBuffer);
 	}
 	
@@ -246,15 +251,17 @@ public class BinaryMetaAnalysisDataset {
 				snpCisProbeMapAl.add(snpProbeList);
 			}
 			elems = tf.readLineElems(TextFile.tab);
-			if (ln % 250000 == 0) {
-				System.out.print("Permutation " + permutation + ": " + ln + " variants parsed\n");
-			}
+			
 			ln++;
+			if (ln % 1000000 == 0) {
+				System.out.print("Permutation: " + permutation + "\t" + ln + " lines parsed sofar.\r");
+			}
 		}
 		tf.close();
+		if (snpctr != null) {
+			snpctr.getAndSet(ln);
+		}
 		System.out.println();
-		System.out.println("Done loading: " + snpsAl.size() + " snps.");
-		
 		// copy data.
 		snps = snpsAl.toArray(new String[0]);
 		snpBytes = Primitives.toPrimitiveArr(snpbytesAl.toArray(new Long[0]));

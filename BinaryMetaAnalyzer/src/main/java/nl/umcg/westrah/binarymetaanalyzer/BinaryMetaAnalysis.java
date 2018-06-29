@@ -161,7 +161,7 @@ public class BinaryMetaAnalysis {
 	}
 	
 	
-	public void run() throws IOException {
+	public void run() throws IOException, Exception {
 		initialize();
 		
 		
@@ -408,7 +408,7 @@ public class BinaryMetaAnalysis {
 					settings.getDatasetnames().get(d),
 					settings.getDatasetPrefix().get(d), permutation,
 					settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d),
-					loadsnpstats);
+					loadsnpstats, null);
 		}
 		
 		System.out.println("Loaded " + datasets.length + " datasets");

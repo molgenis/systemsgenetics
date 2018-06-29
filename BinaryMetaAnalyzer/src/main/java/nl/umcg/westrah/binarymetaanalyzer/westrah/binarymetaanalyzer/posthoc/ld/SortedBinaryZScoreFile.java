@@ -88,6 +88,7 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 			String allele = Strings.cache(elems[2]);
 			String assessed = Strings.cache(elems[3]);
 			
+			
 			float[] data = new float[size];
 			for (int i = 0; i < data.length; i++) {
 				data[i] = is.readFloat();
@@ -100,6 +101,7 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 			b.allele = allele;
 			b.assessed = assessed;
 			b.z = data;
+			b.n = Integer.parseInt(elems[4]);
 			return b;
 		}
 		

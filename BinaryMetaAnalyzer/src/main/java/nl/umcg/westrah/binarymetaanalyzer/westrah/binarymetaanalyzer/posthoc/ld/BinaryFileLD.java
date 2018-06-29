@@ -1,7 +1,7 @@
 package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc.ld;
 
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import umcg.genetica.containers.Pair;
+import umcg.genetica.containers.Triple;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.text.Strings;
@@ -21,12 +21,16 @@ public class BinaryFileLD {
 	
 	public void run(String indir, String geneloc, int nrthreads, String outdir) throws IOException {
 		
-		File[] datasetlocs = getLocs(indir);
-		int nrdatasets = datasetlocs.length;
-		
-		boolean writezmat = true;
+		boolean useinnerproduct = true;
+		boolean weightforsamplesize = true;
+		int minnrsamples = 0;
+		int minnrvalues = 30;
+		boolean writezmat = false;
 		boolean debug = false;
 		
+		File[] datasetlocs = getLocs(indir);
+		int nrdatasets = datasetlocs.length;
+
 		// read genes to test
 		TextFile tf = new TextFile(geneloc, TextFile.R);
 		ArrayList<String> genes = tf.readAsArrayList();
@@ -124,7 +128,13 @@ public class BinaryFileLD {
 					nrRunning,
 					nrCompleted,
 					writezmat,
-					g);
+					useinnerproduct,
+					weightforsamplesize,
+					g,
+					minnrsamples,
+					minnrvalues
+			);
+			
 			// prevent clogging of memories.
 			int nrrunningi = nrRunning.get();
 			while (nrrunningi >= nrthreads) {
@@ -183,10 +193,15 @@ public class BinaryFileLD {
 		LinkedHashMap<String, Integer> snpmap;
 		SortedBinaryZScoreFile[] dataset;
 		String outdir;
+		int minNrValues = 0;
+		int minNrSamples = 0;
+		boolean useinnerproduct;
+		boolean weightforsamplesize;
 		
 		public SortedZCorrelationTask(ArrayList<ArrayList<SortedBinaryZDataBlock>> geneblocks, String querygene,
 									  LinkedHashMap<String, Integer> snpmap, SortedBinaryZScoreFile[] dataset,
-									  String outdir, AtomicInteger ctr, AtomicInteger cmctr, boolean writezmat, int id) {
+									  String outdir, AtomicInteger ctr, AtomicInteger cmctr, boolean writezmat,
+									  boolean useinnerproduct, boolean weightforsamplesize, int id, int minNrSamples, int minNrValues) {
 			this.geneblocks = geneblocks;
 			this.querygene = querygene;
 			this.snpmap = snpmap;
@@ -196,6 +211,10 @@ public class BinaryFileLD {
 			this.cmctr = cmctr;
 			this.writezmat = writezmat;
 			this.id = id;
+			this.useinnerproduct = useinnerproduct;
+			this.weightforsamplesize = weightforsamplesize;
+			this.minNrSamples = minNrSamples;
+			this.minNrValues = minNrValues;
 		}
 		
 		@Override
@@ -250,7 +269,7 @@ public class BinaryFileLD {
 				TextFile output = new TextFile(outdir + querygene + ".txt.gz", TextFile.W, 32 * 1024);
 				TextFile alleleout = new TextFile(outdir + querygene + "-referenceAlleles.txt.gz", TextFile.W, 32 * 1024);
 				alleleout.writeln("SNP\tAlleles\tAssessed");
-				String header = "SNP1\tSNP2\tN\tPearsonR\tPearsonRSq";
+				String header = "SNP1\tSNP2\tNrValues\tNrSamples\tPearsonR\tPearsonRSq";
 				
 				output.writeln(header);
 				for (int s1 = 0; s1 < snpmap.size(); s1++) {
@@ -259,14 +278,27 @@ public class BinaryFileLD {
 					for (int s2 = (s1 + 1); s2 < snpmap.size(); s2++) {
 						SortedBinaryZDataBlock[] snp2 = blockindex[s2];
 						
-						Pair<double[], double[]> zs = removeNullsAndConvertToDouble(snp1, snp2);
-						if (zs.getLeft().length > 20) {
-							double corr = c.correlation(zs.getLeft(), zs.getRight());
+						Triple<double[], double[], Integer> zs = removeNullsAndConvertToDouble(snp1, snp2, weightforsamplesize);
+						if (zs.getLeft().length >= minNrValues && zs.getRight() >= minNrSamples) {
+							
+							double corr = 0;
+							if (useinnerproduct) {
+								corr = innerproduct(zs.getLeft(), zs.getMiddle());
+								corr /= zs.getRight();
+							} else if (weightforsamplesize) {
+								corr = innerproduct(zs.getLeft(), zs.getMiddle());
+								corr /= Math.sqrt(zs.getRight());
+							} else {
+								corr = c.correlation(zs.getLeft(), zs.getMiddle());
+							}
+							
+							
 							double rsq = corr * corr;
 							SortedBinaryZDataBlock refblock2 = refBlocks[s2];
 							String outln = refblock1.snp
 									+ "\t" + refblock2.snp
 									+ "\t" + zs.getLeft().length
+									+ "\t" + zs.getRight()
 									+ "\t" + corr + "\t" + rsq;
 							output.writeln(outln);
 							
@@ -337,26 +369,46 @@ public class BinaryFileLD {
 			cmctr.getAndIncrement();
 		}
 		
+		private double innerproduct(double[] x, double[] y) {
+			double sum = 0;
+			for (int i = 0; i < x.length; i++) {
+				sum += (x[i] * y[i]);
+			}
+			return sum;
+		}
+		
 	}
 	
 	
-	private Pair<double[], double[]> removeNullsAndConvertToDouble(SortedBinaryZDataBlock[] snp1, SortedBinaryZDataBlock[] snp2) {
+	private Triple<double[], double[], Integer> removeNullsAndConvertToDouble(SortedBinaryZDataBlock[] snp1, SortedBinaryZDataBlock[] snp2, boolean weightforsamplesize) {
 		ArrayList<Double> z1 = new ArrayList<>();
 		ArrayList<Double> z2 = new ArrayList<>();
+		
+		int sumN = 0;
 		
 		for (int i = 0; i < snp1.length; i++) {
 			SortedBinaryZDataBlock b1 = snp1[i];
 			SortedBinaryZDataBlock b2 = snp2[i];
 			if (b1 != null && b2 != null) {
+				double sqrtn1 = Math.sqrt(b1.n);
+				sumN += sqrtn1;
+				double sqrtn2 = Math.sqrt(b2.n);
 				for (int q = 0; q < b1.z.length; q++) {
-					z1.add((double) b1.z[q]);
-					z2.add((double) b2.z[q]);
+					if (weightforsamplesize) {
+						z1.add((double) b1.z[q] * sqrtn1);
+						z2.add((double) b2.z[q] * sqrtn2);
+					} else {
+						z1.add((double) b1.z[q]);
+						z2.add((double) b2.z[q]);
+					}
+					
 				}
 			}
 		}
 		
-		return new Pair<>(Primitives.toPrimitiveArr(z1.toArray(new Double[0])),
-				Primitives.toPrimitiveArr(z2.toArray(new Double[0])));
+		return new Triple<>(Primitives.toPrimitiveArr(z1.toArray(new Double[0])),
+				Primitives.toPrimitiveArr(z2.toArray(new Double[0])),
+				sumN);
 	}
 	
 }

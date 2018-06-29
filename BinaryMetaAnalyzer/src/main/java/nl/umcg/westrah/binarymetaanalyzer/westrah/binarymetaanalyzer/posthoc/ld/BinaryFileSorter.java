@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BinaryFileSorter extends BinaryMetaAnalysis {
 	
@@ -30,7 +31,7 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 		return "Usage: " + Gpio.humanizeFileSize(use) + ", free: " + Gpio.humanizeFileSize(free);
 	}
 	
-	public void run() throws IOException {
+	public void run() throws IOException, Exception {
 		super.initialize();
 		
 		
@@ -76,9 +77,13 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			System.out.println("Procesing dataset: " + datasetname);
 			int nrperms = (settings.getNrPermutations() - settings.getStartPermutations()) + 1;
 			System.out.println(nrperms);
+			
+			AtomicInteger[] ctrs = new AtomicInteger[nrperms];
 			for (int perm = settings.getStartPermutations(); perm <= settings.getNrPermutations(); perm++) {
-				BinaryDatasetInitializerTask t = new BinaryDatasetInitializerTask(perm, d);
+				AtomicInteger c = new AtomicInteger();
+				BinaryDatasetInitializerTask t = new BinaryDatasetInitializerTask(perm, d, c);
 				ex.submit(t);
+				ctrs[submitted] = c;
 				submitted++;
 			}
 			System.out.println(submitted + " jobs submitted, " + nrperms + " permutations");
@@ -91,8 +96,12 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			
 			while (returned < submitted) {
 				try {
+					String ctri = "Returned: " + returned + "/" + submitted + "\tNr variants parsed:";
+					
+					System.out.print(ctri + "\r");
 					BinaryMetaAnalysisDataset ds = ex.take().get();
 					if (ds != null) {
+						
 						int perm = ds.getPermutation();
 						perms[perm - settings.getStartPermutations()] = ds;
 						
@@ -104,10 +113,15 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 							}
 						}
 						returned++;
+						
 					}
+					
+					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				} catch (ExecutionException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -140,7 +154,6 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 			int batchsize = 500000;
 			int batchctr = 0;
 			for (int i = 0; i < genesnpcombos.size(); i++) {
-				
 				// submit
 				CombineTask t = new CombineTask(snpmap, genesnpcombos, perms, snpalleles, snpindex, i);
 				Future<ReturnObject> future = executor.submit(t);
@@ -320,17 +333,16 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 				// compare allelic directions (no idea why this would flip)
 				float[] outz = new float[perms.length];
 				Pair<String, String> refalleles = snpalleles.get(snp);
-				
+				int refSampleSize = 0;
 				for (int p = 0; p < perms.length; p++) {
 					
 					BinaryMetaAnalysisDataset ds = perms[p];
 					
 					// get zscores
-					
-					
 					Integer dssnpid = snpindex[p][snpid];
 					
 					if (dssnpid != null) {
+						
 						float[] zscores = ds.getZScores(dssnpid);
 						String dssnpalleles = ds.getAlleles(dssnpid);
 						String dssnpalleleassessed = ds.getAlleleAssessed(dssnpid);
@@ -339,6 +351,8 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 						if (refalleles == null) {
 							refalleles = new Pair<String, String>(dssnpalleles, dssnpalleleassessed);
 							snpalleles.put(snp, refalleles);
+							int dssamplesize = ds.getSampleSize(dssnpid);
+							refSampleSize = dssamplesize;
 						} else {
 							flip = BaseAnnot.flipalleles(refalleles.getLeft(), refalleles.getRight(), dssnpalleles, dssnpalleleassessed);
 						}
@@ -371,11 +385,12 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 				if (nrtested == perms.length) {
 					
 					
-					String outln = gene.getMetaTraitName() + "\t" + snp + "\t" + refalleles.getLeft() + "\t" + refalleles.getRight();
+					String outln = gene.getMetaTraitName() + "\t" + snp + "\t" + refalleles.getLeft() + "\t" + refalleles.getRight() + "\t" + refSampleSize;
 //					out.writeln(outln);
 //					bf.writeZ(outz);
 					o.outz = outz;
 					o.outln = outln;
+					
 					o.i = i;
 					
 				} else {
@@ -396,11 +411,13 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 		
 		int permutation;
 		int d;
-		boolean loadsnpstats = false;
+		boolean loadsnpstats = true;
+		AtomicInteger ctr;
 		
-		public BinaryDatasetInitializerTask(int permutation, int d) {
+		public BinaryDatasetInitializerTask(int permutation, int d, AtomicInteger ctr) {
 			this.d = d;
 			this.permutation = permutation;
+			this.ctr = ctr;
 		}
 		
 		@Override
@@ -410,7 +427,8 @@ public class BinaryFileSorter extends BinaryMetaAnalysis {
 					settings.getDatasetnames().get(d),
 					settings.getDatasetPrefix().get(d), permutation,
 					settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d),
-					loadsnpstats);
+					loadsnpstats,
+					null);
 			
 			return ds;
 		}

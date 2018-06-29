@@ -5,6 +5,6 @@ public class SortedBinaryZDataBlock {
 	public String gene;
 	public String allele;
 	public String assessed;
-	
+	public int n;
 	public float[] z;
 }
