@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.function.Consumer;
+
 import org.molgenis.genotype.GenotypeDataException;
 
 /**
@@ -88,7 +90,17 @@ public class BgenixVariantQueryResult implements Iterator<BgenixVariantData>, Cl
 		}
 
 	}
-
+	
+	@Override
+	public void remove() {
+	
+	}
+	
+	@Override
+	public void forEachRemaining(Consumer<? super BgenixVariantData> action) {
+	
+	}
+	
 	@Override
 	public void close() throws IOException {
 		try {

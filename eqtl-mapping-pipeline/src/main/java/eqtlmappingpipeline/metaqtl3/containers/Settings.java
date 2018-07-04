@@ -41,6 +41,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public int maxNrMostSignificantEQTLs = 500000;                             // Max number of results stored in memory
 	public boolean performParametricAnalysisGetAccuratePValueEstimates;        // Use an accurate estimation of the P-values
 	public Integer nrThreads;                                                  // Use this number of threads
+	public boolean writeSNPQCLog = false;
 	// Multiple testing correction
 	public double fdrCutOff = 0.05;                                            // Cutoff for FDR procedure
 	public int nrPermutationsFDR = 1;                                          // Number of permutations to determine FDR
@@ -92,12 +93,14 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean usemd5hash = true;
 	public boolean sortsnps = true;
 	
+	
 	public Settings() {
 	}
 	
 	public void load(String settings) throws IOException, ConfigurationException {
 		
 		XMLConfiguration config = new XMLConfiguration(settings);           // Use the apache XML configuration parser
+		
 		
 		String analysisType = null;
 		String correlationType = null;
@@ -155,7 +158,11 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			analysisType = config.getString("defaults.analysis.analysistype");
 		} catch (Exception e) {
 		}
+		try {
+			sortsnps = config.getBoolean("defaults.analysis.sortsnps", false);
+		} catch (Exception e) {
 		
+		}
 		// analysis settings
 		try {
 			String buffersizeStr = config.getString("defaults.analysis.buffersize");
@@ -253,6 +260,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		} else {
 			metaAnalyseInteractionTerms = false;
 		}
+		
 		
 		Boolean metaAnalyseModelCorrelationYHatB = null;
 		try {
@@ -403,9 +411,13 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			}
 		} catch (Exception e) {
 		}
-		
 		try {
-			usemd5hash = config.getBoolean("defaults.output.usemd5hashforbinaryoutput", true);
+			writeSNPQCLog = config.getBoolean("defaults.output.writeSNPQCLog", true);
+		} catch (Exception e) {
+		
+		}
+		try {
+			usemd5hash = config.getBoolean("defaults.output.usemd5hashforbinaryoutput", false);
 		} catch (Exception e) {
 		
 		}
@@ -511,6 +523,15 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		} catch (Exception e) {
 		}
 		
+		try {
+			confineToProbesThatMapToChromosome = config.getByte("defaults.confine.confineToProbesThatMapToChromosome");
+		} catch (Exception e) {
+		}
+		try {
+			snpProbeConfineBasedOnChrPos = config.getBoolean("defaults.confine.snpProbeConfineBasedOnChrPos", false);
+		} catch (Exception e) {
+		
+		}
 		// confinements on snp, probe, or snp-probe
 		String confineSNP = null;
 		String confineProbe = null;

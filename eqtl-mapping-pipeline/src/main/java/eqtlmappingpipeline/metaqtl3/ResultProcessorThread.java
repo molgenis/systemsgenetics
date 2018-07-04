@@ -103,6 +103,8 @@ public class ResultProcessorThread extends Thread {
 			tmpbuffersize = 10;
 		} else if (tmpbuffersize > 250000) {
 			tmpbuffersize = 250000;
+		} else if (m_maxResults < 1000000) {
+			tmpbuffersize = 1000000;
 		}
 
 //        m_totalNumberOfProbes = probelist.length;
