@@ -51,15 +51,16 @@ public class HpoGenePrioritisation {
 //		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
 //		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_5GPM_processed.txt");
 //		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
-		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\hpos_selected.txt");
-		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm");
+//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\hpos_selected.txt");
+//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm");
+
+		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\hpoSolvedCases_selected.txt");
+		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations3");
 
 //		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalcasehpo_EditedSipko3_JanJongbloed_selected.txt");
 //		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations2");
-
 		outputFolder.mkdirs();
-		
-		
+
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
 		HashMap<String, LinkedHashSet<String>> caseHpo = loadCaseHpo(caseHpoFile);
