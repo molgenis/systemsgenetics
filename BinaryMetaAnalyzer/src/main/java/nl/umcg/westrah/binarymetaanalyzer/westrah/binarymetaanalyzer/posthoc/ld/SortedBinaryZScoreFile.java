@@ -8,20 +8,23 @@ import umcg.genetica.text.Strings;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 public class SortedBinaryZScoreFile extends BinaryFile {
-	int size = 0;
+	int nrElemsPerArray = 0;
 	long filesize = 0;
 	private TextFile rowdata;
+	private LinkedHashMap<String, Integer> availableGenes = null;
+	private int HEADERLEN = 12;
 	
 	public SortedBinaryZScoreFile(String loc, boolean mode) throws IOException {
-		super(loc, mode);
+		super(loc, mode, 32 * 1024);
 		if (!super.writeable) {
 			filesize = is.readLong();
-			size = is.readInt();
+			nrElemsPerArray = is.readInt();
 			File f = new File(loc);
 			if (f.length() != filesize) {
-				throw new IOException("Expected file size: " + filesize + ",  but found: " + f.length());
+				throw new IOException("Expected file nrElemsPerArray: " + filesize + ",  but found: " + f.length());
 			}
 			openrowdata();
 		}
@@ -33,10 +36,10 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 		super(loc, mode, buffersize);
 		if (!super.writeable) {
 			filesize = is.readLong();
-			size = is.readInt();
+			nrElemsPerArray = is.readInt();
 			File f = new File(loc);
 			if (f.length() != filesize) {
-				throw new IOException("Expected file size: " + filesize + ",  but found: " + f.length());
+				throw new IOException("Expected file nrElemsPerArray: " + filesize + ",  but found: " + f.length());
 			}
 			openrowdata();
 		}
@@ -49,16 +52,39 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 	private void openrowdata() throws IOException {
 		String rowfile = loc.replaceAll("-data.dat", "-combos.txt.gz");
 		rowdata = new TextFile(rowfile, TextFile.R);
+		
+		availableGenes = new LinkedHashMap<>();
+		String ln = rowdata.readLine();
+		int lnctr = 0;
+		while (ln != null) {
+			String gene = Strings.subsplit(ln, Strings.tab, 0, 1)[0];
+			if (!availableGenes.containsKey(gene)) {
+				availableGenes.put(gene, lnctr);
+			}
+			lnctr++;
+			ln = rowdata.readLine();
+		}
+		
+		System.out.println(rowfile + " has " + availableGenes.size() + " genes");
+		
+		rowdata.close();
+		rowdata.open();
+		
+	}
+	
+	
+	public boolean hasGene(String gene) {
+		return availableGenes.containsKey(gene);
 	}
 	
 	public SortedBinaryZScoreFile(String loc, boolean mode, int buffersize, boolean useHash) throws IOException {
 		super(loc, mode, buffersize, useHash);
 		if (!super.writeable) {
 			filesize = is.readLong();
-			size = is.readInt();
+			nrElemsPerArray = is.readInt();
 			File f = new File(loc);
 			if (f.length() != filesize) {
-				throw new IOException("Expected file size: " + filesize + ",  but found: " + f.length());
+				throw new IOException("Expected file nrElemsPerArray: " + filesize + ",  but found: " + f.length());
 			}
 			openrowdata();
 		}
@@ -76,20 +102,20 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 		}
 	}
 	
+	int currentposition = 0;
+	
 	public SortedBinaryZDataBlock readNextBlock() throws IOException {
 		
 		String[] elems = rowdata.readLineElems(TextFile.tab);
 		if (elems == null) {
 			return null;
 		} else {
-			
 			String snp = Strings.cache(elems[1]);
 			String gene = Strings.cache(elems[0]);
 			String allele = Strings.cache(elems[2]);
 			String assessed = Strings.cache(elems[3]);
 			
-			
-			float[] data = new float[size];
+			float[] data = new float[nrElemsPerArray];
 			for (int i = 0; i < data.length; i++) {
 				data[i] = is.readFloat();
 			}
@@ -102,12 +128,38 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 			b.assessed = assessed;
 			b.z = data;
 			b.n = Integer.parseInt(elems[4]);
+			currentposition++;
 			return b;
 		}
-		
-		
 	}
 	
+	
+	public void skipTo(String gene) throws IllegalAccessException, IOException {
+		
+		Integer geneId = availableGenes.get(gene);
+		if (geneId != null) {
+			
+			long currentPosB = (nrElemsPerArray * 4 * currentposition) + HEADERLEN;
+			long lookuppositioninbinaryfile = ((long) nrElemsPerArray * 4 * geneId) + HEADERLEN; // nr floats * geneID + header int + header long
+			
+			System.out.println("Looking for gene: " + gene + "\t" + geneId + "\tcurrent: " + currentposition + "\tbpos: " + currentPosB + "\tlookup: " + lookuppositioninbinaryfile);
+			long difference = lookuppositioninbinaryfile - currentPosB;
+			if (difference < 0) {
+				throw new IllegalAccessException("Can't skip backwards! " + loc + "\tcurrently at: " + currentPosB + "\tlooking for: " + lookuppositioninbinaryfile + "\tdiff: " + difference);
+			}
+			
+			is.skip(difference);
+			
+			// skip the text file forward as well...
+			// determine the number of lines to read until we hit the geneId
+			int nrlinesToread = geneId - currentposition;
+			for (int n = 0; n < nrlinesToread; n++) {
+				rowdata.readLine();
+			}
+			
+			currentposition = geneId;
+		}
+	}
 	
 	public void close() throws IOException {
 		if (!writeable) {

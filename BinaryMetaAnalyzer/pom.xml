@@ -25,11 +25,7 @@
             <artifactId>commons-math3</artifactId>
             <version>3.5</version>
         </dependency>
-        <dependency>
-            <groupId>PlayGround</groupId>
-            <artifactId>PlayGround</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
+
     </dependencies>
     <name>BinaryMetaAnalyzer</name>
     <build>
