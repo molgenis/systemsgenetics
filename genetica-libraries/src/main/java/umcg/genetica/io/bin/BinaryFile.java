@@ -18,7 +18,7 @@ public class BinaryFile {
 	public static final boolean W = true;
 	public static final boolean R = false;
 	protected final DataOutputStream os;
-	protected final DataInputStream is;
+	protected DataInputStream is;
 	protected final String loc;
 	protected final boolean writeable;
 	private final OutputStream osh;

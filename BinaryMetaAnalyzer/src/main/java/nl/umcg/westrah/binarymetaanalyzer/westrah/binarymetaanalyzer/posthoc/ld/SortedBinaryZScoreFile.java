@@ -6,8 +6,13 @@ import umcg.genetica.io.bin.RandomAccessFile;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.text.Strings;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 
 public class SortedBinaryZScoreFile extends BinaryFile {
@@ -139,17 +144,28 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 		Integer geneId = availableGenes.get(gene);
 		if (geneId != null) {
 			
-			long currentPosB = (nrElemsPerArray * 4 * currentposition) + HEADERLEN;
+			long currentPosB = ((long) nrElemsPerArray * 4 * currentposition) + HEADERLEN;
 			long lookuppositioninbinaryfile = ((long) nrElemsPerArray * 4 * geneId) + HEADERLEN; // nr floats * geneID + header int + header long
 			
-			System.out.println("Looking for gene: " + gene + "\t" + geneId + "\tcurrent: " + currentposition + "\tbpos: " + currentPosB + "\tlookup: " + lookuppositioninbinaryfile);
+			
 			long difference = lookuppositioninbinaryfile - currentPosB;
+			
+			
+			System.out.println("Looking for gene: " + gene + "\t" + geneId + "\tcurrent: " + currentposition + "\tbpos: " + currentPosB + "\tlookup: " + lookuppositioninbinaryfile + "\tdiff: " + difference);
 			if (difference < 0) {
 				throw new IllegalAccessException("Can't skip backwards! " + loc + "\tcurrently at: " + currentPosB + "\tlooking for: " + lookuppositioninbinaryfile + "\tdiff: " + difference);
 			}
 			
-			is.skip(difference);
-			
+			is.close();
+			FileChannel ch = FileChannel.open(Paths.get(loc), StandardOpenOption.READ);
+			is = new DataInputStream(Channels.newInputStream(ch.position(lookuppositioninbinaryfile)));
+
+
+//			is.
+//			if (skipped != difference) {
+//				throw new IllegalAccessException("Wanted to skip: " + difference + " bytes, but actually skipped: " + skipped);
+//			}
+//
 			// skip the text file forward as well...
 			// determine the number of lines to read until we hit the geneId
 			int nrlinesToread = geneId - currentposition;

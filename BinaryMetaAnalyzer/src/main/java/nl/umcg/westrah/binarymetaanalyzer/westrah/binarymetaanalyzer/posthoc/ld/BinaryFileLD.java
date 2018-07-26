@@ -126,15 +126,20 @@ public class BinaryFileLD {
 					// (which should not be possible)
 					if (b != null && !b.gene.equals(querygene)) {
 						
-						dataset[d].skipTo(querygene);
 						// fast forward
+						dataset[d].skipTo(querygene);
+						
+						
 						b = dataset[d].readNextBlock();
+						
+						if (!b.gene.equals(querygene)) {
+							System.out.println("Dataset is supposed to have " + querygene + " but I skipped to the wrong position?");
+							System.exit(-1);
+						}
+						
 					}
 					
 					ArrayList<SortedBinaryZDataBlock> blocks = new ArrayList<>();
-					if (debug && b != null) {
-						System.out.println("Dataset: " + d + " current gene: " + b.gene);
-					}
 					
 					while (b != null && b.gene.equals(querygene)) {
 						// add
@@ -145,10 +150,18 @@ public class BinaryFileLD {
 						}
 						
 						b = dataset[d].readNextBlock();
-						currentblock[d] = b;
-						if (debug && b != null) {
-							System.out.println("Dataset: " + d + " next gene: " + b.gene);
+						if (debug) {
+							if (b != null && currentblock[d] != null) {
+								System.out.println("Dataset: " + d + " current gene:" + currentblock[d].gene + ". Next gene: " + b.gene);
+							} else if (b != null) {
+								System.out.println("Dataset: " + d + " Next gene: " + b.gene);
+							} else if (currentblock[d] != null) {
+								System.out.println("Dataset: " + d + " current gene:" + currentblock[d].gene);
+								
+							}
 						}
+						currentblock[d] = b;
+						
 						
 					}
 					if (debug) {
