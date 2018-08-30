@@ -1,11 +1,1 @@
-bin/
-deconvolution.jar
-.Rhistory
-.classpath
-.project
-/deconvolution/
-*.jar
-*.class
-fake_genotypes.py
-example_results/
-build/
+example_output/
