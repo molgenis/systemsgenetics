@@ -3,7 +3,7 @@
   <groupId>Decon-eQTL_simple</groupId>
   <artifactId>Decon-eQTL_simple</artifactId>
   <packaging>jar</packaging>
-  <version>v1.0.2</version>
+  <version>v1.0.3</version>
   <name>Decon-eQTL_simple</name>
   <description>Decon-eQTL_simple is as simple y ~ snp + snp : gt interaction model that we use as comparison to our proposed interaction model including all cell types.</description>
   <build>
