@@ -156,12 +156,14 @@ public class InteractionModelCollection {
 		CellCount cellCount = getCellCount();
 		int numberOfCelltypes = cellCount.getNumberOfCelltypes();
 		int numberOfSamples = cellCount.getNumberOfSamples();
-		int numberOfTerms = 2;
+		// number of terms is 3 because intercept + snp + snp:GT
+		int numberOfTerms = 3;
 		// for each cell type we have to make 1 model, e.g. y ~ snp + snp : neut, y ~ snp + snp : mono etc
 		for (int modelIndex = 0; modelIndex < numberOfCelltypes; modelIndex++) {
 			InteractionModel interactionModel = new InteractionModel(numberOfSamples, 
 					numberOfTerms);
-			InteractionModel snpModel = new InteractionModel(numberOfSamples, 1);
+			// number of terms is 2 because intercept + snp
+			InteractionModel snpModel = new InteractionModel(numberOfSamples, 2);
 			
 			String modelName = String.format("model_%s",cellCount.getCelltype(modelIndex) );
 			interactionModel.setModelName(modelName);
