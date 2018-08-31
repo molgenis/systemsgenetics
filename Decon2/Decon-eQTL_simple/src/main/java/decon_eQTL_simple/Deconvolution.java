@@ -139,7 +139,7 @@ public class Deconvolution {
 				double[] estimateRegressionParameters = model.getEstimateRegressionParameters();
 
 				// first write out the beta of the cell proportion term
-				results += "\t"+estimateRegressionParameters[1];
+				results += "\t"+estimateRegressionParameters[2];
 			}
 			output.add(results);	
 		}
