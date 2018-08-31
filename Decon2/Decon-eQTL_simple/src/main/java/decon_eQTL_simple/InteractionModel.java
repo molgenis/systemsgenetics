@@ -193,7 +193,7 @@ public class InteractionModel {
 		// OLS = Ordinary Least Squares
 		OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 		// if GetIntercept is false, remove the intercept (Beta1) from the linear model
-		regression.setNoIntercept(true);
+		regression.setNoIntercept(false);
 
 		try{
 			regression.newSampleData(expressionValues, this.getObservedValues());
@@ -203,11 +203,29 @@ public class InteractionModel {
 					expressionValues.length, this.getNumberOfTerms()));
 			throw(e);
 		}
+		
+		/*for (int i = 0; i < this.getObservedValues().length; i++) {
+		    for (int j = 0; j < this.getObservedValues()[i].length; j++) {
+		        System.out.print(this.getObservedValues()[i][j] + " ");
+		    }
+		    System.out.println();
+		}*/
+		
 		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
 		setResiduals(regression.estimateResiduals());
 		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
-
+		
+		//for (int i = 0; i < expressionValues.length; ++i) {
+	//		System.out.println(expressionValues[i]+"\t"+this.getObservedValues()[i][0]);
+		//}
+		
+		
+		//for (double d : regression.estimateRegressionParameters()) {
+		//	System.out.println(d);
+		//}
+		//System.out.println("------");
+		//System.exit(0);
 	}
 
 	

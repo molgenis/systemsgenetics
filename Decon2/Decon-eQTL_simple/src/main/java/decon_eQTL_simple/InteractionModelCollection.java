@@ -133,12 +133,16 @@ public class InteractionModelCollection {
 	 * Go through all models and calculate the regression statistics
 	 */
 	public void calculateOlsForAllModels() throws IllegalAccessException, IOException{
+		//System.out.println(this.qtlName);
 		for (String modelName : getModelNames()){
+		//	System.out.println(modelName);
 			InteractionModel interactionModel = getInteractionModel(modelName);
 			interactionModel.calculateSumOfSquaresOLS(getExpessionValues());
 			InteractionModel snpModel = snpModels.get(modelName);
 			snpModel.calculateSumOfSquaresOLS(getExpessionValues());
+		//	System.out.println("------");
 		}
+		//System.exit(0);
 	}
 
 

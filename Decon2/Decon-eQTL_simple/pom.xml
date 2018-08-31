@@ -3,7 +3,7 @@
   <groupId>Decon-eQTL_simple</groupId>
   <artifactId>Decon-eQTL_simple</artifactId>
   <packaging>jar</packaging>
-  <version>v1.0.0</version>
+  <version>v1.0.1</version>
   <name>Decon-eQTL_simple</name>
   <description>Decon-eQTL_simple is as simple y ~ snp + snp : gt interaction model that we use as comparison to our proposed interaction model including all cell types.</description>
   <build>
@@ -29,7 +29,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>main.java.decon_eQTL.Main</mainClass>
+              <mainClass>main.java.decon_eQTL_simple.Main</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
@@ -58,7 +58,7 @@
 	  </plugin>
     </plugins>
   </build>
-  <url>https://github.com/molgenis/systemsgenetics/tree/master/Decon2/Decon-eQTL</url>
+  <url>https://github.com/molgenis/systemsgenetics/tree/master/Decon2/Decon-eQTL_simple</url>
   <dependencies>
   	<dependency>
   		<groupId>org.apache.commons</groupId>
