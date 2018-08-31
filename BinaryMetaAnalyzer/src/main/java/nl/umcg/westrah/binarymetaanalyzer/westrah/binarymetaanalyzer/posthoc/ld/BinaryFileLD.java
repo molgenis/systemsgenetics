@@ -44,7 +44,8 @@ public class BinaryFileLD {
 		PEARSON,
 		WEIGHTEDPEARSON,
 		INNERPRODUCT,
-		WEIGHTEDINNERPRODUCT
+		WEIGHTEDINNERPRODUCT,
+		NOLD
 	}
 	
 	public MODE method;
@@ -71,6 +72,8 @@ public class BinaryFileLD {
 				method = MODE.INNERPRODUCT;
 			} else if (mode.equals("weightedinnerproduct")) {
 				method = MODE.WEIGHTEDINNERPRODUCT;
+			} else if (mode.equals("nold")) {
+				method = MODE.NOLD;
 			} else {
 				method = MODE.PEARSON;
 			}
@@ -304,6 +307,7 @@ public class BinaryFileLD {
 				}
 				
 				System.out.println("Job" + id + "\tGene " + querygene + "\tFlipping alleles");
+				
 				// flip the z-scores, using a reference dataset (TODO: flip to 1kg reference allele?)
 				SortedBinaryZDataBlock[] refBlocks = new SortedBinaryZDataBlock[snpmap.size()];
 				for (int s = 0; s < snpmap.size(); s++) {
@@ -332,63 +336,72 @@ public class BinaryFileLD {
 					}
 				}
 				
-				// now correlate
-				System.out.println("Job" + id + "\tGene " + querygene + "\thas " + snpmap.size() + " snps");
 				
-				PearsonsCorrelation c = new PearsonsCorrelation();
-				TextFile output = new TextFile(outdir + querygene + ".txt.gz", TextFile.W, 32 * 1024);
+				if (!method.equals(MODE.NOLD)) {
+					PearsonsCorrelation c = new PearsonsCorrelation();
+					TextFile output = new TextFile(outdir + querygene + ".txt.gz", TextFile.W, 32 * 1024);
+					
+					String header = "SNP1\tSNP2\tNrValues\tNrSamples\tR(" + method + ")\tRsq";
+					output.writeln(header);
+					for (int s1 = 0; s1 < snpmap.size(); s1++) {
+						SortedBinaryZDataBlock[] snp1 = blockindex[s1];
+						SortedBinaryZDataBlock refblock1 = refBlocks[s1];
+
+//					int s2 = s1;
+						for (int s2 = (s1 + 1); s2 < snpmap.size(); s2++) {
+//					for (int s2 = 0; s2 < snpmap.nrElemsPerArray(); s2++) {
+							SortedBinaryZDataBlock[] snp2 = blockindex[s2];
+							
+							ReturnObj zs = removeNullsAndConvertToDouble(snp1, snp2);
+							if (zs != null && zs.x.length >= minNrValues && zs.nx[0] >= minNrSamples) {
+								SortedBinaryZDataBlock refblock2 = refBlocks[s2];
+								String outln = refblock1.snp
+										+ "\t" + refblock2.snp;
+								
+								double r = 0;
+								double rsq = 0;
+								if (method.equals(MODE.WEIGHTEDPEARSON)) {
+									r = weightedcorr(zs);
+								} else if (method.equals(MODE.INNERPRODUCT)) {
+									r = innerproduct(zs, false);
+								} else if (method.equals(MODE.WEIGHTEDINNERPRODUCT)) {
+									r = innerproduct(zs, true);
+								} else {
+									r = c.correlation(zs.x, zs.y);
+								}
+								
+								rsq = r * r;
+								
+								outln += "\t"
+										+ zs.x.length + "\t"
+										+ zs.weight + "\t"
+										+ r + "\t"
+										+ rsq;
+								
+								output.writeln(outln);
+							}
+							
+							
+						}
+					}
+					output.close();
+					
+				}
+				
+				// write alleles
+				System.out.println("Job" + id + "\tGene " + querygene + "\thas " + snpmap.size() + " snps");
 				TextFile alleleout = new TextFile(outdir + querygene + "-referenceAlleles.txt.gz", TextFile.W, 32 * 1024);
 				alleleout.writeln("SNP\tAlleles\tAssessed");
 				
-				String header = "SNP1\tSNP2\tNrValues\tNrSamples\tR(" + method + ")\tRsq";
-				
-				output.writeln(header);
 				for (int s1 = 0; s1 < snpmap.size(); s1++) {
 					SortedBinaryZDataBlock[] snp1 = blockindex[s1];
 					SortedBinaryZDataBlock refblock1 = refBlocks[s1];
-
-//					int s2 = s1;
-					for (int s2 = (s1 + 1); s2 < snpmap.size(); s2++) {
-//					for (int s2 = 0; s2 < snpmap.nrElemsPerArray(); s2++) {
-						SortedBinaryZDataBlock[] snp2 = blockindex[s2];
-						
-						ReturnObj zs = removeNullsAndConvertToDouble(snp1, snp2);
-						if (zs != null && zs.x.length >= minNrValues && zs.nx[0] >= minNrSamples) {
-							SortedBinaryZDataBlock refblock2 = refBlocks[s2];
-							String outln = refblock1.snp
-									+ "\t" + refblock2.snp;
-							
-							double r = 0;
-							double rsq = 0;
-							if (method.equals(MODE.WEIGHTEDPEARSON)) {
-								r = weightedcorr(zs);
-							} else if (method.equals(MODE.INNERPRODUCT)) {
-								r = innerproduct(zs, false);
-							} else if (method.equals(MODE.WEIGHTEDINNERPRODUCT)) {
-								r = innerproduct(zs, true);
-							} else {
-								r = c.correlation(zs.x, zs.y);
-							}
-							
-							rsq = r * r;
-							
-							outln += "\t"
-									+ zs.x.length + "\t"
-									+ zs.weight + "\t"
-									+ r + "\t"
-									+ rsq;
-							
-							output.writeln(outln);
-						}
-						
-						
-					}
-//					System.out.println(Thread.currentThread().getName() + "\t" + s1 + "/" + snpmap.nrElemsPerArray());
 					alleleout.writeln(refblock1.snp + "\t" + refblock1.allele + "\t" + refblock1.assessed);
 				}
 				alleleout.close();
-				output.close();
 				
+				
+				// write zscore matrices.
 				if (writezmat) {
 					System.out.println("Job" + id + "\tGene " + querygene + "\tInitializing z-mat: " + snpmap.size() + " x " + (dataset.length * 10));
 					float[][] zout = new float[dataset.length * 10][snpmap.size()];
@@ -421,7 +434,7 @@ public class BinaryFileLD {
 					System.out.println("Job" + id + "\tGene " + querygene + "\tWriting mat");
 					TextFile outz = new TextFile(outdir + querygene + "-zmat.txt.gz", TextFile.W);
 					TextFile outn = new TextFile(outdir + querygene + "-nmat.txt.gz", TextFile.W);
-					header = "-";
+					String header = "-";
 					
 					for (int s1 = 0; s1 < snpmap.size(); s1++) {
 						header += "\t" + refBlocks[s1].snp;

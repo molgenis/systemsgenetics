@@ -90,7 +90,7 @@ public class TriTyperToVCF {
 				loader.loadGenotypes(obj);
 				Byte chr = d.getChr(s);
 				
-				if (chr != null && chr > 1 && chr < 24) {
+				if (chr != null && chr > 0 && chr < 24) {
 					if (obj.getCR() < 0.95) {
 						nrlowcr++;
 					}

@@ -44,6 +44,7 @@ public class Normalizer {
 		} else {
 			if (Gpio.getParentDir(expressionFile) == null) {
 				//This happens for relative paths in current dir
+				//This happens for relative paths in current dir
 				outdir = "";
 			} else {
 				outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
