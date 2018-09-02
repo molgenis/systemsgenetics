@@ -23,9 +23,12 @@ public class Deconvolution {
 	public HashMap<String,ArrayList<String>> geneSnpPairs;
 	private CommandLineOptions commandLineOptions;
 	public GenotypeData genotypeData;
-
+	private cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = null;
+	private cern.jet.random.tdouble.StudentT tDistColt = null;
+	
 	public Deconvolution(CommandLineOptions commandLineOptions) {
 		this.commandLineOptions = commandLineOptions;
+		randomEngine = new cern.jet.random.tdouble.engine.DRand();
 	}
 
 	/*
@@ -139,7 +142,7 @@ public class Deconvolution {
 				double[] estimateRegressionParameters = model.getEstimateRegressionParameters();
 
 				// first write out the beta of the cell proportion term
-				results += "\t"+estimateRegressionParameters[2];
+				results += "\t"+estimateRegressionParameters[3];
 			}
 			output.add(results);	
 		}
@@ -199,10 +202,11 @@ public class Deconvolution {
 		 */
 		interactionModelCollection.createObservedValueMatrices();
 		interactionModelCollection.calculateOlsForAllModels();		
+		
 		calculateDeconvolutionPvalue(interactionModelCollection);
 
 		DeconvolutionResult deconResult =  new DeconvolutionResult();
-
+		
 		interactionModelCollection.cleanUp();
 		deconResult = new DeconvolutionResult(interactionModelCollection);
 		return deconResult;
@@ -215,13 +219,17 @@ public class Deconvolution {
 	 */
 	private void calculateDeconvolutionPvalue(InteractionModelCollection interactionModelCollection) 
 			throws IllegalAccessException, IOException {
+	
 		for (String interactionModelName : interactionModelCollection.getModelNames()) {
 			
 			InteractionModel interactionModel = interactionModelCollection.getInteractionModel(interactionModelName);
-			InteractionModel snpModel = interactionModelCollection.getSnpModel(interactionModelName);
-			double pval = Statistics.anova(interactionModel.getSumOfSquares(), snpModel.getSumOfSquares(), 
-					interactionModel.getDegreesOfFreedom(),snpModel.getDegreesOfFreedom(), 
-					true);
+			tDistColt = new cern.jet.random.tdouble.StudentT(interactionModel.getDegreesOfFreedom(), randomEngine);
+//			InteractionModel snpModel = interactionModelCollection.getSnpModel(interactionModelName);
+			//double pval = Statistics.anova(interactionModel.getSumOfSquares(), snpModel.getSumOfSquares(), 
+			//		interactionModel.getDegreesOfFreedom(),snpModel.getDegreesOfFreedom(), 
+			//		true);
+			double se = interactionModel.getEstimateRegressionParametersStandardErrors()[2];
+			double pval = Statistics.convertBetaToP(interactionModel.getEstimateRegressionParameters()[2],se,tDistColt);
 			interactionModel.setPvalue(pval);
 			interactionModelCollection.setPvalue(pval, interactionModelName);
 		}

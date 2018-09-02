@@ -25,6 +25,7 @@ public class InteractionModel {
 	private Integer degreesOfFreedom;
 	private Integer modelLength;
 	private Integer numberOfTerms;
+	private double[] estimatedRegressionParametersStandardErrors;
 	private double[] estimatedRegressionParameters;
 	private double[] residuals;
 	private double estimatedStandardError;
@@ -165,6 +166,14 @@ public class InteractionModel {
 		this.estimatedRegressionParameters = estimatedRegressionParamters;
 	}
 	
+	public void setEstimatedRegressionParametersStandardErrors(double[] estimatedRegressionParamtersStandardErrors){
+		this.estimatedRegressionParametersStandardErrors = estimatedRegressionParamtersStandardErrors;
+	}
+	
+	public double[] getEstimateRegressionParametersStandardErrors() throws IllegalAccessException{
+		return(this.estimatedRegressionParametersStandardErrors);
+	}
+	
 	public double[] getEstimateRegressionParameters() throws IllegalAccessException{
 		return(this.estimatedRegressionParameters);
 	}
@@ -204,18 +213,11 @@ public class InteractionModel {
 			throw(e);
 		}
 		
-		/*for (int i = 0; i < this.getObservedValues().length; i++) {
-		    for (int j = 0; j < this.getObservedValues()[i].length; j++) {
-		        System.out.print(this.getObservedValues()[i][j] + " ");
-		    }
-		    System.out.println();
-		}*/
-		
 		this.setSumOfSquares(regression.calculateResidualSumOfSquares());
 		this.setDegreesOfFreedom(expressionValues.length - (this.getNumberOfTerms() + 1));
 		setResiduals(regression.estimateResiduals());
 		setEstimatedRegressionParameters(regression.estimateRegressionParameters());
-		
+		setEstimatedRegressionParametersStandardErrors(regression.estimateRegressionParametersStandardErrors());
 		//for (int i = 0; i < expressionValues.length; ++i) {
 	//		System.out.println(expressionValues[i]+"\t"+this.getObservedValues()[i][0]);
 		//}

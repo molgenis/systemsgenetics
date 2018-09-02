@@ -3,6 +3,7 @@ package main.java.decon_eQTL_simple;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import JSci.maths.statistics.FDistribution;
 import java.lang.Math;
+import cern.jet.random.tdouble.StudentT;
 
 /**
  * Several functions for statistical computations
@@ -114,6 +115,34 @@ public class Statistics
 		/*** Calculate 1 - the probability of observing a lower Fvalue **/
 		double pval = 1 - Fdist.cumulative(Fval);
 		return pval;
+	}
+	
+	/**
+	 * Convert a beta to zscore, and the zscore to a p-value. Adjusted from https://github.com/molgenis/systemsgenetics/blob/master/eqtl-mapping-pipeline/src/main/java/eqtlmappingpipeline/interactionanalysis/InteractionAnalysisTask.java
+	 * 
+	 * @param beta The beta to convert
+	 * @param se The standard error
+	 * @param tDistColt t-distribution
+	 * @return p-value
+	 */
+	public static Double convertBetaToP(double beta, double se, StudentT tDistColt) {
+
+		double t = beta / se;
+		double p = 1;
+		if (t < 0) {
+			p = tDistColt.cdf(t);
+			if (p < 2.0E-323) {
+				p = 2.0E-323;
+
+			}
+		} else {
+			p = tDistColt.cdf(-t);
+			if (p < 2.0E-323) {
+				p = 2.0E-323;
+
+			}
+		}
+		return p;
 	}
 }
 

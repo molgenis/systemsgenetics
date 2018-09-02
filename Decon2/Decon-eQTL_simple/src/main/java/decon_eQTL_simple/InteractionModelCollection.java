@@ -156,14 +156,14 @@ public class InteractionModelCollection {
 		CellCount cellCount = getCellCount();
 		int numberOfCelltypes = cellCount.getNumberOfCelltypes();
 		int numberOfSamples = cellCount.getNumberOfSamples();
-		// number of terms is 3 because intercept + snp + snp:GT
+		// number of terms is 3 because intercept + snp + CC + snp:CC
 		int numberOfTerms = 3;
 		// for each cell type we have to make 1 model, e.g. y ~ snp + snp : neut, y ~ snp + snp : mono etc
 		for (int modelIndex = 0; modelIndex < numberOfCelltypes; modelIndex++) {
 			InteractionModel interactionModel = new InteractionModel(numberOfSamples, 
 					numberOfTerms);
-			// number of terms is 2 because intercept + snp
-			InteractionModel snpModel = new InteractionModel(numberOfSamples, 2);
+			// number of terms is 1 becausee only snp
+			InteractionModel snpModel = new InteractionModel(numberOfSamples, 1);
 			
 			String modelName = String.format("model_%s",cellCount.getCelltype(modelIndex) );
 			interactionModel.setModelName(modelName);
@@ -177,7 +177,8 @@ public class InteractionModelCollection {
 				double celltypePerc = cellCount.getCellCountPercentages()[sampleIndex][modelIndex];
 				// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
 				interactionModel.addObservedValue(genotypes[sampleIndex], sampleIndex, 0);
-				interactionModel.addObservedValue(genotypes[sampleIndex]*celltypePerc, sampleIndex, 1);
+				interactionModel.addObservedValue(celltypePerc, sampleIndex, 1);
+				interactionModel.addObservedValue(genotypes[sampleIndex]*celltypePerc, sampleIndex, 2);
 				
 				snpModel.addObservedValue(genotypes[sampleIndex], sampleIndex, 0);
 			}
