@@ -168,7 +168,8 @@ public class Normalizer {
 		}
 
 		if (runPCA) {
-			ConcurrentCorrelation c = new ConcurrentCorrelation(2);
+			int cores = Runtime.getRuntime().availableProcessors();
+			ConcurrentCorrelation c = new ConcurrentCorrelation(cores);
 			double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
 			Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
 			if (nrPCAsOverSamplesToRemove != 0 || nrIntermediatePCAsOverSamplesToRemoveToOutput != 0) {
