@@ -141,7 +141,12 @@ public class Deconvolution {
 
 				double[] estimateRegressionParameters = model.getEstimateRegressionParameters();
 
-				// first write out the beta of the cell proportion term
+				// because model is y = intercept + snp + cc + snp:cc the interaction beta is at index [3]
+				// but have to check what direction the beta of snp has, because if it is negative the interaction
+				// term beta has to be flipped.
+				if (estimateRegressionParameters[1] < 0) {
+					estimateRegressionParameters[3] = estimateRegressionParameters[3]*-1;
+				}
 				results += "\t"+estimateRegressionParameters[3];
 			}
 			output.add(results);	

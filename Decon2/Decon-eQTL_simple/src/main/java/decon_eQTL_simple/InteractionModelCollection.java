@@ -175,7 +175,7 @@ public class InteractionModelCollection {
 			// number of terms + 1 because for full model all cell types are included
 			for (int sampleIndex = 0; sampleIndex <= numberOfSamples-1; ++sampleIndex) {
 				double celltypePerc = cellCount.getCellCountPercentages()[sampleIndex][modelIndex];
-				// if i (cell type index) is the same as m (model index), don't add the interaction term of celltype:GT
+
 				interactionModel.addObservedValue(genotypes[sampleIndex], sampleIndex, 0);
 				interactionModel.addObservedValue(celltypePerc, sampleIndex, 1);
 				interactionModel.addObservedValue(genotypes[sampleIndex]*celltypePerc, sampleIndex, 2);
