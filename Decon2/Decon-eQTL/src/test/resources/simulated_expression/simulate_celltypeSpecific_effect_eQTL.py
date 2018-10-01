@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 import random
-
+import sys
 
 parser = argparse.ArgumentParser(description='Simulate gene expression levels using expression ~ cc1 + cc2 + snp:cc1 + snp:cc2')
 parser.add_argument('cellcount_file', help='file containing cell counts')
@@ -84,8 +84,7 @@ def simulate_cellcounts(number_of_samples, batch):
     for index, line in enumerate(genotype_lines):
         if index % 100 == 0:
             print('processed',index,'lines')
-            if index == 500:
-                break
+            sys.stdout.flush()
         line = line.strip().split('\t')
         snp = line[0]
         if len(snp.strip()) == 0:
