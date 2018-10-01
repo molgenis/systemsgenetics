@@ -43,7 +43,7 @@ def simulate_cellcounts(number_of_samples, batch):
     out_genotype = open(args.out_dir+'/genotypes/genotypes_'+batch_name+'samples.txt','w')
     out_cellcount = open(args.out_dir+'/cellcounts/cellcounts_'+batch_name+'samples.txt','w')
     out_simulatedExpression =  open(args.out_dir+'/expression/simulated_expression_'+batch_name+'samples.txt','w')
-    out_snpToTest = open(args.out_dir+'/snpsToTest.txt','w') 
+    out_snpToTest = open(args.out_dir+'snpsToTest/snpsToTest_'+batch_name+'.txt','w') 
             
     out_beta_info.write('gene\tsnp')
     for cc in cellcount_names:
@@ -100,7 +100,7 @@ def simulate_cellcounts(number_of_samples, batch):
         current_cc_gt_betas = betas[random.sample(range(10000), len(cellcount_names))]
         for cc_index, cellcount_name in enumerate(cellcount_names):
             out_beta_info.write('\t'+str(current_cc_betas[cc_index])+'\t'+str(current_cc_gt_betas[cc_index]))
-
+        
         #error_index =  random.randint(0,10000
         #out_beta_info.write('\t'+str(betas[error_index\)+'\n')
         
