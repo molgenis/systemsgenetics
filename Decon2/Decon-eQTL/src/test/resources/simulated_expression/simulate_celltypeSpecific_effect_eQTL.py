@@ -72,10 +72,11 @@ def simulate_cellcounts(number_of_samples, batch):
     out_simulatedExpression.write('\t'+'\t'.join(random_selected_samples_list)+'\n')
     out_genotype.write('\t'+'\t'.join(random_selected_samples_list)+'\n')
 
-    mu, sigma = 5, 7
+    mu, sigma = 0, 4
     print('simulate betas')
     error = np.random.normal(0,0, len(genotype_lines[1:])+2)
     betas = np.random.normal(mu, sigma, 10000)
+    betas = [abs(x) for x in betas]
     print('done')        
     out_snpToTest.write('gene\tsnp\n')
     # use random genotypes
@@ -95,8 +96,17 @@ def simulate_cellcounts(number_of_samples, batch):
         out_genotype.write(snp)
         out_beta_info.write('gene_'+str(index)+'\t'+snp)
         
+    
         current_cc_betas = betas[random.sample(range(10000), len(cellcount_names))]
+        #  make sure that all betas have same direction, 50% all negative or all positive
+        if random.randint(1,2) == 1:
+            current_cc_betas = [-1*x for x in current_cc_betas]
+            
         current_cc_gt_betas = betas[random.sample(range(10000), len(cellcount_names))]
+        #  make sure that all betas have same direction, 50% all negative or all positive
+        if random.randint(1,2) == 1:
+            current_cc_gt_betas = [-1*x for x in current_cc_gt_betas]
+            
         for cc_index, cellcount_name in enumerate(cellcount_names):
             out_beta_info.write('\t'+str(current_cc_betas[cc_index])+'\t'+str(current_cc_gt_betas[cc_index]))
         
