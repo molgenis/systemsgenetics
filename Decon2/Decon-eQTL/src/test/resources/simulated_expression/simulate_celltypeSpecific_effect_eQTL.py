@@ -2,6 +2,7 @@ import numpy as np
 import argparse
 import random
 import sys
+import os
 
 parser = argparse.ArgumentParser(description='Simulate gene expression levels using expression ~ cc1 + cc2 + snp:cc1 + snp:cc2')
 parser.add_argument('cellcount_file', help='file containing cell counts')
@@ -11,6 +12,17 @@ parser.add_argument('number_of_samples', help='Number of samples to simulate', t
 parser.add_argument('batch', help='Name of the batch')
 
 args = parser.parse_args()
+
+if not os.path.exists(args.out_dir+'/betas/'):
+    os.makedirs(args.out_dir+'/betas/')
+if not os.path.exists(args.out_dir+'/genotypes/'):
+    os.makedirs(args.out_dir+'/genotypes/')
+if not os.path.exists(args.out_dir+'/cellcounts/'):
+    os.makedirs(args.out_dir+'/cellcounts/')
+if not os.path.exists(args.out_dir+'/expression/'):
+    os.makedirs(args.out_dir+'/expression/')
+if not os.path.exists(args.out_dir+'/snpsToTest/'):
+    os.makedirs(args.out_dir+'/snpsToTest/')
 
 
 # Use actual (or Decon-Cell predicted) cell counts to simulate the expression levels. Parse the file
