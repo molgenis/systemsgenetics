@@ -7,6 +7,7 @@ import os
 parser = argparse.ArgumentParser(description='Simulate gene expression levels using expression ~ cc1 + cc2 + snp:cc1 + snp:cc2')
 parser.add_argument('cellcount_file', help='file containing cell counts')
 parser.add_argument('genotype_file', help='file containing genotypes')
+parser.add_argument('beta_file', help='file containing betas')
 parser.add_argument('out_dir', help='output directory to write the simulated data to')
 parser.add_argument('number_of_samples', help='Number of samples to simulate', type=int)
 parser.add_argument('batch', help='Name of the batch')
@@ -31,6 +32,7 @@ if not os.path.exists(args.out_dir+'/snpsToTest/'):
 # sample1  75     14
 # sample2  84     4
 def simulate_cellcounts(number_of_samples, batch):
+      
     cellcount_names = []
     samples = []
     cellcount_per_sample = {}
@@ -126,11 +128,10 @@ def simulate_cellcounts(number_of_samples, batch):
         #out_beta_info.write('\t'+str(betas[error_index\)+'\n')
         
         out_beta_info.write('\t'+str(0)+'\n')
-        for sample_index, dosage in enumerate(line[1:]):
-            sample = samples[sample_index]
-            if sample not in random_selected_samples_set:
-                continue
-            dosage = float(dosage)
+        for sample in random_selected_samples_list:
+            sample_index = samples.index(sample)+1
+            
+            dosage = float(line[sample_index])
             cellcounts = cellcount_per_sample[sample]
             out_genotype.write('\t'+str(dosage))
             # Expression will be made with expression = cc1 + cc2 + snp:cc1 + snp:cc2 + error
