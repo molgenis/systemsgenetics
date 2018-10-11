@@ -31,9 +31,9 @@ public class InvestigateBav {
 	 */
 	public static void main(String[] args) throws IOException {
 
-		final File rankFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\rankingCandidateGenes");
-		final File samplesFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\AtaxiaSamples.txt");
-		final File mutationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\MutationMatrixAtaxia.txt");
+		final File rankFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioMieke\\");
+		final File samplesFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioMieke\\samples.txt");
+		final File mutationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\MutationMatrixCardio.txt");
 
 		ArrayList<String> samples = loadLines(samplesFile);
 
@@ -47,25 +47,24 @@ public class InvestigateBav {
 		for (String sample : samples) {
 
 			File sampleFile = new File(rankFolder, sample + ".txt");
-			
-			if(!sampleFile.exists()){
-				System.out.println("Skipping: " + sample );
+
+			if (!sampleFile.exists()) {
+				System.out.println("Skipping: " + sample);
 				continue;
 			}
-			
+
 			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
+			String[] line;
+			while ((line = reader.readNext()) != null) {
 
-			for (int i = 0; i < 20; i++) {
-
-				String[] line = reader.readNext();
 				String gene = line[1];
 				double zscore = Double.parseDouble(line[3]);
 				String otherHpos = line[5];
 
-				if(zscore > 3){
+				if (zscore >= 5) {
 					System.out.println(sample + " " + gene + " " + zscore);
 				}
-				
+
 				geneZscore.put(gene, zscore);
 				geneCount.adjustOrPutValue(gene, 1, 1);
 				geneOtherHpo.put(gene, otherHpos);
@@ -83,14 +82,13 @@ public class InvestigateBav {
 		for (String gene : geneCount.keySet()) {
 			int count = geneCount.get(gene);
 
-			if (count > 1) {
+			if (count >= 1) {
 
-				if (geneZscore.get(gene) > 3) {
+				if (geneZscore.get(gene) >= 5) {
 					recurrentGenes.add(gene);
 					System.out.println(gene + "\t" + count + "\t" + geneZscore.get(gene) + "\t" + geneOtherHpo.get(gene) + "\t" + String.join(";", geneMutatedSamples.get(gene)));
 				}
 
-				
 			}
 		}
 
@@ -99,13 +97,12 @@ public class InvestigateBav {
 		for (String sample : samples) {
 
 			File sampleFile = new File(rankFolder, sample + ".txt");
-			
-			if(!sampleFile.exists()){
-				System.out.println("Skipping: " + sample );
+
+			if (!sampleFile.exists()) {
+				System.out.println("Skipping: " + sample);
 				continue;
 			}
-			
-			
+
 			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
 
 			String[] nextLine;

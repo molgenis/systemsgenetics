@@ -736,6 +736,19 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return matrix.getQuick(row, column);
 	}
+	
+		/**
+	 * Set specific element. Fast but no check if query is in range
+	 *
+	 * @param row
+	 * @param column
+	 * @param value
+	 * @return
+	 */
+	public void setElementQuick(int row, int column, double value) {
+
+		matrix.setQuick(row, column, value);
+	}
 
 	public boolean containsRow(R rowId) {
 		return hashRows.containsKey(rowId);
@@ -828,7 +841,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int i = 0;
 		for (C col : colsToView) {
 
-			//Null pointer below probabli indicates looking for non existing col
+			//Null pointer below probably indicates looking for non existing col
 			colNrs[i] = hashCols.get(col);
 			newHashCols.put(col, i++);
 

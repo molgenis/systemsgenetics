@@ -36,13 +36,11 @@ public class ConvertMyoclonusClustersToMatrix {
 	public static void main(String[] args) throws IOException, Exception {
 
 		//final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
-		
 		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
-		
+
 		final File clusterFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\myoclonusClusters.txt");
 		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + clusterFile.getName() + "_matrix.txt.gz");
-		
-		
+
 		HashMap<String, HashSet<String>> clusterToGenes = readClusterFile(clusterFile);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
@@ -69,10 +67,8 @@ public class ConvertMyoclonusClustersToMatrix {
 
 		hpoMatrix.save(outputFile);
 
-
 	}
 
-	
 	private static HashMap<String, HashSet<String>> readClusterFile(File hpoFile) throws Exception {
 
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
@@ -80,21 +76,22 @@ public class ConvertMyoclonusClustersToMatrix {
 
 		HashMap<String, HashSet<String>> hpoToGenes = new HashMap<>();
 
+		HashSet<String> allMyoclonusGenes = new HashSet<>();
+		hpoToGenes.put("AllMyoclonus", allMyoclonusGenes);
+
 		String[] nextLine;
 		while ((nextLine = hpoReader.readNext()) != null) {
 			String gene = nextLine[0];
 			String cluster = nextLine[1];
 
-				HashSet<String> hpoGenes = hpoToGenes.get(cluster);
-				if (hpoGenes == null) {
-					hpoGenes = new HashSet<>();
-					hpoToGenes.put(cluster, hpoGenes);
-				}
+			HashSet<String> hpoGenes = hpoToGenes.get(cluster);
+			if (hpoGenes == null) {
+				hpoGenes = new HashSet<>();
+				hpoToGenes.put(cluster, hpoGenes);
+			}
 
-				
-					hpoGenes.add(gene);
-				
-
+			allMyoclonusGenes.add(gene);
+			hpoGenes.add(gene);
 
 		}
 
