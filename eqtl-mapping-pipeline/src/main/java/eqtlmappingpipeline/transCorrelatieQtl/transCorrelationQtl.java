@@ -22,7 +22,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
@@ -38,7 +37,6 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.collections.intervaltree.NamedGenomicRange;
 import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
-import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -181,7 +179,7 @@ public class transCorrelationQtl {
 		System.out.println("---------------------------------");
 		System.out.println();
 
-		final HashMap<String, HashSet<EQTL>> transEqtls = loadTransEqtls(transQtlPath);
+		final HashMap<String, HashSet<Qtl>> transEqtls = loadTransEqtls(transQtlPath);
 		System.out.println("Trans SNPs: " + transEqtls.size());
 
 		final PerChrIntervalTree<NamedGenomicRange> geneMappings = loadGeneMappings(geneMappingFile, window);
@@ -204,7 +202,7 @@ public class transCorrelationQtl {
 		for (String genotypeSample : genotypeSamples) {
 			String expressionSample = gteMap.get(genotypeSample);
 			expressionSamples.add(expressionSample);
-			if(!expressionDataAll.containsCol(gteMap.get(genotypeSample))){
+			if (!expressionDataAll.containsCol(gteMap.get(genotypeSample))) {
 				System.out.println("Could not find expression data for: " + genotypeSample + " / " + expressionSample);
 			}
 		}
@@ -231,36 +229,63 @@ public class transCorrelationQtl {
 		outputLine[c++] = "ZcoreDifferenceBetweenBothHom";
 		outputWriter.writeNext(outputLine);
 
-		for (Map.Entry<String, HashSet<EQTL>> transSnpEntry : transEqtls.entrySet()) {
+		for (Map.Entry<String, HashSet<Qtl>> transSnpEntry : transEqtls.entrySet()) {
 			final String snp = transSnpEntry.getKey();
-			final HashSet<EQTL> snpTransEffects = transSnpEntry.getValue();
+			final HashSet<Qtl> snpTransEffects = transSnpEntry.getValue();
 
 			GeneticVariant variant = variantMap.get(snp);
+
+			if (variant == null) {
+				System.err.println("Skipping: " + snp);
+				continue;
+			}
 
 			Alleles het = variant.getVariantAlleles();
 			Alleles homRef = Alleles.createAlleles(het.get(0), het.get(0));
 			Alleles homAlt = Alleles.createAlleles(het.get(1), het.get(1));
 
+			List<Alleles> sampleGenotypes = variant.getSampleVariants();
+
+			long homRefN = 0;
+			long hetN;
+			long homAltN = 0;
+
+			for (int s = 0; s < genotypeSamples.length; ++s) {
+
+				if (sampleGenotypes.get(s) == homRef) {
+					homRefN++;
+				} else if (sampleGenotypes.get(s) == homAlt) {
+					homAltN++;
+				}
+
+			}
+			
+			if(homRefN < 10 || homAltN < 10){
+				System.err.println("Skipping: " + snp);
+				continue;
+			}
+
 			SimpleRegression homRefRegression = new SimpleRegression();
 			SimpleRegression hetRegression = new SimpleRegression();
 			SimpleRegression homAltRegression = new SimpleRegression();
 
-			List<Alleles> sampleGenotypes = variant.getSampleVariants();
-
 			List<NamedGenomicRange> genesNearTransSnp = geneMappings.searchPosition(variant.getSequenceName(), variant.getStartPos());
 
-			for (NamedGenomicRange geneNearTransSnp : genesNearTransSnp) {
+			for (Qtl transEffect : snpTransEffects) {
 
-				DoubleMatrix1D nearbyGeneExpression = expressionData.getRow(geneNearTransSnp.getName());
+				DoubleMatrix1D targetGeneExpression = expressionData.getRow(transEffect.getTrait());
 
-				for (EQTL transEffect : snpTransEffects) {
+				for (NamedGenomicRange geneNearTransSnp : genesNearTransSnp) {
 
-					DoubleMatrix1D targetGeneExpression = expressionData.getRow(transEffect.getProbe());
+					if (!expressionData.containsRow(geneNearTransSnp.getName())) {
+						continue;
+					}
 
+					DoubleMatrix1D nearbyGeneExpression = expressionData.getRow(geneNearTransSnp.getName());
 					homRefRegression.clear();
 					hetRegression.clear();
 					homAltRegression.clear();
-					
+
 					for (int s = 0; s < genotypeSamples.length; ++s) {
 
 						if (sampleGenotypes.get(s) == homRef) {
@@ -272,29 +297,52 @@ public class transCorrelationQtl {
 						}
 
 					}
-					
+
 					double homRefR = homRefRegression.getR();
 					double hetR = hetRegression.getR();
 					double homAltR = homAltRegression.getR();
-					
-					long homRefN = homRefRegression.getN();
-					long hetN = hetRegression.getN();
-					long homAltN = homAltRegression.getN();
-					
-					double homRefZ = RtoPandZ.calculatePandZforCorrelationR(homRefR, homRefN).getZscore();
-					double hetZ = RtoPandZ.calculatePandZforCorrelationR(hetR, hetN).getZscore();
-					double homAltZ = RtoPandZ.calculatePandZforCorrelationR(homAltR, homAltN).getZscore();
-					
-					double zDiff = (homRefZ - homAltZ) / Math.sqrt((1/(homRefN-3)+(1/(homAltN-3))));
-					
+
+					homRefN = homRefRegression.getN();
+					hetN = hetRegression.getN();
+					homAltN = homAltRegression.getN();
+
+					double homRefZ;
+					double hetZ;
+					double homAltZ;
+
+					try {
+						homRefZ = RtoPandZ.calculatePandZforCorrelationR(homRefR, homRefN).getZscore();
+					} catch (Exception e) {
+						homRefZ = Double.NaN;
+					}
+					try {
+						hetZ = RtoPandZ.calculatePandZforCorrelationR(hetR, hetN).getZscore();
+					} catch (Exception e) {
+						hetZ = Double.NaN;
+					}
+					try {
+						homAltZ = RtoPandZ.calculatePandZforCorrelationR(homAltR, homAltN).getZscore();
+					} catch (Exception e) {
+						homAltZ = Double.NaN;
+					}
+
+					double zDiff;
+					if (!Double.isNaN(homRefZ) && !Double.isNaN(homAltZ)) {
+
+						zDiff = (homRefZ - homAltZ) / Math.sqrt((1 / (double) (homRefN - 3)) + (1 / (double) (homAltN - 3)));
+
+					} else {
+						zDiff = Double.NaN;
+					}
+
 					c = 0;
 					outputLine[c++] = snp;
 					outputLine[c++] = String.valueOf(transEffect.getZscore());
 					outputLine[c++] = geneNearTransSnp.getName();
-					outputLine[c++] = transEffect.getProbe();
+					outputLine[c++] = transEffect.getTrait();
 					outputLine[c++] = String.valueOf(homRefR);
 					outputLine[c++] = String.valueOf(hetR);
-					outputLine[c++] = String.valueOf(homAltR);					
+					outputLine[c++] = String.valueOf(homAltR);
 					outputLine[c++] = String.valueOf(homRefN);
 					outputLine[c++] = String.valueOf(hetN);
 					outputLine[c++] = String.valueOf(homAltN);
@@ -307,9 +355,9 @@ public class transCorrelationQtl {
 				}
 			}
 
-			outputWriter.close();
-			
 		}
+
+		outputWriter.close();
 
 	}
 
@@ -335,16 +383,38 @@ public class transCorrelationQtl {
 		return geneMappings;
 	}
 
-	public static HashMap<String, HashSet<EQTL>> loadTransEqtls(final String transQtlPath) throws IOException {
-		final QTLTextFile transEqtlFile = new QTLTextFile(transQtlPath, false);
-		final HashMap<String, HashSet<EQTL>> transEqtls = new HashMap<>();
-		Iterator<EQTL> transEqtlFileIterator = transEqtlFile.getEQtlIterator();
-		while (transEqtlFileIterator.hasNext()) {
-			EQTL eqtl = transEqtlFileIterator.next();
-			HashSet<EQTL> snpTransEffects = transEqtls.getOrDefault(eqtl.getRsName(), new HashSet());
+//	public static HashMap<String, HashSet<EQTL>> loadTransEqtls(final String transQtlPath) throws IOException {
+//		final QTLTextFile transEqtlFile = new QTLTextFile(transQtlPath, false);
+//		final HashMap<String, HashSet<EQTL>> transEqtls = new HashMap<>();
+//		Iterator<EQTL> transEqtlFileIterator = transEqtlFile.getEQtlIterator();
+//		while (transEqtlFileIterator.hasNext()) {
+//			EQTL eqtl = transEqtlFileIterator.next();
+//			HashSet<EQTL> snpTransEffects = transEqtls.getOrDefault(eqtl.getRsName(), new HashSet());
+//			snpTransEffects.add(eqtl);
+//			transEqtls.putIfAbsent(eqtl.getRsName(), snpTransEffects);
+//		}
+//		return transEqtls;
+//	}
+	
+	public static HashMap<String, HashSet<Qtl>> loadTransEqtls(final String transQtlPath) throws IOException {
+		
+		final HashMap<String, HashSet<Qtl>> transEqtls = new HashMap<>();
+		
+		
+		CSVReader transFileReader = new CSVReader(new InputStreamReader(new FileInputStream(transQtlPath), ENCODING), '\t', '\0', 0);
+		String[] nextLine;
+		while ((nextLine = transFileReader.readNext()) != null) {	
+
+			Qtl eqtl = new Qtl(nextLine[3], nextLine[4], Double.valueOf(nextLine[5]));
+		
+			HashSet<Qtl> snpTransEffects = transEqtls.getOrDefault(eqtl.getSnp(), new HashSet());
 			snpTransEffects.add(eqtl);
-			transEqtls.putIfAbsent(eqtl.getRsName(), snpTransEffects);
+			transEqtls.putIfAbsent(eqtl.getSnp(), snpTransEffects);
+			
 		}
+			
+			
+		
 		return transEqtls;
 	}
 
