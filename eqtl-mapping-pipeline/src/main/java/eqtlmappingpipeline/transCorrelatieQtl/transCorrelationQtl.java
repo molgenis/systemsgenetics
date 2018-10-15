@@ -8,6 +8,7 @@ package eqtlmappingpipeline.transCorrelatieQtl;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.jet.random.tdouble.StudentT;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -17,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +28,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.molgenis.genotype.Alleles;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
@@ -37,7 +36,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.collections.intervaltree.NamedGenomicRange;
 import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
-import umcg.genetica.io.trityper.QTLTextFile;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -50,6 +49,8 @@ public class transCorrelationQtl {
 	static final String DEFAULT_CALL_P = "0.7";
 	private static final String ENCODING = "ISO-8859-1";
 	private static final Options OPTIONS;
+	private static final cern.jet.random.tdouble.engine.DoubleRandomEngine randomEngine = new cern.jet.random.tdouble.engine.DRand();
+	private static final Pair<Double, Double> NAN_PAIR = new Pair<Double, Double>(Double.NaN, Double.NaN);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
 			+ "  |         Trans correlation QTL         |\n"
@@ -208,25 +209,22 @@ public class transCorrelationQtl {
 		}
 		final DoubleMatrixDataset<String, String> expressionData = expressionDataAll.viewColSelection(expressionSamples);
 		expressionData.setColObjects(Arrays.asList(genotypeData.getSampleNames()));
+		
+		DoubleMatrixDataset<String, String> expressionDataForceNormal = expressionData.createRowForceNormalDuplicate();
 
 		CSVWriter outputWriter = new CSVWriter(new FileWriter(outputPath), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 
-		final String[] outputLine = new String[14];
+		final String[] outputLine = new String[6];
 		int c = 0;
 		outputLine[c++] = "TransSnp";
 		outputLine[c++] = "Z-score";
 		outputLine[c++] = "NearbyGene";
 		outputLine[c++] = "TargetGene";
-		outputLine[c++] = "CorHomRef";
-		outputLine[c++] = "CorHet";
-		outputLine[c++] = "CorHomAlt";
-		outputLine[c++] = "NHomRef";
-		outputLine[c++] = "NHet";
-		outputLine[c++] = "NHomAlt";
-		outputLine[c++] = "ZscoreHomRef";
-		outputLine[c++] = "ZscoreHet";
-		outputLine[c++] = "ZscoreHomAlt";
-		outputLine[c++] = "ZcoreDifferenceBetweenBothHom";
+		outputLine[c++] = "InteractionP";
+		outputLine[c++] = "InteractionZ";
+
+		StudentT tDistColt = new cern.jet.random.tdouble.StudentT(genotypeSamples.length - 4, randomEngine);
+
 		outputWriter.writeNext(outputLine);
 
 		for (Map.Entry<String, HashSet<Qtl>> transSnpEntry : transEqtls.entrySet()) {
@@ -240,116 +238,58 @@ public class transCorrelationQtl {
 				continue;
 			}
 
-			Alleles het = variant.getVariantAlleles();
-			Alleles homRef = Alleles.createAlleles(het.get(0), het.get(0));
-			Alleles homAlt = Alleles.createAlleles(het.get(1), het.get(1));
+			//List<Alleles> sampleGenotypes = variant.getSampleVariants();
+			float[] sampleDosage = variant.getSampleDosages();
 
-			List<Alleles> sampleGenotypes = variant.getSampleVariants();
-
-			long homRefN = 0;
-			long hetN;
-			long homAltN = 0;
-
-			for (int s = 0; s < genotypeSamples.length; ++s) {
-
-				if (sampleGenotypes.get(s) == homRef) {
-					homRefN++;
-				} else if (sampleGenotypes.get(s) == homAlt) {
-					homAltN++;
-				}
-
-			}
-			
-			if(homRefN < 10 || homAltN < 10){
+			if (variant.getMinorAlleleFrequency() < 0.05) {
 				System.err.println("Skipping: " + snp);
 				continue;
 			}
-
-			SimpleRegression homRefRegression = new SimpleRegression();
-			SimpleRegression hetRegression = new SimpleRegression();
-			SimpleRegression homAltRegression = new SimpleRegression();
 
 			List<NamedGenomicRange> genesNearTransSnp = geneMappings.searchPosition(variant.getSequenceName(), variant.getStartPos());
 
 			for (Qtl transEffect : snpTransEffects) {
 
-				DoubleMatrix1D targetGeneExpression = expressionData.getRow(transEffect.getTrait());
+				DoubleMatrix1D targetGeneExpression = expressionDataForceNormal.getRow(transEffect.getTrait());
+
+				double[] targetExpresison = targetGeneExpression.toArray();
+				double[][] modelParameters = new double[genotypeSamples.length][];
 
 				for (NamedGenomicRange geneNearTransSnp : genesNearTransSnp) {
 
-					if (!expressionData.containsRow(geneNearTransSnp.getName())) {
+					if (!expressionDataForceNormal.containsRow(geneNearTransSnp.getName())) {
 						continue;
 					}
 
-					DoubleMatrix1D nearbyGeneExpression = expressionData.getRow(geneNearTransSnp.getName());
-					homRefRegression.clear();
-					hetRegression.clear();
-					homAltRegression.clear();
+					DoubleMatrix1D nearbyGeneExpression = expressionDataForceNormal.getRow(geneNearTransSnp.getName());
 
 					for (int s = 0; s < genotypeSamples.length; ++s) {
 
-						if (sampleGenotypes.get(s) == homRef) {
-							homRefRegression.addData(nearbyGeneExpression.getQuick(s), targetGeneExpression.getQuick(s));
-						} else if (sampleGenotypes.get(s) == homAlt) {
-							homAltRegression.addData(nearbyGeneExpression.getQuick(s), targetGeneExpression.getQuick(s));
-						} else {
-							hetRegression.addData(nearbyGeneExpression.getQuick(s), targetGeneExpression.getQuick(s));
-						}
+						double[] x = new double[3];
+						x[0] = nearbyGeneExpression.getQuick(s);
+						x[1] = sampleDosage[s];
+						x[2] = nearbyGeneExpression.getQuick(s) * sampleDosage[s];
+
+						modelParameters[s] = x;
 
 					}
 
-					double homRefR = homRefRegression.getR();
-					double hetR = hetRegression.getR();
-					double homAltR = homAltRegression.getR();
+					OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+					regression.newSampleData(targetExpresison, modelParameters);
+					double[] betas = regression.estimateRegressionParameters();
+					double[] betaSes = regression.estimateRegressionParametersStandardErrors();
 
-					homRefN = homRefRegression.getN();
-					hetN = hetRegression.getN();
-					homAltN = homAltRegression.getN();
-
-					double homRefZ;
-					double hetZ;
-					double homAltZ;
-
-					try {
-						homRefZ = RtoPandZ.calculatePandZforCorrelationR(homRefR, homRefN).getZscore();
-					} catch (Exception e) {
-						homRefZ = Double.NaN;
-					}
-					try {
-						hetZ = RtoPandZ.calculatePandZforCorrelationR(hetR, hetN).getZscore();
-					} catch (Exception e) {
-						hetZ = Double.NaN;
-					}
-					try {
-						homAltZ = RtoPandZ.calculatePandZforCorrelationR(homAltR, homAltN).getZscore();
-					} catch (Exception e) {
-						homAltZ = Double.NaN;
-					}
-
-					double zDiff;
-					if (!Double.isNaN(homRefZ) && !Double.isNaN(homAltZ)) {
-
-						zDiff = (homRefZ - homAltZ) / Math.sqrt((1 / (double) (homRefN - 3)) + (1 / (double) (homAltN - 3)));
-
-					} else {
-						zDiff = Double.NaN;
-					}
+					Pair<Double, Double> pair = convertBetaToP(betas[3], betaSes[3], tDistColt);
+					double pValueInteraction = pair.getLeft();
+					double zScoreInteraction = pair.getRight();
 
 					c = 0;
 					outputLine[c++] = snp;
 					outputLine[c++] = String.valueOf(transEffect.getZscore());
 					outputLine[c++] = geneNearTransSnp.getName();
 					outputLine[c++] = transEffect.getTrait();
-					outputLine[c++] = String.valueOf(homRefR);
-					outputLine[c++] = String.valueOf(hetR);
-					outputLine[c++] = String.valueOf(homAltR);
-					outputLine[c++] = String.valueOf(homRefN);
-					outputLine[c++] = String.valueOf(hetN);
-					outputLine[c++] = String.valueOf(homAltN);
-					outputLine[c++] = String.valueOf(homRefZ);
-					outputLine[c++] = String.valueOf(hetZ);
-					outputLine[c++] = String.valueOf(homAltZ);
-					outputLine[c++] = String.valueOf(zDiff);
+					outputLine[c++] = String.valueOf(pValueInteraction);
+					outputLine[c++] = String.valueOf(zScoreInteraction);
 					outputWriter.writeNext(outputLine);
 
 				}
@@ -395,26 +335,22 @@ public class transCorrelationQtl {
 //		}
 //		return transEqtls;
 //	}
-	
 	public static HashMap<String, HashSet<Qtl>> loadTransEqtls(final String transQtlPath) throws IOException {
-		
+
 		final HashMap<String, HashSet<Qtl>> transEqtls = new HashMap<>();
-		
-		
+
 		CSVReader transFileReader = new CSVReader(new InputStreamReader(new FileInputStream(transQtlPath), ENCODING), '\t', '\0', 0);
 		String[] nextLine;
-		while ((nextLine = transFileReader.readNext()) != null) {	
+		while ((nextLine = transFileReader.readNext()) != null) {
 
 			Qtl eqtl = new Qtl(nextLine[3], nextLine[4], Double.valueOf(nextLine[5]));
-		
+
 			HashSet<Qtl> snpTransEffects = transEqtls.getOrDefault(eqtl.getSnp(), new HashSet());
 			snpTransEffects.add(eqtl);
 			transEqtls.putIfAbsent(eqtl.getSnp(), snpTransEffects);
-			
+
 		}
-			
-			
-		
+
 		return transEqtls;
 	}
 
@@ -432,5 +368,33 @@ public class transCorrelationQtl {
 		}
 		return Collections.unmodifiableMap(genotypeToExpression);
 	}
+	
+	private static Pair<Double, Double> convertBetaToP(double beta, double se, StudentT tDistColt) {
+
+		if (Double.isNaN(beta)) {
+			return NAN_PAIR;
+		}
+
+		double t = beta / se;
+		double p = 1;
+		double z = 0;
+		if (t < 0) {
+			p = tDistColt.cdf(t);
+			if (p < 2.0E-323) {
+				p = 2.0E-323;
+
+			}
+			z = cern.jet.stat.Probability.normalInverse(p);
+		} else {
+			p = tDistColt.cdf(-t);
+			if (p < 2.0E-323) {
+				p = 2.0E-323;
+
+			}
+			z = -cern.jet.stat.Probability.normalInverse(p);
+		}
+		return new Pair<Double, Double>(p, z);
+	}
+
 
 }

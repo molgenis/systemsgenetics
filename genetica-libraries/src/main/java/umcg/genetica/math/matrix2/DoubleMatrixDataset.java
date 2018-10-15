@@ -27,6 +27,9 @@ import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -116,7 +119,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		//Pattern splitPatern = Pattern.compile(delimiter);
-
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
@@ -198,7 +200,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LinkedHashSet<Integer> desiredColPos = new LinkedHashSet<Integer>();
 
 		//Pattern splitPatern = Pattern.compile(delimiter);
-
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
@@ -288,25 +289,25 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
 		return dataset;
 	}
-	
-	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException{
-		
+
+	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException {
+
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
-		
+
 		HashSet<String> desiredCols = new HashSet<>();
-		
-		for(String colName : data){
-			
-			if(!colsToExclude.contains(colName)){
+
+		for (String colName : data) {
+
+			if (!colsToExclude.contains(colName)) {
 				desiredCols.add(colName);
 			}
-			
+
 		}
-		
+
 		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols);
-		
+
 	}
 
 	private static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
@@ -724,7 +725,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return matrix.get(row, column);
 	}
-	
+
 	/**
 	 * Get specific element. Fast but no check if query is in range
 	 *
@@ -736,8 +737,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return matrix.getQuick(row, column);
 	}
-	
-		/**
+
+	/**
 	 * Set specific element. Fast but no check if query is in range
 	 *
 	 * @param row
@@ -774,7 +775,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
 		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
-		
+
 		System.out.println("");
 
 		int i = 0;
@@ -879,6 +880,33 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public int getRowIndex(R gene) {
 		return this.hashRows.get(gene);
+	}
+
+	public DoubleMatrixDataset<R, C> createRowForceNormalDuplicate() {
+
+		DoubleMatrixDataset<R, C> newDataset = new DoubleMatrixDataset<>(hashRows, hashCols);
+
+		NaturalRanking ranking = new NaturalRanking(NaNStrategy.MINIMAL,
+				TiesStrategy.AVERAGE);
+
+		for (int r = 0; r < matrix.rows(); ++r) {
+
+			double[] row = matrix.viewRow(r).toArray();
+
+			double mean = JSci.maths.ArrayMath.mean(row);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(row);
+			double[] values = new double[row.length];
+
+			double[] rankedValues = ranking.rank(values);
+			for (int s = 0; s < matrix.columns(); s++) {
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+				newDataset.setElementQuick(r, s, mean + cern.jet.stat.Probability.normalInverse(pValue) * stdev);
+			}
+
+		}
+
+		return newDataset;
+
 	}
 
 }
