@@ -28,6 +28,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
@@ -90,14 +91,14 @@ public class transCorrelationQtl {
 		OPTIONS.addOption(OptionBuilder.create("G"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("GTE file");
 		OptionBuilder.withLongOpt("GTE");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("gte"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Expression matrix");
 		OptionBuilder.withLongOpt("expression");
 		OptionBuilder.isRequired();
@@ -209,12 +210,12 @@ public class transCorrelationQtl {
 		}
 		final DoubleMatrixDataset<String, String> expressionData = expressionDataAll.viewColSelection(expressionSamples);
 		expressionData.setColObjects(Arrays.asList(genotypeData.getSampleNames()));
-		
-		DoubleMatrixDataset<String, String> expressionDataForceNormal = expressionData.createRowForceNormalDuplicate();
 
+		final DoubleMatrixDataset<String, String> expressionDataForceNormal = expressionData.createRowForceNormalDuplicate();
+		
 		CSVWriter outputWriter = new CSVWriter(new FileWriter(outputPath), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 
-		final String[] outputLine = new String[6];
+		final String[] outputLine = new String[8];
 		int c = 0;
 		outputLine[c++] = "TransSnp";
 		outputLine[c++] = "Z-score";
@@ -222,6 +223,8 @@ public class transCorrelationQtl {
 		outputLine[c++] = "TargetGene";
 		outputLine[c++] = "InteractionP";
 		outputLine[c++] = "InteractionZ";
+		outputLine[c++] = "NumberOfSamples";
+		outputLine[c++] = "RefAllele";
 
 		StudentT tDistColt = new cern.jet.random.tdouble.StudentT(genotypeSamples.length - 4, randomEngine);
 
@@ -274,14 +277,22 @@ public class transCorrelationQtl {
 
 					}
 
-					OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-					regression.newSampleData(targetExpresison, modelParameters);
-					double[] betas = regression.estimateRegressionParameters();
-					double[] betaSes = regression.estimateRegressionParametersStandardErrors();
+					double pValueInteraction;
+					double zScoreInteraction;
 
-					Pair<Double, Double> pair = convertBetaToP(betas[3], betaSes[3], tDistColt);
-					double pValueInteraction = pair.getLeft();
-					double zScoreInteraction = pair.getRight();
+					try {
+						OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+						regression.newSampleData(targetExpresison, modelParameters);
+						double[] betas = regression.estimateRegressionParameters();
+						double[] betaSes = regression.estimateRegressionParametersStandardErrors();
+
+						Pair<Double, Double> pair = convertBetaToP(betas[3], betaSes[3], tDistColt);
+						pValueInteraction = pair.getLeft();
+						zScoreInteraction = pair.getRight();
+					} catch (SingularMatrixException ex) {
+						pValueInteraction = Double.NaN;
+						zScoreInteraction = Double.NaN;
+					}
 
 					c = 0;
 					outputLine[c++] = snp;
@@ -290,6 +301,8 @@ public class transCorrelationQtl {
 					outputLine[c++] = transEffect.getTrait();
 					outputLine[c++] = String.valueOf(pValueInteraction);
 					outputLine[c++] = String.valueOf(zScoreInteraction);
+					outputLine[c++] = String.valueOf(genotypeSamples.length);
+					outputLine[c++] = variant.getRefAllele().getAlleleAsString();
 					outputWriter.writeNext(outputLine);
 
 				}
@@ -368,7 +381,7 @@ public class transCorrelationQtl {
 		}
 		return Collections.unmodifiableMap(genotypeToExpression);
 	}
-	
+
 	private static Pair<Double, Double> convertBetaToP(double beta, double se, StudentT tDistColt) {
 
 		if (Double.isNaN(beta)) {
@@ -395,6 +408,5 @@ public class transCorrelationQtl {
 		}
 		return new Pair<Double, Double>(p, z);
 	}
-
 
 }

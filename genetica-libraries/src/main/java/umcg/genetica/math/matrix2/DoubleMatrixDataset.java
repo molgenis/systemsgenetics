@@ -30,6 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import org.apache.mahout.math.Arrays;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -886,7 +887,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		DoubleMatrixDataset<R, C> newDataset = new DoubleMatrixDataset<>(hashRows, hashCols);
 
-		NaturalRanking ranking = new NaturalRanking(NaNStrategy.MINIMAL,
+		NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED,
 				TiesStrategy.AVERAGE);
 
 		for (int r = 0; r < matrix.rows(); ++r) {
@@ -895,11 +896,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 			double mean = JSci.maths.ArrayMath.mean(row);
 			double stdev = JSci.maths.ArrayMath.standardDeviation(row);
-			double[] values = new double[row.length];
 
-			double[] rankedValues = ranking.rank(values);
+			double[] rankedValues = ranking.rank(row);
+
 			for (int s = 0; s < matrix.columns(); s++) {
 				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+
 				newDataset.setElementQuick(r, s, mean + cern.jet.stat.Probability.normalInverse(pValue) * stdev);
 			}
 

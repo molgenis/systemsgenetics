@@ -25,6 +25,8 @@ import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
+import eqtlmappingpipeline.transCorrelatieQtl.ExtractDataForPlots;
+import eqtlmappingpipeline.transCorrelatieQtl.MetaTransCorrelationQtl;
 import eqtlmappingpipeline.transCorrelatieQtl.transCorrelationQtl;
 import eqtlmappingpipeline.util.ModuleEqtWestraReplication;
 import eqtlmappingpipeline.util.ModuleEqtlGeuvadisReplication;
@@ -153,6 +155,12 @@ public class EQTLMappingPipelineConsole {
 				return;
 			} else if (mode.equals("transCorrelation")) {
 				transCorrelationQtl.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("transCorrelationMeta")) {
+				MetaTransCorrelationQtl.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("transCorrelationExtractData")) {
+				ExtractDataForPlots.main(Arrays.copyOfRange(args, 2, args.length));
 				return;
 			} else {
 				printUsage();
