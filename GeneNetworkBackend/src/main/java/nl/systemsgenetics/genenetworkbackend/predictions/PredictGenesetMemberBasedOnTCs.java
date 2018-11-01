@@ -1,4 +1,4 @@
-package nl.systemsgenetics.genenetworkbackend.legacy;
+package nl.systemsgenetics.genenetworkbackend.predictions;
 
 import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
