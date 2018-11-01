@@ -54,19 +54,19 @@ public class TestDiseaseGenePerformance {
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
 		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
 		final File ensgSymbolMappingFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
-		final File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_zscores.txt.gz");
+		final File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions.txt.gz");
 		final File predictionMatrixCorrelationFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_pathwayCorrelation.txt");
-		final File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_bonSigTerms.txt");
+		final File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions_bonSigTerms.txt");
 		final double correctedPCutoff = 0.05;
 		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
-		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_bonferroni.txt");
+		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions_auc_bonferroni.txt");
 		final File hposToExcludeFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoToExclude.txt");
 		final File skewnessFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\skewnessSummary.txt");
 		final boolean randomize = true;
 		final File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
-		final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_genesInPathways.txt");
+		//final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_genesInPathways.txt");
 		//final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\expressedReactomeGenes.txt");
-		final boolean randomizeCustomBackground = true;
+		final boolean randomizeCustomBackground = false;
 
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
@@ -81,12 +81,12 @@ public class TestDiseaseGenePerformance {
 //				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomizedCustomBackground.txt");
 			} else {
 				backgroundGenes = null;
-				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomizedExtraNorm.txt");
+				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomized.txt");
 			}
 
 		} else {
 			backgroundGenes = null;
-			outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkExtraNorm.txt");
+			outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmark.txt");
 		}
 
 		final HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
