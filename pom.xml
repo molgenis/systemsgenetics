@@ -87,6 +87,6 @@
 		<module>MetaGenomicDataProcessing</module>
 		<module>GeneNetworkBackend</module>
 		<module>Decon2/Decon-eQTL</module>
-		<module>Decon2/Decon-eQTL_simple</module>
+	 <module>FunctionEnrichmentOfTransQtls</module>
 	</modules>
 </project>
