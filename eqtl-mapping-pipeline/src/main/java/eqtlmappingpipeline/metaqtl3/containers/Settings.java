@@ -88,7 +88,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public Integer batchid;
 	public Integer batchsize;
 	public boolean displayWarnings = true;
-	public int numberOfVariantsToBuffer = 10000;
+	public int numberOfVariantsToBuffer = 1000;
 	public boolean skipFDRCalculation = false;
 	public boolean usemd5hash = true;
 	public boolean sortsnps = true;
@@ -169,6 +169,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			this.numberOfVariantsToBuffer = Integer.parseInt(buffersizeStr);
 		} catch (Exception e) {
 		}
+		
 		
 		try {
 			createQQPlot = config.getBoolean("defaults.analysis.createqqplot", true);
@@ -548,8 +549,11 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			if (settingsTextToReplace2 != null && confineSNP.contains(settingsTextToReplace2)) {
 				confineSNP = confineSNP.replace(settingsTextToReplace2, settingsTextReplace2With);
 			}
+			
+			numberOfVariantsToBuffer = 1;
 		} catch (Exception e) {
 		}
+		
 		
 		// confine to this list of probes
 		try {

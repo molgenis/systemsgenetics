@@ -67,7 +67,10 @@ public class PCAOptimum extends MetaQTL3 {
 		String origInExp = inexp;
 		
 		m_settings = new Settings();
-		m_settings.numberOfVariantsToBuffer = 10000;
+		m_settings.numberOfVariantsToBuffer = 1000;
+		if (snpfile != null) {
+			m_settings.numberOfVariantsToBuffer = 1;
+		}
 		m_settings.fullFdrOutput = false;
 		
 		
@@ -353,7 +356,8 @@ public class PCAOptimum extends MetaQTL3 {
 		}
 		m_settings.datasetSettings = new ArrayList<TriTyperGeneticalGenomicsDatasetSettings>();
 		m_settings.datasetSettings.add(s);
-		m_settings.numberOfVariantsToBuffer = 10000;
+		m_settings.numberOfVariantsToBuffer = 1000;
+		
 		m_settings.createDotPlot = false;
 		m_settings.displayWarnings = false;
 		
@@ -370,6 +374,10 @@ public class PCAOptimum extends MetaQTL3 {
 		
 		m_settings.nrPermutationsFDR = permutations;
 		m_settings.tsSNPsConfine = snpsToTest;
+		m_settings.numberOfVariantsToBuffer = 1000;
+		if (snpsToTest != null) {
+			m_settings.numberOfVariantsToBuffer = 1;
+		}
 		if (probesToTest != null) {
 			m_settings.tsProbesConfine = probesToTest;
 		}
@@ -516,7 +524,7 @@ public class PCAOptimum extends MetaQTL3 {
 		
 		
 		m_settings = new Settings();
-		m_settings.numberOfVariantsToBuffer = 10000;
+		
 		m_settings.sortsnps = sortsnps;
 		m_settings.fullFdrOutput = false;
 		m_settings.displayWarnings = false;
@@ -555,6 +563,10 @@ public class PCAOptimum extends MetaQTL3 {
 		if (snpfile != null) {
 			TextFile f = new TextFile(snpfile, TextFile.R);
 			m_settings.tsSNPsConfine = new HashSet<String>(f.readAsArrayList());
+		}
+		m_settings.numberOfVariantsToBuffer = 1000;
+		if (snpfile != null) {
+			m_settings.numberOfVariantsToBuffer = 1;
 		}
 		m_settings.createDotPlot = false;
 		m_settings.createQQPlot = false;
