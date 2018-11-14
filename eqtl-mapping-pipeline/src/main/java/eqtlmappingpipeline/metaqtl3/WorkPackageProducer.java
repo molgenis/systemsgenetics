@@ -72,9 +72,11 @@ class WorkPackageProducer extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
+		// make sure not to load more than 500mb worth of SNP data per block
+		// SNPLoader has it's own buffer of a set number of variants
 		sumaveragesnpsize /= m_SNPLoaders.length;
-		workPackageBufferSize = (int) Math.floor((double) (500 * 1048576) / sumaveragesnpsize);
+		workPackageBufferSize = (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
 		
 		
 		if (m_workPackages.length < workPackageBufferSize) {
@@ -82,7 +84,7 @@ class WorkPackageProducer extends Thread {
 		}
 		
 		System.out.println("Loading " + workPackageBufferSize + " SNPs per buffer.");
-		
+		System.out.println();
 		int workPackagesPassingQC = 0;
 		int numProcessed = 0;
 		

@@ -20,7 +20,7 @@
             <metaAnalyseInteractionTerms>false</metaAnalyseInteractionTerms>
             <permuteCovariates>false</permuteCovariates>
             <metaAnalyseModelCorrelationYHat>false</metaAnalyseModelCorrelationYHat>
-            <useabsolutepvalue>false</useabsolutepvalue>;
+            <useabsolutepvalue>false</useabsolutepvalue>
             <threads>2</threads>
             <forcethreads>false</forcethreads>
             <randomseed></randomseed>
@@ -73,6 +73,17 @@
     <datasets>
         <dataset>
             <name>Dataset1</name>
+            <location></location>
+            <genometoexpressioncoupling></genometoexpressioncoupling>
+            <expressiondata></expressiondata>
+            <probeannotation></probeannotation>
+            <expressionplatform></expressionplatform>
+            <covariates></covariates>
+            <quantilenormalize>false</quantilenormalize>
+            <logtranform>false</logtranform>
+        </dataset>
+		<dataset>
+            <name>Dataset2</name>
             <location></location>
             <genometoexpressioncoupling></genometoexpressioncoupling>
             <expressiondata></expressiondata>

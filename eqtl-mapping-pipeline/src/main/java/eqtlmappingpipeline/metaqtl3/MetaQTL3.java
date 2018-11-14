@@ -201,7 +201,7 @@ public class MetaQTL3 {
         int numDatasets = m_settings.datasetSettings.size();
         m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];
         numAvailableInds = 0;
-        int nrOfDatasetsWithGeneExpressionData = 0;
+//        AtomicInteger nrOfDatasetsWithGeneExpressionData = new AtomicInteger();
         int nrDatasetsWithCovariates = 0;
 
         for (int i = 0; i < numDatasets; i++) {
@@ -255,29 +255,46 @@ public class MetaQTL3 {
         } else {
             pathwayDefinitions = null;
         }
-
-
-        for (int i = 0; i < numDatasets; i++) {
-            System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
-            m_settings.datasetSettings.get(i).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
+    
+    
+        AtomicInteger finalNrOfDatasetsWithGeneExpressionData = new AtomicInteger();
+        IntStream.range(0,numDatasets).parallel().forEach(v->{
+            System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(v).name + "");
+            m_settings.datasetSettings.get(v).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
             System.out.println(ConsoleGUIElems.LINE);
-            m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i), pathwayDefinitions, m_settings.displayWarnings);
-
-            if (m_gg[i].isExpressionDataLoadedCorrectly()) {
-                nrOfDatasetsWithGeneExpressionData++;
+            try {
+                m_gg[v] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(v), pathwayDefinitions, m_settings.displayWarnings);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        }
+    
+            if (m_gg[v].isExpressionDataLoadedCorrectly()) {
+                finalNrOfDatasetsWithGeneExpressionData.getAndIncrement();
+            }
+            
+        });
 
-        if (nrOfDatasetsWithGeneExpressionData == 0) {
+//        for (int i = 0; i < numDatasets; i++) {
+//            System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
+//            m_settings.datasetSettings.get(i).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
+//            System.out.println(ConsoleGUIElems.LINE);
+//            m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i), pathwayDefinitions, m_settings.displayWarnings);
+//
+//            if (m_gg[i].isExpressionDataLoadedCorrectly()) {
+//                nrOfDatasetsWithGeneExpressionData++;
+//            }
+//        }
+
+        if (finalNrOfDatasetsWithGeneExpressionData.get() == 0) {
             System.out.println("Error: none of your datasets contain any gene expression data for the settings you have specified");
             System.exit(0);
         }
 
-        if (nrOfDatasetsWithGeneExpressionData != m_gg.length) {
-            System.out.println("WARNING: was able to load gene expression data for " + nrOfDatasetsWithGeneExpressionData + " while you specified " + m_gg.length + " datasets in the settings.");
+        if (finalNrOfDatasetsWithGeneExpressionData.get() != m_gg.length) {
+            System.out.println("WARNING: was able to load gene expression data for " + finalNrOfDatasetsWithGeneExpressionData.get() + " while you specified " + m_gg.length + " datasets in the settings.");
 
             // remove the datasets without expression data.
-            TriTyperGeneticalGenomicsDataset[] tmp_gg = new TriTyperGeneticalGenomicsDataset[nrOfDatasetsWithGeneExpressionData];
+            TriTyperGeneticalGenomicsDataset[] tmp_gg = new TriTyperGeneticalGenomicsDataset[finalNrOfDatasetsWithGeneExpressionData.get()];
             int ctr = 0;
             for (TriTyperGeneticalGenomicsDataset d : m_gg) {
                 if (d.isExpressionDataLoadedCorrectly()) {
