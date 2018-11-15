@@ -4,6 +4,8 @@
  */
 package umcg.genetica.io.trityper;
 
+import umcg.genetica.io.Gpio;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
@@ -70,8 +72,18 @@ public class SNPLoader {
 		if (mappedGenotypeHandle == null || seekLoc < currentGtMapStart || seekLoc > currentGtMapEnd || seekEnd > currentGtMapEnd) {
 			// 32 megabytes worth of variants; (32*1048576)/(m_numIndividuals * 2) bytes
 			if (mappedGenotypeHandle == null) {
+				
+				
+				
 				int bytesPerVariant = (m_numIndividuals * 2);
 				int nrBytesPerBuffer = bytesPerVariant * numberOfVariantsInMemoryMap; //(32 * 1048576);
+				while (nrBytesPerBuffer < 0) {
+					numberOfVariantsInMemoryMap /= 2;
+					nrBytesPerBuffer = bytesPerVariant * numberOfVariantsInMemoryMap; //(32 * 1048576);
+					
+//					System.out.println("WARNING: BUFFER OVERFLOW! Setting max number of variants in memory to " + numberOfVariantsInMemoryMap);
+//					System.out.println("Buffer will be " + Gpio.humanizeFileSize(nrBytesPerBuffer) + " (" + nrBytesPerBuffer + "b)");
+				}
 //				int remainder = nrBytesPerBuffer % bytesPerVariant;
 //				nrBytesPerBuffer += remainder;
 				gtmaplen = nrBytesPerBuffer;

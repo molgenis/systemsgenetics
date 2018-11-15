@@ -78,6 +78,7 @@ public class ConvertToChiSq {
 			zmat.getMatrix().assign(square);
 			
 			DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(zmat.getHashCols(), traitindex);
+			DoubleMatrixDataset<String, String> outputct = new DoubleMatrixDataset<>(zmat.getHashCols(), traitindex);
 			
 			// combine trait snps into single column
 			for (Map.Entry<String, LinkedHashSet<String>> set : traitToSnp.entrySet()) {
@@ -92,13 +93,24 @@ public class ConvertToChiSq {
 				}
 				DoubleMatrixDataset subzmat = zmat.viewRowSelection(snpselect);
 				for (int col = 0; col < subzmat.columns(); col++) {
-					double sum = subzmat.getMatrix().viewColumn(col).zSum();
+					double sum = 0;
+					int nrsnps = 0;
+					for (int row = 0; row < subzmat.rows(); row++) {
+						double val = subzmat.getElementQuick(row, col);
+						if (!Double.isNaN(val)) {
+							sum += val;
+							nrsnps++;
+						}
+					}
+					
 					output.getMatrix().setQuick(col, colindex, sum);
+					outputct.getMatrix().setQuick(col, colindex, nrsnps);
 				}
 			}
 			
 			// write resulting matrix
 			output.save(outputfilename);
+			output.save(outputfilename + "-nrSNPs.txt.gz");
 		}
 		
 	}

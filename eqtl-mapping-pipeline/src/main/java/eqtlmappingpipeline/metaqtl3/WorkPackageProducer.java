@@ -4,18 +4,17 @@
 package eqtlmappingpipeline.metaqtl3;
 
 
-import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
-
-import java.io.IOException;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.util.BaseAnnot;
+
+import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author harmjan
@@ -73,21 +72,25 @@ class WorkPackageProducer extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
+		// make sure not to load more than 500mb worth of SNP data per block
+		// SNPLoader has it's own buffer of a set number of variants
 		sumaveragesnpsize /= m_SNPLoaders.length;
-		workPackageBufferSize = (int) Math.floor((double) (50 * 1048576) / sumaveragesnpsize);
+		workPackageBufferSize = (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
 		
 		
 		if (m_workPackages.length < workPackageBufferSize) {
 			workPackageBufferSize = m_workPackages.length;
 		}
 		
+		System.out.println("Loading " + workPackageBufferSize + " SNPs per buffer.");
+		System.out.println();
 		int workPackagesPassingQC = 0;
 		int numProcessed = 0;
 		
 		TextFile snplog = null;
 		try {
-			if (!m_permuting) {
+			if (!m_permuting && m_settings.writeSNPQCLog) {
 				snplog = new TextFile(m_outputdir + "SNPQCLog.txt.gz", TextFile.W);
 				
 				String ln = "-";
@@ -114,7 +117,7 @@ class WorkPackageProducer extends Thread {
 				WorkPackage[] workPackageBuffer = new WorkPackage[workPackageBufferSize];
 				StringBuilder[] qcBuffer = null;
 				
-				if (!m_permuting) {
+				if (!m_permuting && m_settings.writeSNPQCLog) {
 					qcBuffer = new StringBuilder[workPackageBufferSize];
 				}
 				
@@ -149,7 +152,7 @@ class WorkPackageProducer extends Thread {
 						
 						WorkPackage wp = workPackageBuffer[i];
 						
-						if (!m_permuting && qcBuffer[i] == null) {
+						if (!m_permuting && m_settings.writeSNPQCLog && qcBuffer[i] == null) {
 							qcBuffer[i] = new StringBuilder();
 						}
 						// update sorting dataset
@@ -159,7 +162,7 @@ class WorkPackageProducer extends Thread {
 						
 						SNP[] snps = wp.getSnps();
 						SNP dSNP = snps[d];
-						
+
 //						if (i % 5000 == 0) {
 //							System.out.println("d " + d + "\ti " + i + "\tnp: " + numProcessed + "/" + m_workPackages.length + "\t" + workPackageBuffer.length);
 //						}
@@ -173,7 +176,7 @@ class WorkPackageProducer extends Thread {
 								wp.setDatasetsPassingQC(dsPassingQC);
 							}
 							
-							if (!m_permuting) {
+							if (!m_permuting && m_settings.writeSNPQCLog) {
 								Integer snpid = m_gg[d].getGenotypeData().getSnpToSNPId().get(dSNP.getName());
 								qcBuffer[i].append("\t").
 										append(snpid).append("\t").append(BaseAnnot.getAllelesDescription(dSNP.getAlleles())).append("\t").
@@ -188,7 +191,7 @@ class WorkPackageProducer extends Thread {
 								snps[d] = null;
 							}
 						} else {
-							if (!m_permuting) {
+							if (!m_permuting && m_settings.writeSNPQCLog) {
 								qcBuffer[i].append("\tNA\t-\t-\t-\t-");
 							}
 						}
@@ -212,7 +215,7 @@ class WorkPackageProducer extends Thread {
 				// done QC-ing and parsing SNPs
 				for (int i = 0; i < workPackageBufferSize; i++) {
 					WorkPackage wp = workPackageBuffer[i];
-					if (!m_permuting) {
+					if (!m_permuting && m_settings.writeSNPQCLog) {
 						String snpName = m_snpList[wp.getMetaSNPId()];
 						SNP[] snps = wp.getSnps();
 						boolean notequal = false;
@@ -233,7 +236,9 @@ class WorkPackageProducer extends Thread {
 						
 					}
 					
-					if ((!m_settings.confineSNPsToSNPsPresentInAllDatasets && wp.getDatasetsPassingQC() > 0) || (m_settings.confineSNPsToSNPsPresentInAllDatasets && wp.getDatasetsPassingQC() == m_gg.length) || (m_settings.confineSNPsToSNPsPresentInAllDatasets && m_permuting && wp.getDatasetsPassingQC() > 0)) {
+					if ((!m_settings.confineSNPsToSNPsPresentInAllDatasets && wp.getDatasetsPassingQC() > 0)
+							|| (m_settings.confineSNPsToSNPsPresentInAllDatasets && wp.getDatasetsPassingQC() == m_gg.length)
+							|| (m_settings.confineSNPsToSNPsPresentInAllDatasets && m_permuting && wp.getDatasetsPassingQC() > 0)) {
 						// check whether alleles should be flipped.
 						boolean allelesOk = detmermineAlleleFlips(wp, snplog);
 						
@@ -363,7 +368,9 @@ class WorkPackageProducer extends Thread {
 									+ "\tSNP1 (" + m_gg[firstDatasetToPassQC].getSettings().name + "): " + snp1Alleles
 									+ "\tSNP2 (" + m_gg[d].getSettings().name + "): " + snp2Alleles;
 							System.err.println(output);
-							snplog.writeln(output);
+							if(m_settings.writeSNPQCLog) {
+								snplog.writeln(output);
+							}
 						}
 						return false;
 					} else {

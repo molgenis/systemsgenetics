@@ -10,8 +10,8 @@ import java.util.Iterator;
 public class BHFDR {
 	
 	public static void main(String[] args) {
-		String in = "D:\\Work\\TMP\\fdrtest\\2018-03-13-cd4.txt";
-		String out = "D:\\Work\\TMP\\fdrtest\\2018-03-13-cd4-fdr.txt";
+		String in = "D:\\biogen\\trans\\eQTLs.txt.gz";
+		String out = "D:\\biogen\\trans\\eQTLs-fdr.txt.gz";
 		double p = 0.05;
 		BHFDR f = new BHFDR();
 		try {

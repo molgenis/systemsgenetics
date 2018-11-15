@@ -7,22 +7,17 @@ package eqtlmappingpipeline.metaqtl3.containers;
 import eqtlmappingpipeline.Main;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import gnu.trove.set.hash.THashSet;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.regex.Pattern;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author harmjan
@@ -46,6 +41,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public int maxNrMostSignificantEQTLs = 500000;                             // Max number of results stored in memory
 	public boolean performParametricAnalysisGetAccuratePValueEstimates;        // Use an accurate estimation of the P-values
 	public Integer nrThreads;                                                  // Use this number of threads
+	public boolean writeSNPQCLog = false;
 	// Multiple testing correction
 	public double fdrCutOff = 0.05;                                            // Cutoff for FDR procedure
 	public int nrPermutationsFDR = 1;                                          // Number of permutations to determine FDR
@@ -94,6 +90,9 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean displayWarnings = true;
 	public int numberOfVariantsToBuffer = 1000;
 	public boolean skipFDRCalculation = false;
+	public boolean usemd5hash = true;
+	public boolean sortsnps = true;
+	
 	
 	public Settings() {
 	}
@@ -101,6 +100,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public void load(String settings) throws IOException, ConfigurationException {
 		
 		XMLConfiguration config = new XMLConfiguration(settings);           // Use the apache XML configuration parser
+		
 		
 		String analysisType = null;
 		String correlationType = null;
@@ -158,13 +158,18 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			analysisType = config.getString("defaults.analysis.analysistype");
 		} catch (Exception e) {
 		}
+		try {
+			sortsnps = config.getBoolean("defaults.analysis.sortsnps", false);
+		} catch (Exception e) {
 		
+		}
 		// analysis settings
 		try {
 			String buffersizeStr = config.getString("defaults.analysis.buffersize");
 			this.numberOfVariantsToBuffer = Integer.parseInt(buffersizeStr);
 		} catch (Exception e) {
 		}
+		
 		
 		try {
 			createQQPlot = config.getBoolean("defaults.analysis.createqqplot", true);
@@ -175,6 +180,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			createDotPlot = config.getBoolean("defaults.analysis.createdotplot", true);
 		} catch (Exception e) {
 		}
+		
 		
 		try {
 			runOnlyPermutations = config.getBoolean("defaults.analysis.onlypermutations", false);
@@ -255,6 +261,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		} else {
 			metaAnalyseInteractionTerms = false;
 		}
+		
 		
 		Boolean metaAnalyseModelCorrelationYHatB = null;
 		try {
@@ -356,6 +363,10 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			nrPermutationsFDR = numPermutations;
 		}
 		
+		try {
+			startWithPermutation = config.getInteger("defaults.multipletesting.startpermutation", null);
+		} catch (Exception e) {
+		}
 		
 		try {
 			fdrtype = config.getString("defaults.multipletesting.fdrtype", "all");
@@ -400,6 +411,16 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 				outdir = outdir.replace(settingsTextToReplace2, settingsTextReplace2With);
 			}
 		} catch (Exception e) {
+		}
+		try {
+			writeSNPQCLog = config.getBoolean("defaults.output.writeSNPQCLog", true);
+		} catch (Exception e) {
+		
+		}
+		try {
+			usemd5hash = config.getBoolean("defaults.output.usemd5hashforbinaryoutput", false);
+		} catch (Exception e) {
+		
 		}
 		
 		if (outdir != null) {
@@ -503,6 +524,15 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		} catch (Exception e) {
 		}
 		
+		try {
+			confineToProbesThatMapToChromosome = config.getByte("defaults.confine.confineToProbesThatMapToChromosome");
+		} catch (Exception e) {
+		}
+		try {
+			snpProbeConfineBasedOnChrPos = config.getBoolean("defaults.confine.snpProbeConfineBasedOnChrPos", false);
+		} catch (Exception e) {
+		
+		}
 		// confinements on snp, probe, or snp-probe
 		String confineSNP = null;
 		String confineProbe = null;
@@ -519,8 +549,11 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			if (settingsTextToReplace2 != null && confineSNP.contains(settingsTextToReplace2)) {
 				confineSNP = confineSNP.replace(settingsTextToReplace2, settingsTextReplace2With);
 			}
+			
+			numberOfVariantsToBuffer = 1;
 		} catch (Exception e) {
 		}
+		
 		
 		// confine to this list of probes
 		try {

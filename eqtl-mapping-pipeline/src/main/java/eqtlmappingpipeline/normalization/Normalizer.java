@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 /**
  * @author harmjan
@@ -43,6 +44,7 @@ public class Normalizer {
 			Gpio.createDir(outdir);
 		} else {
 			if (Gpio.getParentDir(expressionFile) == null) {
+				//This happens for relative paths in current dir
 				//This happens for relative paths in current dir
 				outdir = "";
 			} else {
@@ -167,7 +169,8 @@ public class Normalizer {
 		}
 
 		if (runPCA) {
-			ConcurrentCorrelation c = new ConcurrentCorrelation(2);
+			int cores = Runtime.getRuntime().availableProcessors();
+			ConcurrentCorrelation c = new ConcurrentCorrelation(cores);
 			double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
 			Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
 			if (nrPCAsOverSamplesToRemove != 0 || nrIntermediatePCAsOverSamplesToRemoveToOutput != 0) {
@@ -563,15 +566,36 @@ public class Normalizer {
 
 
 		ProgressBar pb = new ProgressBar(dataset.rowObjects.size(), "Calculating the PCA scores per probe: ");
-		for (int probe = 0; probe < dataset.rowObjects.size(); probe++) {
-			for (int sample1 = 0; sample1 < nrOfPCsToCalculate; sample1++) {
-				for (int sample2 = 0; sample2 < dataset.colObjects.size(); sample2++) {
-					double probeCoefficient = datasetEV.getRawData()[sample2][sample1];
-					datasetPCAOverSamplesPCAs.getRawData()[probe][sample1] += probeCoefficient * dataset.getRawData()[probe][sample2];
+		
+		int nrprobes = dataset.rowObjects.size();
+		int nrsamples = dataset.colObjects.size();
+		double[][] evrawdata = datasetEV.getRawData();
+		double[][] datasetPCAOverSamplesPCAsrawdata = datasetPCAOverSamplesPCAs.getRawData();
+		double[][] datasetrawdata = dataset.getRawData();
+		
+		// multithread
+		Integer finalNrOfPCsToCalculate = nrOfPCsToCalculate;
+		IntStream.range(0,nrprobes).parallel().forEach(probe->{
+//			double[] probePCAs = datasetPCAOverSamplesPCAsrawdata[probe];
+			double[] probedata = datasetrawdata[probe];
+			for (int pc = 0; pc < finalNrOfPCsToCalculate; pc++) {
+				for (int sample = 0; sample < nrsamples; sample++) {
+					double probeCoefficient = evrawdata[sample][pc];
+					datasetPCAOverSamplesPCAsrawdata[probe][pc] += probeCoefficient * probedata[sample];
 				}
 			}
-			pb.iterate();
-		}
+			pb.iterateSynched();
+		});
+		
+//		for (int probe = 0; probe < dataset.rowObjects.size(); probe++) {
+//			for (int sample1 = 0; sample1 < nrOfPCsToCalculate; sample1++) {
+//				for (int sample2 = 0; sample2 < dataset.colObjects.size(); sample2++) {
+//					double probeCoefficient = datasetEV.getRawData()[sample2][sample1];
+//					datasetPCAOverSamplesPCAs.getRawData()[probe][sample1] += probeCoefficient * dataset.getRawData()[probe][sample2];
+//				}
+//			}
+//			pb.iterate();
+//		}
 		pb.close();
 
 		String outfilename = expressionFile + ".PCAOverSamplesPrincipalComponents.txt.gz";
