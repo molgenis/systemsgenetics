@@ -1,4 +1,4 @@
-package nl.systemsgenetics.genenetworkbackend.legacy;
+package nl.systemsgenetics.genenetworkbackend.predictions;
 
 import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
@@ -379,8 +379,8 @@ public class PredictGenesetMemberBasedOnTCs {
 
 					timeStart = System.currentTimeMillis();
 
-					StudentT tDistColt = new StudentT(vals1.length / 2 - 2, randomEngine);
-					double t = correlation / (Math.sqrt((1 - correlation * correlation) / (double) (vals1.length / 2 - 2)));
+					StudentT tDistColt = new StudentT(vals1.length - 2, randomEngine);
+					double t = correlation / (Math.sqrt((1 - correlation * correlation) / (double) (vals1.length - 2)));
 					double pValue;
 					double zScore;
 					if (t < 0) {

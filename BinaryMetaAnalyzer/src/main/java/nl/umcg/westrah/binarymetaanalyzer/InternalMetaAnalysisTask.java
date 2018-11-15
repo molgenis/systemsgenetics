@@ -69,7 +69,7 @@ public class InternalMetaAnalysisTask implements Runnable {
 			}
 			
 			//Initialize the new binaryOutput
-			//Original initialize binary matrix
+			//Original writeHeader binary matrix
 			String fileName = settings.getOutput() + settings.getDatasetname();
 			
 			if (runningPermutation) {
@@ -203,7 +203,7 @@ public class InternalMetaAnalysisTask implements Runnable {
 						}
 						if (!remappedEntries.isEmpty()) {
 							double[] zScoresOut = new double[remappedEntries.size()];
-							// initialize with NaN
+							// writeHeader with NaN
 							for (int q = 0; q < zScoresOut.length; q++) {
 								zScoresOut[q] = Double.NaN;
 							}

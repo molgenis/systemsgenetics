@@ -1,4 +1,4 @@
-package nl.systemsgenetics.genenetworkbackend.legacy;
+package nl.systemsgenetics.genenetworkbackend.predictions;
 
 import java.io.*;
 import java.net.*;
@@ -14,9 +14,9 @@ import javax.imageio.*;
  *
  * @author lude
  */
-public class ExpressionDatasetInt {
+public class ExpressionDataset {
 
-    public int[][] rawData = null;
+    public double[][] rawData = null;
     public int nrSamples = 0;
     public int nrProbes = 0;
     public String[] probeNames = null;
@@ -27,7 +27,7 @@ public class ExpressionDatasetInt {
     private HashMap hashSamplesToInclude = null;
     public String fileName = null;
 
-    public ExpressionDatasetInt(String fileName) {
+    public ExpressionDataset(String fileName) {
         if (fileName.endsWith(".binary")) {
             loadExpressionDataInBinaryFormat(fileName);
         } else {
@@ -35,7 +35,7 @@ public class ExpressionDatasetInt {
         }
     }
 
-    public ExpressionDatasetInt(String fileName, String delimiter) {
+    public ExpressionDataset(String fileName, String delimiter) {
         if (fileName.endsWith(".binary")) {
             loadExpressionDataInBinaryFormat(fileName);
         } else {
@@ -43,7 +43,7 @@ public class ExpressionDatasetInt {
         }
     }
 
-    public ExpressionDatasetInt(String fileName, String delimiter, HashMap hashProbesToInclude) {
+    public ExpressionDataset(String fileName, String delimiter, HashMap hashProbesToInclude) {
         this.hashProbesToInclude = hashProbesToInclude;
         if (fileName.endsWith(".binary")) {
             loadExpressionDataInBinaryFormat(fileName);
@@ -52,7 +52,7 @@ public class ExpressionDatasetInt {
         }
     }
 
-    public ExpressionDatasetInt(String fileName, String delimiter, HashMap hashProbesToInclude, HashMap hashSamplesToInclude) {
+    public ExpressionDataset(String fileName, String delimiter, HashMap hashProbesToInclude, HashMap hashSamplesToInclude) {
         this.hashProbesToInclude = hashProbesToInclude;
         this.hashSamplesToInclude = hashSamplesToInclude;
         if (fileName.endsWith(".binary")) {
@@ -62,14 +62,14 @@ public class ExpressionDatasetInt {
         }
     }
 
-    public ExpressionDatasetInt(int nrProbes, int nrSamples) {
+    public ExpressionDataset(int nrProbes, int nrSamples) {
         this.nrProbes = nrProbes;
         this.nrSamples = nrSamples;
         sampleNames = new String[nrSamples];
         for (int s=0; s<nrSamples; s++) sampleNames[s] = "Sample_" + String.valueOf(s);
         probeNames = new String[nrProbes];
         for (int p=0; p<nrProbes; p++) probeNames[p] = "Probe_" + String.valueOf(p);
-        rawData = new int[nrProbes][nrSamples];
+        rawData = new double[nrProbes][nrSamples];
     }
 
     public void loadExpressionDataInBinaryFormat(String fileName) {
@@ -99,7 +99,7 @@ public class ExpressionDatasetInt {
             //We want to load all the data:
             nrProbes = nrProbesThisBinaryFile;
             nrSamples = nrSamplesThisBinaryFile;
-            rawData = new int[nrProbes][nrSamples];
+            rawData = new double[nrProbes][nrSamples];
 
             //Now load the row identifiers from file:
             probeNames = new String[nrProbes];
@@ -151,10 +151,8 @@ public class ExpressionDatasetInt {
                                 | (long) (0xff & buffer[bufferLoc + 1]) << 48
                                 | (long) (buffer[bufferLoc]) << 56;
 
-                        //rawData[row][col] = Double.longBitsToDouble(bits);
-						bufferLoc += 8;
-						throw new RuntimeException("Not implemented");
-                        
+                        rawData[row][col] = Double.longBitsToDouble(bits);
+                        bufferLoc += 8;
                     }
                 }
                 in.close();
@@ -269,7 +267,7 @@ public class ExpressionDatasetInt {
             }
 
             //Now load the binary data:
-            rawData = new int[nrProbes][nrSamples];
+            rawData = new double[nrProbes][nrSamples];
 
             byte[] buffer = new byte[nrSamplesThisBinaryFile * 8];
             long bits = 0;
@@ -290,8 +288,7 @@ public class ExpressionDatasetInt {
                         int rowIndex = probeSubsetIndex[row];
                         int colIndex = sampleSubsetIndex[col];
                         if (rowIndex!=-1 && colIndex!=-1) {
-                           // rawData[rowIndex][colIndex] = Double.longBitsToDouble(bits);
-						   throw new RuntimeException("Not implemented");
+                            rawData[rowIndex][colIndex] = Double.longBitsToDouble(bits);
                         }
                         bufferLoc += 8;
                     }
@@ -377,7 +374,7 @@ public class ExpressionDatasetInt {
             System.out.println("Error:\t" + e.getMessage());
             e.printStackTrace();
         }
-        rawData = new int[nrProbes][nrSamples];
+        rawData = new double[nrProbes][nrSamples];
         probeNames = new String[nrProbes];
         try {
             java.io.BufferedReader in = new java.io.BufferedReader(new java.io.FileReader(file));
@@ -389,7 +386,7 @@ public class ExpressionDatasetInt {
                     probeNames[nrProbes] = new String(data[0].getBytes());
                     hashProbes.put(probeNames[nrProbes], nrProbes);
                     for (int s=0; s<nrSamples; s++) {
-                        rawData[nrProbes][s] = (int) Double.parseDouble(data[sampleIndex[s] + sampleOffset]);
+                        rawData[nrProbes][s] = Double.parseDouble(data[sampleIndex[s] + sampleOffset]);
                     }
                     nrProbes++;
                     //if (nrProbes%100==0) System.out.println(nrProbes);
@@ -417,14 +414,35 @@ public class ExpressionDatasetInt {
 
     }
 
-    public int[][] getRawDataTransposed() {
-        int[][] rawDataTransposed = new int[nrSamples][nrProbes];
+    public double[][] getRawDataTransposed() {
+        double[][] rawDataTransposed = new double[nrSamples][nrProbes];
         for (int s=0; s<nrSamples; s++) {
             for (int p=0; p < nrProbes; p++) {
                 rawDataTransposed[s][p] = rawData[p][s];
             }
         }
         return rawDataTransposed;
+    }
+
+
+    public void standardNormalizeData() {
+
+        System.out.println("Setting probe mean to zero and stdev to one for every probe:");
+        for (int probeID=0; probeID<nrProbes; probeID++) {
+            double vals[] = new double[nrSamples];
+            for (int s=0; s<nrSamples; s++) {
+                vals[s] = rawData[probeID][s];
+            }
+            double mean = JSci.maths.ArrayMath.mean(vals);
+            for (int s=0; s<nrSamples; s++) {
+                vals[s]-=(double) mean;
+            }
+            double standardDeviation = JSci.maths.ArrayMath.standardDeviation(vals);
+            for (int s=0; s<nrSamples; s++) {
+                rawData[probeID][s] = (float) (vals[s] / standardDeviation);
+            }
+        }
+
     }
 
     public void save (String fileName) {

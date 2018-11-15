@@ -143,7 +143,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 					
 					float[][] finalZScores = new float[cisProbeMap.size()][datasets.length];
 					
-					// initialize with NaN
+					// writeHeader with NaN
 					for (int q = 0; q < cisProbeMap.size(); q++) {
 						for (int r = 0; r < datasets.length; r++) {
 							finalZScores[q][r] = Float.NaN;
@@ -158,7 +158,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 								zScore[d] = Float.NaN;
 							}
 						} else {
-							//initialize z-score
+							//writeHeader z-score
 							for (int p = 0; p < cisProbeMap.size(); p++) {
 								finalZScores[p][d] = Float.NaN; // this is not very nice, but does prevent the metaZ method from going nuts
 							}
@@ -302,7 +302,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				float[][] finalZScores = new float[probeIndex.length][datasets.length];
 				
 				
-				// initialize with NaN
+				// writeHeader with NaN
 				for (int q = 0; q < probeIndex.length; q++) {
 					for (int r = 0; r < datasets.length; r++) {
 						finalZScores[q][r] = Float.NaN;
@@ -365,7 +365,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 				
 				// meta-analyze!
 				if (settings.isMakezscoretable()) {
-					// initialize with NaN
+					// writeHeader with NaN
 					for (int i = 0; i < zscoretableoutput.length; i++) {
 						zscoretableoutput[i] = Double.NaN;
 						zscorenrsamplestableoutput[i] = 0;

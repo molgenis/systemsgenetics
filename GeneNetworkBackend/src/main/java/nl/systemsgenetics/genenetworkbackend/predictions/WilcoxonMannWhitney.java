@@ -1,4 +1,4 @@
-package nl.systemsgenetics.genenetworkbackend.legacy;
+package nl.systemsgenetics.genenetworkbackend.predictions;
 
 /**
  *

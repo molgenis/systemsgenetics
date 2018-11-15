@@ -5,6 +5,7 @@
 package umcg.genetica.io.bin;
 
 import com.mastfrog.util.streams.HashingOutputStream;
+import umcg.genetica.containers.Triple;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
@@ -17,35 +18,17 @@ public class BinaryFile {
 	public static final boolean W = true;
 	public static final boolean R = false;
 	protected final DataOutputStream os;
-	protected final DataInputStream is;
+	protected DataInputStream is;
 	protected final String loc;
 	protected final boolean writeable;
 	private final OutputStream osh;
 	
 	public BinaryFile(String loc, boolean mode) throws IOException {
-		if (loc.trim().length() == 0) {
-			throw new IOException("Could not find file: no file specified");
-		}
-		this.writeable = mode;
-		this.loc = loc;
-		
-		if (writeable) {
-			try {
-				is = null;
-				osh = new HashingOutputStream("md5", new FileOutputStream(loc));
-				os = new DataOutputStream(new BufferedOutputStream(osh, 32 * 1024));
-			} catch (NoSuchAlgorithmException ex) {
-				throw new RuntimeException(ex);
-			}
-		} else {
-			is = new DataInputStream(new BufferedInputStream(new FileInputStream(loc)));
-			os = null;
-			osh = null;
-		}
+		this(loc, mode, 32 * 1024, false);
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize) throws IOException {
-		this(loc, mode, buffersize, true);
+		this(loc, mode, buffersize, false);
 	}
 	
 	public BinaryFile(String loc, boolean mode, int buffersize, boolean useHash) throws IOException {
@@ -93,7 +76,7 @@ public class BinaryFile {
 	
 	public void writeString(String s) throws IOException {
 		if (writeable) {
-			os.writeChars(s);
+			os.writeUTF(s);
 		} else {
 			throw new IOException("File is read only.");
 		}
@@ -207,9 +190,6 @@ public class BinaryFile {
 		}
 	}
 	
-	public int read() throws IOException {
-		return is.read();
-	}
 	
 	public void write(int b) throws IOException {
 		os.write(b);
@@ -227,5 +207,17 @@ public class BinaryFile {
 		} else {
 			return null;
 		}
+	}
+	
+	public int read(byte[] buffer) throws IOException {
+		return is.read(buffer);
+	}
+	
+	public void write(byte[] buffer, int i, int len) throws IOException {
+		os.write(buffer, i, len);
+	}
+	
+	public void write(byte[] alleles0) throws IOException {
+		os.write(alleles0);
 	}
 }

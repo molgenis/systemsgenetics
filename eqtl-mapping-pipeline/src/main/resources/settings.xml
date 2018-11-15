@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<settings>
+    <defaults>
+        <qc>
+            <snpqccallratethreshold>0.95</snpqccallratethreshold>
+            <snpqchwethreshold>0.0001</snpqchwethreshold>
+            <snpqcmafthreshold>0.05</snpqcmafthreshold>
+        </qc>
+
+        <analysis>
+            <analysistype>cis</analysistype>
+            <cisanalysisprobedistance>250000</cisanalysisprobedistance>
+            <correlationtype>nonparametric</correlationtype>
+            <buffersize>100000</buffersize>
+            <createqqplot>true</createqqplot>
+            <createdotplot>true</createdotplot>
+            <regressOutEQTLEffects></regressOutEQTLEffects>
+            <regressOutEQTLEffectsSaveOutput>false</regressOutEQTLEffectsSaveOutput>
+            <equalrankforties>true</equalrankforties>
+            <metaAnalyseInteractionTerms>false</metaAnalyseInteractionTerms>
+            <permuteCovariates>false</permuteCovariates>
+            <metaAnalyseModelCorrelationYHat>false</metaAnalyseModelCorrelationYHat>
+            <useabsolutepvalue>false</useabsolutepvalue>
+            <threads>2</threads>
+            <forcethreads>false</forcethreads>
+            <randomseed></randomseed>
+            <onlypermutations>false</onlypermutations>
+            <displayWarnings>false</displayWarnings>
+            <pathwaydefinition></pathwaydefinition>
+            <sortsnps>false</sortsnps>
+        </analysis>
+
+        <multipletesting>
+            <type>fdr</type>
+            <skipFDRCalculation>false</skipFDRCalculation>
+            <threshold>0.05</threshold>
+            <fdrtype>probe-level</fdrtype>
+            <largeFdrFileOut>false</largeFdrFileOut>
+            <permutations>100</permutations>
+            <startpermutation></startpermutation>
+        </multipletesting>
+
+        <output>
+            <outputdirectory></outputdirectory>
+            <outputplotthreshold>0</outputplotthreshold>
+            <outputplotdirectory></outputplotdirectory>
+            <maxnreqtlresults>500000</maxnreqtlresults>
+            <usemd5hashforbinaryoutput>false</usemd5hashforbinaryoutput>
+            <binaryoutput>false</binaryoutput>
+            <textoutput>true</textoutput>
+            <generatesnpsummarystatistics>false</generatesnpsummarystatistics>
+            <generateeqtlpvaluetable>false</generateeqtlpvaluetable>
+            <generatefoldchangevalues>false</generatefoldchangevalues>
+            <generatebetaandfoldchanges>false</generatebetaandfoldchanges>
+            <generatesnpsummarystatistics>false</generatesnpsummarystatistics>
+            <writeSNPQCLog>true</writeSNPQCLog>
+        </output>
+
+        <confine>
+            <snp></snp>
+            <snpProbe></snpProbe>
+            <probe></probe>
+            <confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets>
+            <confineSNPsSelectSNPInStrongestLD>false</confineSNPsSelectSNPInStrongestLD>
+            <confineProbesThatMapToKnownChromosome>true</confineProbesThatMapToKnownChromosome>
+            <confineToProbesThatMapToChromosome></confineToProbesThatMapToChromosome>
+            <confineToSNPsThatMapToChromosome></confineToSNPsThatMapToChromosome>
+            <confineToProbesPresentInAllDatasets>false</confineToProbesPresentInAllDatasets>
+            <snpProbeConfineBasedOnChrPos>false</snpProbeConfineBasedOnChrPos>
+        </confine>
+    </defaults>
+
+    <datasets>
+        <dataset>
+            <name>Dataset1</name>
+            <location></location>
+            <genometoexpressioncoupling></genometoexpressioncoupling>
+            <expressiondata></expressiondata>
+            <probeannotation></probeannotation>
+            <expressionplatform></expressionplatform>
+            <covariates></covariates>
+            <quantilenormalize>false</quantilenormalize>
+            <logtranform>false</logtranform>
+        </dataset>
+		<dataset>
+            <name>Dataset2</name>
+            <location></location>
+            <genometoexpressioncoupling></genometoexpressioncoupling>
+            <expressiondata></expressiondata>
+            <probeannotation></probeannotation>
+            <expressionplatform></expressionplatform>
+            <covariates></covariates>
+            <quantilenormalize>false</quantilenormalize>
+            <logtranform>false</logtranform>
+        </dataset>
+
+    </datasets>
+</settings>
