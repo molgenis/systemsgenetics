@@ -296,9 +296,9 @@ public class Deconvolution {
 		 * 		fullModel = [[sample1_neut%, sample1_mono%, sample1_neut%*sample1_genotype, sample1_mono%*sample1_genotype], [sample2_neut%, ..., etc]]
 		 * 
 		 */
-		interactionModelCollection.createObservedValueMatricesFullModel();
+		interactionModelCollection.createObservedValueMatricesFullModel(commandLineOptions.getAddGenotypeTerm());
 		interactionModelCollection.findBestFullModel();		
-		interactionModelCollection.createObservedValueMatricesCtModels();
+		interactionModelCollection.createObservedValueMatricesCtModels(commandLineOptions.getAddGenotypeTerm());
 		interactionModelCollection.findBestCtModel();
 		calculateDeconvolutionPvalue(interactionModelCollection);
 

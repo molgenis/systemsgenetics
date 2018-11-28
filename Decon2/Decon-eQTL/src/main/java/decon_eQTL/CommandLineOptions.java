@@ -28,6 +28,7 @@ public class CommandLineOptions {
 	private Boolean testRun = false;
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
+	private Boolean addGenotypeTerm = false;
 	private Boolean outputPredictedExpression = false;
 	private String genotypeConfigurationType = "one";
 	private String programVersion;
@@ -47,6 +48,8 @@ public class CommandLineOptions {
 		programVersion = properties.getProperty("artifactId")+"_"+properties.getProperty("version");
 		Options options = new Options();
 		Option help = new Option("help", "print this message");
+		Option addGenotypeTermOption = Option.builder("a").required(false).longOpt("add_genotype_term")
+				.desc("Add genotype term to the model").build();
 		Option allDosages = Option.builder("ad").required(false).longOpt("all_dosages")
 				.desc("Filter out QTLs where not all dosages are present in at least 1 sample").build();
 		Option cellcount = Option.builder("c").required(true).hasArg().longOpt("cellcount").desc("Cellcount file name")
@@ -80,6 +83,7 @@ public class CommandLineOptions {
 				.desc("Add whole blood eQTL (pearson correlation genotypes and expression)").build();
 		Option version = Option.builder("v").required(false).longOpt("version")
 				.desc("Print the version of the program").build();
+		options.addOption(addGenotypeTermOption);
 		options.addOption(filterSamplesOption);
 		options.addOption(help);
 		options.addOption(outfile);
@@ -173,6 +177,10 @@ public class CommandLineOptions {
 		if (cmdLine.hasOption("version")) {
 			DeconvolutionLogger.log.info("Version: "+programVersion);
 		}
+		
+		if (cmdLine.hasOption("add_genotype_term")) {
+			addGenotypeTerm = !addGenotypeTerm;
+		}
 	}
 	
 
@@ -212,6 +220,7 @@ public class CommandLineOptions {
 		DeconvolutionLogger.log.info(String.format("Do not ouput logging info to console (-no): %s", noConsole));
 		DeconvolutionLogger.log.info(String.format("Write predicted expression to output file (-oe): %s", outputPredictedExpression));
 		DeconvolutionLogger.log.info(String.format("Genotype configuration to use (-gc): %s", genotypeConfigurationType));
+		DeconvolutionLogger.log.info(String.format("Add genotype term (-a): %s", addGenotypeTerm));
 		DeconvolutionLogger.log.info("=================================================");
 	}
 	public String getExpressionFile(){
@@ -261,6 +270,9 @@ public class CommandLineOptions {
 		return genotypeConfigurationType;
 	}
 	
+	public Boolean getAddGenotypeTerm() {
+		return addGenotypeTerm;
+	}
 }
 
 
