@@ -128,8 +128,9 @@ public class CommandLineOptions {
 		if(cmdLine.hasOption("genotypeConfigurationType")){
 			genotypeConfigurationType = cmdLine.getOptionValue("genotypeConfigurationType");
 			
-			if(!(genotypeConfigurationType.equals("all") || genotypeConfigurationType.equals("two") || genotypeConfigurationType.equals("one"))){
-				throw new IllegalArgumentException("genotypeConfigurationType should be all or two, not "+genotypeConfigurationType);
+			if(!(genotypeConfigurationType.equals("all") || genotypeConfigurationType.equals("two") || 
+				 genotypeConfigurationType.equals("one") || genotypeConfigurationType.equals("NONE"))){
+				throw new IllegalArgumentException("genotypeConfigurationType should be one, all, two, or NONE, not "+genotypeConfigurationType);
 			}
 		}
 

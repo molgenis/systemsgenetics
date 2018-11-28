@@ -278,7 +278,6 @@ public class InteractionModelCollection {
 				this.genotypeConfigurationsCtModel.add(genotypeConfiguration.toString());
 			}
 	
-			System.exit(0);
 
 		}else if(genotypeConfigurationType.equals("NONE")){
 			// this gets no swapping, so all are 000

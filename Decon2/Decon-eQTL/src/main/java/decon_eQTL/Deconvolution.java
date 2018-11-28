@@ -138,6 +138,7 @@ public class Deconvolution {
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
 
+		
 		//header += "\tStandardError";
 		List<String> output = new ArrayList<String>();
 		output.add(header);
@@ -280,7 +281,7 @@ public class Deconvolution {
 		interactionModelCollection.setQtlName(qtlName);
 		interactionModelCollection.setGenotypes(genotypes);
 		interactionModelCollection.setExpressionValues(expression);
-
+		
 		/**
 		 * For each cell type model, e.g. ctModel 1 -> y = neut% + mono% + neut%:GT; ctModel 2 -> y = neut% + mono% + mono%:GT, one for each cell type, 
 		 * where the interaction term (e.g mono%:GT) of the celltype:genotype to test is removed, calculate and save the observations in an observation vector
