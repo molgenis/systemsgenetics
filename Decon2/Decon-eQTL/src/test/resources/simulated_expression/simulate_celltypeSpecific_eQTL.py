@@ -3,13 +3,15 @@ import argparse
 import random
 import sys
 import os
+import scipy.stats
+
 
 parser = argparse.ArgumentParser(description='Simulate gene expression levels using expression ~ cc1 + cc2 + snp:cc1 + snp:cc2')
 parser.add_argument('cellcount_file', help='file containing cell counts')
 parser.add_argument('genotype_file', help='file containing genotypes')
-parser.add_argument('beta_file', help='file containing betas')
 parser.add_argument('out_dir', help='output directory to write the simulated data to')
 parser.add_argument('number_of_samples', help='Number of samples to simulate', type=int)
+parser.add_argument('number_of_snps', help='Number of snps to simulate', type=int)
 parser.add_argument('batch', help='Name of the batch')
 
 args = parser.parse_args()
@@ -26,12 +28,35 @@ if not os.path.exists(args.out_dir+'/snpsToTest/'):
     os.makedirs(args.out_dir+'/snpsToTest/')
 
 
+def get_random_betas(n_betas):
+    # get random nominal significant betas
+    betas_significant = []
+    x = 0.1
+    for i in range(0, n_betas):
+        if i % 2 == 0:
+            x *= 10
+        pval = random.uniform(0, 0.05/x)
+        beta = scipy.stats.norm.ppf(1-pval/2)
+        betas_significant.append(beta)
+    # get random non-significant betas
+    betas_not_significant = []
+    for i in range(0, n_betas):
+        pval = random.uniform(0.05, 1)
+        beta = scipy.stats.norm.ppf(1-pval/2)
+        betas_not_significant.append(beta)
+    
+    mix = betas_not_significant+betas_significant
+    random.shuffle(mix)
+    return({'significant':betas_significant,
+            'non_significant':betas_not_significant,
+            'mix':mix})
+
 # Use actual (or Decon-Cell predicted) cell counts to simulate the expression levels. Parse the file
 # File should be in format of
 #          CC1    CC2
 # sample1  75     14
 # sample2  84     4
-def simulate_cellcounts(number_of_samples, batch):
+def simulate_expression(number_of_samples, number_of_snps, batch):
       
     cellcount_names = []
     samples = []
@@ -71,9 +96,9 @@ def simulate_cellcounts(number_of_samples, batch):
     with open(args.genotype_file) as input_file:
         # read in all lines of the file so that it can be closed after
         genotype_lines = input_file.read().split('\n')
-        genptype_header = genotype_lines[0].strip().split('\t')
-        if not genptype_header == samples:
-            for index, sample in enumerate(genptype_header):
+        genotype_header = genotype_lines[0].strip().split('\t')
+        if not genotype_header == samples:
+            for index, sample in enumerate(genotype_header):
                 print(samples[index], sample)
             raise RuntimeError("header and samples not same order")
     for sample in random_selected_samples_list:
@@ -88,14 +113,14 @@ def simulate_cellcounts(number_of_samples, batch):
 
     mu, sigma = 0, 4
     print('simulate betas')
-    error = np.random.normal(0,0, len(genotype_lines[1:])+2)
-    betas = np.random.normal(mu, sigma, 10000)
-    betas = [abs(x) for x in betas]
-    print('done')        
+    error = np.random.normal(0,1, len(genotype_lines[1:])+2)
+    
+    
+
     out_snpToTest.write('gene\tsnp\n')
     # use random genotypes
     
-    genotype_lines = genotype_lines[1:]
+    genotype_lines = genotype_lines[1:number_of_snps]
     for index, line in enumerate(genotype_lines):
         if index % 100 == 0:
             print('processed',index,'lines')
@@ -110,24 +135,24 @@ def simulate_cellcounts(number_of_samples, batch):
         out_genotype.write(snp)
         out_beta_info.write('gene_'+str(index)+'\t'+snp)
         
+        # get random betas
+        betas = get_random_betas(len(cellcounts))
+        current_cc_betas = betas['mix']
+        random.shuffle(current_cc_betas)
+        current_cc_gt_betas = betas['mix']
+        random.shuffle(current_cc_gt_betas)
+        #current_cc_gt_betas[-1] = random.choice(betas['significant'])
         
-        current_cc_betas = [betas[i] for i in random.sample(range(10000), len(cellcount_names))]
-        #  make sure that all betas have same direction, 50% all negative or all positive
-        if random.randint(1,2) == 1:
-            current_cc_betas = [-1*x for x in current_cc_betas]
-            
-        current_cc_gt_betas = [betas[i] for i in random.sample(range(10000), len(cellcount_names))]
-        #  make sure that all betas have same direction, 50% all negative or all positive
+        #  for the cc*gt term, make sure that all betas have same direction, 50% all negative or all positive
         if random.randint(1,2) == 1:
             current_cc_gt_betas = [-1*x for x in current_cc_gt_betas]
             
         for cc_index, cellcount_name in enumerate(cellcount_names):
             out_beta_info.write('\t'+str(current_cc_betas[cc_index])+'\t'+str(current_cc_gt_betas[cc_index]))
         
-        #error_index =  random.randint(0,10000
-        #out_beta_info.write('\t'+str(betas[error_index\)+'\n')
+        error_index =  random.randint(0,len(genotype_lines[1:])+2)
+        out_beta_info.write('\t'+str(error[error_index])+'\n')
         
-        out_beta_info.write('\t'+str(0)+'\n')
         for sample in random_selected_samples_list:
             sample_index = samples.index(sample)+1
             
@@ -143,8 +168,8 @@ def simulate_cellcounts(number_of_samples, batch):
                 expression += cc_contribution
                 cc_snp_contribution = current_cc_gt_betas[cc_index] * float(cellcount) * float(dosage)
                 expression += cc_snp_contribution
-            #out_simulatedExpression.write('\t'+str(expression+error[error_index]))
-            out_simulatedExpression.write('\t'+str(expression+0))
+            out_simulatedExpression.write('\t'+str(expression+error[error_index]))
+            #out_simulatedExpression.write('\t'+str(expression+0))
 
         out_simulatedExpression.write('\n')
         out_genotype.write('\n')
@@ -157,4 +182,4 @@ def simulate_cellcounts(number_of_samples, batch):
     out_simulatedExpression.close()
     out_snpToTest.close()
         
-simulate_cellcounts(args.number_of_samples,args.batch)
+simulate_expression(args.number_of_samples,args.number_of_snps, args.batch)

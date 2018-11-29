@@ -241,10 +241,14 @@ public class InteractionModelCollection {
 		if(genotypeConfigurationType.equals("all")){
 			// this gets all possible combinations, e.g. if 3 celltypes: 000, 001, 010, 100, 011, 101, 110, 111
 			this.genotypeConfigurationsFullModel = Utils.binaryPermutations("",celltypes.size(), new ArrayList<String>());
+			this.genotypeConfigurationsCtModel = Utils.binaryPermutations("",celltypes.size()-1, new ArrayList<String>());
 		}else if(genotypeConfigurationType.equals("two")){
 			// this gets two possible combinations, e.g. if 3 celltypes: 000, 111
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "0")));
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "1")));
+			
+			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
+			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "1")));
 		}else if(genotypeConfigurationType.equals("one")){
 			// similar to "two", but can have one different, e.g. : 000, 111, 001, 010, 100
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "0")));
@@ -259,10 +263,25 @@ public class InteractionModelCollection {
 				genotypeConfiguration.setCharAt(i, '0');
 				this.genotypeConfigurationsFullModel.add(genotypeConfiguration.toString());
 			}
+			
+			
+			
+			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
+			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "1")));
+			for(int i = 0; i < celltypes.size()-1; ++i){
+				StringBuilder genotypeConfiguration = new StringBuilder(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
+				genotypeConfiguration.setCharAt(i, '1');
+				this.genotypeConfigurationsCtModel.add(genotypeConfiguration.toString());
+			}
+			for(int i = 0; i < celltypes.size()-1; ++i){
+				StringBuilder genotypeConfiguration = new StringBuilder(String.join("", Collections.nCopies(celltypes.size()-1, "1")));
+				genotypeConfiguration.setCharAt(i, '0');
+				this.genotypeConfigurationsCtModel.add(genotypeConfiguration.toString());
+			}
+			
 		}else{
 			throw new RuntimeException("configurationType should be either \"all\" or \"two\", was: "+genotypeConfigurationType);
 		}
-		this.genotypeConfigurationsCtModel = Utils.binaryPermutations("",celltypes.size()-1, new ArrayList<String>());
 
 
 		for(String genotypeConfiguration : genotypeConfigurationsFullModel){
