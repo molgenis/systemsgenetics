@@ -12,9 +12,6 @@ Encoding: UTF-8
 LazyData: true
 Suggests: knitr,rmarkdown
 VignetteBuilder: knitr
-Imports:
-    edgeR,
-    glmnet,
-    data.table,
-    DeconRNASeq
+biocViews:
+Imports: edgeR,glmnet,data.table,DeconRNASeq
 RoxygenNote: 6.1.1

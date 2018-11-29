@@ -38,6 +38,7 @@ ggplot(pData, aes(y=PearsonCor , x= CTs, fill=Subpop))+
 
 ## ----dCell.run-----------------------------------------------------------
 library(DeconRNASeq)
+
 data(multi_tissue)
 
 ## remove colums that are not needed.
