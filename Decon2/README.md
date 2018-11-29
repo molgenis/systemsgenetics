@@ -114,6 +114,8 @@ write.table(predicted.cellcounts.scaled, 'example_data/predicted.cellcounts.scal
 
 You now how scaled, predicted cell counts that can be used as input for Decon-eQTL.
 
+If you want to build your own prediction models you can use as example our (vignette)[http://htmlpreview.github.io/?https://github.com/molgenis/systemsgenetics/blob/master/Decon2/DeconCell/inst/doc/my-vignette.html].
+
 ## Decon-eQTL
 
 With the predicted cell counts you can now run Decon-eQTL. In your terminal, run:
