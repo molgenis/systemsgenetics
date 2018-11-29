@@ -20,7 +20,7 @@ For additional details on methods and results please go our [manuscript](link to
 
 ```{r}
 library(devtools)
-install_github("raguirreg/DeconCell")
+install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
 
