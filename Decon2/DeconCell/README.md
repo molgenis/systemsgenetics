@@ -21,8 +21,8 @@ library(devtools)
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
-##Vignette 
-For a quick start and tutorial please visit our  [vignette](http://htmlpreview.github.io/?https://github.com/molgenis/systemsgenetics/blob/master/Decon2/DeconCell/inst/doc/my-vignette.html)
+## Vignette 
+For a quick start and tutorial please visit our [vignette](http://htmlpreview.github.io/?https://github.com/molgenis/systemsgenetics/blob/master/Decon2/DeconCell/inst/doc/my-vignette.html)
 
 
 
