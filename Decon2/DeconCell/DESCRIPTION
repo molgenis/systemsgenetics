@@ -4,17 +4,17 @@ Title: DeconCell
 Version: 0.1.0
 Author: Raúl Aguirre-Gamboa and Niek de Klein
 Maintainer: Raúl Aguirre-Gamboa <raul.aguirre.gamboa@gmail.com>
-Description: Models and functions for predicting immune cell proportions using expression data. 
-    The DeconCell package contains....
+Description: 
+	DeconCell is an statitsical framework for generating cell proportions predictive models using bulk expresion data. It currently has pre-calculated models
 URL: pending....
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-Suggests: knitr,
-    rmarkdown
+Suggests: knitr,rmarkdown
 VignetteBuilder: knitr
 Imports:
     edgeR,
     glmnet,
     data.table,
-RoxygenNote: 6.0.1
+    DeconRNASeq
+RoxygenNote: 6.1.1
