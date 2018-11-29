@@ -32,13 +32,17 @@ public class InteractionModelCollection {
 	private HashMap<String, ArrayList<String>> genotypeConfigMap = new HashMap<String, ArrayList<String>>();
 	private List<String> celltypes = new ArrayList<String>();
 	private List<String> sampleNames = new ArrayList<String>();
+	private Boolean useOLS;
+
 
 	/*
 	 * Have to initialize instance with if NNLS or OLS will be used, and for that we need cellCounts
 	 */
-	public InteractionModelCollection(CellCount cellCount, String genotypeConfigurationType) throws IllegalAccessException{
+	public InteractionModelCollection(CellCount cellCount, String genotypeConfigurationType, Boolean useOLS) throws IllegalAccessException{
 		setCellCount(cellCount);
 		makeConfigurations(genotypeConfigurationType);
+		this.useOLS = useOLS;
+
 	}
 
 	public List<String> getAllCelltypes(){
@@ -188,7 +192,13 @@ public class InteractionModelCollection {
 		double sumOfSquares = -1;
 		for (String modelName : getFullModelNames()){
 			InteractionModel fullModel = getInteractionModel(modelName);
-			fullModel.calculateSumOfSquaresNNLS(getExpessionValues());
+
+			if(useOLS){
+				fullModel.calculateSumOfSquaresOLS(getExpessionValues());
+			}else{
+				fullModel.calculateSumOfSquaresNNLS(getExpessionValues());
+			}
+			
 			if (sumOfSquares == -1){
 				sumOfSquares = fullModel.getSumOfSquares();
 			}
@@ -215,7 +225,12 @@ public class InteractionModelCollection {
 				InteractionModel ctModel = getInteractionModel(modelName);
 				modelCelltype.put(modelName, celltype);
 
-				ctModel.calculateSumOfSquaresNNLS(getExpessionValues());
+				if(useOLS){
+					ctModel.calculateSumOfSquaresOLS(getExpessionValues());
+				}
+				else{
+					ctModel.calculateSumOfSquaresNNLS(getExpessionValues());
+				}
 
 				if (sumOfSquares == -1){
 					sumOfSquares = ctModel.getSumOfSquares();
@@ -250,7 +265,7 @@ public class InteractionModelCollection {
 			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
 			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "1")));
 		}else if(genotypeConfigurationType.equals("one")){
-			// similar to "two", but can have one different, e.g. : 000, 111, 001, 010, 100
+			// similar to "two", but can have one different, e.g. : 000, 111, 001, 010, 100, 110, 101, 011 (for 3 celltypes is same as all)
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "0")));
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "1")));
 			for(int i = 0; i < celltypes.size(); ++i){

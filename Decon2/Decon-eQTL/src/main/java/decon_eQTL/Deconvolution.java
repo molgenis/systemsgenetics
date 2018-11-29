@@ -277,7 +277,8 @@ public class Deconvolution {
 		}
 
 		InteractionModelCollection interactionModelCollection = new InteractionModelCollection(cellCounts, 
-				commandLineOptions.getGenotypeConfigurationType());
+																							   commandLineOptions.getGenotypeConfigurationType(),
+																							   commandLineOptions.getUseOLS());
 		interactionModelCollection.setQtlName(qtlName);
 		interactionModelCollection.setGenotypes(genotypes);
 		interactionModelCollection.setExpressionValues(expression);
