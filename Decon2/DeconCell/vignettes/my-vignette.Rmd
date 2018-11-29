@@ -2,7 +2,7 @@
 title: "DeconCell quick start and tutorial"
 author: "Raúl Aguirre-Gamboa and Niek de Klein"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: rmarkdown::github_document
 vignette: >
   %\VignetteIndexEntry{DeconCell quick start and tutorial}
   %\VignetteEngine{knitr::rmarkdown}
@@ -72,6 +72,7 @@ To illustrate this we will make use of the publicly available data from the [Dec
 
 ```{r dCell.run}
 library(DeconRNASeq)
+
 data(multi_tissue)
 
 ## remove colums that are not needed.
