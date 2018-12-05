@@ -31,6 +31,15 @@
 //	public void testReader_1_1() throws URISyntaxException, IOException {
 //		genotypeData = new BgenGenotypeData(getTest3Bgen(), getTest3Sample());
 //	}
+//	@Test
+//	public void testSomeMethod() {
+//		// TODO review the generated test code and remove the default call to fail.
+//	}
+//
+//	@Test
+//	public void testReader_1_1() throws URISyntaxException, IOException {
+//		//genotypeData = new BgenGenotypeData(getTest3Bgen(), getTest3Sample());
+//	}
 //
 //	@Test
 //	public void testReader_1_2() throws URISyntaxException, IOException {
@@ -46,3 +55,4 @@
 //		genotypeData = new BgenGenotypeData(bgenixFile, null);
 //	}
 //}
+

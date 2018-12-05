@@ -25,12 +25,14 @@ import eqtlmappingpipeline.mixupmapper.MixupMapperConsoleGUI;
 import eqtlmappingpipeline.normalization.NormalizationConsoleGUI;
 import eqtlmappingpipeline.pcaoptimum.PCAOptimumConsoleGUI;
 import eqtlmappingpipeline.qcpca.QCPCAConsoleGui;
+import eqtlmappingpipeline.transCorrelatieQtl.ExtractDataForPlots;
+import eqtlmappingpipeline.transCorrelatieQtl.MetaTransCorrelationQtl;
+import eqtlmappingpipeline.transCorrelatieQtl.transCorrelationQtl;
 import eqtlmappingpipeline.util.ModuleEqtWestraReplication;
 import eqtlmappingpipeline.util.ModuleEqtlGeuvadisReplication;
 import eqtlmappingpipeline.util.ModuleEqtlNeutrophilReplication;
 import eqtlmappingpipeline.util.UtilConsoleGUI;
 import eqtlmappingpipeline.util.QTLFileCompare;
-import eqtlmappingpipeline.util.QTLmeQTLCompare;
 
 import java.util.Arrays;
 
@@ -41,47 +43,47 @@ import umcg.genetica.io.pileup.PileupToVcf;
  * @author harmjan
  */
 public class EQTLMappingPipelineConsole {
-	
+
 	public void main(String[] args) throws Exception {
-		
+
 		if (args == null || args.length == 0) {
-			
+
 			printHeader();
 			printUsage();
 			System.out.println("\nERROR: Please supply --mode\n");
 			return;
 		}
-		
+
 		String mode = null;
-		
+
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			String val = null;
-			
+
 			if (i + 1 < args.length) {
 				val = args[i + 1];
 			}
-			
+
 			if (arg.equals("--imputationtool")) {
-				
+
 				imputationtool.ImputationTool.main(args);
 			}
-			
+
 			if (arg.equals("--metamode")) {
 				eqtlmappingpipeline.binarymeta.Main.main(args);
 				System.exit(0);
 			}
-			
+
 			if (arg.equals("--utilmode")) {
 				UtilConsoleGUI g = new UtilConsoleGUI(args);
 				System.exit(0);
 			}
-			
+
 			if (arg.equals("--mode")) {
 				mode = val;
 			}
 		}
-		
+
 		if (mode == null) {
 			System.out.println("ERROR: Please supply --mode");
 			printUsage();
@@ -96,8 +98,6 @@ public class EQTLMappingPipelineConsole {
 				NormalizationConsoleGUI p = new NormalizationConsoleGUI(args);
 			} else if (mode.equals("compare")) {
 				QTLFileCompare r = new QTLFileCompare(args);
-			} else if (mode.equals("compareM")) {
-				QTLmeQTLCompare r = new QTLmeQTLCompare(args);
 			} else if (mode.equals("chryplot")) {
 				ChrYExpressionPlotConsoleGUI r = new ChrYExpressionPlotConsoleGUI(args);
 			} else if (mode.equals("pcaoptimum")) {
@@ -153,16 +153,25 @@ public class EQTLMappingPipelineConsole {
 			} else if (mode.equals("aseSnpEff")) {
 				AnnotateAseWithSnpEffVcf.annotateAseWithSnpEffVcf(args[2], args[3], args[4]);
 				return;
+			} else if (mode.equals("transCorrelation")) {
+				transCorrelationQtl.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("transCorrelationMeta")) {
+				MetaTransCorrelationQtl.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
+			} else if (mode.equals("transCorrelationExtractData")) {
+				ExtractDataForPlots.main(Arrays.copyOfRange(args, 2, args.length));
+				return;
 			} else {
 				printUsage();
 			}
 		}
-		
+
 		System.out.println(ConsoleGUIElems.DOUBLELINE);
 	}
-	
+
 	private void printHeader() {
-		
+
 		//Note: Version is null when running from netbeans but will be set when buidling a jar
 		System.out.println("\n"
 				+ ConsoleGUIElems.DOUBLELINE
@@ -172,7 +181,7 @@ public class EQTLMappingPipelineConsole {
 				+ "Harm-Jan Westra, Patrick Deelen, Marc Jan Bonder, Dasha Zhernakova and Lude Franke\n"
 				+ ConsoleGUIElems.DOUBLELINE + "\n");
 	}
-	
+
 	/*
 	 * prints usage
 	 */
@@ -196,6 +205,6 @@ public class EQTLMappingPipelineConsole {
 				+ "       compareM\tCompare eQTL and eQTM files\n");
 		System.out.println("");
 		System.out.println("More information: www.molgenis.org/systemsgenetics/QTL-mapping-pipeline");
-		
+
 	}
 }

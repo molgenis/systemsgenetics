@@ -43,7 +43,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		compression_0, compression_1, compression_2
 	}
 
-	public enum layout {
+	public enum Layout {
 		layOut_1, layOut_2
 	}
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
@@ -54,11 +54,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final boolean sampleIdentifiersPresent;
 	private final Inflater gzipInflater = new Inflater();
 	private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
-	private static final Charset charset = Charset.forName("UTF-8");
+	private static final Charset CHARSET = Charset.forName("UTF-8");
 	private final blockRepresentation snpBlockRepresentation;
-	private final layout fileLayout;
-	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
+	private final Layout fileLayout;
+	private static final GeneticVariantMeta GP_VARIANT = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 	private final SampleVariantsProvider sampleVariantProvider;
+	private final BgenixReader bgenixReader;
+	private final long sampleCount;
 
 	public BgenGenotypeData(File bgenFile, File sampleFile) throws IOException {
 		this(bgenFile, sampleFile, 1000);
@@ -71,7 +73,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	public BgenGenotypeData(File bgenFile, File sampleFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
 
 		this.bgenFile = new RandomAccessFile(bgenFile, "r");
-
+		
+		
+		
 		if (this.bgenFile.read(byteArray4, 0, 4) != 4) {
 			throw new GenotypeDataException("Error reading bgen file header. File is corrupt");
 		}
@@ -100,7 +104,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		if (this.bgenFile.read(byteArray4, 0, 4) != 4) {
 			throw new GenotypeDataException("Error reading bgen file header. File is corrupt");
 		}
-		long sampleCount = getUInt32(byteArray4, 0);
+		sampleCount = getUInt32(byteArray4, 0);
 		LOGGER.debug("Number of samples: " + sampleCount);
 
 		if (sampleCount > Integer.MAX_VALUE) {
@@ -140,17 +144,17 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		switch (byte_tmp & 7) {
 			case 1:
 				LOGGER.debug("Genotype data is in layout 1 (BGEN 1.1)");
-				fileLayout = layout.layOut_1;
+				fileLayout = Layout.layOut_1;
 				break;
 			case 2:
 				LOGGER.debug("Genotype data is in layout 2 (BGEN 1.2 & 1.3)");
-				fileLayout = layout.layOut_2;
+				fileLayout = Layout.layOut_2;
 				break;
 			default:
 				throw new GenotypeDataException("Invalid layout, observed: " + (byteArray4[0] & 3));
 		}
 
-		if (snpBlockRepresentation.equals(blockRepresentation.compression_2) & fileLayout.equals(layout.layOut_1)) {
+		if (snpBlockRepresentation.equals(blockRepresentation.compression_2) & fileLayout.equals(Layout.layOut_1)) {
 			throw new GenotypeDataException("Invalid compression method for layout one observed. Trying to use ZSTD compression on layout one file, which is not supported.");
 		}
 
@@ -190,7 +194,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				int sampleIdLength = getUInt16(byteArray2, 0);
 				byte[] sampleName = new byte[sampleIdLength];
 				this.bgenFile.read(sampleName, 0, sampleIdLength);
-				sampleIds[i] = new String(sampleName, charset);
+				sampleIds[i] = new String(sampleName, CHARSET);
 //				System.out.println("\t"+sampleIds[i]);
 			}
 		}
@@ -201,42 +205,42 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		long lastSnpStart = snpOffset + 4;
 
-		if (bgenixFile.exists()) {
-			BgenixReader indexInformation = new BgenixReader(bgenixFile);
-			BgenixMetadata metadata = indexInformation.getMetadata();
-			if (metadata != null) {
-				if (!metadata.getFileName().equals(bgenFile.getName())) {
-					throw new GenotypeDataException("Sample name between bgenix and bgen is not equal. Invalid Bgen and Bgenix combination.");
-				}
-
-				if (metadata.getFileSize() != bgenFile.length()) {
-					throw new GenotypeDataException("Number of expected bytes is different to the numer of observed bytes. Invalid Bgen and Bgenix combination.");
-				}
-
-				this.bgenFile.seek(0);
-				byte[] firstBytes = new byte[1000];
-				this.bgenFile.read(firstBytes, 0, 1000);
-				if (!Arrays.equals(metadata.getFirst1000bytes(), firstBytes)) {
-					throw new GenotypeDataException("First 1000 bytes of meta data and actual data are not equal. Invalid Bgen and Bgenix combination.");
-				}
-			}
-		} else {
-
-			System.out.println("path: "+bgenixFile);
+		if (!bgenixFile.exists()) {
+			LOGGER.info("Creating bgenix file at: " + bgenixFile.getAbsolutePath());
 			BgenixWriter b = new BgenixWriter(bgenixFile);
 			createBgenixFile(bgenFile, b, lastSnpStart, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
 			b.finalizeIndex();
 		}
+
+		bgenixReader = new BgenixReader(bgenixFile);
+		BgenixMetadata metadata = bgenixReader.getMetadata();
+		if (metadata != null) {
+			if (!metadata.getFileName().equals(bgenFile.getName())) {
+				throw new GenotypeDataException("Sample name between bgenix and bgen is not equal. Invalid Bgen and Bgenix combination.");
+			}
+
+			if (metadata.getFileSize() != bgenFile.length()) {
+				throw new GenotypeDataException("Number of expected bytes is different to the numer of observed bytes. Invalid Bgen and Bgenix combination.");
+			}
+
+			this.bgenFile.seek(0);
+			byte[] firstBytes = new byte[1000];
+			this.bgenFile.read(firstBytes, 0, 1000);
+			if (!Arrays.equals(metadata.getFirst1000bytes(), firstBytes)) {
+				throw new GenotypeDataException("First 1000 bytes of meta data and actual data are not equal. Invalid Bgen and Bgenix combination.");
+			}
+		}
+
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
 		} else {
 			sampleVariantProvider = this;
 		}
 		//Read the first snp to get into genotype-io.
-		readCompleteGeneticVariant(bgenFile, lastSnpStart, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
+//		readCompleteGeneticVariant(bgenFile, lastSnpStart, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
 	}
 
-	private void createBgenixFile(File bgen, BgenixWriter b, long pointerFirstSnp, int nSamples, layout fileLayout, blockRepresentation fileBlockRepresentation) throws IOException {
+	private void createBgenixFile(File bgen, BgenixWriter b, long pointerFirstSnp, int nSamples, Layout fileLayout, blockRepresentation fileBlockRepresentation) throws IOException {
 		this.bgenFile.seek(0);
 
 		byte[] firstBytes = new byte[1000];
@@ -244,7 +248,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		//Add current time in int.
 		System.out.println((System.currentTimeMillis() / 1000L));
-		BgenixMetadata m = new BgenixMetadata(bgen.getName(), (int) this.bgenFile.length(), (int) (bgen.lastModified()/1000L), firstBytes, (System.currentTimeMillis() / 1000L));
+		BgenixMetadata m = new BgenixMetadata(bgen.getName(), (int) this.bgenFile.length(), (int) (bgen.lastModified() / 1000L), firstBytes, (System.currentTimeMillis() / 1000L));
 		b.writeMetadata(m);
 
 		//Loop through the start of the file
@@ -256,24 +260,24 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		while ((startSize) < bgenFile.length()) {
 			//Loop through variants.
 //			long currentStart = pointerFirstSnp + stepToNextVariant;
-			
-			GeneticVariant var = readSnpInfo(bgen, nSamples, fileLayout, startSize);
-			long currentPointer= this.bgenFile.getFilePointer();
+
+			GeneticVariant var = readSnpInfo(startSize);
+			long currentPointer = this.bgenFile.getFilePointer();
 			long stepSize = DetermineStepSize(currentPointer, fileLayout, fileBlockRepresentation, nSamples);
-			
-			if(fileLayout.equals(fileLayout.layOut_2)){
-				stepSize+=4;
+
+			if (fileLayout.equals(fileLayout.layOut_2)) {
+				stepSize += 4;
 			}
 //			this.bgenFile.seek(currentPointer);
-			startSize=currentPointer+stepSize;
-			
+			startSize = currentPointer + stepSize;
+
 			b.addVariantToIndex(var, pointerFirstSnp, (int) stepSize, var.getVariantId().getPrimairyId());
 		}
 	}
-	
-	private GeneticVariant readSnpInfo(File bgen, int nSamples, layout fileLayout, long filePointer) throws IOException {
+
+	private GeneticVariant readSnpInfo(long filePointer) throws IOException {
 		long lastSnpStart = filePointer;
-		if (fileLayout.equals(layout.layOut_1)) {
+		if (fileLayout == Layout.layOut_1) {
 			lastSnpStart += 4;
 		}
 //		System.out.println("Seeking to:" +lastSnpStart);
@@ -287,30 +291,28 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //		if (snpInfoBufferSize < 20) {
 //			throw new GenotypeDataException("Error reading bgen snp data. File is corrupt");
 //		}
-	
 		// Need to check that it is correct with the block infront of the snp id.
 		ArrayList<String> snpIds = new ArrayList<>();
 		int fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp ID length " + fieldLength);
 		snpInfoBufferPos += 2;
-		String snpId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
+		String snpId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
 //		System.out.println(snpId);
 		snpInfoBufferPos += fieldLength; // skip id length and snp id
-		
 
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp RS length " + fieldLength);
 
 		snpInfoBufferPos += 2;
-		String snpRs = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
+		String snpRs = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
 //		System.out.println(snpRs);
-		snpInfoBufferPos += fieldLength;		
+		snpInfoBufferPos += fieldLength;
 		snpIds.add(snpRs);
 		snpIds.add(snpId);
-		
+
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		snpInfoBufferPos += 2;
-		String seqName = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, charset);
+		String seqName = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
 //		System.out.println(seqName);
 		snpInfoBufferPos += fieldLength;
 
@@ -323,9 +325,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		int snpPos = (int) snpPosLong;
 
 //		System.out.println("SNP pos " + snpPos);
-
 		int numberOfAlleles = 2;
-		if (fileLayout.equals(layout.layOut_2)) {
+		if (fileLayout.equals(Layout.layOut_2)) {
 			numberOfAlleles = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 			snpInfoBufferPos += 2;
 //			System.out.println("SNP Alleles " + numberOfAlleles);
@@ -338,33 +339,32 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			if (fieldLengthLong > Integer.MAX_VALUE) {
 				throw new GenotypeDataException("SNP with allele longer than (2^31)-1 characters not supported");
 			}
-			String a = new String(snpInfoBuffer, snpInfoBufferPos, (int) fieldLengthLong, charset);
+			String a = new String(snpInfoBuffer, snpInfoBufferPos, (int) fieldLengthLong, CHARSET);
 			snpInfoBufferPos += ((int) fieldLengthLong);
 			alleles.add(a);
 		}
 
 //		System.out.println(alleles.toString());
-
 //			System.out.println("Location where genotypes start: "+this.bgenFile.getFilePointer());
 		this.bgenFile.seek(snpInfoBufferPos + lastSnpStart);
 
-		GeneticVariant var = ReadOnlyGeneticVariant.createVariant(geneticVariantMeta, snpIds, snpPos, seqName, sampleVariantProvider, alleles, alleles.get(0));
-		
+		GeneticVariant var = ReadOnlyGeneticVariant.createVariant(GP_VARIANT, snpIds, snpPos, seqName, sampleVariantProvider, alleles, alleles.get(0));
+
 		return var;
 	}
-	
-	private void readGenotypesFromVariant(long filePointer, layout currentFileLayout, blockRepresentation currentBlockRepresentation, int sampleCount) throws IOException {
+
+	private void readGenotypesFromVariant(long filePointer) throws IOException {
 		this.bgenFile.seek(filePointer);
-		
+
 		//Not sure if we want to do the buffer search here. Or we might be able to take a smaller set.
 		byte[] snpInfoBuffer = new byte[8096];
 //		int snpInfoBufferSize = 
 		this.bgenFile.read(snpInfoBuffer, 0, snpInfoBuffer.length);
 		int snpInfoBufferPos = 0;
 
-		if (currentFileLayout.equals(fileLayout.layOut_1)) {
+		if (fileLayout == fileLayout.layOut_1) {
 			long snpBlockSize;
-			if (currentBlockRepresentation.equals(blockRepresentation.compression_1)) {
+			if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
 				snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpBlockSize += 4;
 			} else {
@@ -372,7 +372,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			}
 			System.out.println("Snp block size: " + snpBlockSize);
 			byte[] snpBlockData = new byte[6 * (int) sampleCount];
-			if (currentBlockRepresentation.equals(blockRepresentation.compression_1)) {
+			if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
 				gzipInflater.setInput(snpInfoBuffer, snpInfoBufferPos + 4, (int) snpBlockSize - 4);
 				try {
 					gzipInflater.inflate(snpBlockData);
@@ -387,10 +387,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				//Here we can directly parse from the snpInfoBuffer.
 			}
 
-		} else if (currentFileLayout.equals(fileLayout.layOut_2)) {
+		} else if (fileLayout.equals(fileLayout.layOut_2)) {
 			long snpBlockSize;
 			long snpBlockSizeDecompressed;
-			if (!currentBlockRepresentation.equals(blockRepresentation.compression_0)) {
+			if (!snpBlockRepresentation.equals(blockRepresentation.compression_0)) {
 				snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpInfoBufferPos += 4;
 				snpBlockSizeDecompressed = getUInt32(snpInfoBuffer, snpInfoBufferPos);
@@ -404,7 +404,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			System.out.println("Snp block size decompressed: " + snpBlockSizeDecompressed);
 
 			byte[] snpBlockData = new byte[(int) snpBlockSizeDecompressed];
-			switch (currentBlockRepresentation) {
+			switch (snpBlockRepresentation) {
 
 				case compression_1:
 					gzipInflater.setInput(snpInfoBuffer, snpInfoBufferPos, (int) snpBlockSize - 4);
@@ -465,55 +465,54 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		}
 	}
-	
-	private void readCompleteGeneticVariant(File bgen, long lastSnpStart, int sampleCount, layout currentFileLayout, blockRepresentation currentBlockRepresentation) throws IOException {
-		//Binary index writer.
-//		for (int snpI = 0; snpI < variantCount; ++snpI) {
 
-		long currentPointer= this.bgenFile.getFilePointer();
-		long stepSize=0L;
-		
-		while((currentPointer+stepSize)<bgen.length()){
-			GeneticVariant var = readSnpInfo(bgen, sampleCount, currentFileLayout, (currentPointer+stepSize));
-			System.out.println(var.getAllIds().get(0));
-			currentPointer= this.bgenFile.getFilePointer();
-			
-			stepSize = DetermineStepSize(currentPointer, currentFileLayout, currentBlockRepresentation, sampleCount);
-			if(currentFileLayout.equals(layout.layOut_2)){
-				stepSize+=4;
-			}
-			this.bgenFile.seek(currentPointer);
-			//Here we can process actual genotype info.
-			
-			
-//			System.out.println(bgen.length() - (currentPointer+stepSize));
-			System.out.println("Step to skip, to next variant: " + (int) stepSize);
-		}
-
-	}
-	
-	private Long DetermineStepSize(long filePointer, layout currentFileLayout, blockRepresentation currentBlockRepresentation, int sampleCount) throws IOException {
+//	private void readCompleteGeneticVariant(File bgen, long lastSnpStart, int sampleCount, layout currentFileLayout, blockRepresentation currentBlockRepresentation) throws IOException {
+//		//Binary index writer.
+////		for (int snpI = 0; snpI < variantCount; ++snpI) {
+//
+//		long currentPointer= this.bgenFile.getFilePointer();
+//		long stepSize=0L;
+//		
+//		while((currentPointer+stepSize)<bgen.length()){
+//			GeneticVariant var = readSnpInfo((currentPointer+stepSize));
+//			System.out.println(var.getAllIds().get(0));
+//			currentPointer= this.bgenFile.getFilePointer();
+//			
+//			stepSize = DetermineStepSize(currentPointer, currentFileLayout, currentBlockRepresentation, sampleCount);
+//			if(currentFileLayout.equals(layout.layOut_2)){
+//				stepSize+=4;
+//			}
+//			this.bgenFile.seek(currentPointer);
+//			//Here we can process actual genotype info.
+//			
+//			
+////			System.out.println(bgen.length() - (currentPointer+stepSize));
+//			System.out.println("Step to skip, to next variant: " + (int) stepSize);
+//		}
+//
+//	}
+	private Long DetermineStepSize(long filePointer, Layout currentFileLayout, blockRepresentation currentBlockRepresentation, int sampleCount) throws IOException {
 		this.bgenFile.seek(filePointer);
-		
+
 		//Not sure if we want to do the buffer search here. Or we might be able to take a smaller set.
 		byte[] snpInfoBuffer = new byte[8096];
 //		int snpInfoBufferSize = 
 		this.bgenFile.read(snpInfoBuffer, 0, snpInfoBuffer.length);
 		int snpInfoBufferPos = 0;
-		
+
 		Long snpBlockSize = null;
 		long snpBlockSizeDecompressed;
-		
-		if (currentFileLayout.equals(fileLayout.layOut_1)) {
+
+		if (currentFileLayout == fileLayout.layOut_1) {
 			if (currentBlockRepresentation.equals(blockRepresentation.compression_1)) {
 				snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 				snpBlockSize += 4;
 			} else {
-				snpBlockSize = new Long( (long) (6 * sampleCount));
+				snpBlockSize = new Long((long) (6 * sampleCount));
 			}
 			System.out.println("Snp block size: " + snpBlockSize);
 
-		} else if (currentFileLayout.equals(fileLayout.layOut_2)) {
+		} else if (currentFileLayout == fileLayout.layOut_2) {
 
 			if (!currentBlockRepresentation.equals(blockRepresentation.compression_0)) {
 				snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
@@ -530,7 +529,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		}
 		return snpBlockSize;
 	}
-	
+
 	@Override
 	public List<Sample> getSamples() {
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -548,7 +547,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public boolean isOnlyContaingSaveProbabilityGenotypes() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return true;
 	}
 
 	@Override
@@ -573,7 +572,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		BgenixVariantQueryResult bgenixVariants = bgenixReader.getVariantsChromosome(seqName);
+
+		return null;
 	}
 
 	@Override
@@ -620,7 +621,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
-	
+
 	/**
 	 * Convert 4 bytes to unsigned 32 bit int from index. Returns long since
 	 * java does not have unsigned int

@@ -331,7 +331,7 @@ public class Main {
         }
 
         geneticRiskScoreMatrix.setMatrix(ConvertDoubleMatrixDataToTriTyper.rankRows(geneticRiskScoreMatrix.getMatrix()));
-		//geneticRiskScoreMatrix.save(outputF + File.separator + "Step1_ScoreMatrix.txt");
+
         geneticRiskScoreMatrix.setMatrix(ConvertDoubleMatrixDataToTriTyper.rescaleValue(geneticRiskScoreMatrix.getMatrix(), 200.0d));
 		//geneticRiskScoreMatrix.save(outputF + File.separator + "Step2_ScoreMatrix.txt");
 		

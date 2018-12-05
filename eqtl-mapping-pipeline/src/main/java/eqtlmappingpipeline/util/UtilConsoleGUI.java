@@ -330,14 +330,6 @@ public class UtilConsoleGUI {
 							m.mergeChr(in, out, nreqtls);
 						}
 						break;
-					case EQTLEQTMLINK:
-						if (in == null || out == null || in2 == null) {
-							System.out.println("USAGE: --in eQTLFile --in2 eqtmfile --out directory");
-						} else {
-							EQTMGeneLinker l = new EQTMGeneLinker();
-							l.link(in, in2, out);
-						}
-						break;
 					case SORTFILE:
 						if (in == null) {
 							System.out.println("USAGE: --in eQTLFile --out eQTLFile");

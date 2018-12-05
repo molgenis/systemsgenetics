@@ -4,37 +4,31 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
-import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
 import cern.colt.matrix.tint.impl.DenseLargeIntMatrix2D;
 import com.itextpdf.text.DocumentException;
-import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
-import umcg.genetica.math.stats.Descriptives;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
+import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLPlotter;
+import umcg.genetica.console.ConsoleGUIElems;
+import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Pair;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.*;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import umcg.genetica.math.stats.Correlation;
+import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.util.RunTimer;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import umcg.genetica.console.ConsoleGUIElems;
-import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.SNP;
-import umcg.genetica.io.trityper.SNPLoader;
-import umcg.genetica.io.trityper.TriTyperExpressionData;
-import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
-import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
-import umcg.genetica.io.trityper.TriTyperGenotypeData;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
-import umcg.genetica.math.stats.Correlation;
-import umcg.genetica.util.RunTimer;
 
 /**
  * @author harmjan
@@ -131,12 +125,17 @@ public class MetaQTL3 {
 			m_settings.cisAnalysis = cis;
 			m_settings.transAnalysis = trans;
 			m_settings.nrPermutationsFDR = perm;
-			if (maf != null && maf > 0.0d && maf < 1.0d) {
+			if (maf != null && maf >= 0.0d && maf < 1.0d) {
 				m_settings.snpQCMAFThreshold = maf;
+			} else if (maf != null) {
+				System.out.println("Error: maf not between 0 and 1");
 			}
 			if (hwe != null && hwe >= 0.0d && hwe <= 1.0d) {
 				m_settings.snpQCHWEThreshold = hwe;
+			} else if (hwe != null) {
+				System.out.println("Error: hwe-p not between 0 and 1");
 			}
+			
 			if (!out.endsWith("/")) {
 				out += "/";
 			}
