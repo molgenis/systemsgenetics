@@ -26,7 +26,7 @@ public class BinaryMetaAnalysisSettings {
 				"useAbsoluteZscore\t" + useAbsoluteZscore + "\n" +
 				"finalEQTLBufferMaxLength\t" + finalEQTLBufferMaxLength + "\n" +
 				"includeSNPsWithoutProperMapping\t" + includeSNPsWithoutProperMapping + "\n" +
-				"includeProbesWithoutProperMapping\t" + includeProbesWithoutProperMapping +
+				"includeProbesWithoutProperMapping\t" + includeProbesWithoutProperMapping + "\n" +
 				"analysisType\t" + analysisType + "\n" +
 				"cisdistance\t" + cisdistance + "\n" +
 				"transdistance\t" + transdistance + "\n" +
@@ -44,6 +44,7 @@ public class BinaryMetaAnalysisSettings {
 				"snpselection\t'" + snpselection + '\'' + "\n" +
 				"snpprobeselection\t'" + snpprobeselection + '\'' + "\n" +
 				"snpAnnotationFile\t'" + snpAnnotationFile + '\'' + "\n" +
+				"probeRescaling\t" + rescalingOfSampleSize + "\n" +
 				"minimalNumberOfDatasets\t" + minimalNumberOfDatasets + "\n" +
 				"debug\t" + debug + "\n" +
 				"fullpermutationoutput\t" + fullpermutationoutput + "\n" +
@@ -231,7 +232,6 @@ public class BinaryMetaAnalysisSettings {
 				}
 				i++;
 			}
-			
 			summarize();
 			// parse datasets
 		} catch (ConfigurationException e) {
