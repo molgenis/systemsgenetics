@@ -58,7 +58,7 @@ public class MixupMapper extends MetaQTL3 {
 			out = initialOutputdir + "Cis-eQTLs/";
 			
 			
-			initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null,
+			initialize(xmlSettingsFile, texttoreplace, texttoreplacewith,
 					ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile,
 					threads, maxNrResults, regressouteqtls, snpprobecombofile, true, true, null, 0.05d, null);
 			m_settings.numberOfVariantsToBuffer = 1000;

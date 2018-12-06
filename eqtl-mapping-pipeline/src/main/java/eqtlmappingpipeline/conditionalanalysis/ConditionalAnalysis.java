@@ -47,7 +47,7 @@ public class ConditionalAnalysis extends MetaQTL3 {
 					String ingt, String inexp, String inexpplatform, String inexpannot, String gte,
 					String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads) throws IOException, Exception {
 		
-		initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, null, null, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, null, null);
+		initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, null, null);
 		double fdrthreshold = m_settings.fdrCutOff;
 		
 		m_settings.provideBetasAndStandardErrors = true;
