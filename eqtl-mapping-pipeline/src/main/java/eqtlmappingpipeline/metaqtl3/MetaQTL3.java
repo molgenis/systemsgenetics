@@ -255,10 +255,10 @@ public class MetaQTL3 {
         } else {
             pathwayDefinitions = null;
         }
-    
-    
+
+
         AtomicInteger finalNrOfDatasetsWithGeneExpressionData = new AtomicInteger();
-        IntStream.range(0,numDatasets).parallel().forEach(v->{
+        IntStream.range(0, numDatasets).parallel().forEach(v -> {
             System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(v).name + "");
             m_settings.datasetSettings.get(v).confineProbesToProbesMappingToAnyChromosome = m_settings.confineProbesToProbesMappingToAnyChromosome;
             System.out.println(ConsoleGUIElems.LINE);
@@ -267,11 +267,14 @@ public class MetaQTL3 {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-    
-            if (m_gg[v].isExpressionDataLoadedCorrectly()) {
+
+            if (m_gg[v] == null) {
+                System.err.println("ERROR: " + m_settings.datasetSettings.get(v).name + " dataset not loaded correctly.");
+                System.exit(-1);
+            } else if (m_gg[v].isExpressionDataLoadedCorrectly()) {
                 finalNrOfDatasetsWithGeneExpressionData.getAndIncrement();
             }
-            
+
         });
 
 //        for (int i = 0; i < numDatasets; i++) {
@@ -580,9 +583,8 @@ public class MetaQTL3 {
         }
 
 
-        System.out.println(m_snpList.length + " snps before sorting");
-        ArrayList<InSNP> snpsArr = new ArrayList<>();
-        for (int s = 0; s < m_snpList.length; s++) {
+        InSNP[] snpsArr = new InSNP[m_snpList.length];
+        IntStream.range(0, m_snpList.length).parallel().forEach(s -> {
             int pos = 0;
             int chr = 0;
             String snp = m_snpList[s];
@@ -593,18 +595,17 @@ public class MetaQTL3 {
                     pos = m_gg[d].getGenotypeData().getChrPos(id);
                 }
             }
-            snpsArr.add(new InSNP(snp, chr, pos));
-        }
+            snpsArr[s] = new InSNP(snp, chr, pos);
+        });
+
         if (m_gg.length > 1 && m_settings.sortsnps) {
-            Collections.sort(snpsArr);
-            System.out.println(snpsArr.size() + " snps after sorting");
+            Arrays.parallelSort(snpsArr);
         }
 
         m_snpList = new String[m_snpList.length];
         for (int i = 0; i < m_snpList.length; i++) {
-            m_snpList[i] = snpsArr.get(i).snp;
+            m_snpList[i] = snpsArr[i].snp;
         }
-
 
         // create snp translation table..
         if ((m_gg.length * (long) m_snpList.length) < (Integer.MAX_VALUE - 2)) {
@@ -614,7 +615,8 @@ public class MetaQTL3 {
         }
 
 //        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
-        for (int p = 0; p < m_snpList.length; p++) {
+        System.out.println("- Linking snps between datasets.");
+        IntStream.range(0,m_snpList.length).parallel().forEach(p->{
             String snp = m_snpList[p];
             for (int d = 0; d < m_gg.length; d++) {
                 Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
@@ -625,7 +627,19 @@ public class MetaQTL3 {
                 }
 
             }
-        }
+        });
+//        for (int p = 0; p < m_snpList.length; p++) {
+//            String snp = m_snpList[p];
+//            for (int d = 0; d < m_gg.length; d++) {
+//                Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
+//                if (tmp == -9) {
+//                    m_snpTranslationTable.setQuick(d, p, -9);
+//                } else {
+//                    m_snpTranslationTable.setQuick(d, p, tmp);
+//                }
+//
+//            }
+//        }
         excludedSNPs.close();
 
         // now determine which of the SNPs that was queried for does not exist in any of the datasets.
@@ -936,6 +950,12 @@ public class MetaQTL3 {
             ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
                     m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
             resultthread.setName("ResultProcessorThread");
+            if(m_settings.dumpeverythingtodisk){
+                System.out.println("-------------------------------------");
+                System.out.println("WARNING: dumping all results to disk!");
+                System.out.println("-------------------------------------");
+                resultthread.setDumpEverything();
+            }
             resultthread.start();
 
             // start production in advance

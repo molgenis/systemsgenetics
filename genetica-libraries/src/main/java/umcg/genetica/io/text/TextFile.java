@@ -4,16 +4,18 @@
  */
 package umcg.genetica.io.text;
 
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import umcg.genetica.containers.Pair;
+import umcg.genetica.containers.Triple;
+import umcg.genetica.text.Strings;
+
 import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
-import umcg.genetica.containers.Pair;
-import umcg.genetica.containers.Triple;
-import umcg.genetica.text.Strings;
 
 /**
  * @author harmjan
@@ -27,6 +29,7 @@ public class TextFile implements Iterable<String> {
 	public static final Pattern colon = Strings.colon;
 	public static final Pattern semicolon = Strings.semicolon;
 	public static final Pattern comma = Strings.comma;
+	private boolean uselz4;
 	protected BufferedReader in;
 	protected File file;
 	public static final boolean W = true;
@@ -56,7 +59,9 @@ public class TextFile implements Iterable<String> {
 		}
 		this.writeable = mode;
 		
-		if (loc.endsWith(".gz")) {
+		if (loc.endsWith(".lz4")) {
+			uselz4 = true;
+		} else if (loc.endsWith(".gz")) {
 			gzipped = true;
 		}
 		open();
@@ -72,16 +77,26 @@ public class TextFile implements Iterable<String> {
 			throw new IOException("Could not find file: " + file);
 		} else {
 			if (writeable) {
-				if (gzipped) {
+				if (uselz4) {
+					
+					LZ4BlockOutputStream os = new LZ4BlockOutputStream(new FileOutputStream(file), buffersize);
+					out = new BufferedWriter(new OutputStreamWriter(os,"US-ASCII"), buffersize);
+					
+				} else if (gzipped) {
 //					ParallelGZIPOutputStream gzipOutputStream = new ParallelGZIPOutputStream(new FileOutputStream(file), buffersize));
-					GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file), buffersize){{def.setLevel(Deflater.BEST_SPEED);}};
-					out = new BufferedWriter(new OutputStreamWriter(gzipOutputStream), buffersize);
+					GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file), buffersize) {{
+						def.setLevel(Deflater.BEST_SPEED);
+					}};
+					out = new BufferedWriter(new OutputStreamWriter(gzipOutputStream, "US-ASCII"), buffersize);
 					
 				} else {
 					out = new BufferedWriter(new FileWriter(file), buffersize);
 				}
 			} else {
-				if (gzipped) {
+				if (uselz4) {
+					LZ4BlockInputStream is = new LZ4BlockInputStream(new FileInputStream(file));
+					in = new BufferedReader(new InputStreamReader(is, "US-ASCII"));
+				} else if (gzipped) {
 					GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(file), buffersize);
 					in = new BufferedReader(new InputStreamReader(gzipInputStream, "US-ASCII"));
 				} else {
