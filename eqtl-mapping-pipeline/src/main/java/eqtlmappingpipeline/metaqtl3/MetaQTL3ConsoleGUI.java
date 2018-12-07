@@ -186,8 +186,8 @@ public class MetaQTL3ConsoleGUI {
         System.out.println("");
         System.out.print("Settings file options:\n" + ConsoleGUIElems.LINE);
         System.out.println("--settings\t\tsettings.xml\tLocation of settings file\n"
-                + "--replacetext\t\ttext\t\tText to replace in settings file\n"
-                + "--replacetextwith\ttext\t\tReplace the text in the settings file, defined by --replacetext with the following text (can be empty)");
+                + "--replacetext\t\ttext\t\tText to replace in settings file (comma separated if multiple)\n"
+                + "--replacetextwith\ttext\t\tReplace the text in the settings file, defined by --replacetext with the following text (can be empty; comma separated if multiple)");
 
         System.out.println("");
         System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);

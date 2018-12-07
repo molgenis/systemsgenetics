@@ -580,7 +580,7 @@ public class QTLFileCompare {
 			System.out.println("\nCorrelation between the Z-Scores of the overlapping set of eQTLs:\t" + correlation + "\tP-Value:\t" + pValuePearson);
 		}
 		
-		TextFile out = new TextFile(outputFile + "-OppositeEQTLs.txt", TextFile.W);
+		TextFile out = new TextFile(outputFile + "-OppositeEQTLs.txt.gz", TextFile.W);
 		for (String oppositeEQTL : vecOppositeEQTLs) {
 			out.write(oppositeEQTL);
 			out.append('\n');

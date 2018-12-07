@@ -762,8 +762,8 @@ public class ConditionalAnalysis extends MetaQTL3 {
 //        mapEQTLs();
 //    }
 	private void determineTopProbeEffect(String outdir) throws IOException {
-		TextFile efile = new TextFile(outdir + "/eQTLs.txt", TextFile.R);
-		TextFile efileout = new TextFile(outdir + "/eQTLsTopProbeEffects.txt", TextFile.W);
+		TextFile efile = new TextFile(outdir + "/eQTLs.txt.gz", TextFile.R);
+		TextFile efileout = new TextFile(outdir + "/eQTLsTopProbeEffects.txt.gz", TextFile.W);
 		efileout.writeln(efile.readLine());
 		String[] elems = efile.readLineElems(TextFile.tab);
 		HashSet<String> probesVisited = new HashSet<String>();
