@@ -225,7 +225,7 @@ public class QTLFileCompare {
 			datasetname1 = "Dataset1";
 		}
 		if (datasetname2 == null) {
-			datasetname1 = "Dataset2";
+			datasetname2 = "Dataset2";
 		}
 		zs.init(2, new String[]{datasetname1, datasetname2}, false, zsOutFileName);
 		
