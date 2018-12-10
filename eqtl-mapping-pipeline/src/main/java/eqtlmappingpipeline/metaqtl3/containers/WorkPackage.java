@@ -167,4 +167,8 @@ public class WorkPackage implements Comparable<WorkPackage> {
     public boolean getHasResults(){
         return hasResults;
     }
+    
+    synchronized public void incrementDatasetsPassingQC() {
+        datasetsPassingQC++;
+    }
 }

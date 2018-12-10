@@ -225,7 +225,7 @@ public class QTLFileCompare {
 			datasetname1 = "Dataset1";
 		}
 		if (datasetname2 == null) {
-			datasetname1 = "Dataset2";
+			datasetname2 = "Dataset2";
 		}
 		zs.init(2, new String[]{datasetname1, datasetname2}, false, zsOutFileName);
 		
@@ -580,7 +580,7 @@ public class QTLFileCompare {
 			System.out.println("\nCorrelation between the Z-Scores of the overlapping set of eQTLs:\t" + correlation + "\tP-Value:\t" + pValuePearson);
 		}
 		
-		TextFile out = new TextFile(outputFile + "-OppositeEQTLs.txt", TextFile.W);
+		TextFile out = new TextFile(outputFile + "-OppositeEQTLs.txt.gz", TextFile.W);
 		for (String oppositeEQTL : vecOppositeEQTLs) {
 			out.write(oppositeEQTL);
 			out.append('\n');

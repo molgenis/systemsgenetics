@@ -4,10 +4,8 @@ import umcg.genetica.containers.Pair;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.text.Strings;
 
-import javax.xml.soap.Text;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.TreeSet;
 
 public class QTLFileFilter {
 	

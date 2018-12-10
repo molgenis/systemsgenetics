@@ -42,7 +42,7 @@ public class eQtlsInEncodeAnnotationDataRegions {
 	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
 	
 	public static void main(String[] args)throws IOException {
-		eQtlsInEncodeAnnotationDataRegions aap = new eQtlsInEncodeAnnotationDataRegions("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
+		eQtlsInEncodeAnnotationDataRegions aap = new eQtlsInEncodeAnnotationDataRegions("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt.gz",
 				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\gencode\\gencode.v18.annotation.b36.gtf");
 	}
 	

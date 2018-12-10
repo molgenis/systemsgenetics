@@ -192,6 +192,120 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
 		return dataset;
 	}
+	
+	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+		
+		//Now load the row and column identifiers from files
+		LinkedHashMap<String, Integer> rowMap = loadIdentifiers(fileName + ".rows.txt");
+		LinkedHashMap<String, Integer> colMap = loadIdentifiers(fileName + ".cols.txt");
+		
+		// determine which rows to include
+		LinkedHashMap<String, Integer> newRowMap = null;
+		HashSet<Integer> requestedRows = null;
+		if (desiredRows != null) {
+			requestedRows = new HashSet<>();
+			int rctr = 0;
+			for (String key : rowMap.keySet()) {
+				if (desiredRows.contains(key)) {
+					requestedRows.add(rowMap.get(key));
+					newRowMap.put(key, rctr);
+					rctr++;
+				}
+			}
+		} else {
+			newRowMap = rowMap;
+		}
+		
+		// determine which columns to include
+		LinkedHashMap<String, Integer> newColMap = null;
+		HashSet<Integer> requestedCols = null;
+		if (desiredRows != null) {
+			requestedCols = new HashSet<>();
+			int cctr = 0;
+			for (String key : colMap.keySet()) {
+				if (desiredCols.contains(key)) {
+					requestedCols.add(rowMap.get(key));
+					newColMap.put(key, cctr);
+					cctr++;
+				}
+			}
+		} else {
+			newColMap = colMap;
+		}
+		
+		
+		//First load the raw binary data:
+		File fileBinary = new File(fileName + ".dat");
+		BufferedInputStream in;
+		int nrRows;
+		int nrCols;
+		in = new BufferedInputStream(new FileInputStream(fileBinary));
+		byte[] bytes = new byte[4];
+		in.read(bytes, 0, 4);
+		nrRows = byteArrayToInt(bytes);
+		in.read(bytes, 0, 4);
+		nrCols = byteArrayToInt(bytes);
+		
+		int reqrows = nrRows;
+		int reqcols = nrCols;
+		if (requestedRows != null) {
+			reqrows = requestedRows.size();
+		}
+		if (requestedCols != null) {
+			reqcols = requestedCols.size();
+		}
+		
+		DoubleMatrix2D matrix;
+		if ((reqrows * (long) reqcols) < (Integer.MAX_VALUE - 2)) {
+			matrix = new DenseDoubleMatrix2D(reqrows, reqcols);
+		} else {
+			matrix = new DenseLargeDoubleMatrix2D(reqrows, reqcols);
+		}
+		
+		
+		byte[] buffer = new byte[nrCols * 8];
+		long bits;
+		
+		int rctr = -1;
+		
+		
+		for (int row = 0; row < nrRows; row++) {
+			in.read(buffer, 0, nrCols * 8);
+			int bufferLoc = 0;
+			
+			if (requestedRows == null || requestedRows.contains(row)) {
+				rctr++;
+				int cctr = 0;
+				for (int col = 0; col < nrCols; col++) {
+					bits = (long) (0xff & buffer[bufferLoc + 7])
+							| (long) (0xff & buffer[bufferLoc + 6]) << 8
+							| (long) (0xff & buffer[bufferLoc + 5]) << 16
+							| (long) (0xff & buffer[bufferLoc + 4]) << 24
+							| (long) (0xff & buffer[bufferLoc + 3]) << 32
+							| (long) (0xff & buffer[bufferLoc + 2]) << 40
+							| (long) (0xff & buffer[bufferLoc + 1]) << 48
+							| (long) (buffer[bufferLoc]) << 56;
+					
+					if (requestedCols == null || requestedCols.contains(col)) {
+						matrix.setQuick(rctr, cctr, Double.longBitsToDouble(bits));
+						cctr++;
+					}
+					
+					bufferLoc += 8;
+				}
+			}
+			
+			
+		}
+		in.close();
+		
+		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, newRowMap, newColMap);
+		LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, reqrows, reqcols});
+		
+		return dataset;
+		
+		
+	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {

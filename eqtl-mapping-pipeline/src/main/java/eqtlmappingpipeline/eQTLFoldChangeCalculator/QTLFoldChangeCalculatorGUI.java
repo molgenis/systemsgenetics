@@ -112,7 +112,7 @@ public class QTLFoldChangeCalculatorGUI {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, maf, hwe);
+                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, maf, hwe);
                 m.calculateFoldChanges(eqtlfile);
             }
         } catch (Exception e) {

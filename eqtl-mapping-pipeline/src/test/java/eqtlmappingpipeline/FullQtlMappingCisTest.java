@@ -82,7 +82,7 @@ public class FullQtlMappingCisTest {
 				"--skipdotplot",
 				"--rseed", "0");
 		
-		QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt", QTLTextFile.R);
+		QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt.gz", QTLTextFile.R);
 		
 		QTLFileSorter r = new QTLFileSorter();
 		r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz");
@@ -97,7 +97,7 @@ public class FullQtlMappingCisTest {
 			assertTrue(eact.sameQTL(eexp, true), "eQTL not identical");
 		}
 		
-		assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found. Comparing: " + tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz and " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt");
+		assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found. Comparing: " + tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz and " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt.gz");
 		assertFalse(eActualIterator.hasNext(), "found more eQTL than expected");
 		
 		

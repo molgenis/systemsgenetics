@@ -28,13 +28,13 @@ public class PCAOptimumInventorize {
         int round = 1;
         
         if(cis){
-            QTLTextFile etf = new QTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrCISEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
         }
         if(trans){
-            QTLTextFile etf = new QTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrTransEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
@@ -42,27 +42,27 @@ public class PCAOptimumInventorize {
         for (int pca = stepSize; pca <= max; pca += stepSize) {
 
             if(cis){
-                String cisNull = in + "Cis-0PCAsRemoved/eQTLsFDR0.05.txt";
-                String cisOut = in + "Cis-" + pca + "PCAsRemoved/eQTLsFDR0.05.txt";
+                String cisNull = in + "Cis-0PCAsRemoved/eQTLsFDR0.05.txt.gz";
+                String cisOut = in + "Cis-" + pca + "PCAsRemoved/eQTLsFDR0.05.txt.gz";
 
                 e.compareOverlapAndZScoreDirectionTwoEQTLFiles(cisOut, cisNull, in + "Cis-" + pca + "PCAsRemoved", false);
                 nrCisSharedPerRound[round] = e.getNrShared();
                 nrCisOppositePerRound[round] = e.getNrOpposite();
 
-                QTLTextFile etf2 = new QTLTextFile(in + "Cis-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Cis-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
                 nrCISEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }  
             
             if(trans){
-                String transNull = in + "Trans-0PCAsRemoved/eQTLsFDR0.05.txt";
-                String transOut = in + "Trans-" + pca + "PCAsRemoved/eQTLsFDR0.05.txt";
+                String transNull = in + "Trans-0PCAsRemoved/eQTLsFDR0.05.txt.gz";
+                String transOut = in + "Trans-" + pca + "PCAsRemoved/eQTLsFDR0.05.txt.gz";
 
                 e.compareOverlapAndZScoreDirectionTwoEQTLFiles(transOut, transNull, in + "Trans-" + pca + "PCAsRemoved", false);
                 nrTransSharedPerRound[round] = e.getNrShared();
                 nrTransOppositePerRound[round] = e.getNrOpposite();
 
-                QTLTextFile etf2 = new QTLTextFile(in + "Trans-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Trans-" + pca + "PCAsRemoved/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
                 nrTransEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }
@@ -88,39 +88,39 @@ public class PCAOptimumInventorize {
 
         String pcqtlsuffix = "-GeneticVectorsNotRemoved";
         if(cis){
-            QTLTextFile etf = new QTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Cis-0PCAsRemoved/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrCISEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
         }
         if(trans){
-            QTLTextFile etf = new QTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+            QTLTextFile etf = new QTLTextFile(in + "Trans-0PCAsRemoved/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
             EQTL[] origEQTLs = etf.read();
             nrTransEQTLsPerRound[0] = origEQTLs.length;
             etf.close();
         }
         for (int pca = stepSize; pca <= max; pca += stepSize) {
             if(cis){
-                String cisNull = in + "Cis-0PCAsRemoved/eQTLsFDR0.05.txt";
-                String cisOut = in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLsFDR0.05.txt";
+                String cisNull = in + "Cis-0PCAsRemoved/eQTLsFDR0.05.txt.gz";
+                String cisOut = in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLsFDR0.05.txt.gz";
 
                 e.compareOverlapAndZScoreDirectionTwoEQTLFiles(cisOut, cisNull, in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix, false);
                 nrCisSharedPerRound[round] = e.getNrShared();
                 nrCisOppositePerRound[round] = e.getNrOpposite();
 
-                QTLTextFile etf2 = new QTLTextFile(in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Cis-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
                 nrCISEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }
             if(trans){
-                String transNull = in + "Trans-0PCAsRemoved/eQTLsFDR0.05.txt";
-                String transOut = in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLsFDR0.05.txt";
+                String transNull = in + "Trans-0PCAsRemoved/eQTLsFDR0.05.txt.gz";
+                String transOut = in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLsFDR0.05.txt.gz";
 
                 e.compareOverlapAndZScoreDirectionTwoEQTLFiles(transOut, transNull, in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix, false);
                 nrTransSharedPerRound[round] = e.getNrShared();
                 nrTransOppositePerRound[round] = e.getNrOpposite();
 
-                QTLTextFile etf2 = new QTLTextFile(in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt", QTLTextFile.R);
+                QTLTextFile etf2 = new QTLTextFile(in + "Trans-" + pca + "PCAsRemoved" + pcqtlsuffix + "/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
                 nrTransEQTLsPerRound[round] = etf2.read().length;
                 etf2.close();
             }
