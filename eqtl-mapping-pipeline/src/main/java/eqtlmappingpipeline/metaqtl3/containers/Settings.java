@@ -94,6 +94,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean usemd5hash = true;
 	public boolean sortsnps = true;
 	public boolean dumpeverythingtodisk;
+	public Integer stopWithPermutation;
 	
 	
 	public Settings() {
@@ -104,23 +105,37 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		XMLConfiguration config = null;
 		if (settingsTextToReplace != null) {
 			
+			System.out.println("Found string to replace: " + settingsTextToReplace);
+			System.out.println("Replacement string: " + settingsTextReplaceWith);
+			
 			String[] queries = settingsTextToReplace.split(",");
 			String[] replacements = settingsTextReplaceWith.split(",");
 			
 			System.out.println("Will attempt to replace template strings in configuration file.");
+			System.out.println(queries.length + " strings to replace with " + replacements.length + " replacements");
+			if (replacements.length != queries.length) {
+				System.out.println("Error: number of strings to replace and number of replacements should be equal.");
+				System.exit(-1);
+			}
 			TextFile tf = new TextFile(settings, TextFile.R);
 			String generatedString = RandomStringUtils.randomAlphabetic(12);
+//			String generatedString = "v2";//RandomStringUtils.randomAlphabetic(12);
 			TextFile tf2 = new TextFile(settings + "-" + generatedString + ".xml", TextFile.W);
 			String line = tf.readLine();
+			int lnctr = 0;
 			while (line != null) {
 				for (int s = 0; s < queries.length; s++) {
 					String query = queries[s];
 					String replacement = replacements[s];
+					System.out.println(lnctr + "\t" + query + "\t" + replacement);
 					if (line.contains(query)) {
 						System.out.println(line + " --> Replacing: " + query + " with " + replacement);
+						line = line.replace(query, replacement);
 					}
-					line = line.replaceAll(query, replacement);
+					
 				}
+				tf2.writeln(line);
+				lnctr++;
 				line = tf.readLine();
 			}
 			tf.close();
@@ -396,6 +411,10 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		
 		try {
 			startWithPermutation = config.getInteger("defaults.multipletesting.startpermutation", null);
+		} catch (Exception e) {
+		}
+		try {
+			stopWithPermutation = config.getInteger("defaults.multipletesting.stoppermutation", null);
 		} catch (Exception e) {
 		}
 		
