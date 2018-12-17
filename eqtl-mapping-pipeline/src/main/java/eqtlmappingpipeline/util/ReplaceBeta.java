@@ -9,9 +9,9 @@ import java.util.HashMap;
 
 public class ReplaceBeta {
 	
+	// WARNING: this code assumes that N is equal for each eQTL (which may not be the case in a meta-analysis context)
 	public void run(String in, String out, String mafqcfile) throws IOException {
 		TextFile tf = new TextFile(in, TextFile.R);
-		TextFile tfo = new TextFile(out, TextFile.W);
 		String[] header = tf.readLineElems(TextFile.tab);
 		
 		int metazcol = -1;
@@ -20,18 +20,15 @@ public class ReplaceBeta {
 		int snpcol = -1;
 		
 		for (int i = 0; i < header.length; i++) {
-			
-			if (header[i].contains("")) {
+			if (header[i].contains("OverallZScore")) {
 				metazcol = i;
-			} else if (header[i].contains("")) {
+			} else if (header[i].contains("Meta-Beta (SE)")) {
 				metabetacol = i;
-			} else if (header[i].contains("")) {
+			} else if (header[i].contains("SNPName")) {
 				snpcol = i;
-			} else if (header[i].contains("")) {
+			} else if (header[i].contains("DatasetsNrSamples")) {
 				ncol = i;
 			}
-			
-			
 		}
 		
 		if (metazcol < 0 || metabetacol < 0 || ncol < 0 || snpcol < 0) {
@@ -46,37 +43,55 @@ public class ReplaceBeta {
 		// load maf per snp
 		HashMap<String, Double> mafpersnp = new HashMap<String, Double>();
 		TextFile tf1 = new TextFile(mafqcfile, TextFile.R);
+		System.out.println("Loading MAF info from: " + mafqcfile);
 		tf1.readLine();
+		int lnctr2 = 0;
 		String[] elems = tf1.readLineElems(TextFile.tab);
 		while (elems != null) {
 			String snp = elems[0];
 			double maf = Double.parseDouble(elems[elems.length - 1]);
-			mafpersnp.put(snp, maf);
+			if (!Double.isNaN(maf)) {
+				mafpersnp.put(snp, maf);
+			}
 			elems = tf1.readLineElems(TextFile.tab);
+			lnctr2++;
+			if (lnctr2 % 1000000 == 0) {
+				System.out.println(lnctr2 + " SNPs parsed sofar.");
+			}
 		}
 		tf1.close();
+		System.out.println("MAF info found for " + mafpersnp.size() + " variants, out of " + lnctr2 + " total.");
 		
+		TextFile tfo = new TextFile(out, TextFile.W);
+		tfo.writeln(Strings.concat(header, Strings.tab));
 		elems = tf.readLineElems(TextFile.tab);
+		int lnctr = 0;
+		System.out.println("Processing: " + in);
 		while (elems != null) {
 			
 			String snp = elems[snpcol];
 			
-			double maf = mafpersnp.get(snp);
-			String nstr = elems[ncol];
-			int n = 0;
-			String[] nstrelems = nstr.split(";");
-			for (String s : nstrelems) {
-				if (!s.equals("-")) {
-					n += Integer.parseInt(s);
+			Double maf = mafpersnp.get(snp);
+			if (maf != null) {
+				String nstr = elems[ncol];
+				int n = 0;
+				String[] nstrelems = nstr.split(";");
+				for (String s : nstrelems) {
+					if (!s.equals("-")) {
+						n += Integer.parseInt(s);
+					}
 				}
+				double z = Double.parseDouble(elems[metazcol]);
+				
+				double[] betaandse = ZScores.zToBeta(z, maf, n);
+				elems[metabetacol] = betaandse[0] + " (" + betaandse[1] + ")";
 			}
-			double z = Double.parseDouble(elems[metazcol]);
-			
-			double[] betaandse = ZScores.zToBeta(z, maf, n);
-			elems[metabetacol] = betaandse[0] + " (" + betaandse[1] + ")";
-			
 			tfo.writeln(Strings.concat(elems, Strings.tab));
 			elems = tf.readLineElems(TextFile.tab);
+			lnctr++;
+			if (lnctr % 100000 == 0) {
+				System.out.println(lnctr + " lines parsed.");
+			}
 		}
 		
 		tf.close();

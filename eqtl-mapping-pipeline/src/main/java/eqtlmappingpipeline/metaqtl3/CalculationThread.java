@@ -653,7 +653,6 @@ class CalculationThread extends Thread {
             int nrDatasetsPassingQC = 0;
             int nrTotalSamples = 0;
             double zSum = 0;
-            double betasum = 0;
 
             for (int d = 0; d < m_numDatasets; d++) {
                 // TODO: check whether this actually returns the correct Z-scores: should the stored values be flipped?
@@ -683,15 +682,11 @@ class CalculationThread extends Thread {
 
                     zSum += (zscore * weight);
                     nrTotalSamples += numSamples;
-
-                    if (determinebeta) {
-                        if (flipalleles) {
-                            betasum += (-dsResults.beta[d][p] * numSamples);
-                            dsResults.beta[d][p] = -dsResults.beta[d][p];
-                        } else {
-                            betasum += (dsResults.beta[d][p] * numSamples);
-                        }
+    
+                    if (flipalleles) {
+                        dsResults.beta[d][p] = -dsResults.beta[d][p];
                     }
+                    
                 }
             }
 
@@ -704,13 +699,14 @@ class CalculationThread extends Thread {
                 dsResults.pvalues[p] = pValueOverall;
                 dsResults.finalZScore[p] = zScore;
 
-                // determine assessed allele....
-                if (determinebeta) {
-                    betasum /= nrTotalSamples;
-                    double metase = 1 / Math.sqrt(nrTotalSamples);
-                    dsResults.finalBeta[p] = betasum;
-                    dsResults.finalBetaSe[p] = metase;
-                }
+                
+                // calculate total MAF
+                
+                
+                // derive beta + se from meta-analyzed Z-score
+//                double[] metabetastats = ZScores.zToBeta(zScore,totalmaf,nrTotalSamples);
+//                dsResults.finalBeta[p] = metabetastats[0];
+//                dsResults.finalBetaSe[p] = metabetastats[1];
             } else {
                 dsResults.pvalues[p] = Double.NaN;
                 dsResults.finalZScore[p] = Double.NaN;
