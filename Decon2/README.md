@@ -128,7 +128,7 @@ java -jar Decon-eQTL-v*.*.*-jar-with-dependencies.jar \
 	--outfolder example_output/
 ```
 
-A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the cell types, and the last 6 columns are the beta (effect size) of the cell type - genotype interaction effect, relative to the allele that is coded as 2 in the dosage file. So if `A/A = 0`, `A/T = `, and `T/T = 2`, a negative beta means that the `T` has allele has a negative effect on expression.
+A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the cell types, and the last 6 columns are the beta (effect size) of the cell type - genotype interaction effect, relative to the allele that is coded as 2 in the dosage file. So if `A/A = 0`, `A/T = `, and `T/T = 2`, a negative beta means that the `T` allele has a negative effect on expression.
 
 
 |	|Granulocytes_pvalue	|B cells (CD19+)_pvalue	|CD4+ T cells_pvalue	|CD8+ T cells_pvalue	|NK cells (CD3- CD56+)_pvalue	|Monocytes (CD14+)_pvalue	|Beta1_Granulocytes	|Beta2_B cells (CD19+)	|Beta3_CD4+ T cells	|Beta4_CD8+ T cells	|Beta5_NK cells (CD3- CD56+)	|Beta6_Monocytes (CD14+)	|Beta7_Granulocytes:GT	|Beta8_B cells (CD19+):GT	|Beta9_CD4+ T cells:GT	|Beta10_CD8+ T cells:GT	|Beta11_NK cells (CD3- CD56+):GT	|Beta12_Monocytes (CD14+):GT
