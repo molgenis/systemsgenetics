@@ -90,6 +90,9 @@ public class TriTyperGenotypeData {
 		int numIncluded = 0;
 		
 		lineElems = t.readLineElemsReturnReference(TextFile.tab);
+		int nrexcludestatusunparseable = 0;
+		int nrgenderstatusunparseable = 0;
+		int nrcasecontrolstatusunparseable = 0;
 		while (lineElems != null) {
 			String ind = lineElems[0];
 			Integer indId = individualToId.get(ind);
@@ -101,9 +104,10 @@ public class TriTyperGenotypeData {
 					isCase[indId] = true;
 					numCases++;
 				} else {
-					if (displayWarnings) {
-						System.err.println("Warning: case/control status unparseable for\t" + lineElems[1] + "\tfor\t" + indId);
-					}
+					nrcasecontrolstatusunparseable++;
+//					if (displayWarnings) {
+//						System.err.println("Warning: case/control status unparseable for\t" + lineElems[1] + "\tfor\t" + indId);
+//					}
 				}
 				
 				if (lineElems[2].equals("exclude")) {
@@ -113,9 +117,10 @@ public class TriTyperGenotypeData {
 					isIncluded[indId] = true;
 					numIncluded++;
 				} else {
-					if (displayWarnings) {
-						System.err.println("Warning: include/exclude status unparseable\t" + lineElems[2] + "\tfor\t" + indId);
-					}
+					nrexcludestatusunparseable++;
+//					if (displayWarnings) {
+//						System.err.println("Warning: include/exclude status unparseable\t" + lineElems[2] + "\tfor\t" + indId);
+//					}
 				}
 				
 				if (lineElems[3].equals("male")) {
@@ -125,14 +130,26 @@ public class TriTyperGenotypeData {
 					isFemale[indId] = true;
 					numFemales++;
 				} else {
-					if (displayWarnings) {
-						System.err.println("Warning: gender status unparseable\t" + lineElems[3] + "\tfor\t" + indId);
-					}
+					nrgenderstatusunparseable++;
+//					if (displayWarnings) {
+//						System.err.println("Warning: gender status unparseable\t" + lineElems[3] + "\tfor\t" + indId);
+//					}
 				}
 			}
 			lineElems = t.readLineElemsReturnReference(TextFile.tab);
 		}
 		t.close();
+		
+		
+		if (nrcasecontrolstatusunparseable > 0) {
+			System.out.println("Warning: case/control status unparseable for " + nrcasecontrolstatusunparseable + " individuals.");
+		}
+		if (nrexcludestatusunparseable > 0) {
+			System.out.println("Warning: include/exclude status unparseable for " + nrexcludestatusunparseable + " individuals.");
+		}
+		if (nrgenderstatusunparseable > 0) {
+			System.out.println("Warning: male/female status unparseable for " + nrgenderstatusunparseable + " individuals.");
+		}
 		
 		System.out.println(numInds + " individuals detected, " + numMales + " males, " + numFemales + " females, " + numCases + " cases, " + numControls + " controls, " + numIncluded + " included");
 		

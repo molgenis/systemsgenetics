@@ -9,6 +9,7 @@ import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import gnu.trove.set.hash.THashSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.lang3.RandomStringUtils;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
@@ -16,6 +17,8 @@ import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -27,8 +30,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	// Output
 	public String settingsTextToReplace = null;                                // Replace this text in the configuration XML file
 	public String settingsTextReplaceWith = null;                              // Replace the text in settingsTextToReplace with this text
-	public String settingsTextToReplace2 = null;                                // Replace this text in the configuration XML file
-	public String settingsTextReplace2With = null;                              // Replace the text in settingsTextToReplace with this text
 	public boolean createSNPPValueSummaryStatisticsFile = false;               // Output SNP P-Value summary statistics
 	public boolean createSNPSummaryStatisticsFile = false;                     // Output SNP P-Value summary statistics
 	public boolean createEQTLPValueTable = false;                              // Output an eQTL p-value table (only applies for a limited number (500) of SNP)
@@ -92,6 +93,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean skipFDRCalculation = false;
 	public boolean usemd5hash = true;
 	public boolean sortsnps = true;
+	public boolean dumpeverythingtodisk;
 	
 	
 	public Settings() {
@@ -99,7 +101,36 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	
 	public void load(String settings) throws IOException, ConfigurationException {
 		
-		XMLConfiguration config = new XMLConfiguration(settings);           // Use the apache XML configuration parser
+		XMLConfiguration config = null;
+		if (settingsTextToReplace != null) {
+			
+			String[] queries = settingsTextToReplace.split(",");
+			String[] replacements = settingsTextReplaceWith.split(",");
+			
+			System.out.println("Will attempt to replace template strings in configuration file.");
+			TextFile tf = new TextFile(settings, TextFile.R);
+			String generatedString = RandomStringUtils.randomAlphabetic(12);
+			TextFile tf2 = new TextFile(settings + "-" + generatedString + ".xml", TextFile.W);
+			String line = tf.readLine();
+			while (line != null) {
+				for (int s = 0; s < queries.length; s++) {
+					String query = queries[s];
+					String replacement = replacements[s];
+					if (line.contains(query)) {
+						System.out.println(line + " --> Replacing: " + query + " with " + replacement);
+					}
+					line = line.replaceAll(query, replacement);
+				}
+				line = tf.readLine();
+			}
+			tf.close();
+			tf2.close();
+			
+			config = new XMLConfiguration(settings + "-" + generatedString + ".xml");           // Use the apache XML configuration parser
+			Files.delete(Paths.get(settings + "-" + generatedString + ".xml"));
+		} else {
+			config = new XMLConfiguration(settings);           // Use the apache XML configuration parser
+		}
 		
 		
 		String analysisType = null;
@@ -403,17 +434,16 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		// output settings
 		try {
 			outdir = config.getString("defaults.output.outputdirectory", null);
-			if (settingsTextToReplace != null && outdir.contains(settingsTextToReplace)) {
-				outdir = outdir.replace(settingsTextToReplace, settingsTextReplaceWith);
-			}
-			
-			if (settingsTextToReplace2 != null && outdir.contains(settingsTextToReplace2)) {
-				outdir = outdir.replace(settingsTextToReplace2, settingsTextReplace2With);
-			}
 		} catch (Exception e) {
 		}
 		try {
 			writeSNPQCLog = config.getBoolean("defaults.output.writeSNPQCLog", true);
+		} catch (Exception e) {
+		
+		}
+		
+		try {
+			dumpeverythingtodisk = config.getBoolean("defaults.output.dumpeverything", false);
 		} catch (Exception e) {
 		
 		}
@@ -460,13 +490,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		
 		try {
 			outputplotdirectory = config.getString("defaults.output.outputplotdirectory", null);
-			if (settingsTextToReplace != null && outputplotdirectory.contains(settingsTextToReplace)) {
-				outputplotdirectory = outputplotdirectory.replace(settingsTextToReplace, settingsTextReplaceWith);
-			}
-			
-			if (settingsTextToReplace2 != null && outputplotdirectory.contains(settingsTextToReplace2)) {
-				outputplotdirectory = outputplotdirectory.replace(settingsTextToReplace2, settingsTextReplace2With);
-			}
 			
 		} catch (Exception e) {
 		}
@@ -543,14 +566,10 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		// confine to this list of snp
 		try {
 			confineSNP = config.getString("defaults.confine.snp", null);
-			if (settingsTextToReplace != null && confineSNP.contains(settingsTextToReplace)) {
-				confineSNP = confineSNP.replace(settingsTextToReplace, settingsTextReplaceWith);
-			}
-			if (settingsTextToReplace2 != null && confineSNP.contains(settingsTextToReplace2)) {
-				confineSNP = confineSNP.replace(settingsTextToReplace2, settingsTextReplace2With);
-			}
 			
-			numberOfVariantsToBuffer = 1;
+			if (confineSNP != null && confineSNP.length() > 0) {
+				numberOfVariantsToBuffer = 1;
+			}
 		} catch (Exception e) {
 		}
 		
@@ -558,24 +577,14 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		// confine to this list of probes
 		try {
 			confineProbe = config.getString("defaults.confine.probe", null);
-			if (settingsTextToReplace != null && confineProbe.contains(settingsTextToReplace)) {
-				confineProbe = confineProbe.replace(settingsTextToReplace, settingsTextReplaceWith);
-			}
-			if (settingsTextToReplace2 != null && confineProbe.contains(settingsTextToReplace2)) {
-				confineProbe = confineProbe.replace(settingsTextToReplace2, settingsTextReplace2With);
-			}
+			
 		} catch (Exception e) {
 		}
 		
 		// confine to this list of snp-probe combinations
 		try {
 			snpProbeConfine = config.getString("defaults.confine.snpProbe", null);
-			if (settingsTextToReplace != null && snpProbeConfine.contains(settingsTextToReplace)) {
-				snpProbeConfine = snpProbeConfine.replace(settingsTextToReplace, settingsTextReplaceWith);
-			}
-			if (settingsTextToReplace2 != null && snpProbeConfine.contains(settingsTextToReplace2)) {
-				snpProbeConfine = snpProbeConfine.replace(settingsTextToReplace2, settingsTextReplace2With);
-			}
+			
 		} catch (Exception e) {
 		}
 		
@@ -640,11 +649,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		// confine to SNP that map to this chromosome
 		try {
 			String confineStr = config.getString("defaults.confine.confineToSNPsThatMapToChromosome", null);
-			if (settingsTextToReplace != null && settingsTextReplaceWith != null) {
-				if (confineStr.contains(settingsTextToReplace)) {
-					confineStr = confineStr.replaceAll(settingsTextToReplace, settingsTextReplaceWith);
-				}
-			}
 			if (confineStr == null || confineStr.trim().length() == 0) {
 				confineToSNPsThatMapToChromosome = null;
 			} else {
@@ -669,11 +673,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			String batchsizestr = config.getString("defaults.analysis.batchsize", null);
 			String batchidstr = config.getString("defaults.analysis.batchid", null);
 			if (batchidstr != null && batchsizestr != null) {
-				if (settingsTextToReplace != null && settingsTextReplaceWith != null) {
-					if (batchidstr.contains(settingsTextToReplace)) {
-						batchidstr = batchidstr.replaceAll(settingsTextToReplace, settingsTextReplaceWith);
-					}
-				}
 				this.batchid = Integer.parseInt(batchidstr);
 				this.batchsize = Integer.parseInt(batchsizestr);
 			}
@@ -717,13 +716,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		int i = 0;
 		
 		String dataset = config.getString("datasets.dataset(" + i + ").name", null);  // see if a dataset is defined
-		if (settingsTextToReplace != null && dataset.contains(settingsTextToReplace)) {
-			dataset = dataset.replace(settingsTextToReplace, settingsTextReplaceWith);
-		}
 		
-		if (settingsTextToReplace2 != null && dataset.contains(settingsTextToReplace2)) {
-			dataset = dataset.replace(settingsTextToReplace2, settingsTextReplace2With);
-		}
 		
 		datasetSettings = new ArrayList<TriTyperGeneticalGenomicsDatasetSettings>();
 
@@ -747,36 +740,21 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			// get the location of the expression data
 			try {
 				expressionData = config.getString("datasets.dataset(" + i + ").expressiondata", null);
-				if (settingsTextToReplace != null && expressionData.contains(settingsTextToReplace)) {
-					expressionData = expressionData.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && expressionData.contains(settingsTextToReplace2)) {
-					expressionData = expressionData.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
+				
 			} catch (Exception e) {
 			}
 			
 			String expressionPlatform = null;
 			try {
 				expressionPlatform = config.getString("datasets.dataset(" + i + ").expressionplatform", null);
-				if (settingsTextToReplace != null && expressionData.contains(settingsTextToReplace)) {
-					expressionPlatform = expressionPlatform.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && expressionData.contains(settingsTextToReplace2)) {
-					expressionPlatform = expressionPlatform.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
+				
 			} catch (Exception e) {
 			}
 			
 			probeannotation = null;
 			try {
 				probeannotation = config.getString("datasets.dataset(" + i + ").probeannotation", null);
-				if (settingsTextToReplace != null && probeannotation.contains(settingsTextToReplace)) {
-					probeannotation = probeannotation.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && probeannotation.contains(settingsTextToReplace2)) {
-					probeannotation = probeannotation.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
+				
 				if (probeannotation.length() == 0) {
 					probeannotation = null;
 				}
@@ -790,12 +768,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			// get the location of the dataset
 			try {
 				dataloc = config.getString("datasets.dataset(" + i + ").location", null);
-				if (settingsTextToReplace != null && dataloc.contains(settingsTextToReplace)) {
-					dataloc = dataloc.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && dataloc.contains(settingsTextToReplace2)) {
-					dataloc = dataloc.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
+				
 			} catch (Exception e) {
 				System.out.println("Please provide a location on your disk where " + dataset + " is located");
 				System.exit(-1);
@@ -812,12 +785,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 				if (covariateFile.equals("")) {
 					covariateFile = null;
 				}
-				if (settingsTextToReplace != null && covariateFile.contains(settingsTextToReplace)) {
-					covariateFile = covariateFile.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && covariateFile.contains(settingsTextToReplace2)) {
-					covariateFile = covariateFile.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
+				
 			} catch (Exception e) {
 			}
 			
@@ -826,12 +794,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			// see if there is a genotype to expression couplings file
 			try {
 				genToExpCoupling = config.getString("datasets.dataset(" + i + ").genometoexpressioncoupling", null);
-				if (settingsTextToReplace != null && genToExpCoupling.contains(settingsTextToReplace)) {
-					genToExpCoupling = genToExpCoupling.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && genToExpCoupling.contains(settingsTextToReplace2)) {
-					genToExpCoupling = genToExpCoupling.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
+				
 			} catch (Exception e) {
 			}
 			
@@ -860,12 +823,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			i++;
 			try {
 				dataset = config.getString("datasets.dataset(" + i + ").name", null);
-				if (settingsTextToReplace != null && dataset.contains(settingsTextToReplace)) {
-					dataset = dataset.replace(settingsTextToReplace, settingsTextReplaceWith);
-				}
-				if (settingsTextToReplace2 != null && dataset.contains(settingsTextToReplace2)) {
-					dataset = dataset.replace(settingsTextToReplace2, settingsTextReplace2With);
-				}
 				
 			} catch (Exception e) {
 			}
@@ -886,8 +843,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 				+ "Settings\n----\n"
 				+ "settingsTextToReplace\t" + settingsTextToReplace + "\n"
 				+ "settingsTextReplaceWith\t" + settingsTextReplaceWith + "\n"
-				+ "settingsTextToReplace2\t" + settingsTextToReplace2 + "\n"
-				+ "settingsTextReplace2With\t" + settingsTextReplace2With + "\n"
+				
 				+ "\nOutput\n----\n"
 				+ "createSNPPValueSummaryStatisticsFile\t" + createSNPPValueSummaryStatisticsFile + "\n"
 				+ "createEQTLPValueTable\t" + createEQTLPValueTable + "\n"

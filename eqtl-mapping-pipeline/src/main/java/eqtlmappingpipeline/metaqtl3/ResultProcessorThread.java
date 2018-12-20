@@ -75,6 +75,7 @@ public class ResultProcessorThread extends Thread {
 	private TextFile zScoreMetaAnalysisRowNamesFile;
 	private TextFile[] zScoreRowNamesFile;
 	private boolean usemd5 = true;
+	private boolean m_dumpEverythingToDisk;
 	
 	public ResultProcessorThread(int nrThreads, LinkedBlockingQueue<WorkPackage> queue, boolean chargeOutput,
 								 TriTyperGeneticalGenomicsDataset[] gg, Settings settings, IntMatrix2D pprobeTranslation,
@@ -114,6 +115,10 @@ public class ResultProcessorThread extends Thread {
 //        m_numdatasets = m_gg.length;
 		finalEQTLs = new QTL[(m_maxResults + tmpbuffersize)];
 		nrSNPsTested = 0;
+	}
+	
+	public void setDumpEverything() {
+		this.m_dumpEverythingToDisk = true;
 	}
 	
 	@Override
@@ -164,6 +169,17 @@ public class ResultProcessorThread extends Thread {
 				}
 			}
 			
+			TextFile etdump = null;
+			
+			if (m_dumpEverythingToDisk) {
+				if (m_permuting) {
+					etdump = new TextFile((m_outputdir + "eQTLDump-PermutedEQTLsPermutationRound" + m_permutationround + ".txt.lz4"), TextFile.W);
+					etdump.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
+				} else {
+					etdump = new QTLTextFile((m_outputdir + "eQTLDump.txt.lz4"), QTLTextFile.W);
+				}
+			}
+			
 			ProgressBar progressbar = new ProgressBar(m_availableWorkPackages.length);
 			boolean poison = false;
 			
@@ -187,13 +203,13 @@ public class ResultProcessorThread extends Thread {
 						writeBinaryResult(r);
 					}
 					
-					if (m_createTEXTFiles && !poison) {
+					if (m_createTEXTFiles && !poison ) {
 						// classic textual output.
 						
 						for (int p = 0; p < pvalues.length; p++) {
 							double pval = pvalues[p];
 							
-							if (!Double.isNaN(pval) && pval <= highestP) {
+							if ((!Double.isNaN(pval) && pval <= highestP) || m_dumpEverythingToDisk) {
 								double[][] corr = r.correlations;
 								double[] correlations = new double[corr.length];
 								double[] zscores = new double[corr.length];
@@ -262,7 +278,18 @@ public class ResultProcessorThread extends Thread {
 									pid = p;
 								}
 								
-								addEQTL(pid, wp.getId(), pval, Zfinal, correlations, zscores, samples, alleles, allele, fc, beta, betase, finalbeta, finalbetase);
+								if (m_dumpEverythingToDisk) {
+									QTL q = new QTL(pval, pid, wp.getId(), allele, Zfinal, alleles, zscores, samples, correlations, fc, beta, betase, finalbeta, finalbetase);
+									String desc = null;
+									if (m_permuting) {
+										desc = q.getPermutationDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
+									} else {
+										desc = q.getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
+									}
+									etdump.writeln(desc);
+								} else {
+									addEQTL(pid, wp.getId(), pval, Zfinal, correlations, zscores, samples, alleles, allele, fc, beta, betase, finalbeta, finalbetase);
+								}
 								
 							}
 						}
@@ -281,8 +308,11 @@ public class ResultProcessorThread extends Thread {
 			progressbar.close();
 			
 			//Is this working?
+			if (m_dumpEverythingToDisk) {
+				etdump.close();
+			}
+			
 			if (m_createBinaryFiles) {
-				
 				String fileName = "check";
 				if (m_permuting) {
 					fileName += "-PermutationRound-" + m_permutationround;
@@ -346,7 +376,7 @@ public class ResultProcessorThread extends Thread {
 				}
 			}
 			
-			if (m_createTEXTFiles) {
+			if (m_createTEXTFiles && !m_dumpEverythingToDisk) {
 				if (!sorted) {
 					if (locationToStoreResult != 0) {
 						
@@ -365,6 +395,7 @@ public class ResultProcessorThread extends Thread {
 			e2.printStackTrace();
 		}
 	}
+	
 	
 	private void writeBinaryResult(Result r) throws IOException {
 		
@@ -526,7 +557,15 @@ public class ResultProcessorThread extends Thread {
 		}
 	}
 	
-	private void addEQTL(int pid, int sid, double pval, double zscore, double[] correlations, double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta, double[] betase, double finalbeta, double finalbetase) {
+	private void dumpToDisk(int pid, int sid, double pval, double zscore, double[] correlations, double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta, double[] betase, double finalbeta, double finalbetase) {
+		
+		
+	}
+	
+	
+	private void addEQTL(int pid, int sid, double pval, double zscore, double[] correlations,
+						 double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta,
+						 double[] betase, double finalbeta, double finalbetase) {
 		
 		if (bufferHasOverFlown) {
 			if (pval <= maxSavedPvalue) {
