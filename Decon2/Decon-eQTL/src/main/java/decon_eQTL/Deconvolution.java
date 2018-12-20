@@ -138,6 +138,7 @@ public class Deconvolution {
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";
 		}
 
+		
 		//header += "\tStandardError";
 		List<String> output = new ArrayList<String>();
 		output.add(header);
@@ -276,11 +277,12 @@ public class Deconvolution {
 		}
 
 		InteractionModelCollection interactionModelCollection = new InteractionModelCollection(cellCounts, 
-				commandLineOptions.getGenotypeConfigurationType());
+																							   commandLineOptions.getGenotypeConfigurationType(),
+																							   commandLineOptions.getUseOLS());
 		interactionModelCollection.setQtlName(qtlName);
 		interactionModelCollection.setGenotypes(genotypes);
 		interactionModelCollection.setExpressionValues(expression);
-
+		
 		/**
 		 * For each cell type model, e.g. ctModel 1 -> y = neut% + mono% + neut%:GT; ctModel 2 -> y = neut% + mono% + mono%:GT, one for each cell type, 
 		 * where the interaction term (e.g mono%:GT) of the celltype:genotype to test is removed, calculate and save the observations in an observation vector
@@ -296,9 +298,9 @@ public class Deconvolution {
 		 * 		fullModel = [[sample1_neut%, sample1_mono%, sample1_neut%*sample1_genotype, sample1_mono%*sample1_genotype], [sample2_neut%, ..., etc]]
 		 * 
 		 */
-		interactionModelCollection.createObservedValueMatricesFullModel();
+		interactionModelCollection.createObservedValueMatricesFullModel(commandLineOptions.getAddGenotypeTerm());
 		interactionModelCollection.findBestFullModel();		
-		interactionModelCollection.createObservedValueMatricesCtModels();
+		interactionModelCollection.createObservedValueMatricesCtModels(commandLineOptions.getAddGenotypeTerm());
 		interactionModelCollection.findBestCtModel();
 		calculateDeconvolutionPvalue(interactionModelCollection);
 

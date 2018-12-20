@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.transCorrelatieQtl;
+package eqtlmappingpipeline.transCorrelationQtl;
 
 import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;

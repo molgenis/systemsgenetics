@@ -3,19 +3,17 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package eqtlmappingpipeline.transCorrelatieQtl;
+package eqtlmappingpipeline.transCorrelationQtl;
 
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
-import static eqtlmappingpipeline.transCorrelatieQtl.transCorrelationQtl.readGte;
+import static eqtlmappingpipeline.transCorrelationQtl.transCorrelationQtl.readGte;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.regex.Pattern;

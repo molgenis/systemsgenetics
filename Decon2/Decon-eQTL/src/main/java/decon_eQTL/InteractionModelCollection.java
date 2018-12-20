@@ -32,13 +32,17 @@ public class InteractionModelCollection {
 	private HashMap<String, ArrayList<String>> genotypeConfigMap = new HashMap<String, ArrayList<String>>();
 	private List<String> celltypes = new ArrayList<String>();
 	private List<String> sampleNames = new ArrayList<String>();
+	private Boolean useOLS;
+
 
 	/*
 	 * Have to initialize instance with if NNLS or OLS will be used, and for that we need cellCounts
 	 */
-	public InteractionModelCollection(CellCount cellCount, String genotypeConfigurationType) throws IllegalAccessException{
+	public InteractionModelCollection(CellCount cellCount, String genotypeConfigurationType, Boolean useOLS) throws IllegalAccessException{
 		setCellCount(cellCount);
 		makeConfigurations(genotypeConfigurationType);
+		this.useOLS = useOLS;
+
 	}
 
 	public List<String> getAllCelltypes(){
@@ -188,7 +192,13 @@ public class InteractionModelCollection {
 		double sumOfSquares = -1;
 		for (String modelName : getFullModelNames()){
 			InteractionModel fullModel = getInteractionModel(modelName);
-			fullModel.calculateSumOfSquaresNNLS(getExpessionValues());
+
+			if(useOLS){
+				fullModel.calculateSumOfSquaresOLS(getExpessionValues());
+			}else{
+				fullModel.calculateSumOfSquaresNNLS(getExpessionValues());
+			}
+			
 			if (sumOfSquares == -1){
 				sumOfSquares = fullModel.getSumOfSquares();
 			}
@@ -215,7 +225,12 @@ public class InteractionModelCollection {
 				InteractionModel ctModel = getInteractionModel(modelName);
 				modelCelltype.put(modelName, celltype);
 
-				ctModel.calculateSumOfSquaresNNLS(getExpessionValues());
+				if(useOLS){
+					ctModel.calculateSumOfSquaresOLS(getExpessionValues());
+				}
+				else{
+					ctModel.calculateSumOfSquaresNNLS(getExpessionValues());
+				}
 
 				if (sumOfSquares == -1){
 					sumOfSquares = ctModel.getSumOfSquares();
@@ -250,7 +265,7 @@ public class InteractionModelCollection {
 			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
 			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "1")));
 		}else if(genotypeConfigurationType.equals("one")){
-			// similar to "two", but can have one different, e.g. : 000, 111, 001, 010, 100
+			// similar to "two", but can have one different, e.g. : 000, 111, 001, 010, 100, 110, 101, 011 (for 3 celltypes is same as all)
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "0")));
 			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "1")));
 			for(int i = 0; i < celltypes.size(); ++i){
@@ -265,7 +280,6 @@ public class InteractionModelCollection {
 			}
 			
 			
-			
 			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
 			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "1")));
 			for(int i = 0; i < celltypes.size()-1; ++i){
@@ -278,7 +292,13 @@ public class InteractionModelCollection {
 				genotypeConfiguration.setCharAt(i, '0');
 				this.genotypeConfigurationsCtModel.add(genotypeConfiguration.toString());
 			}
-			
+	
+
+		}else if(genotypeConfigurationType.equals("NONE")){
+			// this gets no swapping, so all are 000
+			this.genotypeConfigurationsFullModel.add(String.join("", Collections.nCopies(celltypes.size(), "0")));
+			this.genotypeConfigurationsCtModel.add(String.join("", Collections.nCopies(celltypes.size()-1, "0")));
+
 		}else{
 			throw new RuntimeException("configurationType should be either \"all\" or \"two\", was: "+genotypeConfigurationType);
 		}
@@ -313,7 +333,7 @@ public class InteractionModelCollection {
 	 * 
 	 * @throws IllegalAccessException	If cell counts file can not be read
 	 */
-	public void createObservedValueMatricesFullModel() 
+	public void createObservedValueMatricesFullModel(Boolean addGenotypeTerm) 
 			throws IllegalAccessException{
 		CellCount cellCount = getCellCount();
 		int numberOfCelltypes = cellCount.getNumberOfCelltypes();
@@ -324,6 +344,10 @@ public class InteractionModelCollection {
 			// things neded for fullModel defined outside of loop because every celltype model (ctModel) has to be compared to it
 			InteractionModel fullModel = new InteractionModel(numberOfSamples, 
 					numberOfTerms);
+			if(addGenotypeTerm) {
+				// add one to number of terms because we are adding the genotype as a separate term
+				fullModel = new InteractionModel(numberOfSamples, numberOfTerms+1);
+			}
 			fullModel.setGenotypeConfiguration(genotypeConfiguration);
 			String modelName = String.format("fullModel_%s",genotypeConfiguration);
 			fullModel.setModelName(modelName);
@@ -339,6 +363,8 @@ public class InteractionModelCollection {
 				// add the celltype name at position i so that it gets in front of the celltype:GT
 				fullModel.addIndependentVariableName(celltypeIndex, cellCount.getCelltype(celltypeIndex));
 				fullModel.addIndependentVariableName(cellCount.getCelltype(celltypeIndex)+":GT");
+
+				
 
 			}
 
@@ -360,7 +386,14 @@ public class InteractionModelCollection {
 					}
 
 					fullModel.addObservedValue(celltypePerc * genotypes[sampleIndex], 
-							sampleIndex, numberOfCelltypes + celltypeIndex);					
+							sampleIndex, numberOfCelltypes + celltypeIndex);
+
+
+				}
+				if(addGenotypeTerm) {
+					fullModel.addIndependentVariableName("GT");
+					fullModel.addObservedValue(genotypes[sampleIndex], 
+							sampleIndex, (numberOfCelltypes*2));
 				}
 			}
 			fullModel.setModelLength();
@@ -385,7 +418,7 @@ public class InteractionModelCollection {
 	 * 
 	 * @throws IllegalAccessException	If cell counts file can not be read
 	 */
-	public void createObservedValueMatricesCtModels() 
+	public void createObservedValueMatricesCtModels(Boolean addGenotypeTerm) 
 			throws IllegalAccessException{
 		CellCount cellCount = getCellCount();
 		int numberOfCelltypes = cellCount.getNumberOfCelltypes();
@@ -396,7 +429,11 @@ public class InteractionModelCollection {
 		for (String genotypeConfiguration : getGenotypeConfigurationsCtModel()){
 			// m = model, there are equally many models as celltypes
 			for (int modelIndex = 0; modelIndex < numberOfCelltypes; modelIndex++) {
-				InteractionModel ctModel = new InteractionModel(numberOfSamples, numberOfTerms);	
+				InteractionModel ctModel = new InteractionModel(numberOfSamples, numberOfTerms);
+				if(addGenotypeTerm) {
+					// add one to number of terms because we are adding the genotype as a separate term
+					ctModel = new InteractionModel(numberOfSamples, numberOfTerms+1);
+				}
 				ctModel.setGenotypeConfiguration(genotypeConfiguration);
 				// calculate p-value and save it, with other information, in a ctModel object. 
 				// Then, add it to a list of these models to return as decon results
@@ -438,8 +475,7 @@ public class InteractionModelCollection {
 								// but for ctModel this is easiest method
 								int[] index = new int[] {celltypeIndex, numberOfCelltypes-1+celltypeIndex};
 								ctModel.addCelltypeVariablesIndex(index);
-								// add the celltype name. This could be done with less code by getting it from IndependentVariableName, but this way 
-								// it is explicit. Don't know if better.
+								
 							}
 							double genotype = 0;
 							// because the genotype configuration is of length (number of celltypes - 1), when a model is skipped we need to 
@@ -464,6 +500,11 @@ public class InteractionModelCollection {
 							int[] index = new int[] {celltypeIndex};
 							ctModel.addCelltypeVariablesIndex(index);
 						}
+					}
+					if(addGenotypeTerm) {
+						ctModel.addIndependentVariableName("GT");
+						ctModel.addObservedValue(genotypes[sampleIndex], 
+								sampleIndex, (numberOfCelltypes*2)-1);
 					}
 					// because 1 of numberOfCelltypes + i needs to be skipped,
 					// keeping it tracked with separate value is easier

@@ -262,7 +262,7 @@ public class TriTyperExpressionData {
 		ArrayList<Integer> tmpChrEnd = new ArrayList<Integer>();
 		ArrayList<Byte> tmpChr = new ArrayList<Byte>();
 		ArrayList<String> tmpProbe = new ArrayList<String>();
-		ArrayList<float[]> tmpRaw = new ArrayList<float[]>();
+		ArrayList<float[]> tmpRaw = new ArrayList<float[]>(50000);
 		ArrayList<String> tmpAnnotation = new ArrayList<String>();
 		
 		annotationToProbeId = new THashMap<String, ArrayIntList>();
