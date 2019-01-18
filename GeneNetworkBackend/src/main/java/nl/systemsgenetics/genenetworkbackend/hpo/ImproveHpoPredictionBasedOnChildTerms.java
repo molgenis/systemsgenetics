@@ -288,7 +288,7 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 
 	}
 
-	private static LinkedHashSet<String> readPredictedHpoTermFile(File predictedHpoTermFile) throws FileNotFoundException, IOException {
+	public static LinkedHashSet<String> readPredictedHpoTermFile(File predictedHpoTermFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
