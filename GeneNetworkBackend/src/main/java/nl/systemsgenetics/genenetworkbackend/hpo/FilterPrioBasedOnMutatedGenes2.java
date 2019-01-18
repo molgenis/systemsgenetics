@@ -34,11 +34,16 @@ public class FilterPrioBasedOnMutatedGenes2 {
 //		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
 //		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations\\rankingCandidateGenes");
 
-		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations\\samples.txt");
-		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\CandidateGenes\\");
-		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
-		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\rankingCandidateGenes");
 
+//		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations\\samples.txt");
+//		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\CandidateGenes\\");
+//		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
+//		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\rankingCandidateGenes");
+
+		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\hpo5gpm.txt");
+		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Genes\\");
+		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\Prioritisations\\");
+		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\RankingCandidateGenes\\");
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
@@ -47,9 +52,9 @@ public class FilterPrioBasedOnMutatedGenes2 {
 		while ((nextLine = sampleFileReader.readNext()) != null) {
 
 			String sample = nextLine[0];
-			
+
 			String genoSampleName = sample + ".txt";
-			
+
 			File genoFile = new File(genoFolder, genoSampleName);
 			File prioFile = new File(prioFolder, sample + ".txt");
 			File rankingFile = new File(resultFolder, sample + ".txt");
@@ -60,7 +65,7 @@ public class FilterPrioBasedOnMutatedGenes2 {
 			System.out.println("Prio: " + prioFile.getAbsolutePath());
 			System.out.println("Ranking: " + rankingFile.getAbsolutePath());
 
-			HashSet<String> genesWithMutation = getMutatedGenes(genoFile, 0,1);
+			HashSet<String> genesWithMutation = getMutatedGenes(genoFile, 0, 0);
 
 			final CSVReader prioFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(prioFile))).withSkipLines(0).withCSVParser(parser).build();
 
@@ -68,18 +73,18 @@ public class FilterPrioBasedOnMutatedGenes2 {
 
 			String[] outputLine = prioFileReader.readNext();
 			writer.writeNext(outputLine);
-			
+
 			while ((outputLine = prioFileReader.readNext()) != null) {
-				
-				if(genesWithMutation.contains(outputLine[1])){
+
+				if (genesWithMutation.contains(outputLine[1])) {
 					writer.writeNext(outputLine);
 				}
-				
+
 			}
-			
+
 			writer.close();
 			prioFileReader.close();
-			
+
 		}
 
 	}
