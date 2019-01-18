@@ -39,6 +39,11 @@
 			<destName>cisSnps.txt.gz</destName>
 		</file>
 		<file>
+			<source>src/main/resources/settings.xml</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>settings.xml</destName>
+		</file>
+		<file>
 			<source>src/main/resources/transSnps.txt.gz</source>
 			<outputDirectory>/</outputDirectory>
 			<destName>transSnps.txt.gz</destName>

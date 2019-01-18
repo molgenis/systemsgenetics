@@ -7,17 +7,16 @@ package eqtlmappingpipeline.util;
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.metaqtl3.containers.Settings;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.apache.commons.configuration.ConfigurationException;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author harmjan
@@ -134,7 +133,9 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
 				if (!binout && !textout) {
 					textout = true;
 				}
-				this.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, null, null, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, null, false, false, null, maf, hwe);
+				this.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in,
+						inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads,
+						nrEQTLsToOutput, eqtleffectstoregressout, null, false, false, null, maf, hwe);
 				
 				// now save all the expressiondata to a new file..
 				for (int d = 0; d < m_gg.length; d++) {

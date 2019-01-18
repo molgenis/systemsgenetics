@@ -1,0 +1,7 @@
+example_output/
+*.pydevproject
+Decon-eQTL/src/test/resources/simulated_expression/betas/
+Decon-eQTL/src/test/resources/simulated_expression/cellcounts/
+Decon-eQTL/src/test/resources/simulated_expression/expression/
+Decon-eQTL/src/test/resources/simulated_expression/genotypes/
+Decon-eQTL/src/test/resources/simulated_expression/snpsToTest.txt

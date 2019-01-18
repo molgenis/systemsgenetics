@@ -219,7 +219,7 @@ public class EQtlPermutationTranscriptionFactorAnalysis {
 					sharedIterationProbes = eqptfa.getSharedIterationProbes("/target/gpfs2/gcc/groups/gcc/projects/eQTLMapping_Matthieu/RegressOut_Old/Iteration" + n + "/eQTLProbesFDR0.05-ProbeLevel.txt", "/target/gpfs2/gcc/groups/gcc/projects/eQTLMapping_Matthieu/RegressOut_Old/Iteration" + n + "/");
 					
 					//2. Filter data for real iteration eQTLs.
-					iterationEQTLs = eqdp.readEQtlData("/target/gpfs2/gcc/groups/gcc/projects/eQTLMapping_Matthieu/RegressOut_Old/Iteration" + n + "/eQTLsFDR0.05.txt");
+					iterationEQTLs = eqdp.readEQtlData("/target/gpfs2/gcc/groups/gcc/projects/eQTLMapping_Matthieu/RegressOut_Old/Iteration" + n + "/eQTLsFDR0.05.txt.gz");
 					topIterationEffects = eqdp.getTopEffects(iterationEQTLs, sharedIterationProbes);
 					nonTopIterationEffects = eqdp.getNonTopEffects(iterationEQTLs, topIterationEffects);
 					

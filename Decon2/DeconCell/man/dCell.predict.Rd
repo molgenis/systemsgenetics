@@ -3,12 +3,13 @@
 \name{dCell.predict}
 \alias{dCell.predict}
 \title{Predict all available cell subpopoulation in DeconCell
-\code{dCell.predict.single} Runs dCell.predict}
+\code{dCell.predict} Runs dCell.predict}
 \usage{
-dCell.predict(dCell.exp, dCell.models, res.type = "median")
+dCell.predict(dCell.exp, dCell.models, res.type = "median",
+  custom = FALSE)
 }
 \arguments{
-\item{dCell.exp}{A table of normalized and scaled expression, samples by columns and genes by row. Preferably comming from \code{dCell.expProcessing}.}
+\item{dCell.exp}{A matrix or data.frame of normalized (by gene lenght and library size (RPKM, TMM, TPM...)) and scaled expression data, samples by columns and genes by row. Preferably comming from \code{dCell.expProcessing}.}
 
 \item{dCell.models}{A list containing the DeconCell models.}
 
@@ -21,7 +22,7 @@ A vector containing the performance evaluation of all available models.
 }
 \description{
 Predict all available cell subpopoulation in DeconCell
-\code{dCell.predict.single} Runs dCell.predict
+\code{dCell.predict} Runs dCell.predict
 }
 \examples{
 data(dCell.models)

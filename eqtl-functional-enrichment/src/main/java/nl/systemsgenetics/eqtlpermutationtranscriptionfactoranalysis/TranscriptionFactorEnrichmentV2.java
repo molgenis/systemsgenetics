@@ -57,7 +57,7 @@ public class TranscriptionFactorEnrichmentV2 {
 		 */
 		//EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 = new EQtlPermutationTranscriptionFactorAnalysisV3(args[0], args[1], args[2], args[3], Integer.parseInt(args[4]), Double.valueOf(args[5]));
 		EQtlPermutationTranscriptionFactorAnalysisV3 eqptfa3 =
-				new EQtlPermutationTranscriptionFactorAnalysisV3("", "C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
+				new EQtlPermutationTranscriptionFactorAnalysisV3("", "C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt.gz",
 				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\PermutedEQTLsPermutationRound8.txt",
 				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", "C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\regulomeDb\\", 0.8, "");
 	}

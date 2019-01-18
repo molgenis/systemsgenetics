@@ -2,7 +2,6 @@ package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
 
 import umcg.genetica.io.text.TextFile;
 
-import javax.xml.soap.Text;
 import java.io.IOException;
 import java.util.HashSet;
 

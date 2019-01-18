@@ -5,15 +5,15 @@
 package umcg.genetica.io.trityper;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.util.ChrAnnotation;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
-import umcg.genetica.io.trityper.util.ChrAnnotation;
+import java.util.LinkedList;
 
 /**
  * @author harmjan
@@ -90,6 +90,9 @@ public class TriTyperGenotypeData {
 		int numIncluded = 0;
 		
 		lineElems = t.readLineElemsReturnReference(TextFile.tab);
+		int nrexcludestatusunparseable = 0;
+		int nrgenderstatusunparseable = 0;
+		int nrcasecontrolstatusunparseable = 0;
 		while (lineElems != null) {
 			String ind = lineElems[0];
 			Integer indId = individualToId.get(ind);
@@ -101,9 +104,10 @@ public class TriTyperGenotypeData {
 					isCase[indId] = true;
 					numCases++;
 				} else {
-					if (displayWarnings) {
-						System.err.println("Warning: case/control status unparseable for\t" + lineElems[1] + "\tfor\t" + indId);
-					}
+					nrcasecontrolstatusunparseable++;
+//					if (displayWarnings) {
+//						System.err.println("Warning: case/control status unparseable for\t" + lineElems[1] + "\tfor\t" + indId);
+//					}
 				}
 				
 				if (lineElems[2].equals("exclude")) {
@@ -113,9 +117,10 @@ public class TriTyperGenotypeData {
 					isIncluded[indId] = true;
 					numIncluded++;
 				} else {
-					if (displayWarnings) {
-						System.err.println("Warning: include/exclude status unparseable\t" + lineElems[2] + "\tfor\t" + indId);
-					}
+					nrexcludestatusunparseable++;
+//					if (displayWarnings) {
+//						System.err.println("Warning: include/exclude status unparseable\t" + lineElems[2] + "\tfor\t" + indId);
+//					}
 				}
 				
 				if (lineElems[3].equals("male")) {
@@ -125,14 +130,26 @@ public class TriTyperGenotypeData {
 					isFemale[indId] = true;
 					numFemales++;
 				} else {
-					if (displayWarnings) {
-						System.err.println("Warning: gender status unparseable\t" + lineElems[3] + "\tfor\t" + indId);
-					}
+					nrgenderstatusunparseable++;
+//					if (displayWarnings) {
+//						System.err.println("Warning: gender status unparseable\t" + lineElems[3] + "\tfor\t" + indId);
+//					}
 				}
 			}
 			lineElems = t.readLineElemsReturnReference(TextFile.tab);
 		}
 		t.close();
+		
+		
+		if (nrcasecontrolstatusunparseable > 0) {
+			System.out.println("Warning: case/control status unparseable for " + nrcasecontrolstatusunparseable + " individuals.");
+		}
+		if (nrexcludestatusunparseable > 0) {
+			System.out.println("Warning: include/exclude status unparseable for " + nrexcludestatusunparseable + " individuals.");
+		}
+		if (nrgenderstatusunparseable > 0) {
+			System.out.println("Warning: male/female status unparseable for " + nrgenderstatusunparseable + " individuals.");
+		}
 		
 		System.out.println(numInds + " individuals detected, " + numMales + " males, " + numFemales + " females, " + numCases + " cases, " + numControls + " controls, " + numIncluded + " included");
 		
@@ -142,25 +159,31 @@ public class TriTyperGenotypeData {
 		}
 		
 		if (Gpio.exists(loc + "SNPs.txt")) {
-			t = new TextFile(loc + "SNPs.txt", TextFile.R);
+			t = new TextFile(loc + "SNPs.txt", TextFile.R, 100 * 1024);
 		} else if (Gpio.exists(loc + "SNPs.txt.gz")) {
-			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R);
+			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R, 100 * 1024);
 		} else {
 			throw new FileNotFoundException("SNPs file not found");
 		}
 		
 		String line = t.readLine();
 		
-		ArrayList<String> tmpSNP = new ArrayList<String>();
-		
+		LinkedList<String> tmpSNP = new LinkedList<String>();
+		System.out.println("Reading: " + t.getFileName());
+		int ctr = 0;
 		while (line != null) {
 			if (line.trim().length() > 0) {
 				tmpSNP.add(line.intern());
-				
 			}
 			line = t.readLine();
+			ctr++;
+			if (ctr % 100000 == 0) {
+				System.out.print(ctr + " snps read so far.\r");
+			}
 		}
+		System.out.println();
 		t.close();
+		
 		
 		//value if absent now will be -9
 		snpToSNPId = new TObjectIntHashMap<String>(tmpSNP.size(), 1f, -9);
@@ -181,13 +204,14 @@ public class TriTyperGenotypeData {
 		}
 		
 		if (Gpio.exists(loc + "SNPMappings.txt")) {
-			t = new TextFile(loc + "SNPMappings.txt", TextFile.R);
+			t = new TextFile(loc + "SNPMappings.txt", TextFile.R, 100 * 1024);
 		} else if (Gpio.exists(loc + "SNPMappings.txt.gz")) {
-			t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R);
+			t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R, 100 * 1024);
 		} else {
 			throw new FileNotFoundException("SNPMappings not found");
 		}
 		
+		System.out.println("Reading: " + t.getFileName());
 		lineElems = t.readLineElemsReturnReference(TextFile.tab);
 		
 		chr = new byte[SNPs.length];
@@ -222,10 +246,14 @@ public class TriTyperGenotypeData {
 				
 			}
 			linenr++;
+			if (linenr % 100000 == 0) {
+				System.out.print(linenr + " snp mappings read so far.\r");
+			}
 			lineElems = t.readLineElemsReturnReference(TextFile.tab);
 			
 		}
 		t.close();
+		System.out.println();
 		System.out.println("Nr of SNPs without annotation: " + nrWoAnnotation + " / " + snpToSNPId.size());
 		// open random access file
 		setGenotypeFileName(loc + "GenotypeMatrix.dat");
@@ -408,7 +436,7 @@ public class TriTyperGenotypeData {
 			long expectedfilesize = (long) (SNPs.length * 2) * (long) individuals.length;
 			long detectedsize = Gpio.getFileSize(genotypeFileName);
 			if (expectedfilesize != detectedsize) {
-				throw new IOException("Size of GenotypeMatrix.dat does not match size defined by Indivuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
+				throw new IOException("Size of GenotypeMatrix.dat does not match size defined by Individuals.txt and SNPs.txt. Expected size: " + expectedfilesize + " (" + Gpio.humanizeFileSize(expectedfilesize) + ")\tDetected size: " + detectedsize + " (" + Gpio.humanizeFileSize(detectedsize) + ")\tDiff: " + Math.abs(expectedfilesize - detectedsize));
 			}
 		} else {
 			throw new IOException("GenotypeMatrix.dat not detected at location: " + genotypeFileName);
