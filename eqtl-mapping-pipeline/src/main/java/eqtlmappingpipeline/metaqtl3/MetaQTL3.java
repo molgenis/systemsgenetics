@@ -13,6 +13,7 @@ import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLPlotter;
+import gnu.trove.map.hash.THashMap;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
@@ -368,6 +369,17 @@ public class MetaQTL3 {
 		
 		if (m_workPackages.length < m_settings.nrThreads) {
 			m_settings.nrThreads = m_workPackages.length;
+		}
+		
+		// save GTE's for future use
+		for (int d = 0; d < m_gg.length; d++) {
+			String outf = m_settings.outputReportsDir + "GTE-" + m_gg[d].getSettings().name + ".txt";
+			TextFile tf = new TextFile(outf, TextFile.W);
+			THashMap<String, String> samples = m_gg[d].getGenotypeToExpressionCouplings();
+			for (Map.Entry<String, String> entry : samples.entrySet()) {
+				tf.writeln(entry.getKey() + "\t" + entry.getValue());
+			}
+			tf.close();
 		}
 		printSummary();
 		

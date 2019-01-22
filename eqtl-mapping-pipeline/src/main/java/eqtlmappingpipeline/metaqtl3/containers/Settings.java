@@ -129,7 +129,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 					String replacement = replacements[s];
 					System.out.println(lnctr + "\t" + query + "\t" + replacement);
 					if (line.contains(query)) {
-						System.out.println(line + " --> Replacing: " + query + " with " + replacement);
+//						System.out.println(line + " --> Replacing: " + query + " with " + replacement);
 						line = line.replace(query, replacement);
 					}
 					
