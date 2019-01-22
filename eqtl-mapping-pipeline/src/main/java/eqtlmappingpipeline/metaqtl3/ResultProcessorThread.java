@@ -173,10 +173,10 @@ public class ResultProcessorThread extends Thread {
 			
 			if (m_dumpEverythingToDisk) {
 				if (m_permuting) {
-					etdump = new TextFile((m_outputdir + "eQTLDump-PermutedEQTLsPermutationRound" + m_permutationround + ".txt.lz4"), TextFile.W);
+					etdump = new TextFile((m_outputdir + "eQTLDump-PermutedEQTLsPermutationRound" + m_permutationround + ".txt.gz"), TextFile.W);
 					etdump.writeln("PValue\tSNP\tProbe\tGene\tAlleles\tAlleleAssessed\tZScore");
 				} else {
-					etdump = new QTLTextFile((m_outputdir + "eQTLDump.txt.lz4"), QTLTextFile.W);
+					etdump = new QTLTextFile((m_outputdir + "eQTLDump.txt.gz"), QTLTextFile.W);
 				}
 			}
 			

@@ -85,7 +85,7 @@ public class FullQtlMappingCisTest {
 		QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt.gz", QTLTextFile.R);
 		
 		QTLFileSorter r = new QTLFileSorter();
-		r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz");
+		r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLFileSorter.SORTBY.Z);
 		
 		QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLTextFile.R);
 		Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
