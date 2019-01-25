@@ -64,7 +64,7 @@ public class InternalMetaAnalysis {
 	}
 	
 	public InternalMetaAnalysis(String settingsFile, String textToReplace, String replaceTextWith) {
-		// initialize settings
+		// writeHeader settings
 		settings = new InternalMetaAnalysisSettings();
 		settings.parse(settingsFile, textToReplace, replaceTextWith);
 		

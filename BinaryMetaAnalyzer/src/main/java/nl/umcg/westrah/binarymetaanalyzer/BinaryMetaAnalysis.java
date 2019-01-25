@@ -6,37 +6,27 @@
 package nl.umcg.westrah.binarymetaanalyzer;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-
+import org.apache.commons.io.FileUtils;
+import umcg.genetica.console.ProgressBar;
+import umcg.genetica.containers.Triple;
+import umcg.genetica.io.Gpio;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.text.Strings;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
-
-import org.apache.commons.io.FileUtils;
-import umcg.genetica.console.ProgressBar;
-import umcg.genetica.containers.Pair;
-import umcg.genetica.containers.Triple;
-import umcg.genetica.io.Gpio;
-import umcg.genetica.io.text.TextFile;
-
-import umcg.genetica.math.stats.Descriptives;
-import umcg.genetica.math.stats.ZScores;
-import umcg.genetica.text.Strings;
 
 
 /**
  * @author Harm-Jan
  */
 public class BinaryMetaAnalysis {
+	
 	
 	public static void main(String[] args) {
 		
@@ -70,16 +60,16 @@ public class BinaryMetaAnalysis {
 	private final String textToReplace;
 	private final String settingsFile;
 	
-	private MetaQTL4TraitAnnotation probeAnnotation;
-	private BinaryMetaAnalysisDataset[] datasets = new BinaryMetaAnalysisDataset[0];
-	private int[][] snpIndex;
-	private String[] snpList;
-	private BinaryMetaAnalysisSettings settings;
-	private String[] snpChr;
-	private int[] snpPositions;
-	private Integer[][] probeIndex;
-	private boolean usetmp;
-	private String tempDir;
+	protected MetaQTL4TraitAnnotation probeAnnotation;
+	protected BinaryMetaAnalysisDataset[] datasets = new BinaryMetaAnalysisDataset[0];
+	protected int[][] snpIndex;
+	protected String[] snpList;
+	protected BinaryMetaAnalysisSettings settings;
+	protected String[] snpChr;
+	protected int[] snpPositions;
+	protected Integer[][] probeIndex;
+	protected boolean usetmp;
+	protected String tempDir;
 	
 	private QTL[] finalEQTLs;
 	private boolean bufferHasOverFlown;
@@ -88,8 +78,8 @@ public class BinaryMetaAnalysis {
 	private int locationToStoreResult;
 	private MetaQTL4MetaTrait[][] snpprobeCombos;
 	
-	TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = null;
-	MetaQTL4MetaTrait[] traitList = null;
+	protected TObjectIntHashMap<MetaQTL4MetaTrait> traitMap = null;
+	protected MetaQTL4MetaTrait[] traitList = null;
 	
 	public class QTLPair {
 		int snpid;
@@ -120,13 +110,6 @@ public class BinaryMetaAnalysis {
 		this.textToReplace = textToReplace;
 		this.replaceTextWith = replaceTextWith;
 		
-		try {
-			
-			run();
-		} catch (IOException ex) {
-			ex.printStackTrace();
-			Logger.getLogger(BinaryMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
-		}
 		
 	}
 	
@@ -135,8 +118,8 @@ public class BinaryMetaAnalysis {
 		
 	}
 	
-	public void initialize() {
-		// initialize settings
+	public void initialize() throws IOException {
+		// writeHeader settings
 		
 		settings = new BinaryMetaAnalysisSettings();
 		
@@ -171,12 +154,16 @@ public class BinaryMetaAnalysis {
 		maxSavedPvalue = -Double.MAX_VALUE;
 		locationToStoreResult = 0;
 		bufferHasOverFlown = false;
+		
+		System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
+		loadProbeAnnotation();
+		
 	}
 	
 	
-	public void run() throws IOException {
+	public void run() throws IOException, Exception {
 		initialize();
-		loadProbeAnnotation();
+		
 		
 		String outdir = settings.getOutput();
 		if (usetmp) {
@@ -222,8 +209,8 @@ public class BinaryMetaAnalysis {
 			// re-intialize for each permutation, just to be sure
 			if (permutation > settings.getStartPermutations()) {
 				initialize();
-				System.out.println("Loading probe annotation from: " + settings.getProbetranslationfile());
-				loadProbeAnnotation();
+				
+				
 				if (traitList.length == 0) {
 					System.err.println("Error: no annotation loaded.");
 					System.exit(-1);
@@ -231,38 +218,7 @@ public class BinaryMetaAnalysis {
 			}
 			//			clearResultsBuffer();
 			
-			// create dataset objects
-			System.out.println("Running permutation " + permutation);
-			datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
-			
-			System.out.println("Loading datasets");
-			for (int d = 0; d < datasets.length; d++) {
-				datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d),
-						settings.getDatasetnames().get(d),
-						settings.getDatasetPrefix().get(d), permutation,
-						settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d));
-			}
-			
-			System.out.println("Loaded " + datasets.length + " datasets");
-			
-			// create meta-analysis SNP index. have to recreate this every permutation,
-			// since the order of SNPs is generated at random.
-			System.out.println("Creating SNP index");
-			createSNPIndex(outdir);
-			System.out.println("Total of " + snpIndex.length + " SNPs");
-			
-			System.out.println("Creating probe index");
-			createProbeIndex(outdir);
-			System.out.println("Total of " + probeIndex.length + " probes");
-			
-			// make index of snp/probe combinations, if any specified
-			createSNPProbeCombos(outdir);
-			
-			// load SNP annotation for SNPs present in dataset
-//			if (snpChr == null) {
-			System.out.println("Loading SNP annotation from " + settings.getSNPAnnotationFile());
-			loadSNPAnnotation();
-//			}
+			initdataset(permutation, outdir, true);
 			
 			
 			// run analysis
@@ -440,6 +396,43 @@ public class BinaryMetaAnalysis {
 		}
 	}
 	
+	protected void initdataset(int permutation, String outdir, boolean loadsnpstats) throws IOException {
+		// create dataset objects
+		System.out.println("Running permutation " + permutation);
+		datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
+		
+		System.out.println("Loading datasets");
+		for (int d = 0; d < datasets.length; d++) {
+			System.out.println("Dataset " + d + "/" + datasets.length);
+			datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d),
+					settings.getDatasetnames().get(d),
+					settings.getDatasetPrefix().get(d), permutation,
+					settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d),
+					loadsnpstats, null);
+		}
+		
+		System.out.println("Loaded " + datasets.length + " datasets");
+		
+		// create meta-analysis SNP index. have to recreate this every permutation,
+		// since the order of SNPs is generated at random.
+		System.out.println("Creating SNP index");
+		createSNPIndex(outdir);
+		System.out.println("Total of " + snpIndex.length + " SNPs");
+		
+		System.out.println("Creating probe index");
+		createProbeIndex(outdir);
+		System.out.println("Total of " + probeIndex.length + " probes");
+		
+		// make index of snp/probe combinations, if any specified
+		createSNPProbeCombos(outdir);
+		
+		// load SNP annotation for SNPs present in dataset
+//			if (snpChr == null) {
+		System.out.println("Loading SNP annotation from " + settings.getSNPAnnotationFile());
+		loadSNPAnnotation();
+//			}
+	}
+	
 	private void createSNPProbeCombos(String outdir) throws IOException {
 		
 		snpprobeCombos = null;
@@ -513,7 +506,7 @@ public class BinaryMetaAnalysis {
 		}
 	}
 	
-	private void createSNPIndex(String outdir) throws IOException {
+	protected void createSNPIndex(String outdir) throws IOException {
 		
 		HashSet<String> confineToTheseSNPs = null;
 		
@@ -624,7 +617,7 @@ public class BinaryMetaAnalysis {
 		tf.close();
 	}
 	
-	private void loadProbeAnnotation() throws IOException {
+	protected void loadProbeAnnotation() throws IOException {
 		
 		HashSet<String> platforms = new HashSet<String>();
 		platforms.addAll(settings.getDatasetannotations());
@@ -649,7 +642,7 @@ public class BinaryMetaAnalysis {
 		
 	}
 	
-	private void loadSNPAnnotation() throws IOException {
+	protected void loadSNPAnnotation() throws IOException {
 		
 		snpChr = new String[snpList.length];
 		snpPositions = new int[snpList.length];
@@ -684,7 +677,7 @@ public class BinaryMetaAnalysis {
 	}
 	
 	// index the probes
-	private void createProbeIndex(String outdir) throws IOException {
+	protected void createProbeIndex(String outdir) throws IOException {
 		
 		HashSet<String> confineToTheseProbes = null;
 		
@@ -743,7 +736,7 @@ public class BinaryMetaAnalysis {
 			String[] probes = datasets[d].getProbeList();
 			int platformId = probeAnnotation.getPlatformId(datasets[d].getPlatform());
 			
-			HashMap<String, MetaQTL4MetaTrait> traitHashForPlatform = probeAnnotation.getTraitHashForPlatform(platformId);
+			Map<String, MetaQTL4MetaTrait> traitHashForPlatform = probeAnnotation.getTraitHashForPlatform(platformId);
 //			System.out.println(probeAnnotation.getTraitHashPerPlatform().size());
 //
 //			System.out.println(datasets[d].getName() + "\t" + platformId + "\t" + datasets[d].getPlatform() + "\t" + traitHashForPlatform.size());
@@ -794,7 +787,7 @@ public class BinaryMetaAnalysis {
 	private void addEQTL(QTL q) {
 		
 		double pval = q.getPvalue();
-		
+
 //		// sort every 1E7 results
 //		if (locationToStoreResult > 1E7 && locationToStoreResult % 1E7 == 0) {
 ////			System.out.println("Sorting intermediate output.");

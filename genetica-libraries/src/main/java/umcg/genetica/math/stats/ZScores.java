@@ -6,11 +6,10 @@ package umcg.genetica.math.stats;
 
 import JSci.maths.statistics.NormalDistribution;
 import cern.jet.random.tdouble.StudentT;
-//import cern.jet.random.tdouble.engine.DRand;
-//import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
 
-import java.util.ArrayList;
+//import cern.jet.random.tdouble.engine.DRand;
+//import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 
 /**
  * @author juha
@@ -21,6 +20,7 @@ public class ZScores {
 		double r = z * Math.pow(10, 0.00332727459306132 + -0.500803673176124 * Math.log10(n)) - Math.pow(z, 3) * Math.pow(10, -0.600314180613649 + -1.50039529106925 * Math.log10(n)) + Math.pow(z, 5) * Math.pow(10, -1.3415016045602 + -2.48579979106749 * Math.log10(n)) - Math.pow(z, 7) * Math.pow(10, -2.53051421275022 + -3.39996348904233 * Math.log10(n));
 		return r;
 	}
+	
 	
 	private static NormalDistribution normDist;
 	
@@ -407,5 +407,12 @@ public class ZScores {
 		return b / (se * Math.sqrt(n));
 	}
 	
+	
+	public static double[] zToBeta(double z, double maf, int n) {
+		double chi = z * z;
+		double beta = z / Math.sqrt(2 * maf * (1 - maf) * (n + chi));
+		double se = 1d / Math.sqrt(2 * maf * (1 - maf) * (n + chi));
+		return new double[]{beta, se};
+	}
 	
 }

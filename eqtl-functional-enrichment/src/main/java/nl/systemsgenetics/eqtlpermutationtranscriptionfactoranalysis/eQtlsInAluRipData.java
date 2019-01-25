@@ -36,7 +36,7 @@ public class eQtlsInAluRipData {
 	private static final Pattern TAB_PATTERN = Pattern.compile("\t");
 	
 	public static void main(String[] args)throws IOException{
-		eQtlsInAluRipData eqiard = new eQtlsInAluRipData("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt",
+		eQtlsInAluRipData eqiard = new eQtlsInAluRipData("C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\eQTLsFDR0.05.txt.gz",
 				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Pilot\\2.eQtlFunctionalEnrichment\\analysis\\data\\PermutedEQTLsPermutationRound8.txt",
 				"C:\\Users\\Matthieu\\Documents\\Afstudeerstage\\Data\\BloodHT12Combined\\", "C:\\Users\\Matthieu\\Downloads\\dbrip\\Alu_hg18_v2h.txt", 0.8);
 	}

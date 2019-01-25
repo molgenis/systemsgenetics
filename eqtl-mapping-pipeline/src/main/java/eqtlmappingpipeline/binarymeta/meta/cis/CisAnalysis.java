@@ -124,7 +124,7 @@ public class CisAnalysis extends MetaAnalyze {
                 if (abs > 0) {
                     suffix += "-Absolute.txt.gz";
                 }
-                sorter.run(m_settings.getOutput() + suffix, null);
+                sorter.run(m_settings.getOutput() + suffix, null, QTLFileSorter.SORTBY.Z);
                 System.out.println("Moving file.");
                 System.out.println("SRC: " + m_settings.getOutput() + suffix + "_sorted.txt");
                 System.out.println("DST: " + m_settings.getOutput() + "/Sorted/" + suffix);
