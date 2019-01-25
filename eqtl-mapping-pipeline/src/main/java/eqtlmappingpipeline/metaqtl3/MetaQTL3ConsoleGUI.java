@@ -17,8 +17,6 @@ public class MetaQTL3ConsoleGUI {
         String settingsfile = null;
         String settingstexttoreplace = null;
         String settingstexttoreplacewith = null;
-        String settingstexttoreplace2 = null;
-        String settingstexttoreplace2with = null;
         String in = null;
         String out = null;
         boolean cis = false;
@@ -59,10 +57,6 @@ public class MetaQTL3ConsoleGUI {
                 settingstexttoreplace = val;
             } else if (arg.equals("--replacetextwith")) {
                 settingstexttoreplacewith = val;
-            } else if (arg.equals("--replacetext2")) {
-                settingstexttoreplace2 = val;
-            } else if (arg.equals("--replacetext2with")) {
-                settingstexttoreplace2with = val;
             } else if (arg.equals("--in")) {
                 in = val;
             } else if (arg.equals("--out")) {
@@ -168,7 +162,9 @@ public class MetaQTL3ConsoleGUI {
                 if (!binout && !textout) {
                     textout = true;
                 }
-                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith, settingstexttoreplace2, settingstexttoreplace2with, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed, maf, hwe);
+                m.initialize(settingsfile, settingstexttoreplace, settingstexttoreplacewith,
+                        in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile,
+                        threads, nrEQTLsToOutput, eqtleffectstoregressout, snpprobecombofile, skipdotplot, skipqqplot, rSeed, maf, hwe);
                 
                 if(outputPlotThresold!=null){
                     m.setOutputPlotThreshold(outputPlotThresold);
@@ -190,8 +186,8 @@ public class MetaQTL3ConsoleGUI {
         System.out.println("");
         System.out.print("Settings file options:\n" + ConsoleGUIElems.LINE);
         System.out.println("--settings\t\tsettings.xml\tLocation of settings file\n"
-                + "--replacetext\t\ttext\t\tText to replace in settings file\n"
-                + "--replacetextwith\ttext\t\tReplace the text in the settings file, defined by --replacetext with the following text (can be empty)");
+                + "--replacetext\t\ttext\t\tText to replace in settings file (comma separated if multiple)\n"
+                + "--replacetextwith\ttext\t\tReplace the text in the settings file, defined by --replacetext with the following text (can be empty; comma separated if multiple)");
 
         System.out.println("");
         System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);

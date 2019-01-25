@@ -295,7 +295,7 @@ public class MetaAnalysisResultThread extends Thread {
 		if (perm > 0) {
 			oppositeEffects = new TextFile(m_settings.getOutput() + "OppositeEffects-PermutedEQTLsPermutationRound" + perm + ".txt.gz", TextFile.W);
 		} else {
-			oppositeEffects = new TextFile(m_settings.getOutput() + "OppositeEffects-eQTLs.txt", TextFile.W);
+			oppositeEffects = new TextFile(m_settings.getOutput() + "OppositeEffects-eQTLs.txt.gz", TextFile.W);
 		}
 
 		for (int i = 0; i < finalEQTLBuffer.length; i++) {

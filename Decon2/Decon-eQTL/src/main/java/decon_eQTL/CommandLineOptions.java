@@ -29,7 +29,7 @@ public class CommandLineOptions {
 	private Boolean wholeBloodQTL = false;
 	private Boolean noConsole = false;
 	private Boolean outputPredictedExpression = false;
-	private String genotypeConfigurationType = "all";
+	private String genotypeConfigurationType = "one";
 	private String programVersion;
 	
 	/**

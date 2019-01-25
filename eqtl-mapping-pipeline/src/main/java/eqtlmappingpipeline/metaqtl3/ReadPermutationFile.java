@@ -146,9 +146,7 @@ public class ReadPermutationFile implements Callable<TDoubleIntHashMap> {
 		}
 		gz.close();
 		System.out.println("Done reading: " + fileString + "\t" + permutedPvalues.keys().length + " unique p-values. " + visitedEffects.size() + " IDs seen.");
-		if(m.equals(FDR.FDRMethod.GENELEVEL)){
-			System.out.println("check this out");
-		}
+
 		if (mpb != null) {
 			mpb.complete(permutationRound);
 		}

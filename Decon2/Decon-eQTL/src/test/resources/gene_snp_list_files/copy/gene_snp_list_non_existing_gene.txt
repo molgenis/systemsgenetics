@@ -1,2 +1,0 @@
-gene	snp
-gene_NON_EXISTING_GENE	genotype_29

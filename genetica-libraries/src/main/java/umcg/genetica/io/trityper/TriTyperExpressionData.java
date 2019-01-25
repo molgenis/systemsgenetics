@@ -13,7 +13,6 @@ import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.math.stats.Descriptives;
-import umcg.genetica.text.Strings;
 import umcg.genetica.util.RankArray;
 
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.util.List;
  */
 public class TriTyperExpressionData {
 	
+	public boolean displayWarnings;
 	//Potentialy we can use TObjectIntMaps
 	private int[] chrStart;
 	private int[] chrStop;
@@ -262,7 +262,7 @@ public class TriTyperExpressionData {
 		ArrayList<Integer> tmpChrEnd = new ArrayList<Integer>();
 		ArrayList<Byte> tmpChr = new ArrayList<Byte>();
 		ArrayList<String> tmpProbe = new ArrayList<String>();
-		ArrayList<float[]> tmpRaw = new ArrayList<float[]>();
+		ArrayList<float[]> tmpRaw = new ArrayList<float[]>(50000);
 		ArrayList<String> tmpAnnotation = new ArrayList<String>();
 		
 		annotationToProbeId = new THashMap<String, ArrayIntList>();
@@ -411,7 +411,9 @@ public class TriTyperExpressionData {
 					}
 				} else if (printreason) {
 					probesExcluded++;
-					System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
+					if (displayWarnings) {
+						System.out.println("Probe\t" + probe + "\texcluded. Reason:\t" + reason);
+					}
 				}
 			}
 			
@@ -420,7 +422,9 @@ public class TriTyperExpressionData {
 		in.close();
 		
 		if (probesWithMissingValues.size() > 0) {
-			System.err.println("WARNING: " + probesWithMissingValues.size() + " probes with missing values detected. Will replace missing values with average probe value.");
+			if (displayWarnings) {
+				System.err.println("WARNING: " + probesWithMissingValues.size() + " probes with missing values detected. Will replace missing values with average probe value.");
+			}
 			ArrayList<float[]> newRaw = new ArrayList<float[]>();
 			for (int i = 0; i < tmpRaw.size(); i++) {
 				if (probesWithMissingValues.contains(i)) {
@@ -472,7 +476,9 @@ public class TriTyperExpressionData {
 				annotation[i] = "-";
 			}
 			if (tmpChr.get(i) == null) {
-				System.err.println("No chromosome annotation loaded for probe " + tmpProbe.get(i));
+				if (displayWarnings) {
+					System.err.println("No chromosome annotation loaded for probe " + tmpProbe.get(i));
+				}
 				chr[i] = -1;
 				chrStart[i] = -1;
 				chrStop[i] = -1;
@@ -737,7 +743,7 @@ public class TriTyperExpressionData {
 					setProbeData(p, probeData);
 					probeMean[p] = Descriptives.mean(probeData);
 					probeVariance[p] = Descriptives.variance(probeData, probeMean[p]);
-					
+
 //					if (probes[p].equals("TB_trait36_2013_24074872_hg19.txt.gz_P5.0E-8")) {
 //
 //						System.out.println(Strings.concat(getProbeData(p), Strings.space));

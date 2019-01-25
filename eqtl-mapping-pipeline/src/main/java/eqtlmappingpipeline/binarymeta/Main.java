@@ -25,7 +25,7 @@ public class Main {
 //        try{
 //        MetaAnalyze m = new MetaAnalyze();
 //
-//        m.reannotateprobesInEQTLFile("D:\\Work\\MetaTest\\2011-10-06-ProbeTranslationTable+H8HT12Conversion.log_reannotatedHG18_96PercIdentity.txt", "Z:\\MarjoleinHomeAccount\\marjolein\\Results\\2011-10-25-METATEST.Rotterdam+EGCUT+Groningen+SHIP-40PCs.YES-GVR.YES-GWAS-PCS\\eQTLsFDR0.05.txt");
+//        m.reannotateprobesInEQTLFile("D:\\Work\\MetaTest\\2011-10-06-ProbeTranslationTable+H8HT12Conversion.log_reannotatedHG18_96PercIdentity.txt", "Z:\\MarjoleinHomeAccount\\marjolein\\Results\\2011-10-25-METATEST.Rotterdam+EGCUT+Groningen+SHIP-40PCs.YES-GVR.YES-GWAS-PCS\\eQTLsFDR0.05.txt.gz");
 //        } catch (Exception e){
 //            e.printStackTrace();
 //        }

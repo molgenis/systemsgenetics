@@ -7,7 +7,6 @@ package umcg.genetica.console;
 import umcg.genetica.util.RunTimer;
 
 /**
- *
  * @author harmjan
  */
 public class ProgressBar {
@@ -97,7 +96,6 @@ public class ProgressBar {
             out.append(" #: ").append(iterations).append("/").append(maxIterations);
 
 
-
             int length = out.toString().length();
             if (length < maxwidth) {
                 int difflen = maxwidth - out.length();
@@ -124,5 +122,12 @@ public class ProgressBar {
         print();
         System.out.println("");
 
+    }
+
+    public synchronized void iterateSynched() {
+        iterations++;
+        if (iterations % printEvery == 0) {
+            print();
+        }
     }
 }

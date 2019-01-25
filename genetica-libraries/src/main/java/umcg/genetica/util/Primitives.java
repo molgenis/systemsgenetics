@@ -249,4 +249,22 @@ public class Primitives {
 		}
 		return out;
 	}
+	
+	
+	public static long[] toPrimitiveArr(Long[] ts) {
+		long[] out = new long[ts.length];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = ts[i];
+		}
+		return out;
+	}
+	
+	public static float[] toPrimitiveArr(Float[] ts) {
+		float[] out = new float[ts.length];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = ts[i];
+		}
+		return out;
+		
+	}
 }
