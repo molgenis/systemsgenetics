@@ -41,9 +41,9 @@ public class FilterPrioBasedOnMutatedGenes2 {
 //		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\rankingCandidateGenes");
 
 		final File sampleFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\hpo5gpm.txt");
-		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Genes\\");
+		final File genoFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\Genes\\");
 		final File prioFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\Prioritisations\\");
-		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\RankingCandidateGenes\\");
+		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\RankingCandidateGenes\\");
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
