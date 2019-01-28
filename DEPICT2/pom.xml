@@ -44,11 +44,6 @@
 			<version>1.0.3</version>
 		</dependency>
 		<dependency>
-			<groupId>jsc</groupId>
-			<artifactId>jsc</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>genetica-libraries</artifactId>
 			<version>1.0.9-SNAPSHOT</version>
