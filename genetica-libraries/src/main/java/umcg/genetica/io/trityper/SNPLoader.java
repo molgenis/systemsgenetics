@@ -4,7 +4,6 @@
  */
 package umcg.genetica.io.trityper;
 
-import jdk.internal.ref.Cleaner;
 import sun.nio.ch.DirectBuffer;
 import umcg.genetica.io.Gpio;
 
