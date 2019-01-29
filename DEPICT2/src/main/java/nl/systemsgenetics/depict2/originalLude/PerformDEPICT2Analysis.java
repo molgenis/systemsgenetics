@@ -94,17 +94,17 @@ public class PerformDEPICT2Analysis {
 			}
 
 			//Determine per gene which SNPs are in close physical proximity:
-			int[][] geneToSNP = new int[dataset.nrSamples][dataset.nrProbes];
-			int[] geneNrSNPsAssigned = new int[dataset.nrSamples];
+			int[][] geneToSNP = new int[dataset.nrSamples][dataset.nrProbes];//samples is genes and probes is snps
+			int[] geneNrSNPsAssigned = new int[dataset.nrSamples];//number of snps per gene
 			int nrPerms = 100000000;
-			double[] geneChi2SumNull = new double[nrPerms];
-			int[] pValueDistribution = new int[21];
+			double[] geneChi2SumNull = new double[nrPerms];//For the current gene the permutation chi2 values
+			int[] pValueDistribution = new int[21];//used to create histogram 
 
-			ExpressionDataset datasetSNPSetXGenePValues = new ExpressionDataset(datasetGenePos.nrProbes, dataset.nrSamples);
+			ExpressionDataset datasetSNPSetXGenePValues = new ExpressionDataset(datasetGenePos.nrProbes, dataset.nrSamples);// probes genomic region (aggregate over SNPs around a gene, samples is number of phenotypes)
 			datasetSNPSetXGenePValues.probeNames = datasetGenePos.probeNames;
 			datasetSNPSetXGenePValues.sampleNames = dataset.sampleNames;
 			datasetSNPSetXGenePValues.recalculateHashMaps();
-			for (int gene = 0; gene < datasetGenePos.nrProbes; gene++) {
+			for (int gene = 0; gene < datasetGenePos.nrProbes; gene++) { // This loop is mostly done when loading genotype data but make sure to prune out near perfect LD variants
 				for (int s = 0; s < dataset.nrSamples; s++) {
 					datasetSNPSetXGenePValues.rawData[gene][s] = Double.NaN;
 				}
@@ -120,7 +120,7 @@ public class PerformDEPICT2Analysis {
 						if (snpPos >= geneChrPosStart - 100000 && snpPos <= geneChrPosEnd + 100000) {
 							boolean includeSNP = true;
 							int snpIndex = ((Integer) dataset.hashProbes.get(datasetSNPPos.probeNames[snp])).intValue();;
-							for (int q = 0; q < geneNrSNPsAssigned[gene]; q++) {
+							for (int q = 0; q < geneNrSNPsAssigned[gene]; q++) {//check back over already included SNPs and only include this SNP if not in strong LD
 								double corr = JSci.maths.ArrayMath.correlation(datasetNull.rawData[snpIndex], datasetNull.rawData[geneToSNP[gene][q]]);
 								if (Math.abs(corr) > 0.95) {
 									includeSNP = false;
@@ -135,10 +135,10 @@ public class PerformDEPICT2Analysis {
 					}
 				}
 				System.out.print(gene + "\t" + datasetGenePos.probeNames[gene] + "\t" + geneNrSNPsAssigned[gene]);
-				for (int p = 0; p < geneNrSNPsAssigned[gene]; p++) {
-					int snpIndexP = geneToSNP[gene][p];
-					System.out.print("\t" + datasetNull.probeNames[snpIndexP]);
-				}
+//				for (int p = 0; p < geneNrSNPsAssigned[gene]; p++) {
+//					int snpIndexP = geneToSNP[gene][p];
+//					System.out.print("\t" + datasetNull.probeNames[snpIndexP]);
+//				}
 				System.out.println("");
 				if (geneNrSNPsAssigned[gene] > 1) {
 					double[][] cov = new double[geneNrSNPsAssigned[gene]][geneNrSNPsAssigned[gene]];
@@ -199,7 +199,7 @@ public class PerformDEPICT2Analysis {
 						}
 						if (!missingData) {
 							double p = 0.5;
-							int nrPermsHere = 1000;
+							int nrPermsHere = 1000; //TODO ask Lude
 							for (int perm = 0; perm < nrPermsHere; perm++) {
 								if (geneChi2SumNull[perm] >= sumChi2) {
 									p += 1;
@@ -215,22 +215,21 @@ public class PerformDEPICT2Analysis {
 								System.out.println(gene + "\t" + datasetGenePos.probeNames[gene] + "\t" + geneNrSNPsAssigned[gene] + "\t" + sumChi2 + "\t" + p);
 							}
 						}
-					} else {
-						if (geneNrSNPsAssigned[gene] == 1) {
-							if (datasetNrSamples.rawData[geneToSNP[gene][0]][phenotypeIndex] != 0) {
-								double z = dataset.rawData[geneToSNP[gene][0]][phenotypeIndex];
-								double p = ZScores.zToP(-Math.abs(z));//Patrick used differnt method to get to p-value because of old lib
-								if (p == 1) {
-									p = 0.99999d;
-								}
-								if (p < 1e-300d) {
-									p = 1e-300d;
-								}
-								pValueDistribution[(int) (20d * p)]++;
-								datasetSNPSetXGenePValues.rawData[gene][phenotypeIndex] = p;
-								//System.out.println(gene + "\t" + datasetGenePos.probeNames[gene] + "\t" + geneNrSNPsAssigned[gene] + "\t" + z*z + "\t" + p);
+					} else if (geneNrSNPsAssigned[gene] == 1) {
+						if (datasetNrSamples.rawData[geneToSNP[gene][0]][phenotypeIndex] != 0) {
+							double z = dataset.rawData[geneToSNP[gene][0]][phenotypeIndex];
+							double p = ZScores.zToP(-Math.abs(z));//Patrick used differnt method to get to p-value because of old lib
+							if (p == 1) {
+								p = 0.99999d;
 							}
+							if (p < 1e-300d) {
+								p = 1e-300d;
+							}
+							pValueDistribution[(int) (20d * p)]++;
+							datasetSNPSetXGenePValues.rawData[gene][phenotypeIndex] = p;
+							//System.out.println(gene + "\t" + datasetGenePos.probeNames[gene] + "\t" + geneNrSNPsAssigned[gene] + "\t" + z*z + "\t" + p);
 						}
+
 					}
 				}
 				if (gene % 10 == 0) {
