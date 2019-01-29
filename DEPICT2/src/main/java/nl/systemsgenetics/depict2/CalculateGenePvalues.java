@@ -26,7 +26,7 @@ public class CalculateGenePvalues {
 	 */
 	public static DoubleMatrixDataset<String, String> calculatorGenePvalues(DoubleMatrixDataset<String, String> variantPhenotypeMatrix, RandomAccessGenotypeData referenceGenotypes, ArrayList<Genes> genes, HashMap<String, ChrPos> snpMapping){
 		
-		
+		return null;
 		
 	}
 	
