@@ -23,7 +23,7 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 	}
 
 	@Override
-	public GenotypieCovarianceResult getCovarianceMatrixForRange(String chr, int start, int stop, double doubleMaxR) {
+	public GenotypieCovarianceResult getCovarianceMatrixForRange(String chr, int start, int stop, double maxR) {
 
 		final SimpleRegression regression = new SimpleRegression();
 
@@ -42,9 +42,11 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 				}
 
 				//If correlation is tool large stop with current newVariant and move to next variant
-				if (regression.getR() >= doubleMaxR) {
+				if (regression.getR() >= maxR) {
 					continue newVariants;
 				}
+				
+				includedVariantsList.add(newVariant);
 			}
 		}
 
