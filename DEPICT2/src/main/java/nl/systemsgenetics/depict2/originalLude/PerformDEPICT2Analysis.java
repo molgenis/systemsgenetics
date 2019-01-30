@@ -199,7 +199,7 @@ public class PerformDEPICT2Analysis {
 						}
 						if (!missingData) {
 							double p = 0.5;
-							int nrPermsHere = 1000; //TODO ask Lude
+							int nrPermsHere = 1000; 
 							for (int perm = 0; perm < nrPermsHere; perm++) {
 								if (geneChi2SumNull[perm] >= sumChi2) {
 									p += 1;
