@@ -14,21 +14,20 @@ import gnu.trove.set.hash.TIntHashSet;
 public class GenotypieCovarianceResult {
 	
 	private final double[][] cov;
-	private final TIntHashSet includedVariantsPositions;
+	private final String[] includedVariants;
 
-	public GenotypieCovarianceResult(double[][] cov, TIntHashSet includedVariantsPositions) {
+	public GenotypieCovarianceResult(double[][] cov, String[] includedVariants) {
 		this.cov = cov;
-		this.includedVariantsPositions = includedVariantsPositions;
+		this.includedVariants = includedVariants;
 	}
 
 	public double[][] getCov() {
 		return cov;
 	}
 
-	public TIntHashSet getIncludedVariantsPositions() {
-		return includedVariantsPositions;
-	}
-	
+	public String[] getIncludedVariants() {
+		return includedVariants;
+	}	
 	
 	
 }

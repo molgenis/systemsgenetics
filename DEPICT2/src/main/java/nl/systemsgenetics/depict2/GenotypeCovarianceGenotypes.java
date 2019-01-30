@@ -5,7 +5,6 @@
  */
 package nl.systemsgenetics.depict2;
 
-import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -50,19 +49,17 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 		}
 
 		if (includedVariantsList.isEmpty()) {
-			return new GenotypieCovarianceResult(new double[0][0], new TIntHashSet(0));
+			return new GenotypieCovarianceResult(new double[0][0], new String[0]);
 		} else {
 			
-			final TIntHashSet includedVariantsPositions = new TIntHashSet(includedVariantsList.size());
+			final String[] includedVariants = new String[includedVariantsList.size()];
 
 			final double[][] cov = new double[includedVariantsList.size()][includedVariantsList.size()];
 			for (int p = 0; p < includedVariantsList.size(); p++) {
 				
 				GeneticVariant pVariant = includedVariantsList.get(p);
 				
-				if(includedVariantsPositions.add(pVariant.getStartPos())){
-					throw new RuntimeException("Cannot handle reference genotype data with multiple variants at same position: " + pVariant.getSequenceName() + ":" + pVariant.getStartPos());
-				}
+				includedVariants[p] = pVariant.getPrimaryVariantId();
 				
 				final float[] pVariantDosages = pVariant.getSampleDosages();
 				cov[p][p] = 1;
@@ -79,7 +76,7 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 				}
 			}
 
-			return new GenotypieCovarianceResult(cov, includedVariantsPositions);
+			return new GenotypieCovarianceResult(cov, includedVariants);
 
 		}
 
