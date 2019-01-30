@@ -8,9 +8,10 @@ import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.normalization.Normalizer;
+import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import umcg.genetica.console.ConsoleGUIElems;
-import umcg.genetica.containers.Pair;
+import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
@@ -257,6 +258,7 @@ public class PCAOptimum extends MetaQTL3 {
 			
 		}
 		
+		
 		PCAOptimumInventorize pi = new PCAOptimumInventorize();
 		if (performEigenVectorQTLMapping) {
 			pi.inventorypcqtl(out, cis, trans, max, stepSize);
@@ -315,6 +317,18 @@ public class PCAOptimum extends MetaQTL3 {
 		if (m_workPackages.length < m_settings.nrThreads) {
 			m_settings.nrThreads = m_workPackages.length;
 		}
+		
+		// save GTE's for future use
+		for (int d = 0; d < m_gg.length; d++) {
+			String outf = m_settings.outputReportsDir + "GTE-" + m_gg[d].getSettings().name + ".txt";
+			TextFile tf = new TextFile(outf, TextFile.W);
+			THashMap<String, String> samples = m_gg[d].getGenotypeToExpressionCouplings();
+			for (Map.Entry<String, String> entry : samples.entrySet()) {
+				tf.writeln(entry.getKey() + "\t" + entry.getValue());
+			}
+			tf.close();
+		}
+		
 		printSummary();
 	}
 	
@@ -476,11 +490,14 @@ public class PCAOptimum extends MetaQTL3 {
 		
 		parentDir += Gpio.getFileSeparator();
 		Normalizer n = new Normalizer();
-		Pair<String, String> nextInExp = n.calculatePcaOnly(origInExp);
+		Triple<String, String, String> nextInExp = n.calculatePcaOnly(origInExp);
 		
+		String eigenvectorFileTransposed = nextInExp.getLeft();
+		String eigenvectorFile = nextInExp.getMiddle();
+		String pcaFile = nextInExp.getRight();
 		// ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.PCAOverSamplesEigenvectorsTransposed
 		
-		performeQTLMapping(true, true, nextInExp.getLeft(), out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
+		performeQTLMapping(true, true, eigenvectorFileTransposed, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
 		cleanup();
 		
 		QTLTextFile etf = new QTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
@@ -510,7 +527,9 @@ public class PCAOptimum extends MetaQTL3 {
 			System.out.println("No PCs are under genetic control.");
 			System.out.println();
 		}
-		n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, nextInExp.getLeft(), nextInExp.getRight(), max, stepSize);
+		
+		
+		n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, eigenvectorFile, pcaFile, max, stepSize);
 	}
 	
 	public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out,

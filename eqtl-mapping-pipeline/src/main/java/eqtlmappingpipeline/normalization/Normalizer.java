@@ -5,6 +5,7 @@ import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
+import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.PCA;
@@ -31,13 +32,13 @@ import java.util.stream.IntStream;
  * @author harmjan
  */
 public class Normalizer {
-
+	
 	//nrIntermediatePCAsOverSamplesToRemoveToOutput = 5
 	//nrPCAsOverSamplesToRemove = 100
 	public void normalize(String expressionFile, String probeIncludeList, String sampleIncludeList, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates, String outdir,
 						  boolean runQQNorm, boolean runLog2Transform, boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates, boolean forceMissingValues, boolean forceReplacementOfMissingValues,
 						  boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls, boolean forceNormalDistribution) throws IOException {
-
+		
 		System.out.println("Running normalization.");
 		if (outdir != null) {
 			outdir = Gpio.formatAsDirectory(outdir);
@@ -50,24 +51,24 @@ public class Normalizer {
 			} else {
 				outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
 			}
-
+			
 		}
-
+		
 		String parentDir = Gpio.getParentDir(expressionFile);
 		String expressionFileName = Gpio.getFileName(expressionFile);
 		if (parentDir == null) {
 			parentDir = "";
 		}
-
+		
 		if (expressionFileName.contains(".txt.gz")) {
 			expressionFileName = expressionFileName.replaceAll(".txt.gz", "");
 		} else {
 			expressionFileName = expressionFileName.replaceAll(".txt", "");
 		}
-
+		
 		String outputFileNamePrefix = outdir + expressionFileName;
-
-
+		
+		
 		Set<String> s = null;
 		if (sampleIncludeList != null) {
 			TextFile t = new TextFile(sampleIncludeList, TextFile.R);
@@ -79,7 +80,7 @@ public class Normalizer {
 			p = new HashSet<String>(t.readAsArrayList());
 		}
 		DoubleMatrixDataset<String, String> dataset = null;
-
+		
 		if (s != null || p != null) {
 			dataset = new DoubleMatrixDataset<String, String>(expressionFile, p, s);
 			//Check if samples are correclty loaded.
@@ -139,18 +140,18 @@ public class Normalizer {
 //            if(breakAfterCheck){
 //                System.exit(-1);
 //            }
-
+			
 			dataset.save(outputFileNamePrefix + ".txt.gz");
 		} else {
 			dataset = new DoubleMatrixDataset<String, String>(expressionFile);
 		}
-
-
+		
+		
 		// check for probes with zero variance, if there > 3 samples in the dataset
 		if (dataset.nrCols > 3) {
 			outputFileNamePrefix = removeProbesWithZeroVariance(dataset, outputFileNamePrefix);
 		}
-
+		
 		if (runQQNorm) {
 			outputFileNamePrefix = quantileNormalize(dataset, outputFileNamePrefix, forceMissingValues, forceReplacementOfMissingValues, forceReplacementOfMissingValues2, treatZerosAsNulls);
 		}
@@ -163,11 +164,11 @@ public class Normalizer {
 		if (runCenterScale) {
 			outputFileNamePrefix = centerAndScale(dataset, outputFileNamePrefix);
 		}
-
+		
 		if (adjustCovariates && covariatesToRemove != null) {
 			outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, orthogonalizecovariates, 1E-10);
 		}
-
+		
 		if (runPCA) {
 			int cores = Runtime.getRuntime().availableProcessors();
 			ConcurrentCorrelation c = new ConcurrentCorrelation(cores);
@@ -177,43 +178,42 @@ public class Normalizer {
 				correctDataForPCs(dataset, outputFileNamePrefix, nrPCAsOverSamplesToRemove, nrIntermediatePCAsOverSamplesToRemoveToOutput, PCAResults.getLeft(), PCAResults.getRight());
 			}
 		}
-
+		
 		if (forceNormalDistribution) {
 			outputFileNamePrefix = forceNormalDistribution(dataset, outputFileNamePrefix);
 		}
 	}
-
-
+	
+	
 	NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED, TiesStrategy.AVERAGE);
-
-    
-    public Pair<String,String> calculatePcaOnly(String expressionFile) throws IOException{
-        String outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
+	
+	
+	public Triple<String, String, String> calculatePcaOnly(String expressionFile) throws IOException {
+		String outdir = Gpio.getParentDir(expressionFile) + Gpio.getFileSeparator();
 		
 		String parentDir = Gpio.getParentDir(expressionFile);
 		String expressionFileName = Gpio.getFileName(expressionFile);
 		if (parentDir == null) {
 			parentDir = "";
 		}
-
+		
 		if (expressionFileName.contains(".txt.gz")) {
 			expressionFileName = expressionFileName.replaceAll(".txt.gz", "");
 		} else {
 			expressionFileName = expressionFileName.replaceAll(".txt", "");
 		}
-        
-        DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
-        
+		
+		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(expressionFile);
+		
 		String outputFileNamePrefix = outdir + expressionFileName;
-        
-        ConcurrentCorrelation c = new ConcurrentCorrelation(2);
-        double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
-        calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
-        return new Pair<String,String>(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz",outputFileNamePrefix + ".PCAOverSamplesPrincipalComponents.txt.gz");
-    }
-    
-    
-    
+		
+		ConcurrentCorrelation c = new ConcurrentCorrelation(2);
+		double[][] correlationMatrix = c.pairwiseCorrelation(dataset.getRawDataTransposed());
+		calculatePCA(dataset, correlationMatrix, outputFileNamePrefix, null);
+		return new Triple<String, String, String>(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz", outputFileNamePrefix + ".PCAOverSamplesEigenvectors.txt.gz", outputFileNamePrefix + ".PCAOverSamplesPrincipalComponents.txt.gz");
+	}
+	
+	
 	public double[] forceNormal(double[] data) {
 		double[] rankedValues = ranking.rank(data);
 		for (int s = 0; s < data.length; s++) {
@@ -224,27 +224,27 @@ public class Normalizer {
 		}
 		return data;
 	}
-
-
+	
+	
 	public String forceNormalDistribution(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
 		double[][] rawData = dataset.getRawData();
 		for (int p = 0; p < dataset.rowObjects.size(); p++) {
 			rawData[p] = forceNormal(rawData[p]);
 		}
-
+		
 		DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
 		fileNamePrefix += ".ForcedNormal";
 		datasetNormalized.save(fileNamePrefix + ".txt.gz");
 		return fileNamePrefix;
-
-
+		
+		
 	}
-
+	
 	public String quantileNormalize(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, boolean forceMissingValues, boolean forceReplacementOfMissingValues, boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls) throws IOException {
 		double[][] rawData = dataset.getRawData();
-
+		
 		boolean dataContainsNulls = MatrixTools.containsNaNs(rawData);
-
+		
 		if (treatZerosAsNulls && dataContainsNulls) {
 			System.out.println("Warning: Data already contains nulls before treating zeros as nulls.\n Later on it will not be possible to distinguish between those two!");
 		}
@@ -252,7 +252,7 @@ public class Normalizer {
 			MatrixHandling.ReplaceZerosToNull(rawData);
 			dataContainsNulls = MatrixTools.containsNaNs(rawData);
 		}
-
+		
 		if (!dataContainsNulls) {
 			QuantileNormalization.quantilenormalize(rawData);
 		} else if (forceReplacementOfMissingValues) {
@@ -268,18 +268,18 @@ public class Normalizer {
 					+ "If desired please supply additional flag: --forceMissingValues or --forceReplacementOfMissingValues");
 			System.exit(0);
 		}
-
+		
 		if (treatZerosAsNulls) {
 			MatrixHandling.ReplaceNullToZero(rawData);
 		}
-
+		
 		DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
 		fileNamePrefix += ".QuantileNormalized";
 		datasetNormalized.save(fileNamePrefix + ".txt.gz");
-
+		
 		return fileNamePrefix;
 	}
-
+	
 	public String log2transform(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
 		double[][] rawData = dataset.getRawData();
 		Log2Transform.log2transform(rawData);
@@ -288,7 +288,7 @@ public class Normalizer {
 		datasetNormalized.save(fileNamePrefix + ".txt.gz");
 		return fileNamePrefix;
 	}
-
+	
 	public String mValueTransform(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
 		double[][] rawData = dataset.getRawData();
 		ConvertBetaAndMvalues.transformToMvalue(rawData);
@@ -297,7 +297,7 @@ public class Normalizer {
 		datasetNormalized.save(fileNamePrefix + ".txt.gz");
 		return fileNamePrefix;
 	}
-
+	
 	public String centerAndScale(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
 		double[][] rawData = dataset.getRawData();
 		System.out.println("Standardizing probe mean");
@@ -308,11 +308,11 @@ public class Normalizer {
 				rawData[p][s] -= mean;
 			}
 		}
-
+		
 		dataset.setRawData(rawData);
 		fileNamePrefix += ".ProbesCentered";
 		dataset.save(fileNamePrefix + ".txt.gz");
-
+		
 		System.out.println("- Standardizing sample mean and standard deviation");
 		for (int s = 0; s < dataset.colObjects.size(); s++) {
 			double[] vals = new double[dataset.rowObjects.size()];
@@ -329,29 +329,29 @@ public class Normalizer {
 				dataset.getRawData()[p][s] = (vals[p] / stdev);
 			}
 		}
-
+		
 		DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
 		fileNamePrefix += ".SamplesZTransformed";
 		datasetNormalized.save(fileNamePrefix + ".txt.gz");
 		return fileNamePrefix;
 	}
-
+	
 	public String adjustCovariates(DoubleMatrixDataset<String, String> traitData, String fileNamePrefix, String covariatesToRemove, boolean orthogonalizecovariates, double varianceExplainedCutoff) throws IOException {
 		// load covariate data, and remove samples for which there is missing covariate data.
 		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> covariateData = loadCovariateValues(covariatesToRemove, traitData);
 		DoubleMatrixDataset<String, String> covariateDataset = covariateData.getLeft();
 		DoubleMatrixDataset<String, String> traitDataUpdated = covariateData.getRight();
-
+		
 		traitData.rawData = traitDataUpdated.rawData;
 		traitData.colObjects = traitDataUpdated.colObjects;
 		traitData.rowObjects = traitDataUpdated.rowObjects;
 		traitData.recalculateHashMaps();
-
+		
 		double[][] covariateValues = null;
 		double[] pcaExpVar = null;
-
+		
 		System.out.println("Covariate data has " + covariateDataset.nrRows + " rows and " + covariateDataset.nrCols + " columns.");
-
+		
 		for (int p = 0; p < covariateDataset.rowObjects.size(); p++) {
 			double mean = Descriptives.mean(covariateDataset.getRawData()[p]);
 			double stdev = Math.sqrt(Descriptives.variance(covariateDataset.getRawData()[p], mean));
@@ -360,23 +360,23 @@ public class Normalizer {
 				covariateDataset.getRawData()[p][s] /= stdev;
 			}
 		}
-
+		
 		//Covariation on a centered and scaled matrix equals the correlation.
 		//Covariation is faster to compute.
 		ConcurrentCovariation c = new ConcurrentCovariation(2);
 		double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawData());
 		covariateDataset.transposeDataset();
 		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(covariateDataset, correlationMatrix, covariatesToRemove, null);
-
+		
 		// replace covariateValues with orthogonal ones...
 		covariateDataset = PCAResults.getLeft();
-
-
+		
+		
 		covariateDataset.transposeDataset();
 		covariateValues = covariateDataset.getRawData();
-
+		
 		System.out.println(covariateDataset.nrRows + " covariates finally loaded.");
-
+		
 		// load the eigenvalues
 		pcaExpVar = new double[covariateValues.length];
 		System.out.println("Loading eigenvalues from: " + covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz");
@@ -427,8 +427,8 @@ public class Normalizer {
 //                System.out.println("Covariates are orthogonal. Now adjusting for covariates.");
 //            }
 //        }
-
-
+		
+		
 		double[][] rawdata = traitData.getRawData();
 		for (int i = 0; i < covariateValues.length; i++) {
 			if (pcaExpVar == null || pcaExpVar[i] > varianceExplainedCutoff) {
@@ -437,19 +437,18 @@ public class Normalizer {
 				System.out.println("Not regressing covariate: " + i + " because explained variance < " + varianceExplainedCutoff + ": " + pcaExpVar[i]);
 			}
 		}
-
+		
 		traitData.rawData = rawdata;
 		
 		//Why was this done???????
 		//DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawdata, traitData.rowObjects, traitData.colObjects);
 		fileNamePrefix += ".CovariatesRemoved";
 		traitData.save(fileNamePrefix + ".txt.gz");
-
 		
-
+		
 		return fileNamePrefix;
 	}
-
+	
 	/**
 	 * Calculate correlation over columns in DoubleMatrixDataset. WARNING: this
 	 * method assumes that SD == 1 and mean == 0 (which makes the covariance
@@ -461,12 +460,12 @@ public class Normalizer {
 	private double[][] correlateSamples(DoubleMatrixDataset<String, String> dataset) {
 		double[][] correlationMatrix = new double[dataset.colObjects.size()][dataset.colObjects.size()];
 		double probeCountMinusOne = dataset.rowObjects.size() - 1;
-
+		
 		ProgressBar pb = new ProgressBar(dataset.colObjects.size(), "- Calculating correlations: " + dataset.colObjects.size() + " x " + dataset.colObjects.size());
-
+		
 		for (int f = 0; f < dataset.colObjects.size(); f++) {
-
-
+			
+			
 			for (int g = f; g < dataset.colObjects.size(); g++) {
 				double covarianceInterim = 0;
 				for (int p = 0; p < dataset.rowObjects.size(); p++) {
@@ -482,12 +481,12 @@ public class Normalizer {
 		pb.close();
 		return correlationMatrix;
 	}
-
+	
 	public double[][] correlateProbes(DoubleMatrixDataset<String, String> dataset) {
-
+		
 		double[][] correlationMatrix = new double[dataset.rowObjects.size()][dataset.rowObjects.size()];
 		double probeCountMinusOne = dataset.rowObjects.size() - 1;
-
+		
 		ProgressBar pb = new ProgressBar(dataset.rowObjects.size(), "- Calculating correlations: " + dataset.rowObjects.size() + " x " + dataset.rowObjects.size());
 		for (int f = 0; f < dataset.rowObjects.size(); f++) {
 			for (int g = f; g < dataset.rowObjects.size(); g++) {
@@ -505,31 +504,31 @@ public class Normalizer {
 		pb.close();
 		return correlationMatrix;
 	}
-
+	
 	public Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> calculatePCA(DoubleMatrixDataset<String, String> dataset, double[][] correlationMatrix, String fileNamePrefix, Integer nrOfPCsToCalculate) throws IOException {
 		String expressionFile = fileNamePrefix;
 		System.out.println("Calculating PCA over file: " + fileNamePrefix);
 		System.out.println("- Performing PCA over correlation matrix of size: " + correlationMatrix.length + "x" + correlationMatrix.length);
 		Jama.EigenvalueDecomposition eig = PCA.eigenValueDecomposition(correlationMatrix);
-
+		
 		if (nrOfPCsToCalculate == null || nrOfPCsToCalculate > dataset.colObjects.size()) {
 			nrOfPCsToCalculate = dataset.colObjects.size();
 		} else if (nrOfPCsToCalculate < 1) {
 			throw new IllegalArgumentException("Number of PCs to calculate should be at least 1");
 		}
-
+		
 		DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(dataset.colObjects.size(), nrOfPCsToCalculate);
 		datasetEV.rowObjects = dataset.colObjects;
 		double[] eigenValues = eig.getRealEigenvalues();
 		System.out.println("Eigenvalue results:");
-
+		
 		System.out.println("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
-
+		
 		TextFile out = new TextFile(expressionFile + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.W);
 		double cumExpVarPCA = 0;
-
+		
 		out.writeln("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
-
+		
 		for (int pca = 0; pca < nrOfPCsToCalculate; pca++) {
 			double expVarPCA = PCA.getEigenValueVar(eigenValues, pca);
 			double[] pca1ExpEigenVector = PCA.getEigenVector(eig, eigenValues, pca);
@@ -543,13 +542,13 @@ public class Normalizer {
 			System.out.println("PCA:\t" + pcaNr + "\t" + eigenValues[eigenValues.length - 1 - pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA);
 		}
 		out.close();
-
+		
 		datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectors.txt.gz");
-
+		
 		datasetEV.transposeDataset();
-
+		
 		datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
-
+		
 		datasetEV.transposeDataset();
 		System.out.println("Calculating PCs");
 		System.out.println("Initializing PCA matrix");
@@ -563,8 +562,8 @@ public class Normalizer {
 				datasetPCAOverSamplesPCAs.getRawData()[p][t] = 0;
 			}
 		}
-
-
+		
+		
 		ProgressBar pb = new ProgressBar(dataset.rowObjects.size(), "Calculating the PCA scores per probe: ");
 		
 		int nrprobes = dataset.rowObjects.size();
@@ -575,7 +574,7 @@ public class Normalizer {
 		
 		// multithread
 		Integer finalNrOfPCsToCalculate = nrOfPCsToCalculate;
-		IntStream.range(0,nrprobes).parallel().forEach(probe->{
+		IntStream.range(0, nrprobes).parallel().forEach(probe -> {
 //			double[] probePCAs = datasetPCAOverSamplesPCAsrawdata[probe];
 			double[] probedata = datasetrawdata[probe];
 			for (int pc = 0; pc < finalNrOfPCsToCalculate; pc++) {
@@ -586,7 +585,7 @@ public class Normalizer {
 			}
 			pb.iterateSynched();
 		});
-		
+
 //		for (int probe = 0; probe < dataset.rowObjects.size(); probe++) {
 //			for (int sample1 = 0; sample1 < nrOfPCsToCalculate; sample1++) {
 //				for (int sample2 = 0; sample2 < dataset.colObjects.size(); sample2++) {
@@ -597,24 +596,25 @@ public class Normalizer {
 //			pb.iterate();
 //		}
 		pb.close();
-
+		
 		String outfilename = expressionFile + ".PCAOverSamplesPrincipalComponents.txt.gz";
 		System.out.println("Saving PCA scores: " + outfilename);
 		datasetPCAOverSamplesPCAs.save(outfilename);
-
+		
 		return new Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>>(datasetPCAOverSamplesPCAs, datasetEV);
 	}
-
+	
 	public void correctDataForPCs(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput,
 								  DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs, DoubleMatrixDataset<String, String> datasetEV) throws IOException {
 		String expressionFile = fileNamePrefix;
+		
 		System.out.println("\nInitializing residual gene expression matrix");
-
+		
 		if (dataset.colObjects.size() < nrPCAsOverSamplesToRemove) {
 			int remainder = dataset.colObjects.size() % nrIntermediatePCAsOverSamplesToRemoveToOutput;
 			nrPCAsOverSamplesToRemove = dataset.colObjects.size() - remainder;
 		}
-
+		
 		for (int t = 0; t < nrPCAsOverSamplesToRemove; t++) {
 			for (int p = 0; p < dataset.rowObjects.size(); p++) {
 				for (int s = 0; s < dataset.colObjects.size(); s++) {
@@ -626,38 +626,40 @@ public class Normalizer {
 				dataset.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt.gz");
 				System.out.println("Removed\t" + nrPCAs + "\tPCs. File:\t" + expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt.gz");
 			}
-
+			
 		}
 		dataset.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved.txt.gz");
-
 	}
-
-	public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String parentDir, String expressionFile, String nextInExp, String nextInExp2, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
+	
+	public void repeatPCAOmitCertainPCAs(HashSet<Integer> pcasNotToRemove, String parentDir, String expressionFile,
+										 String eigenVectorFile, String pcaFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
+		
 		System.out.println("Will write output to: " + parentDir);
 		String[] files = Gpio.getListOfFiles(parentDir);
 		String startExpressionFileName = expressionFile;
 		File st = new File(startExpressionFileName);
-
+		
 		// strip the parent dir name
 		parentDir += Gpio.getFileSeparator();
 		String minimalFilename = st.getName();
 		String[] expressionFileNameElems = minimalFilename.split("\\.");
 		String eigenvectorFile = null;
 		String principalComponentsFile = null;
-
+		
 		if (minimalFilename.contains("PCAsOverSamplesRemoved")) {
-                    System.out.println("Warning, it seems like this data is already normalized for PCA's over sampels.");
+			System.out.println("Warning, it seems like this data is already normalized for PCA's over samples.");
 		}
-
-                eigenvectorFile = nextInExp;
-                principalComponentsFile = nextInExp2;
-
+		
+		eigenvectorFile = eigenVectorFile;
+		principalComponentsFile = pcaFile;
+		
 		System.out.println("Detected core file name to be: " + minimalFilename);
-
+		
 		DoubleMatrixDataset<String, String> expressionDataset = new DoubleMatrixDataset<String, String>(parentDir + minimalFilename);
 		DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(principalComponentsFile);
 		DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(eigenvectorFile);
-
+		
+		
 		if (expressionDataset.colObjects.size() < nrPCAsOverSamplesToRemove) {
 			int remainder = expressionDataset.colObjects.size() % nrIntermediatePCAsOverSamplesToRemoveToOutput;
 			nrPCAsOverSamplesToRemove = expressionDataset.colObjects.size() - remainder;
@@ -670,16 +672,19 @@ public class Normalizer {
 //        for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
 //            System.arraycopy(expressionDataset.getRawData()[p], 0, datasetResidualExpressionBasedOnPCAOverSamples.getRawData()[p], 0, expressionDataset.colObjects.size());
 //        }
-
+		
 		if (minimalFilename.endsWith(".txt")) {
 			minimalFilename = minimalFilename.substring(0, minimalFilename.length() - 4);
 		} else if (minimalFilename.endsWith(".txt.gz")) {
 			minimalFilename = minimalFilename.substring(0, minimalFilename.length() - 7);
 		}
-
+		
+		System.out.println("Will not remove " + pcasNotToRemove.size() + " PCs");
+		
 		for (int t = 0; t < nrPCAsOverSamplesToRemove; t++) {
 			if (!pcasNotToRemove.contains(t + 1)) {
-
+				System.out.println("Removing pc " + t + " or " + (t + 1));
+				
 				for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
 					for (int s = 0; s < expressionDataset.colObjects.size(); s++) {
 						//datasetResidualExpressionBasedOnPCAOverSamples.rawData[p][s]-= datasetPCAOverSamplesPCAs.rawData[p][t] * datasetEV.rawData[s][t];
@@ -689,34 +694,34 @@ public class Normalizer {
 			} else {
 				System.out.println("Omitting PCA: " + (t + 1) + " since this component is under genetic control");
 			}
-
+			
 			int nrPCAs = t + 1;
-
+			
 			if (nrIntermediatePCAsOverSamplesToRemoveToOutput > 0 && nrPCAs % nrIntermediatePCAsOverSamplesToRemoveToOutput == 0) {
 				//datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAs + "PCAsOverSamplesRemoved.txt");
 				expressionDataset.save(parentDir + minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
 				System.out.println("Removed\t" + nrPCAs + "\tPCs. File:\t" + minimalFilename + "." + nrPCAs + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
 			}
-
+			
 		}
 		//datasetResidualExpressionBasedOnPCAOverSamples.save(expressionFile + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved.txt");
 		expressionDataset.save(parentDir + minimalFilename + "." + nrPCAsOverSamplesToRemove + "PCAsOverSamplesRemoved-GeneticVectorsNotRemoved.txt.gz");
-
+		
 		System.out.println("Done\n");
 	}
-
+	
 	private void correctForCovariate(double[][] rawdata, double[][] covariateValues, int covariateToCorrect) {
 		for (int probe = 0; probe < rawdata.length; probe++) {
 			double[] y = rawdata[probe];
 			double meanY = JSci.maths.ArrayMath.mean(y);
 			double varianceY = JSci.maths.ArrayMath.variance(y);
 			double[] x = covariateValues[covariateToCorrect];
-
-
+			
+			
 			double[] rc = Regression.getLinearRegressionCoefficients(x, y);
 			double correlation = JSci.maths.ArrayMath.correlation(x, y);
 			double propExplainedVarianceTrait = correlation * correlation - 1.0d / (double) y.length;
-
+			
 			if (propExplainedVarianceTrait < 0) {
 				propExplainedVarianceTrait = 0;
 			}
@@ -727,7 +732,7 @@ public class Normalizer {
 				double residual = y[s] - x[s] * rc[0];
 				rawDataUpdated[s] = residual;
 			}
-
+			
 			double meanUpdated = JSci.maths.ArrayMath.mean(rawDataUpdated);
 			double stdDevRatio = JSci.maths.ArrayMath.standardDeviation(rawDataUpdated) / Math.sqrt(varianceY);
 			for (int s = 0; s < x.length; s++) {
@@ -738,14 +743,14 @@ public class Normalizer {
 			System.arraycopy(rawDataUpdated, 0, rawdata[probe], 0, x.length);
 		}
 	}
-
+	
 	// NOTE: this new code switches around columns and rows for the covariate matrix
 	private Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> loadCovariateValues(String covariatesToRemove, DoubleMatrixDataset<String, String> dataset) throws IOException {
 		System.out.println("- Removing covariates as defined in: " + covariatesToRemove);
 		TextFile covariates = new TextFile(covariatesToRemove, TextFile.R);
 		int numRows = covariates.countLines() - 1; // minus the header :)
 		int numCols = covariates.countCols(TextFile.tab) - 1; // minus the header's row identifier (if any)
-
+		
 		if (numRows == 0 || numCols == 0) {
 			System.err.println("Covariate file is empty, but no covariates found in file! Is your file format correct?");
 			System.err.println("The program is expecting the following: tab separated, one covariate per row, one sample per column, with sample identifiers identical to your --in file.");
@@ -753,19 +758,19 @@ public class Normalizer {
 		} else {
 			System.out.println("Covariate file has " + numRows + " rows and " + numCols + " columns");
 		}
-
-
+		
+		
 		// first hash up which samples are in the dataset
 		HashMap<String, Integer> samplesInDatasetIndex = new HashMap<String, Integer>();
 		String[] allSamplesInDataset = dataset.colObjects.toArray(new String[0]);
 		for (int i = 0; i < allSamplesInDataset.length; i++) {
 			samplesInDatasetIndex.put(allSamplesInDataset[i], i);
 		}
-
+		
 		// read the column names from the covariate file
 		// expect the samples on the columns
 		String[] elems = covariates.readLineElemsReturnReference(TextFile.tab); // header
-
+		
 		int ctr = 0;
 		boolean[] sampleInDatasetIncludedInCovariates = new boolean[dataset.colObjects.size()];
 		ArrayList<String> columnNames = new ArrayList<String>();
@@ -777,7 +782,7 @@ public class Normalizer {
 				ctr++;
 			}
 		}
-
+		
 		// read the covariate names, expect them to be on the rows
 		ArrayList<String> rowNames = new ArrayList<String>();
 		elems = covariates.readLineElemsReturnReference(TextFile.tab); // first line
@@ -786,7 +791,7 @@ public class Normalizer {
 			elems = covariates.readLineElemsReturnReference(TextFile.tab);
 		}
 		covariates.close();
-
+		
 		boolean isTransposed = false;
 		if (ctr == 0) {
 			System.err.println("No matching samples detected between covariate file and dataset. Maybe your covariate file needs to be transposed? Will test that for you now:");
@@ -797,27 +802,27 @@ public class Normalizer {
 					ctr++;
 				}
 			}
-
+			
 			if (ctr == 0) {
 				System.err.println("Transposing the data does not seem to resolve the issue. Please check your sample identifiers.");
 				System.exit(0);
 			} else {
 				System.out.println("Transposing the covariate file reveals: " + ctr + " samples present.");
 				isTransposed = true;
-
+				
 			}
-
-
+			
+			
 		}
 
 //        if (dataset.colObjects.size() != numSamples) {
 //            System.out.println("Covariates loaded from: " + covariatesToRemove + ", but the number of samples does not correspond! " + numSamples + " in covariates file, " + dataset.colObjects.size() + " in dataset...");
 //            System.out.println("Please note that missing samples will be removed from your eventual corrected --in file.");
 //        }
-        if(!isTransposed && ctr<=numRows+2 || isTransposed && ctr<=numCols+2){
-            System.err.println("Less samples present than minimaly required for the normalization, (minimaly covariats+3 samples needed).");
-            System.exit(0);
-        }
+		if (!isTransposed && ctr <= numRows + 2 || isTransposed && ctr <= numCols + 2) {
+			System.err.println("Less samples present than minimaly required for the normalization, (minimaly covariats+3 samples needed).");
+			System.exit(0);
+		}
 		if (ctr < dataset.colObjects.size()) {
 			System.err.println("Covariates loaded from: " + covariatesToRemove + ", but not all samples present in covariates file! " + ctr + " present in covariates file, out of " + dataset.colObjects.size() + " in dataset...");
 			System.out.println("Your dataset will be adjusted accordingly.");
@@ -826,7 +831,7 @@ public class Normalizer {
 		if (isTransposed) {
 			nrCovariates = numCols;
 		}
-
+		
 		// make matrix with equal sample size
 		double[][] covariateValues = new double[nrCovariates][dataset.colObjects.size()];
 		for (int row = 0; row < covariateValues.length; row++) {
@@ -834,7 +839,7 @@ public class Normalizer {
 				covariateValues[row][col] = Double.NaN;
 			}
 		}
-
+		
 		int lineCtr = 0;
 		covariates.open();
 		String[] headerElems = covariates.readLineElemsReturnReference(TextFile.tab); // header
@@ -871,7 +876,7 @@ public class Normalizer {
 			lineCtr++;
 		}
 		covariates.close();
-
+		
 		// investigate how many covariates there actually is data for.
 		int covariateCtr = 0;
 		boolean[] includeCovariate = new boolean[covariateValues.length];
@@ -882,7 +887,7 @@ public class Normalizer {
 					nrColsFilled++;
 				}
 			}
-
+			
 			if (nrColsFilled == 0) {
 				// there's no data for this covariate....
 				includeCovariate[row] = false;
@@ -891,21 +896,21 @@ public class Normalizer {
 				covariateCtr++;
 			}
 		}
-
+		
 		if (covariateCtr == 0) {
 			System.err.println("ERROR: none of your covariates seem to have valid numerical values.. Please check your covariate file.");
 			System.exit(0);
 		} else {
 			System.out.println("After removing covariates without data, your dataset will have " + covariateCtr + " covariates (out of: " + covariateValues.length + ") .");
 		}
-
+		
 		ArrayList<String> covariateNames = null;
 		if (isTransposed) {
 			covariateNames = columnNames;
 		} else {
 			covariateNames = rowNames;
 		}
-
+		
 		if (covariateCtr != covariateValues.length) {
 			// remove covariates with missing values
 			System.out.println("Removing covariates that have no data at all.");
@@ -915,10 +920,10 @@ public class Normalizer {
 			for (int row = 0; row < covariateValues.length; row++) {
 				if (includeCovariate[row]) {
 					newCovariateNames.add(covariateNames.get(row));
-
+					
 					for (int col = 0; col < covariateValues[row].length; col++) {
 						newCovariateData[newCovariateCTR][col] = covariateValues[row][col];
-
+						
 						// check whether we should include all samples, but don't remove yet: sync this with the expression/whatever dastaset
 						if (Double.isNaN(covariateValues[row][col])) {
 							sampleInDatasetIncludedInCovariates[col] = false;
@@ -929,8 +934,8 @@ public class Normalizer {
 					System.out.println(covariateNames.get(row) + " removed.");
 				}
 			}
-
-
+			
+			
 			nrCovariates = newCovariateCTR;
 			covariateValues = newCovariateData;
 			covariateNames = newCovariateNames;
@@ -949,33 +954,33 @@ public class Normalizer {
 				}
 			}
 		}
-
+		
 		int sampleCtr = 0;
 		for (int q = 0; q < sampleInDatasetIncludedInCovariates.length; q++) {
 			if (sampleInDatasetIncludedInCovariates[q]) {
 				sampleCtr++;
 			}
 		}
-
+		
 		// remove samples that have a missing value for at least one covariate
 //        if (sampleCtr == sampleInDatasetIncludedInCovariates.length) {
 //            System.out.println("There were no missing values or samples in your covariate file. Sample size will remain unchanged.");
 //            DoubleMatrixDataset<String, String> covariateDataset = new DoubleMatrixDataset<String, String>(covariateValues, dataset.rowObjects, covariateNames);
 //            return new Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>>(covariateDataset, dataset);
 //        } else {
-
+		
 		System.out.println("Your covariate corrected dataset will have " + sampleCtr + " samples, after removing samples with missing covariate values.");
 		double[][] rawData = dataset.getRawData();
 		double[][] newRawData = new double[rawData.length][sampleCtr];
 		double[][] finalCovariateData = new double[nrCovariates][sampleCtr];
 		ArrayList<String> newColObjects = new ArrayList<String>();
-
+		
 		for (int col = 0; col < dataset.colObjects.size(); col++) {
 			if (sampleInDatasetIncludedInCovariates[col]) {
 				newColObjects.add(dataset.colObjects.get(col));
 			}
 		}
-
+		
 		for (int row = 0; row < rawData.length; row++) {
 			int includedSampleCtr = 0;
 			for (int col = 0; col < dataset.colObjects.size(); col++) {
@@ -986,7 +991,7 @@ public class Normalizer {
 				}
 			}
 		}
-
+		
 		for (int row = 0; row < covariateValues.length; row++) {
 			int includedCovariateSampleCtr = 0;
 			for (int col = 0; col < dataset.colObjects.size(); col++) {
@@ -997,7 +1002,7 @@ public class Normalizer {
 				}
 			}
 		}
-
+		
 		DoubleMatrixDataset<String, String> covariateDataset = new DoubleMatrixDataset<String, String>(finalCovariateData, covariateNames, newColObjects);
 		covariateDataset.save(covariatesToRemove + "-asLoadedByNormalizer.txt");
 		DoubleMatrixDataset<String, String> newDataset = new DoubleMatrixDataset<String, String>(newRawData, dataset.rowObjects, newColObjects);
@@ -1005,7 +1010,7 @@ public class Normalizer {
 		return new Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>>(covariateDataset, newDataset);
 //        }
 	}
-
+	
 	private String removeProbesWithZeroVariance(DoubleMatrixDataset<String, String> dataset, String outputFileNamePrefix) throws IOException {
 		boolean[] dataHasZeroVariance = new boolean[dataset.nrRows];
 		int nrRowsWithZeroVariance = 0;
@@ -1018,15 +1023,15 @@ public class Normalizer {
 				dataHasZeroVariance[row] = true;
 			}
 		}
-
+		
 		if (nrRowsWithZeroVariance > 0) {
 			int newNrRows = dataset.nrRows - nrRowsWithZeroVariance;
 			if (newNrRows == 0) {
 				System.err.println("ERROR: all probes have zero variance!");
 				System.exit(-1);
 			}
-
-
+			
+			
 			double[][] newData = new double[newNrRows][dataset.nrCols];
 			int ctr = 0;
 			ArrayList<String> newRowHeader = new ArrayList<String>();
@@ -1037,7 +1042,7 @@ public class Normalizer {
 					ctr++;
 				}
 			}
-
+			
 			dataset.rawData = newData;
 			dataset.rowObjects = newRowHeader;
 			dataset.recalculateHashMaps();
@@ -1045,7 +1050,7 @@ public class Normalizer {
 			dataset.save(outputFileName + ".txt.gz");
 			return outputFileName;
 		}
-
+		
 		return outputFileNamePrefix;
 	}
 }
