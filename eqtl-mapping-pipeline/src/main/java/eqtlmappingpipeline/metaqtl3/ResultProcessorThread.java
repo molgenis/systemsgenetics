@@ -557,12 +557,6 @@ public class ResultProcessorThread extends Thread {
 		}
 	}
 	
-	private void dumpToDisk(int pid, int sid, double pval, double zscore, double[] correlations, double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta, double[] betase, double finalbeta, double finalbetase) {
-		
-		
-	}
-	
-	
 	private void addEQTL(int pid, int sid, double pval, double zscore, double[] correlations,
 						 double[] zscores, int[] numSamples, byte[] alleles, byte assessedAllele, double[] fc, double[] beta,
 						 double[] betase, double finalbeta, double finalbetase) {

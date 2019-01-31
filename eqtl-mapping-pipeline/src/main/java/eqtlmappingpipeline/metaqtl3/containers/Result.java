@@ -12,6 +12,7 @@ public class Result {
     public double[][]  correlations;
     public double[][]  zscores;
     public int[] numSamples;
+    public int[] nrAllelesA;
     public double[] pvalues;
 //    public WorkPackage workpackage;
     public double[] finalZScore;

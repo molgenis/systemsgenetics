@@ -410,8 +410,9 @@ public class ZScores {
 	
 	public static double[] zToBeta(double z, double maf, int n) {
 		double chi = z * z;
-		double beta = z / Math.sqrt(2 * maf * (1 - maf) * (n + chi));
-		double se = 1d / Math.sqrt(2 * maf * (1 - maf) * (n + chi));
+		double a = 2 * maf * (1 - maf) * (n + chi);
+		double beta = z / Math.sqrt(a);
+		double se = 1d / Math.sqrt(a);
 		return new double[]{beta, se};
 	}
 	
