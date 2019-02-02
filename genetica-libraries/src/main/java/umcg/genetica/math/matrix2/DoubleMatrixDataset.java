@@ -192,13 +192,13 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
 		return dataset;
 	}
-	
+
 	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
-		
+
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> rowMap = loadIdentifiers(fileName + ".rows.txt");
 		LinkedHashMap<String, Integer> colMap = loadIdentifiers(fileName + ".cols.txt");
-		
+
 		// determine which rows to include
 		LinkedHashMap<String, Integer> newRowMap = null;
 		HashSet<Integer> requestedRows = null;
@@ -215,7 +215,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		} else {
 			newRowMap = rowMap;
 		}
-		
+
 		// determine which columns to include
 		LinkedHashMap<String, Integer> newColMap = null;
 		HashSet<Integer> requestedCols = null;
@@ -232,8 +232,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		} else {
 			newColMap = colMap;
 		}
-		
-		
+
 		//First load the raw binary data:
 		File fileBinary = new File(fileName + ".dat");
 		BufferedInputStream in;
@@ -245,7 +244,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		nrRows = byteArrayToInt(bytes);
 		in.read(bytes, 0, 4);
 		nrCols = byteArrayToInt(bytes);
-		
+
 		int reqrows = nrRows;
 		int reqcols = nrCols;
 		if (requestedRows != null) {
@@ -254,25 +253,23 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		if (requestedCols != null) {
 			reqcols = requestedCols.size();
 		}
-		
+
 		DoubleMatrix2D matrix;
 		if ((reqrows * (long) reqcols) < (Integer.MAX_VALUE - 2)) {
 			matrix = new DenseDoubleMatrix2D(reqrows, reqcols);
 		} else {
 			matrix = new DenseLargeDoubleMatrix2D(reqrows, reqcols);
 		}
-		
-		
+
 		byte[] buffer = new byte[nrCols * 8];
 		long bits;
-		
+
 		int rctr = -1;
-		
-		
+
 		for (int row = 0; row < nrRows; row++) {
 			in.read(buffer, 0, nrCols * 8);
 			int bufferLoc = 0;
-			
+
 			if (requestedRows == null || requestedRows.contains(row)) {
 				rctr++;
 				int cctr = 0;
@@ -285,26 +282,24 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 							| (long) (0xff & buffer[bufferLoc + 2]) << 40
 							| (long) (0xff & buffer[bufferLoc + 1]) << 48
 							| (long) (buffer[bufferLoc]) << 56;
-					
+
 					if (requestedCols == null || requestedCols.contains(col)) {
 						matrix.setQuick(rctr, cctr, Double.longBitsToDouble(bits));
 						cctr++;
 					}
-					
+
 					bufferLoc += 8;
 				}
 			}
-			
-			
+
 		}
 		in.close();
-		
+
 		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, newRowMap, newColMap);
 		LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, reqrows, reqcols});
-		
+
 		return dataset;
-		
-		
+
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
@@ -934,6 +929,37 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			rowNrs[i] = hashRows.get(row);
 			newHashRows.put(row, i++);
 
+		}
+
+		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
+
+	}
+
+	/**
+	 * Creates a new view to this dataset with a subset of rows.
+	 *
+	 * New order of rows is based on input order.
+	 *
+	 * @param rowsToView
+	 * @return
+	 */
+	public DoubleMatrixDataset<R, C> viewRowSelection(R[] rowsToView) {
+
+		int[] rowNrs = new int[rowsToView.length];
+
+		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.length);
+
+		int i = 0;
+		for (R row : rowsToView) {
+
+			//Null pointer below probabli indicates looking for non existing row
+			rowNrs[i] = hashRows.get(row);
+			newHashRows.put(row, i++);
+
+		}
+		
+		if(rowsToView.length != newHashRows.size()){
+			throw new RuntimeException("Duplicates in rowsToView");
 		}
 
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);

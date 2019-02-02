@@ -23,12 +23,13 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 	}
 
 	@Override
-	public GenotypieCovarianceResult getCovarianceMatrixForRange(String chr, int start, int stop, double maxR) {
+	public GenotypieCorrelationResult getCorrelationMatrixForRange(String chr, int start, int stop, double maxR) {
 
 		final SimpleRegression regression = new SimpleRegression();
 
 		final ArrayList<GeneticVariant> includedVariantsList = new ArrayList<>();
-		
+
+		start = start < 0 ? 0 : start;
 
 		newVariants:
 		for (GeneticVariant newVariant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
@@ -41,7 +42,7 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 					regression.addData(newVariantDosages[i], selectedVariantDosages[i]);
 				}
 
-				//If correlation is tool large stop with current newVariant and move to next variant
+				//If correlation is too large stop with current newVariant and move to next variant
 				if (regression.getR() >= maxR) {
 					continue newVariants;
 				}
@@ -51,7 +52,7 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 		}
 
 		if (includedVariantsList.isEmpty()) {
-			return new GenotypieCovarianceResult(new double[0][0], new String[0]);
+			return new GenotypieCorrelationResult(new double[0][0], new String[0]);
 		} else {
 			
 			final String[] includedVariants = new String[includedVariantsList.size()];
@@ -78,7 +79,7 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 				}
 			}
 
-			return new GenotypieCovarianceResult(cov, includedVariants);
+			return new GenotypieCorrelationResult(cov, includedVariants);
 
 		}
 

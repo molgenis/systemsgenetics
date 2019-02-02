@@ -5,24 +5,22 @@
  */
 package nl.systemsgenetics.depict2;
 
-import gnu.trove.set.hash.TIntHashSet;
-
 /**
  *
  * @author patri
  */
-public class GenotypieCovarianceResult {
+public class GenotypieCorrelationResult {
 	
-	private final double[][] cov;
+	private final double[][] corMatrix;
 	private final String[] includedVariants;
 
-	public GenotypieCovarianceResult(double[][] cov, String[] includedVariants) {
-		this.cov = cov;
+	public GenotypieCorrelationResult(double[][] corMatrix, String[] includedVariants) {
+		this.corMatrix = corMatrix;
 		this.includedVariants = includedVariants;
 	}
 
-	public double[][] getCov() {
-		return cov;
+	public double[][] getCorMatrix() {
+		return corMatrix;
 	}
 
 	public String[] getIncludedVariants() {
