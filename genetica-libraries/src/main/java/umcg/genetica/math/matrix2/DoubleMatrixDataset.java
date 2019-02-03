@@ -597,7 +597,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public ArrayList<R> getRowObjects() {
-		return new ArrayList<R>(hashRows.keySet());
+		return new ArrayList<>(hashRows.keySet());
+	}
+	
+	public LinkedHashMap<C, Integer> getHashColsCopy(){
+		return new LinkedHashMap<>(hashCols);
 	}
 
 	public void setRowObjects(List<R> arrayList) throws Exception {
@@ -1019,8 +1023,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	public int getRowIndex(R gene) {
-		return this.hashRows.get(gene);
+	public int getRowIndex(R row) {
+		return this.hashRows.get(row);
 	}
 
 	public DoubleMatrixDataset<R, C> createRowForceNormalDuplicate() {
