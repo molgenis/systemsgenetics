@@ -20,6 +20,6 @@ public interface GenotypeCovarianceSource {
 	 * @param doubleMaxR max correlation between variants in resulting covariance matrix. Highly correlated variants will be excluded.
 	 * @return 
 	 */
-	public GenotypieCovarianceResult getCovarianceMatrixForRange(String chr, int start, int stop, double doubleMaxR);
+	public GenotypieCorrelationResult getCorrelationMatrixForRange(String chr, int start, int stop, double doubleMaxR);
 	
 }

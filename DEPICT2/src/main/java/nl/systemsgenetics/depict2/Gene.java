@@ -9,14 +9,14 @@ package nl.systemsgenetics.depict2;
  *
  * @author patri
  */
-public class Genes {
+public class Gene {
 	
 	private final String gene;
 	private final String chr;
 	private final int start;
 	private final int stop;
 
-	public Genes(String gene, String chr, int start, int stop) {
+	public Gene(String gene, String chr, int start, int stop) {
 		this.gene = gene;
 		this.chr = chr;
 		this.start = start;
