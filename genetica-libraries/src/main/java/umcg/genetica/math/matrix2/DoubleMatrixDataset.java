@@ -486,6 +486,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			
 		}
 		
+		System.out.println("Done loading eQTL result matrix");
+		
 		return dataset;
 		
 	}

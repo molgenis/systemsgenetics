@@ -81,15 +81,15 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("permutations");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("p"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Number of bases to add left and right of gene window");
 		OptionBuilder.withLongOpt("window");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("w"));
-		
-		OptionBuilder.withArgName("int");
+
+		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Max correlation between variants to use (recommend = 0.95)");
 		OptionBuilder.withLongOpt("variantCorrelation");
@@ -122,14 +122,19 @@ public class Depict2Options {
 		} catch (NumberFormatException e) {
 			throw new ParseException("Error parsing --permutations \"" + commandLine.getOptionValue('p') + "\" is not an int");
 		}
-		
-		
+
 		try {
 			windowExtend = Integer.parseInt(commandLine.getOptionValue('w'));
 		} catch (NumberFormatException e) {
 			throw new ParseException("Error parsing --window \"" + commandLine.getOptionValue('w') + "\" is not an int");
 		}
-		
+
+		try {
+			maxRBetweenVariants = Double.parseDouble(commandLine.getOptionValue('v'));
+		} catch (NumberFormatException e) {
+			throw new ParseException("Error parsing --variantCorrelation \"" + commandLine.getOptionValue('v') + "\" is not an double");
+		}
+
 		outputPath = commandLine.getOptionValue('o');
 		gwasZscoreMatrixFile = new File(commandLine.getOptionValue('g'));
 
@@ -180,15 +185,47 @@ public class Depict2Options {
 			System.out.println(" - Reference genotype data type: " + genotypeType.getName());
 		}
 
-//		System.out.println(" - Eigenvector matrix: " + eigenVectorFile.getPath());
-//		System.out.println(" - Pathway matrix: " + pathwayMatrixFile.getPath());
-//		System.out.println(" - Pathway predictions: " + predictionsFile.getPath());
-//
-//		if (backgroudGenesFile == null) {
-//			System.out.println(" - Not using background genes");
-//		} else {
-//			System.out.println(" - Background gene list: " + backgroudGenesFile.getPath());
-//		}
+		System.out.println(" - Ouput path: " + outputPath);
+		
+		System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixFile.getPath());
+		
+		System.out.println(" - Gene window extend in bases: " + windowExtend);
+		System.out.println(" - Number of permutations: " + numberOfPermutations);
+		System.out.println(" - Max correlation between variants: " + maxRBetweenVariants);
+		System.out.println(" - Number of threads to use: " + numberOfThreadsToUse);
+		
+		
+		System.out.println(" - ");
+		
+		
+	}
+
+	public String[] getGenotypeBasePath() {
+		return genotypeBasePath;
+	}
+
+	public RandomAccessGenotypeDataReaderFormats getGenotypeType() {
+		return genotypeType;
+	}
+
+	public String getOutputPath() {
+		return outputPath;
+	}
+
+	public File getGwasZscoreMatrixFile() {
+		return gwasZscoreMatrixFile;
+	}
+
+	public int getNumberOfPermutations() {
+		return numberOfPermutations;
+	}
+
+	public int getWindowExtend() {
+		return windowExtend;
+	}
+
+	public double getMaxRBetweenVariants() {
+		return maxRBetweenVariants;
 	}
 
 	public static int getNumberOfThreadsToUse() {
