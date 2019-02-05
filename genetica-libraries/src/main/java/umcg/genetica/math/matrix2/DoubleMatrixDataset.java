@@ -449,13 +449,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		String[] nextLine;
 		int nrCols = 0;
 		while ((nextLine = probeReader.readNext()) != null) {
-			colMap.put(nextLine[0], nrCols++);
+			if(colMap.put(nextLine[0], nrCols++) != null){
+				throw new RuntimeException("Duplicate col names not allowed: " + nextLine[0]);
+			}
 		}
 		
 		int nrRows = 0;
 		while ((nextLine = snpReader.readNext()) != null) {
-			rowMap.put(nextLine[0], nrRows++);
+			if(rowMap.put(nextLine[0], nrRows++) != null) {
+				throw new RuntimeException("Duplicate row names not allowed: " + nextLine[0]);
+			}
 		}
+		
+		System.out.println("Number of cols in " + probeFile.getName() + ": " + nrCols);
+		System.out.println("Number of rows in " + snpFile.getName() + ": " + nrRows);
 		
 		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<>(rowMap, colMap);
 		
