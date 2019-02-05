@@ -77,7 +77,7 @@ class WorkPackageProducer extends Thread {
 		// make sure not to load more than 500mb worth of SNP data per block
 		// SNPLoader has it's own buffer of a set number of variants
 		sumaveragesnpsize /= m_SNPLoaders.length;
-		workPackageBufferSize = (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
+		workPackageBufferSize = 1; // 256; // (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
 		
 		
 		if (m_workPackages.length < workPackageBufferSize) {

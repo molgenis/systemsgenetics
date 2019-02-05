@@ -7,20 +7,15 @@ package eqtlmappingpipeline.util;
 import eqtlmappingpipeline.binarymeta.meta.graphics.ZScorePlot;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.BaseAnnot;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * @author harmjan
@@ -157,48 +152,50 @@ public class QTLFileCompare {
 			}
 		}
 		System.out.println("FDR col file 1: " + fdrcol);
+		
 		String[] data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
-		
-		if (data.length < 5) {
-			throw new IllegalStateException("QTL File does not have enough columns. Detected columns: " + data.length + " in file " + in.getFileName());
-		}
-		
-		while (data != null) {
-			if (hashConvertProbeNames.size() > 0) {
-				if (hashConvertProbeNames.containsKey(data[4].trim())) {
-					data[4] = hashConvertProbeNames.get(data[4].trim());
-				}
+		if (data != null) {
+			if (data.length < 5) {
+				throw new IllegalStateException("QTL File does not have enough columns. Detected columns: " + data.length + " in file " + in.getFileName());
 			}
-			if (filterOnFDR == -1 || Double.parseDouble(data[fdrcol]) <= filterOnFDR) {
-				if (hashConfineAnalysisToSubsetOfProbes.isEmpty() || hashConfineAnalysisToSubsetOfProbes.contains(data[4])) {
-					if (matchOnGeneName) {
-						if (data[16].length() > 1) {
-							if (splitGeneNames) {
-								for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
-									if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
-										hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
-										hashUniqueProbes.add(data[4]);
-										hashUniqueGenes.add(gene);
-									}
-									
-								}
-							} else if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
-								hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16], data);
-								hashUniqueProbes.add(data[4]);
-								hashUniqueGenes.add(data[16]);
-								//log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]);
-							}
-							
-						}
-					} else if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[4])) {
-						hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4], data);
-						hashUniqueProbes.add(data[4]);
-						hashUniqueGenes.add(data[16]);
-						//	log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4]);
+			
+			while (data != null) {
+				if (hashConvertProbeNames.size() > 0) {
+					if (hashConvertProbeNames.containsKey(data[4].trim())) {
+						data[4] = hashConvertProbeNames.get(data[4].trim());
 					}
 				}
+				if (filterOnFDR == -1 || Double.parseDouble(data[fdrcol]) <= filterOnFDR) {
+					if (hashConfineAnalysisToSubsetOfProbes.isEmpty() || hashConfineAnalysisToSubsetOfProbes.contains(data[4])) {
+						if (matchOnGeneName) {
+							if (data[16].length() > 1) {
+								if (splitGeneNames) {
+									for (String gene : SEMI_COLON_PATTERN.split(data[16])) {
+										if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
+											hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + gene, data);
+											hashUniqueProbes.add(data[4]);
+											hashUniqueGenes.add(gene);
+										}
+										
+									}
+								} else if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[16])) {
+									hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16], data);
+									hashUniqueProbes.add(data[4]);
+									hashUniqueGenes.add(data[16]);
+									//log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[16]);
+								}
+								
+							}
+						} else if (!hashExcludeEQTLs.contains(data[1] + "\t" + data[4])) {
+							hashEQTLs.put((matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4], data);
+							hashUniqueProbes.add(data[4]);
+							hashUniqueGenes.add(data[16]);
+							//	log.write("Added eQTL from original file " + (matchSnpOnPos ? data[2] + ":" + data[3] : data[1]) + "\t" + data[4]);
+						}
+					}
+				}
+				data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
 			}
-			data = in.readLineElemsReturnReference(SPLIT_ON_TAB);
 		}
 		in.close();
 		
@@ -264,6 +261,7 @@ public class QTLFileCompare {
 		data = null;
 		TextFile identicalOut = new TextFile(outputFile + "-eQTLsWithIdenticalDirecton.txt.gz", TextFile.W);
 		TextFile log = new TextFile(outputFile + "-eQTLComparisonLog.txt", TextFile.W);
+		
 		while ((data = in.readLineElemsReturnReference(SPLIT_ON_TAB)) != null) {
 			
 			if (filterOnFDR == -1 || Double.parseDouble(data[fdrcol]) <= filterOnFDR) {
