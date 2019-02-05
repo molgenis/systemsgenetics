@@ -5,6 +5,8 @@
  */
 package nl.systemsgenetics.depict2;
 
+import org.apache.commons.cli.ParseException;
+
 /**
  *
  * @author patri
@@ -15,7 +17,25 @@ public class Depict2 {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
-		// TODO code application logic here
+		
+		Depict2Options options;
+
+		if (args.length == 0) {
+			Depict2Options.printHelp();
+			return;
+		}
+
+		try {
+			options = new Depict2Options(args);
+		} catch (ParseException ex) {
+			System.err.println("Error parsing commandline: " + ex.getMessage());
+			Depict2Options.printHelp();
+			return;
+		}
+
+		options.printOptions();
+		
+		
 	}
 	
 }
