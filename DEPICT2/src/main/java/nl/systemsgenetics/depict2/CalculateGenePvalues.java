@@ -145,7 +145,7 @@ public class CalculateGenePvalues {
 		final int nrPermutationsPerTask = nrPermutations / nrTasks;
 		final double[] geneChi2SumNull = new double[nrPermutations];
 
-		int nrThreads = Runtime.getRuntime().availableProcessors();
+		int nrThreads = Depict2Options.getNumberOfThreadsToUse();
 		java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
 		CompletionService<DoubleArrayIntegerObject> pool = new ExecutorCompletionService<>(threadPool);
 		for (int taskNr = 0; taskNr < nrTasks; taskNr++) {
