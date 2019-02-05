@@ -187,6 +187,17 @@ public class MetaQTL3 {
 			System.exit(0);
 		}
 		
+		
+		// check whether output makes sense.
+		if (!m_settings.createBinaryOutputFiles && !m_settings.createTEXTOutputFiles) {
+			System.err.println("Error: according to the settings we're neither binary files nor textfiles as output!");
+			System.exit(0);
+		}
+		if (m_settings.createTEXTOutputFiles && m_settings.maxNrMostSignificantEQTLs < 1) {
+			System.out.println("Creating text files, but requested number of eQTLs in settings file is " + m_settings.maxNrMostSignificantEQTLs);
+			System.exit(0);
+		}
+		
 		// initialize dataset
 		if (!m_settings.cisAnalysis && !m_settings.transAnalysis) {
 			System.err.println("! WARNING: defaulting to CIS analysis (override with --trans or --trans and --cis))");
