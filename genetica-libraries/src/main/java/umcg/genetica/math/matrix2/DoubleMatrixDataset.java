@@ -9,10 +9,17 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DoubleStatistic;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +37,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
-import org.apache.mahout.math.Arrays;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -418,6 +424,61 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols);
 
+	}
+	
+	/**
+	 * 
+	 * @param fileName excluding .dat
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException 
+	 */
+	public static DoubleMatrixDataset<String, String> loadTransEqtlExpressionMatrix(String fileName) throws FileNotFoundException, IOException {
+		
+		File matrix = new File(fileName + ".dat");
+		File probeFile = new File(fileName + "-ColNames.txt.gz");
+		File snpFile = new File(fileName + "-RowNames.txt.gz");
+		
+		LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<>();
+		LinkedHashMap<String, Integer> colMap = new LinkedHashMap<>();
+		
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader probeReader = new CSVReaderBuilder(new BufferedReader(new FileReader(probeFile))).withSkipLines(0).withCSVParser(parser).build();
+		final CSVReader snpReader = new CSVReaderBuilder(new BufferedReader(new FileReader(snpFile))).withSkipLines(1).withCSVParser(parser).build();
+		
+		String[] nextLine;
+		int nrCols = 0;
+		while ((nextLine = probeReader.readNext()) != null) {
+			colMap.put(nextLine[0], nrCols++);
+		}
+		
+		int nrRows = 0;
+		while ((nextLine = snpReader.readNext()) != null) {
+			rowMap.put(nextLine[0], nrRows++);
+		}
+		
+		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<>(rowMap, colMap);
+		
+		DataInputStream dis = new DataInputStream(new FileInputStream(matrix));
+		int magicNumber = dis.readInt();
+		if(magicNumber == 1){
+			throw new RuntimeException("Cannot read cis matrix");
+		} else if(magicNumber > 1){
+			throw new RuntimeException("Invalid magic number");
+		}
+		
+		for(int r = 0 ; r < nrRows ; ++r){
+			
+			for(int c = 0 ; c < nrCols ; ++c){
+				
+				dataset.setElementQuick(r, c, dis.readFloat());
+				
+			}
+			
+		}
+		
+		return dataset;
+		
 	}
 
 	private static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
