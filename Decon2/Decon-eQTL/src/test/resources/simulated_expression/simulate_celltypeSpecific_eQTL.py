@@ -4,13 +4,13 @@ import random
 import sys
 import os
 import scipy.stats
-
+import collections
+import logging 
 
 parser = argparse.ArgumentParser(description='Simulate gene expression levels using expression ~ cc1 + cc2 + snp:cc1 + snp:cc2')
 parser.add_argument('cellcount_file', help='file containing cell counts')
 parser.add_argument('genotype_file', help='file containing genotypes')
 parser.add_argument('out_dir', help='output directory to write the simulated data to')
-parser.add_argument('number_of_samples', help='Number of samples to simulate', type=int)
 parser.add_argument('number_of_snps', help='Number of snps to simulate', type=int)
 parser.add_argument('batch', help='Name of the batch')
 
@@ -27,159 +27,315 @@ if not os.path.exists(args.out_dir+'/expression/'):
 if not os.path.exists(args.out_dir+'/snpsToTest/'):
     os.makedirs(args.out_dir+'/snpsToTest/')
 
+format = '%(asctime)s - %(levelname)s - %(funcName)s\t- %(message)s'
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format=format, datefmt="%Y-%m-%d %H:%M")
 
-def get_random_betas(n_betas):
-    # get random nominal significant betas
-    betas_significant = []
-    x = 0.1
-    for i in range(0, n_betas):
-        if i % 2 == 0:
-            x *= 10
-        pval = random.uniform(0, 0.05/x)
-        beta = scipy.stats.norm.ppf(1-pval/2)
-        betas_significant.append(beta)
-    # get random non-significant betas
-    betas_not_significant = []
-    for i in range(0, n_betas):
-        pval = random.uniform(0.05, 1)
-        beta = scipy.stats.norm.ppf(1-pval/2)
-        betas_not_significant.append(beta)
-    
-    mix = betas_not_significant+betas_significant
-    random.shuffle(mix)
-    return({'significant':betas_significant,
-            'non_significant':betas_not_significant,
-            'mix':mix})
-
-# Use actual (or Decon-Cell predicted) cell counts to simulate the expression levels. Parse the file
-# File should be in format of
-#          CC1    CC2
-# sample1  75     14
-# sample2  84     4
-def simulate_expression(number_of_samples, number_of_snps, batch):
-      
-    cellcount_names = []
-    samples = []
-    cellcount_per_sample = {}
-    with open(args.cellcount_file) as input_file:
-        cellcount_names = input_file.readline().strip().split('\t')
+class Expression_simulator():
+    '''Simulate expression from multiple cell types using real cell count and genotype data'''
+    def __init__(self, genotype_file, out_dir, number_of_snps, batch):
+        self.number_of_snps = number_of_snps
+        self.batch_name = 'batch'+str(batch)
+        self.genotype_file = genotype_file
+        self.samples = []
+        self.out_dir = out_dir
+        self.cellcount_per_sample = {}
+        self.cellcount_names = None
+        self.number_of_celltypes = None
+        self.cc_beta_per_type = {'all_positive':{}, 'all_negative':{}}
+        self.cc_gt_beta_per_type = {'all_positive':{}, 'all_negative':{}}
+        self.error = {}
+        self.error_size = [1,5,10,20,40,80,160,250,1000]
+        self.beta_types = ['all_positive', 'all_negative','mixed','some_same']
+        # want to keep the order of SNPs the same, so use ordered dict
+        self.genotypes = collections.OrderedDict()
         
-        for line in input_file:
-            line = line.strip().split('\t')
-            samples.append(line[0])
-            cellcount_per_sample[line[0]] = line[1:]
-
-    sample_info = {}    
-    samples_tmp = list(samples)
-
-    random.shuffle(samples_tmp)
-    random_selected_samples_list = samples_tmp[:number_of_samples]
-    random_selected_samples_set = set(random_selected_samples_list)
-    batch_name = 'batch'+str(batch)+'.'+str(number_of_samples)
-    
-    # opening outfiles
-    out_beta_info = open(args.out_dir+'/betas/beta_info_cc'+batch_name+'samples.txt','w')
-    out_genotype = open(args.out_dir+'/genotypes/genotypes_'+batch_name+'samples.txt','w')
-    out_cellcount = open(args.out_dir+'/cellcounts/cellcounts_'+batch_name+'samples.txt','w')
-    out_simulatedExpression =  open(args.out_dir+'/expression/simulated_expression_'+batch_name+'samples.txt','w')
-    out_snpToTest = open(args.out_dir+'snpsToTest/snpsToTest_'+batch_name+'.txt','w') 
+        
+        # read the genotype and cell count files 
+        self.__read_cellcount_data()
+        self.__read_genotype_data()
+        self.__make_betas()
+        self.__make_errors()
+        self.__simulate_expression()
+        self.__write_betas()
+        self.__write_cellcounts()
+        self.__write_genotypes()
+        self.__write_snps_to_test()
+        
+    def __read_cellcount_data(self):
+        '''Read the cellcount data'''
+        logging.info('Read cell count data')
+        cellcount_names = []
+        with open(args.cellcount_file) as input_file:
+            self.cellcount_names = input_file.readline().strip().split('\t')
+            for line in input_file:
+                line = line.strip().split('\t')
+                self.samples.append(line[0])
+                self.cellcount_per_sample[line[0]] = [float(x) for x in line[1:]]
+                self.number_of_celltypes = len(line[1:])
+                
+    def __read_genotype_data(self):
+        '''Read the genotype data'''
+        logging.info('Read genotype data')
+        with open(self.genotype_file) as input_file:
+            genotype_header = input_file.readline().strip().split('\t')
+            # Check that the samples from the genotype file are the same as the samples in the cell counts file
+            if not genotype_header == self.samples:
+                for index, sample in enumerate(genotype_header):
+                    if self.samples[index] != sample:
+                        logging.info(index, self.samples[index], sample)
+                raise RuntimeError("header and samples not same order")
             
-    out_beta_info.write('gene\tsnp')
-    for cc in cellcount_names:
-        out_beta_info.write('\t'+cc+'_beta\t'+cc+':GT_beta')
-        out_cellcount.write('\t'+cc)
-    out_beta_info.write('\terror\n')
-    out_cellcount.write('\n')
+            # Read in all lines after header so that SNPs can be shuffled and sub sampled 
+            lines = input_file.read().rstrip().split('\n')
+            random.shuffle(lines)
             
-               #sample_info[batch_name] = [random_selected_samples_list, random_selected_samples_set,
-        #                                         out_beta_info, out_genotype, out_cellcount, out_simulatedExpression]     
-    with open(args.genotype_file) as input_file:
-        # read in all lines of the file so that it can be closed after
-        genotype_lines = input_file.read().split('\n')
-        genotype_header = genotype_lines[0].strip().split('\t')
-        if not genotype_header == samples:
-            for index, sample in enumerate(genotype_header):
-                print(samples[index], sample)
-            raise RuntimeError("header and samples not same order")
-    for sample in random_selected_samples_list:
-        cellcounts = cellcount_per_sample[sample]
-        out_cellcount.write(sample)
-        for cellcount in cellcounts:
-            out_cellcount.write('\t'+cellcount)
-        out_cellcount.write('\n')
+            for line in lines[:self.number_of_snps]:
+                # would be faster to now also write the genotypes and do the expression simulation
+                # but want to keep these separate for readability. 
+                line = line.strip().split('\t')
+                # self.genotypes is an ordered dict, so the order of SNPs is preserved and can be used later
+                self.genotypes[line[0]] = line[1:]
+            
+    def __write_betas(self):
+        outfile = self.out_dir+'/betas/betas_'+self.batch_name+'.txt'
+        with open(outfile,'w') as out:
+            out.write('gene\tsnp')
+            for cc in self.cellcount_names:
+                out.write('\t'+cc+'_beta\t'+cc+':GT_beta')
+            out.write('\terror\tbeta_type\terror_sigma\n')
+            
+            for beta_type in self.beta_types:
+                for sigma in self.error_size:
+                    for index, snp in enumerate(self.genotypes):
+                        gene = 'gene_'+str(index)+'_'+beta_type+'_'+str(sigma)
+                        out.write(gene+'\t'+snp)
+                        for cc_index in range(0, self.number_of_celltypes):
+                            out.write('\t'+str(self.cc_beta_per_type[beta_type][snp][cc_index])+'\t'+str(self.cc_gt_beta_per_type[beta_type][snp][cc_index]))
+                        out.write('\t'+str(self.error[sigma][snp])+'\t'+beta_type+'\t'+str(sigma)+'\n')
+   
+        logging.info('Betas written to '+outfile)
+                            
+    def __write_cellcounts(self):
+        outfile = self.out_dir+'/cellcounts/cellcounts_'+self.batch_name+'.txt'
+        with open(outfile,'w') as out:
+            for cc in self.cellcount_names:
+                out.write('\t'+str(cc))
+            out.write('\n')
+            for sample in self.samples:
+                out.write(sample)
+                for i in range(0, self.number_of_celltypes):
+                    out.write('\t'+str(self.cellcount_per_sample[sample][i]))
+                out.write('\n')
 
-    out_simulatedExpression.write('\t'+'\t'.join(random_selected_samples_list)+'\n')
-    out_genotype.write('\t'+'\t'.join(random_selected_samples_list)+'\n')
+        logging.info('Cellcounts written to '+outfile)
 
-    mu, sigma = 0, 4
-    print('simulate betas')
-    error = np.random.normal(0,1, len(genotype_lines[1:])+2)
+    def __write_snps_to_test(self):
+        outfile = self.out_dir+'snpsToTest/snpsToTest_'+self.batch_name+'.txt'
+        with open(outfile,'w') as out:
+            out.write('gene\tsnp\n')
+
+            for beta_type in self.beta_types:
+                for error_type in self.error_size:
+                    for index, snp in enumerate(self.genotypes):
+                        gene = 'gene_'+str(index)+'_'+beta_type+'_'+str(error_type)
+                        # Since gene just gets simulated and we use the same order of SNPs, gene name can just be the index
+                        out.write(gene+'\t'+snp+'\n')
+        logging.info('Snps to test written to '+outfile)
+        
+    def __write_genotypes(self):
+        outfile = self.out_dir+'/genotypes/genotypes_'+self.batch_name+'.txt'
+        with open(outfile,'w') as out:
+            out.write('\t'+'\t'.join(self.samples)+'\n')
+
+            # since genotypes is an ordered dict we can just loop over keys
+            for snp in self.genotypes:
+                out.write(snp)
+                # When reading in genotype file we check that the samples are in the same order as
+                # the samples in the cell counts file, so can just write out now
+                for dosage in self.genotypes[snp]:
+                    out.write('\t'+dosage)
+                out.write('\n')
+        logging.info('Genotypes written to '+outfile)
+
+    def __make_errors(self):
+        mu = 0
+        for sigma in self.error_size:
+            error = np.random.normal(mu, sigma, self.number_of_snps)
+            self.error[sigma] = {}
+            for index, snp in enumerate(self.genotypes):
+                self.error[sigma][snp] = error[index]
+
+    def __gaussian_betas(self, mu, sigma):
+        '''Simulate betas where all betas follow the same distribution (but for cc betas always positive)'''
+        number_of_betas_to_simulate = self.number_of_celltypes*self.number_of_snps        
+        # simulate as many betas in one go as it is faster
+        cc_betas = np.random.normal(abs(mu), sigma, number_of_betas_to_simulate)
+        cc_betas = [abs(x) for x in cc_betas]
+        cc_gt_betas = np.random.normal(mu, sigma, number_of_betas_to_simulate)
+        
+        cc_beta = {}
+        cc_gt_beta = {}
+        
+        # then to make it more understandable and to test that correct values got simulated
+        # separate them for different cell types
+        for index, snp in enumerate(self.genotypes):
+            # Every n_cell type window of the beta list is for one sample, e.g. with 3 cell types:
+            # beta = [  3, 4, 4,    3, 4, 3,    2, 4, 5]
+            #         --sample1-- --sample2-- --sample3--
+            # So calculate the index using the sample index and the number of cell types
+            start_index = index * self.number_of_celltypes
+            end_index = start_index + self.number_of_celltypes
+            cc_beta[snp] = cc_betas[start_index:end_index]
+            cc_gt_beta[snp] = cc_gt_betas[start_index:end_index]
+            
+            for beta_index, cc_beta_value in enumerate(cc_beta[snp]):
+                # make sure that for B1*cc + B2*cc*gt -> B1 + (2*B2) >= 0
+                combined_betas = cc_beta[snp][beta_index] + (2*cc_gt_beta[snp][beta_index])
+                x = 0
+                while combined_betas < 0:
+                    x+=1
+                    if x == 20:
+                        exit()
+                    cc_beta[snp][beta_index] = cc_beta[snp][beta_index]*2
+                    combined_betas = cc_beta[snp][beta_index] + (2*cc_gt_beta[snp][beta_index])     
+        return(cc_beta, cc_gt_beta)
+    
+    def __same_betas(self, mu, sigma):
+        '''Simulate betas where all betas follow the same distribution (but for cc betas always positive)'''
+        number_of_betas_to_simulate = self.number_of_celltypes*self.number_of_snps        
+        # simulate as many betas in one go as it is faster. Copy some of the betas so that some cell types get the same gt beta
+        cc_betas = np.random.normal(abs(mu), sigma, number_of_betas_to_simulate)
+        cc_betas = [abs(x) for x in cc_betas]
+        cc_gt_betas = np.random.normal(mu, sigma, number_of_betas_to_simulate)        
+        
+        cc_beta = {}
+        cc_gt_beta = {}
+        
+        # then to make it more understandable and to test that correct values got simulated
+        # separate them for different cell types
+        for index, snp in enumerate(self.genotypes):
+            # Every n_cell type window of the beta list is for one sample, e.g. with 3 cell types:
+            # beta = [  3, 4, 4,    3, 4, 3,    2, 4, 5]
+            #         --sample1-- --sample2-- --sample3--
+            # So calculate the index using the sample index and the number of cell types
+            start_index = index * self.number_of_celltypes
+            end_index = start_index + self.number_of_celltypes
+            
+            # make 2 cell types have the same beta by select random index of value to change and one to change it with
+            # this makes it so that e.g. the gt beta of cell type 1 is same as cell type 4 (randomly selected) 
+            to_change = random.randint(start_index, end_index)
+            change_with = random.randint(start_index, end_index)
+            while to_change == change_with:
+                change_with = random.randint(start_index, end_index)
+            cc_gt_betas[to_change] = cc_gt_betas[change_with]
+            
+
+            cc_beta[snp] = cc_betas[start_index:end_index]
+            cc_gt_beta[snp] = cc_gt_betas[start_index:end_index]
+            print(cc_gt_beta[snp])
+            for beta_index, cc_beta_value in enumerate(cc_beta[snp]):
+                # make sure that for B1*cc + B2*cc*gt -> B1 + (2*B2) >= 0
+                combined_betas = cc_beta[snp][beta_index] + (2*cc_gt_beta[snp][beta_index])
+                while combined_betas < 0:
+                    cc_beta[snp][beta_index] = cc_beta[snp][beta_index]*2
+                    combined_betas = cc_beta[snp][beta_index] + (2*cc_gt_beta[snp][beta_index])     
+        return(cc_beta, cc_gt_beta)
     
     
-
-    out_snpToTest.write('gene\tsnp\n')
-    # use random genotypes
+           
+    def __make_betas(self):
+        '''Get betas for all the different situations. 
+        Want to simulate different combinations of betas because some cell counts can be correlated to each other, which
+        can have different effects on beta prediciton based on which combination of cc have the same effect
+        Per cell type there are 2 betas to simulate: the cc:gt interaction term beta and the cc term beta. For these
+            beta terms there is the restriction that beta*cc:gt + 2*beta*cc >= 0
+        
+        We want to simulate:
+            1. All betas strong positive
+            2. All interaction term betas strong negative and cc term beta strong positive
+                                                           (note: simualted betas direction towards the allele that is
+                                                           coded as 2. cc term betas can not be negative as there is
+                                                           no direction, and contribution should be positive)
+                                                           Also, cc term need to be strong positive to fulfill 
+                                                           (2*interaction beta + cc beta) >= 0 
+            3. mix of effects positive and negative effects
+            4. same effects
+            Each of these want to do with different range of errors'''
+        logging.info('simulate betas')
+        number_of_samples = len(self.samples)
+        # 1. all betas postive. 
+        cc_beta, cc_gt_beta = self.__gaussian_betas(15, 5)
+        self.cc_beta_per_type['all_positive'] = cc_beta
+        self.cc_gt_beta_per_type['all_positive'] = cc_gt_beta
+        # 2. all cc_gt betas negative
+        cc_beta, cc_gt_beta = self.__gaussian_betas(-15, 5)
+        self.cc_beta_per_type['all_negative'] = cc_beta
+        self.cc_gt_beta_per_type['all_negative'] = cc_gt_beta
+        # 3. Mix of effects
+        cc_beta, cc_gt_beta = self.__gaussian_betas(0, 20)
+        self.cc_beta_per_type['mixed'] = cc_beta
+        self.cc_gt_beta_per_type['mixed'] = cc_gt_beta        
+        # 4. Same effects, make sure the effects are the same for some cell types
+        cc_beta, cc_gt_beta = self.__same_betas(0, 20)
+        self.cc_beta_per_type['some_same'] = cc_beta
+        self.cc_gt_beta_per_type['some_same'] = cc_gt_beta        
     
-    genotype_lines = genotype_lines[1:number_of_snps]
-    for index, line in enumerate(genotype_lines):
-        if index % 100 == 0:
-            print('processed',index,'lines')
-            sys.stdout.flush()
-        line = line.strip().split('\t')
-        snp = line[0]
-        if len(snp.strip()) == 0:
-            continue
-        out_snpToTest.write('gene_'+str(index)+'\t'+snp+'\n')
+    # Use actual (or Decon-Cell predicted) cell counts to simulate the expression levels. Parse the file
+    # File should be in format of
+    #          CC1    CC2
+    # sample1  75     14
+    # sample2  84     4
+    def __simulate_expression(self):
+        '''Simulate expression by summing over the simulated expression per cell type + error'''
+        outfile = self.out_dir+'/expression/simulated_expression_'+self.batch_name+'.txt'
+        with open(outfile,'w') as out:
+            out.write('\t'+'\t'.join(self.samples)+'\n')
 
-        out_simulatedExpression.write('gene_'+str(index))
-        out_genotype.write(snp)
-        out_beta_info.write('gene_'+str(index)+'\t'+snp)
-        
-        # get random betas
-        betas = get_random_betas(len(cellcounts))
-        current_cc_betas = betas['mix']
-        random.shuffle(current_cc_betas)
-        current_cc_gt_betas = betas['mix']
-        random.shuffle(current_cc_gt_betas)
-        #current_cc_gt_betas[-1] = random.choice(betas['significant'])
-        
-        #  for the cc*gt term, make sure that all betas have same direction, 50% all negative or all positive
-        if random.randint(1,2) == 1:
-            current_cc_gt_betas = [-1*x for x in current_cc_gt_betas]
-            
-        for cc_index, cellcount_name in enumerate(cellcount_names):
-            out_beta_info.write('\t'+str(current_cc_betas[cc_index])+'\t'+str(current_cc_gt_betas[cc_index]))
-        
-        error_index =  random.randint(0,len(genotype_lines[1:])+2)
-        out_beta_info.write('\t'+str(error[error_index])+'\n')
-        
-        for sample in random_selected_samples_list:
-            sample_index = samples.index(sample)+1
-            
-            dosage = float(line[sample_index])
-            cellcounts = cellcount_per_sample[sample]
-            out_genotype.write('\t'+str(dosage))
-            # Expression will be made with expression = cc1 + cc2 + snp:cc1 + snp:cc2 + error
-            # so start with 0
-            expression = 0
-            # then add cc and cc*snp. for cc*snp can add the beta
-            for cc_index, cellcount in enumerate(cellcounts):
-                cc_contribution = current_cc_betas[cc_index] * float(cellcount)
-                expression += cc_contribution
-                cc_snp_contribution = current_cc_gt_betas[cc_index] * float(cellcount) * float(dosage)
-                expression += cc_snp_contribution
-            out_simulatedExpression.write('\t'+str(expression+error[error_index]))
-            #out_simulatedExpression.write('\t'+str(expression+0))
+            for beta_type in self.beta_types:
+                logging.info('simulating for beta type '+beta_type)
+                for error_type in self.error_size:
+                    for index, snp in enumerate(self.genotypes):
+                        out.write('gene_'+str(index)+'_'+beta_type+'_'+str(error_type))
+                    
+                        # When reading the genotype and cell count data we checked that the header is in same order, so an just use the index
+                        for sample_index, sample in enumerate(self.samples):
+                            dosage = self.genotypes[snp][sample_index]
 
-        out_simulatedExpression.write('\n')
-        out_genotype.write('\n')
-            
-    print('output written to '+args.out_dir+'/')
+                            cellcounts = self.cellcount_per_sample[sample]
+                            # Expression will be made with expression = cc1 + cc2 + snp:cc1 + snp:cc2 + error
+                            # so start with 0
+                            expression = 0
+                            # then add cc and cc*snp. for cc*snp can add the beta
+                            for cc_index, cellcount in enumerate(cellcounts):
+                                cc_contribution = self.cc_beta_per_type[beta_type][snp][cc_index] * float(cellcount)
+                                expression += cc_contribution
+                                cc_snp_contribution = self.cc_gt_beta_per_type[beta_type][snp][cc_index] * float(cellcount) * float(dosage)
+                                expression += cc_snp_contribution
+                                if cc_contribution+cc_snp_contribution < 0:
+                                    logging.info('beta, errror type: '+beta_type+', '+str(error_type))
+                                    logging.info('snp: '+snp)
+                                    logging.info('cc_index: '+str(cc_index))
+                                    logging.info('cellcount: '+str(cellcount))
+                                    logging.info('cc_beta: '+str(self.cc_beta_per_type[beta_type][snp][cc_index]))
+                                    logging.info('cc_gt_beta: '+str(self.cc_gt_beta_per_type[beta_type][snp][cc_index]))
+                                    logging.info('cc_contribution: '+str(cc_contribution))
+                                    logging.info('cc_snp_contribution: '+str(cc_snp_contribution))                                               
+                                    raise RuntimeError('cc contribution should never be < 0')
+                            
+                            
+                            if expression < 0:
+                                raise RuntimeError('Expression should never be lower than 0')
+                            if expression+self.error[error_type][snp] < 0:
+                                # since expression should never be 0, if with the error it is lower than zero flip the sign of the error
+                                # Will give a bias in errors towards positive errors so possibly has to be done differently
+                                self.error[error_type][snp] = abs(self.error[error_type][snp])
+                            out.write('\t'+str(expression+self.error[error_type][snp]))
+                        out.write('\n')
+        logging.info('Simulated expression written to '+outfile)
+               
+    
 
-    out_beta_info.close()
-    out_genotype.close()
-    out_cellcount.close()
-    out_simulatedExpression.close()
-    out_snpToTest.close()
-        
-simulate_expression(args.number_of_samples,args.number_of_snps, args.batch)
+
+if __name__ == '__main__':
+    expression_simulator = Expression_simulator(args.genotype_file, args.out_dir, args.number_of_snps, args.batch)
