@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
@@ -443,8 +445,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LinkedHashMap<String, Integer> colMap = new LinkedHashMap<>();
 		
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader probeReader = new CSVReaderBuilder(new BufferedReader(new FileReader(probeFile))).withSkipLines(0).withCSVParser(parser).build();
-		final CSVReader snpReader = new CSVReaderBuilder(new BufferedReader(new FileReader(snpFile))).withSkipLines(1).withCSVParser(parser).build();
+		final CSVReader probeReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(probeFile))))).withSkipLines(0).withCSVParser(parser).build();
+		final CSVReader snpReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(snpFile))))).withSkipLines(1).withCSVParser(parser).build();
 		
 		String[] nextLine;
 		int nrCols = 0;
