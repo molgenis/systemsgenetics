@@ -39,7 +39,7 @@ public class Depict2 {
 	 * @param args the command line arguments
 	 * @throws java.lang.InterruptedException
 	 */
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException, IOException {
 
 		System.out.println(HEADER);
 		System.out.println();
@@ -72,7 +72,7 @@ public class Depict2 {
 
 		options.printOptions();
 		
-		readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath()))
+		readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows"));
 
 		if (options.getOutputFile().getParentFile() != null && !options.getOutputFile().getParentFile().isDirectory()) {
 			if (!options.getOutputFile().getParentFile().mkdirs()) {

@@ -295,7 +295,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		}
 		in.close();
-		return null;
+		return new DoubleMatrixDataset<>(matrix, rowMap, colMap);
 
 	}
 
@@ -306,7 +306,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @param desiredCols
 	 * @return
 	 * @throws IOException
-	 * @deprecated untested
+	 * @deprecated Untested. For now use loadSubsetOfRowsBinaryDoubleData and then do viewColSelection. That option will keep all cols in memory
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
 
@@ -622,6 +622,14 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> rowMap = loadIdentifiers(fileName + ".rows.txt");
 		LinkedHashMap<String, Integer> colMap = loadIdentifiers(fileName + ".cols.txt");
+		
+		if(nrRows != rowMap.size()){
+			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows");
+		}
+		
+		if(nrCols != colMap.size()){
+			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols");
+		}
 
 		byte[] buffer = new byte[nrCols * 8];
 		long bits;
