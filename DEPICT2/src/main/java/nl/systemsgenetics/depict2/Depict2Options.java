@@ -27,8 +27,8 @@ public class Depict2Options {
 
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
-	private final String outputPath;
-	private final File gwasZscoreMatrixFile;
+	private final File outputFile;
+	private final String gwasZscoreMatrixPath;
 	private final int numberOfPermutations;
 	private final int windowExtend;
 	private final double maxRBetweenVariants;
@@ -39,7 +39,7 @@ public class Depict2Options {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("GWAS Z-sccore matrix. Rows variants, Cols phenotypes");
+		OptionBuilder.withDescription("GWAS Z-sccore binary matrix. Rows variants, Cols phenotypes. Without .dat");
 		OptionBuilder.withLongOpt("gwas");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("g"));
@@ -135,8 +135,8 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --variantCorrelation \"" + commandLine.getOptionValue('v') + "\" is not an double");
 		}
 
-		outputPath = commandLine.getOptionValue('o');
-		gwasZscoreMatrixFile = new File(commandLine.getOptionValue('g'));
+		outputFile = new File(commandLine.getOptionValue('o'));
+		gwasZscoreMatrixPath = commandLine.getOptionValue('g');
 
 		if (commandLine.hasOption('r')) {
 
@@ -185,9 +185,9 @@ public class Depict2Options {
 			System.out.println(" - Reference genotype data type: " + genotypeType.getName());
 		}
 
-		System.out.println(" - Ouput path: " + outputPath);
+		System.out.println(" - Ouput path: " + outputFile.getPath());
 		
-		System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixFile.getPath());
+		System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixPath);
 		
 		System.out.println(" - Gene window extend in bases: " + windowExtend);
 		System.out.println(" - Number of permutations: " + numberOfPermutations);
@@ -208,12 +208,12 @@ public class Depict2Options {
 		return genotypeType;
 	}
 
-	public String getOutputPath() {
-		return outputPath;
+	public File getOutputFile() {
+		return outputFile;
 	}
 
-	public File getGwasZscoreMatrixFile() {
-		return gwasZscoreMatrixFile;
+	public String getGwasZscoreMatrixPath() {
+		return gwasZscoreMatrixPath;
 	}
 
 	public int getNumberOfPermutations() {

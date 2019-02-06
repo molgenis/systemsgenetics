@@ -26,8 +26,9 @@ public class CalculateGenePvalues {
 
 	/**
 	 *
-	 * @param variantPhenotypeZscoreMatrix rows: variants, cols: phenotypes.
-	 * Variants must have IDs identical to genotypeCovarianceSource
+	 * @param variantPhenotypeZscoreMatrixFile Binary matrix. rows: variants,
+	 * cols: phenotypes. Variants must have IDs identical to
+	 * genotypeCovarianceSource
 	 * @param genotypeCorrelationSource Source data used to calculate
 	 * correlations between SNPs
 	 * @param genes genes for which to calculate p-values.
@@ -38,17 +39,23 @@ public class CalculateGenePvalues {
 	 * as genes parameter, cols: phenotypes
 	 */
 	public static DoubleMatrixDataset<String, String> calculatorGenePvalues(
-			final DoubleMatrixDataset<String, String> variantPhenotypeZscoreMatrix,
+			final String variantPhenotypeZscoreMatrixPath,
 			final GenotypeCovarianceSource genotypeCorrelationSource,
 			final ArrayList<Gene> genes,
 			final int windowExtend,
 			final double maxR,
 			final int nrPermutations) {
 
+		
+		
+		
+		
+		
 		//Result matrix. Rows: genes, Cols: phenotypes
 		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), variantPhenotypeZscoreMatrix.getHashColsCopy());
 		final int numberPheno = variantPhenotypeZscoreMatrix.columns();
-		final int numberGenes = variantPhenotypeZscoreMatrix.rows();
+		final int numberGenes = genes.size();
+		
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
 
@@ -85,14 +92,14 @@ public class CalculateGenePvalues {
 						}
 					}
 					p /= (double) nrPermutations + 1;
-					
+
 					if (p == 1) {
 						p = 0.99999d;
 					}
 					if (p < 1e-300d) {
 						p = 1e-300d;
 					}
-					
+
 					genePValueDistribution[(int) (20d * p)]++;
 					genePvalues.setElementQuick(geneI, phenoI, p);
 
@@ -122,11 +129,11 @@ public class CalculateGenePvalues {
 
 		System.out.println("-----------------------");
 		System.out.println("Gene p-value histrogram");
-		for(double histCount : genePValueDistribution){
+		for (double histCount : genePValueDistribution) {
 			System.out.println(histCount);
 		}
 		System.out.println("-----------------------");
-		
+
 		return genePvalues;
 
 	}
