@@ -8,7 +8,6 @@ package nl.systemsgenetics.depict2;
 import cern.jet.math.tdouble.DoubleFunctions;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletionService;
@@ -40,11 +39,12 @@ public class CalculateGenePvalues {
 	 * @param nrPermutations
 	 * @return gene p-value matrix for each phenotype. rows: genes in same order
 	 * as genes parameter, cols: phenotypes
+	 * @throws java.io.IOException
 	 */
 	public static DoubleMatrixDataset<String, String> calculatorGenePvalues(
 			final String variantPhenotypeZscoreMatrixPath,
 			final GenotypeCovarianceSource genotypeCorrelationSource,
-			final ArrayList<Gene> genes,
+			final List<Gene> genes,
 			final int windowExtend,
 			final double maxR,
 			final int nrPermutations) throws IOException {
@@ -140,7 +140,7 @@ public class CalculateGenePvalues {
 
 	}
 
-	public static LinkedHashMap<String, Integer> createGeneHashRows(final ArrayList<Gene> genes) {
+	public static LinkedHashMap<String, Integer> createGeneHashRows(final List<Gene> genes) {
 		LinkedHashMap<String, Integer> geneHashRows = new LinkedHashMap<>(genes.size());
 		for (int geneI = 0; geneI < genes.size(); ++geneI) {
 			geneHashRows.put(genes.get(geneI).getGene(), geneI);

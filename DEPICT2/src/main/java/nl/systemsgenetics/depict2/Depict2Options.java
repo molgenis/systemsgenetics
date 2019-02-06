@@ -28,6 +28,7 @@ public class Depict2Options {
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
 	private final File outputFile;
+	private final File geneInfoFile;
 	private final String gwasZscoreMatrixPath;
 	private final int numberOfPermutations;
 	private final int windowExtend;
@@ -95,6 +96,13 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("variantCorrelation");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("v"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos");
+		OptionBuilder.withLongOpt("genes");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("ge"));
 
 	}
 
@@ -137,6 +145,7 @@ public class Depict2Options {
 
 		outputFile = new File(commandLine.getOptionValue('o'));
 		gwasZscoreMatrixPath = commandLine.getOptionValue('g');
+		geneInfoFile  = new File(commandLine.getOptionValue("ge"));
 
 		if (commandLine.hasOption('r')) {
 
@@ -193,6 +202,7 @@ public class Depict2Options {
 		System.out.println(" - Number of permutations: " + numberOfPermutations);
 		System.out.println(" - Max correlation between variants: " + maxRBetweenVariants);
 		System.out.println(" - Number of threads to use: " + numberOfThreadsToUse);
+		System.out.println(" - Gene info file: " + geneInfoFile.getAbsolutePath());
 		
 		
 		System.out.println(" - ");
@@ -230,6 +240,10 @@ public class Depict2Options {
 
 	public static int getNumberOfThreadsToUse() {
 		return numberOfThreadsToUse;
+	}
+
+	public File getGeneInfoFile() {
+		return geneInfoFile;
 	}
 
 }

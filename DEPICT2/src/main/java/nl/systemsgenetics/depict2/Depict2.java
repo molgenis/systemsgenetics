@@ -12,6 +12,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
@@ -19,6 +20,8 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -72,7 +75,7 @@ public class Depict2 {
 
 		options.printOptions();
 		
-		readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows"));
+		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows"));
 
 		if (options.getOutputFile().getParentFile() != null && !options.getOutputFile().getParentFile().isDirectory()) {
 			if (!options.getOutputFile().getParentFile().mkdirs()) {
@@ -81,15 +84,21 @@ public class Depict2 {
 			}
 		}
 
-		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options);
+		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
+		
+		List<Gene> genes = readGenes(options.getGeneInfoFile());
 
-		//DoubleMatrixDataset<String, String>genePvalues = CalculateGenePvalues.calculatorGenePvalues(variantPhenotypeZscoreMatrix, new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
+		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
+		
+		genePvalues.save(options.getOutputFile());
+		
+		
 	}
 
-	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options) {
+	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) {
 		final RandomAccessGenotypeData referenceGenotypeData;
 		try {
-			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, null, null, null, 0.34f);
+			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), null, null, 0.34f);
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");
@@ -126,6 +135,24 @@ public class Depict2 {
 		}
 
 		return identifiers;
+
+	}
+	
+	private static List<Gene> readGenes(File geneFile) throws IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
+
+		final ArrayList<Gene> genes = new ArrayList<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3])));
+
+		}
+
+		return genes;
 
 	}
 
