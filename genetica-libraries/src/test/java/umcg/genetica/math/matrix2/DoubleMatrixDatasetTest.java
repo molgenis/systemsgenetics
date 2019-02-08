@@ -134,9 +134,9 @@ public class DoubleMatrixDatasetTest {
 		dataset.setElementQuick(0, 3, 4);
 		dataset.setElementQuick(0, 4, 5);
 
-		dataset.setElementQuick(2, 3, 5.55);
-		dataset.setElementQuick(3, 2, 6.66);
-		dataset.setElementQuick(3, 3, -12.2);
+		dataset.setElementQuick(1, 3, 5.55);
+		dataset.setElementQuick(2, 2, 6.66);
+		dataset.setElementQuick(2, 3, -12.2);
 
 		dataset.saveBinary(tmpOutputFolder.getAbsolutePath() + ".testBin");
 
@@ -150,21 +150,15 @@ public class DoubleMatrixDatasetTest {
 
 		assertEquals(dataset2.getElementQuick(0, 2), 3d);
 		assertEquals(dataset2.getElementQuick(0, 1), 2d);
+		assertEquals(dataset2.getElementQuick(2, 2), 6.66d);
 
-		DoubleMatrixDataset<String, String> dataset3 = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(tmpOutputFolder.getAbsolutePath() + ".testBin", new String[]{"row2", "row1"});
+		DoubleMatrixDataset<String, String> dataset3 = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(tmpOutputFolder.getAbsolutePath() + ".testBin", new String[]{"row3", "row2"});
 
-		for(int r = 0 ; r < dataset3.rows() ; ++r){
-			for(int c = 0 ; c < dataset3.columns() ; ++c){
-				System.out.print(dataset3.getElementQuick(r, c) + "\t");
-			}
-			System.out.println();
-		}
-		
 		assertEquals(dataset3.rows(), 2);
 		assertEquals(dataset3.columns(), 5);
 
-		assertEquals(dataset3.getRowObjects().get(0), "row2");
-		assertEquals(dataset3.getRowObjects().get(1), "row1");
+		assertEquals(dataset3.getRowObjects().get(0), "row3");
+		assertEquals(dataset3.getRowObjects().get(1), "row2");
 		assertEquals(dataset3.getColObjects().get(2), "col3");
 		
 		assertEquals(dataset3.getElementQuick(0, 2), 6.66d);
