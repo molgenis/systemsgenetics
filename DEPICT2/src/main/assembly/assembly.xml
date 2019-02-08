@@ -1,0 +1,32 @@
+<assembly>
+	<id>dist</id>
+	<!-- Generates a zip package containing the needed files -->
+	<formats>
+		<format>zip</format>
+		<format>tar.gz</format>
+	</formats>
+
+	<!-- Adds dependencies to zip package under lib directory -->
+	<dependencySets>
+		<dependencySet>
+			<!--
+    Project artifact is not copied under library directory since
+    it is added to the root directory of the zip package.
+   -->
+			<useProjectArtifact>false</useProjectArtifact>
+			<outputDirectory>lib</outputDirectory>
+			<unpack>false</unpack>
+		</dependencySet>
+	</dependencySets>
+
+	<files>
+		<file>
+			<source>${project.build.directory}/Depict2-${project.version}.jar</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>Depict2.jar</destName>
+		</file>
+	</files>
+
+
+
+</assembly>
