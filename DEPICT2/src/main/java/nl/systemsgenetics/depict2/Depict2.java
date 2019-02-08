@@ -19,6 +19,8 @@ import org.apache.commons.cli.ParseException;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
+import org.molgenis.genotype.sampleFilter.SampleFilter;
+import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -41,6 +43,7 @@ public class Depict2 {
 	/**
 	 * @param args the command line arguments
 	 * @throws java.lang.InterruptedException
+	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws InterruptedException, IOException {
 
@@ -83,8 +86,11 @@ public class Depict2 {
 		}
 
 		switch (options.getMode()) {
+			case CONVERT_EQTL:
+				convertEqtlToBin(options);
+				break;
 			case CONVERT_TXT:
-				System.err.println("Not yet implementend");
+				convertTxtToBin(options);
 				break;
 			case RUN:
 				run(options);
@@ -111,10 +117,18 @@ public class Depict2 {
 		genePvalues.save(options.getOutputFile());
 	}
 
-	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) {
+	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
 		final RandomAccessGenotypeData referenceGenotypeData;
+		
+		final SampleFilter sampleFilter;
+		if(options.getGenotypeSamplesFile() != null){
+			sampleFilter = readSampleFile(options.getGenotypeSamplesFile());
+		} else {
+			sampleFilter = null;
+		}
+		
 		try {
-			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), null, null, 0.34f);
+			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");
@@ -171,5 +185,38 @@ public class Depict2 {
 		return genes;
 
 	}
+	
+	private static SampleIdIncludeFilter readSampleFile(File sampleFile) throws IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withCSVParser(parser).withSkipLines(0).build();
+
+		final HashSet<String> samples = new HashSet<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			samples.add(nextLine[0]);
+
+		}
+		
+		return new SampleIdIncludeFilter(samples);
+
+	}
+	
+	private static void convertTxtToBin(Depict2Options options) throws IOException{
+		
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
+		
+	}
+	
+	private static void convertEqtlToBin(Depict2Options options) throws IOException{
+		
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(options.getGwasZscoreMatrixPath());
+		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
+		
+	}
+	
 
 }

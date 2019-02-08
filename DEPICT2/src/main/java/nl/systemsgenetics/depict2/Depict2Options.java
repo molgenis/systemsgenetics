@@ -29,6 +29,7 @@ public class Depict2Options {
 
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
+	private final File genotypeSamplesFile;
 	private final File outputFile;
 	private final File geneInfoFile;
 	private final String gwasZscoreMatrixPath;
@@ -43,8 +44,9 @@ public class Depict2Options {
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
-				+ "* RUN - Run the DEPICT2 prioritization\n"
-				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas and --output");
+				+ "* RUN - Run the DEPICT2 prioritization.\n"
+				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas and --output\n"
+				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -60,6 +62,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("The reference genotypes");
 		OptionBuilder.withLongOpt("referenceGenotypes");
 		OPTIONS.addOption(OptionBuilder.create("r"));
+		
+		OptionBuilder.withArgName("basePath");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Samples to include from reference genotypes");
+		OptionBuilder.withLongOpt("referenceSamples");
+		OPTIONS.addOption(OptionBuilder.create("rs"));
 
 		OptionBuilder.withArgName("type");
 		OptionBuilder.hasArg();
@@ -133,7 +141,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -190,6 +198,12 @@ public class Depict2Options {
 			} else {
 
 				genotypeBasePath = commandLine.getOptionValues('r');
+				
+				if(commandLine.hasOption("rs")){
+					genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+				} else {
+					genotypeSamplesFile = null;
+				}
 
 				try {
 					if (commandLine.hasOption('R')) {
@@ -213,6 +227,7 @@ public class Depict2Options {
 		} else {
 			genotypeBasePath = null;
 			genotypeType = null;
+			genotypeSamplesFile = null;
 			geneInfoFile = null;
 			maxRBetweenVariants = 0d;
 			numberOfPermutations = 0;
@@ -232,6 +247,9 @@ public class Depict2Options {
 		System.out.println(" - Ouput path: " + outputFile.getPath());
 
 		switch (mode) {
+			case CONVERT_EQTL:
+				System.out.println(" - eQTL Z-score matrix: " + gwasZscoreMatrixPath);
+				break;
 			case CONVERT_TXT:
 				System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixPath);
 				break;
@@ -295,6 +313,10 @@ public class Depict2Options {
 
 	public Depict2Mode getMode() {
 		return mode;
+	}
+
+	public File getGenotypeSamplesFile() {
+		return genotypeSamplesFile;
 	}
 
 }
