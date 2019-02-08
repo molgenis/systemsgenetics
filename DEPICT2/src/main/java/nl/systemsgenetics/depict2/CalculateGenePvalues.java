@@ -6,8 +6,10 @@
 package nl.systemsgenetics.depict2;
 
 import cern.jet.math.tdouble.DoubleFunctions;
-import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -26,8 +28,9 @@ public class CalculateGenePvalues {
 
 	/**
 	 *
-	 * @param variantPhenotypeZscoreMatrix rows: variants, cols: phenotypes.
-	 * Variants must have IDs identical to genotypeCovarianceSource
+	 * @param variantPhenotypeZscoreMatrixPath Binary matrix. rows: variants,
+	 * cols: phenotypes. Variants must have IDs identical to
+	 * genotypeCovarianceSource
 	 * @param genotypeCorrelationSource Source data used to calculate
 	 * correlations between SNPs
 	 * @param genes genes for which to calculate p-values.
@@ -36,19 +39,26 @@ public class CalculateGenePvalues {
 	 * @param nrPermutations
 	 * @return gene p-value matrix for each phenotype. rows: genes in same order
 	 * as genes parameter, cols: phenotypes
+	 * @throws java.io.IOException
 	 */
 	public static DoubleMatrixDataset<String, String> calculatorGenePvalues(
-			final DoubleMatrixDataset<String, String> variantPhenotypeZscoreMatrix,
+			final String variantPhenotypeZscoreMatrixPath,
 			final GenotypeCovarianceSource genotypeCorrelationSource,
-			final ArrayList<Gene> genes,
+			final List<Gene> genes,
 			final int windowExtend,
 			final double maxR,
-			final int nrPermutations) {
+			final int nrPermutations) throws IOException {
 
+		
+		
+		List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
+		
+		
 		//Result matrix. Rows: genes, Cols: phenotypes
-		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), variantPhenotypeZscoreMatrix.getHashColsCopy());
-		final int numberPheno = variantPhenotypeZscoreMatrix.columns();
-		final int numberGenes = variantPhenotypeZscoreMatrix.rows();
+		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
+		final int numberPheno = phenotypes.size();
+		final int numberGenes = genes.size();
+		
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
 
@@ -68,13 +78,13 @@ public class CalculateGenePvalues {
 			} else {
 				geneChi2SumNull = null;
 			}
+			
+			//load current variants from variantPhenotypeMatrix
+			final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(variantPhenotypeZscoreMatrixPath, variantCorrelations.getIncludedVariants());
 
 			for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
 
 				if (variantCorrelations.getIncludedVariants().length > 1) {
-
-					//extract current variants from variantPhenotypeMatrix
-					final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = variantPhenotypeZscoreMatrix.viewRowSelection(variantCorrelations.getIncludedVariants());
 
 					final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
 
@@ -85,22 +95,21 @@ public class CalculateGenePvalues {
 						}
 					}
 					p /= (double) nrPermutations + 1;
-					
+
 					if (p == 1) {
 						p = 0.99999d;
 					}
 					if (p < 1e-300d) {
 						p = 1e-300d;
 					}
-					
+
 					genePValueDistribution[(int) (20d * p)]++;
 					genePvalues.setElementQuick(geneI, phenoI, p);
 
 				} else if (variantCorrelations.getIncludedVariants().length == 1) {
 
-					final int variantI = variantPhenotypeZscoreMatrix.getRowIndex(variantCorrelations.getIncludedVariants()[0]);
-
-					double p = ZScores.zToP(-Math.abs(variantPhenotypeZscoreMatrix.getElementQuick(variantI, phenoI)));
+					//Always row 0
+					double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
 					if (p == 1) {
 						p = 0.99999d;
 					}
@@ -122,21 +131,29 @@ public class CalculateGenePvalues {
 
 		System.out.println("-----------------------");
 		System.out.println("Gene p-value histrogram");
-		for(double histCount : genePValueDistribution){
+		for (double histCount : genePValueDistribution) {
 			System.out.println(histCount);
 		}
 		System.out.println("-----------------------");
-		
+
 		return genePvalues;
 
 	}
 
-	public static LinkedHashMap<String, Integer> createGeneHashRows(final ArrayList<Gene> genes) {
+	public static LinkedHashMap<String, Integer> createGeneHashRows(final List<Gene> genes) {
 		LinkedHashMap<String, Integer> geneHashRows = new LinkedHashMap<>(genes.size());
 		for (int geneI = 0; geneI < genes.size(); ++geneI) {
 			geneHashRows.put(genes.get(geneI).getGene(), geneI);
 		}
 		return geneHashRows;
+	}
+	
+	public static LinkedHashMap<String, Integer> createPhenoHashCols(final List<String> phenotypes) {
+		LinkedHashMap<String, Integer> phenoHashCols = new LinkedHashMap<>(phenotypes.size());
+		for (int phenoI = 0; phenoI < phenotypes.size(); ++phenoI) {
+			phenoHashCols.put(phenotypes.get(phenoI), phenoI);
+		}
+		return phenoHashCols;
 	}
 
 	public static double[] runPermutationsUsingEigenValues(final double[] eigenValues, final int nrPermutations) {
