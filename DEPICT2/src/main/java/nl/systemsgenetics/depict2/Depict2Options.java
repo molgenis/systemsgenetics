@@ -29,6 +29,7 @@ public class Depict2Options {
 
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
+	private final File genotypeSamplesFile;
 	private final File outputFile;
 	private final File geneInfoFile;
 	private final String gwasZscoreMatrixPath;
@@ -61,6 +62,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("The reference genotypes");
 		OptionBuilder.withLongOpt("referenceGenotypes");
 		OPTIONS.addOption(OptionBuilder.create("r"));
+		
+		OptionBuilder.withArgName("basePath");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Samples to include from reference genotypes");
+		OptionBuilder.withLongOpt("referenceSamples");
+		OPTIONS.addOption(OptionBuilder.create("rs"));
 
 		OptionBuilder.withArgName("type");
 		OptionBuilder.hasArg();
@@ -191,6 +198,12 @@ public class Depict2Options {
 			} else {
 
 				genotypeBasePath = commandLine.getOptionValues('r');
+				
+				if(commandLine.hasOption("rs")){
+					genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+				} else {
+					genotypeSamplesFile = null;
+				}
 
 				try {
 					if (commandLine.hasOption('R')) {
@@ -214,6 +227,7 @@ public class Depict2Options {
 		} else {
 			genotypeBasePath = null;
 			genotypeType = null;
+			genotypeSamplesFile = null;
 			geneInfoFile = null;
 			maxRBetweenVariants = 0d;
 			numberOfPermutations = 0;
@@ -299,6 +313,10 @@ public class Depict2Options {
 
 	public Depict2Mode getMode() {
 		return mode;
+	}
+
+	public File getGenotypeSamplesFile() {
+		return genotypeSamplesFile;
 	}
 
 }
