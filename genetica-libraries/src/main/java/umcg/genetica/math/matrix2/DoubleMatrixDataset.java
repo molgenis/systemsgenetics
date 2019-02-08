@@ -13,12 +13,16 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVWriter;
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
@@ -200,30 +204,30 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
 		return dataset;
 	}
-	
+
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, String[] rowsToView) throws IOException {
-		
+
 		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.length);
-		
+
 		for (String rowToView : rowsToView) {
 			rowsToViewHash.add(rowToView);
 		}
-		
-		if(rowsToViewHash.size() != rowsToView.length){
+
+		if (rowsToViewHash.size() != rowsToView.length) {
 			throw new RuntimeException("Duplicates in rows not allowed");
 		}
-		
+
 		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToViewHash);
-		
+
 	}
 
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @param fileName
-	 * @param rowsToView 
+	 * @param rowsToView
 	 * @return subset of rows in order of rowsToView
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, LinkedHashSet<String> rowsToView) throws IOException {
 
@@ -247,7 +251,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		File fileBinary = new File(fileName + ".dat");
-		RandomAccessFile in = new RandomAccessFile(fileBinary, "");
+		RandomAccessFile in = new RandomAccessFile(fileBinary, "r");
 		int nrRows;
 		int nrCols;
 		byte[] bytes = new byte[4];
@@ -255,12 +259,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		nrRows = byteArrayToInt(bytes);
 		in.read(bytes, 0, 4);
 		nrCols = byteArrayToInt(bytes);
-		
-		if(nrRows != originalRowMap.size()){
+
+		if (nrRows != originalRowMap.size()) {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows");
 		}
-		
-		if(nrCols != colMap.size()){
+
+		if (nrCols != colMap.size()) {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols");
 		}
 
@@ -269,7 +273,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		int currentRowInSubset = 0;
 		for (String rowToView : rowsToView) {
-			
+
 			rowMap.put(rowToView, currentRowInSubset);
 
 			int rowInFullMatrix = originalRowMap.get(rowToView);
@@ -306,7 +310,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @param desiredCols
 	 * @return
 	 * @throws IOException
-	 * @deprecated Untested. For now use loadSubsetOfRowsBinaryDoubleData and then do viewColSelection. That option will keep all cols in memory
+	 * @deprecated Untested. For now use loadSubsetOfRowsBinaryDoubleData and
+	 * then do viewColSelection. That option will keep all cols in memory
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
 
@@ -599,7 +604,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	private static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
+	public static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
 		//First load the raw binary data:
 		File fileBinary = new File(fileName + ".dat");
 		BufferedInputStream in;
@@ -622,12 +627,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> rowMap = loadIdentifiers(fileName + ".rows.txt");
 		LinkedHashMap<String, Integer> colMap = loadIdentifiers(fileName + ".cols.txt");
-		
-		if(nrRows != rowMap.size()){
+
+		if (nrRows != rowMap.size()) {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows");
 		}
-		
-		if(nrCols != colMap.size()){
+
+		if (nrCols != colMap.size()) {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols");
 		}
 
@@ -656,6 +661,54 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
 
 		return dataset;
+	}
+
+	public void saveBinary(String path) throws IOException {
+
+		final File matrixFile = new File(path + ".dat");
+		final File rowFile = new File(path + ".rows.txt");
+		final File colFile = new File(path + ".cols.txt");
+
+		final String[] outputLine = new String[1];
+
+		final CSVWriter rowWriter = new CSVWriter(new FileWriter(rowFile), '\t', '\0', '\0', "\n");
+		for (R row : hashRows.keySet()) {
+			outputLine[0] = row.toString();
+			rowWriter.writeNext(outputLine);
+		}
+		rowWriter.close();
+
+		final CSVWriter colWriter = new CSVWriter(new FileWriter(colFile), '\t', '\0', '\0', "\n");
+		for (C col : hashCols.keySet()) {
+			outputLine[0] = col.toString();
+			colWriter.writeNext(outputLine);
+		}
+		colWriter.close();
+		
+		final int rows = rows();
+		final int cols = columns();
+
+		final BufferedOutputStream matrixWriter = new BufferedOutputStream(new FileOutputStream(matrixFile));
+		matrixWriter.write(intToByteArray(rows));
+		matrixWriter.write(intToByteArray(cols));
+		byte[] buffer = new byte[cols * 8];
+		for (int row = 0; row < rows; row++) { // rows
+			int bufferLoc = 0;
+			for (int col = 0; col < cols; col++) { // columns
+				long bits = Double.doubleToLongBits(matrix.getQuick(row, col));
+				buffer[bufferLoc++] = (byte) (bits >> 56);
+				buffer[bufferLoc++] = (byte) (bits >> 48 & 0xff);
+				buffer[bufferLoc++] = (byte) (bits >> 40 & 0xff);
+				buffer[bufferLoc++] = (byte) (bits >> 32 & 0xff);
+				buffer[bufferLoc++] = (byte) (bits >> 24 & 0xff);
+				buffer[bufferLoc++] = (byte) (bits >> 16 & 0xff);
+				buffer[bufferLoc++] = (byte) (bits >> 8 & 0xff);
+				buffer[bufferLoc++] = (byte) (bits & 0xff);
+			}
+			matrixWriter.write(buffer);
+		}
+		matrixWriter.close();
+
 	}
 
 	private static LinkedHashMap<String, Integer> loadIdentifiers(String filename) throws IOException {
