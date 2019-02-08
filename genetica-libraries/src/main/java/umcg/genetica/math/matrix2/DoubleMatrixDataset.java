@@ -277,7 +277,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			rowMap.put(rowToView, currentRowInSubset);
 
 			int rowInFullMatrix = originalRowMap.get(rowToView);
-
+			
 			in.seek(8 + (nrCols * 8 * rowInFullMatrix));
 
 			in.read(buffer, 0, nrCols * 8);

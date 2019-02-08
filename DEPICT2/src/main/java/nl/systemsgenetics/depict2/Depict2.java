@@ -74,8 +74,6 @@ public class Depict2 {
 		}
 
 		options.printOptions();
-		
-		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows"));
 
 		if (options.getOutputFile().getParentFile() != null && !options.getOutputFile().getParentFile().isDirectory()) {
 			if (!options.getOutputFile().getParentFile().mkdirs()) {
@@ -84,15 +82,33 @@ public class Depict2 {
 			}
 		}
 
-		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
+		switch (options.getMode()) {
+			case CONVERT_TXT:
+				System.err.println("Not yet implementend");
+				break;
+			case RUN:
+				run(options);
+				break;
+		}
 		
+		
+		System.out.println("Completed mode: " + options.getMode());
+		
+		currentDataTime = new Date();
+		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+
+	}
+
+	public static void run(Depict2Options options) throws IOException {
+		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows"));
+
+		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
+
 		List<Gene> genes = readGenes(options.getGeneInfoFile());
 
 		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
-		
+
 		genePvalues.save(options.getOutputFile());
-		
-		
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) {
@@ -137,7 +153,7 @@ public class Depict2 {
 		return identifiers;
 
 	}
-	
+
 	private static List<Gene> readGenes(File geneFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
