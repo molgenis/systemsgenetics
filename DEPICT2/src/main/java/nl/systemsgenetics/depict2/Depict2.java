@@ -83,8 +83,11 @@ public class Depict2 {
 		}
 
 		switch (options.getMode()) {
+			case CONVERT_EQTL:
+				convertEqtlToBin(options);
+				break;
 			case CONVERT_TXT:
-				System.err.println("Not yet implementend");
+				convertTxtToBin(options);
 				break;
 			case RUN:
 				run(options);
@@ -171,5 +174,20 @@ public class Depict2 {
 		return genes;
 
 	}
+	
+	private static void convertTxtToBin(Depict2Options options) throws IOException{
+		
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
+		
+	}
+	
+	private static void convertEqtlToBin(Depict2Options options) throws IOException{
+		
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(options.getGwasZscoreMatrixPath());
+		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
+		
+	}
+	
 
 }

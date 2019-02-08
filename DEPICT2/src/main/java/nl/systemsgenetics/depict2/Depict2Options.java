@@ -43,8 +43,9 @@ public class Depict2Options {
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
-				+ "* RUN - Run the DEPICT2 prioritization\n"
-				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas and --output");
+				+ "* RUN - Run the DEPICT2 prioritization.\n"
+				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas and --output\n"
+				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -133,7 +134,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -232,6 +233,9 @@ public class Depict2Options {
 		System.out.println(" - Ouput path: " + outputFile.getPath());
 
 		switch (mode) {
+			case CONVERT_EQTL:
+				System.out.println(" - eQTL Z-score matrix: " + gwasZscoreMatrixPath);
+				break;
 			case CONVERT_TXT:
 				System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixPath);
 				break;
