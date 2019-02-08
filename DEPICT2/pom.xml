@@ -28,7 +28,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>nl.systemsgenetics.depict2.development.BinaryCompareFormat</mainClass>
+                            <mainClass>nl.systemsgenetics.depict2.Depict2</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>

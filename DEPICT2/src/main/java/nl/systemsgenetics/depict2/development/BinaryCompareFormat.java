@@ -38,8 +38,7 @@ public class BinaryCompareFormat {
         DoubleMatrixDataset<String, String> predictionMatrixFull = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(predictionMatrixFile.getAbsolutePath());
 
         System.out.println(predictionMatrixFull.getElement("rs351365", "PH443"));
-        File eQTLfile = new File("/groups/umcg-wijmenga/scr02/umcg-smulcahy/eQTLResults_texttrue2/test_eQTLs.txt.gz");
-        System.out.println(eQTLfile);
+        File eQTLfile = new File("/groups/umcg-wijmenga/scr02/umcg-smulcahy/eQTLResults_texttrue2/eQTLs.txt.gz");
         final CSVParser eQTLparser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
         final CSVReader eQTLreader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(eQTLfile))))).withSkipLines(1).withCSVParser(eQTLparser).build();
 
@@ -66,7 +65,11 @@ public class BinaryCompareFormat {
                 c++;
             }
         }
-        System.out.println("Number of occurances where z-scores differ: " + c);
+        System.out.println("Number of occurrances where z-scores differ: " + c);
+        //save new file 
+        predictionMatrixFull.saveBinary("/groups/umcg-wijmenga/scr02/umcg-smulcahy/eQTLResults_texttrue2/eQTL2");
+        
+        System.out.println("Done saving");
 
     }
 
