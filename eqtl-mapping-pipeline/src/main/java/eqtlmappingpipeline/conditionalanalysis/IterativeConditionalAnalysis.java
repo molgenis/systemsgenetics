@@ -7,18 +7,19 @@ package eqtlmappingpipeline.conditionalanalysis;
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import gnu.trove.set.hash.THashSet;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
+import umcg.genetica.math.matrix.DoubleMatrixDataset;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  * @author harm-jan
@@ -53,7 +54,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 				mapEQTLs();
 			} else {
 				// check whether there were significant results in the previous iteration
-				String efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + "-ProbeLevel.txt";
+				String efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + "-ProbeLevel.txt.gz";
 				if (!Gpio.exists(efilename)) {
 					System.err.println("Previous iteration (" + (iteration - 1) + ") did not have any significant results.");
 					System.err.println("File: " + efilename + " does not exist.");
@@ -103,8 +104,52 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 			}
 			
 			iteration++;
+		}
+		
+		
+		System.out.println("Done with iterations. Will now save residual expression matrix.");
+		
+		
+		// get the list of eQTLs to regress out...
+		ArrayList<Pair<String, String>> toRegress = collectEQTLs(origOutputDir, iteration - 1, fdrthreshold);
+		
+		if (toRegress.isEmpty()) {
+			System.out.println("No significant eQTLs found, and thus no need to save residual gene expression matrix.");
+		}else{
+			// get the significant probes from the previous run
+			m_settings.tsProbesConfine = null;
 			
+			// reset the datasets
+			reinit();
 			
+			// regress significant eQTLs
+			eqr.regressOutEQTLEffects(toRegress, m_gg);
+			
+			// recalculate mean and SD
+			for (int i = 0; i < m_gg.length; i++) {
+				if (!m_settings.performParametricAnalysis) {
+					m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
+				}
+				m_gg[i].getExpressionData().calcAndSubtractMean();
+				m_gg[i].getExpressionData().calcMeanAndVariance();
+				numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
+			}
+			
+			// save the output
+			for (int d = 0; d < m_gg.length; d++) {
+				TriTyperGeneticalGenomicsDataset ds = m_gg[d];
+				TriTyperExpressionData dsexp = ds.getExpressionData();
+				double[][] matrix = dsexp.getMatrix();
+				String[] probes = dsexp.getProbes();
+				String[] individuals = dsexp.getIndividuals();
+				String filename = ds.getSettings().expressionLocation;
+				File f = new File(filename);
+				String fname = f.getName();
+				DoubleMatrixDataset<String, String> dsout = new DoubleMatrixDataset<String, String>(matrix, Arrays.asList(probes), Arrays.asList(individuals));
+				dsout.recalculateHashMaps();
+				System.out.println("Saving expression file after removal of eQTL effects: " + origOutputDir + fname + "-EQTLEffectsRemoved.txt.gz");
+				dsout.save(origOutputDir + fname + "-EQTLEffectsRemoved.txt.gz");
+			}
 		}
 	}
 	
@@ -148,7 +193,6 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 		System.out.println("");
 		
 		
-		
 		System.out.println("Accumulating available data...");
 		System.out.print(ConsoleGUIElems.LINE);
 		
@@ -183,16 +227,20 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 		
 		HashSet<Pair<String, String>> eqtls = new HashSet<Pair<String, String>>();
 		for (int iteration = 1; iteration < currentIteration; iteration++) {
-			String iterationFile = origOutputDir + "/Iteration" + iteration + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt";
+			String iterationFile = origOutputDir + "/Iteration" + iteration + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt.gz";
 			TextFile tf = new TextFile(iterationFile, TextFile.R);
 			tf.readLineElems(TextFile.tab);
 			String[] elems = tf.readLineElems(TextFile.tab);
+			int ctr = 0;
 			while (elems != null) {
 				eqtls.add(new Pair<String, String>(elems[1], elems[4]));
+				ctr++;
 				elems = tf.readLineElems(TextFile.tab);
 			}
 			tf.close();
+			System.out.println("Iteration " + iteration + " has " + ctr + " effects. Total sofar: " + eqtls.size());
 		}
+		
 		ArrayList<Pair<String, String>> pairs = new ArrayList<Pair<String, String>>();
 		pairs.addAll(eqtls);
 		return pairs;
@@ -201,7 +249,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 	private THashSet<String> collectEQTLProbes(String origOutputDir, int currentIteration, double fdr) throws IOException {
 		
 		THashSet<String> output = new THashSet<String>();
-		String iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt";
+		String iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt.gz";
 		TextFile tf = new TextFile(iterationFile, TextFile.R);
 		tf.readLineElems(TextFile.tab);
 		String[] elems = tf.readLineElems(TextFile.tab);
@@ -209,6 +257,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 			output.add(elems[4]);
 			elems = tf.readLineElems(TextFile.tab);
 		}
+		System.out.println("Iteration " + (currentIteration - 1) + " has " + output.size() + " significant probes.");
 		return output;
 	}
 }

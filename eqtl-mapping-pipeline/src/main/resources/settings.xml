@@ -1,88 +1,88 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!-- note: legacy options are not actively developed and may be broken -->
 <settings>
     <defaults>
         <qc>
-            <snpqccallratethreshold>0.95</snpqccallratethreshold>
-            <snpqchwethreshold>0.0001</snpqchwethreshold>
-            <snpqcmafthreshold>0.05</snpqcmafthreshold>
+            <snpqccallratethreshold>0.95</snpqccallratethreshold> <!-- SNP call rate or (1-missingness) threshold-->
+            <snpqchwethreshold>0.0001</snpqchwethreshold> <!-- Hardy-Weinberg p-value threshold -->
+            <snpqcmafthreshold>0.05</snpqcmafthreshold> <!-- Minor allele frequency threshold-->
         </qc>
 
         <analysis>
-            <analysistype>cis</analysistype>
-            <cisanalysisprobedistance>250000</cisanalysisprobedistance>
-            <correlationtype>nonparametric</correlationtype>
-            <buffersize>100000</buffersize>
-            <createqqplot>true</createqqplot>
-            <createdotplot>true</createdotplot>
-            <regressOutEQTLEffects></regressOutEQTLEffects>
-            <regressOutEQTLEffectsSaveOutput>false</regressOutEQTLEffectsSaveOutput>
-            <equalrankforties>true</equalrankforties>
-            <metaAnalyseInteractionTerms>false</metaAnalyseInteractionTerms>
-            <permuteCovariates>false</permuteCovariates>
-            <metaAnalyseModelCorrelationYHat>false</metaAnalyseModelCorrelationYHat>
-            <useabsolutepvalue>false</useabsolutepvalue>
-            <threads>2</threads>
-            <forcethreads>false</forcethreads>
-            <randomseed></randomseed>
-            <onlypermutations>false</onlypermutations>
-            <displayWarnings>false</displayWarnings>
-            <pathwaydefinition></pathwaydefinition>
-            <sortsnps>false</sortsnps>
+            <analysistype>cis</analysistype> <!-- can be cis, trans, or cistrans. cis and trans keep cisanalysisprobedistance into account, cistrans ignores this setting -->
+            <cisanalysisprobedistance>250000</cisanalysisprobedistance> <!-- int: distance between SNP and probe or gene position to call an effect cis or trans-->
+            <correlationtype>nonparametric</correlationtype> <!-- nonparametric for Spearman rank based analysis, parametric for Pearson correlation -->
+            <buffersize>100000</buffersize> <!-- int: Number of snps to preload -->
+            <createqqplot>true</createqqplot> <!-- true/false create QQ plot after calculating QTLs -->
+            <createdotplot>true</createdotplot> <!-- true/false create QTL dotplot-->
+            <regressOutEQTLEffects></regressOutEQTLEffects> <!-- path to eQTL file containing QTLs to regress prior to analysis -->
+            <regressOutEQTLEffectsSaveOutput>false</regressOutEQTLEffectsSaveOutput> <!-- true/false save the expression matrix as output after regressing eQTLs specified in regressOutEQTLEffects -->
+            <equalrankforties>true</equalrankforties> <!-- true/false use equal ranks for ties in nonparametric analysis -->
+            <metaAnalyseInteractionTerms>false</metaAnalyseInteractionTerms> <!-- legacy: meta analyze interaction terms when performing interaction analysis -->
+            <permuteCovariates>false</permuteCovariates> <!-- legacy: permute covariates when performing interaction analysis-->
+            <metaAnalyseModelCorrelationYHat>false</metaAnalyseModelCorrelationYHat> <!-- legacy: meta-analyze meta-analyze correlation of residuals -->
+            <useabsolutepvalue>false</useabsolutepvalue> <!-- true/false output absolute Z-scores and derived p-values -->
+            <threads>2</threads> <!-- int: number of threads to use during analysis-->
+            <forcethreads>false</forcethreads> <!-- true/false force the use of number of threads specified in threads -->
+            <randomseed></randomseed> <!-- integer or empty: specify random seed number for random number generator -->
+            <onlypermutations>false</onlypermutations> <!-- true/false: skip analysis on non-permuted data -->
+            <displayWarnings>false</displayWarnings> <!-- true/false: display warnings about sample gender, case control status etc -->
+            <pathwaydefinition></pathwaydefinition> <!-- legacy: a file containing pathway definitions for genes-->
+            <sortsnps>false</sortsnps> <!-- legacy: sort snps on position before analysis -->
         </analysis>
 
         <multipletesting>
-            <type>fdr</type>
-            <skipFDRCalculation>false</skipFDRCalculation>
-            <threshold>0.05</threshold>
-            <fdrtype>probe-level</fdrtype>
-            <largeFdrFileOut>false</largeFdrFileOut>
-            <permutations>100</permutations>
-            <startpermutation></startpermutation>
-            <stoppermutation></stoppermutation>
+            <type>fdr</type> <!-- type of multiple testing. -->
+            <skipFDRCalculation>false</skipFDRCalculation> <!-- true/false: do not calculate FDR after performing eQTL analysis -->
+            <threshold>0.05</threshold> <!-- double: significance threshold for FDR calculation -->
+            <fdrtype>probe-level</fdrtype> <!-- full/probe-level/gene-level/snp-level: different methods for FDR calculation. probe-level is recommended -->
+            <largeFdrFileOut>false</largeFdrFileOut> <!-- true/false: output permuted eQTLs in the same file format as non-permuted eQTLs (recommended: false) -->
+            <permutations>100</permutations> <!-- int: number of permutations to run -->
+            <startpermutation></startpermutation> <!-- int: start permutations at iteration-->
+            <stoppermutation></stoppermutation> <!-- int: stop permuting at iteration -->
         </multipletesting>
 
         <output>
-            <outputdirectory></outputdirectory>
-            <outputplotthreshold>0</outputplotthreshold>
-            <outputplotdirectory></outputplotdirectory>
-            <maxnreqtlresults>500000</maxnreqtlresults>
-            <dumpeverything>false</dumpeverything>
-            <usemd5hashforbinaryoutput>false</usemd5hashforbinaryoutput>
-            <binaryoutput>false</binaryoutput>
-            <textoutput>true</textoutput>
-            <generatesnpsummarystatistics>false</generatesnpsummarystatistics>
-            <generateeqtlpvaluetable>false</generateeqtlpvaluetable>
-            <generatefoldchangevalues>false</generatefoldchangevalues>
-            <generatebetaandfoldchanges>false</generatebetaandfoldchanges>
-            <generatesnpsummarystatistics>false</generatesnpsummarystatistics>
-            <writeSNPQCLog>true</writeSNPQCLog>
+            <outputdirectory></outputdirectory> <!-- path: location to store results-->
+            <outputplotthreshold>0</outputplotthreshold> <!-- double: make eQTL plots when eQTL has p-value below this threshold -->
+            <outputplotdirectory></outputplotdirectory> <!-- path: store eQTL plots in this directory -->
+            <maxnreqtlresults>500000</maxnreqtlresults> <!-- int: maximum number of eQTLs to store in text-based file -->
+            <dumpeverything>false</dumpeverything> <!-- true/false: dump all calculated eQTLs to text-based file (not recommended, output will be unsorted) -->
+            <usemd5hashforbinaryoutput>false</usemd5hashforbinaryoutput> <!-- true/false: calculate MD5 hashes while output to binary file format -->
+            <binaryoutput>false</binaryoutput> <!-- true/false: provide binary output (for meta-analysis purposes) -->
+            <textoutput>true</textoutput> <!-- true/false: provide text-based output -->
+            <generatesnpsummarystatistics>false</generatesnpsummarystatistics> <!-- true/false: generate SNP summary statistics-->
+            <generateeqtlpvaluetable>false</generateeqtlpvaluetable> <!-- legacy: create p-value table -->
+            <generatefoldchangevalues>false</generatefoldchangevalues> <!-- legacy: true/false: calculate fold-change for eQTLs -->
+            <generatebetaandfoldchanges>false</generatebetaandfoldchanges> <!-- legacy: calculate linear model betas for eQTLs -->
+            <writeSNPQCLog>true</writeSNPQCLog> <!-- true/false: write allele counts and other stats for SNPs -->
         </output>
 
         <confine>
-            <snp></snp>
-            <snpProbe></snpProbe>
-            <probe></probe>
-            <confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets>
-            <confineSNPsSelectSNPInStrongestLD>false</confineSNPsSelectSNPInStrongestLD>
-            <confineProbesThatMapToKnownChromosome>true</confineProbesThatMapToKnownChromosome>
-            <confineToProbesThatMapToChromosome></confineToProbesThatMapToChromosome>
-            <confineToSNPsThatMapToChromosome></confineToSNPsThatMapToChromosome>
-            <confineToProbesPresentInAllDatasets>false</confineToProbesPresentInAllDatasets>
-            <snpProbeConfineBasedOnChrPos>false</snpProbeConfineBasedOnChrPos>
+            <snp></snp> <!-- path: path to a textfile listing SNPs to limit the analysis to (one snp per line) -->
+            <snpProbe></snpProbe> <!-- path: path to a textfile listing SNPs and probes/genes to limit the analysis to (tab-separated format snp\tgene -->
+            <probe></probe> <!-- path: path to a textfile listing probes/genes to limit the analysis to (one probe/gene per line) -->
+            <confineSNPsToSNPsPresentInAllDatasets>false</confineSNPsToSNPsPresentInAllDatasets> <!-- true/false: when meta-analyzing, limit analysis to SNPs present in all datasets -->
+            <confineSNPsSelectSNPInStrongestLD>false</confineSNPsSelectSNPInStrongestLD> <!-- legacy: true/false: select SNPs in meta-analysis that represent LD best-->
+            <confineProbesThatMapToKnownChromosome>true</confineProbesThatMapToKnownChromosome> <!-- true/false: include or exclude SNPs that map to non-autosomal positions -->
+            <confineToProbesThatMapToChromosome></confineToProbesThatMapToChromosome> <!-- int: only analyse probes/genes that are located on this chromosome -->
+            <confineToSNPsThatMapToChromosome></confineToSNPsThatMapToChromosome> <!-- int: only analyse probes/genes that are located on this chromosome -->
+            <confineToProbesPresentInAllDatasets>false</confineToProbesPresentInAllDatasets> <!-- true/false: only analyze probes/genes that are available in all datasets when meta-analyzing -->
+            <snpProbeConfineBasedOnChrPos>false</snpProbeConfineBasedOnChrPos> <!-- legacy: true/false: filter confined snpProbe list to combinations on the same chromosome-->
         </confine>
     </defaults>
 
     <datasets>
         <dataset>
-            <name>Dataset1</name>
-            <location></location>
-            <genometoexpressioncoupling></genometoexpressioncoupling>
-            <expressiondata></expressiondata>
-            <probeannotation></probeannotation>
-            <expressionplatform></expressionplatform>
-            <covariates></covariates>
-            <quantilenormalize>false</quantilenormalize>
-            <logtranform>false</logtranform>
+            <name>Dataset1</name> <!-- String: dataset name-->
+            <location></location> <!-- path: path to TriTyper genotype files -->
+            <genometoexpressioncoupling></genometoexpressioncoupling> <!-- path: path to file that links genotyped individuals to expression individuals (one combination per line, tab separated) -->
+            <expressiondata></expressiondata> <!-- path: path to expression matrix (tab separated, samples on columns, genes/probes on rows) -->
+            <probeannotation></probeannotation> <!-- path: path to probe annotation file -->
+            <expressionplatform></expressionplatform> <!-- String: expression platform used in expression matrix -->
+            <covariates></covariates> <!-- path: path to covariate matrix (same format as expression matrix) -->
+            <quantilenormalize>false</quantilenormalize> <!-- legacy: true/false: quantile normalize data prior to analysis -->
+            <logtranform>false</logtranform> <!-- legacy: true/false: log2 transform data prior to analysis -->
         </dataset>
 		<dataset>
             <name>Dataset2</name>
