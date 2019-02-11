@@ -171,7 +171,7 @@ public class CalculateGenePvalues {
 
 		int nrThreads = Depict2Options.getNumberOfThreadsToUse();
 		java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
-		CompletionService<DoubleArrayIntegerObject> pool = new ExecutorCompletionService<>(threadPool);
+		CompletionService<double[]> pool = new ExecutorCompletionService<>(threadPool);
 		for (int taskNr = 0; taskNr < nrTasks; taskNr++) {
 			EstimateChi2SumDistUsingCorrelatedVariablesThread task = new EstimateChi2SumDistUsingCorrelatedVariablesThread(eigenValues, nrPermutationsPerTask, taskNr);
 			pool.submit(task);
@@ -179,10 +179,8 @@ public class CalculateGenePvalues {
 		try {
 			for (int task = 0; task < nrTasks; task++) {
 				try {
-					DoubleArrayIntegerObject result = pool.take().get();
-					int taskNr = result.intValue;
-					double[] chi2SumDist = result.doubleArray;
-					System.arraycopy(chi2SumDist, 0, geneChi2SumNull, taskNr * nrPermutationsPerTask, chi2SumDist.length);
+					double[] chi2SumDist = pool.take().get();
+					System.arraycopy(chi2SumDist, 0, geneChi2SumNull, task * nrPermutationsPerTask, chi2SumDist.length);
 				} catch (ExecutionException ex) {
 					throw new RuntimeException(ex);
 				}

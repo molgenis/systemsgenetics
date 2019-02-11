@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
  *
  * @author lude
  */
-public class EstimateChi2SumDistUsingCorrelatedVariablesThread implements Callable<DoubleArrayIntegerObject> {
+public class EstimateChi2SumDistUsingCorrelatedVariablesThread implements Callable<double[]> {
 
     public double[] eigenValues = null;
     public int nrPerms = 0;
@@ -24,7 +24,7 @@ public class EstimateChi2SumDistUsingCorrelatedVariablesThread implements Callab
     }
     
     @Override
-    public DoubleArrayIntegerObject call() throws Exception {
+    public double[] call() throws Exception {
         java.util.Random rnd = new java.util.Random();
         double[] geneChi2SumNull = new double[nrPerms];
         for (int perm=0; perm<nrPerms; perm++) {
@@ -35,7 +35,7 @@ public class EstimateChi2SumDistUsingCorrelatedVariablesThread implements Callab
             }
             geneChi2SumNull[perm]=weightedChi2Perm;
         } 
-        return new DoubleArrayIntegerObject(geneChi2SumNull, threadID);
+        return geneChi2SumNull;
     }    
  
    
