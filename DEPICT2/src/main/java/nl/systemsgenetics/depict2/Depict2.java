@@ -114,7 +114,7 @@ public class Depict2 {
 
 		List<Gene> genes = readGenes(options.getGeneInfoFile());
 		
-		System.out.println("Loaded " + genes.size());
+		System.out.println("Loaded " + genes.size() + " genes");
 
 		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
 

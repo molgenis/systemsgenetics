@@ -14,6 +14,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
+import me.tongfei.progressbar.ProgressBar;
 import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
 import nl.systemsgenetics.depict2.originalLude.DoubleArrayIntegerObject;
 import nl.systemsgenetics.depict2.originalLude.EstimateChi2SumDistUsingCorrelatedVariablesThread;
@@ -61,6 +62,8 @@ public class CalculateGenePvalues {
 		
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
+		
+		ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes);
 
 		for (int geneI = 0; geneI < numberGenes; ++geneI) {
 
@@ -127,12 +130,16 @@ public class CalculateGenePvalues {
 
 			}
 			
-			if(geneI % 100 == 0 & geneI > 0){
-				System.out.print("Proccessed " + geneI + " genes\r");
-			}
+			pb.step();
+			
+//			if (geneI % 100 == 0 & geneI > 0) {
+//				System.out.print("Proccessed " + geneI + " genes");
+//			}
 			
 
 		}
+		
+		pb.stop();
 
 		System.out.println("-----------------------");
 		System.out.println("Gene p-value histrogram");
