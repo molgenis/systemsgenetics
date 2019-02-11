@@ -59,11 +59,20 @@ public class CalculateGenePvalues {
 		final int numberGenes = genes.size();
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
-		
+
 		int countRanPermutationsForGene = 0;
 		int countBasedPvalueOnPermutations = 0;
 		int countUseChi2DistForPvalue = 0;
 		int countNoVariants = 0;
+
+		long timeInPermutations = 0;
+		long timeInCreatingGenotypeCorrelationMatrix = 0;
+		long timeInDoingPca = 0;
+		long timeInLoadingZscoreMatrix = 0;
+		long timeInCalculatingPvalue = 0;
+
+		long timeStart;
+		long timeStop;
 
 		try (ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
 
@@ -71,26 +80,50 @@ public class CalculateGenePvalues {
 
 				Gene gene = genes.get(geneI);
 
+				timeStart = System.currentTimeMillis();
+
 				final GenotypieCorrelationResult variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
 						gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend, maxR);
 
-				final double[] geneChi2SumNull;
+				timeStop = System.currentTimeMillis();
+				timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
+				final double[] geneChi2SumNull;
 				if (variantCorrelations.getIncludedVariants().length > 1) {
+
+					timeStart = System.currentTimeMillis();
+					
 					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getCorMatrix());
 					final double[] eigenValues = eig.getRealEigenvalues();
+
+					timeStop = System.currentTimeMillis();
+					timeInDoingPca += (timeStop - timeStart);
+
+					timeStart = System.currentTimeMillis();
+					
 					geneChi2SumNull = runPermutationsUsingEigenValues(eigenValues, nrPermutations);
+					
+					timeStop = System.currentTimeMillis();
+					timeInPermutations += (timeStop - timeStart);
+
 					countRanPermutationsForGene++;
 				} else {
 					geneChi2SumNull = null;
 				}
 
+				timeStart = System.currentTimeMillis();
+
 				//load current variants from variantPhenotypeMatrix
 				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(variantPhenotypeZscoreMatrixPath, variantCorrelations.getIncludedVariants());
+
+				timeStop = System.currentTimeMillis();
+				timeInLoadingZscoreMatrix += (timeStop - timeStart);
 
 				for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
 
 					if (variantCorrelations.getIncludedVariants().length > 1) {
+
+						timeStart = System.currentTimeMillis();
 
 						final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
 
@@ -111,7 +144,10 @@ public class CalculateGenePvalues {
 
 						genePValueDistribution[(int) (20d * p)]++;
 						genePvalues.setElementQuick(geneI, phenoI, p);
-						
+
+						timeStop = System.currentTimeMillis();
+						timeInCalculatingPvalue += (timeStop - timeStart);
+
 						countBasedPvalueOnPermutations++;
 
 					} else if (variantCorrelations.getIncludedVariants().length == 1) {
@@ -126,7 +162,7 @@ public class CalculateGenePvalues {
 						}
 						genePValueDistribution[(int) (20d * p)]++;
 						genePvalues.setElementQuick(geneI, phenoI, p);
-						
+
 						countUseChi2DistForPvalue++;
 
 					} else {
@@ -159,6 +195,11 @@ public class CalculateGenePvalues {
 		System.out.println("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
 		System.out.println("countNoVariants: " + countNoVariants);
 		
+		System.out.println("timeInPermutation : " + timeInPermutations);
+		System.out.println("timeInCreatingGenotypeCorrelationMatrix: " + timeInCreatingGenotypeCorrelationMatrix);
+		System.out.println("timeInDoingPca: " + timeInDoingPca);
+		System.out.println("timeInLoadingZscoreMatrix: " + timeInLoadingZscoreMatrix);
+		System.out.println("timeInCalculatingPvalue: " + timeInCalculatingPvalue);
 		
 		return genePvalues;
 
