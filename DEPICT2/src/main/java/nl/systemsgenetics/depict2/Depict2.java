@@ -15,9 +15,11 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
-import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
@@ -35,6 +37,7 @@ public class Depict2 {
 
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
 			+ "  |                DEPICT2                |\n"
@@ -78,14 +81,29 @@ public class Depict2 {
 			return;
 		}
 
-		options.printOptions();
 
-		if (options.getOutputFile().getParentFile() != null && !options.getOutputFile().getParentFile().isDirectory()) {
-			if (!options.getOutputFile().getParentFile().mkdirs()) {
-				System.err.println("Failed to create output folder: " + options.getOutputFile().getParent());
-				System.exit(1);
-			}
-		}
+		if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
+            if (!options.getLogFile().getParentFile().mkdirs()) {
+                System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
+                System.exit(1);
+            }
+        }
+
+        try {
+            FileAppender logAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
+            LOGGER.getRootLogger().removeAllAppenders();
+            LOGGER.getRootLogger().addAppender(logAppender);
+            if (options.isDebugMode()) {
+                LOGGER.setLevel(Level.DEBUG);
+            } else {
+                LOGGER.setLevel(Level.INFO);
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to create logger: " + e.getMessage());
+            System.exit(1);
+        }
+		
+		options.printOptions();
 
 		switch (options.getMode()) {
 			case CONVERT_EQTL:
@@ -107,8 +125,13 @@ public class Depict2 {
 	}
 
 	public static void run(Depict2Options options) throws IOException {
+		
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
+		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
+		System.out.println("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
+		System.out.println("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
+		
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 
 		System.out.println("Done loading genotype data");
@@ -117,11 +140,11 @@ public class Depict2 {
 
 		System.out.println("Loaded " + genes.size() + " genes");
 
-		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
+		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
 
 		System.out.println("Finished calculating gene p-values");
 
-		genePvalues.save(options.getOutputFile());
+		genePvalues.save(options.getOutputBasePath() + "-genePvalues.txt");
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -132,6 +155,13 @@ public class Depict2 {
 			sampleFilter = readSampleFile(options.getGenotypeSamplesFile());
 		} else {
 			sampleFilter = null;
+		}
+		
+		if(LOGGER.isDebugEnabled()){
+			LOGGER.debug("First 5 variants to load from genotype data:");
+			for(int i = 0 ; i < 5 && i < variantsToInclude.size() ; ++i){
+				LOGGER.debug(" - " + variantsToInclude.get(i));
+			}
 		}
 
 		try {
@@ -214,14 +244,14 @@ public class Depict2 {
 	private static void convertTxtToBin(Depict2Options options) throws IOException {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
-		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
+		matrix.saveBinary(options.getOutputBasePath());
 
 	}
 
 	private static void convertEqtlToBin(Depict2Options options) throws IOException {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(options.getGwasZscoreMatrixPath());
-		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
+		matrix.saveBinary(options.getOutputBasePath());
 
 	}
 

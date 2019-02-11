@@ -45,7 +45,7 @@ public class CalculateGenePvalues {
 	 */
 	public static DoubleMatrixDataset<String, String> calculatorGenePvalues(
 			final String variantPhenotypeZscoreMatrixPath,
-			final GenotypeCovarianceSource genotypeCorrelationSource,
+			final GenotypeCorrelationSource genotypeCorrelationSource,
 			final List<Gene> genes,
 			final int windowExtend,
 			final double maxR,

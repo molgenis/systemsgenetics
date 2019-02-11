@@ -9,7 +9,7 @@ package nl.systemsgenetics.depict2;
  *
  * @author patri
  */
-public interface GenotypeCovarianceSource {
+public interface GenotypeCorrelationSource {
 	
 	/**
 	 * 

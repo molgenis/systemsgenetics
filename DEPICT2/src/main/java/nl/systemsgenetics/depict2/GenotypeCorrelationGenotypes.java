@@ -7,6 +7,7 @@ package nl.systemsgenetics.depict2;
 
 import java.util.ArrayList;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 
@@ -14,11 +15,14 @@ import org.molgenis.genotype.variant.GeneticVariant;
  *
  * @author patri
  */
-public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
+public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 
+	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
+	
 	private final RandomAccessGenotypeData referenceGenotypes;
+	
 
-	public GenotypeCovarianceGenotypes(RandomAccessGenotypeData referenceGenotypes) {
+	public GenotypeCorrelationGenotypes(RandomAccessGenotypeData referenceGenotypes) {
 		this.referenceGenotypes = referenceGenotypes;
 	}
 
@@ -30,11 +34,17 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 		final ArrayList<GeneticVariant> includedVariantsList = new ArrayList<>();
 
 		start = start < 0 ? 0 : start;
-
+		
+		LOGGER.debug("Query genotype data: " + chr + ":" + start + "-" + stop);
+		
+		int variantsFoundInRegion = 0;
+		int variantsExcludedDueToHighR = 0;
+		
 		newVariants:
 		for (GeneticVariant newVariant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
 			final float[] newVariantDosages = newVariant.getSampleDosages();
 			for (GeneticVariant selectedVariant : includedVariantsList) {
+				variantsFoundInRegion++;
 				final float[] selectedVariantDosages = selectedVariant.getSampleDosages();
 
 				//This loop is used to calculate correlation between variant dosages
@@ -44,12 +54,16 @@ public class GenotypeCovarianceGenotypes implements GenotypeCovarianceSource {
 
 				//If correlation is too large stop with current newVariant and move to next variant
 				if (regression.getR() >= maxR) {
+					variantsExcludedDueToHighR++;
 					continue newVariants;
 				}
 				
 				includedVariantsList.add(newVariant);
 			}
 		}
+		
+		LOGGER.debug(" - Variants found in region: " + variantsFoundInRegion);
+		LOGGER.debug(" - Variants excluded due to high correlation: " + variantsExcludedDueToHighR);
 
 		if (includedVariantsList.isEmpty()) {
 			return new GenotypieCorrelationResult(new double[0][0], new String[0]);

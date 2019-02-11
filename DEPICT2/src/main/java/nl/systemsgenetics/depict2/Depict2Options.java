@@ -30,12 +30,18 @@ public class Depict2Options {
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
 	private final File genotypeSamplesFile;
-	private final File outputFile;
+	private final String outputBasePath;
 	private final File geneInfoFile;
 	private final String gwasZscoreMatrixPath;
 	private final int numberOfPermutations;
 	private final int windowExtend;
 	private final double maxRBetweenVariants;
+	private final File logFile;
+	private final boolean debugMode;
+
+	public boolean isDebugMode() {
+		return debugMode;
+	}
 
 	static {
 
@@ -62,7 +68,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("The reference genotypes");
 		OptionBuilder.withLongOpt("referenceGenotypes");
 		OPTIONS.addOption(OptionBuilder.create("r"));
-		
+
 		OptionBuilder.withArgName("basePath");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Samples to include from reference genotypes");
@@ -118,6 +124,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
+		OptionBuilder.withLongOpt("debug");
+		OPTIONS.addOption(OptionBuilder.create("d"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -133,7 +144,9 @@ public class Depict2Options {
 			}
 		}
 
-		outputFile = new File(commandLine.getOptionValue('o'));
+		outputBasePath = commandLine.getOptionValue('o');
+		logFile = new File(outputBasePath + ".log");
+		debugMode = commandLine.hasOption('d');
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m"));
@@ -198,8 +211,8 @@ public class Depict2Options {
 			} else {
 
 				genotypeBasePath = commandLine.getOptionValues('r');
-				
-				if(commandLine.hasOption("rs")){
+
+				if (commandLine.hasOption("rs")) {
 					genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
 				} else {
 					genotypeSamplesFile = null;
@@ -244,7 +257,7 @@ public class Depict2Options {
 	public void printOptions() {
 
 		System.out.println(" - Mode: " + mode.name());
-		System.out.println(" - Ouput path: " + outputFile.getPath());
+		System.out.println(" - Ouput path: " + outputBasePath);
 
 		switch (mode) {
 			case CONVERT_EQTL:
@@ -272,6 +285,8 @@ public class Depict2Options {
 				System.out.println(" - Gene info file: " + geneInfoFile.getAbsolutePath());
 				break;
 		}
+		
+		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
 
 	}
 
@@ -283,8 +298,12 @@ public class Depict2Options {
 		return genotypeType;
 	}
 
-	public File getOutputFile() {
-		return outputFile;
+	public String getOutputBasePath() {
+		return outputBasePath;
+	}
+
+	public File getLogFile() {
+		return logFile;
 	}
 
 	public String getGwasZscoreMatrixPath() {
