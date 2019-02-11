@@ -126,6 +126,11 @@ public class CalculateGenePvalues {
 				}
 
 			}
+			
+			if(geneI % 100 == 0 & geneI > 0){
+				System.out.print("Proccessed " + geneI + " genes\r");
+			}
+			
 
 		}
 

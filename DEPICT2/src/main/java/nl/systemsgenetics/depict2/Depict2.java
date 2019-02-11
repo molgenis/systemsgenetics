@@ -109,11 +109,17 @@ public class Depict2 {
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
+		
+		System.out.println("Done loading genotype data");
 
 		List<Gene> genes = readGenes(options.getGeneInfoFile());
+		
+		System.out.println("Loaded " + genes.size());
 
 		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
 
+		System.out.println("Finished calculating gene p-values");
+		
 		genePvalues.save(options.getOutputFile());
 	}
 
