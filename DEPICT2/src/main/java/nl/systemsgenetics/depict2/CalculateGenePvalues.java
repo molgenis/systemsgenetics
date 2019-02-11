@@ -59,6 +59,11 @@ public class CalculateGenePvalues {
 		final int numberGenes = genes.size();
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
+		
+		int countRanPermutationsForGene = 0;
+		int countBasedPvalueOnPermutations = 0;
+		int countUseChi2DistForPvalue = 0;
+		int countNoVariants = 0;
 
 		try (ProgressBar pb = new ProgressBar("Gene p-value calculations", 10, ProgressBarStyle.ASCII)) {
 
@@ -75,6 +80,7 @@ public class CalculateGenePvalues {
 					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getCorMatrix());
 					final double[] eigenValues = eig.getRealEigenvalues();
 					geneChi2SumNull = runPermutationsUsingEigenValues(eigenValues, nrPermutations);
+					countRanPermutationsForGene++;
 				} else {
 					geneChi2SumNull = null;
 				}
@@ -105,6 +111,8 @@ public class CalculateGenePvalues {
 
 						genePValueDistribution[(int) (20d * p)]++;
 						genePvalues.setElementQuick(geneI, phenoI, p);
+						
+						countBasedPvalueOnPermutations++;
 
 					} else if (variantCorrelations.getIncludedVariants().length == 1) {
 
@@ -118,11 +126,14 @@ public class CalculateGenePvalues {
 						}
 						genePValueDistribution[(int) (20d * p)]++;
 						genePvalues.setElementQuick(geneI, phenoI, p);
+						
+						countUseChi2DistForPvalue++;
 
 					} else {
 						//no variants in or near gene
 						genePValueDistribution[(int) (20d * 0.99999d)]++;
 						genePvalues.setElementQuick(geneI, phenoI, 0.99999d);
+						countNoVariants++;
 					}
 
 				}
@@ -143,6 +154,12 @@ public class CalculateGenePvalues {
 		}
 		System.out.println("-----------------------");
 
+		System.out.println("countRanPermutationsForGene: " + countRanPermutationsForGene);
+		System.out.println("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
+		System.out.println("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
+		System.out.println("countNoVariants: " + countNoVariants);
+		
+		
 		return genePvalues;
 
 	}
