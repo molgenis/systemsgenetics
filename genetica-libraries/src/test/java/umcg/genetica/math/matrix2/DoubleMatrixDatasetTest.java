@@ -165,6 +165,21 @@ public class DoubleMatrixDatasetTest {
 		assertEquals(dataset3.getElementQuick(0, 3), -12.2d);
 		assertEquals(dataset3.getElementQuick(1, 3), 5.55d);
 		assertEquals(dataset3.getElementQuick(1, 2), 0d);
+		
+		DoubleMatrixDataset<String, String> dataset4 = dataset2.viewRowSelection(new String[]{"row3", "row2"});
+		
+		assertEquals(dataset4.rows(), 2);
+		assertEquals(dataset4.columns(), 5);
+
+		assertEquals(dataset4.getRowObjects().get(0), "row3");
+		assertEquals(dataset4.getRowObjects().get(1), "row2");
+		assertEquals(dataset4.getColObjects().get(2), "col3");
+		
+		assertEquals(dataset4.getElementQuick(0, 2), 6.66d);
+		assertEquals(dataset4.getElementQuick(0, 3), -12.2d);
+		assertEquals(dataset4.getElementQuick(1, 3), 5.55d);
+		assertEquals(dataset4.getElementQuick(1, 2), 0d);
+		
 
 	}
 

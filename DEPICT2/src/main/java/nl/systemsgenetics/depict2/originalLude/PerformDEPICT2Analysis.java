@@ -160,7 +160,7 @@ public class PerformDEPICT2Analysis {
 					int nrTasks = 0;
 					for (int taskNr = 0; taskNr < 10000; taskNr++) {
 						EstimateChi2SumDistUsingCorrelatedVariablesThread task = new EstimateChi2SumDistUsingCorrelatedVariablesThread(eigenValues, 10000, taskNr);
-						pool.submit(task);
+						//pool.submit(task);
 						nrTasks++;
 					}
 					try {

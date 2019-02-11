@@ -65,7 +65,7 @@ public class CalculateGenePvalues {
 		int countUseChi2DistForPvalue = 0;
 		int countNoVariants = 0;
 
-		try (ProgressBar pb = new ProgressBar("Gene p-value calculations", 10, ProgressBarStyle.ASCII)) {
+		try (ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
 
 			for (int geneI = 0; geneI < numberGenes; ++geneI) {
 
