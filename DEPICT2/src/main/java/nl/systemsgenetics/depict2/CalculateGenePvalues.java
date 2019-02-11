@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
 import nl.systemsgenetics.depict2.originalLude.DoubleArrayIntegerObject;
 import nl.systemsgenetics.depict2.originalLude.EstimateChi2SumDistUsingCorrelatedVariablesThread;
@@ -50,96 +51,90 @@ public class CalculateGenePvalues {
 			final double maxR,
 			final int nrPermutations) throws IOException {
 
-		
-		
 		List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
-		
-		
+
 		//Result matrix. Rows: genes, Cols: phenotypes
 		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
 		final int numberPheno = phenotypes.size();
 		final int numberGenes = genes.size();
-		
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
-		
-		ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes);
 
-		for (int geneI = 0; geneI < numberGenes; ++geneI) {
+		try (ProgressBar pb = new ProgressBar("Gene p-value calculations", 10, ProgressBarStyle.ASCII)) {
 
-			Gene gene = genes.get(geneI);
+			for (int geneI = 0; geneI < numberGenes; ++geneI) {
 
-			final GenotypieCorrelationResult variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
-					gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend, maxR);
+				Gene gene = genes.get(geneI);
 
-			final double[] geneChi2SumNull;
+				final GenotypieCorrelationResult variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
+						gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend, maxR);
 
-			if (variantCorrelations.getIncludedVariants().length > 1) {
-				final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getCorMatrix());
-				final double[] eigenValues = eig.getRealEigenvalues();
-				geneChi2SumNull = runPermutationsUsingEigenValues(eigenValues, nrPermutations);
-			} else {
-				geneChi2SumNull = null;
-			}
-			
-			//load current variants from variantPhenotypeMatrix
-			final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(variantPhenotypeZscoreMatrixPath, variantCorrelations.getIncludedVariants());
-
-			for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
+				final double[] geneChi2SumNull;
 
 				if (variantCorrelations.getIncludedVariants().length > 1) {
-
-					final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
-
-					double p = 0.5;
-					for (int perm = 0; perm < nrPermutations; perm++) {
-						if (geneChi2SumNull[perm] >= geneChi2Sum) {
-							p += 1;
-						}
-					}
-					p /= (double) nrPermutations + 1;
-
-					if (p == 1) {
-						p = 0.99999d;
-					}
-					if (p < 1e-300d) {
-						p = 1e-300d;
-					}
-
-					genePValueDistribution[(int) (20d * p)]++;
-					genePvalues.setElementQuick(geneI, phenoI, p);
-
-				} else if (variantCorrelations.getIncludedVariants().length == 1) {
-
-					//Always row 0
-					double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
-					if (p == 1) {
-						p = 0.99999d;
-					}
-					if (p < 1e-300d) {
-						p = 1e-300d;
-					}
-					genePValueDistribution[(int) (20d * p)]++;
-					genePvalues.setElementQuick(geneI, phenoI, p);
-
+					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getCorMatrix());
+					final double[] eigenValues = eig.getRealEigenvalues();
+					geneChi2SumNull = runPermutationsUsingEigenValues(eigenValues, nrPermutations);
 				} else {
-					//no variants in or near gene
-					genePValueDistribution[(int) (20d * 0.99999d)]++;
-					genePvalues.setElementQuick(geneI, phenoI, 0.99999d);
+					geneChi2SumNull = null;
 				}
 
-			}
-			
-			pb.step();
-			
+				//load current variants from variantPhenotypeMatrix
+				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(variantPhenotypeZscoreMatrixPath, variantCorrelations.getIncludedVariants());
+
+				for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
+
+					if (variantCorrelations.getIncludedVariants().length > 1) {
+
+						final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
+
+						double p = 0.5;
+						for (int perm = 0; perm < nrPermutations; perm++) {
+							if (geneChi2SumNull[perm] >= geneChi2Sum) {
+								p += 1;
+							}
+						}
+						p /= (double) nrPermutations + 1;
+
+						if (p == 1) {
+							p = 0.99999d;
+						}
+						if (p < 1e-300d) {
+							p = 1e-300d;
+						}
+
+						genePValueDistribution[(int) (20d * p)]++;
+						genePvalues.setElementQuick(geneI, phenoI, p);
+
+					} else if (variantCorrelations.getIncludedVariants().length == 1) {
+
+						//Always row 0
+						double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
+						if (p == 1) {
+							p = 0.99999d;
+						}
+						if (p < 1e-300d) {
+							p = 1e-300d;
+						}
+						genePValueDistribution[(int) (20d * p)]++;
+						genePvalues.setElementQuick(geneI, phenoI, p);
+
+					} else {
+						//no variants in or near gene
+						genePValueDistribution[(int) (20d * 0.99999d)]++;
+						genePvalues.setElementQuick(geneI, phenoI, 0.99999d);
+					}
+
+				}
+
+				pb.step();
+
 //			if (geneI % 100 == 0 & geneI > 0) {
 //				System.out.print("Proccessed " + geneI + " genes");
 //			}
-			
+			}
 
 		}
-		
-		pb.stop();
 
 		System.out.println("-----------------------");
 		System.out.println("Gene p-value histrogram");
@@ -159,7 +154,7 @@ public class CalculateGenePvalues {
 		}
 		return geneHashRows;
 	}
-	
+
 	public static LinkedHashMap<String, Integer> createPhenoHashCols(final List<String> phenotypes) {
 		LinkedHashMap<String, Integer> phenoHashCols = new LinkedHashMap<>(phenotypes.size());
 		for (int phenoI = 0; phenoI < phenotypes.size(); ++phenoI) {

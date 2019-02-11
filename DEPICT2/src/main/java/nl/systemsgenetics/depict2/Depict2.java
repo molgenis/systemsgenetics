@@ -15,6 +15,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.cli.ParseException;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -96,10 +98,9 @@ public class Depict2 {
 				run(options);
 				break;
 		}
-		
-		
+
 		System.out.println("Completed mode: " + options.getMode());
-		
+
 		currentDataTime = new Date();
 		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
 
@@ -109,30 +110,30 @@ public class Depict2 {
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
-		
+
 		System.out.println("Done loading genotype data");
 
 		List<Gene> genes = readGenes(options.getGeneInfoFile());
-		
+
 		System.out.println("Loaded " + genes.size() + " genes");
 
 		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCovarianceGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
 
 		System.out.println("Finished calculating gene p-values");
-		
+
 		genePvalues.save(options.getOutputFile());
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
 		final RandomAccessGenotypeData referenceGenotypeData;
-		
+
 		final SampleFilter sampleFilter;
-		if(options.getGenotypeSamplesFile() != null){
+		if (options.getGenotypeSamplesFile() != null) {
 			sampleFilter = readSampleFile(options.getGenotypeSamplesFile());
 		} else {
 			sampleFilter = null;
 		}
-		
+
 		try {
 			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
 		} catch (TabixFileNotFoundException e) {
@@ -191,7 +192,7 @@ public class Depict2 {
 		return genes;
 
 	}
-	
+
 	private static SampleIdIncludeFilter readSampleFile(File sampleFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
@@ -205,24 +206,23 @@ public class Depict2 {
 			samples.add(nextLine[0]);
 
 		}
-		
+
 		return new SampleIdIncludeFilter(samples);
 
 	}
-	
-	private static void convertTxtToBin(Depict2Options options) throws IOException{
-		
+
+	private static void convertTxtToBin(Depict2Options options) throws IOException {
+
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
-		
+
 	}
-	
-	private static void convertEqtlToBin(Depict2Options options) throws IOException{
-		
+
+	private static void convertEqtlToBin(Depict2Options options) throws IOException {
+
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(options.getGwasZscoreMatrixPath());
 		matrix.saveBinary(options.getOutputFile().getAbsolutePath());
-		
+
 	}
-	
 
 }
