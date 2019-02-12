@@ -286,6 +286,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		byte[] buffer = new byte[nrCols * 8];
+		
+		long rowLength = 8l * nrCols;
 		long bits;
 
 		int currentRowInSubset = 0;
@@ -293,9 +295,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 			rowMap.put(rowToView, currentRowInSubset);
 
-			int rowInFullMatrix = originalRowMap.get(rowToView);
+			long rowInFullMatrix = originalRowMap.get(rowToView);
 			
-			in.seek(8 + (nrCols * 8 * rowInFullMatrix));
+			in.seek(8 + (rowLength * rowInFullMatrix));
 
 			in.read(buffer, 0, nrCols * 8);
 			int bufferLoc = 0;
