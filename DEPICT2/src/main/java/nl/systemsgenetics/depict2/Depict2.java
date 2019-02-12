@@ -160,12 +160,14 @@ public class Depict2 {
 		if(LOGGER.isDebugEnabled()){
 			LOGGER.debug("First 5 variants to load from genotype data:");
 			for(int i = 0 ; i < 5 && i < variantsToInclude.size() ; ++i){
-				LOGGER.debug(" - " + variantsToInclude.get(i));
+				LOGGER.debug(" * " + variantsToInclude.get(i));
 			}
 		}
 
 		try {
-			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
+			
+			//new VariantIdIncludeFilter(new HashSet<>(variantsToInclude))
+			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, null, sampleFilter, null, 0.34f);
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");

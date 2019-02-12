@@ -17,7 +17,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
+	private static final Logger LOGGER = Logger.getLogger(GenotypeCorrelationGenotypes.class);
 	
 	private final RandomAccessGenotypeData referenceGenotypes;
 	
