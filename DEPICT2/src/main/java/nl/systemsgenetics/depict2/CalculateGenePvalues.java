@@ -20,6 +20,7 @@ import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposi
 import nl.systemsgenetics.depict2.originalLude.DoubleArrayIntegerObject;
 import nl.systemsgenetics.depict2.originalLude.EstimateChi2SumDistUsingCorrelatedVariablesThread;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
 
 /**
@@ -57,6 +58,8 @@ public class CalculateGenePvalues {
 		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
 		final int numberPheno = phenotypes.size();
 		final int numberGenes = genes.size();
+		
+		final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader = new DoubleMatrixDatasetFastSubsetLoader(variantPhenotypeZscoreMatrixPath);
 
 		final int[] genePValueDistribution = new int[21];//used to create histogram 
 
@@ -114,7 +117,7 @@ public class CalculateGenePvalues {
 				timeStart = System.currentTimeMillis();
 
 				//load current variants from variantPhenotypeMatrix
-				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(variantPhenotypeZscoreMatrixPath, variantCorrelations.getIncludedVariants());
+				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelations.getIncludedVariants());
 
 				timeStop = System.currentTimeMillis();
 				timeInLoadingZscoreMatrix += (timeStop - timeStart);

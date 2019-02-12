@@ -220,7 +220,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToViewHash);
 
 	}
-
+	
 	/**
 	 *
 	 *
@@ -230,10 +230,27 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @throws IOException
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, LinkedHashSet<String> rowsToView) throws IOException {
-
+		
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> originalRowMap = loadIdentifiers(fileName + ".rows.txt");
-		LinkedHashMap<String, Integer> colMap = loadIdentifiers(fileName + ".cols.txt");
+		LinkedHashMap<String, Integer> originalColMap = loadIdentifiers(fileName + ".cols.txt");
+		
+		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToView, originalRowMap, originalColMap);
+		
+	}
+
+	/**
+	 * Internal function. Does not check if proper original row/col map is used
+	 *
+	 * @param fileName
+	 * @param rowsToView
+	 * @param originalRowMap
+	 * @param originalColMap
+	 * @return subset of rows in order of rowsToView
+	 * @throws IOException
+	 */
+	protected static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, LinkedHashSet<String> rowsToView, LinkedHashMap<String, Integer> originalRowMap, LinkedHashMap<String, Integer> originalColMap) throws IOException {
+
 		LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<>(rowsToView.size());
 
 		DoubleMatrix2D matrix;
@@ -244,10 +261,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			}
 		}
 
-		if ((rowsToView.size() * (long) colMap.size()) < (Integer.MAX_VALUE - 2)) {
-			matrix = new DenseDoubleMatrix2D(rowsToView.size(), colMap.size());
+		if ((rowsToView.size() * (long) originalColMap.size()) < (Integer.MAX_VALUE - 2)) {
+			matrix = new DenseDoubleMatrix2D(rowsToView.size(), originalColMap.size());
 		} else {
-			matrix = new DenseLargeDoubleMatrix2D(rowsToView.size(), colMap.size());
+			matrix = new DenseLargeDoubleMatrix2D(rowsToView.size(), originalColMap.size());
 		}
 
 		File fileBinary = new File(fileName + ".dat");
@@ -264,7 +281,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows");
 		}
 
-		if (nrCols != colMap.size()) {
+		if (nrCols != originalColMap.size()) {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols");
 		}
 
@@ -299,7 +316,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		}
 		in.close();
-		return new DoubleMatrixDataset<>(matrix, rowMap, colMap);
+		return new DoubleMatrixDataset<>(matrix, rowMap, originalColMap);
 
 	}
 
@@ -711,15 +728,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	private static LinkedHashMap<String, Integer> loadIdentifiers(String filename) throws IOException {
+	protected static LinkedHashMap<String, Integer> loadIdentifiers(String filename) throws IOException {
 		TextFile tf = new TextFile(filename, false);
 		String[] rowsArr = tf.readAsArray();
 		tf.close();
-		LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<String, Integer>();
+		LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
 		for (String row : rowsArr) {
-			rowMap.put(row, rowMap.size());
+			map.put(row, map.size());
 		}
-		return rowMap;
+		return map;
 	}
 
 	public void save(File file, String rowDescriptor) throws IOException {

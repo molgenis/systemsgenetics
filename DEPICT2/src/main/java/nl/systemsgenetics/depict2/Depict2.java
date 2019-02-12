@@ -26,6 +26,7 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -133,6 +134,13 @@ public class Depict2 {
 		System.out.println("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
 		
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
+		
+		
+		for(int i = 0 ; i < 5 ; i++){
+			GeneticVariant v = referenceGenotypeData.iterator().next();
+			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
+		}
+		
 
 		System.out.println("Done loading genotype data");
 
