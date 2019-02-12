@@ -136,26 +136,26 @@ public class Depict2 {
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 		
 		
-		Iterator<GeneticVariant> it = referenceGenotypeData.iterator();
-		for(int i = 0 ; i < 5 ; i++){
-			if(!it.hasNext()){
-				System.out.println("No more variants");
-			}
-			GeneticVariant v = it.next();
-			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
-		}
-		System.out.println("---");
-		GeneticVariant v = referenceGenotypeData.getVariantsByPos("1", 10177).iterator().next();
-		System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
-		System.out.println("---");
-		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)) {
-			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
-		}
-		System.out.println("---");
-		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 11919466, 12132045)) {
-			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
-		}
-		
+//		Iterator<GeneticVariant> it = referenceGenotypeData.iterator();
+//		for(int i = 0 ; i < 5 ; i++){
+//			if(!it.hasNext()){
+//				System.out.println("No more variants");
+//			}
+//			GeneticVariant v = it.next();
+//			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
+//		}
+//		System.out.println("---");
+//		GeneticVariant v = referenceGenotypeData.getVariantsByPos("1", 10177).iterator().next();
+//		System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
+//		System.out.println("---");
+//		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)) {
+//			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
+//		}
+//		System.out.println("---");
+//		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 11919466, 12132045)) {
+//			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
+//		}
+//		
 
 		System.out.println("Done loading genotype data");
 
