@@ -62,8 +62,8 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			}
 		}
 		
-		LOGGER.debug(" - Variants found in region: " + variantsFoundInRegion);
-		LOGGER.debug(" - Variants excluded due to high correlation: " + variantsExcludedDueToHighR);
+		LOGGER.debug(" * Variants found in region: " + variantsFoundInRegion);
+		LOGGER.debug(" * Variants excluded due to high correlation: " + variantsExcludedDueToHighR);
 
 		if (includedVariantsList.isEmpty()) {
 			return new GenotypieCorrelationResult(new double[0][0], new String[0]);

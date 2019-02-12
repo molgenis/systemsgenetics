@@ -17,7 +17,6 @@ import java.util.concurrent.Executors;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
-import nl.systemsgenetics.depict2.originalLude.DoubleArrayIntegerObject;
 import nl.systemsgenetics.depict2.originalLude.EstimateChi2SumDistUsingCorrelatedVariablesThread;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;

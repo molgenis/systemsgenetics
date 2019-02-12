@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
@@ -27,7 +28,6 @@ import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -136,8 +136,16 @@ public class Depict2 {
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 		
 		
+		Iterator<GeneticVariant> it = referenceGenotypeData.iterator();
 		for(int i = 0 ; i < 5 ; i++){
-			GeneticVariant v = referenceGenotypeData.iterator().next();
+			GeneticVariant v = it.next();
+			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
+		}
+		System.out.println("---");
+		GeneticVariant v = referenceGenotypeData.getVariantsByPos("1", 10177).iterator().next();
+		System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
+		System.out.println("---");
+		for(v : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)){
 			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
 		}
 		
