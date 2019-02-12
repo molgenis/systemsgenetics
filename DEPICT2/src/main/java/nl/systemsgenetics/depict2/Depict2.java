@@ -138,6 +138,9 @@ public class Depict2 {
 		
 		Iterator<GeneticVariant> it = referenceGenotypeData.iterator();
 		for(int i = 0 ; i < 5 ; i++){
+			if(!it.hasNext()){
+				System.out.println("No more variants");
+			}
 			GeneticVariant v = it.next();
 			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
 		}
