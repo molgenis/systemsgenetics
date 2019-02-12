@@ -13,6 +13,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
@@ -24,6 +25,7 @@ public class Depict2Options {
 
 	private static final Options OPTIONS;
 	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();
+	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
 	private final Depict2Mode mode;
 
