@@ -148,8 +148,8 @@ public class Depict2 {
 		GeneticVariant v = referenceGenotypeData.getVariantsByPos("1", 10177).iterator().next();
 		System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
 		System.out.println("---");
-		for(v : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)){
-			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
+		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)) {
+			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
 		}
 		
 
