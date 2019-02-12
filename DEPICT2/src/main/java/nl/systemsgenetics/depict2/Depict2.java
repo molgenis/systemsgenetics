@@ -181,9 +181,7 @@ public class Depict2 {
 		}
 		
 		try {
-			
-			//new VariantIdIncludeFilter(new HashSet<>(variantsToInclude))
-			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, null, sampleFilter, null, 0.34f);
+			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");
