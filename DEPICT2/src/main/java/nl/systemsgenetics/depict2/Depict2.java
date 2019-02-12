@@ -151,6 +151,10 @@ public class Depict2 {
 		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)) {
 			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
 		}
+		System.out.println("---");
+		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 11919466, 12132045)) {
+			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
+		}
 		
 
 		System.out.println("Done loading genotype data");
