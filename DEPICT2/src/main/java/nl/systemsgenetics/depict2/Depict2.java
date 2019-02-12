@@ -180,13 +180,6 @@ public class Depict2 {
 			sampleFilter = null;
 		}
 		
-		if(LOGGER.isDebugEnabled()){
-			LOGGER.debug("First 5 variants to load from genotype data:");
-			for(int i = 0 ; i < 5 && i < variantsToInclude.size() ; ++i){
-				LOGGER.debug(" * " + variantsToInclude.get(i));
-			}
-		}
-
 		try {
 			
 			//new VariantIdIncludeFilter(new HashSet<>(variantsToInclude))
