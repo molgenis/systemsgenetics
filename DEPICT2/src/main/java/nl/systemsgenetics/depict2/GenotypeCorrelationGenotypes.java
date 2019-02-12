@@ -43,8 +43,8 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		newVariants:
 		for (GeneticVariant newVariant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
 			final float[] newVariantDosages = newVariant.getSampleDosages();
+			variantsFoundInRegion++;
 			for (GeneticVariant selectedVariant : includedVariantsList) {
-				variantsFoundInRegion++;
 				final float[] selectedVariantDosages = selectedVariant.getSampleDosages();
 
 				//This loop is used to calculate correlation between variant dosages
@@ -57,9 +57,9 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 					variantsExcludedDueToHighR++;
 					continue newVariants;
 				}
-				
-				includedVariantsList.add(newVariant);
+			
 			}
+			includedVariantsList.add(newVariant);
 		}
 		
 		LOGGER.debug(" * Variants found in region: " + variantsFoundInRegion);
