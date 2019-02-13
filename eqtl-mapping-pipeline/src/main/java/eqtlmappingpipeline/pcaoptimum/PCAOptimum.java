@@ -18,6 +18,7 @@ import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.text.Strings;
 
 import java.io.IOException;
@@ -28,10 +29,10 @@ import java.util.*;
  */
 public class PCAOptimum extends MetaQTL3 {
 	
-	protected String inexpplatform;
-	protected String inexpannot;
-	protected String ingt;
-	protected String gte;
+	//	protected String inexpplatform;
+//	protected String inexpannot;
+//	protected String ingt;
+//	protected String gte;
 	protected Integer m_threads = 1;
 	protected int permutations = 10;
 	protected boolean covariatesremoved = false;
@@ -58,39 +59,6 @@ public class PCAOptimum extends MetaQTL3 {
 						   String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile,
 						   Integer threads, Integer maxNrResults, String regressouteqtls, String snpprobecombofile, boolean skipdotplot,
 						   boolean skipqqplot, Long rseed, Double maf, Double hwe) throws IOException, Exception {
-		if (!out.endsWith("/")) {
-			out += "/";
-		}
-		if (!Gpio.exists(out)) {
-			Gpio.createDir(out);
-		}
-		
-		permutations = perm;
-		
-		String origInExp = inexp;
-		
-		m_settings = new Settings();
-		m_settings.numberOfVariantsToBuffer = 1000;
-		if (snpfile != null) {
-			m_settings.numberOfVariantsToBuffer = 1;
-		}
-		m_settings.fullFdrOutput = false;
-		
-		
-		int nrProcs = Runtime.getRuntime().availableProcessors();
-		if (threads != null && threads > 0 && threads <= nrProcs) {
-			//
-			m_threads = threads;
-		} else {
-			if (threads != null && threads > nrProcs) {
-				System.out.println("The number of threads you set using the command line is not correct for your system. You set " + threads + " threads, while your machine has " + nrProcs + " processors");
-			}
-			threads = nrProcs;
-		}
-		
-		m_threads = threads;
-		int round = 0;
-		
 		
 		HashSet<String> cisSnpsToTest = new HashSet<String>();
 		HashSet<String> transSnpsToTest = new HashSet<String>();
@@ -122,45 +90,91 @@ public class PCAOptimum extends MetaQTL3 {
 			tf.close();
 		}
 		
-		//String nextInExp = origInExp + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt.gz";
-		String outputdir = out + "Cis-0PCAsRemoved";
-		if (!outputdir.endsWith("/")) {
-			outputdir += "/";
-		}
-		if (!Gpio.exists(outputdir)) {
-			Gpio.createDir(outputdir);
+		if (xmlSettingsFile == null) {
+			// store all settings in a settings object
+			if (!out.endsWith("/")) {
+				out += "/";
+			}
+			if (!Gpio.exists(out)) {
+				Gpio.createDir(out);
+			}
+			
+			permutations = perm;
+			
+			
+			m_settings = new Settings();
+			m_settings.numberOfVariantsToBuffer = 1000;
+			if (snpfile != null) {
+				m_settings.numberOfVariantsToBuffer = 1;
+			}
+			m_settings.fullFdrOutput = false;
+			
+			
+			int nrProcs = Runtime.getRuntime().availableProcessors();
+			if (threads != null && threads > 0 && threads <= nrProcs) {
+				//
+				m_threads = threads;
+			} else {
+				if (threads != null && threads > nrProcs) {
+					System.out.println("The number of threads you set using the command line is not correct for your system. You set " + threads + " threads, while your machine has " + nrProcs + " processors");
+				}
+				threads = nrProcs;
+			}
+			
+			m_threads = threads;
+			int round = 0;
+			
+			//String nextInExp = origInExp + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt.gz";
+			String outputdir = out + "Cis-0PCAsRemoved";
+			if (!outputdir.endsWith("/")) {
+				outputdir += "/";
+			}
+			if (!Gpio.exists(outputdir)) {
+				Gpio.createDir(outputdir);
+			}
+			
+			m_settings.datasetSettings = new ArrayList<>();
+			TriTyperGeneticalGenomicsDatasetSettings ds = new TriTyperGeneticalGenomicsDatasetSettings();
+			ds.name = "Dataset";
+			ds.probeannotation = inexpannot;
+			ds.expressionplatform = inexpplatform;
+			ds.expressionLocation = inexp;
+			ds.genotypeLocation = ingt;
+			ds.genotypeToExpressionCoupling = gte;
+			m_settings.datasetSettings.add(ds);
+			
+		} else {
+			System.out.println("This tool does not support the use of XML settings files.");
+			System.exit(-1);
+			m_settings = new Settings();
+			m_settings.load(xmlSettingsFile);
 		}
 		
-		// set standard cis-settings
-		this.inexpannot = inexpannot;
-		this.inexpplatform = inexpplatform;
-		this.ingt = ingt;
-		this.gte = gte;
+		ArrayList<String> origExpDs = new ArrayList<>();
+		ArrayList<Integer> pcs = null;
+		boolean alldshavesamepcs = true;
 		
-		String parentDir = Gpio.getParentDir(origInExp);
-		System.out.println("Looking for PCA corrected files in folder: " + parentDir);
-		String[] fileList = Gpio.getListOfFiles(parentDir);
-		ArrayList<Integer> pcs = new ArrayList<Integer>();
-		HashMap<Integer, String> stepToFile = new HashMap<Integer, String>();
-		for (String f : fileList) {
-			if (f.toLowerCase().contains("pcasoversamplesremoved") && !f.toLowerCase().contains("geneticvectorsnotremoved")) {
-				String[] fileParts = f.split("\\.");
-				for (String p : fileParts) {
-					if (p.toLowerCase().contains("pcasoversamplesremoved")) {
-						Integer pc = Integer.parseInt(p.toLowerCase().replace("pcasoversamplesremoved", ""));
-						pcs.add(pc);
-						stepToFile.put(pc, f);
-						System.out.println("Found file for PC: " + pc + "\t" + f);
-						break;
+		for (int d = 0; d < m_settings.datasetSettings.size(); d++) {
+			origExpDs.add(m_settings.datasetSettings.get(d).expressionLocation);
+			if (d == 0) {
+				pcs = getPCs(d);
+			} else {
+				ArrayList<Integer> dspcs = getPCs(d);
+				HashSet<Integer> dspcshash = new HashSet<>();
+				dspcshash.addAll(dspcs);
+				for (Integer pc : pcs) {
+					if (!(dspcs.contains(pc))) {
+						System.out.println("Error: could not find file for " + pc + " for dataset " + m_settings.datasetSettings.get(d).name);
+						alldshavesamepcs = false;
 					}
 				}
 			}
 		}
 		
-		if (pcs.isEmpty()) {
-			System.out.println("No PCA corrected files."
-					+ "\n Please first run the normalization procedure.");
-			System.exit(0);
+		
+		if (!alldshavesamepcs) {
+			System.out.println("Error: not all pc files present for all datasets. ");
+			System.exit(-1);
 		}
 		
 		Collections.sort(pcs);
@@ -194,68 +208,50 @@ public class PCAOptimum extends MetaQTL3 {
 		
 		
 		System.out.println("Determined max: " + max);
-		System.out.println("Determined stepsize: " + stepSize);
+		System.out.println("Determined step size: " + stepSize);
 		
 		if (performEigenVectorQTLMapping) {
-			performeQTLMappingOverEigenvectorMatrixAndReNormalize(origInExp, out, parentDir, stepSize, max, maxNrResults);
+			performeQTLMappingOverEigenvectorMatrixAndReNormalize(out, stepSize, max, maxNrResults);
 			
-			fileList = Gpio.getListOfFiles(parentDir);
-			pcs = new ArrayList<Integer>();
-			stepToFile = new HashMap<Integer, String>();
-			for (String f : fileList) {
-				
-				if (f.toLowerCase().contains("pcasoversamplesremoved-geneticvectorsnotremoved")) {
-					String[] fileParts = f.split("\\.");
-					for (String p : fileParts) {
-						if (p.toLowerCase().contains("pcasoversamplesremoved-geneticvectorsnotremoved")) {
-							Integer pc = Integer.parseInt(p.toLowerCase().replace("pcasoversamplesremoved-geneticvectorsnotremoved", ""));
-							pcs.add(pc);
-							stepToFile.put(pc, f);
-							System.out.println("Found file for PC: " + pc + "\t" + f);
-							break;
-						}
-					}
-				}
-			}
 		}
 		
-		String nextInExp = "";
+		
 		for (int pca = 0; pca <= max; pca += stepSize) {
-			if (pca == 0) {
-				//nextInExp = origInExp + ".QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.txt.gz";
-				nextInExp = origInExp;
-			} else {
-//                String tmpName = origInExp.replaceAll(".txt", "");
-//                tmpName = tmpName.replaceAll(".gz", "");
-//                nextInExp = tmpName + "." + pca + "PCAsOverSamplesRemoved.txt.gz";
-				nextInExp = parentDir + "/" + stepToFile.get(pca);
-			}
-			
-			if (!Gpio.exists(nextInExp)) {
-				System.err.println("Could not find file for pca: " + pca + "\t" + nextInExp);
-			} else {
-				if (cis) {
-					String outputDir = out + "Cis-" + pca + "PCAsRemoved/";
-					if (performEigenVectorQTLMapping && pca > 0) {
-						outputDir = out + "Cis-" + pca + "PCAsRemoved-GeneticVectorsNotRemoved/";
-					}
-					if ((pca == 0 && !Gpio.exists(outputDir + "eQTLProbesFDR0.05.txt.gz")) || pca > 0) {
-						performeQTLMapping(true, false, nextInExp, outputDir, cisSnpsToTest, null, threads, maxNrResults);
-						cleanup();
-					}
+			for (int d = 0; d < m_settings.datasetSettings.size(); d++) {
+				String expfile = origExpDs.get(d);
+				
+				if (pca > 0) {
+				
 				}
-				if (trans) {
-					String outputDir = out + "Trans-" + pca + "PCAsRemoved/";
-					if (performEigenVectorQTLMapping && pca > 0) {
-						outputDir = out + "Trans-" + pca + "PCAsRemoved-GeneticVectorsNotRemoved/";
-					}
-					if ((pca == 0 && !Gpio.exists(outputDir + "eQTLProbesFDR0.05.txt.gz")) || pca > 0) {
-						performeQTLMapping(false, true, nextInExp, outputDir, transSnpsToTest, null, threads, maxNrResults);
-						cleanup();
-					}
+				
+				
+				// check whether the file exists...
+				if (!Gpio.exists(expfile)) {
+					System.err.println("Could not find file for pca: " + pca + "\t" + expfile);
+					System.exit(-1);
+				}
+				m_settings.datasetSettings.get(d).expressionLocation = expfile;
+			}
+			if (cis) {
+				String outputDir = out + "Cis-" + pca + "PCAsRemoved/";
+				if (performEigenVectorQTLMapping && pca > 0) {
+					outputDir = out + "Cis-" + pca + "PCAsRemoved-GeneticVectorsNotRemoved/";
+				}
+				if ((pca == 0 && !Gpio.exists(outputDir + "eQTLProbesFDR0.05.txt.gz")) || pca > 0) {
+					performeQTLMapping(true, false, outputDir, cisSnpsToTest, null, threads, maxNrResults);
+					cleanup();
 				}
 			}
-			
+			if (trans) {
+				String outputDir = out + "Trans-" + pca + "PCAsRemoved/";
+				if (performEigenVectorQTLMapping && pca > 0) {
+					outputDir = out + "Trans-" + pca + "PCAsRemoved-GeneticVectorsNotRemoved/";
+				}
+				if ((pca == 0 && !Gpio.exists(outputDir + "eQTLProbesFDR0.05.txt.gz")) || pca > 0) {
+					performeQTLMapping(false, true, outputDir, transSnpsToTest, null, threads, maxNrResults);
+					cleanup();
+				}
+			}
 		}
 		
 		
@@ -265,6 +261,38 @@ public class PCAOptimum extends MetaQTL3 {
 		} else {
 			pi.inventory(out, cis, trans, max, stepSize);
 		}
+		
+	}
+	
+	private ArrayList<Integer> getPCs(int d) {
+		String origInExp = m_settings.datasetSettings.get(d).expressionLocation;
+		
+		String parentDir = Gpio.getParentDir(origInExp);
+		System.out.println("Looking for PCA corrected files in folder: " + parentDir);
+		String[] fileList = Gpio.getListOfFiles(parentDir);
+		ArrayList<Integer> dspcs = new ArrayList<Integer>();
+		HashMap<Integer, String> stepToFile = new HashMap<Integer, String>();
+		for (String f : fileList) {
+			if (f.toLowerCase().contains("pcasoversamplesremoved") && !f.toLowerCase().contains("geneticvectorsnotremoved")) {
+				String[] fileParts = f.split("\\.");
+				for (String p : fileParts) {
+					if (p.toLowerCase().contains("pcasoversamplesremoved")) {
+						Integer pc = Integer.parseInt(p.toLowerCase().replace("pcasoversamplesremoved", ""));
+						dspcs.add(pc);
+						stepToFile.put(pc, f);
+						System.out.println("Found file for PC: " + pc + "\t" + f);
+						break;
+					}
+				}
+			}
+		}
+		if (dspcs.isEmpty()) {
+			System.out.println("No PCA corrected files."
+					+ "\n Please first run the normalization procedure.");
+			System.exit(0);
+		}
+		
+		return dspcs;
 	}
 	
 	protected void init() throws IOException, Exception {
@@ -287,9 +315,6 @@ public class PCAOptimum extends MetaQTL3 {
 			System.out.println("");
 		}
 		
-		// sort datasets on size to increase efficiency of random reads..
-		// for some reason, it is faster to load the largest dataset first.
-		Arrays.sort(m_gg, Collections.reverseOrder());
 		
 		System.out.println("Accumulating available data...");
 		System.out.print(ConsoleGUIElems.LINE);
@@ -344,9 +369,8 @@ public class PCAOptimum extends MetaQTL3 {
 		this.m_workPackages = null;
 	}
 	
-	protected void performeQTLMapping(boolean cis, boolean trans, String inFile, String out, HashSet<String> snpsToTest, THashSet<String> probesToTest, int threads, Integer maxNrResults) throws IOException, Exception {
+	protected void performeQTLMapping(boolean cis, boolean trans, String out, HashSet<String> snpsToTest, THashSet<String> probesToTest, int threads, Integer maxNrResults) throws IOException, Exception {
 //
-		String nextInExp = inFile;
 		
 		String outputdir = out;
 		if (!Gpio.exists(outputdir)) {
@@ -354,24 +378,21 @@ public class PCAOptimum extends MetaQTL3 {
 		}
 		// set output dir
 		// set standard cis-settings
+		Settings backup = m_settings;
+		
 		m_settings = new Settings();
-		TriTyperGeneticalGenomicsDatasetSettings s = new TriTyperGeneticalGenomicsDatasetSettings();
-		
-		s.name = "Dataset";
-		s.expressionLocation = nextInExp;
-		System.out.println(nextInExp);
-		s.expressionplatform = inexpplatform;
-		s.probeannotation = inexpannot;
-		s.genotypeLocation = ingt;
-		s.genotypeToExpressionCoupling = gte;
-		s.cisAnalysis = cis;
-		s.transAnalysis = trans;
-		
-		if (probesToTest != null) {
-			s.tsProbesConfine = probesToTest;
-		}
 		m_settings.datasetSettings = new ArrayList<TriTyperGeneticalGenomicsDatasetSettings>();
-		m_settings.datasetSettings.add(s);
+		for (int d = 0; d < backup.datasetSettings.size(); d++) {
+			TriTyperGeneticalGenomicsDatasetSettings s = backup.datasetSettings.get(d);
+			s.cisAnalysis = cis;
+			s.transAnalysis = trans;
+			if (probesToTest != null) {
+				s.tsProbesConfine = probesToTest;
+			}
+			m_settings.datasetSettings.add(s);
+		}
+		
+		
 		m_settings.numberOfVariantsToBuffer = 1000;
 		
 		m_settings.createDotPlot = false;
@@ -412,6 +433,7 @@ public class PCAOptimum extends MetaQTL3 {
 		// set standard trans settings
 		super.mapEQTLs();
 		cleanup();
+		m_settings = backup;
 	}
 	
 	protected void compareZScores(EQTL[] ciseqtls, EQTL[] transeqtls, EQTL[] originalCisEQTLs, EQTL[] originalTransEQTLs, String out, int pca) {
@@ -474,12 +496,46 @@ public class PCAOptimum extends MetaQTL3 {
 		return y;
 	}
 	
-	public void performeQTLMappingOverEigenvectorMatrixAndReNormalize(String origInExp, String out, String parentDir, int stepSize, int max, Integer maxNrResults) throws IOException, Exception {
+	public void performeQTLMappingOverEigenvectorMatrixAndReNormalize(String out, int stepSize, int max, Integer maxNrResults) throws IOException, Exception {
+		Normalizer n = new Normalizer();
+		
+		ArrayList<String> origexp = new ArrayList<>();
+		
+		for (int d = 0; d < m_settings.datasetSettings.size(); d++) {
+			
+			String origInExp = m_settings.datasetSettings.get(d).expressionLocation;
+			String parentDir = Gpio.getParentDir(origInExp);
+			
+			// check whether transposed eQTL file is there
+			String expressionFileName = Gpio.getFileName(origInExp);
+			if (parentDir == null) {
+				parentDir = "";
+			}
+			
+			if (expressionFileName.contains(".txt.gz")) {
+				expressionFileName = expressionFileName.replaceAll(".txt.gz", "");
+			} else {
+				expressionFileName = expressionFileName.replaceAll(".txt", "");
+			}
+			
+			origexp.add(origInExp);
+			String outputFileNamePrefix = parentDir + expressionFileName;
+			if (!Gpio.exists(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz") && Gpio.exists(outputFileNamePrefix + ".PCAOverSamplesEigenvectors.txt.gz")) {
+				// transpose eigenvector matrix
+				DoubleMatrixDataset<String, String> ds = DoubleMatrixDataset.loadDoubleData(outputFileNamePrefix + ".PCAOverSamplesEigenvectors.txt.gz");
+				ds.saveDice(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz");
+				m_settings.datasetSettings.get(d).expressionLocation = outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz";
+			} else {
+				Triple<String, String, String> locations = n.calculatePcaOnly(origInExp);
+				String eigenvectorFileTransposed = locations.getLeft();
+				String eigenvectorFile = locations.getMiddle();
+				String pcaFile = locations.getRight();
+				m_settings.datasetSettings.get(d).expressionLocation = eigenvectorFileTransposed;
+			}
+			
+		}
+		
 		// Eigenvector mapping
-		TextFile tf = new TextFile(origInExp, TextFile.R);
-		String[] header = tf.readLineElems(TextFile.tab);
-		int nrCols = header.length;
-		tf.close();
 		
 		int nrToRemove = max + 1;
 		
@@ -487,17 +543,11 @@ public class PCAOptimum extends MetaQTL3 {
 		for (int i = 1; i < nrToRemove; i++) {
 			probesToTest.add("Comp" + i);
 		}
-		
-		parentDir += Gpio.getFileSeparator();
-		Normalizer n = new Normalizer();
-		Triple<String, String, String> nextInExp = n.calculatePcaOnly(origInExp);
-		
-		String eigenvectorFileTransposed = nextInExp.getLeft();
-		String eigenvectorFile = nextInExp.getMiddle();
-		String pcaFile = nextInExp.getRight();
+
+//
 		// ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.PCAOverSamplesEigenvectorsTransposed
 		
-		performeQTLMapping(true, true, eigenvectorFileTransposed, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
+		performeQTLMapping(true, true, out + "CisTrans-PCAEigenVectors/", m_settings.tsSNPsConfine, probesToTest, m_threads, maxNrResults);
 		cleanup();
 		
 		QTLTextFile etf = new QTLTextFile(out + "CisTrans-PCAEigenVectors/eQTLProbesFDR0.05.txt.gz", QTLTextFile.R);
@@ -528,8 +578,30 @@ public class PCAOptimum extends MetaQTL3 {
 			System.out.println();
 		}
 		
-		
-		n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, eigenvectorFile, pcaFile, max, stepSize);
+		for (int d = 0; d < m_settings.datasetSettings.size(); d++) {
+			String origInExp = origexp.get(d);
+			String parentDir = Gpio.getParentDir(origInExp);
+			
+			// check whether transposed eQTL file is there
+			String expressionFileName = Gpio.getFileName(origInExp);
+			if (parentDir == null) {
+				parentDir = "";
+			}
+			
+			if (expressionFileName.contains(".txt.gz")) {
+				expressionFileName = expressionFileName.replaceAll(".txt.gz", "");
+			} else {
+				expressionFileName = expressionFileName.replaceAll(".txt", "");
+			}
+			
+			
+			String outputFileNamePrefix = parentDir + expressionFileName;
+			String eigenvectorFileTranspose = outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz";
+			String eigenvectorFile = outputFileNamePrefix + ".PCAOverSamplesEigenvectors.txt.gz";
+			String pcaFile = outputFileNamePrefix + ".PCAOverSamplesPrincipalComponents.txt.gz";
+			n.repeatPCAOmitCertainPCAs(geneticEigenVectors, parentDir, origInExp, eigenvectorFile, pcaFile, max, stepSize);
+			m_settings.datasetSettings.get(d).expressionLocation = origInExp;
+		}
 	}
 	
 	public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out,
@@ -542,9 +614,9 @@ public class PCAOptimum extends MetaQTL3 {
 		}
 		
 		permutations = perm;
-		
-		
-		m_settings = new Settings();
+
+
+//		m_settings = new Settings();
 		
 		m_settings.sortsnps = sortsnps;
 		m_settings.fullFdrOutput = false;
@@ -574,12 +646,6 @@ public class PCAOptimum extends MetaQTL3 {
 		} else {
 			trans = false;
 		}
-		
-		// set standard cis-settings
-		this.inexpannot = inexpannot;
-		this.inexpplatform = inexpplatform;
-		this.ingt = ingt;
-		this.gte = gte;
 		
 		if (snpfile != null) {
 			TextFile f = new TextFile(snpfile, TextFile.R);

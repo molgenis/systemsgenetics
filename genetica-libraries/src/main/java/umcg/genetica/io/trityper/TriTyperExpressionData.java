@@ -391,17 +391,24 @@ public class TriTyperExpressionData {
 					
 					int samplePos = 0;
 					float[] tmpDt = new float[numIndsIncluded];
-					for (int pos = offset; pos < elems.length; pos++) {
-						if (includeCol[pos]) {
-							try {
-								tmpDt[samplePos] = Float.parseFloat(elems[pos]);
-							} catch (NumberFormatException e) {
-								System.err.println("WARNING: missing value for column:\t" + pos + "\tprobe:\t" + probe);
-								tmpDt[samplePos] = Float.NaN;
-								probesWithMissingValues.add(probeNr);
+					try {
+						for (int pos = offset; pos < elems.length; pos++) {
+							if (includeCol[pos]) {
+								try {
+									tmpDt[samplePos] = Float.parseFloat(elems[pos]);
+								} catch (NumberFormatException e) {
+									System.err.println("WARNING: missing value for column:\t" + pos + "\tprobe:\t" + probe);
+									tmpDt[samplePos] = Float.NaN;
+									probesWithMissingValues.add(probeNr);
+								}
+								samplePos++;
 							}
-							samplePos++;
 						}
+					} catch (ArrayIndexOutOfBoundsException e) {
+						System.err.println("ERROR: array index out of bounds: ");
+						System.err.println(e.getMessage());
+						System.err.println("Seems like your expression data is malformed (e.g. is there a column shift?).");
+						System.exit(-1);
 					}
 					
 					tmpRaw.add(tmpDt);
