@@ -329,7 +329,7 @@ public class transCorrelationQtl {
 			genes.putIfAbsent(chr, chrGenes);
 
 		}
-		PerChrIntervalTree<NamedGenomicRange> geneMappings = new PerChrIntervalTree(NamedGenomicRange.class);
+		PerChrIntervalTree<NamedGenomicRange> geneMappings = new PerChrIntervalTree<>(NamedGenomicRange.class);
 		for (Map.Entry<String, ArrayList<NamedGenomicRange>> entry : genes.entrySet()) {
 			geneMappings.addChrElements(entry.getKey(), entry.getValue());
 		}
@@ -358,7 +358,7 @@ public class transCorrelationQtl {
 
 			Qtl eqtl = new Qtl(nextLine[3], nextLine[4], Double.valueOf(nextLine[5]));
 
-			HashSet<Qtl> snpTransEffects = transEqtls.getOrDefault(eqtl.getSnp(), new HashSet());
+			HashSet<Qtl> snpTransEffects = transEqtls.getOrDefault(eqtl.getSnp(), new HashSet<>());
 			snpTransEffects.add(eqtl);
 			transEqtls.putIfAbsent(eqtl.getSnp(), snpTransEffects);
 

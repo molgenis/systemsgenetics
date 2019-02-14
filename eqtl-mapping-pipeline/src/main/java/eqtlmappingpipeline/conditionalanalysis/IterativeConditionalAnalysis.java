@@ -13,7 +13,7 @@ import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.io.File;
 import java.io.IOException;
@@ -145,8 +145,10 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 				String filename = ds.getSettings().expressionLocation;
 				File f = new File(filename);
 				String fname = f.getName();
-				DoubleMatrixDataset<String, String> dsout = new DoubleMatrixDataset<String, String>(matrix, Arrays.asList(probes), Arrays.asList(individuals));
-				dsout.recalculateHashMaps();
+				DoubleMatrixDataset<String, String> dsout = new DoubleMatrixDataset<>();
+				dsout.setRowObjects(Arrays.asList(probes));
+				dsout.setColObjects(Arrays.asList(individuals));
+				dsout.setMatrix(matrix);
 				System.out.println("Saving expression file after removal of eQTL effects: " + origOutputDir + fname + "-EQTLEffectsRemoved.txt.gz");
 				dsout.save(origOutputDir + fname + "-EQTLEffectsRemoved.txt.gz");
 			}
