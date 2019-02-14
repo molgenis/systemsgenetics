@@ -489,22 +489,20 @@ public class UtilConsoleGUI {
 					
 					case NONGENETICPCACORRECTION:
 						
-						if (settingsfile == null || (in == null || out == null || inexp == null || gte == null)) {
-							System.out.println("Please specify --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --nreqtls and --dontsortsnps");
+						boolean cmdlinesettings = (in == null || out == null || inexp == null || gte == null);
+						
+						if (settingsfile == null && cmdlinesettings) {
+							System.out.println("Please specify --settings, --in, --out, --stepsizepcaremoval, --maxnrpcaremoved, --gte, --nreqtls and --dontsortsnps");
 						} else {
 							try {
 								
 								
 								PCAOptimum p = new PCAOptimum();
 //            public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out, boolean cis, boolean trans, int perm, String snpfile, Integer threads) throws IOException, Exception {
-								if (!out.endsWith(Gpio.getFileSeparator())) {
-									out += Gpio.getFileSeparator();
-								}
+								
 								
 								perm = 10;
 								p.alternativeInitialize(settingsfile, in, inexp, null, annot, gte, out, true, true, perm, snpfile, threads, sortsnps);
-								File file = new File(inexp);
-								
 								p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(out, stepSize, max, nreqtls);
 							} catch (IOException ex) {
 								Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);

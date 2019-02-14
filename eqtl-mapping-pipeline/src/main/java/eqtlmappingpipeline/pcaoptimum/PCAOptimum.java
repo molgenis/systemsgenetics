@@ -434,7 +434,6 @@ public class PCAOptimum extends MetaQTL3 {
 		}
 		
 		
-		
 		m_settings.numberOfVariantsToBuffer = 1000;
 		
 		m_settings.createDotPlot = false;
@@ -662,12 +661,6 @@ public class PCAOptimum extends MetaQTL3 {
 	
 	public void alternativeInitialize(String settingsfile, String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out,
 									  boolean cis, boolean trans, int perm, String snpfile, Integer threads, boolean sortsnps) throws IOException, Exception {
-		if (!out.endsWith(Gpio.getFileSeparator())) {
-			out += Gpio.getFileSeparator();
-		}
-		if (!Gpio.exists(out)) {
-			Gpio.createDir(out);
-		}
 		
 		
 		if (settingsfile != null) {
@@ -675,6 +668,7 @@ public class PCAOptimum extends MetaQTL3 {
 			m_settings.load(settingsfile);
 			permutations = m_settings.nrPermutationsFDR;
 			m_threads = m_settings.nrThreads;
+			out = m_settings.outputReportsDir;
 		} else {
 			permutations = perm;
 			m_settings = new Settings();
@@ -699,7 +693,12 @@ public class PCAOptimum extends MetaQTL3 {
 			m_settings.fullFdrOutput = false;
 		}
 		
-		
+		if (!out.endsWith(Gpio.getFileSeparator())) {
+			out += Gpio.getFileSeparator();
+		}
+		if (!Gpio.exists(out)) {
+			Gpio.createDir(out);
+		}
 		if (cissnps != null) {
 			cis = true;
 		} else {
