@@ -616,7 +616,7 @@ public class PCAOptimum extends MetaQTL3 {
 		permutations = perm;
 
 
-//		m_settings = new Settings();
+		m_settings = new Settings();
 		
 		m_settings.sortsnps = sortsnps;
 		m_settings.fullFdrOutput = false;
