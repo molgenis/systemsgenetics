@@ -604,7 +604,7 @@ public class PCAOptimum extends MetaQTL3 {
 		}
 	}
 	
-	public void alternativeInitialize(String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out,
+	public void alternativeInitialize(String settingsfile, String ingt, String inexp, String inexpplatform, String inexpannot, String gte, String out,
 									  boolean cis, boolean trans, int perm, String snpfile, Integer threads, boolean sortsnps) throws IOException, Exception {
 		if (!out.endsWith(Gpio.getFileSeparator())) {
 			out += Gpio.getFileSeparator();
@@ -614,26 +614,33 @@ public class PCAOptimum extends MetaQTL3 {
 		}
 		
 		permutations = perm;
-
-
-		m_settings = new Settings();
 		
-		m_settings.sortsnps = sortsnps;
-		m_settings.fullFdrOutput = false;
-		m_settings.displayWarnings = false;
-		
-		int nrProcs = Runtime.getRuntime().availableProcessors();
-		if (threads != null && threads > 0 && threads <= nrProcs) {
-			//
-			m_threads = threads;
+		if(settingsfile!=null){
+			m_settings = new Settings();
+			m_settings.load(settingsfile);
 		} else {
-			if (threads != null && threads > nrProcs) {
-				System.out.println("The number of threads you set using the command line is not correct for your system. You set " + threads + " threads, while your machine has " + nrProcs + " processors");
+			m_settings = new Settings();
+			m_settings.datasetSettings = new ArrayList<>();
+			m_settings.sortsnps = sortsnps;
+			m_settings.fullFdrOutput = false;
+			m_settings.displayWarnings = false;
+			int nrProcs = Runtime.getRuntime().availableProcessors();
+			if (threads != null && threads > 0 && threads <= nrProcs) {
+				//
+				m_threads = threads;
+			} else {
+				if (threads != null && threads > nrProcs) {
+					System.out.println("The number of threads you set using the command line is not correct for your system. You set " + threads + " threads, while your machine has " + nrProcs + " processors");
+				}
+				threads = nrProcs;
 			}
-			threads = nrProcs;
+			
+			m_threads = threads;
+			m_settings.createDotPlot = false;
+			m_settings.createQQPlot = false;
+			m_settings.fullFdrOutput = false;
 		}
 		
-		m_threads = threads;
 		
 		if (cissnps != null) {
 			cis = true;
@@ -647,6 +654,20 @@ public class PCAOptimum extends MetaQTL3 {
 			trans = false;
 		}
 		
+		m_settings.cisAnalysis = cis;
+		m_settings.transAnalysis = trans;
+
+		if(settingsfile==null){
+			TriTyperGeneticalGenomicsDatasetSettings ds = new TriTyperGeneticalGenomicsDatasetSettings();
+			ds.expressionLocation = inexp;
+			ds.probeannotation = inexpannot;
+			ds.expressionplatform = inexpplatform;
+			ds.genotypeLocation = ingt;
+			ds.genotypeToExpressionCoupling = gte;
+			ds.cisAnalysis = cis;
+			ds.transAnalysis = trans;
+		}
+		
 		if (snpfile != null) {
 			TextFile f = new TextFile(snpfile, TextFile.R);
 			m_settings.tsSNPsConfine = new HashSet<String>(f.readAsArrayList());
@@ -655,8 +676,6 @@ public class PCAOptimum extends MetaQTL3 {
 		if (snpfile != null) {
 			m_settings.numberOfVariantsToBuffer = 1;
 		}
-		m_settings.createDotPlot = false;
-		m_settings.createQQPlot = false;
-		m_settings.fullFdrOutput = false;
+
 	}
 }
