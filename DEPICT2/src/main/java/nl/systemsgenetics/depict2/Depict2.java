@@ -119,7 +119,9 @@ public class Depict2 {
 					break;
 			}
 		} catch (Exception e) {
-			System.err.println("Error running mode: " + options.getMode());
+			System.err.println("Problem running mode: " + options.getMode());
+			System.err.println("Error meesage: " + e.getMessage());
+			System.err.println("See log file for stack trace");
 			LOGGER.error("Error running mode: " + options.getMode(), e);
 			System.exit(1);
 		} 
