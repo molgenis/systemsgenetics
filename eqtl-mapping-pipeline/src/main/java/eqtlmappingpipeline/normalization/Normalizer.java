@@ -683,7 +683,7 @@ public class Normalizer {
 		
 		for (int t = 0; t < nrPCAsOverSamplesToRemove; t++) {
 			if (!pcasNotToRemove.contains(t + 1)) {
-				System.out.println("Removing pc " + t + " or " + (t + 1));
+//				System.out.println("Removing pc " + t + " or " + (t + 1));
 				
 				for (int p = 0; p < expressionDataset.rowObjects.size(); p++) {
 					for (int s = 0; s < expressionDataset.colObjects.size(); s++) {

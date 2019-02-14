@@ -350,7 +350,7 @@ public class TriTyperExpressionData {
 						}
 					}
 				} else {
-					System.err.println("Error: data is in TriTyper format, but is probably wrongly formated (because the number of columns <10!)");
+					System.err.println("Error: data is in TriTyper format, but is probably wrongly formatted (because the number of columns <10!)");
 					System.exit(-1);
 				}
 				
