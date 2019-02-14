@@ -49,7 +49,7 @@ public class CalculateGenePvalues {
 			final List<Gene> genes,
 			final int windowExtend,
 			final double maxR,
-			final int nrPermutations) throws IOException {
+			final int nrPermutations) throws IOException, Exception {
 
 		List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 

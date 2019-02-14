@@ -52,7 +52,7 @@ public class Depict2 {
 	 * @throws java.lang.InterruptedException
 	 * @throws java.io.IOException
 	 */
-	public static void main(String[] args) throws InterruptedException, IOException {
+	public static void main(String[] args) throws InterruptedException {
 
 		System.out.println(HEADER);
 		System.out.println();
@@ -83,42 +83,46 @@ public class Depict2 {
 			return;
 		}
 
-
 		if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
-            if (!options.getLogFile().getParentFile().mkdirs()) {
-                System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
-                System.exit(1);
-            }
-        }
-
-        try {
-            FileAppender logAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
-            LOGGER.getRootLogger().removeAllAppenders();
-            LOGGER.getRootLogger().addAppender(logAppender);
-            if (options.isDebugMode()) {
-                LOGGER.setLevel(Level.DEBUG);
-            } else {
-                LOGGER.setLevel(Level.INFO);
-            }
-        } catch (IOException e) {
-            System.err.println("Failed to create logger: " + e.getMessage());
-            System.exit(1);
-        }
-		
-		options.printOptions();
-
-		switch (options.getMode()) {
-			case CONVERT_EQTL:
-				convertEqtlToBin(options);
-				break;
-			case CONVERT_TXT:
-				convertTxtToBin(options);
-				break;
-			case RUN:
-				run(options);
-				break;
+			if (!options.getLogFile().getParentFile().mkdirs()) {
+				System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
+				System.exit(1);
+			}
 		}
 
+		try {
+			FileAppender logAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
+			LOGGER.getRootLogger().removeAllAppenders();
+			LOGGER.getRootLogger().addAppender(logAppender);
+			if (options.isDebugMode()) {
+				LOGGER.setLevel(Level.DEBUG);
+			} else {
+				LOGGER.setLevel(Level.INFO);
+			}
+		} catch (IOException e) {
+			System.err.println("Failed to create logger: " + e.getMessage());
+			System.exit(1);
+		}
+
+		options.printOptions();
+
+		try {
+			switch (options.getMode()) {
+				case CONVERT_EQTL:
+					convertEqtlToBin(options);
+					break;
+				case CONVERT_TXT:
+					convertTxtToBin(options);
+					break;
+				case RUN:
+					run(options);
+					break;
+			}
+		} catch (Exception e) {
+			System.err.println("Error running mode: " + options.getMode());
+			LOGGER.error("Error running mode: " + options.getMode(), e);
+			System.exit(1);
+		} 
 		System.out.println("Completed mode: " + options.getMode());
 
 		currentDataTime = new Date();
@@ -126,17 +130,16 @@ public class Depict2 {
 
 	}
 
-	public static void run(Depict2Options options) throws IOException {
-		
+	public static void run(Depict2Options options) throws IOException, Exception {
+
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
 		System.out.println("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
 		System.out.println("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
-		
+
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
-		
-		
+
 //		Iterator<GeneticVariant> it = referenceGenotypeData.iterator();
 //		for(int i = 0 ; i < 5 ; i++){
 //			if(!it.hasNext()){
@@ -157,7 +160,6 @@ public class Depict2 {
 //			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
 //		}
 //		
-
 		System.out.println("Done loading genotype data");
 
 		List<Gene> genes = readGenes(options.getGeneInfoFile());
@@ -180,7 +182,7 @@ public class Depict2 {
 		} else {
 			sampleFilter = null;
 		}
-		
+
 		try {
 			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
 		} catch (TabixFileNotFoundException e) {

@@ -6,6 +6,7 @@
 package umcg.genetica.math.matrix2;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
@@ -43,7 +44,7 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 	 * @return subset of rows in order of rowsToView
 	 * @throws IOException
 	 */
-	public DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String[] rowsToView) throws IOException {
+	public DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String[] rowsToView) throws IOException, Exception {
 
 		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.length);
 
@@ -52,7 +53,21 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 		}
 
 		if (rowsToViewHash.size() != rowsToView.length) {
-			throw new RuntimeException("Duplicates in rows not allowed");
+			
+			StringBuilder duplicateRowsRequested = new StringBuilder();
+			
+			HashSet<String> rowsSeen = new HashSet<>();
+			
+			for (String rowToView : rowsToView) {
+				
+				if(!rowsSeen.add(rowToView)){
+					duplicateRowsRequested.append(rowToView);
+					duplicateRowsRequested.append(";");
+				}
+				
+			}
+			
+			throw new Exception("Duplicates in rows not allowed. Requested duplicate values: " + duplicateRowsRequested);
 		}
 
 		return loadSubsetOfRowsBinaryDoubleData(rowsToViewHash);
