@@ -8,11 +8,13 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
+import umcg.genetica.text.Strings;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 /**
@@ -27,8 +29,10 @@ public class TriTyperGenotypeData {
 	private String[] individuals;
 	private TObjectIntHashMap<String> individualToId;
 	private TObjectIntHashMap<String> snpToSNPId;
+	private LinkedList<String[]> alleles;
 	private String genotypeFileName;
 	private String dosageFileName;
+	
 	private byte[] chr;
 	private int[] chrPos;
 	public boolean displayWarnings = true;
@@ -159,23 +163,49 @@ public class TriTyperGenotypeData {
 		}
 		
 		if (Gpio.exists(loc + "SNPs.txt")) {
-			t = new TextFile(loc + "SNPs.txt", TextFile.R, 100 * 1024);
+			t = new TextFile(loc + "SNPs.txt", TextFile.R, 32 * 1024);
 		} else if (Gpio.exists(loc + "SNPs.txt.gz")) {
-			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R, 100 * 1024);
+			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R, 32 * 1024);
 		} else {
 			throw new FileNotFoundException("SNPs file not found");
 		}
 		
-		String line = t.readLine();
 		
 		LinkedList<String> tmpSNP = new LinkedList<String>();
+		LinkedList<String[]> tmpSNPAlleles = null; //
 		System.out.println("Reading: " + t.getFileName());
 		int ctr = 0;
-		while (line != null) {
-			if (line.trim().length() > 0) {
-				tmpSNP.add(line.intern());
+		String[] elems = t.readLineElems(TextFile.tab);
+		HashMap<String, String> alleleCache = new HashMap<String, String>();
+		
+		while (elems != null) {
+			if (elems.length > 1) {
+				String snp = elems[0];
+				String alleleStr = elems[1];
+				String[] alleleElems = Strings.comma.split(alleleStr);
+				
+				for (int a = 0; a < alleleElems.length; a++) {
+					String tmpa = alleleElems[a];
+					String allele = alleleCache.get(tmpa);
+					if (allele == null) {
+						String str = new String(tmpa);
+						alleleCache.put(alleleElems[a], str);
+					}
+					alleleElems[a] = allele;
+				}
+				if (tmpSNPAlleles == null) {
+					tmpSNPAlleles = new LinkedList<String[]>();
+				}
+				tmpSNPAlleles.add(alleleElems);
+				tmpSNP.add(snp);
+			} else {
+				String line = elems[0];
+				if (line.trim().length() > 0) {
+					tmpSNP.add(line.intern());
+				}
 			}
-			line = t.readLine();
+			
+			elems = t.readLineElems(TextFile.tab);
 			ctr++;
 			if (ctr % 100000 == 0) {
 				System.out.print(ctr + " snps read so far.\r");
@@ -189,12 +219,15 @@ public class TriTyperGenotypeData {
 		snpToSNPId = new TObjectIntHashMap<String>(tmpSNP.size(), 1f, -9);
 		int snpId = 0;
 		for (String s : tmpSNP) {
+			if (snpToSNPId.containsKey(s)) {
+				System.err.println("Warning: duplicate snp " + s + " in " + t.getFileName());
+			}
 			snpToSNPId.put(s, snpId);
 			snpId++;
 		}
 		
 		SNPs = tmpSNP.toArray(new String[0]);
-		
+		alleles = tmpSNPAlleles;
 		
 		System.out.println(SNPs.length + " snps loaded");
 		
@@ -412,6 +445,7 @@ public class TriTyperGenotypeData {
 		out.setChr(chr[d]);
 		out.setChrPos(chrPos[d]);
 		out.setName(SNPs[d]);
+		out.setAlleleEncoding(alleles.get(d));
 		return out;
 	}
 	
