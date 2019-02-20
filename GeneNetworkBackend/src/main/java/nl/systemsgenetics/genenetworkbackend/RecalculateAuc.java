@@ -73,7 +73,7 @@ public class RecalculateAuc {
 		DoubleMatrixDataset<String, String> annotationMatrixPredictedProteinCoding = annotationMatrixPredicted.viewRowSelection(proteinCodingGenes);
 
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
-		String[] outputLine = new String[11];
+		String[] outputLine = new String[3];
 		int c = 0;
 		outputLine[c++] = "HPO";
 		outputLine[c++] = "Origanl_AUC";

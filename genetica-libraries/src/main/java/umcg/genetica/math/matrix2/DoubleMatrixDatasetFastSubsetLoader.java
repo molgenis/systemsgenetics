@@ -73,5 +73,13 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 		return loadSubsetOfRowsBinaryDoubleData(rowsToViewHash);
 
 	}
+	
+	public int totalRowsInDataset(){
+		return originalRowMap.size();
+	}
+	
+	public int totalColsInDataset(){
+		return originalColMap.size();
+	}
 
 }

@@ -13,10 +13,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -27,7 +27,6 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
-import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -91,9 +90,12 @@ public class Depict2 {
 		}
 
 		try {
-			FileAppender logAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
+			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
+			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			LOGGER.getRootLogger().removeAllAppenders();
-			LOGGER.getRootLogger().addAppender(logAppender);
+			LOGGER.getRootLogger().addAppender(logFileAppender);
+			LOGGER.getRootLogger().addAppender(logConsoleInfoAppender);
+			
 			if (options.isDebugMode()) {
 				LOGGER.setLevel(Level.DEBUG);
 			} else {
@@ -125,10 +127,12 @@ public class Depict2 {
 			LOGGER.error("Error running mode: " + options.getMode(), e);
 			System.exit(1);
 		} 
-		System.out.println("Completed mode: " + options.getMode());
+		LOGGER.info("Completed mode: " + options.getMode());
 
 		currentDataTime = new Date();
-		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		
+		System.out.println("Done");
 
 	}
 
@@ -137,8 +141,8 @@ public class Depict2 {
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
-		System.out.println("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
-		System.out.println("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
+		LOGGER.info("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
+		LOGGER.info("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
 
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 
@@ -168,11 +172,11 @@ public class Depict2 {
 
 		System.out.println("Loaded " + genes.size() + " genes");
 
-		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations());
+		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), new File(options.getOutputBasePath() + "_geneVariantCount.txt"));
 
 		System.out.println("Finished calculating gene p-values");
 
-		genePvalues.save(options.getOutputBasePath() + "-genePvalues.txt");
+		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {

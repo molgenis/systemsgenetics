@@ -104,7 +104,7 @@ public class DoubleMatrixDatasetTest {
 	}
 
 	@Test
-	public void testSaveLoadBinaryMatrix() throws IOException {
+	public void testSaveLoadBinaryMatrix() throws IOException, Exception {
 
 		ArrayList<String> rows = new ArrayList<>();
 		ArrayList<String> cols = new ArrayList<>();
