@@ -258,18 +258,20 @@ public class Depict2Options {
 
 	public void printOptions() {
 
-		System.out.println(" - Mode: " + mode.name());
-		System.out.println(" - Ouput path: " + outputBasePath);
+		LOGGER.info("Supplied options:");
+		
+		LOGGER.info(" * Mode: " + mode.name());
+		LOGGER.info(" * Ouput path: " + outputBasePath);
 
 		switch (mode) {
 			case CONVERT_EQTL:
-				System.out.println(" - eQTL Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath);
 				break;
 			case CONVERT_TXT:
-				System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath);
 				break;
 			case RUN:
-				System.out.println(" - Gwas Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath);
 
 				if (genotypeBasePath != null) {
 					StringBuilder genotypeBasePaths = new StringBuilder();
@@ -277,18 +279,18 @@ public class Depict2Options {
 						genotypeBasePaths.append(path);
 						genotypeBasePaths.append(' ');
 					}
-					System.out.println(" - Reference genotype data: " + genotypeBasePaths);
-					System.out.println(" - Reference genotype data type: " + genotypeType.getName());
+					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
+					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
-				System.out.println(" - Gene window extend in bases: " + windowExtend);
-				System.out.println(" - Number of permutations: " + numberOfPermutations);
-				System.out.println(" - Max correlation between variants: " + maxRBetweenVariants);
-				System.out.println(" - Number of threads to use: " + numberOfThreadsToUse);
-				System.out.println(" - Gene info file: " + geneInfoFile.getAbsolutePath());
+				LOGGER.info(" * Gene window extend in bases: " + windowExtend);
+				LOGGER.info(" * Number of permutations: " + numberOfPermutations);
+				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
+				LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
+				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 				break;
 		}
 		
-		LOGGER.info("Debug mode: " + (debugMode ? "on" : "off"));
+		LOGGER.info(" * Debug mode: " + (debugMode ? "on" : "off"));
 
 	}
 

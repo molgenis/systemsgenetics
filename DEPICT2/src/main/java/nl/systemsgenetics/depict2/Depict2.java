@@ -148,7 +148,7 @@ public class Depict2 {
 			System.err.println("Problem running mode: " + options.getMode());
 			System.err.println("Error meesage: " + e.getMessage());
 			System.err.println("See log file for stack trace");
-			LOGGER.fatal("Error running mode: " + options.getMode(), e);
+			LOGGER.fatal("Error: " + e.getMessage(), e);
 			System.exit(1);
 		}
 		LOGGER.info("Completed mode: " + options.getMode());
