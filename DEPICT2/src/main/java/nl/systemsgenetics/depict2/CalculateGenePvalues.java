@@ -204,19 +204,8 @@ public class CalculateGenePvalues {
 			}
 
 		}
-		
-		geneVariantCountWriter.close();
 
-		System.out.println("-----------------------");
-		System.out.println("Gene p-value histrogram chi2 dist");
-		for (double histCount : genePValueDistributionChi2Dist) {
-			System.out.println(histCount);
-		}
-		System.out.println("Gene p-value histrogram permuations");
-		for (double histCount : genePValueDistributionPermuations) {
-			System.out.println(histCount);
-		}
-		System.out.println("-----------------------");
+		geneVariantCountWriter.close();
 
 		LOGGER.debug("countRanPermutationsForGene: " + countRanPermutationsForGene);
 		LOGGER.debug("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
@@ -228,6 +217,17 @@ public class CalculateGenePvalues {
 		LOGGER.debug("timeInDoingPca: " + timeInDoingPca);
 		LOGGER.debug("timeInLoadingZscoreMatrix: " + timeInLoadingZscoreMatrix);
 		LOGGER.debug("timeInCalculatingPvalue: " + timeInCalculatingPvalue);
+
+		LOGGER.info("-----------------------");
+		LOGGER.info("Gene p-value histrogram chi2 dist");
+		for (double histCount : genePValueDistributionChi2Dist) {
+			LOGGER.info(histCount);
+		}
+		LOGGER.info("Gene p-value histrogram permuations");
+		for (double histCount : genePValueDistributionPermuations) {
+			LOGGER.info(histCount);
+		}
+		LOGGER.info("-----------------------");
 
 		return genePvalues;
 

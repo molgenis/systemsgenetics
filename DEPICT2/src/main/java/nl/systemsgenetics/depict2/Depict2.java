@@ -49,7 +49,6 @@ public class Depict2 {
 	/**
 	 * @param args the command line arguments
 	 * @throws java.lang.InterruptedException
-	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws InterruptedException {
 
@@ -61,7 +60,8 @@ public class Depict2 {
 		System.out.println();
 
 		Date currentDataTime = new Date();
-		System.out.println("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		String startDateTime = DATE_TIME_FORMAT.format(currentDataTime);
+		System.out.println("Current date and time: " + startDateTime);
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -94,8 +94,12 @@ public class Depict2 {
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			LOGGER.getRootLogger().removeAllAppenders();
 			LOGGER.getRootLogger().addAppender(logFileAppender);
+
+			LOGGER.info("DEPICT2 version: " + VERSION);
+			LOGGER.info("Current date and time: " + startDateTime);
+
 			LOGGER.getRootLogger().addAppender(logConsoleInfoAppender);
-			
+
 			if (options.isDebugMode()) {
 				LOGGER.setLevel(Level.DEBUG);
 			} else {
@@ -120,19 +124,37 @@ public class Depict2 {
 					run(options);
 					break;
 			}
+		} catch (TabixFileNotFoundException e) {
+			System.err.println("Problem running mode: " + options.getMode());
+			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
+					+ "Please see README on how to create a tabix file");
+			LOGGER.fatal("Tabix file not found for input data at: " + e.getPath(), e);
+			System.exit(1);
+		} catch (IOException e) {
+			System.err.println("Problem running mode: " + options.getMode());
+			System.err.println("Error accessing input data: " + e.getMessage());
+			LOGGER.fatal("Error accessing input data: " + e.getMessage(), e);
+			System.exit(1);
+		} catch (IncompatibleMultiPartGenotypeDataException e) {
+			System.err.println("Problem running mode: " + options.getMode());
+			System.err.println("Error combining the impute genotype data files: " + e.getMessage());
+			LOGGER.fatal("Error combining the impute genotype data files: " + e.getMessage(), e);
+		} catch (GenotypeDataException e) {
+			System.err.println("Problem running mode: " + options.getMode());
+			System.err.println("Error reading input data: " + e.getMessage());
+			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
+			System.exit(1);
 		} catch (Exception e) {
 			System.err.println("Problem running mode: " + options.getMode());
 			System.err.println("Error meesage: " + e.getMessage());
 			System.err.println("See log file for stack trace");
-			LOGGER.error("Error running mode: " + options.getMode(), e);
+			LOGGER.fatal("Error running mode: " + options.getMode(), e);
 			System.exit(1);
-		} 
+		}
 		LOGGER.info("Completed mode: " + options.getMode());
 
 		currentDataTime = new Date();
 		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
-		
-		System.out.println("Done");
 
 	}
 
@@ -166,15 +188,15 @@ public class Depict2 {
 //			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
 //		}
 //		
-		System.out.println("Done loading genotype data");
+		LOGGER.info("Done loading genotype data");
 
 		List<Gene> genes = readGenes(options.getGeneInfoFile());
 
-		System.out.println("Loaded " + genes.size() + " genes");
+		LOGGER.info("Loaded " + genes.size() + " genes");
 
 		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), new File(options.getOutputBasePath() + "_geneVariantCount.txt"));
 
-		System.out.println("Finished calculating gene p-values");
+		LOGGER.info("Finished calculating gene p-values");
 
 		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
 	}
@@ -189,26 +211,8 @@ public class Depict2 {
 			sampleFilter = null;
 		}
 
-		try {
-			referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
-		} catch (TabixFileNotFoundException e) {
-			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
-					+ "Please see README on how to create a tabix file");
-			System.exit(1);
-			return null;
-		} catch (IOException e) {
-			System.err.println("Error accessing input data: " + e.getMessage());
-			System.exit(1);
-			return null;
-		} catch (IncompatibleMultiPartGenotypeDataException e) {
-			System.err.println("Error combining the impute genotype data files: " + e.getMessage());
-			System.exit(1);
-			return null;
-		} catch (GenotypeDataException e) {
-			System.err.println("Error reading input data: " + e.getMessage());
-			System.exit(1);
-			return null;
-		}
+		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
+
 		return referenceGenotypeData;
 	}
 
