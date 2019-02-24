@@ -6,7 +6,6 @@
 package nl.systemsgenetics.depict2;
 
 import java.util.ArrayList;
-import jsat.math.FastMath;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
