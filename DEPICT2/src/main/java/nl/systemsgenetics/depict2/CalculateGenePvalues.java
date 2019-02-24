@@ -226,7 +226,7 @@ public class CalculateGenePvalues {
 		LOGGER.debug("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
 		LOGGER.debug("countNoVariants: " + countNoVariants);
 
-		LOGGER.debug("timeInPermutation : " + formatMsForLog(timeInPermutations));
+		LOGGER.debug("timeInPermutation: " + formatMsForLog(timeInPermutations));
 		LOGGER.debug("timeInCreatingGenotypeCorrelationMatrix: " + formatMsForLog(timeInCreatingGenotypeCorrelationMatrix));
 		LOGGER.debug("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
 		LOGGER.debug("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
