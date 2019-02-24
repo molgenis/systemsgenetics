@@ -53,7 +53,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 				}
 
 				//If correlation is too large stop with current newVariant and move to next variant
-				if (regression.getR() >= maxR) {
+				if (regression.getR() >= maxR || regression.getR() <= -maxR) {
 					variantsExcludedDueToHighR++;
 					continue newVariants;
 				}
