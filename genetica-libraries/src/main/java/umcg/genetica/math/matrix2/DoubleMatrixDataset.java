@@ -987,6 +987,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			this.matrix.assign(matrix);
 		}
 	}
+	
+	/**
+	 * NOT recommended. Will make full copy of the data. 
+	 * 
+	 * @return 
+	 */
+	public double[][] getMatrixAs2dDoubleArray(){
+		return this.matrix.toArray();
+	}
 
 	/**
 	 * Order columns

@@ -6,6 +6,7 @@
 package nl.systemsgenetics.depict2;
 
 import java.util.ArrayList;
+import jsat.math.FastMath;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -53,10 +54,11 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 				}
 
 				//If correlation is too large stop with current newVariant and move to next variant
-				if (regression.getR() >= maxR || regression.getR() <= -maxR) {
+				if (Math.abs(regression.getR()) >= maxR) {
 					variantsExcludedDueToHighR++;
 					continue newVariants;
 				}
+				regression.clear();
 			
 			}
 			includedVariantsList.add(newVariant);
@@ -71,7 +73,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			
 			final String[] includedVariants = new String[includedVariantsList.size()];
 
-			final double[][] cov = new double[includedVariantsList.size()][includedVariantsList.size()];
+			final double[][] cor = new double[includedVariantsList.size()][includedVariantsList.size()];
 			for (int p = 0; p < includedVariantsList.size(); p++) {
 				
 				GeneticVariant pVariant = includedVariantsList.get(p);
@@ -79,7 +81,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 				includedVariants[p] = pVariant.getPrimaryVariantId();
 				
 				final float[] pVariantDosages = pVariant.getSampleDosages();
-				cov[p][p] = 1;
+				cor[p][p] = 1;
 				for (int q = p + 1; q < includedVariantsList.size(); q++) {
 					final float[] qVariantDosages = includedVariantsList.get(q).getSampleDosages();
 
@@ -88,12 +90,14 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 						regression.addData(pVariantDosages[i], qVariantDosages[i]);
 					}
 
-					cov[p][q] = regression.getR();
-					cov[q][p] = cov[p][q];
+					cor[p][q] = regression.getR();
+					cor[q][p] = cor[p][q];
+					
+					regression.clear();
 				}
 			}
 
-			return new GenotypieCorrelationResult(cov, includedVariants);
+			return new GenotypieCorrelationResult(cor, includedVariants);
 
 		}
 
