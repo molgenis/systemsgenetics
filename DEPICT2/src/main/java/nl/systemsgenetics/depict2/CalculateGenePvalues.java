@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
+import static nl.systemsgenetics.depict2.Depict2.formatMsForLog;
 import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
 import nl.systemsgenetics.depict2.originalLude.EstimateChi2SumDistUsingCorrelatedVariablesThread;
 import org.apache.log4j.Logger;
@@ -225,11 +226,11 @@ public class CalculateGenePvalues {
 		LOGGER.debug("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
 		LOGGER.debug("countNoVariants: " + countNoVariants);
 
-		LOGGER.debug("timeInPermutation : " + timeInPermutations);
-		LOGGER.debug("timeInCreatingGenotypeCorrelationMatrix: " + timeInCreatingGenotypeCorrelationMatrix);
-		LOGGER.debug("timeInDoingPca: " + timeInDoingPca);
-		LOGGER.debug("timeInLoadingZscoreMatrix: " + timeInLoadingZscoreMatrix);
-		LOGGER.debug("timeInCalculatingPvalue: " + timeInCalculatingPvalue);
+		LOGGER.debug("timeInPermutation : " + formatMsForLog(timeInPermutations));
+		LOGGER.debug("timeInCreatingGenotypeCorrelationMatrix: " + formatMsForLog(timeInCreatingGenotypeCorrelationMatrix));
+		LOGGER.debug("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
+		LOGGER.debug("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
+		LOGGER.debug("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
 
 		LOGGER.info("-----------------------");
 		LOGGER.info("Gene p-value histrogram chi2 dist");
