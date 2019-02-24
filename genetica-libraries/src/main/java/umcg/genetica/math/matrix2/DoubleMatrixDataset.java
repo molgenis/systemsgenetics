@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -114,6 +115,64 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			matrix = new DenseLargeDoubleMatrix2D(hashRows.size(), hashCols.size());
 		}
 
+	}
+	
+	/**
+	 * Not making double matrix for 2D array is not very efficient. Try creating a DoubleMatrixDataset directly.
+	 * 
+	 * @param matrix
+	 * @param rowNames
+	 * @param colNames
+	 * @throws Exception 
+	 */
+	public DoubleMatrixDataset(double[][] matrix, R[] rowNames, C[] colNames) throws Exception{
+		this(matrix, Arrays.asList(rowNames), Arrays.asList(colNames));
+	}
+	
+	/**
+	 * Not making double matrix for 2D array is not very efficient. Try creating a DoubleMatrixDataset directly.
+	 * 
+	 * @param matrix
+	 * @param rowNames
+	 * @param colNames
+	 * @throws Exception 
+	 */
+	public DoubleMatrixDataset(double[][] matrix, List<R> rowNames, List<C> colNames) throws Exception{
+		
+		
+		if(matrix.length == 0){
+			throw new Exception("Can't create dataset matrix with no dimensions");
+		}
+		
+		if(rowNames.size()!= matrix.length){
+			throw new Exception("Row names not same size as matrix");
+		}
+		
+		if(colNames.size()!= matrix[0].length){
+			throw new Exception("Col names not same size as matrix");
+		}
+		
+		hashRows = new LinkedHashMap<>(rowNames.size());
+		hashCols = new LinkedHashMap<>(colNames.size());
+
+		int i = 0;
+		for (R row : rowNames) {
+			if(hashRows.put(row, i) != null){
+				throw new Exception("Duplicate row names not allowed: " + row.toString());
+			}
+			++i;
+		}
+
+		i = 0;
+		for (C col : colNames) {
+			if(hashCols.put(col, i) != null){
+				throw new Exception("Duplicate col names not allowed: " + col.toString());
+			}
+			++i;
+		}
+		
+		this.matrix = new DenseDoubleMatrix2D(matrix);
+		
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {

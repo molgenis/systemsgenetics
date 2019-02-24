@@ -44,7 +44,7 @@ public class CalculateGenePvalues {
 	 * @param windowExtend number of bases to add left and right of gene window
 	 * @param maxR max correlation between variants to use
 	 * @param nrPermutations
-	 * @param geneVariantCountFile
+	 * @param outputBasePath
 	 * @return gene p-value matrix for each phenotype. rows: genes in same order
 	 * as genes parameter, cols: phenotypes
 	 * @throws java.io.IOException
@@ -56,9 +56,11 @@ public class CalculateGenePvalues {
 			final int windowExtend,
 			final double maxR,
 			final int nrPermutations,
-			final File geneVariantCountFile) throws IOException, Exception {
+			final String outputBasePath) throws IOException, Exception {
 
-		List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
+		final File geneVariantCountFile = new File(outputBasePath + "_geneVariantCount.txt");
+
+		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 
 		//Result matrix. Rows: genes, Cols: phenotypes
 		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
@@ -84,14 +86,14 @@ public class CalculateGenePvalues {
 		long timeStart;
 		long timeStop;
 
-		CSVWriter geneVariantCountWriter = new CSVWriter(new FileWriter(geneVariantCountFile), '\t', '\0', '\0', "\n");
-		String[] outputLine = new String[2];
+		final CSVWriter geneVariantCountWriter = new CSVWriter(new FileWriter(geneVariantCountFile), '\t', '\0', '\0', "\n");
+		final String[] outputLine = new String[2];
 		int c = 0;
 		outputLine[c++] = "Gene";
 		outputLine[c++] = "NumberVariants";
 		geneVariantCountWriter.writeNext(outputLine);
 
-		try (ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
+		try (final ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
 
 			for (int geneI = 0; geneI < numberGenes; ++geneI) {
 
@@ -101,6 +103,14 @@ public class CalculateGenePvalues {
 
 				final GenotypieCorrelationResult variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
 						gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend, maxR);
+
+				if (LOGGER.isDebugEnabled() & variantCorrelations.getIncludedVariants().length > 1) {
+
+					DoubleMatrixDataset<String, String> corDataset = new DoubleMatrixDataset<>(variantCorrelations.getCorMatrix(), variantCorrelations.getIncludedVariants(), variantCorrelations.getIncludedVariants());
+
+					corDataset.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
+
+				}
 
 				timeStop = System.currentTimeMillis();
 				timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
@@ -117,6 +127,12 @@ public class CalculateGenePvalues {
 
 					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getCorMatrix());
 					final double[] eigenValues = eig.getRealEigenvalues();
+
+					if (LOGGER.isDebugEnabled()) {
+
+						saveEigenValues(eigenValues, new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
+
+					}
 
 					timeStop = System.currentTimeMillis();
 					timeInDoingPca += (timeStop - timeStart);
@@ -152,7 +168,7 @@ public class CalculateGenePvalues {
 						double p = 0.5;
 						for (int perm = 0; perm < nrPermutations; perm++) {
 							if (geneChi2SumNull[perm] >= geneChi2Sum) {
-								p += 1;
+								p++;
 							}
 						}
 						p /= (double) nrPermutations + 1;
@@ -198,9 +214,6 @@ public class CalculateGenePvalues {
 
 				pb.step();
 
-//			if (geneI % 100 == 0 & geneI > 0) {
-//				System.out.print("Proccessed " + geneI + " genes");
-//			}
 			}
 
 		}
@@ -277,6 +290,28 @@ public class CalculateGenePvalues {
 		}
 
 		return geneChi2SumNull;
+
+	}
+
+	private static void saveEigenValues(double[] eigenValues, File file) throws IOException {
+
+		final CSVWriter eigenWriter = new CSVWriter(new FileWriter(file), '\t', '\0', '\0', "\n");
+		final String[] outputLine = new String[2];
+		int c = 0;
+		outputLine[c++] = "Component";
+		outputLine[c++] = "EigenValue";
+		eigenWriter.writeNext(outputLine);
+
+		for (int i = 0; i < eigenValues.length; ++i) {
+
+			c = 0;
+			outputLine[c++] = "PC" + i + 1;
+			outputLine[c++] = String.valueOf(eigenValues[i]);
+			eigenWriter.writeNext(outputLine);
+			
+		}
+
+		eigenWriter.close();
 
 	}
 
