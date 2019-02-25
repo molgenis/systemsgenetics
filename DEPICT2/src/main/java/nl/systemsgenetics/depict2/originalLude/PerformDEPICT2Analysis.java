@@ -218,6 +218,7 @@ public class PerformDEPICT2Analysis {
 					} else if (geneNrSNPsAssigned[gene] == 1) {
 						if (datasetNrSamples.rawData[geneToSNP[gene][0]][phenotypeIndex] != 0) {
 							double z = dataset.rawData[geneToSNP[gene][0]][phenotypeIndex];
+							//double p = 2d * cern.jet.stat.Probability.normal(-Math.abs(z));
 							double p = ZScores.zToP(-Math.abs(z));//Patrick used differnt method to get to p-value because of old lib
 							if (p == 1) {
 								p = 0.99999d;

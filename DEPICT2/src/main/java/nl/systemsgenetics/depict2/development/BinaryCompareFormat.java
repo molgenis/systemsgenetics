@@ -9,15 +9,12 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.zip.GZIPInputStream;
-import static org.apache.hadoop.hive.common.StatsSetupConst.StatDB.counter;
 
 /**
  *

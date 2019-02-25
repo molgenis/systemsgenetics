@@ -1231,7 +1231,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
 		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
 
-		System.out.println("");
 
 		int i = 0;
 		for (R row : rowsToView) {
@@ -1310,11 +1309,42 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
 
 	}
+	
+		/**
+	 * Creates a new view to this dataset with a subset of cools.
+	 *
+	 * New order of cols is based on input order.
+	 *
+	 * @param colsToView
+	 * @return
+	 */
+	public DoubleMatrixDataset<R, C> viewColSelection(C[] colsToView) {
+
+		int[] colNrs = new int[colsToView.length];
+
+		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.length);
+
+		int i = 0;
+		for (C col : colsToView) {
+
+			//Null pointer below probabli indicates looking for non existing row
+			colNrs[i] = hashCols.get(col);
+			newHashCols.put(col, i++);
+
+		}
+
+		if (colsToView.length != newHashCols.size()) {
+			throw new RuntimeException("Duplicates in colsToView");
+		}
+
+		return new DoubleMatrixDataset<>(matrix.viewSelection(null, colNrs), hashRows, newHashCols);
+
+	}
 
 	/**
-	 * Creates a new view to this dataset with a subset of rows.
+	 * Creates a new view to this dataset with a subset of cools.
 	 *
-	 * New order of rows is based on input order.
+	 * New order of cols is based on input order.
 	 *
 	 * @param colsToView
 	 * @return

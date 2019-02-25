@@ -82,6 +82,12 @@
 			<artifactId>presto-orc</artifactId>
 			<version>0.188-SNAPSHOT</version>
 		 <type>jar</type>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>com.facebook.presto.hive</groupId>
+		   <artifactId>hive-apache</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 	</dependencies>
 	<properties>

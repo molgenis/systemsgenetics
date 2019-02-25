@@ -22,7 +22,7 @@ public class ZScores {
 		return r;
 	}
 	
-	private static NormalDistribution normDist;
+	private final static NormalDistribution NORM_DIST = new NormalDistribution();
 	
 	/**
 	 * Calculates a weighted Z-score according to Whitlock's paper:
@@ -139,15 +139,11 @@ public class ZScores {
 	 */
 	public static double zToP(double z) {
 		
-		if (normDist == null) {
-			normDist = new NormalDistribution();
-			System.out.println("Creating new Normal Dist");
-		}
 		double p;
 		if (z > 0) {
-			p = normDist.cumulative(-z);
+			p = NORM_DIST.cumulative(-z);
 		} else {
-			p = normDist.cumulative(z);
+			p = NORM_DIST.cumulative(z);
 		}
 		if (p > 0.5) {
 			p = 1 - p;
