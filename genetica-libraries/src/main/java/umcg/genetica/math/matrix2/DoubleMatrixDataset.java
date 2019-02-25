@@ -116,48 +116,49 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 	}
-	
+
 	/**
-	 * Not making double matrix for 2D array is not very efficient. Try creating a DoubleMatrixDataset directly.
-	 * 
+	 * Not making double matrix for 2D array is not very efficient. Try creating
+	 * a DoubleMatrixDataset directly.
+	 *
 	 * @param matrix
 	 * @param rowNames
 	 * @param colNames
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public DoubleMatrixDataset(double[][] matrix, R[] rowNames, C[] colNames) throws Exception{
+	public DoubleMatrixDataset(double[][] matrix, R[] rowNames, C[] colNames) throws Exception {
 		this(matrix, Arrays.asList(rowNames), Arrays.asList(colNames));
 	}
-	
+
 	/**
-	 * Not making double matrix for 2D array is not very efficient. Try creating a DoubleMatrixDataset directly.
-	 * 
+	 * Not making double matrix for 2D array is not very efficient. Try creating
+	 * a DoubleMatrixDataset directly.
+	 *
 	 * @param matrix
 	 * @param rowNames
 	 * @param colNames
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public DoubleMatrixDataset(double[][] matrix, List<R> rowNames, List<C> colNames) throws Exception{
-		
-		
-		if(matrix.length == 0){
+	public DoubleMatrixDataset(double[][] matrix, List<R> rowNames, List<C> colNames) throws Exception {
+
+		if (matrix.length == 0) {
 			throw new Exception("Can't create dataset matrix with no dimensions");
 		}
-		
-		if(rowNames.size()!= matrix.length){
+
+		if (rowNames.size() != matrix.length) {
 			throw new Exception("Row names not same size as matrix");
 		}
-		
-		if(colNames.size()!= matrix[0].length){
+
+		if (colNames.size() != matrix[0].length) {
 			throw new Exception("Col names not same size as matrix");
 		}
-		
+
 		hashRows = new LinkedHashMap<>(rowNames.size());
 		hashCols = new LinkedHashMap<>(colNames.size());
 
 		int i = 0;
 		for (R row : rowNames) {
-			if(hashRows.put(row, i) != null){
+			if (hashRows.put(row, i) != null) {
 				throw new Exception("Duplicate row names not allowed: " + row.toString());
 			}
 			++i;
@@ -165,14 +166,14 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		i = 0;
 		for (C col : colNames) {
-			if(hashCols.put(col, i) != null){
+			if (hashCols.put(col, i) != null) {
 				throw new Exception("Duplicate col names not allowed: " + col.toString());
 			}
 			++i;
 		}
-		
+
 		this.matrix = new DenseDoubleMatrix2D(matrix);
-		
+
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
@@ -273,27 +274,27 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		if (rowsToViewHash.size() != rowsToView.length) {
-			
+
 			StringBuilder duplicateRowsRequested = new StringBuilder();
-			
+
 			HashSet<String> rowsSeen = new HashSet<>();
-			
+
 			for (String rowToView : rowsToView) {
-				
-				if(!rowsSeen.add(rowToView)){
+
+				if (!rowsSeen.add(rowToView)) {
 					duplicateRowsRequested.append(rowToView);
 					duplicateRowsRequested.append(";");
 				}
-				
+
 			}
-			
+
 			throw new Exception("Duplicates in rows not allowed. Requested duplicate values: " + duplicateRowsRequested);
 		}
 
 		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToViewHash);
 
 	}
-	
+
 	/**
 	 *
 	 *
@@ -303,13 +304,13 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @throws IOException
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, LinkedHashSet<String> rowsToView) throws IOException {
-		
+
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> originalRowMap = loadIdentifiers(fileName + ".rows.txt");
 		LinkedHashMap<String, Integer> originalColMap = loadIdentifiers(fileName + ".cols.txt");
-		
+
 		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToView, originalRowMap, originalColMap);
-		
+
 	}
 
 	/**
@@ -359,7 +360,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		byte[] buffer = new byte[nrCols * 8];
-		
+
 		long rowLength = 8l * nrCols;
 		long bits;
 
@@ -369,7 +370,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			rowMap.put(rowToView, currentRowInSubset);
 
 			long rowInFullMatrix = originalRowMap.get(rowToView);
-			
+
 			in.seek(8 + (rowLength * rowInFullMatrix));
 
 			in.read(buffer, 0, nrCols * 8);
@@ -776,7 +777,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			colWriter.writeNext(outputLine);
 		}
 		colWriter.close();
-		
+
 		final int rows = rows();
 		final int cols = columns();
 
@@ -987,13 +988,13 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			this.matrix.assign(matrix);
 		}
 	}
-	
+
 	/**
-	 * NOT recommended. Will make full copy of the data. 
-	 * 
-	 * @return 
+	 * NOT recommended. Will make full copy of the data.
+	 *
+	 * @return
 	 */
-	public double[][] getMatrixAs2dDoubleArray(){
+	public double[][] getMatrixAs2dDoubleArray() {
 		return this.matrix.toArray();
 	}
 
@@ -1231,7 +1232,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
 		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
 
-
 		int i = 0;
 		for (R row : rowsToView) {
 
@@ -1309,8 +1309,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
 
 	}
-	
-		/**
+
+	/**
 	 * Creates a new view to this dataset with a subset of cools.
 	 *
 	 * New order of cols is based on input order.

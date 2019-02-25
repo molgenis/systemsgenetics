@@ -286,7 +286,7 @@ public class Depict2 {
 	}
 	
 	public static String formatMsForLog(long ms){
-		return LOG_TIME_FORMAT.format(new Date(ms));	
+		return LOG_TIME_FORMAT.format(new Date(ms)) + "(" + ms + ")";	
 	}
 
 }
