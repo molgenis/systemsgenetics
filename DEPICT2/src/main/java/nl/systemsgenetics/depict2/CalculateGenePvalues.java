@@ -102,14 +102,12 @@ public class CalculateGenePvalues {
 
 				timeStart = System.currentTimeMillis();
 
-				final GenotypieCorrelationResult variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
+				final DoubleMatrixDataset<String, String> variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
 						gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend, maxR);
 
-				if (LOGGER.isDebugEnabled() & variantCorrelations.getIncludedVariants().length > 1) {
+				if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
 
-					DoubleMatrixDataset<String, String> corDataset = new DoubleMatrixDataset<>(variantCorrelations.getCorMatrix(), variantCorrelations.getIncludedVariants(), variantCorrelations.getIncludedVariants());
-
-					corDataset.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
+					variantCorrelations.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
 
 				}
 
@@ -118,15 +116,15 @@ public class CalculateGenePvalues {
 
 				c = 0;
 				outputLine[c++] = gene.getGene();
-				outputLine[c++] = String.valueOf(variantCorrelations.getIncludedVariants().length);
+				outputLine[c++] = String.valueOf(variantCorrelations.rows());
 				geneVariantCountWriter.writeNext(outputLine);
 
 				final double[] geneChi2SumNull;
-				if (variantCorrelations.getIncludedVariants().length > 1) {
+				if (variantCorrelations.rows() > 1) {
 
 					timeStart = System.currentTimeMillis();
 
-					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getCorMatrix());
+					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getMatrixAs2dDoubleArray());
 					final double[] eigenValues = eig.getRealEigenvalues();
 
 					if (LOGGER.isDebugEnabled()) {
@@ -153,14 +151,14 @@ public class CalculateGenePvalues {
 				timeStart = System.currentTimeMillis();
 
 				//load current variants from variantPhenotypeMatrix
-				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelations.getIncludedVariants());
+				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelations.getRowObjects());
 
 				timeStop = System.currentTimeMillis();
 				timeInLoadingZscoreMatrix += (timeStop - timeStart);
 
 				for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
 
-					if (variantCorrelations.getIncludedVariants().length > 1) {
+					if (variantCorrelations.rows() > 1) {
 
 						timeStart = System.currentTimeMillis();
 
@@ -189,7 +187,7 @@ public class CalculateGenePvalues {
 
 						countBasedPvalueOnPermutations++;
 
-					} else if (variantCorrelations.getIncludedVariants().length == 1) {
+					} else if (variantCorrelations.rows() == 1) {
 
 						//Always row 0
 						double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));

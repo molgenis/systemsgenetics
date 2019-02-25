@@ -5,11 +5,15 @@
  */
 package nl.systemsgenetics.depict2;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -18,85 +22,78 @@ import org.molgenis.genotype.variant.GeneticVariant;
 public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 
 	private static final Logger LOGGER = Logger.getLogger(GenotypeCorrelationGenotypes.class);
-	
+	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
+
 	private final RandomAccessGenotypeData referenceGenotypes;
-	
+	private final LinkedHashMap<String, Integer> sampleHash;
 
 	public GenotypeCorrelationGenotypes(RandomAccessGenotypeData referenceGenotypes) {
 		this.referenceGenotypes = referenceGenotypes;
+
+		String[] samples = referenceGenotypes.getSampleNames();
+
+		sampleHash = new LinkedHashMap<>(samples.length);
+
+		int s = 0;
+		for (String sample : samples) {
+			sampleHash.put(sample, s++);
+		}
 	}
 
 	@Override
-	public GenotypieCorrelationResult getCorrelationMatrixForRange(String chr, int start, int stop, double maxR) {
-
-		final SimpleRegression regression = new SimpleRegression();
-
-		final ArrayList<GeneticVariant> includedVariantsList = new ArrayList<>();
+	public DoubleMatrixDataset<String, String> getCorrelationMatrixForRange(String chr, int start, int stop, double maxR) {
 
 		start = start < 0 ? 0 : start;
-		
+
 		LOGGER.debug("Query genotype data: " + chr + ":" + start + "-" + stop);
-		
-		int variantsFoundInRegion = 0;
-		int variantsExcludedDueToHighR = 0;
-		
-		newVariants:
-		for (GeneticVariant newVariant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
-			final float[] newVariantDosages = newVariant.getSampleDosages();
-			variantsFoundInRegion++;
-			for (GeneticVariant selectedVariant : includedVariantsList) {
-				final float[] selectedVariantDosages = selectedVariant.getSampleDosages();
 
-				//This loop is used to calculate correlation between variant dosages
-				for (int i = 0; i < newVariantDosages.length; ++i) {
-					regression.addData(newVariantDosages[i], selectedVariantDosages[i]);
-				}
+		ArrayList<GeneticVariant> variants = new ArrayList<>(64);
+		LinkedHashMap<String, Integer> variantHash = new LinkedHashMap<>(64);
 
-				//If correlation is too large stop with current newVariant and move to next variant
-				if (Math.abs(regression.getR()) >= maxR) {
-					variantsExcludedDueToHighR++;
-					continue newVariants;
-				}
-				regression.clear();
-			
-			}
-			includedVariantsList.add(newVariant);
+		int v = 0;
+		for (GeneticVariant variant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
+			variants.add(variant);
+			variantHash.put(variant.getPrimaryVariantId(), v++);
 		}
-		
-		LOGGER.debug(" * Variants found in region: " + variantsFoundInRegion);
-		LOGGER.debug(" * Variants excluded due to high correlation: " + variantsExcludedDueToHighR);
 
-		if (includedVariantsList.isEmpty()) {
-			return new GenotypieCorrelationResult(new double[0][0], new String[0]);
+		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset(sampleHash, variantHash);
+
+		DoubleMatrix2D dosageMatrix = dosageDataset.getMatrix();
+
+		v = 0;
+		for (GeneticVariant variant : variants) {
+			float[] dosages = variant.getSampleDosages();
+			for (int s = 0; s < dosages.length; ++s) {
+				dosageMatrix.setQuick(s, v, dosages[s]);
+			}
+			v++;
+		}
+
+		LOGGER.debug(" * Variants found in region: " + variants.size());
+
+		if (dosageDataset.rows() == 0) {
+			return EMPTY_DATASET;
 		} else {
-			
-			final String[] includedVariants = new String[includedVariantsList.size()];
 
-			final double[][] cor = new double[includedVariantsList.size()][includedVariantsList.size()];
-			for (int p = 0; p < includedVariantsList.size(); p++) {
-				
-				GeneticVariant pVariant = includedVariantsList.get(p);
-				
-				includedVariants[p] = pVariant.getPrimaryVariantId();
-				
-				final float[] pVariantDosages = pVariant.getSampleDosages();
-				cor[p][p] = 1;
-				for (int q = p + 1; q < includedVariantsList.size(); q++) {
-					final float[] qVariantDosages = includedVariantsList.get(q).getSampleDosages();
+			DoubleMatrixDataset variantCorrelationMatrix = dosageDataset.calculateCorrelationMatrix();
 
-					//This loop is used to calculate correlation between variant dosages
-					for (int i = 0; i < pVariantDosages.length; ++i) {
-						regression.addData(pVariantDosages[i], qVariantDosages[i]);
+			ArrayList<String> variantNames = dosageDataset.getRowObjects();
+			LinkedHashSet<String> includedVariants = new LinkedHashSet<>(variantCorrelationMatrix.rows());
+
+			rows:
+			for (int r = 0; r < variantCorrelationMatrix.rows(); ++r) {
+				cols:
+				for (int c = 0; c < r; ++c) {
+					if (Math.abs(variantCorrelationMatrix.getElementQuick(r, c)) >= maxR && includedVariants.contains(variantNames.get(c))) {
+						continue rows;
 					}
-
-					cor[p][q] = regression.getR();
-					cor[q][p] = cor[p][q];
-					
-					regression.clear();
 				}
+				includedVariants.add(variantNames.get(r));
 			}
 
-			return new GenotypieCorrelationResult(cor, includedVariants);
+			LOGGER.debug(" * Variants after pruning high r: " + includedVariants.size());
+
+			return variantCorrelationMatrix.viewSelection(includedVariants, includedVariants);
 
 		}
 

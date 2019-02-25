@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
@@ -46,6 +47,10 @@ public class Depict2 {
 			+ "  |                                       |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
+	
+	static {
+		LOG_TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+	}
 
 	/**
 	 * @param args the command line arguments
@@ -286,7 +291,7 @@ public class Depict2 {
 	}
 	
 	public static String formatMsForLog(long ms){
-		return LOG_TIME_FORMAT.format(new Date(ms)) + "(" + ms + ")";	
+		return LOG_TIME_FORMAT.format(new Date(ms));	
 	}
 
 }
