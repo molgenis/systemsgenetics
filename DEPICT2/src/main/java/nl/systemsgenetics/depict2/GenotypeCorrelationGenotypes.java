@@ -8,8 +8,6 @@ package nl.systemsgenetics.depict2;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -50,6 +48,8 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		ArrayList<GeneticVariant> variants = new ArrayList<>(64);
 		LinkedHashMap<String, Integer> variantHash = new LinkedHashMap<>(64);
 
+		long timeStart = System.currentTimeMillis();
+		
 		int v = 0;
 		for (GeneticVariant variant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
 			variants.add(variant);
@@ -68,14 +68,20 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			}
 			v++;
 		}
+		
+		long timeStop = System.currentTimeMillis();
+		CalculateGenePvalues.timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
 		LOGGER.debug(" * Variants found in region: " + variants.size());
 
 		if (dosageDataset.rows() == 0) {
 			return EMPTY_DATASET;
 		} else {
-
-			return dosageDataset.calculateCorrelationMatrix();
+			timeStart = System.currentTimeMillis();
+			DoubleMatrixDataset<String, String> corMatrix = dosageDataset.calculateCorrelationMatrix();
+			 timeStop = System.currentTimeMillis();
+			CalculateGenePvalues.timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
+			return corMatrix;
 
 		}
 

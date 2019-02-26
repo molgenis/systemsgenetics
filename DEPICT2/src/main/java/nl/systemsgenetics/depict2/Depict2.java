@@ -39,7 +39,7 @@ public class Depict2 {
 
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
+	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"

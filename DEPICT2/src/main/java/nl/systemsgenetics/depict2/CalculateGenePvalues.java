@@ -35,6 +35,8 @@ import umcg.genetica.math.stats.ZScores;
 public class CalculateGenePvalues {
 
 	private static final Logger LOGGER = Logger.getLogger(CalculateGenePvalues.class);
+	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
+	protected static long timeInLoadingGenotypeDosages = 0;
 
 	/**
 	 *
@@ -81,7 +83,7 @@ public class CalculateGenePvalues {
 		int countNoVariants = 0;
 
 		long timeInPermutations = 0;
-		long timeInCreatingGenotypeCorrelationMatrix = 0;
+		//long timeInCreatingGenotypeCorrelationMatrix = 0;
 		long timeInPruningGenotypeCorrelationMatrix = 0;
 		long timeInDoingPca = 0;
 		long timeInLoadingZscoreMatrix = 0;
@@ -106,11 +108,11 @@ public class CalculateGenePvalues {
 				final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
 
 				{
-					timeStart = System.currentTimeMillis();
+					//timeStart = System.currentTimeMillis();
 					final DoubleMatrixDataset<String, String> variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
 							gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
-					timeStop = System.currentTimeMillis();
-					timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
+//					timeStop = System.currentTimeMillis();
+//					timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
 					timeStart = System.currentTimeMillis();
 					variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
@@ -237,10 +239,11 @@ public class CalculateGenePvalues {
 		LOGGER.debug("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
 		LOGGER.debug("countNoVariants: " + countNoVariants);
 
-		LOGGER.debug("timeInPermutation: " + formatMsForLog(timeInPermutations));
+		LOGGER.debug("timeInLoadingGenotypeDosages: " + formatMsForLog(timeInLoadingGenotypeDosages));
 		LOGGER.debug("timeInCreatingGenotypeCorrelationMatrix: " + formatMsForLog(timeInCreatingGenotypeCorrelationMatrix));
 		LOGGER.debug("timeInPruningGenotypeCorrelationMatrix: " + formatMsForLog(timeInPruningGenotypeCorrelationMatrix));
 		LOGGER.debug("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
+		LOGGER.debug("timeInPermutation: " + formatMsForLog(timeInPermutations));
 		LOGGER.debug("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
 		LOGGER.debug("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
 
