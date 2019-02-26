@@ -323,7 +323,7 @@ public class CalculateGenePvalues {
 		for (int i = 0; i < eigenValues.length; ++i) {
 
 			c = 0;
-			outputLine[c++] = "PC" + i + 1;
+			outputLine[c++] = "PC" + (i + 1);
 			outputLine[c++] = String.valueOf(eigenValues[i]);
 			eigenWriter.writeNext(outputLine);
 
