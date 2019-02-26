@@ -45,14 +45,16 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 
 		LOGGER.debug("Query genotype data: " + chr + ":" + start + "-" + stop);
 
-		ArrayList<GeneticVariant> variants = new ArrayList<>(64);
+		//ArrayList<GeneticVariant> variants = new ArrayList<>(64);
+		ArrayList<float[]> variantsDosages = new ArrayList<>(64);
 		LinkedHashMap<String, Integer> variantHash = new LinkedHashMap<>(64);
 
 		long timeStart = System.currentTimeMillis();
 		
 		int v = 0;
 		for (GeneticVariant variant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
-			variants.add(variant);
+			//variants.add(variant);
+			variantsDosages.add(variant.getSampleDosages());
 			variantHash.put(variant.getPrimaryVariantId(), v++);
 		}
 
@@ -61,10 +63,9 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		DoubleMatrix2D dosageMatrix = dosageDataset.getMatrix();
 
 		v = 0;
-		for (GeneticVariant variant : variants) {
-			float[] dosages = variant.getSampleDosages();
-			for (int s = 0; s < dosages.length; ++s) {
-				dosageMatrix.setQuick(s, v, dosages[s]);
+		for (float[] variantDosages : variantsDosages) {
+			for (int s = 0; s < variantDosages.length; ++s) {
+				dosageMatrix.setQuick(s, v, variantDosages[s]);
 			}
 			v++;
 		}
@@ -72,7 +73,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		long timeStop = System.currentTimeMillis();
 		CalculateGenePvalues.timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
-		LOGGER.debug(" * Variants found in region: " + variants.size());
+		LOGGER.debug(" * Variants found in region: " + variantsDosages.size());
 
 		if (dosageDataset.rows() == 0) {
 			return EMPTY_DATASET;
