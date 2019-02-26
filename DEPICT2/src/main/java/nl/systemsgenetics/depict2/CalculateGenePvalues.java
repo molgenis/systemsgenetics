@@ -144,7 +144,7 @@ public class CalculateGenePvalues {
 
 					if (LOGGER.isDebugEnabled()) {
 
-						saveEigenValues(eigenValues, new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
+						saveEigenValues(eigenValues, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
 
 					}
 
