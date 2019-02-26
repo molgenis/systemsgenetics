@@ -41,7 +41,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 	}
 
 	@Override
-	public DoubleMatrixDataset<String, String> getCorrelationMatrixForRange(String chr, int start, int stop, double maxR) {
+	public DoubleMatrixDataset<String, String> getCorrelationMatrixForRange(String chr, int start, int stop) {
 
 		start = start < 0 ? 0 : start;
 
@@ -75,25 +75,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			return EMPTY_DATASET;
 		} else {
 
-			DoubleMatrixDataset variantCorrelationMatrix = dosageDataset.calculateCorrelationMatrix();
-
-			ArrayList<String> variantNames = variantCorrelationMatrix.getRowObjects();
-			LinkedHashSet<String> includedVariants = new LinkedHashSet<>(variantCorrelationMatrix.rows());
-
-			rows:
-			for (int r = 0; r < variantCorrelationMatrix.rows(); ++r) {
-				cols:
-				for (int c = 0; c < r; ++c) {
-					if (Math.abs(variantCorrelationMatrix.getElementQuick(r, c)) >= maxR && includedVariants.contains(variantNames.get(c))) {
-						continue rows;
-					}
-				}
-				includedVariants.add(variantNames.get(r));
-			}
-
-			LOGGER.debug(" * Variants after pruning high r: " + includedVariants.size());
-
-			return variantCorrelationMatrix.viewSelection(includedVariants, includedVariants);
+			return dosageDataset.calculateCorrelationMatrix();
 
 		}
 

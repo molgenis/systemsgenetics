@@ -19,9 +19,8 @@ public interface GenotypeCorrelationSource {
 	 * @param chr
 	 * @param start
 	 * @param stop
-	 * @param doubleMaxR max correlation between variants in resulting covariance matrix. Highly correlated variants will be excluded.
 	 * @return 
 	 */
-	public DoubleMatrixDataset<String, String> getCorrelationMatrixForRange(String chr, int start, int stop, double doubleMaxR);
+	public DoubleMatrixDataset<String, String> getCorrelationMatrixForRange(String chr, int start, int stop);
 	
 }

@@ -10,7 +10,9 @@ import com.opencsv.CSVWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
@@ -80,6 +82,7 @@ public class CalculateGenePvalues {
 
 		long timeInPermutations = 0;
 		long timeInCreatingGenotypeCorrelationMatrix = 0;
+		long timeInPruningGenotypeCorrelationMatrix = 0;
 		long timeInDoingPca = 0;
 		long timeInLoadingZscoreMatrix = 0;
 		long timeInCalculatingPvalue = 0;
@@ -100,14 +103,24 @@ public class CalculateGenePvalues {
 
 				Gene gene = genes.get(geneI);
 
-				timeStart = System.currentTimeMillis();
+				final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
 
-				final DoubleMatrixDataset<String, String> variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
-						gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend, maxR);
+				{
+					timeStart = System.currentTimeMillis();
+					final DoubleMatrixDataset<String, String> variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
+							gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
+					timeStop = System.currentTimeMillis();
+					timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
-				if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
+					timeStart = System.currentTimeMillis();
+					variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
+					timeStop = System.currentTimeMillis();
+					timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
+				}
 
-					variantCorrelations.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
+				if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
+
+					variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
 
 				}
 
@@ -116,15 +129,15 @@ public class CalculateGenePvalues {
 
 				c = 0;
 				outputLine[c++] = gene.getGene();
-				outputLine[c++] = String.valueOf(variantCorrelations.rows());
+				outputLine[c++] = String.valueOf(variantCorrelationsPruned.rows());
 				geneVariantCountWriter.writeNext(outputLine);
 
 				final double[] geneChi2SumNull;
-				if (variantCorrelations.rows() > 1) {
+				if (variantCorrelationsPruned.rows() > 1) {
 
 					timeStart = System.currentTimeMillis();
 
-					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelations.getMatrixAs2dDoubleArray());
+					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
 					final double[] eigenValues = eig.getRealEigenvalues();
 
 					if (LOGGER.isDebugEnabled()) {
@@ -151,14 +164,14 @@ public class CalculateGenePvalues {
 				timeStart = System.currentTimeMillis();
 
 				//load current variants from variantPhenotypeMatrix
-				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelations.getRowObjects());
+				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
 
 				timeStop = System.currentTimeMillis();
 				timeInLoadingZscoreMatrix += (timeStop - timeStart);
 
 				for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
 
-					if (variantCorrelations.rows() > 1) {
+					if (variantCorrelationsPruned.rows() > 1) {
 
 						timeStart = System.currentTimeMillis();
 
@@ -187,7 +200,7 @@ public class CalculateGenePvalues {
 
 						countBasedPvalueOnPermutations++;
 
-					} else if (variantCorrelations.rows() == 1) {
+					} else if (variantCorrelationsPruned.rows() == 1) {
 
 						//Always row 0
 						double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
@@ -226,6 +239,7 @@ public class CalculateGenePvalues {
 
 		LOGGER.debug("timeInPermutation: " + formatMsForLog(timeInPermutations));
 		LOGGER.debug("timeInCreatingGenotypeCorrelationMatrix: " + formatMsForLog(timeInCreatingGenotypeCorrelationMatrix));
+		LOGGER.debug("timeInPruningGenotypeCorrelationMatrix: " + formatMsForLog(timeInPruningGenotypeCorrelationMatrix));
 		LOGGER.debug("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
 		LOGGER.debug("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
 		LOGGER.debug("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
@@ -235,10 +249,12 @@ public class CalculateGenePvalues {
 		for (double histCount : genePValueDistributionChi2Dist) {
 			LOGGER.info(histCount);
 		}
+
 		LOGGER.info("Gene p-value histrogram permuations");
 		for (double histCount : genePValueDistributionPermuations) {
 			LOGGER.info(histCount);
 		}
+
 		LOGGER.info("-----------------------");
 
 		return genePvalues;
@@ -307,10 +323,32 @@ public class CalculateGenePvalues {
 			outputLine[c++] = "PC" + i + 1;
 			outputLine[c++] = String.valueOf(eigenValues[i]);
 			eigenWriter.writeNext(outputLine);
-			
+
 		}
 
 		eigenWriter.close();
+
+	}
+
+	private static DoubleMatrixDataset<String, String> pruneCorrelatinMatrix(DoubleMatrixDataset<String, String> correlationMatrixForRange, double maxR) {
+
+		ArrayList<String> variantNames = correlationMatrixForRange.getRowObjects();
+		LinkedHashSet<String> includedVariants = new LinkedHashSet<>(correlationMatrixForRange.rows());
+
+		rows:
+		for (int r = 0; r < correlationMatrixForRange.rows(); ++r) {
+			cols:
+			for (int c = 0; c < r; ++c) {
+				if (Math.abs(correlationMatrixForRange.getElementQuick(r, c)) >= maxR && includedVariants.contains(variantNames.get(c))) {
+					continue rows;
+				}
+			}
+			includedVariants.add(variantNames.get(r));
+		}
+
+		LOGGER.debug(" * Variants after pruning high r: " + includedVariants.size());
+
+		return correlationMatrixForRange.viewSelection(includedVariants, includedVariants);
 
 	}
 
