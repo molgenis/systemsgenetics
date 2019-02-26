@@ -77,7 +77,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 
 			DoubleMatrixDataset variantCorrelationMatrix = dosageDataset.calculateCorrelationMatrix();
 
-			ArrayList<String> variantNames = dosageDataset.getRowObjects();
+			ArrayList<String> variantNames = variantCorrelationMatrix.getRowObjects();
 			LinkedHashSet<String> includedVariants = new LinkedHashSet<>(variantCorrelationMatrix.rows());
 
 			rows:
