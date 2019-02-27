@@ -99,18 +99,18 @@ public class Depict2 {
 		try {
 			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
-			LOGGER.getRootLogger().removeAllAppenders();
-			LOGGER.getRootLogger().addAppender(logFileAppender);
+			Logger.getRootLogger().removeAllAppenders();
+			Logger.getRootLogger().addAppender(logFileAppender);
 
 			LOGGER.info("DEPICT2 version: " + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
 
-			LOGGER.getRootLogger().addAppender(logConsoleInfoAppender);
+			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
 
 			if (options.isDebugMode()) {
-				LOGGER.setLevel(Level.DEBUG);
+				Logger.getRootLogger().setLevel(Level.DEBUG);
 			} else {
-				LOGGER.setLevel(Level.INFO);
+				Logger.getRootLogger().setLevel(Level.INFO);
 			}
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());
