@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
+import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
@@ -47,7 +48,7 @@ public class Depict2 {
 			+ "  |                                       |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
-	
+
 	static {
 		LOG_TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
@@ -125,6 +126,9 @@ public class Depict2 {
 					break;
 				case CONVERT_TXT:
 					convertTxtToBin(options);
+					break;
+				case FIRST1000:
+					First1000qtl.printFirst1000(options);
 					break;
 				case RUN:
 					run(options);
@@ -289,9 +293,9 @@ public class Depict2 {
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}
-	
-	public static String formatMsForLog(long ms){
-		return LOG_TIME_FORMAT.format(new Date(ms));	
+
+	public static String formatMsForLog(long ms) {
+		return LOG_TIME_FORMAT.format(new Date(ms));
 	}
 
 }

@@ -7,9 +7,11 @@ package umcg.genetica.math.matrix2;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 /**
  *
@@ -82,5 +84,15 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 	public int totalColsInDataset(){
 		return originalColMap.size();
 	}
+
+	public Map<String, Integer> getOriginalRowMap() {
+		return Collections.unmodifiableMap(originalRowMap);
+	}
+
+	public Map<String, Integer> getOriginalColMap() {
+		return Collections.unmodifiableMap(originalColMap);
+	}
+	
+	
 
 }

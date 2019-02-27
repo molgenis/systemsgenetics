@@ -94,6 +94,7 @@ public class Depict2Options {
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("The output path");
 		OptionBuilder.withLongOpt("output");
+		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
 		OptionBuilder.withArgName("int");
@@ -156,7 +157,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());

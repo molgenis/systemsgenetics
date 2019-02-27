@@ -12,5 +12,6 @@ package nl.systemsgenetics.depict2;
 public enum Depict2Mode {
 	RUN,
 	CONVERT_TXT,
-	CONVERT_EQTL;
+	CONVERT_EQTL,
+	FIRST1000;
 }
