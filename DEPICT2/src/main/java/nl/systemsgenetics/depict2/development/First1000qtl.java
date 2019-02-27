@@ -24,6 +24,11 @@ public class First1000qtl {
 	 * @throws java.io.IOException
 	 */
 	public static void printFirst1000(Depict2Options options) throws IOException, Exception {
+		
+		System.out.println("");
+		System.out.println("WARNING: This is an undocumented function used during development");
+		System.out.println("");
+		
 		DoubleMatrixDatasetFastSubsetLoader loader = new DoubleMatrixDatasetFastSubsetLoader(options.getGwasZscoreMatrixPath());
 		
 		ArrayList<String> rowsToOutput = new ArrayList<>();
