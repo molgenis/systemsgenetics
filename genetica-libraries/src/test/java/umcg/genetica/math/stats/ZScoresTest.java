@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
  * @author patri
  */
 public class ZScoresTest {
-	
+
 	public ZScoresTest() {
 	}
 
@@ -32,7 +32,6 @@ public class ZScoresTest {
 	 */
 	@Test
 	public void testZToP() {
-		System.out.println("zToP");
 		assertEquals(ZScores.zToP(10), 1.523971e-23, 0.00000001);
 		assertEquals(ZScores.zToP(-10), 1.523971e-23, 0.00000001);
 		assertEquals(ZScores.zToP(0), 1, 0.00000001);
@@ -40,5 +39,15 @@ public class ZScoresTest {
 		assertEquals(ZScores.zToP(-2), 0.04550026, 0.00000001);
 	}
 
-	
+	@Test
+	public void pToZTwoTailed() {
+
+		assertEquals(ZScores.pToZTwoTailed(0), -40, 0.00000001);
+		assertEquals(ZScores.pToZTwoTailed(1), 0, 0.00000001);
+		assertEquals(ZScores.pToZTwoTailed(1.523971e-23), -10, 0.00001);
+		assertEquals(ZScores.pToZTwoTailed(1e-308), -37.55912122001427, 0.00001);
+		assertEquals(ZScores.pToZTwoTailed(0.04550026), -2, 0.00001);
+		
+	}
+
 }

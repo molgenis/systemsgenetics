@@ -154,11 +154,11 @@ public class ZScores {
 	}
 	
 	/**
-	 * Returns the absolute Z-score for a given p-value using a normal
+	 * Returns the negative Z-score for a given p-value using a normal
 	 * distribution.
 	 *
 	 * @param p p-value
-	 * @return absolute Z-score
+	 * @return negative Z-score
 	 */
 	public static double pToZ(double p) {
 		if (p == 1d) {
@@ -166,7 +166,7 @@ public class ZScores {
 		} else if (p < 0 || p > 1d) {
 			throw new IllegalStateException("P-value should be between 0 and 1.");
 		} else if (p == 0d) {
-			return 40d;
+			return -40d;
 		}
 		
 		return Probability.normalInverse(p);

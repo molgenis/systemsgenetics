@@ -1,5 +1,6 @@
 package nl.systemsgenetics.depict2;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -31,6 +32,7 @@ import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import umcg.genetica.math.stats.ZScores;
 
 /**
  *
@@ -112,6 +114,10 @@ public class Depict2 {
 			} else {
 				Logger.getRootLogger().setLevel(Level.INFO);
 			}
+			
+			LOGGER.debug("Test debug");
+			LOGGER.info("Test info");
+			
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());
 			System.exit(1);
@@ -283,6 +289,24 @@ public class Depict2 {
 	private static void convertTxtToBin(Depict2Options options) throws IOException {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		
+		if(options.isPvalueToZscore()){
+			DoubleMatrix2D matrixContent = matrix.getMatrix(); 
+			
+			int rows = matrixContent.rows();
+			int cols = matrixContent.columns();
+			
+			for(int r = 0 ; r < rows ; ++r){
+				for(int c = 0 ; c < cols; ++c){
+					
+					matrixContent.setQuick(rows, cols, ZScores.pToZTwoTailed(matrixContent.getQuick(rows, cols)));
+					
+				}
+			}
+			
+		}
+		
+		
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}

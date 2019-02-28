@@ -63,6 +63,9 @@ public class CalculateGenePvalues {
 			final int nrPermutations,
 			final String outputBasePath) throws IOException, Exception {
 
+		LOGGER.debug("Test debug2");
+		LOGGER.info("Test info2");
+
 		final File geneVariantCountFile = new File(outputBasePath + "_geneVariantCount.txt");
 
 		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
@@ -141,8 +144,10 @@ public class CalculateGenePvalues {
 
 					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
 					final double[] eigenValues = eig.getRealEigenvalues();
-					for (int e=0; e<eigenValues.length; e++) {
-						if (eigenValues[e] < 0) eigenValues[e] = 0;
+					for (int e = 0; e < eigenValues.length; e++) {
+						if (eigenValues[e] < 0) {
+							eigenValues[e] = 0;
+						}
 					}
 
 					if (LOGGER.isDebugEnabled()) {

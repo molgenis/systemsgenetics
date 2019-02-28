@@ -40,6 +40,7 @@ public class Depict2Options {
 	private final double maxRBetweenVariants;
 	private final File logFile;
 	private final boolean debugMode;
+	private final boolean pvalueToZscore;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -53,7 +54,7 @@ public class Depict2Options {
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
 				+ "* RUN - Run the DEPICT2 prioritization.\n"
-				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas and --output\n"
+				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
@@ -132,6 +133,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("debug");
 		OPTIONS.addOption(OptionBuilder.create("d"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("When mode=CONVERT_TXT convert p-values to z-scores");
+		OptionBuilder.withLongOpt("pvalueToZscore");
+		OPTIONS.addOption(OptionBuilder.create("p2z"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -166,6 +172,12 @@ public class Depict2Options {
 			gwasZscoreMatrixPath = commandLine.getOptionValue('g');
 		} else {
 			gwasZscoreMatrixPath = null;
+		}
+
+		if (mode == Depict2Mode.CONVERT_TXT) {
+			pvalueToZscore = commandLine.hasOption("p2z");
+		} else {
+			pvalueToZscore = false;
 		}
 
 		if (mode == Depict2Mode.RUN) {
@@ -260,16 +272,20 @@ public class Depict2Options {
 	public void printOptions() {
 
 		LOGGER.info("Supplied options:");
-		
+
 		LOGGER.info(" * Mode: " + mode.name());
 		LOGGER.info(" * Ouput path: " + outputBasePath);
 
 		switch (mode) {
 			case CONVERT_EQTL:
 				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath);
+				if (pvalueToZscore) {
+					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+				}
 				break;
 			case CONVERT_TXT:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
 			case RUN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath);
@@ -288,9 +304,12 @@ public class Depict2Options {
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
 				LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
 				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
+				if (pvalueToZscore) {
+					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+				}
 				break;
 		}
-		
+
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on" : "off"));
 
 	}
@@ -341,6 +360,10 @@ public class Depict2Options {
 
 	public File getGenotypeSamplesFile() {
 		return genotypeSamplesFile;
+	}
+
+	public boolean isPvalueToZscore() {
+		return pvalueToZscore;
 	}
 
 }
