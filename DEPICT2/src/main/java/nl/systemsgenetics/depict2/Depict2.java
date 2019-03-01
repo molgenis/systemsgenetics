@@ -7,6 +7,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -90,6 +91,11 @@ public class Depict2 {
 			Depict2Options.printHelp();
 			return;
 		}
+		
+		if(new File(options.getOutputBasePath()).isDirectory()){
+			System.err.println("Specified output path is a directory. Please include a prefix for the output files.");
+			return;
+		}
 
 		if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
 			if (!options.getLogFile().getParentFile().mkdirs()) {
@@ -146,15 +152,19 @@ public class Depict2 {
 		} catch (IOException e) {
 			System.err.println("Problem running mode: " + options.getMode());
 			System.err.println("Error accessing input data: " + e.getMessage());
+			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error accessing input data: " + e.getMessage(), e);
 			System.exit(1);
 		} catch (IncompatibleMultiPartGenotypeDataException e) {
 			System.err.println("Problem running mode: " + options.getMode());
 			System.err.println("Error combining the impute genotype data files: " + e.getMessage());
+			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error combining the impute genotype data files: " + e.getMessage(), e);
+			System.exit(1);
 		} catch (GenotypeDataException e) {
 			System.err.println("Problem running mode: " + options.getMode());
 			System.err.println("Error reading input data: " + e.getMessage());
+			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
 			System.exit(1);
 		} catch (Exception e) {
@@ -173,34 +183,21 @@ public class Depict2 {
 
 	public static void run(Depict2Options options) throws IOException, Exception {
 
+		//Test here to prevent chrash after running for a while
+		if(!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()){
+			throw new FileNotFoundException("GWAS matrix does not exist at: " + options.getGwasZscoreMatrixPath() + ".dat");
+		}
+		
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
+		
+		
 		LOGGER.info("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
 		LOGGER.info("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
 
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 
-//		Iterator<GeneticVariant> it = referenceGenotypeData.iterator();
-//		for(int i = 0 ; i < 5 ; i++){
-//			if(!it.hasNext()){
-//				System.out.println("No more variants");
-//			}
-//			GeneticVariant v = it.next();
-//			System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
-//		}
-//		System.out.println("---");
-//		GeneticVariant v = referenceGenotypeData.getVariantsByPos("1", 10177).iterator().next();
-//		System.out.println(v.getSequenceName() + ":" + v.getStartPos() + " " + v.getVariantId().getPrimairyId());
-//		System.out.println("---");
-//		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 10100, 10200)) {
-//			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
-//		}
-//		System.out.println("---");
-//		for (GeneticVariant v2 : referenceGenotypeData.getVariantsByRange("1", 11919466, 12132045)) {
-//			System.out.println(v2.getSequenceName() + ":" + v2.getStartPos() + " " + v2.getVariantId().getPrimairyId());
-//		}
-//		
 		LOGGER.info("Done loading genotype data");
 
 		List<Gene> genes = readGenes(options.getGeneInfoFile());

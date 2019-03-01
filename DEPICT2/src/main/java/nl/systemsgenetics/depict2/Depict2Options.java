@@ -129,7 +129,7 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("ge"));
 
 		OptionBuilder.withArgName("boolean");
-		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file");
+		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermediate results to files. Not recommended for large analysis.");
 		OptionBuilder.withLongOpt("debug");
 		OPTIONS.addOption(OptionBuilder.create("d"));
 
@@ -310,7 +310,7 @@ public class Depict2Options {
 				break;
 		}
 
-		LOGGER.info(" * Debug mode: " + (debugMode ? "on" : "off"));
+		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 
 	}
 
