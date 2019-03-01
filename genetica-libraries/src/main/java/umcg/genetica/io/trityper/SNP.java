@@ -81,6 +81,7 @@ public class SNP {
 		genotypeFreq = new int[3];
 		int nrTotal = 0;
 		nrCalled = 0;
+		boolean multiallelic = false;
 		for (int ind = 0; ind < alleles1.length; ind++) {
 			Boolean inc = indIncluded[ind];
 			
@@ -113,6 +114,7 @@ public class SNP {
 						System.out.println("Allele 1:\t" + alleles[0] + " / " + new String(new byte[]{alleles[0]}));
 						System.out.println("Allele 2:\t" + alleles[1] + " / " + new String(new byte[]{alleles[1]}));
 						System.out.println("Allele 3:\t" + alleles[2] + " / " + new String(new byte[]{alleles[2]}));
+						multiallelic = true;
 						break;
 					}
 				}
@@ -131,6 +133,7 @@ public class SNP {
 						System.out.println("Allele 1:\t" + alleles[0] + " / " + new String(new byte[]{alleles[0]}));
 						System.out.println("Allele 2:\t" + alleles[1] + " / " + new String(new byte[]{alleles[1]}));
 						System.out.println("Allele 3:\t" + alleles[2] + " / " + new String(new byte[]{alleles[2]}));
+						multiallelic = true;
 						break;
 					}
 				}
@@ -152,28 +155,72 @@ public class SNP {
 			}
 		}
 		
-		alleleFreq = new double[2];
 		
-		alleleFreq[0] = 2 * genotypeFreq[0] + genotypeFreq[1];
-		alleleFreq[1] = 2 * genotypeFreq[2] + genotypeFreq[1];
-		MAF = (alleleFreq[0]) / ((double) (nrCalled) * 2d);
-		
-		minorAllele = alleles[0];
-		if (alleleFreq[0] > alleleFreq[1]) {
-			minorAllele = alleles[1];
-			MAF = 1 - MAF;
+		if (!multiallelic) {
+			
+			// prune allele encoding, if the variant is multi-allelic, but only two alleles are present
+			if (alleleEncoding != null && alleleEncoding.length > 2) {
+				String[] tmpalleleEnc = new String[2];
+				byte a1repl = 0;
+				byte a2repl = 0;
+				byte a1orig = alleles[0];
+				byte a2orig = alleles[1];
+				if (a1orig > a2orig) { // order of alleles in TriTyper is random; need to take this into account when recoding
+					tmpalleleEnc[1] = alleleEncoding[alleles[0] - 100];
+					tmpalleleEnc[0] = alleleEncoding[alleles[1] - 100];
+					a1repl = 101;
+					a2repl = 100;
+				} else {
+					tmpalleleEnc[0] = alleleEncoding[alleles[0] - 100];
+					tmpalleleEnc[1] = alleleEncoding[alleles[1] - 100];
+					a1repl = 100;
+					a2repl = 101;
+					
+				}
+				alleleEncoding = tmpalleleEnc;
+				alleles[0] = a1repl;
+				alleles[1] = a2repl;
+				// replace alleles1 and alleles2
+				for (int i = 0; i < alleles1.length; i++) {
+					byte a1i = alleles1[i];
+					byte a2i = alleles2[i];
+					if (a1i == a1orig) {
+						alleles[i] = a1repl;
+					} else {
+						alleles[i] = a2repl;
+					}
+					if (a2i == a2orig) {
+						alleles2[i] = a2repl;
+					} else {
+						alleles2[i] = a1repl;
+					}
+				}
+				
+			}
+			alleleFreq = new double[2];
+			
+			alleleFreq[0] = 2 * genotypeFreq[0] + genotypeFreq[1];
+			alleleFreq[1] = 2 * genotypeFreq[2] + genotypeFreq[1];
+			MAF = (alleleFreq[0]) / ((double) (nrCalled) * 2d);
+			
+			minorAllele = alleles[0];
+			if (alleleFreq[0] > alleleFreq[1]) {
+				minorAllele = alleles[1];
+				MAF = 1 - MAF;
+			}
+			
+			this.HWEP = HWE.calculateExactHWEPValue(genotypeFreq[1], genotypeFreq[0], genotypeFreq[2]);
+			
+			
+			passesQC = false;
+			
+			CR = (double) nrCalled / nrTotal;
+			
+			if ((genotypeFreq[0] > 0 && genotypeFreq[1] > 0) || (genotypeFreq[1] > 0 && genotypeFreq[2] > 0) || (genotypeFreq[0] > 0 && genotypeFreq[2] > 0)) {
+				passesQC = true;
+			}
 		}
 		
-		this.HWEP = HWE.calculateExactHWEPValue(genotypeFreq[1], genotypeFreq[0], genotypeFreq[2]);
-		
-		
-		passesQC = false;
-		
-		CR = (double) nrCalled / nrTotal;
-		
-		if ((genotypeFreq[0] > 0 && genotypeFreq[1] > 0) || (genotypeFreq[1] > 0 && genotypeFreq[2] > 0) || (genotypeFreq[0] > 0 && genotypeFreq[2] > 0)) {
-			passesQC = true;
-		}
 	}
 	
 	public void setPassesQC(boolean b) {
@@ -372,5 +419,27 @@ public class SNP {
 	
 	public void setAlleleEncoding(String[] alleles) {
 		this.alleleEncoding = alleles;
+	}
+	
+	public String[] getAlleleEncoding() {
+		return alleleEncoding;
+	}
+	
+	public boolean hasAlleleEncoding() {
+		return (alleleEncoding != null);
+	}
+	
+	public boolean isIndel() {
+		if (alleleEncoding == null) {
+			return false;
+		}
+		
+		boolean indel = false;
+		for (String d : alleleEncoding) {
+			if (d.length() > 1) {
+				indel = true;
+			}
+		}
+		return indel;
 	}
 }
