@@ -88,6 +88,7 @@ public class CalculateGenePvalues {
 		long timeInDoingPca = 0;
 		long timeInLoadingZscoreMatrix = 0;
 		long timeInCalculatingPvalue = 0;
+		long timeInCalculatingRealSumChi2 = 0;
 
 		long timeStart;
 		long timeStop;
@@ -184,6 +185,11 @@ public class CalculateGenePvalues {
 
 						final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
 
+						timeStop = System.currentTimeMillis();
+						timeInCalculatingRealSumChi2 += (timeStop - timeStart);
+
+						timeStart = System.currentTimeMillis();
+
 						double p = 0.5;
 						for (int perm = 0; perm < nrPermutations; perm++) {
 							if (geneChi2SumNull[perm] >= geneChi2Sum) {
@@ -225,7 +231,7 @@ public class CalculateGenePvalues {
 					} else {
 						//no variants in or near gene
 						//genePValueDistribution[(int) (20d * 0.99999d)]++;
-						genePvalues.setElementQuick(geneI, phenoI, 0.99999d);
+						genePvalues.setElementQuick(geneI, phenoI, 0.5d);
 						countNoVariants++;
 					}
 
@@ -250,6 +256,7 @@ public class CalculateGenePvalues {
 		LOGGER.info("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
 		LOGGER.info("timeInPermutation: " + formatMsForLog(timeInPermutations));
 		LOGGER.info("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
+		LOGGER.info("timeInCalculatingRealSumChi2: " + formatMsForLog(timeInCalculatingRealSumChi2));
 		LOGGER.info("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
 
 		LOGGER.info("-----------------------");
