@@ -244,13 +244,13 @@ public class CalculateGenePvalues {
 		LOGGER.debug("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
 		LOGGER.debug("countNoVariants: " + countNoVariants);
 
-		LOGGER.debug("timeInLoadingGenotypeDosages: " + formatMsForLog(timeInLoadingGenotypeDosages));
-		LOGGER.debug("timeInCreatingGenotypeCorrelationMatrix: " + formatMsForLog(timeInCreatingGenotypeCorrelationMatrix));
-		LOGGER.debug("timeInPruningGenotypeCorrelationMatrix: " + formatMsForLog(timeInPruningGenotypeCorrelationMatrix));
-		LOGGER.debug("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
-		LOGGER.debug("timeInPermutation: " + formatMsForLog(timeInPermutations));
-		LOGGER.debug("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
-		LOGGER.debug("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
+		LOGGER.info("timeInLoadingGenotypeDosages: " + formatMsForLog(timeInLoadingGenotypeDosages));
+		LOGGER.info("timeInCreatingGenotypeCorrelationMatrix: " + formatMsForLog(timeInCreatingGenotypeCorrelationMatrix));
+		LOGGER.info("timeInPruningGenotypeCorrelationMatrix: " + formatMsForLog(timeInPruningGenotypeCorrelationMatrix));
+		LOGGER.info("timeInDoingPca: " + formatMsForLog(timeInDoingPca));
+		LOGGER.info("timeInPermutation: " + formatMsForLog(timeInPermutations));
+		LOGGER.info("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
+		LOGGER.info("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
 
 		LOGGER.info("-----------------------");
 		LOGGER.info("Gene p-value histrogram chi2 dist");
