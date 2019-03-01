@@ -31,7 +31,7 @@ public class InfoOnlyLogLayout extends Layout {
 
 	@Override
 	public boolean ignoresThrowable() {
-		return true;
+		return false;
 	}
 
 	@Override

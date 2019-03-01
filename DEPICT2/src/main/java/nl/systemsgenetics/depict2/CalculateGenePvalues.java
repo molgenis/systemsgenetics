@@ -63,9 +63,6 @@ public class CalculateGenePvalues {
 			final int nrPermutations,
 			final String outputBasePath) throws IOException, Exception {
 
-		LOGGER.debug("Test debug2");
-		LOGGER.info("Test info2");
-
 		final File geneVariantCountFile = new File(outputBasePath + "_geneVariantCount.txt");
 
 		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));

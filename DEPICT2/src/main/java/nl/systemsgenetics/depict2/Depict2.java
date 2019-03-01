@@ -103,10 +103,10 @@ public class Depict2 {
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
-
+			
 			LOGGER.info("DEPICT2 version: " + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
-
+			
 			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
 
 			if (options.isDebugMode()) {
@@ -114,9 +114,6 @@ public class Depict2 {
 			} else {
 				Logger.getRootLogger().setLevel(Level.INFO);
 			}
-			
-			LOGGER.debug("Test debug");
-			LOGGER.info("Test info");
 			
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());
@@ -299,13 +296,12 @@ public class Depict2 {
 			for(int r = 0 ; r < rows ; ++r){
 				for(int c = 0 ; c < cols; ++c){
 					
-					matrixContent.setQuick(rows, cols, ZScores.pToZTwoTailed(matrixContent.getQuick(rows, cols)));
+					matrixContent.setQuick(rows, cols, ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
 					
 				}
 			}
 			
 		}
-		
 		
 		matrix.saveBinary(options.getOutputBasePath());
 

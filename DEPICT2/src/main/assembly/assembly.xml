@@ -25,8 +25,23 @@
 			<outputDirectory>/</outputDirectory>
 			<destName>Depict2.jar</destName>
 		</file>
+		<file>
+			<source>src/test/resources/runDemo.sh</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>runDemo.sh</destName>
+		</file>
 	</files>
 
+	<fileSets>
+		<fileSet>
+			<directory>src/test/resources/demoFiles/</directory>
+			<outputDirectory>demoData</outputDirectory>
+			<includes>
+				<include>*</include>
+			</includes>
+			<fileMode>0755</fileMode>		
+		</fileSet>
+	</fileSets>
 
 
 </assembly>
