@@ -293,7 +293,7 @@ public class Depict2 {
 			for(int r = 0 ; r < rows ; ++r){
 				for(int c = 0 ; c < cols; ++c){
 					
-					matrixContent.setQuick(rows, cols, ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
+					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
 					
 				}
 			}
