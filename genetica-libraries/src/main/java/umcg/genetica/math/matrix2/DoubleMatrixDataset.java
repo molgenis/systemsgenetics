@@ -184,6 +184,56 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set to: \"tab\" \n Input filename: " + fileName);
 		}
 	}
+	
+	public static List<String> readDoubleTextDataColNames(String fileName, char delimiter) throws IOException{
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
+		}
+
+		//Pattern splitPatern = Pattern.compile(delimiter);
+		int columnOffset = 1;
+
+		TextFile in = new TextFile(fileName, TextFile.R);
+		String str = in.readLine(); // header
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
+
+		int tmpCols = (data.length - columnOffset);
+
+		ArrayList<String> colNames = new ArrayList<>(tmpCols);
+		
+		for (int s = 0; s < tmpCols; s++) {
+			String colName = data[s + columnOffset];
+			colNames.add(colName);
+		}
+		
+		return colNames;
+
+	}
+	
+	public static List<String> readDoubleTextDataRowNames(String fileName, char delimiter) throws IOException{
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
+		}
+
+		//Pattern splitPatern = Pattern.compile(delimiter);
+		int columnOffset = 1;
+
+		TextFile in = new TextFile(fileName, TextFile.R);
+		String str = in.readLine(); // header
+		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
+
+		int tmpCols = (data.length - columnOffset);
+
+		ArrayList<String> rowNames = new ArrayList<>(tmpCols);
+
+		while ((str = in.readLine()) != null) {
+			data = StringUtils.splitPreserveAllTokens(str, delimiter);
+			rowNames.add(data[0]);
+		}
+		
+		return rowNames;
+
+	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException, Exception {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {

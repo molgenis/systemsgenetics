@@ -5,10 +5,12 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVWriter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -91,8 +93,8 @@ public class Depict2 {
 			Depict2Options.printHelp();
 			return;
 		}
-		
-		if(new File(options.getOutputBasePath()).isDirectory()){
+
+		if (new File(options.getOutputBasePath()).isDirectory()) {
 			System.err.println("Specified output path is a directory. Please include a prefix for the output files.");
 			return;
 		}
@@ -109,10 +111,10 @@ public class Depict2 {
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
-			
+
 			LOGGER.info("DEPICT2 version: " + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
-			
+
 			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
 
 			if (options.isDebugMode()) {
@@ -120,7 +122,7 @@ public class Depict2 {
 			} else {
 				Logger.getRootLogger().setLevel(Level.INFO);
 			}
-			
+
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());
 			System.exit(1);
@@ -184,15 +186,13 @@ public class Depict2 {
 	public static void run(Depict2Options options) throws IOException, Exception {
 
 		//Test here to prevent chrash after running for a while
-		if(!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()){
+		if (!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()) {
 			throw new FileNotFoundException("GWAS matrix does not exist at: " + options.getGwasZscoreMatrixPath() + ".dat");
 		}
-		
+
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
-		
-		
 		LOGGER.info("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
 		LOGGER.info("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
 
@@ -282,24 +282,68 @@ public class Depict2 {
 
 	private static void convertTxtToBin(Depict2Options options) throws IOException, Exception {
 
-		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
-		
-		if(options.isPvalueToZscore()){
-			DoubleMatrix2D matrixContent = matrix.getMatrix(); 
-			
+		final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(options.getGwasZscoreMatrixPath(), '\t');
+		final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(options.getGwasZscoreMatrixPath(), '\t');
+
+		HashSet<String> phenotypesHashSet = new HashSet<>(phenotypesInZscoreMatrix.size());
+
+		for (String pheno : phenotypesInZscoreMatrix) {
+			if (!phenotypesHashSet.add(pheno)) {
+				throw new Exception("GWAS matrix contains a duplicate phenotype column: " + pheno);
+			}
+		}
+
+		HashSet<String> variantsHashSet = new HashSet<>(variantsInZscoreMatrix.size());
+		HashSet<String> variantsWithDuplicates = new HashSet<>();
+
+		for (String variant : variantsInZscoreMatrix) {
+			if (!variantsHashSet.add(variant)) {
+				variantsWithDuplicates.add(variant);
+			}
+		}
+
+		final DoubleMatrixDataset<String, String> matrix;
+
+		if (variantsWithDuplicates.size() > 0) {
+
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariants.txt");
+
+			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final String[] outputLine = new String[1];
+			outputLine[0] = "ExcludedVariants";
+			excludedVariantWriter.writeNext(outputLine);
+
+			for (String dupVariant : variantsWithDuplicates) {
+				outputLine[0] = dupVariant;
+				excludedVariantWriter.writeNext(outputLine);
+			}
+			excludedVariantWriter.close();
+
+			LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants. These are excluded from the conversion. For full list of excluded see: " + excludedVariantsFile.getPath());
+
+			variantsHashSet.removeAll(variantsWithDuplicates);
+			matrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', variantsHashSet, null);
+
+		} else {
+			matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		}
+
+		if (options.isPvalueToZscore()) {
+			DoubleMatrix2D matrixContent = matrix.getMatrix();
+
 			int rows = matrixContent.rows();
 			int cols = matrixContent.columns();
-			
-			for(int r = 0 ; r < rows ; ++r){
-				for(int c = 0 ; c < cols; ++c){
-					
+
+			for (int r = 0; r < rows; ++r) {
+				for (int c = 0; c < cols; ++c) {
+
 					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
-					
+
 				}
 			}
-			
+
 		}
-		
+
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}
