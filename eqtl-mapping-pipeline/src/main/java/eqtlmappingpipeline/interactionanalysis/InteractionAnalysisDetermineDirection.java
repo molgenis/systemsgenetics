@@ -128,7 +128,7 @@ public class InteractionAnalysisDetermineDirection {
 
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, Exception {
 
 		CommandLineParser parser = new PosixParser();
 		final CommandLine commandLine;
