@@ -39,7 +39,7 @@ public class HpoGenePrioritisation {
 
 	private static final NumberFormat Z_FORMAT = new DecimalFormat("#0.0##");
 
-	public static void main(String[] args) throws IOException, ParseException {
+	public static void main(String[] args) throws IOException, ParseException, Exception {
 
 		final File hpoPredictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions.txt.gz");
 		//spliked

@@ -163,7 +163,7 @@ public class Depict2 {
 			System.exit(1);
 		} catch (GenotypeDataException e) {
 			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error reading input data: " + e.getMessage());
+			System.err.println("Error reading genotype data: " + e.getMessage());
 			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
 			System.exit(1);
@@ -280,7 +280,7 @@ public class Depict2 {
 
 	}
 
-	private static void convertTxtToBin(Depict2Options options) throws IOException {
+	private static void convertTxtToBin(Depict2Options options) throws IOException, Exception {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		
