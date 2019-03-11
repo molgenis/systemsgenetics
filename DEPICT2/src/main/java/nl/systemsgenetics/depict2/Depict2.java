@@ -94,16 +94,16 @@ public class Depict2 {
 			return;
 		}
 
-		if (new File(options.getOutputBasePath()).isDirectory()) {
-			System.err.println("Specified output path is a directory. Please include a prefix for the output files.");
-			return;
-		}
-
 		if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
 			if (!options.getLogFile().getParentFile().mkdirs()) {
 				System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
 				System.exit(1);
 			}
+		}
+		
+		if (new File(options.getOutputBasePath()).isDirectory()) {
+			System.err.println("Specified output path is a directory. Please include a prefix for the output files.");
+			return;
 		}
 
 		try {

@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import static nl.systemsgenetics.genenetworkbackend.hpo.ImproveHpoPredictionBasedOnChildTerms.readPredictedHpoTermFile;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.MannWhitneyUTest2;
 
@@ -34,7 +33,7 @@ public class RecalculateAuc {
 	/**
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, Exception {
 
 		final File predictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions.txt.gz");
 		final File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
