@@ -173,7 +173,7 @@ public class ZScores {
 	}
 	
 	/**
-	 * Returns the absolute Z-score for a given p-value using a normal
+	 * Returns the negative Z-score for a given p-value using a normal
 	 * distribution.
 	 *
 	 * @param p p-value

@@ -54,7 +54,6 @@ import umcg.genetica.io.text.TextFile;
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
-	static final IOException doubleMatrixDatasetNonUniqueHeaderException = new IOException("Tried to use a non-unique header set in an identifier HashMap");
 	static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
 
 	protected DoubleMatrix2D matrix;
@@ -176,7 +175,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException, Exception {
 		if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
 			return loadDoubleTextData(fileName, '\t');
 		} else if (fileName.endsWith(".binary")) {
@@ -186,7 +185,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 	}
 
-	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException, Exception {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
 		}
@@ -208,7 +207,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				colMap.put(colName, s);
 			} else {
 				LOGGER.warning("Duplicated column name!");
-				throw (doubleMatrixDatasetNonUniqueHeaderException);
+				throw (new Exception("Duplicated column names found in: " + fileName));
 			}
 		}
 
@@ -250,7 +249,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				row++;
 			} else {
 				LOGGER.warning("Duplicated row name!");
-				throw (doubleMatrixDatasetNonUniqueHeaderException);
+				throw (new Exception("Duplicated row names found in: " + fileName));
 			}
 
 		}
@@ -515,7 +514,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException, Exception {
 		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {
 			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
@@ -542,8 +541,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				storedCols++;
 			} else if (colMap.containsKey(colName)) {
 				LOGGER.warning("Duplicated column name!");
-				System.out.println("Tried to add: " + colName);
-				throw (doubleMatrixDatasetNonUniqueHeaderException);
+				throw new Exception("Duplicated column are not allowed. Tried to add: " + colName);
 			}
 		}
 
@@ -596,8 +594,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 					storingRow++;
 				} else if (rowMap.containsKey(data[0])) {
 					LOGGER.warning("Duplicated row name!");
-					System.out.println("Tried to add: " + data[0]);
-					throw (doubleMatrixDatasetNonUniqueHeaderException);
+					throw new Exception("Duplicated row are not allowed. Tried to add: " + data[0]);
 				}
 			}
 			totalRows++;
@@ -613,7 +610,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return dataset;
 	}
 
-	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException, Exception {
 
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
@@ -944,8 +941,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			if (!newHashRows.containsKey(s)) {
 				newHashRows.put(s, i);
 			} else {
-				System.out.println("Error, new row names contains dupilcates.");
-				throw (doubleMatrixDatasetNonUniqueHeaderException);
+				throw new Exception("Error, new row names contains dupilcates.");
 			}
 			i++;
 		}
@@ -964,8 +960,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			if (!newHashCols.containsKey(s)) {
 				newHashCols.put(s, i);
 			} else {
-				System.out.println("Error, new column names contains dupilcates.");
-				throw (doubleMatrixDatasetNonUniqueHeaderException);
+				throw new Exception("Error, new col names contains dupilcates.");
 			}
 			i++;
 		}
