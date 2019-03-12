@@ -204,6 +204,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		HashSet<Integer> requestedRows = null;
 		if (desiredRows != null) {
 			requestedRows = new HashSet<>();
+			newRowMap = new LinkedHashMap<>();
 			int rctr = 0;
 			for (String key : rowMap.keySet()) {
 				if (desiredRows.contains(key)) {
@@ -221,6 +222,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		HashSet<Integer> requestedCols = null;
 		if (desiredRows != null) {
 			requestedCols = new HashSet<>();
+			newColMap = new LinkedHashMap<>();
 			int cctr = 0;
 			for (String key : colMap.keySet()) {
 				if (desiredCols.contains(key)) {

@@ -1,7 +1,9 @@
 package nl.umcg.deelenp.genotypeharmonizer;
 
 import static JSci.maths.ArrayMath.covariance;
+
 import com.google.common.collect.Lists;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -11,6 +13,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
@@ -22,7 +27,6 @@ import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
- *
  * @author Patrick Deelen
  */
 public class Aligner {
@@ -30,22 +34,21 @@ public class Aligner {
     private static Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
 
     /**
-     *
-     * @param study data to align
-     * @param ref reference for alignment
+     * @param study               data to align
+     * @param ref                 reference for alignment
      * @param minLdToIncludeAlign
      * @param minSnpsToAlignOn
      * @param flankSnpsToConsider
      * @param ldCheck
      * @param updateId
      * @param keep
-     * @param snpUpdateFile file to write ID updates to.
+     * @param snpUpdateFile       file to write ID updates to.
      * @return
      * @throws LdCalculatorException
      */
     public ModifiableGenotypeData alignToRef(RandomAccessGenotypeData study, RandomAccessGenotypeData ref, double minLdToIncludeAlign, double minSnpsToAlignOn, int flankSnpsToConsider, boolean ldCheck, final boolean updateId, boolean keep, File snpUpdateFile, double maxMafForMafAlignment, File snpLogFile, boolean matchRefAllele) throws LdCalculatorException, IOException, GenotypeAlignmentException {
 
-        ModifiableGenotypeData aligendStudyData = new ModifiableGenotypeDataInMemory(study);
+        ModifiableGenotypeData alignedStudyData = new ModifiableGenotypeDataInMemory(study);
 
         //The included study variants after the first loop
         ArrayList<ModifiableGeneticVariant> studyVariantList = new ArrayList<ModifiableGeneticVariant>();
@@ -67,7 +70,7 @@ public class Aligner {
 
         //In this loop we filter the variants present in the reference and swap the AG, AC, TC, TG SNPs.
         studyVariants:
-        for (ModifiableGeneticVariant studyVariant : aligendStudyData.getModifiableGeneticVariants()) {
+        for (ModifiableGeneticVariant studyVariant : alignedStudyData.getModifiableGeneticVariants()) {
 
             ++iterationCounter;
 
@@ -438,25 +441,24 @@ public class Aligner {
 
         snpLogWriter.close();
 
-        return aligendStudyData;
+        return alignedStudyData;
 
     }
 
     private CorrelationResults correlateHaplotypes(double minLdToIncludeAlignBase,
-            int flankSnpsToConsider,
-            ArrayList<ModifiableGeneticVariant> studyVariantList,
-            ArrayList<GeneticVariant> refVariantList, int variantIndex,
-            GeneticVariant snpStudyVariant, GeneticVariant refVariant) {
-
-        int posCor = 0;
-        int negCor = 0;
+                                                   int flankSnpsToConsider,
+                                                   ArrayList<ModifiableGeneticVariant> studyVariantList,
+                                                   ArrayList<GeneticVariant> refVariantList, int variantIndex,
+                                                   GeneticVariant snpStudyVariant, GeneticVariant refVariant) {
 
 //		if(snpStudyVariant.getPrimaryVariantId().equals("rs1001945")){
 //		LOGGER.debug("Alignment of: " + snpStudyVariant.getPrimaryVariantId() + 
 //				"\nstudy alleles: " + snpStudyVariant.getVariantAlleles() + " ref alleles: " + refVariant.getVariantAlleles() + "\n"
 //				+ "maf study: " + snpStudyVariant.getMinorAlleleFrequency() + "(" + snpStudyVariant.getMinorAllele() + ") maf ref: " + refVariant.getMinorAlleleFrequency() + "(" + refVariant.getMinorAllele() + ")");
 //		}
-        //loop over potential variants variants to determine strand
+
+        int posCor = 0;
+        int negCor = 0;
         otherVariantsLoop:
         for (int otherVariantIndex = Math.max(0, variantIndex - flankSnpsToConsider); otherVariantIndex < variantIndex + flankSnpsToConsider && otherVariantIndex < studyVariantList.size(); ++otherVariantIndex) {
 
@@ -521,6 +523,69 @@ public class Aligner {
         }
 
         return new CorrelationResults(posCor, negCor);
+//    }
+//        AtomicInteger negCorAtomic = new AtomicInteger();
+//        AtomicInteger posCorAtomic = new AtomicInteger();
+//
+//        int windowstart = Math.max(0, variantIndex - flankSnpsToConsider);
+//        int windowstop = Math.min(variantIndex + flankSnpsToConsider, (studyVariantList.size() - 1));
+//
+//        // parallelize using java 1.8 worker threads
+//        IntStream.range(windowstart, windowstop).parallel().forEach(otherVariantIndex -> {
+//            GeneticVariant otherSnpStudyVariant = studyVariantList.get(otherVariantIndex);
+//
+//            //Do not use self
+//            //Only use variants on same chromosome
+//            //Do not use other AT or GC for LD alignment
+//            if (variantIndex != otherVariantIndex
+//                    && snpStudyVariant.getSequenceName().equals(otherSnpStudyVariant.getSequenceName())
+//                    && !otherSnpStudyVariant.isAtOrGcSnp()
+//            ) {
+//                GeneticVariant otherRefVariant = refVariantList.get(otherVariantIndex);
+//                Ld ldStudy = null;
+//                Ld ldRef = null;
+//                try {
+//                    ldStudy = LdCalculator.calculateLd(snpStudyVariant, otherSnpStudyVariant);
+//                    ldRef = LdCalculator.calculateLd(refVariant, otherRefVariant);
+//                } catch (LdCalculatorException e) {
+//                    LOGGER.debug("Error in LD calculation, skipping this comparison when comparing haplotype structure. Following error occurred: " + e.getMessage());
+//                }
+//
+//                //only use SNPs with min R2 in both study as ref
+//                if (ldRef != null && ldStudy != null) {
+//                    if (!Double.isNaN(ldStudy.getR2()) && !Double.isNaN(ldRef.getR2()) && ldStudy.getR2() >= minLdToIncludeAlignBase && ldRef.getR2() >= minLdToIncludeAlignBase) {
+//
+//                        //Put in tree map to sort haplotypes. This can differ in the case of different reference allele
+//                        TreeMap<String, Double> studyHapFreq = new TreeMap<String, Double>(ldStudy.getHaplotypesFreq());
+//                        TreeMap<String, Double> refHapFreq = new TreeMap<String, Double>(ldRef.getHaplotypesFreq());
+//
+//                        double[] studyHapFreqArray = createDoubleArrayFromCollection(studyHapFreq.values());
+//                        double[] refHapFreqArray = createDoubleArrayFromCollection(refHapFreq.values());
+//
+//                        //Correlate study haplotypes to ref haplotypes.
+//                        //Note: igonore case of no variance in both that would be correlation of 1 since no added value here
+//                        double studyHapVar = JSci.maths.ArrayMath.variance(studyHapFreqArray);
+//                        double refHapVar = JSci.maths.ArrayMath.variance(refHapFreqArray);
+//
+//                        double denom = Math.sqrt(studyHapVar * refHapVar);
+//                        if (denom != 0) {
+//                            double correlation = covariance(studyHapFreqArray, refHapFreqArray) / denom;
+//
+//                            if (correlation < 0) {
+//                                negCorAtomic.getAndIncrement();
+//                            } else if (correlation > 0) {
+//                                posCorAtomic.getAndIncrement();
+//                            }
+//
+//                        }
+//                    }
+//                }
+//            }
+//
+//
+//        });
+//
+//        return new CorrelationResults(posCorAtomic.get(), negCorAtomic.get());
     }
 
     private double[] createDoubleArrayFromCollection(
