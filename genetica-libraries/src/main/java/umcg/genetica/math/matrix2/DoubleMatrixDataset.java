@@ -315,14 +315,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, String[] rowsToView) throws IOException, Exception {
+		return loadSubsetOfRowsBinaryDoubleData(fileName, Arrays.asList(rowsToView));
+	}
+	
+	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, Collection<String> rowsToView) throws IOException, Exception {
 
-		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.length);
+		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.size());
 
 		for (String rowToView : rowsToView) {
 			rowsToViewHash.add(rowToView);
 		}
 
-		if (rowsToViewHash.size() != rowsToView.length) {
+		if (rowsToViewHash.size() != rowsToView.size()) {
 
 			StringBuilder duplicateRowsRequested = new StringBuilder();
 
