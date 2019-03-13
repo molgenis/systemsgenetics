@@ -11,6 +11,7 @@ import eqtlmappingpipeline.pcaoptimum.PCAOptimum;
 import eqtlmappingpipeline.textmeta.FixedEffectMetaAnalysis;
 import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.Gpio;
+import umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
@@ -30,8 +31,9 @@ public class UtilConsoleGUI {
     public static enum MODE {
 
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
-        SORTFILE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
-        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITTT, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO
+        SORTEQTLFILEBYZSCORE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
+        ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITEQTLFILEBYCHR, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO,
+        SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR
     }
 
     ;
@@ -106,22 +108,31 @@ public class UtilConsoleGUI {
                 run = MODE.QTLFILEMERGE;
             } else if (arg.equals("--splitpheno")) {
                 run = MODE.SPLITPHENO;
+            } else if (arg.equals("--spliteqtlfilebychr")) {
+                run = MODE.SPLITEQTLFILEBYCHR;
             } else if (arg.equals("--splitTT")) {
-                run = MODE.SPLITTT;
+                run = MODE.SPLITTRITYPERBYCHR;
             } else if (arg.equals("--filterpheno")) {
                 run = MODE.PHENOTYPESAMPLEFILTER;
             } else if (arg.equals("--getsnpsinregion")) {
                 region = val;
                 run = MODE.GETSNPSFROMREGION;
-            } else if (arg.equals("--sortfile")) {
+            } else if (arg.equals("--sorteqtlfilebyz") || arg.equals("--sortfile")) {
                 region = val;
-                run = MODE.SORTFILE;
+                run = MODE.SORTEQTLFILEBYZSCORE;
+            } else if (arg.equals("--sorteqtlfilebypos")) {
+                region = val;
+                run = MODE.SORTEQTLFILEBYCHRPOS;
+            } else if (arg.equals("--calculatebeta")) {
+                run = MODE.CALCULATEBETA;
             } else if (arg.equals("--findproxy")) {
                 region = val;
                 run = MODE.PROXYSEARCH;
             } else if (arg.equals("--getmaf")) {
                 region = val;
                 run = MODE.GETMAF;
+            } else if (arg.equals("--getmaffromqclog")) {
+                run = MODE.GETMAFFROMQCLOG;
             } else if (arg.equals("--getsnpsinproberegion")) {
                 region = val;
                 run = MODE.GETSNPSINPROBEREGION;
@@ -231,6 +242,8 @@ public class UtilConsoleGUI {
                 settingstexttoreplace = val;
             } else if (arg.equals("--replacetextwith")) {
                 settingstexttoreplacewith = val;
+            } else if (arg.equals("--converteqtlfiletosmr")) {
+                run = MODE.CONVERTTOSMR;
             }
 //            }  else if (arg.equals("--inexpplatform")) {
 //                inexpplatform = val;
@@ -272,7 +285,7 @@ public class UtilConsoleGUI {
                         }
                         bs.splitPhenotypePerChr(in, inexpannot, out);
                         break;
-                    case SPLITTT:
+                    case SPLITTRITYPERBYCHR:
                         TriTyperSplitter t = new TriTyperSplitter();
                         t.split(in, out);
                         break;
@@ -309,6 +322,14 @@ public class UtilConsoleGUI {
                             dq.getSNPMAF(in, region);
                         }
                         break;
+                    case GETMAFFROMQCLOG:
+                        if (in == null || out == null) {
+                            System.out.println("USAGE: --getmaffromqclog --in snpqclog --out out");
+                        } else {
+                            GetMAFFromSNPQCLog q = new GetMAFFromSNPQCLog();
+                            q.run(in, out);
+                        }
+                        break;
 
                     case GETSNPSTATS:
 
@@ -331,15 +352,30 @@ public class UtilConsoleGUI {
                             m.mergeChr(in, out, nreqtls);
                         }
                         break;
-                    case SORTFILE:
+                    case SORTEQTLFILEBYZSCORE:
                         if (in == null) {
                             System.out.println("USAGE: --in eQTLFile --out eQTLFile");
                         } else {
                             QTLFileSorter f = new QTLFileSorter();
-                            f.run(in, out);
+                            f.run(in, out, QTLFileSorter.SORTBY.Z);
                         }
                         break;
-
+                    case SORTEQTLFILEBYCHRPOS:
+                        if (in == null) {
+                            System.out.println("USAGE: --in eQTLFile --out eQTLFile");
+                        } else {
+                            QTLFileSorter f = new QTLFileSorter();
+                            f.run(in, out, QTLFileSorter.SORTBY.POS);
+                        }
+                        break;
+                    case SPLITEQTLFILEBYCHR:
+                        if (in == null) {
+                            System.out.println("USAGE: --in eQTLFile --out eQTLFileprefix");
+                        } else {
+                            QTLFileSplitter s = new QTLFileSplitter();
+                            s.split(in, out);
+                        }
+                        break;
                     case GETSNPSFROMREGION:
                         if (in == null || region == null) {
                             System.out.println("To use --getsnpsfromregion, please use --in to point to the genotype data and supply a region to query.");
@@ -496,7 +532,7 @@ public class UtilConsoleGUI {
                         } else {
                             String[] argsNew = {"-m", inexpannot, "-d", in, "-o", out, "-r", ranked};
 
-                            umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper.main(argsNew);
+                            ConvertDoubleMatrixDataToTriTyper.main(argsNew);
                         }
                         break;
 
@@ -517,6 +553,24 @@ public class UtilConsoleGUI {
                         } else {
                             ExpressionSampleFilter f = new ExpressionSampleFilter();
                             f.filter(in, out, annot);
+                        }
+                        break;
+                    case CALCULATEBETA:
+                        if (in == null || out == null || in2 == null) {
+                            System.out.println("Please specify --in eqtlfile, --out outeqtlfile, --in2 maffile");
+                        } else {
+                            ReplaceBeta rpb = new ReplaceBeta();
+
+                            rpb.run(in, out, in2);
+                        }
+                        break;
+                    case CONVERTTOSMR:
+                        if (in == null || in2 == null || out == null) {
+                            System.out.println("Usage: --in eqtlfile --out eqtlfile --in2 snpqcfile");
+                        } else {
+                            ConvertTOSMRFormat c = new ConvertTOSMRFormat();
+
+                            c.run(in, in2, out);
                         }
                         break;
                 }
@@ -545,7 +599,10 @@ public class UtilConsoleGUI {
                 + "--dotplot\t\t\tCreates dotplot from eQTL result file\n"
                 + "--regress\t\t\tRemoves eQTL effects from gene expression data.\n"
                 + "--regressknown\t\t\tRemoves known cis-eQTL effects from gene expression data.\n"
-                + "--sortfile\t\t\tSort eQTL files.\n"
+                + "--sortfile\t\t\t(or --sorteqtlfilebyz) Sort eQTL files by abs(Z-score).\n"
+                + "--sorteqtlfilebypos\t\t\tSort eQTL files by chromosome position.\n"
+                + "--calculatebeta\t\t\tCalculate beta using Z-score, MAF, and N\n"
+                + "--getmaffromqclog\t\t\tCalculate MAF from SNPQCLog.txt.gz, for use with --calculatebeta\n"
                 + "--meta\t\t\t\tFixed effect meta analysis.\n"
                 + "--nonGeneticPcaCorrection\tCorrect expression data for non-genetic components.\n"
                 + "--getSNPProbeCombinatios\tCreate list of valid SNP-Probe combinations to test.\n"
@@ -554,9 +611,11 @@ public class UtilConsoleGUI {
                 + "--filterpheno\t\tFilters phenotype file for sample list\n"
                 + "--splitpheno\t\tSplits phenotype file by chromosome\n"
                 + "--splitTT\t\tSplit trityper folder into chromosome chunks\n"
+                + "--spliteqtlfilebychr\t\tSplit eQTL file by chromosome\n"
                 + "--mergeqtlfile\t\tMerge QTL files (and sort them)\n"
                 + "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n"
-                + "--fdrmethod\t\tEither probe, gene, snp or full\n");
+                + "--fdrmethod\t\tEither probe, gene, snp or full\n"
+                + "--converteqtlfiletosmr\t\tConvert eQTL file to SMR format");
         System.out.println("");
 
 //        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);

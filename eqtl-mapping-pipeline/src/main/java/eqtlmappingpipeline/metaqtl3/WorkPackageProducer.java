@@ -73,22 +73,22 @@ class WorkPackageProducer extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
+		
 		// make sure not to load more than 500mb worth of SNP data per block
 		// SNPLoader has it's own buffer of a set number of variants
 		sumaveragesnpsize /= m_SNPLoaders.length;
-		workPackageBufferSize = (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
+		workPackageBufferSize = 1; // 256; // (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
 		
 		
 		if (m_workPackages.length < workPackageBufferSize) {
 			workPackageBufferSize = m_workPackages.length;
 		}
-		
+
 //		System.out.println("Loading " + workPackageBufferSize + " SNPs per buffer.");
 //		System.out.println();
 		int workPackagesPassingQC = 0;
 		int numProcessed = 0;
-		
+
 //		workPackageBufferSize = 1;
 		
 		TextFile snplog = null;
@@ -138,7 +138,7 @@ class WorkPackageProducer extends Thread {
 				// load the SNPs for each dataset
 				int finalWorkPackageBufferSize = workPackageBufferSize;
 				StringBuilder[][] finalQcBuffer = qcBuffer;
-				IntStream.range(0,m_gg.length).parallel().forEach(d->{
+				IntStream.range(0, m_gg.length).parallel().forEach(d -> {
 					SNPLoader loader = m_SNPLoaders[d];
 					
 					boolean dosageAvailable = loader.hasDosageInformation();
@@ -170,12 +170,10 @@ class WorkPackageProducer extends Thread {
 							if (!dSNP.passesQC() || dSNP.getCR() < m_callratethreshold || dSNP.getMAF() < m_mafthreshold || dSNP.getHWEP() < m_hwethreshold || dSNP.getAlleleItr() > 2) {
 								snps[d].setPassesQC(false);
 							} else {
-								
 								wp.incrementDatasetsPassingQC();
 //								short dsPassingQC = wp.getDatasetsPassingQC();
 //								dsPassingQC++;
 //								wp.setDatasetsPassingQC(dsPassingQC);
-							
 							}
 							
 							if (!m_permuting && m_settings.writeSNPQCLog) {
@@ -194,7 +192,7 @@ class WorkPackageProducer extends Thread {
 							}
 						} else {
 							if (!m_permuting && m_settings.writeSNPQCLog) {
-								finalQcBuffer[i][d].append("\tNA\t-\t-\t-\t-");
+								finalQcBuffer[i][d].append("\tNA\t-\t-\t-\t-\t-\t-\t-\t-");
 							}
 						}
 					}
@@ -237,8 +235,8 @@ class WorkPackageProducer extends Thread {
 							System.exit(0);
 						}
 						StringBuilder finalQCString = new StringBuilder().append(m_snpList[wp.getMetaSNPId()]);
-						for(int d=0;d<m_gg.length;d++){
-							finalQCString.append(qcBuffer[i].toString());
+						for (int d = 0; d < m_gg.length; d++) {
+							finalQCString.append(qcBuffer[i][d].toString());
 						}
 						snplog.writeln(finalQCString.toString());
 						
@@ -376,7 +374,7 @@ class WorkPackageProducer extends Thread {
 									+ "\tSNP1 (" + m_gg[firstDatasetToPassQC].getSettings().name + "): " + snp1Alleles
 									+ "\tSNP2 (" + m_gg[d].getSettings().name + "): " + snp2Alleles;
 							System.err.println(output);
-							if(m_settings.writeSNPQCLog) {
+							if (m_settings.writeSNPQCLog) {
 								snplog.writeln(output);
 							}
 						}

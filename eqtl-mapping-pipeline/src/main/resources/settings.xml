@@ -38,6 +38,7 @@
             <largeFdrFileOut>false</largeFdrFileOut>
             <permutations>100</permutations>
             <startpermutation></startpermutation>
+            <stoppermutation></stoppermutation>
         </multipletesting>
 
         <output>
@@ -45,6 +46,7 @@
             <outputplotthreshold>0</outputplotthreshold>
             <outputplotdirectory></outputplotdirectory>
             <maxnreqtlresults>500000</maxnreqtlresults>
+            <dumpeverything>false</dumpeverything>
             <usemd5hashforbinaryoutput>false</usemd5hashforbinaryoutput>
             <binaryoutput>false</binaryoutput>
             <textoutput>true</textoutput>

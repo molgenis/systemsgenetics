@@ -7,8 +7,6 @@ import umcg.genetica.text.Strings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 
 public class ApplyFDR {
 	
@@ -201,9 +199,15 @@ public class ApplyFDR {
 			
 			if (hasFDRCol) {
 				String[] elems = Strings.tab.split(inln);
-				// replace fdr value
-				elems[fdrcol] = "" + currentFDR;
-				inln = Strings.concat(elems, Strings.tab);
+				// check whether the columns is actually there
+				// e.g. fdrcol = 21, but len = 20
+				if (elems.length <= fdrcol) {
+					inln += "\t" + currentFDR;
+				} else {
+					// replace fdr value
+					elems[fdrcol] = "" + currentFDR;
+					inln = Strings.concat(elems, Strings.tab);
+				}
 			} else {
 				inln += "\t" + currentFDR;
 			}

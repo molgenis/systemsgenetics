@@ -202,7 +202,7 @@ public class FixedEffectMetaAnalysis {
 		
 		System.out.println("Done. Now sorting results");
 		QTLFileSorter sorter = new QTLFileSorter();
-		sorter.run(output, output + "tmp.txt.gz");
+		sorter.run(output, output + "tmp.txt.gz",  QTLFileSorter.SORTBY.Z);
 		if (Gpio.exists(output + "tmp.txt.gz")) {
 			Gpio.moveFile(output + "tmp.txt.gz", output);
 		}

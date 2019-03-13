@@ -4,14 +4,11 @@
  */
 package umcg.genetica.io.trityper;
 
-import sun.nio.ch.DirectBuffer;
-import umcg.genetica.io.Gpio;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 

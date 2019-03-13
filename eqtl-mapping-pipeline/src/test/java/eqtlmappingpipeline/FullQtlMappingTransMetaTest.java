@@ -68,7 +68,7 @@ public class FullQtlMappingTransMetaTest {
 		Main.main("--mode", "metaqtl", "--settings", settingsFile, "--replacetext", "${InputFolder}", "--replacetextwith", testFilesFolder.getAbsolutePath(), "--replacetext2", "${OutputFolder}", "--replacetext2with", tmpOutputFolder.getAbsolutePath());
 		
 		QTLFileSorter r = new QTLFileSorter();
-		r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz");
+		r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz", QTLFileSorter.SORTBY.Z);
 		
 		QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", QTLTextFile.R);
 		

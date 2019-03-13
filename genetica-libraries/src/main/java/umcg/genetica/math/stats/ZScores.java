@@ -6,11 +6,10 @@ package umcg.genetica.math.stats;
 
 import JSci.maths.statistics.NormalDistribution;
 import cern.jet.random.tdouble.StudentT;
-//import cern.jet.random.tdouble.engine.DRand;
-//import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 import cern.jet.stat.tdouble.Probability;
 
-import java.util.ArrayList;
+//import cern.jet.random.tdouble.engine.DRand;
+//import cern.jet.random.tdouble.engine.DoubleRandomEngine;
 
 /**
  * @author juha
@@ -23,6 +22,7 @@ public class ZScores {
 	}
 	
 	private final static NormalDistribution NORM_DIST = new NormalDistribution();
+
 	
 	/**
 	 * Calculates a weighted Z-score according to Whitlock's paper:
@@ -403,5 +403,13 @@ public class ZScores {
 		return b / (se * Math.sqrt(n));
 	}
 	
+	
+	public static double[] zToBeta(double z, double maf, int n) {
+		double chi = z * z;
+		double a = 2 * maf * (1 - maf) * (n + chi);
+		double beta = z / Math.sqrt(a);
+		double se = 1d / Math.sqrt(a);
+		return new double[]{beta, se};
+	}
 	
 }
