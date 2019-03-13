@@ -319,7 +319,7 @@ public class Depict2 {
 			}
 			excludedVariantWriter.close();
 
-			LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants. These are excluded from the conversion. For full list of excluded see: " + excludedVariantsFile.getPath());
+			LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
 
 			variantsHashSet.removeAll(variantsWithDuplicates);
 			matrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', variantsHashSet, null);

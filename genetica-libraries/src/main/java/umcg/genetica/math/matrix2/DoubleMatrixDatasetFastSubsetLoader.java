@@ -6,11 +6,12 @@
 package umcg.genetica.math.matrix2;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,7 +48,17 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 	 * @return subset of rows in order of rowsToView
 	 * @throws IOException
 	 */
-	public DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(ArrayList<String> rowsToView) throws IOException, Exception {
+	public DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String[] rowsToView) throws IOException, Exception {
+		return loadSubsetOfRowsBinaryDoubleData(Arrays.asList(rowsToView));
+	}
+	
+	/**
+	 *
+	 * @param rowsToView
+	 * @return subset of rows in order of rowsToView
+	 * @throws IOException
+	 */
+	public DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(List<String> rowsToView) throws IOException, Exception {
 
 		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.size());
 

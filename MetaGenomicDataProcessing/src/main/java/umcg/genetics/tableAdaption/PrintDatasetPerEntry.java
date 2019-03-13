@@ -18,7 +18,7 @@ import umcg.genetica.math.matrix2.MatrixHandling;
  */
 public class PrintDatasetPerEntry {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         
 //        String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Kegg_Genes\\LLD_geneFamilies_KeggTable_KO.tsv.QuantileNormalized.txt";
 //        String outputFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\Kegg_Genes\\PerEntry\\";

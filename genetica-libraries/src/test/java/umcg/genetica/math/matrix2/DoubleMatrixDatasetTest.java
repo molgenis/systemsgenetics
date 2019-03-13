@@ -175,7 +175,21 @@ public class DoubleMatrixDatasetTest {
 		assertEquals(dataset4.getElementQuick(1, 3), 5.55d);
 		assertEquals(dataset4.getElementQuick(1, 2), 0d);
 		
+		DoubleMatrixDatasetFastSubsetLoader subsetLoader = new DoubleMatrixDatasetFastSubsetLoader(tmpOutputFolder.getAbsolutePath() + ".testBin");
+		DoubleMatrixDataset<String, String> dataset5 = subsetLoader.loadSubsetOfRowsBinaryDoubleData(new String[]{"row3", "row2"});
 
+		assertEquals(dataset5.rows(), 2);
+		assertEquals(dataset5.columns(), 5);
+
+		assertEquals(dataset5.getRowObjects().get(0), "row3");
+		assertEquals(dataset5.getRowObjects().get(1), "row2");
+		assertEquals(dataset5.getColObjects().get(2), "col3");
+		
+		assertEquals(dataset5.getElementQuick(0, 2), 6.66d);
+		assertEquals(dataset5.getElementQuick(0, 3), -12.2d);
+		assertEquals(dataset5.getElementQuick(1, 3), 5.55d);
+		assertEquals(dataset5.getElementQuick(1, 2), 0d);
+		
 	}
 	
 	
