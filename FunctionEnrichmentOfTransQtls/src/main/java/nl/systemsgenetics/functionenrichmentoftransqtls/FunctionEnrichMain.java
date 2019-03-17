@@ -4,7 +4,7 @@ import java.io.IOException;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class FunctionEnrichMain {
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, Exception {
 		
 		
 		if (args.length < 1) {
