@@ -10,7 +10,7 @@ import java.util.*;
 public class ConvertToChiSq {
 	
 	
-	public void run(String traitfile, String zscoreloc, String outputloc, int nrperm) throws IOException {
+	public void run(String traitfile, String zscoreloc, String outputloc, int nrperm) throws IOException, Exception {
 		
 		// we need to convert traits->set of snps
 		HashMap<String, HashSet<String>> snptotrait = readTraitFile(traitfile);

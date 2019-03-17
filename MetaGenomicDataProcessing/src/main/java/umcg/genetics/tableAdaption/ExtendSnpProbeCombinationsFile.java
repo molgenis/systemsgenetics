@@ -20,7 +20,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class ExtendSnpProbeCombinationsFile {
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results2.txt";
         String initialReplicationList = "D:\\OnlineFolders\\AeroFS\\SharedQTLFolder\\QTL_Output\\For_paper_20160208\\LifeLines_Discovery\\bQTL_Replist_nonZero.txt";
         String fullReplicationList = "D:\\OnlineFolders\\AeroFS\\SharedQTLFolder\\QTL_Output\\For_paper_20160208\\LifeLines_Discovery\\bQTL_Replist_Full_nonZero.txt";

@@ -27,7 +27,7 @@ public class CorrelateSumChi2ToPathways {
 	/**
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, Exception {
 
 		final File pathwayMatrixFile = new File(args[0]);
 		final File significantTermsFile = new File(args[1]);
