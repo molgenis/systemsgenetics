@@ -246,6 +246,9 @@ public class QTLFileSorter {
 			
 			if (s.equals(SORTBY.Z)) {
 				if (o1.equals(o2)) {
+
+					// compare metabeta
+
 					return 0;
 				}
 				double z1 = o1.z;
