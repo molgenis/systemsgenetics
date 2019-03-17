@@ -21,7 +21,7 @@ import umcg.genetica.math.matrix2.MatrixHandling;
  */
 public class PrintPerDatasetCuttOff {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         
         String inputTable = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GFD_IBS_IBD_LLD_GoNL_500Fg_metaphlan_2.2_results_AsinNorm2.txt";
         String gtmFolder = "D:\\UMCG\\Projects\\MGS_MicrobiomeQTLs\\GTMs\\";

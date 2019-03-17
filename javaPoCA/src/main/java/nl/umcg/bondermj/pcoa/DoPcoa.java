@@ -484,7 +484,7 @@ public class DoPcoa {
         datasetPCAOverSamplesPCAs.save(expressionFile + ".PCAOverSamplesPrincipalComponents.txt.gz");
     }
 
-    public static void regressOutPCs(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, String PcaFile, String eigenVectorFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
+    public static void regressOutPCs(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix, String PcaFile, String eigenVectorFile, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException, Exception {
         DenseDoubleAlgebra Alg = new DenseDoubleAlgebra();
 
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = DoubleMatrixDataset.loadDoubleData(PcaFile);
@@ -515,7 +515,7 @@ public class DoPcoa {
 
     }
 
-    public static void generatePcCorrectedDataWithSkipping(String fileNamePrefix, String PcaFile, String eigenVectorFile, int startSize, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, ArrayList<String> compSkipList) throws IOException {
+    public static void generatePcCorrectedDataWithSkipping(String fileNamePrefix, String PcaFile, String eigenVectorFile, int startSize, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, ArrayList<String> compSkipList) throws IOException, Exception {
 
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = DoubleMatrixDataset.loadDoubleData(PcaFile);
 
@@ -560,7 +560,7 @@ public class DoPcoa {
         }
     }
 
-    public static void generatePcCorrectedData(String fileNamePrefix, String PcaFile, String eigenVectorFile, int startSize, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException {
+    public static void generatePcCorrectedData(String fileNamePrefix, String PcaFile, String eigenVectorFile, int startSize, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput) throws IOException, Exception {
 
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = DoubleMatrixDataset.loadDoubleData(PcaFile);
 

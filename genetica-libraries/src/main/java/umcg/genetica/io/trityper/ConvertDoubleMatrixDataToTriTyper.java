@@ -29,7 +29,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
 	
 	private static final Pattern SPLIT_ON_TAB = Pattern.compile("\t");
 	
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, Exception {
 		
 		CommandLineParser parser = new GnuParser();
 		Options options = new Options();

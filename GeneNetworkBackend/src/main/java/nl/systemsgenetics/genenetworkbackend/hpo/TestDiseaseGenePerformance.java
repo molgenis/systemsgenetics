@@ -62,16 +62,24 @@ public class TestDiseaseGenePerformance {
 		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions_auc_bonferroni.txt");
 		final File hposToExcludeFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoToExclude.txt");
 		final File skewnessFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\skewnessSummary.txt");
-		final boolean randomize = true;
+		final boolean randomize = false;
 		final File annotationMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz");
 		//final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\Ensembl2Reactome_All_Levels.txt_genesInPathways.txt");
 		//final File backgroundForRandomize = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\expressedReactomeGenes.txt");
 		final boolean randomizeCustomBackground = false;
-
+		final int limitHpoTermUsage = 5; //0 is no limit
+		
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
-		final File outputFile;
+		
+		final StringBuilder outputFilePath = new StringBuilder("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmark");
 		final ArrayList<String> backgroundGenes;
+		
+		
+		if(limitHpoTermUsage > 0){
+			outputFilePath.append("hpoLimit").append(limitHpoTermUsage);
+		}
+		
 		if (randomize) {
 
 			if (randomizeCustomBackground) {
@@ -81,13 +89,16 @@ public class TestDiseaseGenePerformance {
 //				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomizedCustomBackground.txt");
 			} else {
 				backgroundGenes = null;
-				outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmarkRandomized.txt");
+				outputFilePath.append("Randomized");
 			}
 
 		} else {
 			backgroundGenes = null;
-			outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\hpoDiseaseBenchmark.txt");
 		}
+		
+		
+		outputFilePath.append(".txt");
+		final File outputFile = new File(outputFilePath.toString());
 
 		final HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 		final HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
@@ -192,6 +203,16 @@ public class TestDiseaseGenePerformance {
 				continue;
 			}
 
+			if(limitHpoTermUsage > 0 && geneHposPredictable.size() > limitHpoTermUsage){
+				ArrayList<String> hposTmp = new ArrayList(geneHposPredictable);
+				geneHposPredictable.clear();
+				
+				for(int i = 0; i < limitHpoTermUsage ; ++i){
+					geneHposPredictable.add(hposTmp.remove(random.nextInt(hposTmp.size())));
+				}
+				
+			}
+			
 //			if(geneHposPredictable.size() > 1){
 //				String hpoSelected = geneHposPredictable.toArray(new String[geneHposPredictable.size()])[random.nextInt(geneHposPredictable.size())];
 //				geneHposPredictable = new LinkedHashSet<>(1);

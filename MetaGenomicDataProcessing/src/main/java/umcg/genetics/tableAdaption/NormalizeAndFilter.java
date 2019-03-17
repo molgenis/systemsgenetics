@@ -19,7 +19,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 public class NormalizeAndFilter {
     
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Metaphlan\\CountBased\\Merged_metaphlan_2.2_results_LLD_TB_SA_reads.tsv";
         String additionToFileName="";
         

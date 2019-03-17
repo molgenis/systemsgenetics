@@ -1,32 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>nl.systemsgenetics</groupId>
-        <artifactId>systemsgenetics</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
-    </parent>
-    <artifactId>DEPICT2</artifactId>
-    <version>0.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-    <dependencies>
-        <dependency>
-            <groupId>com.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
-            <version>4.0</version>
-        </dependency>
-    </dependencies>
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>nl.systemsgenetics</groupId>
+		<artifactId>systemsgenetics</artifactId>
+		<version>1.0.3-SNAPSHOT</version>
+	</parent>
+	<artifactId>DEPICT2</artifactId> 
+	<version>2.0.2-SNAPSHOT</version>
+	<packaging>jar</packaging>
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/verion.properties</include>
+				</includes>
+			</resource>
+		</resources>
+		<finalName>Depict2-${project.version}</finalName>
+		<plugins>
+			<!-- The configuration of maven-assembly-plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<!-- The configuration of the plugin -->
+				<configuration>
+					<!-- Specifies the configuration file of the assembly plugin -->
+					<descriptors>
+						<descriptor>src/main/assembly/assembly.xml</descriptor>
+					</descriptors>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id> <!-- this is used for inheritance merges -->
+						<phase>package</phase> <!-- bind to the packaging phase -->
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- The configuration of maven-jar-plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.1</version>
+				<!-- The configuration of the plugin -->
+				<configuration>
+					<!-- Configuration of the archiver -->
+					<archive>
+						<!-- Manifest specific configuration -->
+						<manifest>
+							<!-- Classpath is added to the manifest of the created jar file. -->
+							<addClasspath>true</addClasspath>
+							<!--
+							 Configures the classpath prefix. This configuration option is
+							 used to specify that all needed libraries are found under lib/
+							 directory.
+							-->
+							<classpathPrefix>lib/</classpathPrefix>
+							<!-- Specifies the main class of the application -->
+							<mainClass>nl.systemsgenetics.depict2.Depict2</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>4.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.edwardraff</groupId>
+			<artifactId>JSAT</artifactId>
+			<version>0.0.9</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.jsci</groupId>
+			<artifactId>jsci</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>gov.nist.math</groupId>
+			<artifactId>jama</artifactId>
+			<version>1.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.systemsgenetics</groupId>
+			<artifactId>genetica-libraries</artifactId>
+			<version>1.0.9-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>me.tongfei</groupId>
+			<artifactId>progressbar</artifactId>
+			<version>0.7.2</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.systemsgenetics</groupId>
+			<artifactId>Genotype-IO</artifactId>
+			<version>1.0.6-SNAPSHOT</version>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>com.facebook.presto.hive</groupId>
+		   <artifactId>hive-apache</artifactId>
+		  </exclusion>
+		 </exclusions>
+		</dependency>
+
+	</dependencies>
 </project>

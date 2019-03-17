@@ -36,7 +36,7 @@ public class GenerateRandomNullData {
         // TODO code application logic here
 
         File phase3File = new File("C:\\Users\\Sophie Mulc\\Documents\\DEPICT2\\phase3_corrected.psam");
-        File phase3RandomFile = new File("C:\\Users\\Sophie Mulc\\Documents\\DEPICT2\\phase3_corrected_randomPhenos.psam");
+        File phase3RandomFile = new File("C:\\Users\\Sophie Mulc\\Documents\\DEPICT2\\phase3_corrected_randomPhenosNew.psam");
 
         //FileReader(String phase3_corrected)
         final CSVParser gmtParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
@@ -44,10 +44,13 @@ public class GenerateRandomNullData {
 
         CSVWriter writer = new CSVWriter(new FileWriter(phase3RandomFile), '\t', '\0', '\0', "\n");
 
-        String[] outputLine = new String[1001];
+     
+        
+        String[] outputLine = new String[1002];
         int c = 0;
+        outputLine[c++] = "#FID";
         outputLine[c++] = "#IID";
-        for (int i = 1; i < 1001; ++i) {
+        for (int i = 2; i < 1002; ++i) {
         outputLine[c++] = "RA" + i;
         }
         writer.writeNext(outputLine);
@@ -74,14 +77,17 @@ public class GenerateRandomNullData {
 
             c = 0;
             outputLine[c++] = iid;
+            outputLine[c++] = iid;
             
-            for (int i = 1; i < 1001; ++i) {
+            for (int i = 2; i < 1002; ++i) {
             outputLine[c++] = String.valueOf(randomno1.nextGaussian());
             }
             writer.writeNext(outputLine);
+            
 
         }
-
+    
+      writer.close();
 //   
     }
 
