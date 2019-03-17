@@ -318,6 +318,21 @@ public class DoubleMatrixDatasetTest {
 		assertEquals(dataset7.getElementQuick(1, 1), 0d);
 		assertEquals(dataset7.getElementQuick(1, 0), -12.2d);
 
+		DoubleMatrixDataset<String, String> dataset8 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + ".testText.txt", '\t', null, colsToLoad);
+
+		assertEquals(dataset8.rows(), 4);
+		assertEquals(dataset8.columns(), 2);
+
+		assertEquals(dataset8.getRowObjects().get(1), "row2");
+		assertEquals(dataset8.getRowObjects().get(2), "row3");
+		assertEquals(dataset8.getColObjects().get(0), "col2");
+		assertEquals(dataset8.getColObjects().get(1), "col4");
+
+		assertEquals(dataset8.getElementQuick(1, 0), 0d);
+		assertEquals(dataset8.getElementQuick(1, 1), 5.55d);
+		assertEquals(dataset8.getElementQuick(2, 0), 0d);
+		assertEquals(dataset8.getElementQuick(2, 1), -12.2d);
+
 	}
 
 }
