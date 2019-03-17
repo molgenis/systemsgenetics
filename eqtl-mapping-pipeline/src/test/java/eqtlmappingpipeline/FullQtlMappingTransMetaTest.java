@@ -70,6 +70,11 @@ public class FullQtlMappingTransMetaTest {
         QTLFileSorter r = new QTLFileSorter();
         r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz", QTLFileSorter.SORTBY.Z);
 
+
+        System.out.println("Comparing:");
+        System.out.println("File 1: " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt");
+        System.out.println("File 2: " + tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz");
+
         QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", QTLTextFile.R);
 
         QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz", QTLTextFile.R);
@@ -77,8 +82,9 @@ public class FullQtlMappingTransMetaTest {
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
 
+
         while (eExpIterator.hasNext() && eActualIterator.hasNext()) {
-            assertTrue(eActualIterator.next().sameQTL(eExpIterator.next()), "eQTL not identical");
+            assertTrue(eActualIterator.next().sameQTL(eExpIterator.next(), true), "eQTL not identical");
 
         }
 
