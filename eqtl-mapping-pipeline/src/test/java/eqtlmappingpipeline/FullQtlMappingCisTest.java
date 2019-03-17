@@ -24,23 +24,23 @@ import umcg.genetica.io.trityper.QTLTextFile;
  * @author MarcJan
  */
 public class FullQtlMappingCisTest {
-	
-	private File tmpOutputFolder;
-	private final String fileSep = System.getProperty("file.separator");
-	private final File testFilesFolder;
-	
-	public FullQtlMappingCisTest() throws URISyntaxException {
-		testFilesFolder = new File(this.getClass().getResource("/GeuvadisTestData/").toURI());
-	}
-	
-	@BeforeTest
-	public void setUpMethod() throws Exception {
-		File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-		
-		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-		Date date = new Date();
-		
-		tmpOutputFolder = new File(tmpDir, "QTLMappingCisTest_" + dateFormat.format(date));
+
+    private File tmpOutputFolder;
+    private final String fileSep = System.getProperty("file.separator");
+    private final File testFilesFolder;
+
+    public FullQtlMappingCisTest() throws URISyntaxException {
+        testFilesFolder = new File(this.getClass().getResource("/GeuvadisTestData/").toURI());
+    }
+
+    @BeforeTest
+    public void setUpMethod() throws Exception {
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        Date date = new Date();
+
+        tmpOutputFolder = new File(tmpDir, "QTLMappingCisTest_" + dateFormat.format(date));
 
 //		Runtime.getRuntime().addShutdownHook(new Thread() {
 //			@Override
@@ -55,52 +55,53 @@ public class FullQtlMappingCisTest {
 //			}
 //		});
 
-		tmpOutputFolder.mkdir();
-		
-		System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
-	}
-	
-	@Test
-	public void testMain() throws Exception {
-		String inputDir = testFilesFolder + fileSep + "trityper";
-		String inputExprs = testFilesFolder + fileSep + "Geuvadis_CEU_YRI_Expr.txt.gz";
-		String inputExprsAnnot = testFilesFolder + fileSep + "Geuvadis_CEU_YRI_Annot.txt";
-		String inputGte = testFilesFolder + fileSep + "Geuvadis_CEU_gte.txt";
-		
-		System.out.println(inputDir);
-		
-		Main.main("--mode", "metaqtl",
-				"--in", inputDir,
-				"--out", tmpOutputFolder.getAbsolutePath(),
-				"--cis",
-				"--perm", "10",
-				"--inexp", inputExprs,
-				"--inexpannot", inputExprsAnnot,
-				"--inexpplatform", "Ensembl_v.71",
-				"--gte", inputGte,
-				"--skipqqplot",
-				"--skipdotplot",
-				"--rseed", "0");
-		
-		QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt.gz", QTLTextFile.R);
-		
-		QTLFileSorter r = new QTLFileSorter();
-		r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLFileSorter.SORTBY.Z);
-		
-		QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLTextFile.R);
-		Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
-		Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
-		
-		while (eExpIterator.hasNext() && eActualIterator.hasNext()) {
-			EQTL eact = eActualIterator.next();
-			EQTL eexp = eExpIterator.next();
-			assertTrue(eact.sameQTL(eexp, true), "eQTL not identical");
-		}
-		
-		assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found. Comparing: " + tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz and " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt.gz");
-		assertFalse(eActualIterator.hasNext(), "found more eQTL than expected");
-		
-		
-	}
-	
+        tmpOutputFolder.mkdir();
+
+        System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
+    }
+
+    @Test
+    public void testMain() throws Exception {
+        String inputDir = testFilesFolder + fileSep + "trityper";
+        String inputExprs = testFilesFolder + fileSep + "Geuvadis_CEU_YRI_Expr.txt.gz";
+        String inputExprsAnnot = testFilesFolder + fileSep + "Geuvadis_CEU_YRI_Annot.txt";
+        String inputGte = testFilesFolder + fileSep + "Geuvadis_CEU_gte.txt";
+
+        System.out.println(inputDir);
+
+        Main.main("--mode", "metaqtl",
+                "--in", inputDir,
+                "--out", tmpOutputFolder.getAbsolutePath(),
+                "--cis",
+                "--perm", "10",
+                "--inexp", inputExprs,
+                "--inexpannot", inputExprsAnnot,
+                "--inexpplatform", "Ensembl_v.71",
+                "--gte", inputGte,
+                "--skipqqplot",
+                "--skipdotplot",
+                "--rseed", "0");
+
+        System.out.println("Using test file: " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt");
+        QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt", QTLTextFile.R);
+
+        QTLFileSorter r = new QTLFileSorter();
+        r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLFileSorter.SORTBY.Z);
+
+        QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLTextFile.R);
+        Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
+        Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
+
+        while (eExpIterator.hasNext() && eActualIterator.hasNext()) {
+            EQTL eact = eActualIterator.next();
+            EQTL eexp = eExpIterator.next();
+            assertTrue(eact.sameQTL(eexp, true), "eQTL not identical");
+        }
+
+        assertFalse(eExpIterator.hasNext(), "not all expected eQTL are found. Comparing: " + tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz and " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt.gz");
+        assertFalse(eActualIterator.hasNext(), "found more eQTL than expected");
+
+
+    }
+
 }
