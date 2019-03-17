@@ -5,7 +5,6 @@
 package umcg.genetica.math.stats;
 
 /**
- *
  * @author juha
  */
 public class Binning {
@@ -26,5 +25,43 @@ public class Binning {
             }
         }
         return bins;
+    }
+
+    public static double[] getFreq(int[] cts, int total) {
+        double[] output = new double[cts.length];
+        for (int d = 0; d < output.length; d++) {
+            if (cts[d] == 0) {
+                output[d] = 0;
+            } else {
+                output[d] = (double) cts[d] / total;
+            }
+        }
+        return output;
+    }
+
+    public static double[] getBounds(double min, double max, int nrbins) {
+        double stepsize = (max - min) / nrbins;
+        double[] output = new double[nrbins];
+        for (int d = 0; d < output.length; d++) {
+            if (d == 0) {
+                output[d] = min;
+            } else {
+                output[d] = output[d - 1] + stepsize;
+            }
+        }
+        return output;
+    }
+
+    public static double[] getBoundsBinCenter(double min, double max, int nrbins) {
+        double stepsize = (max - min) / nrbins;
+        double[] output = new double[nrbins];
+        for (int d = 0; d < output.length; d++) {
+            if (d == 0) {
+                output[d] = min + (stepsize/2);
+            } else {
+                output[d] = output[d - 1] + stepsize;
+            }
+        }
+        return output;
     }
 }
