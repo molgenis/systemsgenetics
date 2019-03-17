@@ -13,7 +13,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 /**
- *
  * @author harmjan
  */
 public class Gpio {
@@ -82,23 +81,23 @@ public class Gpio {
     }
 
     public static boolean exists(String dir) {
-		return existsAndReadable(new File(dir));
+        return existsAndReadable(new File(dir));
     }
-	
-	public static boolean existsAndReadable(File file){
-		return file.exists() && file.canRead();
-	}
-	
-	public static boolean createOuputDir(File dir) throws IOException {
-		
-		if(!dir.exists()){
-			if(!dir.mkdirs()){
-				throw new IOException("Failed to create output dir at: " + dir.getAbsolutePath());
-			}
-		}
-		return dir.canRead() && dir.canWrite();
-		
-	}
+
+    public static boolean existsAndReadable(File file) {
+        return file.exists() && file.canRead();
+    }
+
+    public static boolean createOuputDir(File dir) throws IOException {
+
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+                throw new IOException("Failed to create output dir at: " + dir.getAbsolutePath());
+            }
+        }
+        return dir.canRead() && dir.canWrite();
+
+    }
 
     public static void copyFile(File sourceFile, File destFile) throws IOException {
         if (!destFile.exists()) {
@@ -162,6 +161,11 @@ public class Gpio {
         f1.delete();
     }
 
+    public static void delete(String file) {
+        File f = new File(file);
+        f.delete();
+    }
+
     public static boolean canRead(String fileName) {
         File f = new File(fileName);
         return f.canRead();
@@ -179,10 +183,10 @@ public class Gpio {
 
     public static String getParentDir(String file) {
         File f = new File(file);
-        
+
         return (f.getParent());
     }
-    
+
     public static String getFileName(String file) {
         File f = new File(file);
         return (f.getName());

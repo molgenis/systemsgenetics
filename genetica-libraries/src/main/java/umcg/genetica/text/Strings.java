@@ -30,6 +30,7 @@ public class Strings {
     public static final Pattern dot = Pattern.compile("\\.");
     public static final Pattern space = Pattern.compile(" ");
     public static final Pattern dash = Pattern.compile("-");
+    public static final Pattern equalssign = Pattern.compile("=");
 
     public static String concat(String[] s, Pattern t) {
         String sepstr = t.toString();
@@ -175,6 +176,64 @@ public class Strings {
         return new int[]{totalElems, matchingElems};
     }
 
+    public static String[] subsplit(String ln, Pattern pattern, boolean[] colsToInclude) {
+        return subsplit(ln, pattern, 0, colsToInclude);
+    }
+
+    public static String[] subsplit(String ln, Pattern pattern, int offset, boolean[] colsToInclude) {
+        int nrCols = 0;
+        for (int c = 0; c < colsToInclude.length; c++) {
+            if (colsToInclude[c]) {
+                nrCols++;
+            }
+        }
+        return subsplit(ln, pattern, offset, colsToInclude, nrCols);
+    }
+
+    // split a string, but only return a part of the output
+    public static String[] subsplit(String ln, Pattern pattern, int offset, boolean[] colsToInclude, int nrCols) {
+        String[] output = new String[nrCols];
+        Matcher m = pattern.matcher(ln);
+
+        int ctr1 = 0;
+        int ctr2 = 0;
+        int prevsta = 0;
+
+        while (m.find()) {
+//			System.out.println(m.group() + "\t" + m.start() + "\t" + m.end() + "\t" + ln.substring(prevsta, m.start()));
+            if (ctr1 >= offset && (ctr1 - offset) < colsToInclude.length && colsToInclude[ctr1 - offset]) {
+                String substr = new String(ln.substring(prevsta, m.start()));
+                output[ctr2] = substr;
+//				System.out.println(ctr2 + "\t" + substr);
+                ctr2++;
+
+            }
+
+//			System.out.println(ctr1);
+            prevsta = m.end();
+            ctr1++;
+        }
+
+//		System.out.println(ctr1 + "total");
+        if (ctr1 >= offset && (ctr1 - offset) < colsToInclude.length && colsToInclude[ctr1 - offset] && prevsta < ln.length()) {
+            // last element
+            String substr = ln.substring(prevsta, ln.length());
+            output[ctr2] = substr;
+//			System.out.println("outer loop " + ctr2 + "\t" + substr);
+//			output[output.length - 1] = new String(substr);
+            ctr2++;
+        }
+//		System.out.println("end ctr2: " + ctr2);
+//		System.out.println(upperBound);
+//		System.out.println("enc ctr1: " + ctr1);
+        if (ctr2 == 0) {
+            return null;
+        } else {
+            return output;
+        }
+
+    }
+
     // split a string, but only return a part of the output
     public static String[] subsplit(String ln, Pattern tab, int lowerBound, int upperBound) {
 
@@ -256,5 +315,41 @@ public class Strings {
         }
         return concat(str, t);
 
+    }
+
+    public static String concat(String[] elems, boolean[] includeelem, Pattern tab) {
+
+        return concat(elems, tab, includeelem, null);
+    }
+    public static String concat(String[] s, Pattern t, boolean[] includeElem, String replaceNull) {
+
+        if (s == null) {
+            return null;
+        } else if (s.length == 0) {
+            return "";
+        }
+
+        int approximateFinalStrLen = 0;
+        for (int i = 0; i < s.length; i++) {
+            if (includeElem != null && includeElem[i]) {
+                approximateFinalStrLen += s[i].length();
+            }
+        }
+        approximateFinalStrLen += s.length;
+
+        StringBuilder output = new StringBuilder(approximateFinalStrLen);
+        for (int i = 0; i < s.length; i++) {
+            if (includeElem == null || includeElem[i]) {
+                if (s[i] == null) {
+                    s[i] = replaceNull;
+                }
+                if (i == 0) {
+                    output.append(s[i]);
+                } else {
+                    output.append(t.toString()).append(s[i]);
+                }
+            }
+        }
+        return output.toString();
     }
 }
