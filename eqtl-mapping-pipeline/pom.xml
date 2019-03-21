@@ -61,11 +61,7 @@
             <artifactId>imputation-tool</artifactId>
             <version>1.0.5-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>net.rforge</groupId>
-            <artifactId>Rserve</artifactId>
-            <version>0.6-8.1</version>
-        </dependency>
+
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
@@ -112,6 +108,11 @@
             <artifactId>testng</artifactId>
             <version>RELEASE</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.rosuda.REngine</groupId>
+            <artifactId>Rserve</artifactId>
+            <version>1.8.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>
