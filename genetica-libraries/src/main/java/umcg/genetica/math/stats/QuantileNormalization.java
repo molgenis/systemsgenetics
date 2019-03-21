@@ -6,6 +6,8 @@ package umcg.genetica.math.stats;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.IntStream;
+
 import org.apache.commons.collections.primitives.ArrayDoubleList;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
@@ -36,6 +38,7 @@ public class QuantileNormalization {
         int sampleCount = rawData[probeCount - 1].length;
 
         double[] rankedMean = new double[probeCount];
+
         for (int sampleID = 0; sampleID < sampleCount; sampleID++) {
             double[] x = new double[probeCount];
 
@@ -47,7 +50,7 @@ public class QuantileNormalization {
                 rankedMean[probeID] += x[probeID];
             }
         }
-        
+
         for (int probeID = 0; probeID < probeCount; probeID++) {
             rankedMean[probeID] /= (double) sampleCount;
         }

@@ -4,6 +4,8 @@
  */
 package umcg.genetica.math.stats;
 
+import java.util.stream.IntStream;
+
 /**
  *
  * @author harmjan
@@ -26,14 +28,15 @@ public class Log2Transform {
         
         System.out.println("\nLog2 transforming data: Absolute minimum Expression Value:\t" + minValue);
         double multiplier = 1.0d / Math.log10(2.0d);
-        for (int p=0; p<probeCount; p++) {
+        double finalMinValue = minValue;
+        IntStream.range(0,probeCount).parallel().forEach(p->{
             for (int s=0; s<sampleCount; s++) {
-                if (minValue <= 0) {
-                    rawData[p][s] = (double) (Math.log10(rawData[p][s] - minValue + 1) * multiplier);
+                if (finalMinValue <= 0) {
+                    rawData[p][s] = (double) (Math.log10(rawData[p][s] - finalMinValue + 1) * multiplier);
                 } else {
                     rawData[p][s] = (double) (Math.log10(rawData[p][s] + 1) * multiplier);
                 }
             }
-        }
+        });
     }
 }
