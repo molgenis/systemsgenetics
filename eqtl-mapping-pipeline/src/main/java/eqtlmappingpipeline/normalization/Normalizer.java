@@ -301,20 +301,20 @@ public class Normalizer {
 	public String centerAndScale(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
 		double[][] rawData = dataset.getRawData();
 		System.out.println("Standardizing probe mean");
-		for (int p = 0; p < dataset.rowObjects.size(); p++) {
+		IntStream.range(0,dataset.rowObjects.size()).parallel().forEach(p->{
 			double mean = Descriptives.mean(rawData[p]);
 			//double stdev = Math.sqrt(Descriptives.variance(rawData[p], mean));
 			for (int s = 0; s < dataset.colObjects.size(); s++) {
 				rawData[p][s] -= mean;
 			}
-		}
-		
+		});
+
 		dataset.setRawData(rawData);
 		fileNamePrefix += ".ProbesCentered";
 		dataset.save(fileNamePrefix + ".txt.gz");
 		
 		System.out.println("- Standardizing sample mean and standard deviation");
-		for (int s = 0; s < dataset.colObjects.size(); s++) {
+		IntStream.range(0,dataset.colObjects.size()).parallel().forEach(s->{
 			double[] vals = new double[dataset.rowObjects.size()];
 			for (int p = 0; p < dataset.rowObjects.size(); p++) {
 				vals[p] = dataset.getRawData()[p][s];
@@ -328,7 +328,22 @@ public class Normalizer {
 			for (int p = 0; p < dataset.rowObjects.size(); p++) {
 				dataset.getRawData()[p][s] = (vals[p] / stdev);
 			}
-		}
+		});
+//		for (int s = 0; s < dataset.colObjects.size(); s++) {
+//			double[] vals = new double[dataset.rowObjects.size()];
+//			for (int p = 0; p < dataset.rowObjects.size(); p++) {
+//				vals[p] = dataset.getRawData()[p][s];
+//			}
+//			double mean = Descriptives.mean(vals);
+//			for (int p = 0; p < dataset.rowObjects.size(); p++) {
+//				vals[p] -= mean;
+//			}
+//			double var = Descriptives.variance(vals, mean);
+//			double stdev = Math.sqrt(var);
+//			for (int p = 0; p < dataset.rowObjects.size(); p++) {
+//				dataset.getRawData()[p][s] = (vals[p] / stdev);
+//			}
+//		}
 		
 		DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawData, dataset.rowObjects, dataset.colObjects);
 		fileNamePrefix += ".SamplesZTransformed";
@@ -351,7 +366,8 @@ public class Normalizer {
 		double[] pcaExpVar = null;
 		
 		System.out.println("Covariate data has " + covariateDataset.nrRows + " rows and " + covariateDataset.nrCols + " columns.");
-		
+
+		// quick Z-transform
 		for (int p = 0; p < covariateDataset.rowObjects.size(); p++) {
 			double mean = Descriptives.mean(covariateDataset.getRawData()[p]);
 			double stdev = Math.sqrt(Descriptives.variance(covariateDataset.getRawData()[p], mean));
@@ -364,8 +380,8 @@ public class Normalizer {
 		//Covariation on a centered and scaled matrix equals the correlation.
 		//Covariation is faster to compute.
 		ConcurrentCovariation c = new ConcurrentCovariation(2);
-		double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawData());
-		covariateDataset.transposeDataset();
+		double[][] correlationMatrix = c.pairwiseCovariation(covariateDataset.getRawData()); // row should have covariates now
+		covariateDataset.transposeDataset(); // samples on cols --> samples on rows
 		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(covariateDataset, correlationMatrix, covariatesToRemove, null);
 		
 		// replace covariateValues with orthogonal ones...
@@ -505,7 +521,9 @@ public class Normalizer {
 		return correlationMatrix;
 	}
 	
-	public Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> calculatePCA(DoubleMatrixDataset<String, String> dataset, double[][] correlationMatrix, String fileNamePrefix, Integer nrOfPCsToCalculate) throws IOException {
+	public Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> calculatePCA(DoubleMatrixDataset<String, String> dataset,
+																									   double[][] correlationMatrix, String fileNamePrefix,
+																									   Integer nrOfPCsToCalculate) throws IOException {
 		String expressionFile = fileNamePrefix;
 		System.out.println("Calculating PCA over file: " + fileNamePrefix);
 		System.out.println("- Performing PCA over correlation matrix of size: " + correlationMatrix.length + "x" + correlationMatrix.length);

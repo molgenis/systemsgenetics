@@ -42,18 +42,18 @@ public class FullQtlMappingTransMetaTest {
 
         tmpOutputFolder = new File(tmpDir, "QTLMappingTransMetaTest_" + dateFormat.format(date));
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                System.out.println("Removing tmp dir and files");
-                for (File file : tmpOutputFolder.listFiles()) {
-                    System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    file.delete();
-                }
-                System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-                tmpOutputFolder.delete();
-            }
-        });
+//        Runtime.getRuntime().addShutdownHook(new Thread() {
+//            @Override
+//            public void run() {
+//                System.out.println("Removing tmp dir and files");
+//                for (File file : tmpOutputFolder.listFiles()) {
+//                    System.out.println(" - Deleting: " + file.getAbsolutePath());
+//                    file.delete();
+//                }
+//                System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
+//                tmpOutputFolder.delete();
+//            }
+//        });
 
         tmpOutputFolder.mkdir();
 
@@ -72,12 +72,14 @@ public class FullQtlMappingTransMetaTest {
 
 
         System.out.println("Comparing:");
-        System.out.println("File 1: " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt");
-        System.out.println("File 2: " + tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz");
+        String expectedFile = testFilesFolder + fileSep + "TestOutput" + fileSep + "2019-03-20-Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt";
+        String observedFile = tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz";
+        System.out.println("File 1: (expected) " + expectedFile);
+        System.out.println("File 2: (observed) " + observedFile);
 
-        QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Trans-Meta-eQTLsFDR0.05-ProbeLevel.txt", QTLTextFile.R);
+        QTLTextFile eExp = new QTLTextFile(expectedFile, QTLTextFile.R);
 
-        QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05-ProbeLevel_S.txt.gz", QTLTextFile.R);
+        QTLTextFile eActual = new QTLTextFile(observedFile, QTLTextFile.R);
 
         Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
