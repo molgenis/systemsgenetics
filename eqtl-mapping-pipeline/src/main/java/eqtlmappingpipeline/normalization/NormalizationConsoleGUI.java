@@ -167,6 +167,8 @@ public class NormalizationConsoleGUI {
 
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
