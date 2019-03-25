@@ -174,12 +174,7 @@ public class Normalizer {
             int cores = Runtime.getRuntime().availableProcessors();
             ConcurrentCorrelation c = new ConcurrentCorrelation(cores);
 
-            DoubleMatrixDataset<String, String> datasettransposed = dataset.viewDice();
-            double[][] correlationMatrix = c.pairwiseCorrelation(datasettransposed.getMatrix().toArray());
-            DoubleMatrixDataset<String, String> cormat = new DoubleMatrixDataset<>();
-            cormat.setMatrix(correlationMatrix);
-            cormat.setColObjects(dataset.getRowObjects());
-            cormat.setRowObjects(dataset.getRowObjects());
+            DoubleMatrixDataset<String, String> cormat = c.pairwiseCorrelation(dataset.viewDice());
             Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, cormat, outputFileNamePrefix, null);
             if (nrPCAsOverSamplesToRemove != 0 || nrIntermediatePCAsOverSamplesToRemoveToOutput != 0) {
                 correctDataForPCs(dataset, outputFileNamePrefix, nrPCAsOverSamplesToRemove, nrIntermediatePCAsOverSamplesToRemoveToOutput, PCAResults.getLeft(), PCAResults.getRight());
@@ -215,13 +210,7 @@ public class Normalizer {
         String outputFileNamePrefix = outdir + expressionFileName;
 
         ConcurrentCorrelation c = new ConcurrentCorrelation(2);
-        DoubleMatrixDataset<String, String> datasettransposed = dataset.viewDice();
-        double[][] correlationMatrix = c.pairwiseCorrelation(datasettransposed.getMatrix().toArray());
-
-        DoubleMatrixDataset<String, String> cormat = new DoubleMatrixDataset<>();
-        cormat.setMatrix(correlationMatrix);
-        cormat.setColObjects(dataset.getRowObjects());
-        cormat.setRowObjects(dataset.getRowObjects());
+        DoubleMatrixDataset<String, String> cormat = c.pairwiseCorrelation(dataset.viewDice());
 
         calculatePCA(dataset, cormat, outputFileNamePrefix, null);
         return new Triple<String, String, String>(outputFileNamePrefix + ".PCAOverSamplesEigenvectorsTransposed.txt.gz", outputFileNamePrefix + ".PCAOverSamplesEigenvectors.txt.gz", outputFileNamePrefix + ".PCAOverSamplesPrincipalComponents.txt.gz");
@@ -323,17 +312,18 @@ public class Normalizer {
     }
 
     public String centerAndScale(DoubleMatrixDataset<String, String> dataset, String fileNamePrefix) throws IOException {
-        double[][] rawData = dataset.getMatrix().toArray();
+//        double[][] rawData = dataset.getMatrix().toArray();
         System.out.println("Standardizing probe mean");
         IntStream.range(0, dataset.rows()).parallel().forEach(p -> {
-            double mean = Descriptives.mean(rawData[p]);
+            double[] row = dataset.getRow(p).toArray();
+            double mean = Descriptives.mean(row);
             //double stdev = Math.sqrt(Descriptives.variance(rawData[p], mean));
             for (int s = 0; s < dataset.columns(); s++) {
-                rawData[p][s] -= mean;
+                double val = dataset.getElementQuick(p, s) - mean;
+                dataset.setElementQuick(p, s, val);
             }
         });
 
-        dataset.setMatrix(rawData);
         fileNamePrefix += ".ProbesCentered";
         dataset.save(fileNamePrefix + ".txt.gz");
 
@@ -579,6 +569,8 @@ public class Normalizer {
 
         DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(dataset.columns(), nrOfPCsToCalculate);
         datasetEV.setRowObjects(dataset.getColObjects());
+        datasetEV.setColObjects(new ArrayList<>());
+
         double[] eigenValues = eig.getRealEigenvalues();
         System.out.println("Eigenvalue results:");
 
@@ -589,6 +581,7 @@ public class Normalizer {
 
         out.writeln("PCA\tPCANr\tEigenValue\tExplainedVariance\tTotalExplainedVariance");
 
+        ArrayList<String> evcolnames = new ArrayList<>();
         for (int pca = 0; pca < nrOfPCsToCalculate; pca++) {
             double expVarPCA = PCA.getEigenValueVar(eigenValues, pca);
             double[] pca1ExpEigenVector = PCA.getEigenVector(eig, eigenValues, pca);
@@ -598,11 +591,11 @@ public class Normalizer {
             int pcaNr = pca + 1;
             cumExpVarPCA += expVarPCA;
             out.write(pcaNr + "\t" + eigenValues[eigenValues.length - 1 - pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA + "\n");
-            datasetEV.getColObjects().set(pca, "Comp" + String.valueOf(pcaNr));
+            evcolnames.add(pca, "Comp" + pcaNr);
             System.out.println("PCA:\t" + pcaNr + "\t" + eigenValues[eigenValues.length - 1 - pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA);
         }
         out.close();
-
+        datasetEV.setColObjects(evcolnames);
         datasetEV.save(expressionFile + ".PCAOverSamplesEigenvectors.txt.gz");
 
         datasetEV = datasetEV.viewDice();
@@ -614,9 +607,11 @@ public class Normalizer {
         System.out.println("Initializing PCA matrix");
         DoubleMatrixDataset<String, String> datasetPCAOverSamplesPCAs = new DoubleMatrixDataset<String, String>(dataset.rows(), nrOfPCsToCalculate);
         datasetPCAOverSamplesPCAs.setRowObjects(dataset.getRowObjects());
+        ArrayList<String> pcacolnames = new ArrayList<>();
         for (int s = 0; s < nrOfPCsToCalculate; s++) {
-            datasetPCAOverSamplesPCAs.getColObjects().set(s, "Comp" + String.valueOf(s + 1));
+            pcacolnames.add("Comp" + (s + 1));
         }
+        datasetPCAOverSamplesPCAs.setColObjects(pcacolnames);
 
         for (int p = 0; p < dataset.rows(); p++) {
             for (int t = 0; t < nrOfPCsToCalculate; t++) {

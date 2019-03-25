@@ -171,12 +171,7 @@ public class InteractionAnalysisMultiThreaded {
             correlator = new ConcurrentCorrelation();
         }
 
-        double[][] sampleCorrelationMatrix = correlator.pairwiseCorrelation(rawExpressionDataset.getMatrix().toArray());
-
-        DoubleMatrixDataset<String, String> sampleCorrelationMatrixOut = new DoubleMatrixDataset<String, String>();
-        sampleCorrelationMatrixOut.setMatrix(sampleCorrelationMatrix);
-        sampleCorrelationMatrixOut.setColObjects(rawExpressionDataset.getRowObjects());
-        sampleCorrelationMatrixOut.setRowObjects(rawExpressionDataset.getRowObjects());
+        DoubleMatrixDataset<String, String> sampleCorrelationMatrixOut  = correlator.pairwiseCorrelation(rawExpressionDataset);
         sampleCorrelationMatrixOut.save(outdirectory + "SampleCorrelationMatrix.txt");
 
         // 4. PCA on sample correlation matrix
