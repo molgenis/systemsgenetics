@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 
@@ -39,7 +40,9 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import umcg.genetica.containers.Pair;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.text.Strings;
 
 /**
  * @param <R>
@@ -509,12 +512,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
 
         int storedCols = 0;
-        ArrayList<Integer> desiredColIds = new ArrayList<>();
+        ArrayList<Pair<Integer,Integer>> desiredColIds = new ArrayList<>();
         for (int s = 0; s < tmpCols; s++) {
             String colName = data[s + columnOffset];
             if (!colMap.containsKey(colName) && (desiredCols == null || desiredCols.isEmpty() || desiredCols.contains(colName))) {
                 colMap.put(colName, storedCols);
-                desiredColIds.add(s);
+                desiredColIds.add(new Pair<>(s,storedCols));
                 storedCols++;
             } else if (colMap.containsKey(colName)) {
                 LOGGER.warning("Duplicated column name!");
@@ -527,24 +530,28 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
         AtomicBoolean correctData = new AtomicBoolean(true);
         ArrayList<double[]> tmpdata = new ArrayList<>();
+        Pattern p = Pattern.compile(""+delimiter);
         while ((str = in.readLine()) != null) {
-            String rowname = StringUtils.splitPreserveAllTokens(str, "" + delimiter, 1)[0];
+            String rowname = Strings.subsplit(str,p,0,1)[0];
 
             if (desiredRows == null || desiredRows.isEmpty() || desiredRows.contains(rowname)) {
                 if (!rowMap.containsKey(rowname)) {
-                    data = StringUtils.split(str, delimiter);
+                    data = StringUtils.splitPreserveAllTokens(str, delimiter);
                     rowMap.put(data[0], storingRow);
-                    double[] tmp = new double[desiredCols.size()];
+                    double[] tmp = new double[desiredColIds.size()];
                     String[] finalData = data;
+
                     desiredColIds.parallelStream().forEach(c -> {
+                        int col = c.getLeft();
+                        int pos = c.getRight();
                         double d;
                         try {
-                            d = Double.parseDouble(finalData[c + columnOffset]);
+                            d = Double.parseDouble(finalData[col + columnOffset]);
                         } catch (NumberFormatException e) {
                             correctData.set(false);
                             d = Double.NaN;
                         }
-                        tmp[c] = d;
+                        tmp[pos] = d;
                     });
 
                     tmpdata.add(tmp);
@@ -572,7 +579,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
         IntStream.range(0, tmpdata.size()).parallel().forEach(r -> {
             double[] tmpd = tmpdata.get(r);
-            for (int c = 0; c < tmpCols; c++) {
+            for (int c = 0; c < tmpd.length; c++) {
                 matrix.setQuick(r, c, tmpd[c]);
             }
         });

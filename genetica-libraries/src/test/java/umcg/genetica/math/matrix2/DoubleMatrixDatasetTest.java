@@ -70,7 +70,7 @@ public class DoubleMatrixDatasetTest {
 	 */
 	@Test
 	public void testCreateRowForceNormalDuplicate() {
-
+		System.out.println("testCreateRowForceNormalDuplicate");
 		ArrayList<String> rows = new ArrayList<>();
 		ArrayList<String> cols = new ArrayList<>();
 
@@ -108,7 +108,7 @@ public class DoubleMatrixDatasetTest {
 
 	@Test
 	public void testSaveLoadBinaryMatrix() throws IOException, Exception {
-
+		System.out.println("testSaveLoadBinaryMatrix");
 		ArrayList<String> rows = new ArrayList<>();
 		ArrayList<String> cols = new ArrayList<>();
 
@@ -196,7 +196,7 @@ public class DoubleMatrixDatasetTest {
 
 	@Test
 	public void testSaveLoadTextMatrix() throws IOException, Exception {
-
+		System.out.println("testSaveLoadTextMatrix");
 		ArrayList<String> rows = new ArrayList<>();
 		ArrayList<String> cols = new ArrayList<>();
 
