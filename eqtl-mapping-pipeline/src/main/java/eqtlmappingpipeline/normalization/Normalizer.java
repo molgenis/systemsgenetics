@@ -6,6 +6,7 @@ import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecompos
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
@@ -36,8 +37,11 @@ public class Normalizer {
 
     //nrIntermediatePCAsOverSamplesToRemoveToOutput = 5
     //nrPCAsOverSamplesToRemove = 100
-    public void normalize(String expressionFile, String probeIncludeList, String sampleIncludeList, int nrPCAsOverSamplesToRemove, int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates, String outdir,
-                          boolean runQQNorm, boolean runLog2Transform, boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates, boolean forceMissingValues, boolean forceReplacementOfMissingValues,
+    public void normalize(String expressionFile, String probeIncludeList, String sampleIncludeList, int nrPCAsOverSamplesToRemove,
+                          int nrIntermediatePCAsOverSamplesToRemoveToOutput, String covariatesToRemove, boolean orthogonalizecovariates,
+                          boolean useOLSforCovariates, String outdir, boolean runQQNorm, boolean runLog2Transform,
+                          boolean runMTransform, boolean runCenterScale, boolean runPCA, boolean adjustCovariates,
+                          boolean forceMissingValues, boolean forceReplacementOfMissingValues,
                           boolean forceReplacementOfMissingValues2, boolean treatZerosAsNulls, boolean forceNormalDistribution) throws Exception {
 
         System.out.println("Running normalization.");
@@ -167,7 +171,7 @@ public class Normalizer {
         }
 
         if (adjustCovariates && covariatesToRemove != null) {
-            outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, 1E-10);
+            outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, useOLSforCovariates, 1E-10);
         }
 
         if (runPCA) {
@@ -364,79 +368,147 @@ public class Normalizer {
         return fileNamePrefix;
     }
 
+
+    public static void main(String[] args) {
+
+        Normalizer norm = new Normalizer();
+        String ds = "D:\\norm\\GD660.GeneQuantCount-EUR-CPM-TMM.txt.gz";
+        DoubleMatrixDataset<String, String> dataset = null;
+        try {
+            dataset = DoubleMatrixDataset.loadDoubleData(ds);
+            String filenameprefix = "D:\\norm\\tmp\\test";
+            String covariatefile = "D:\\norm\\tmp\\covariates.txt";
+            norm.adjustCovariates(dataset, filenameprefix, covariatefile, true, 0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
     public String adjustCovariates(DoubleMatrixDataset<String, String> traitData,
                                    String fileNamePrefix,
                                    String covariatesToRemove,
+                                   double varianceExplainedCutoff) throws IOException, Exception {
+        return adjustCovariates(traitData, fileNamePrefix, covariatesToRemove, false, varianceExplainedCutoff);
+    }
+
+    public String adjustCovariates(DoubleMatrixDataset<String, String> traitData,
+                                   String fileNamePrefix,
+                                   String covariatesToRemove,
+                                   boolean useOLS,
                                    double varianceExplainedCutoff) throws IOException, Exception {
 
         // load covariate data, and remove samples for which there is missing covariate data.
         Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> covariateData = loadCovariateValues(covariatesToRemove, traitData);
         DoubleMatrixDataset<String, String> covariateDataset = covariateData.getLeft();
-        DoubleMatrixDataset<String, String> traitDataUpdated = covariateData.getRight();
+        traitData = covariateData.getRight();
 
-        traitData = traitDataUpdated;
 
+        if (useOLS) {
+            // use Apache multivariate OLS in stead of PCA for covariate correction
+
+            double[][] covariateDataMatrix = new double[traitData.columns()][covariateDataset.rows()];
+
+            int[] sampleMap = new int[traitData.columns()];
+            for (int s = 0; s < covariateDataset.getColObjects().size(); s++) {
+                String sample = covariateDataset.getColObjects().get(s);
+                Integer id = traitData.getHashCols().get(sample);
+                sampleMap[s] = id;
+            }
+
+            for (int row = 0; row < covariateDataset.rows(); row++) {
+                for (int col = 0; col < covariateDataset.columns(); col++) {
+                    Integer sampleid = sampleMap[col];
+                    covariateDataMatrix[sampleid][row] = covariateDataset.getElementQuick(row, col);
+                }
+            }
+
+            // TODO: variance inflation factor
+            System.out.println("Calculating OLS residuals...");
+            DoubleMatrixDataset<String, String> outputmat = new DoubleMatrixDataset<>(traitData.rows(), traitData.columns());
+            DoubleMatrixDataset<String, String> finalTraitData = traitData;
+            IntStream.range(0, traitData.rows()).parallel().forEach(row -> {
+                double[] y = finalTraitData.getRow(row).toArray();
+                OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
+                ols.newSampleData(y, covariateDataMatrix);
+                double[] yout = ols.estimateResiduals();
+
+                for (int c = 0; c < yout.length; c++) {
+                    outputmat.setElementQuick(row, c, yout[c]);
+                }
+            });
+
+            traitData.setMatrix(outputmat.getMatrix());
+            fileNamePrefix += ".CovariatesRemovedOLS";
+            traitData.save(fileNamePrefix + ".txt.gz");
+
+
+            return fileNamePrefix;
+        } else {
+
+            // use PCA based approach
 //        double[][] covariateValues = null;
-        double[] pcaExpVar = null;
+            double[] pcaExpVar = null;
 
-        System.out.println("Covariate data has " + covariateDataset.rows() + " rows and " + covariateDataset.columns() + " columns.");
+            System.out.println("Covariate data has " + covariateDataset.rows() + " rows and " + covariateDataset.columns() + " columns.");
 
-        // quick Z-transform
-        for (int p = 0; p < covariateDataset.rows(); p++) {
-            double[] row = covariateDataset.getRow(p).toArray();
-            double mean = Descriptives.mean(row);
-            double stdev = Math.sqrt(Descriptives.variance(row, mean));
-            for (int s = 0; s < covariateDataset.columns(); s++) {
-                double replacement = (row[s] - mean) / stdev;
-                covariateDataset.setElementQuick(p, s, replacement);
+            // quick Z-transform
+            for (int p = 0; p < covariateDataset.rows(); p++) {
+                double[] row = covariateDataset.getRow(p).toArray();
+                double mean = Descriptives.mean(row);
+                double stdev = Math.sqrt(Descriptives.variance(row, mean));
+                for (int s = 0; s < covariateDataset.columns(); s++) {
+                    double replacement = (row[s] - mean) / stdev;
+                    covariateDataset.setElementQuick(p, s, replacement);
+                }
             }
-        }
 
-        //Covariation on a centered and scaled matrix equals the correlation.
-        //Covariation is faster to compute.
-        DoubleMatrixDataset<String, String> correlationMatrix = new DoubleMatrixDataset(covariateDataset.rows(), covariateDataset.rows());
-        DoubleMatrixDataset<String, String> finalCovariateDataset = covariateDataset;
-        IntStream.range(0, covariateDataset.rows()).parallel().forEach(row -> {
-            double[] rowdataA = finalCovariateDataset.getRow(row).toArray();
-            for (int row2 = row + 1; row2 < finalCovariateDataset.rows(); row2++) {
-                double[] rowdataB = finalCovariateDataset.getRow(row2).toArray();
-                double r = Correlation.correlate(rowdataA, rowdataB);
-                correlationMatrix.setElementQuick(row, row2, r);
-                correlationMatrix.setElementQuick(row2, row, r);
-            }
-            correlationMatrix.setElementQuick(row, row, 1);
-        });
+            //Covariation on a centered and scaled matrix equals the correlation.
+            //Covariation is faster to compute.
+            DoubleMatrixDataset<String, String> correlationMatrix = new DoubleMatrixDataset(covariateDataset.rows(), covariateDataset.rows());
+            DoubleMatrixDataset<String, String> finalCovariateDataset = covariateDataset;
+            IntStream.range(0, covariateDataset.rows()).parallel().forEach(row -> {
+                double[] rowdataA = finalCovariateDataset.getRow(row).toArray();
+                for (int row2 = row + 1; row2 < finalCovariateDataset.rows(); row2++) {
+                    double[] rowdataB = finalCovariateDataset.getRow(row2).toArray();
+                    double r = Correlation.correlate(rowdataA, rowdataB);
+                    correlationMatrix.setElementQuick(row, row2, r);
+                    correlationMatrix.setElementQuick(row2, row, r);
+                }
+                correlationMatrix.setElementQuick(row, row, 1);
+            });
 
-        DoubleMatrixDataset<String, String> covariateDatasetTransposed = covariateDataset.viewDice();
-        Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(
-                covariateDatasetTransposed,
-                correlationMatrix, covariatesToRemove,
-                null);
+            DoubleMatrixDataset<String, String> covariateDatasetTransposed = covariateDataset.viewDice();
+            Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(
+                    covariateDatasetTransposed,
+                    correlationMatrix, covariatesToRemove,
+                    null);
 
-        // replace covariateValues with orthogonal ones...
-        covariateDataset = PCAResults.getLeft();
-        covariateDataset = covariateDataset.viewDice();
+            // replace covariateValues with orthogonal ones...
+            covariateDataset = PCAResults.getLeft();
+            covariateDataset = covariateDataset.viewDice();
 //        covariateValues = covariateDataset.getRawData();
 
-        System.out.println(covariateDataset.rows() + " covariates finally loaded.");
+            System.out.println(covariateDataset.rows() + " covariates finally loaded.");
 
-        // load the eigenvalues
-        pcaExpVar = new double[covariateDataset.rows()];
-        System.out.println("Loading eigenvalues from: " + covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz");
-        TextFile tf = new TextFile(covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.R); //
-        // skip header
-        tf.readLine();
-        String[] elems = tf.readLineElems(TextFile.tab);
-        while (elems != null) {
-            if (elems.length > 2) {
-                int pcanr = Integer.parseInt(elems[0]);
-                double expvar = Double.parseDouble(elems[1]);
-                pcaExpVar[pcanr - 1] = expvar;
-                System.out.println(pcanr + "\t" + expvar);
+            // load the eigenvalues
+            pcaExpVar = new double[covariateDataset.rows()];
+            System.out.println("Loading eigenvalues from: " + covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz");
+            TextFile tf = new TextFile(covariatesToRemove + ".PCAOverSamplesEigenvalues.txt.gz", TextFile.R); //
+            // skip header
+            tf.readLine();
+            String[] elems = tf.readLineElems(TextFile.tab);
+            while (elems != null) {
+                if (elems.length > 2) {
+                    int pcanr = Integer.parseInt(elems[0]);
+                    double expvar = Double.parseDouble(elems[1]);
+                    pcaExpVar[pcanr - 1] = expvar;
+                    System.out.println(pcanr + "\t" + expvar);
+                }
+                elems = tf.readLineElems(TextFile.tab);
             }
-            elems = tf.readLineElems(TextFile.tab);
-        }
-        tf.close();
+            tf.close();
 //        } else {
 //            // PCA has been performed a-priori. Just check whether the user has supplied proper covariates.
 //            if (covariateValues.length > 1) {
@@ -473,21 +545,22 @@ public class Normalizer {
 
 
 //        double[][] rawdata = traitData.getRawData();
-        for (int i = 0; i < covariateDataset.rows(); i++) {
-            if (pcaExpVar == null || pcaExpVar[i] > varianceExplainedCutoff) {
-                correctForCovariate(traitData, covariateDataset, i);
-            } else {
-                System.out.println("Not regressing covariate: " + i + " because explained variance < " + varianceExplainedCutoff + ": " + pcaExpVar[i]);
+            for (int i = 0; i < covariateDataset.rows(); i++) {
+                if (pcaExpVar == null || pcaExpVar[i] > varianceExplainedCutoff) {
+                    correctForCovariate(traitData, covariateDataset, i);
+                } else {
+                    System.out.println("Not regressing covariate: " + i + " because explained variance < " + varianceExplainedCutoff + ": " + pcaExpVar[i]);
+                }
             }
+
+            fileNamePrefix += ".CovariatesRemoved";
+            traitData.save(fileNamePrefix + ".txt.gz");
+
+
+            return fileNamePrefix;
         }
 
-        //Why was this done???????
-        //DoubleMatrixDataset<String, String> datasetNormalized = new DoubleMatrixDataset<String, String>(rawdata, traitData.rowObjects, traitData.colObjects);
-        fileNamePrefix += ".CovariatesRemoved";
-        traitData.save(fileNamePrefix + ".txt.gz");
 
-
-        return fileNamePrefix;
     }
 
 //    /**
