@@ -368,24 +368,6 @@ public class Normalizer {
         return fileNamePrefix;
     }
 
-
-    public static void main(String[] args) {
-
-        Normalizer norm = new Normalizer();
-        String ds = "D:\\norm\\GD660.GeneQuantCount-EUR-CPM-TMM.txt.gz";
-        DoubleMatrixDataset<String, String> dataset = null;
-        try {
-            dataset = DoubleMatrixDataset.loadDoubleData(ds);
-            String filenameprefix = "D:\\norm\\tmp\\test";
-            String covariatefile = "D:\\norm\\tmp\\covariates.txt";
-            norm.adjustCovariates(dataset, filenameprefix, covariatefile, true, 0);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-    }
-
     public String adjustCovariates(DoubleMatrixDataset<String, String> traitData,
                                    String fileNamePrefix,
                                    String covariatesToRemove,
