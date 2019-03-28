@@ -797,7 +797,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
         out.append(rowDescriptor);
         for (C col : hashCols.keySet()) {
-
             out.append('\t');
             out.append(col.toString());
         }
@@ -805,10 +804,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         int r = 0;
         for (R row : hashRows.keySet()) {
             out.append(row.toString());
-            for (int c = 0; c < matrix.columns(); c++) {
-                out.append('\t');
-                out.append(String.valueOf(matrix.getQuick(r, c)));
-            }
+            out.append('\t');
+            out.append(Strings.concat( matrix.viewRow(r).toArray(), Strings.tab));
             out.append('\n');
             ++r;
         }

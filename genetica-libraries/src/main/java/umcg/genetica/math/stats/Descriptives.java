@@ -4,6 +4,7 @@
  */
 package umcg.genetica.math.stats;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import umcg.genetica.containers.Pair;
 
 /**
@@ -201,5 +202,15 @@ public class Descriptives {
 			sum += i;
 		}
 		return sum;
+	}
+
+	public static Pair<Double, Double> mean(DoubleMatrix1D v, DoubleMatrix1D w) {
+		double sumV = 0;
+		double sumW = 0;
+		for (int k = 0; k < v.size(); k++) {
+			sumV += v.getQuick(k);
+			sumW += w.getQuick(k);
+		}
+		return (new Pair<Double, Double>((sumV / (double) v.size()), (sumW / (double) v.size())));
 	}
 }

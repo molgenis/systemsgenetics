@@ -4,6 +4,7 @@
  */
 package umcg.genetica.math.stats.concurrent;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
@@ -36,29 +37,25 @@ public class ConcurrentCorrelation {
 
     public DoubleMatrixDataset<String, String> pairwiseCorrelation(DoubleMatrixDataset<String, String> in) throws Exception {
 
-
         DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(in.rows(), in.rows());
         output.setRowObjects(in.getRowObjects());
-        output.setColObjects(in.getColObjects());
+        output.setColObjects(in.getRowObjects());
 
-        double meanOfSamples[] = new double[in.rows()];
-        for (int i = 0; i < meanOfSamples.length; ++i) {
-            meanOfSamples[i] = Descriptives.mean(in.getRow(i).toArray());
-        }
 
+        double[][] data = in.getMatrix().toArray();
+        ProgressBar pb = new ProgressBar(in.rows(), "Calculating correlation matrix");
         IntStream.range(0, in.rows()).parallel().forEach(row -> {
-
-            double[] xarr = in.getRow(row).toArray();
+            double[] xvals = data[row];
             for (int i = row + 1; i < in.rows(); i++) {
-                double[] yarr = in.getRow(i).toArray();
-                double r = Correlation.correlate(meanOfSamples[row], meanOfSamples[i], xarr, yarr);
-                output.setElementQuick(row,i,r);
-                output.setElementQuick(i,row,r);
+                double[] yvals = data[i];
+                double r = Correlation.correlate(xvals, yvals);
+                output.setElementQuick(row, i, r);
+                output.setElementQuick(i, row, r);
             }
-            output.setElementQuick(row,row,1d);
-
+            output.setElementQuick(row, row, 1d);
+            pb.iterateSynched();
         });
-
+        pb.close();
 
         return output;
     }
