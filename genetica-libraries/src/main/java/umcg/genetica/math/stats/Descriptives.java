@@ -207,6 +207,7 @@ public class Descriptives {
 	public static Pair<Double, Double> mean(DoubleMatrix1D v, DoubleMatrix1D w) {
 		double sumV = 0;
 		double sumW = 0;
+
 		for (int k = 0; k < v.size(); k++) {
 			sumV += v.getQuick(k);
 			sumW += w.getQuick(k);

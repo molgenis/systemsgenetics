@@ -40,15 +40,18 @@ public class ConcurrentCorrelation {
         DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(in.rows(), in.rows());
         output.setRowObjects(in.getRowObjects());
         output.setColObjects(in.getRowObjects());
+        output.getMatrix().assign(Double.NaN);
 
+        ProgressBar pb = new ProgressBar(in.rows(), "Calculating correlation matrix");
 
         double[][] data = in.getMatrix().toArray();
-        ProgressBar pb = new ProgressBar(in.rows(), "Calculating correlation matrix");
         IntStream.range(0, in.rows()).parallel().forEach(row -> {
-            double[] xvals = data[row];
+            double[] xarr = data[row];
+
+
             for (int i = row + 1; i < in.rows(); i++) {
-                double[] yvals = data[i];
-                double r = Correlation.correlate(xvals, yvals);
+                double[] yarr = data[i];
+                double r = Correlation.correlate(xarr, yarr);
                 output.setElementQuick(row, i, r);
                 output.setElementQuick(i, row, r);
             }

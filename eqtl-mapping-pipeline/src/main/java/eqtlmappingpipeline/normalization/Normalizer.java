@@ -11,6 +11,7 @@ import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
+import umcg.genetica.math.PCA;
 import umcg.genetica.math.PCAojAlgo;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix.MatrixHandling;
@@ -378,7 +379,11 @@ public class Normalizer {
             dataset = DoubleMatrixDataset.loadDoubleData(ds);
             String filenameprefix = "D:\\norm\\tmp\\test";
             String covariatefile = "D:\\norm\\tmp\\covariates.txt";
-            norm.adjustCovariates(dataset, filenameprefix, covariatefile, true, 0);
+            norm.normalize(ds, null, null, 0, 0,
+                    null, false, false, filenameprefix, false,
+                    false, false, false, true, false,
+                    false, false, false, false, false);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -636,7 +641,6 @@ public class Normalizer {
         PCAojAlgo pcaObj = new PCAojAlgo();
         pcaObj.eigenValueDecomposition(correlationMatrix.getMatrix().toArray());
 
-
         if (nrOfPCsToCalculate == null || nrOfPCsToCalculate > dataset.columns()) {
             nrOfPCsToCalculate = dataset.columns();
         } else if (nrOfPCsToCalculate < 1) {
@@ -646,7 +650,6 @@ public class Normalizer {
         DoubleMatrixDataset<String, String> datasetEV = new DoubleMatrixDataset<String, String>(dataset.columns(), nrOfPCsToCalculate);
         datasetEV.setRowObjects(dataset.getColObjects());
         datasetEV.setColObjects(new ArrayList<>());
-
         double[] eigenValues = pcaObj.getRealEigenValues();
         System.out.println("Eigenvalue results:");
 
@@ -708,14 +711,18 @@ public class Normalizer {
         ProgressBar pb = new ProgressBar(dataset.rows(), "Calculating the PCA scores per probe: ");
         Integer finalNrOfPCsToCalculate = nrOfPCsToCalculate;
         DoubleMatrixDataset<String, String> finalDatasetEV = datasetEV;
+
+        double[][] rawdata = dataset.getMatrix().toArray();
+        double[][] evrawdata = datasetEV.getMatrix().toArray();
+        double[][] pcarawdata = datasetPCAOverSamplesPCAs.getMatrix().toArray();
         IntStream.range(0, nrprobes).parallel().forEach(probe -> {
 //			double[] probePCAs = datasetPCAOverSamplesPCAsrawdata[probe];
-            double[] probedata = dataset.getRow(probe).toArray(); // datasetrawdata[probe];
+            double[] probedata = rawdata[probe]; // datasetrawdata[probe];
 
             for (int pc = 0; pc < finalNrOfPCsToCalculate; pc++) {
                 for (int sample = 0; sample < nrsamples; sample++) {
-                    double probeCoefficient = finalDatasetEV.getElementQuick(sample, pc); //evrawdata[sample][pc];
-                    double v = datasetPCAOverSamplesPCAs.getElementQuick(probe, pc) + (probeCoefficient * probedata[sample]);
+                    double probeCoefficient = evrawdata[sample][pc]; //finalDatasetEV.getElementQuick(sample, pc); //
+                    double v = pcarawdata[probe][pc]; //datasetPCAOverSamplesPCAs.getElementQuick(probe, pc) + (probeCoefficient * probedata[sample]);
                     datasetPCAOverSamplesPCAs.setElementQuick(probe, pc, v);
                 }
             }

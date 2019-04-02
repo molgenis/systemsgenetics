@@ -512,12 +512,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         LinkedHashMap<String, Integer> colMap = new LinkedHashMap<String, Integer>((int) Math.ceil(tmpCols / 0.75));
 
         int storedCols = 0;
-        ArrayList<Pair<Integer,Integer>> desiredColIds = new ArrayList<>();
+        ArrayList<Pair<Integer, Integer>> desiredColIds = new ArrayList<>();
         for (int s = 0; s < tmpCols; s++) {
             String colName = data[s + columnOffset];
             if (!colMap.containsKey(colName) && (desiredCols == null || desiredCols.isEmpty() || desiredCols.contains(colName))) {
                 colMap.put(colName, storedCols);
-                desiredColIds.add(new Pair<>(s,storedCols));
+                desiredColIds.add(new Pair<>(s, storedCols));
                 storedCols++;
             } else if (colMap.containsKey(colName)) {
                 LOGGER.warning("Duplicated column name!");
@@ -530,9 +530,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
         AtomicBoolean correctData = new AtomicBoolean(true);
         ArrayList<double[]> tmpdata = new ArrayList<>();
-        Pattern p = Pattern.compile(""+delimiter);
+        Pattern p = Pattern.compile("" + delimiter);
         while ((str = in.readLine()) != null) {
-            String rowname = Strings.subsplit(str,p,0,1)[0];
+            String rowname = Strings.subsplit(str, p, 0, 1)[0];
 
             if (desiredRows == null || desiredRows.isEmpty() || desiredRows.contains(rowname)) {
                 if (!rowMap.containsKey(rowname)) {
@@ -802,10 +802,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
         }
         out.append('\n');
         int r = 0;
+        double[] data = new double[matrix.columns()];
         for (R row : hashRows.keySet()) {
             out.append(row.toString());
             out.append('\t');
-            out.append(Strings.concat( matrix.viewRow(r).toArray(), Strings.tab));
+            matrix.viewRow(r).toArray(data);
+            out.append(Strings.concat(data, Strings.tab));
             out.append('\n');
             ++r;
         }
@@ -918,7 +920,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             if (!newHashRows.containsKey(s)) {
                 newHashRows.put(s, i);
             } else {
-                throw new Exception("Error, new row names contains dupilcates.");
+                throw new Exception("Error, new row names contains duplicates.");
             }
             i++;
         }
@@ -937,7 +939,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
             if (!newHashCols.containsKey(s)) {
                 newHashCols.put(s, i);
             } else {
-                throw new Exception("Error, new col names contains dupilcates.");
+                throw new Exception("Error, new col names contains duplicates.");
             }
             i++;
         }
