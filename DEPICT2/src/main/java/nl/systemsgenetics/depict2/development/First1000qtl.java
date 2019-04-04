@@ -8,7 +8,6 @@ package nl.systemsgenetics.depict2.development;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
-import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.Depict2Options;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
