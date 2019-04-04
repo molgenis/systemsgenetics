@@ -1,5 +1,6 @@
 package nl.systemsgenetics.genenetworkbackend;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -26,7 +28,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  *
  * @author patri
  */
-public class ConvertHpoToMatrix {
+public class ConvertHpoToMatrixWith10ProcentRandom {
 
 	/**
 	 * @param args the command line arguments
@@ -41,14 +43,15 @@ public class ConvertHpoToMatrix {
 		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
 		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
 		
-		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_matrix.txt.gz");
-		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_genesInPathways.txt");
-
-//		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\bavWithoutWilliams.txt");
+//		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_FREQUENT_FEATURES_phenotype_to_genes.txt");
 //		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_matrix.txt.gz");
 //		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_genesInPathways.txt");
 
+		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_random10p_matrix.txt.gz");
+		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_random10p_genesInPathways.txt");
+
+		final Random random = new Random(1);
 		
 		HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 		HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
@@ -83,7 +86,33 @@ public class ConvertHpoToMatrix {
 			}
 
 		}
-
+		
+		DoubleMatrixDataset<String, String> hpoMatrixGenes = hpoMatrix.viewRowSelection(genesWithHpo);
+		
+		for(int c = 0 ; c < hpoMatrix.columns() ; ++c){
+			DoubleMatrix1D currentHpo = hpoMatrixGenes.viewCol(c);
+			
+			int numberOfGenes = currentHpo.cardinality();
+			if(numberOfGenes < 10){
+				continue;
+			}
+			
+			int numberToAdd = numberOfGenes / 10;
+			
+			while(numberToAdd > 0){
+				
+				int index = random.nextInt(genesWithHpo.size());
+				
+				if(currentHpo.get(index) == 0){
+					currentHpo.set(index, 1);
+					--numberToAdd;
+				}
+				
+				
+			}
+			
+		}
+		
 		geneWriter.close();
 		hpoMatrix.save(outputFile);
 
