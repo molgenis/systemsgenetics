@@ -86,15 +86,7 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
 		expressionData.setPathwayDefinitions(pathwayDefinitions);
 		expressionDataLoadedCorrectly = expressionData.load(settings.expressionLocation, settings.probeannotation, settings.expressionplatform, (settings.cisAnalysis && settings.transAnalysis));
 		pruneGenotypeToExpressionCouplings();
-		
-		if (settings.quantilenormalize) {
-			QuantileNormalization.quantilenormalize(expressionData.getMatrix());
-		}
-		
-		if (settings.logtransform) {
-			Log2Transform.log2transform(expressionData.getMatrix());
-		}
-		
+
 		if (settings.covariateFile != null && Gpio.exists(settings.covariateFile)) {
 			// load covariates..
 			System.out.println("Loading covariates: " + settings.covariateFile);

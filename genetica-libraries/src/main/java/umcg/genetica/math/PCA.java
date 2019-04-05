@@ -29,13 +29,14 @@ public class PCA {
     }
 
     public static double[] getEigenVector(Jama.EigenvalueDecomposition eig, double[] eigenValues, int pca) {
-        Jama.Matrix eigenValueMatrix = eig.getV();
-        double[][] eigenValueMat = eigenValueMatrix.getArray();
-        double[] eigenVector = new double[eigenValueMat.length];
-        for (int i = 0; i < eigenValueMat.length; i++) {
-            eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);                                                                                                                                                                                                                                                                                             
-        }
-        return eigenVector;
+//        Jama.Matrix eigenValueMatrix = eig.getV();
+//        double[][] eigenValueMat = eigenValueMatrix.getArray();
+//        double[] eigenVector = new double[eigenValueMat.length];
+//        for (int i = 0; i < eigenValueMat.length; i++) {
+//            eigenVector[i] = eigenValueMat[i][eigenValueMat.length - 1 - pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);
+//        }
+//        return eigenVector;
+        return getEigenVector(eig,pca);
     }
 
     public static double[] getEigenVector(Jama.EigenvalueDecomposition eig, int pca) {
