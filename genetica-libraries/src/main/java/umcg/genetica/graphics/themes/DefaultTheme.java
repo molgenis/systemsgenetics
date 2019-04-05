@@ -20,7 +20,12 @@ public class DefaultTheme implements Theme {
     public final Stroke stroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 
     private final Color darkgrey = new Color(70, 67, 58);
-    private final Color lightgrey = new Color(174, 164, 140);
+    private Color lightgrey = new Color(174, 164, 140);
+
+
+    public void setLightgrey(Color c) {
+        this.lightgrey = c;
+    }
 
     private Color[] colors = new Color[]{
             new Color(70, 67, 58),

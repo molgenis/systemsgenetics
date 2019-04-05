@@ -42,18 +42,18 @@ public class FullQtlMappingCisTest {
 
         tmpOutputFolder = new File(tmpDir, "QTLMappingCisTest_" + dateFormat.format(date));
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				System.out.println("Removing tmp dir and files");
-				for (File file : tmpOutputFolder.listFiles()) {
-					System.out.println(" - Deleting: " + file.getAbsolutePath());
-					file.delete();
-				}
-				System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-				tmpOutputFolder.delete();
-			}
-		});
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                System.out.println("Removing tmp dir and files");
+                for (File file : tmpOutputFolder.listFiles()) {
+                    System.out.println(" - Deleting: " + file.getAbsolutePath());
+                    file.delete();
+                }
+                System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
+                tmpOutputFolder.delete();
+            }
+        });
 
         tmpOutputFolder.mkdir();
 
@@ -82,14 +82,19 @@ public class FullQtlMappingCisTest {
                 "--skipdotplot",
                 "--rseed", "0");
 
-        System.out.println("Using test file: " + testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt");
-        QTLTextFile eExp = new QTLTextFile(testFilesFolder + fileSep + "TestOutput" + fileSep + "Cis-CEU-eQTLsFDR0.05.txt", QTLTextFile.R);
+        String testfile = testFilesFolder + fileSep + "TestOutput" + fileSep + "2019-03-20-Cis-CEU-eQTLsFDR0.05.txt";
+        System.out.println("Using test file: " + testfile);
+        QTLTextFile eExpected = new QTLTextFile(testfile, QTLTextFile.R);
 
         QTLFileSorter r = new QTLFileSorter();
-        r.run(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz", tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLFileSorter.SORTBY.Z);
+        String observedfile = tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05.txt.gz";
+        String observedfilesorted = tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz";
+        r.run(observedfile, observedfilesorted, QTLFileSorter.SORTBY.Z);
 
-        QTLTextFile eActual = new QTLTextFile(tmpOutputFolder.getAbsolutePath() + fileSep + "eQTLsFDR0.05_S.txt.gz", QTLTextFile.R);
-        Iterator<EQTL> eExpIterator = eExp.getEQtlIterator();
+
+        System.out.println("Comparing with observed eQTLs: " + observedfilesorted);
+        QTLTextFile eActual = new QTLTextFile(observedfilesorted, QTLTextFile.R);
+        Iterator<EQTL> eExpIterator = eExpected.getEQtlIterator();
         Iterator<EQTL> eActualIterator = eActual.getEQtlIterator();
 
         while (eExpIterator.hasNext() && eActualIterator.hasNext()) {

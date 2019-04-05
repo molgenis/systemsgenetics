@@ -7,14 +7,14 @@
         <version>1.0.3-SNAPSHOT</version>
     </parent>
     <artifactId>eqtl-mapping-pipeline</artifactId>
-    <version>1.4.3-SNAPSHOT</version>
+    <version>1.4.4-SNAPSHOT</version>
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>
         <dependency>
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
-            <version>1.0.9-SNAPSHOT</version>
+            <version>1.0.10-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -61,11 +61,7 @@
             <artifactId>imputation-tool</artifactId>
             <version>1.0.5-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>net.rforge</groupId>
-            <artifactId>Rserve</artifactId>
-            <version>0.6-8.1</version>
-        </dependency>
+
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
@@ -106,6 +102,17 @@
             <groupId>javax.activation</groupId>
             <artifactId>activation</artifactId>
             <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.rosuda.REngine</groupId>
+            <artifactId>Rserve</artifactId>
+            <version>1.8.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>

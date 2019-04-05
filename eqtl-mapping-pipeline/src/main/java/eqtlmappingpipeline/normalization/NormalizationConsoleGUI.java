@@ -29,6 +29,7 @@ public class NormalizationConsoleGUI {
         boolean runCovariateAdjustment = false;
         boolean runPCAdjustment = false;
         boolean orthogonalizecovariates = false;
+        boolean useOLSforCovariates = false;
         boolean forceMissingValues = false;
         boolean forceReplacementOfMissingValues = false;
         boolean forceReplacementOfMissingValues2 = false;
@@ -81,6 +82,9 @@ public class NormalizationConsoleGUI {
             }
             if (arg.equals("--covpca")) {
                 orthogonalizecovariates = true;
+            }
+            if (arg.equals("--covols")) {
+                useOLSforCovariates = true;
             }
 
             if (arg.equals("--maxnrpcaremoved")) {
@@ -152,13 +156,13 @@ public class NormalizationConsoleGUI {
             Normalizer p = new Normalizer();
 
             if (!fullNorm) {
-                p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
+                p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
                         runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
                         runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues,
                         forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
             } else {
                 // run full normalization
-                p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, out,
+                p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
                         true, true, false, true, true, true, false, false, false,
                         false, false);
             }
@@ -166,6 +170,8 @@ public class NormalizationConsoleGUI {
             System.out.println("Done.");
 
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -189,6 +195,7 @@ public class NormalizationConsoleGUI {
                 + "Covariate adjustment parameters:\n"
                 + "--cov\t\t\tstring\t\tCovariates to remove\n"
                 + "--covpca\t\t\t\tOrthogonalize covariates using PCA before regression\n"
+                + "--covols\t\t\t\tUse multivariate OLS based approach in stead of PCA\n"
                 + "\n"
                 + "PCA parameters\n"
                 + "--maxnrpcaremoved\tinteger\t\tMaximum number of PCs to remove\n"
