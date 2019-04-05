@@ -24,7 +24,7 @@ import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 public class Depict2Options {
 
 	private static final Options OPTIONS;
-	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might 
+	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
 	private final Depict2Mode mode;
