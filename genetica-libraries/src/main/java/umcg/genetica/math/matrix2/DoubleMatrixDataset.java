@@ -1576,8 +1576,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	/**
-	 * Assumes both datasets have rows in identical order and that columns in
-	 * both dataset have mean 0 and sd 1
+	 * Assumes that columns in both dataset have mean 0 and sd 1
+	 * 
+	 * Rows must be identical, only row count will be checked
 	 *
 	 * Columns in d1 will be columns in output, columns in d2 will be rows
 	 *
@@ -1587,7 +1588,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 */
 	public static DoubleMatrixDataset<String, String> correlateColumnsOf2ColumnNormalizedDatasets(DoubleMatrixDataset<String, String> d1, DoubleMatrixDataset<String, String> d2) throws Exception {
 
-		if (!d1.hashRows.equals(d2.hashRows)) {
+		if (d1.rows() != d2.rows()) {
 			throw new Exception("When correlating two datasets both should have identical number of rows");
 		}
 		final DoubleMatrix2D d1Matrix = d1.matrix;
