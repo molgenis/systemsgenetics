@@ -40,6 +40,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import org.apache.commons.math3.util.FastMath;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.text.Strings;
@@ -1045,6 +1046,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 	}
 
+	/**
+	 * Transposed view
+	 * 
+	 * @return 
+	 */
 	public DoubleMatrixDataset<C, R> viewDice() {
 		return new DoubleMatrixDataset<C, R>(matrix.viewDice(), hashCols, hashRows);
 	}
@@ -1424,4 +1430,77 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
+	/**
+	 *
+	 * In place normalization. Will set mean to 0 and sd to 1
+	 *
+	 */
+	public void normalizeRows() {
+
+		final int cols = matrix.columns();
+
+		for (int r = 0; r < matrix.rows(); ++r) {
+
+			DoubleMatrix1D row = matrix.viewRow(r);
+
+			double rowSum = 0;
+
+			for (int e = 0; e < cols; ++e) {
+				rowSum += row.getQuick(e);
+			}
+
+			final double mean = rowSum / cols;
+
+			double varSum = 0;
+			for (int e = 0; e < cols; ++e) {
+				varSum += (row.getQuick(e) - mean) * (row.getQuick(e) - mean);
+			}
+
+			double sd = FastMath.sqrt(varSum / (cols - 1));
+
+			for (int e = 0; e < cols; ++e) {
+				row.setQuick(e, (row.getQuick(e) - mean) / sd);
+			}
+
+		}
+
+	}
+
+	/**
+	 *
+	 * In place normalization. Will set mean to 0 and sd to 1
+	 *
+	 */
+	public void normalizeColumns() {
+
+		final int rows = matrix.rows();
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			DoubleMatrix1D col = matrix.viewColumn(c);
+
+			double colSum = 0;
+
+			for (int e = 0; e < rows; ++e) {
+				colSum += col.getQuick(e);
+			}
+
+			final double mean = colSum / rows;
+
+			double varSum = 0;
+			for (int e = 0; e < rows; ++e) {
+				varSum += (col.getQuick(e) - mean) * (col.getQuick(e) - mean);
+			}
+
+			double sd = FastMath.sqrt(varSum / (rows - 1));
+
+			for (int e = 0; e < rows; ++e) {
+				col.setQuick(e, (col.getQuick(e) - mean) / sd);
+			}
+
+		}
+
+	}
+
+	
 }

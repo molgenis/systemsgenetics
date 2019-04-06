@@ -7,6 +7,7 @@ package umcg.genetica.math.matrix2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import org.testng.annotations.Test;
 public class DoubleMatrixDatasetTest {
 
 	private File tmpOutputFolder;
+	private File testMatrixFile;
 
 	public DoubleMatrixDatasetTest() {
 	}
@@ -35,6 +37,8 @@ public class DoubleMatrixDatasetTest {
 
 	@BeforeMethod
 	public void setUpMethod() throws Exception {
+
+		testMatrixFile = new File(this.getClass().getResource("/testMatrix.txt").toURI());
 
 		File tmpDir = new File(System.getProperty("java.io.tmpdir"));
 
@@ -103,6 +107,63 @@ public class DoubleMatrixDatasetTest {
 //		
 		assertEquals(datasetForNormal.getElementQuick(0, 0), 0.9736890569622489, 0.000001);
 		assertEquals(datasetForNormal.getElementQuick(0, 4), 5.0263109430377515, 0.000001);
+
+	}
+
+	@Test
+	public void testCalculateCorrelationMatrix() throws URISyntaxException, Exception {
+
+		File testMatrixCorFile = new File(this.getClass().getResource("/testMatrixColumnCorMatrix.txt").toURI());
+
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+		DoubleMatrixDataset<String, String> testMatrixRealCor = DoubleMatrixDataset.loadDoubleTextData(testMatrixCorFile.getPath(), '\t');
+
+		DoubleMatrixDataset<String, String> corMatrix = testMatrix.calculateCorrelationMatrix();
+
+		compareTwoMatrices(corMatrix, testMatrixRealCor);
+
+	}
+
+	public void testCalculateCovarianceMatrix() throws Exception {
+
+		File testMatrixCovFile = new File(this.getClass().getResource("/testMatrixColumnCovMatrix.txt").toURI());
+
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+		DoubleMatrixDataset<String, String> testMatrixRealCov = DoubleMatrixDataset.loadDoubleTextData(testMatrixCovFile.getPath(), '\t');
+
+		DoubleMatrixDataset<String, String> covMatrix = testMatrix.calculateCovarianceMatrix();
+
+		compareTwoMatrices(covMatrix, testMatrixRealCov);
+
+	}
+
+	@Test
+	public void testNormalizeRows() throws URISyntaxException, Exception {
+
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+
+		DoubleMatrixDataset<String, String> testMatrixT = testMatrix.viewDice();
+
+		testMatrixT.normalizeRows();
+
+		File testMatrixScaleFile = new File(this.getClass().getResource("/testMatrixColumnScaledMatrix.txt").toURI());
+		DoubleMatrixDataset<String, String> testMatrixRealScale = DoubleMatrixDataset.loadDoubleTextData(testMatrixScaleFile.getPath(), '\t');
+
+		compareTwoMatrices(testMatrix, testMatrixRealScale);
+
+	}
+
+	@Test
+	public void testNormalizeColumns() throws URISyntaxException, Exception {
+
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+
+		testMatrix.normalizeColumns();
+
+		File testMatrixScaleFile = new File(this.getClass().getResource("/testMatrixColumnScaledMatrix.txt").toURI());
+		DoubleMatrixDataset<String, String> testMatrixRealScale = DoubleMatrixDataset.loadDoubleTextData(testMatrixScaleFile.getPath(), '\t');
+
+		compareTwoMatrices(testMatrix, testMatrixRealScale);
 
 	}
 
@@ -332,6 +393,19 @@ public class DoubleMatrixDatasetTest {
 		assertEquals(dataset8.getElementQuick(1, 1), 5.55d);
 		assertEquals(dataset8.getElementQuick(2, 0), 0d);
 		assertEquals(dataset8.getElementQuick(2, 1), -12.2d);
+
+	}
+
+	private void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
+
+		assertEquals(m1.rows(), m2.rows());
+		assertEquals(m1.columns(), m2.columns());
+
+		for (int r = 0; r < m1.rows(); ++r) {
+			for (int c = 0; c < m1.columns(); ++c) {
+				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), 0.00001, "Difference at r: " + r + " c: " + c);
+			}
+		}
 
 	}
 
