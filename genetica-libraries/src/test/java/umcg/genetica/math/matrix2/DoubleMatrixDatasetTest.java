@@ -137,13 +137,12 @@ public class DoubleMatrixDatasetTest {
 
 		DoubleMatrixDataset<String, String> corMatrix = testMatrix.calculateCorrelationMatrixOnNormalizedColumns();
 
-		//DoubleMatrixDataset<String, String> corMatrix = testMatrix.calculateCovarianceMatrix();
-		System.out.println("Calculated");
-		corMatrix.printMatrix();
-
-		System.out.println("");
-		System.out.println("Reference");
-		testMatrixRealCor.printMatrix();
+//		System.out.println("Calculated");
+//		corMatrix.printMatrix();
+//
+//		System.out.println("");
+//		System.out.println("Reference");
+//		testMatrixRealCor.printMatrix();
 
 		compareTwoMatrices(corMatrix, testMatrixRealCor);
 
@@ -172,6 +171,31 @@ public class DoubleMatrixDatasetTest {
 //		
 		compareTwoMatrices(covMatrix, testMatrixRealCov, 0.5);
 
+	}
+	
+	@Test
+	public void correlateColumnsOf2ColumnNormalizedDatasets() throws Exception{
+		
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+		
+		File testMatrixCorFile = new File(this.getClass().getResource("/testMatrixColumnCorMatrix.txt").toURI());
+		
+		testMatrix.normalizeColumns();
+
+		DoubleMatrixDataset<String, String> testMatrixRealCor = DoubleMatrixDataset.loadDoubleTextData(testMatrixCorFile.getPath(), '\t');
+
+		DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(testMatrix, testMatrix);
+
+//		System.out.println("Calculated");
+//		corMatrix.printMatrix();
+//
+//		System.out.println("");
+//		System.out.println("Reference");
+//		testMatrixRealCor.printMatrix();
+
+		compareTwoMatrices(corMatrix, testMatrixRealCor);
+
+		
 	}
 
 	@Test

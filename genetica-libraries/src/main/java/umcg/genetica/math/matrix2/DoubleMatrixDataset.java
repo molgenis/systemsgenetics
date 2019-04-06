@@ -910,6 +910,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return new LinkedHashMap<>(hashCols);
 	}
 
+	public LinkedHashMap<R, Integer> getHashRowsCopy() {
+		return new LinkedHashMap<>(hashRows);
+	}
+
 	public void setRowObjects(List<R> arrayList) throws Exception {
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<R, Integer>((int) Math.ceil(arrayList.size() / 0.75));
 		int i = 0;
@@ -1568,6 +1572,63 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			}
 			System.out.println();
 		}
+
+	}
+
+	/**
+	 * Assumes both datasets have rows in identical order and that columns in
+	 * both dataset have mean 0 and sd 1
+	 *
+	 * Columns in d1 will be columns in output, columns in d2 will be rows
+	 *
+	 * @param d1
+	 * @param d2
+	 * @return
+	 */
+	public static DoubleMatrixDataset<String, String> correlateColumnsOf2ColumnNormalizedDatasets(DoubleMatrixDataset<String, String> d1, DoubleMatrixDataset<String, String> d2) throws Exception {
+
+		if (!d1.hashRows.equals(d2.hashRows)) {
+			throw new Exception("When correlating two datasets both should have identical number of rows");
+		}
+		final DoubleMatrix2D d1Matrix = d1.matrix;
+		final DoubleMatrix2D d2Matrix = d2.matrix;
+
+		final DoubleMatrixDataset<String, String> correlations = new DoubleMatrixDataset<>(d2.getHashColsCopy(), d1.getHashColsCopy());
+
+		final DoubleMatrix2D corMatrix = correlations.matrix;
+
+		final int d1NrCols = d1.columns();
+		final int d2NrCols = d2.columns();
+		
+		final int nrRows = d1.rows();
+
+		final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];
+		for (int i = d1NrCols; --i >= 0;) {
+			d1Cols[i] = d1Matrix.viewColumn(i);
+		}
+
+		final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d1NrCols];
+		for (int i = d2NrCols; --i >= 0;) {
+			d2Cols[i] = d2Matrix.viewColumn(i);
+		}
+
+		for (int i = d1NrCols; --i >= 0;) {
+			DoubleMatrix1D col1 = d1Cols[i];
+			for (int j = d2NrCols; --j >= 0;) {
+
+				DoubleMatrix1D col2 = d2Cols[j];
+				double sumOfProducts = 0;
+				for (int e = 0; e < nrRows; ++e) {
+					sumOfProducts += col1.getQuick(e) * col2.getQuick(e);
+				}
+
+				double x = sumOfProducts / (nrRows - 1);
+				corMatrix.setQuick(j, i, x);
+
+			}
+		}
+
+		return correlations;
 
 	}
 
