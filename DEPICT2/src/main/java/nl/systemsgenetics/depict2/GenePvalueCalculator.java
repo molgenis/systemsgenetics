@@ -211,6 +211,8 @@ public class GenePvalueCalculator {
 			variantScaledDosagesPruned = variantScaledDosages.viewColSelection(variantCorrelationsPruned.getHashCols().keySet());
 
 		}
+		
+		DoubleMatrixDataset<String, String> permutedGwasZscores = doDummyGwasOnSelectedVariants(variantCorrelationsPruned);
 
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
 
@@ -504,6 +506,26 @@ public class GenePvalueCalculator {
 
 		return phenoData;
 
+	}
+
+	/**
+	 * Result are binned z-scores
+	 * 
+	 * 
+	 * @param variantCorrelationsPruned
+	 * @return
+	 * @throws Exception 
+	 */
+	private DoubleMatrixDataset<String, String> doDummyGwasOnSelectedVariants(DoubleMatrixDataset<String, String> variantCorrelationsPruned) throws Exception {
+		
+		final DoubleMatrixDataset<String, String> gwasResult = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantCorrelationsPruned);
+		
+		
+		
+		throw new Exception("Convert cor to z-score");
+		
+		//return gwasResult;
+		
 	}
 
 }
