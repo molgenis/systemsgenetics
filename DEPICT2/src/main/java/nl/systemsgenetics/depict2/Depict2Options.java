@@ -24,7 +24,7 @@ import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 public class Depict2Options {
 
 	private static final Options OPTIONS;
-	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();
+	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
 	private final Depict2Mode mode;
@@ -148,6 +148,7 @@ public class Depict2Options {
 		if (commandLine.hasOption('t')) {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
+				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism",commandLine.getOptionValue('t'));
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
 			}

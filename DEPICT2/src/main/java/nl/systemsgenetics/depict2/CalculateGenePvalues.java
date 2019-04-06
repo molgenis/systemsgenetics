@@ -14,15 +14,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.depict2.Depict2.formatMsForLog;
 import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
-import nl.systemsgenetics.depict2.originalLude.EstimateChi2SumDistUsingCorrelatedVariablesThread;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -38,6 +36,18 @@ public class CalculateGenePvalues {
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
 	protected static long timeInLoadingGenotypeDosages = 0;
 
+	static long timeInPermutations = 0;
+	static long timeInPruningGenotypeCorrelationMatrix = 0;
+	static long timeInDoingPca = 0;
+	static long timeInLoadingZscoreMatrix = 0;
+	static long timeInCalculatingPvalue = 0;
+	static long timeInCalculatingRealSumChi2 = 0;
+
+	static int countRanPermutationsForGene = 0;
+	static int countBasedPvalueOnPermutations = 0;
+	static int countUseChi2DistForPvalue = 0;
+	static int countNoVariants = 0;
+
 	/**
 	 *
 	 * @param variantPhenotypeZscoreMatrixPath Binary matrix. rows: variants,
@@ -50,6 +60,7 @@ public class CalculateGenePvalues {
 	 * @param maxR max correlation between variants to use
 	 * @param nrPermutations
 	 * @param outputBasePath
+	 * @param randomChi2
 	 * @return gene p-value matrix for each phenotype. rows: genes in same order
 	 * as genes parameter, cols: phenotypes
 	 * @throws java.io.IOException
@@ -61,7 +72,8 @@ public class CalculateGenePvalues {
 			final int windowExtend,
 			final double maxR,
 			final int nrPermutations,
-			final String outputBasePath) throws IOException, Exception {
+			final String outputBasePath,
+			final double[] randomChi2) throws IOException, Exception {
 
 		final File geneVariantCountFile = new File(outputBasePath + "_geneVariantCount.txt");
 
@@ -77,22 +89,6 @@ public class CalculateGenePvalues {
 		final int[] genePValueDistributionPermuations = new int[21];//used to create histogram 
 		final int[] genePValueDistributionChi2Dist = new int[21];//used to create histogram 
 
-		int countRanPermutationsForGene = 0;
-		int countBasedPvalueOnPermutations = 0;
-		int countUseChi2DistForPvalue = 0;
-		int countNoVariants = 0;
-
-		long timeInPermutations = 0;
-		//long timeInCreatingGenotypeCorrelationMatrix = 0;
-		long timeInPruningGenotypeCorrelationMatrix = 0;
-		long timeInDoingPca = 0;
-		long timeInLoadingZscoreMatrix = 0;
-		long timeInCalculatingPvalue = 0;
-		long timeInCalculatingRealSumChi2 = 0;
-
-		long timeStart;
-		long timeStop;
-
 		final CSVWriter geneVariantCountWriter = new CSVWriter(new FileWriter(geneVariantCountFile), '\t', '\0', '\0', "\n");
 		final String[] outputLine = new String[2];
 		int c = 0;
@@ -102,144 +98,17 @@ public class CalculateGenePvalues {
 
 		try (final ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
 
-			for (int geneI = 0; geneI < numberGenes; ++geneI) {
+			//All genes are indipe
+			IntStream.range(0, numberGenes).parallel().forEach((int geneI) -> {
 
-				Gene gene = genes.get(geneI);
-
-				final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
-
-				{
-					//timeStart = System.currentTimeMillis();
-					final DoubleMatrixDataset<String, String> variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
-							gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
-//					timeStop = System.currentTimeMillis();
-//					timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
-
-					timeStart = System.currentTimeMillis();
-					variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
-					timeStop = System.currentTimeMillis();
-					timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
+				try {
+					runGene(genes, geneI, genotypeCorrelationSource, windowExtend, maxR, outputBasePath, geneVariantCountWriter, nrPermutations, randomChi2, geneVariantPhenotypeMatrixRowLoader, numberPheno, genePValueDistributionPermuations, genePvalues, genePValueDistributionChi2Dist);
+					pb.step();
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
 				}
 
-				if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
-
-					variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
-
-				}
-
-				timeStop = System.currentTimeMillis();
-				timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
-
-				c = 0;
-				outputLine[c++] = gene.getGene();
-				outputLine[c++] = String.valueOf(variantCorrelationsPruned.rows());
-				geneVariantCountWriter.writeNext(outputLine);
-
-				final double[] geneChi2SumNull;
-				if (variantCorrelationsPruned.rows() > 1) {
-
-					timeStart = System.currentTimeMillis();
-
-					final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
-					final double[] eigenValues = eig.getRealEigenvalues();
-					for (int e = 0; e < eigenValues.length; e++) {
-						if (eigenValues[e] < 0) {
-							eigenValues[e] = 0;
-						}
-					}
-
-					if (LOGGER.isDebugEnabled()) {
-
-						saveEigenValues(eigenValues, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
-
-					}
-
-					timeStop = System.currentTimeMillis();
-					timeInDoingPca += (timeStop - timeStart);
-
-					timeStart = System.currentTimeMillis();
-
-					geneChi2SumNull = runPermutationsUsingEigenValues(eigenValues, nrPermutations);
-
-					timeStop = System.currentTimeMillis();
-					timeInPermutations += (timeStop - timeStart);
-
-					countRanPermutationsForGene++;
-				} else {
-					geneChi2SumNull = null;
-				}
-
-				timeStart = System.currentTimeMillis();
-
-				//load current variants from variantPhenotypeMatrix
-				final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
-
-				timeStop = System.currentTimeMillis();
-				timeInLoadingZscoreMatrix += (timeStop - timeStart);
-
-				for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
-
-					if (variantCorrelationsPruned.rows() > 1) {
-
-						timeStart = System.currentTimeMillis();
-
-						final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
-
-						timeStop = System.currentTimeMillis();
-						timeInCalculatingRealSumChi2 += (timeStop - timeStart);
-
-						timeStart = System.currentTimeMillis();
-
-						double p = 0.5;
-						for (int perm = 0; perm < nrPermutations; perm++) {
-							if (geneChi2SumNull[perm] >= geneChi2Sum) {
-								p++;
-							}
-						}
-						p /= (double) nrPermutations + 1;
-
-						if (p == 1) {
-							p = 0.99999d;
-						}
-						if (p < 1e-300d) {
-							p = 1e-300d;
-						}
-
-						genePValueDistributionPermuations[(int) (20d * p)]++;
-						genePvalues.setElementQuick(geneI, phenoI, p);
-
-						timeStop = System.currentTimeMillis();
-						timeInCalculatingPvalue += (timeStop - timeStart);
-
-						countBasedPvalueOnPermutations++;
-
-					} else if (variantCorrelationsPruned.rows() == 1) {
-
-						//Always row 0
-						double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
-						if (p == 1) {
-							p = 0.99999d;
-						}
-						if (p < 1e-300d) {
-							p = 1e-300d;
-						}
-						genePValueDistributionChi2Dist[(int) (20d * p)]++;
-						genePvalues.setElementQuick(geneI, phenoI, p);
-
-						countUseChi2DistForPvalue++;
-
-					} else {
-						//no variants in or near gene
-						//genePValueDistribution[(int) (20d * 0.99999d)]++;
-						genePvalues.setElementQuick(geneI, phenoI, 0.5d);
-						countNoVariants++;
-					}
-
-				}
-
-				pb.step();
-
-			}
+			});
 
 		}
 
@@ -276,6 +145,149 @@ public class CalculateGenePvalues {
 
 	}
 
+	private static void runGene(final List<Gene> genes, int geneI, final GenotypeCorrelationSource genotypeCorrelationSource, final int windowExtend, final double maxR, final String outputBasePath, final CSVWriter geneVariantCountWriter, final int nrPermutations, final double[] randomChi2, final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader, final int numberPheno, final int[] genePValueDistributionPermuations, final DoubleMatrixDataset<String, String> genePvalues, final int[] genePValueDistributionChi2Dist) throws Exception, IOException {
+
+		long timeStart;
+		long timeStop;
+
+		Gene gene = genes.get(geneI);
+
+		final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
+
+		{
+			//timeStart = System.currentTimeMillis();
+			final DoubleMatrixDataset<String, String> variantCorrelations = genotypeCorrelationSource.getCorrelationMatrixForRange(
+					gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
+//					timeStop = System.currentTimeMillis();
+//					timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
+
+			timeStart = System.currentTimeMillis();
+			variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
+			timeStop = System.currentTimeMillis();
+			timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
+		}
+
+		if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
+
+			variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
+
+		}
+
+		timeStop = System.currentTimeMillis();
+		timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
+
+		int c = 0;
+		final String[] outputLine = new String[2];
+		outputLine[c++] = gene.getGene();
+		outputLine[c++] = String.valueOf(variantCorrelationsPruned.rows());
+		//This is writeNext is threadsafe
+		geneVariantCountWriter.writeNext(outputLine);
+
+		final double[] geneChi2SumNull;
+		if (variantCorrelationsPruned.rows() > 1) {
+
+			timeStart = System.currentTimeMillis();
+
+			final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
+			final double[] eigenValues = eig.getRealEigenvalues();
+			for (int e = 0; e < eigenValues.length; e++) {
+				if (eigenValues[e] < 0) {
+					eigenValues[e] = 0;
+				}
+			}
+
+			if (LOGGER.isDebugEnabled()) {
+
+				saveEigenValues(eigenValues, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
+
+			}
+
+			timeStop = System.currentTimeMillis();
+			timeInDoingPca += (timeStop - timeStart);
+
+			timeStart = System.currentTimeMillis();
+
+			geneChi2SumNull = runPermutationsUsingEigenValues(eigenValues, nrPermutations, randomChi2);
+
+			timeStop = System.currentTimeMillis();
+			timeInPermutations += (timeStop - timeStart);
+
+			countRanPermutationsForGene++;
+		} else {
+			geneChi2SumNull = null;
+		}
+
+		timeStart = System.currentTimeMillis();
+
+//load current variants from variantPhenotypeMatrix
+		final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
+
+		timeStop = System.currentTimeMillis();
+		timeInLoadingZscoreMatrix += (timeStop - timeStart);
+
+		for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
+
+			if (variantCorrelationsPruned.rows() > 1) {
+
+				timeStart = System.currentTimeMillis();
+
+				final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
+
+				timeStop = System.currentTimeMillis();
+				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
+
+				timeStart = System.currentTimeMillis();
+
+				double p = 0.5;
+				for (int perm = 0; perm < nrPermutations; perm++) {
+					if (geneChi2SumNull[perm] >= geneChi2Sum) {
+						p++;
+					}
+				}
+				p /= (double) nrPermutations + 1;
+
+				if (p == 1) {
+					p = 0.99999d;
+				}
+				if (p < 1e-300d) {
+					p = 1e-300d;
+				}
+
+				genePValueDistributionPermuations[(int) (20d * p)]++;
+				genePvalues.setElementQuick(geneI, phenoI, p);
+
+				timeStop = System.currentTimeMillis();
+				timeInCalculatingPvalue += (timeStop - timeStart);
+
+				countBasedPvalueOnPermutations++;
+
+			} else if (variantCorrelationsPruned.rows() == 1) {
+
+				//Always row 0
+				double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
+				if (p == 1) {
+					p = 0.99999d;
+				}
+				if (p < 1e-300d) {
+					p = 1e-300d;
+				}
+				genePValueDistributionChi2Dist[(int) (20d * p)]++;
+				genePvalues.setElementQuick(geneI, phenoI, p);
+
+				countUseChi2DistForPvalue++;
+
+			} else {
+				//no variants in or near gene
+				//genePValueDistribution[(int) (20d * 0.99999d)]++;
+				genePvalues.setElementQuick(geneI, phenoI, 0.5d);
+				countNoVariants++;
+			}
+
+		}
+
+		
+	}
+
 	public static LinkedHashMap<String, Integer> createGeneHashRows(final List<Gene> genes) {
 		LinkedHashMap<String, Integer> geneHashRows = new LinkedHashMap<>(genes.size());
 		for (int geneI = 0; geneI < genes.size(); ++geneI) {
@@ -292,31 +304,27 @@ public class CalculateGenePvalues {
 		return phenoHashCols;
 	}
 
-	public static double[] runPermutationsUsingEigenValues(final double[] eigenValues, final int nrPermutations) {
+	public static double[] runPermutationsUsingEigenValues(final double[] eigenValues, final int nrPermutations, double[] randomChi2) {
 
-		final int nrTasks = 1000;
-		final int nrPermutationsPerTask = nrPermutations / nrTasks;
 		final double[] geneChi2SumNull = new double[nrPermutations];
 
-		int nrThreads = Depict2Options.getNumberOfThreadsToUse();
-		java.util.concurrent.ExecutorService threadPool = Executors.newFixedThreadPool(nrThreads);
-		CompletionService<double[]> pool = new ExecutorCompletionService<>(threadPool);
-		for (int taskNr = 0; taskNr < nrTasks; taskNr++) {
-			EstimateChi2SumDistUsingCorrelatedVariablesThread task = new EstimateChi2SumDistUsingCorrelatedVariablesThread(eigenValues, nrPermutationsPerTask, taskNr);
-			pool.submit(task);
-		}
-		try {
-			for (int task = 0; task < nrTasks; task++) {
-				try {
-					double[] chi2SumDist = pool.take().get();
-					System.arraycopy(chi2SumDist, 0, geneChi2SumNull, task * nrPermutationsPerTask, chi2SumDist.length);
-				} catch (ExecutionException ex) {
-					throw new RuntimeException(ex);
+		final int randomChi2Size = randomChi2.length;
+		ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+		int i = 0;
+		for (int perm = 0; perm < nrPermutations; perm++) {
+			double weightedChi2Perm = 0;
+			for (int g = 0; g < eigenValues.length; g++) {
+
+				if (i < randomChi2Size) {
+					weightedChi2Perm += eigenValues[g] * randomChi2[i++];
+				} else {
+					double randomZ = rnd.nextGaussian();
+					weightedChi2Perm += eigenValues[g] * randomZ * randomZ;
 				}
+
 			}
-			threadPool.shutdown();
-		} catch (InterruptedException | RuntimeException e) {
-			throw new RuntimeException(e);
+			geneChi2SumNull[perm] = weightedChi2Perm;
 		}
 
 		return geneChi2SumNull;

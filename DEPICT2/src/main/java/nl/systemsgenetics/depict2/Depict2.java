@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.ConsoleAppender;
@@ -100,7 +102,7 @@ public class Depict2 {
 				System.exit(1);
 			}
 		}
-		
+
 		if (new File(options.getOutputBasePath()).isDirectory()) {
 			System.err.println("Specified output path is a directory. Please include a prefix for the output files.");
 			return;
@@ -204,7 +206,11 @@ public class Depict2 {
 
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath());
+		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 100);
+		
+		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
+
+		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
 
 		LOGGER.info("Finished calculating gene p-values");
 
@@ -357,6 +363,47 @@ public class Depict2 {
 
 	public static String formatMsForLog(long ms) {
 		return LOG_TIME_FORMAT.format(new Date(ms));
+	}
+
+	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
+
+		final double[] randomChi2;
+		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE) {
+			randomChi2 = new double[Integer.MAX_VALUE];
+		} else {
+			randomChi2 = new double[numberOfVariantPerGeneToExpect * numberOfPermutations];
+		}
+
+		final int randomChi2Size = randomChi2.length;
+		final int nrThreads = Depict2Options.getNumberOfThreadsToUse();
+		final int permPerThread = randomChi2Size / nrThreads;
+		final int leftoverPerm = randomChi2Size % nrThreads;
+
+		System.out.println("permPerThread " + permPerThread);
+		System.out.println("leftoverPerm " + leftoverPerm);
+
+		IntStream.range(0, nrThreads).parallel().forEach(task -> {
+
+			final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+			double z;
+			for (int p = 0; p < permPerThread; ++p) {
+				z = rnd.nextGaussian();
+				randomChi2[(task * permPerThread) + p] = z * z;
+			}
+
+		});
+
+		if (leftoverPerm > 0) {
+			final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+			double z;
+			for (int p = 0; p < leftoverPerm; ++p) {
+				z = rnd.nextGaussian();
+				randomChi2[(nrThreads * permPerThread) + p] = z * z;
+			}
+		}
+
+		return randomChi2;
+
 	}
 
 }

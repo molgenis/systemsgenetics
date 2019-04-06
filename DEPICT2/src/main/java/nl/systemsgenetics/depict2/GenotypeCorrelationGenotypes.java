@@ -50,12 +50,14 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		LinkedHashMap<String, Integer> variantHash = new LinkedHashMap<>(64);
 
 		long timeStart = System.currentTimeMillis();
-		
+
 		int v = 0;
-		for (GeneticVariant variant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
-			//variants.add(variant);
-			variantsDosages.add(variant.getSampleDosages());
-			variantHash.put(variant.getPrimaryVariantId(), v++);
+		synchronized (this) {
+			for (GeneticVariant variant : referenceGenotypes.getVariantsByRange(chr, start, stop)) {
+				//variants.add(variant);
+				variantsDosages.add(variant.getSampleDosages());
+				variantHash.put(variant.getPrimaryVariantId(), v++);
+			}
 		}
 
 		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset(sampleHash, variantHash);
@@ -69,7 +71,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			}
 			v++;
 		}
-		
+
 		long timeStop = System.currentTimeMillis();
 		CalculateGenePvalues.timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
@@ -80,7 +82,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		} else {
 			timeStart = System.currentTimeMillis();
 			DoubleMatrixDataset<String, String> corMatrix = dosageDataset.calculateCorrelationMatrix();
-			 timeStop = System.currentTimeMillis();
+			timeStop = System.currentTimeMillis();
 			CalculateGenePvalues.timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 			return corMatrix;
 
