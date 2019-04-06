@@ -73,7 +73,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		}
 
 		long timeStop = System.currentTimeMillis();
-		CalculateGenePvalues.timeInLoadingGenotypeDosages += (timeStop - timeStart);
+		GenePvalueCalculator.timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
 		LOGGER.debug(" * Variants found in region: " + variantsDosages.size());
 
@@ -83,7 +83,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			timeStart = System.currentTimeMillis();
 			DoubleMatrixDataset<String, String> corMatrix = dosageDataset.calculateCorrelationMatrix();
 			timeStop = System.currentTimeMillis();
-			CalculateGenePvalues.timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
+			GenePvalueCalculator.timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 			return corMatrix;
 
 		}

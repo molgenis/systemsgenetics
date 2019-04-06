@@ -176,6 +176,9 @@ public class Depict2 {
 			System.err.println("Error meesage: " + e.getMessage());
 			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error: " + e.getMessage(), e);
+			if(LOGGER.isDebugEnabled()){
+				e.printStackTrace();
+			}
 			System.exit(1);
 		}
 		LOGGER.info("Completed mode: " + options.getMode());
@@ -210,7 +213,8 @@ public class Depict2 {
 		
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
-		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
+		DoubleMatrixDataset<String, String> genePvalues = gpc.calculateGenePvalues();
 
 		LOGGER.info("Finished calculating gene p-values");
 
@@ -378,9 +382,6 @@ public class Depict2 {
 		final int nrThreads = Depict2Options.getNumberOfThreadsToUse();
 		final int permPerThread = randomChi2Size / nrThreads;
 		final int leftoverPerm = randomChi2Size % nrThreads;
-
-		System.out.println("permPerThread " + permPerThread);
-		System.out.println("leftoverPerm " + leftoverPerm);
 
 		IntStream.range(0, nrThreads).parallel().forEach(task -> {
 
