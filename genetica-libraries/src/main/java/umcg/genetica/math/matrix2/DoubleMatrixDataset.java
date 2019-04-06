@@ -1048,8 +1048,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Transposed view
-	 * 
-	 * @return 
+	 *
+	 * @return
 	 */
 	public DoubleMatrixDataset<C, R> viewDice() {
 		return new DoubleMatrixDataset<C, R>(matrix.viewDice(), hashCols, hashRows);
@@ -1389,6 +1389,52 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	/**
+	 * Fast correlation matrix function but only valid if all columns have mean
+	 * 0 and sd 1
+	 *
+	 * Does NOT check if conditions valid
+	 *
+	 * This function is not the same as covariance
+	 *
+	 * @return Correlation matrix on columns
+	 */
+	public DoubleMatrixDataset<C, C> calculateCorrelationMatrixOnNormalizedColumns() {
+
+		int rows = matrix.rows();
+		int columns = matrix.columns();
+		DoubleMatrix2D correlations = new cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D(columns, columns);
+
+		DoubleMatrix1D[] cols = new DoubleMatrix1D[columns];
+		for (int i = columns; --i >= 0;) {
+			cols[i] = matrix.viewColumn(i);
+		}
+
+		for (int i = columns; --i >= 0;) {
+			DoubleMatrix1D col1 = cols[i];
+			for (int j = i + 1; --j >= 0;) {
+
+				if (i == j) {
+					correlations.setQuick(i, j, 1);
+				} else {
+
+					DoubleMatrix1D col2 = cols[j];
+					double sumOfProducts = 0;
+					for (int e = 0; e < rows; ++e) {
+						sumOfProducts += col1.getQuick(e) * col2.getQuick(e);
+					}
+
+					double x = sumOfProducts / (rows - 1);
+					correlations.setQuick(i, j, x);
+					correlations.setQuick(j, i, x); // symmetric
+				}
+			}
+		}
+
+		return new DoubleMatrixDataset<>(correlations, hashCols, hashCols);
+
+	}
+
+	/**
 	 * @return Covariance matrix on columns
 	 */
 	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix() {
@@ -1502,5 +1548,27 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	
+	/**
+	 * Obviously not recommended for large matrices but great for debugging
+	 *
+	 */
+	public void printMatrix() {
+
+		for (C col : hashCols.keySet()) {
+			System.out.print("\t" + col.toString());
+		}
+		System.out.println();
+
+		ArrayList<R> rowNames = new ArrayList(hashRows.keySet());
+
+		for (int r = 0; r < matrix.rows(); ++r) {
+			System.out.print(rowNames.get(r));
+			for (int c = 0; c < matrix.columns(); ++c) {
+				System.out.print("\t" + matrix.getQuick(r, c));
+			}
+			System.out.println();
+		}
+
+	}
+
 }

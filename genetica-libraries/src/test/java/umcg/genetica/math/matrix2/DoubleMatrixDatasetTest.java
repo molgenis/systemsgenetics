@@ -124,16 +124,53 @@ public class DoubleMatrixDatasetTest {
 
 	}
 
+	@Test
+	public void testCalculateCorrelationMatrixOnNormalizedColumns() throws URISyntaxException, Exception {
+
+		File testMatrixCorFile = new File(this.getClass().getResource("/testMatrixColumnCorMatrix.txt").toURI());
+
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+
+		testMatrix.normalizeColumns();
+
+		DoubleMatrixDataset<String, String> testMatrixRealCor = DoubleMatrixDataset.loadDoubleTextData(testMatrixCorFile.getPath(), '\t');
+
+		DoubleMatrixDataset<String, String> corMatrix = testMatrix.calculateCorrelationMatrixOnNormalizedColumns();
+
+		//DoubleMatrixDataset<String, String> corMatrix = testMatrix.calculateCovarianceMatrix();
+		System.out.println("Calculated");
+		corMatrix.printMatrix();
+
+		System.out.println("");
+		System.out.println("Reference");
+		testMatrixRealCor.printMatrix();
+
+		compareTwoMatrices(corMatrix, testMatrixRealCor);
+
+	}
+
+	@Test
 	public void testCalculateCovarianceMatrix() throws Exception {
 
 		File testMatrixCovFile = new File(this.getClass().getResource("/testMatrixColumnCovMatrix.txt").toURI());
 
 		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+		System.out.println(testMatrixCovFile.getPath());
 		DoubleMatrixDataset<String, String> testMatrixRealCov = DoubleMatrixDataset.loadDoubleTextData(testMatrixCovFile.getPath(), '\t');
 
 		DoubleMatrixDataset<String, String> covMatrix = testMatrix.calculateCovarianceMatrix();
+		//DoubleMatrixDataset<String, String> covMatrix2 = testMatrix.calculateCorrelationMatrixOnNormalizedColumns();
 
-		compareTwoMatrices(covMatrix, testMatrixRealCov);
+//		System.out.println("Calculated");
+//		covMatrix.printMatrix();
+//		System.out.println("");
+//		System.out.println("Reference");
+//		testMatrixRealCov.printMatrix();
+
+//		System.out.println("Calculated2");
+//		covMatrix2.printMatrix();
+//		
+		compareTwoMatrices(covMatrix, testMatrixRealCov, 0.5);
 
 	}
 
@@ -398,12 +435,18 @@ public class DoubleMatrixDatasetTest {
 
 	private void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
 
+		compareTwoMatrices(m1, m2, 0.00000001);
+
+	}
+
+	private void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
+
 		assertEquals(m1.rows(), m2.rows());
 		assertEquals(m1.columns(), m2.columns());
 
 		for (int r = 0; r < m1.rows(); ++r) {
 			for (int c = 0; c < m1.columns(); ++c) {
-				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), 0.00001, "Difference at r: " + r + " c: " + c);
+				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), delta, "Difference at r: " + r + " c: " + c);
 			}
 		}
 
