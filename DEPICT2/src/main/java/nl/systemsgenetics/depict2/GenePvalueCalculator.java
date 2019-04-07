@@ -26,6 +26,7 @@ import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
+import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 import umcg.genetica.math.stats.ZScores;
 
 /**
@@ -65,6 +66,7 @@ public class GenePvalueCalculator {
 	private final CSVWriter geneVariantCountWriter;
 	private final LinkedHashMap<String, Integer> sampleHash;//In order of the samples in the genotype data
 	private final DoubleMatrixDataset<String, String> randomNormalizedPhenotypes;//Rows samples order of sample hash, cols phenotypes
+	private final PearsonRToZscoreBinned r2zScore;//Based on number of samples with genotypes
 
 	/**
 	 *
@@ -81,7 +83,7 @@ public class GenePvalueCalculator {
 	 * @param randomChi2
 	 * @throws java.io.IOException
 	 */
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, String outputBasePath, double[] randomChi2) throws IOException {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, String outputBasePath, double[] randomChi2) throws IOException, Exception {
 		this.variantPhenotypeZscoreMatrixPath = variantPhenotypeZscoreMatrixPath;
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
@@ -103,6 +105,8 @@ public class GenePvalueCalculator {
 		}
 
 		randomNormalizedPhenotypes = generateRandomNormalizedPheno();
+		
+		r2zScore = new PearsonRToZscoreBinned(100000, sampleHash.size());
 
 	}
 
@@ -212,7 +216,9 @@ public class GenePvalueCalculator {
 
 		}
 		
-		DoubleMatrixDataset<String, String> permutedGwasZscores = doDummyGwasOnSelectedVariants(variantCorrelationsPruned);
+		//nullGwasZscores will first contain peason r valus but this will be converted to Z-score using a lookup table;
+		final DoubleMatrixDataset<String, String> nullGwasZscores = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantCorrelationsPruned);
+		r2zScore.inplaceRToZ(nullGwasZscores);
 
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
 
@@ -506,26 +512,6 @@ public class GenePvalueCalculator {
 
 		return phenoData;
 
-	}
-
-	/**
-	 * Result are binned z-scores
-	 * 
-	 * 
-	 * @param variantCorrelationsPruned
-	 * @return
-	 * @throws Exception 
-	 */
-	private DoubleMatrixDataset<String, String> doDummyGwasOnSelectedVariants(DoubleMatrixDataset<String, String> variantCorrelationsPruned) throws Exception {
-		
-		final DoubleMatrixDataset<String, String> gwasResult = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantCorrelationsPruned);
-		
-		
-		
-		throw new Exception("Convert cor to z-score");
-		
-		//return gwasResult;
-		
 	}
 
 }
