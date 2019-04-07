@@ -10,3 +10,10 @@ write.table(scale(testMatrix), file = "testMatrixColumnScaledMatrix.txt", quote 
 
 
 
+library("psych")
+
+corPvalues <- corr.test(testMatrix, adjust = "none")$p
+
+corZscores <- apply(corPvalues, 1:2, function(p){qnorm(1 - (p/2))})
+
+write.table(corZscores, file = "testMatrixColumnCorZscoreMatrix.txt", quote = F, sep = "\t", col.names = NA)

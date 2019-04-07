@@ -457,13 +457,13 @@ public class DoubleMatrixDatasetTest {
 
 	}
 
-	private void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
+	private static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
 
 		compareTwoMatrices(m1, m2, 0.00000001);
 
 	}
 
-	private void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
+	private static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
 
 		assertEquals(m1.rows(), m2.rows());
 		assertEquals(m1.columns(), m2.columns());
@@ -471,6 +471,27 @@ public class DoubleMatrixDatasetTest {
 		for (int r = 0; r < m1.rows(); ++r) {
 			for (int c = 0; c < m1.columns(); ++c) {
 				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), delta, "Difference at r: " + r + " c: " + c);
+			}
+		}
+
+	}
+	
+	public static void compareTwoMatricesIgnoreNaN(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
+
+		assertEquals(m1.rows(), m2.rows());
+		assertEquals(m1.columns(), m2.columns());
+
+		for (int r = 0; r < m1.rows(); ++r) {
+			for (int c = 0; c < m1.columns(); ++c) {
+				
+				double e1 = m1.getElementQuick(r, c);
+				double e2 = m2.getElementQuick(r, c);
+				
+				if(Double.isNaN(e1) || Double.isNaN(e2)){
+					continue;
+				}
+				
+				assertEquals(e1, e2, delta, "Difference at r: " + r + " c: " + c);
 			}
 		}
 
