@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ public class GenePvalueCalculator {
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int NUMBER_RANDOM_PHENO = 1000;
+	private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
 
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
 	protected static long timeInLoadingGenotypeDosages = 0;
@@ -55,7 +57,6 @@ public class GenePvalueCalculator {
 	private static int countUseChi2DistForPvalue = 0;
 	private static int countNoVariants = 0;
 
-	private final String variantPhenotypeZscoreMatrixPath;
 	private final RandomAccessGenotypeData referenceGenotypes;
 	private final List<Gene> genes;
 	private final int windowExtend;
@@ -63,10 +64,13 @@ public class GenePvalueCalculator {
 	private final int nrPermutations;
 	private final String outputBasePath;
 	private final double[] randomChi2;
-	private final CSVWriter geneVariantCountWriter;
 	private final LinkedHashMap<String, Integer> sampleHash;//In order of the samples in the genotype data
 	private final DoubleMatrixDataset<String, String> randomNormalizedPhenotypes;//Rows samples order of sample hash, cols phenotypes
 	private final PearsonRToZscoreBinned r2zScore;//Based on number of samples with genotypes
+	private final DoubleMatrixDataset<String, String> genePvalues;
+	private final DoubleMatrixDataset<String, String> genePvaluesNullGwas;
+	private final DoubleMatrixDataset<String, String> geneVariantCount;
+	private final int numberRealPheno;
 
 	/**
 	 *
@@ -84,7 +88,7 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, String outputBasePath, double[] randomChi2) throws IOException, Exception {
-		this.variantPhenotypeZscoreMatrixPath = variantPhenotypeZscoreMatrixPath;
+
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
 		this.windowExtend = windowExtend;
@@ -92,8 +96,6 @@ public class GenePvalueCalculator {
 		this.nrPermutations = nrPermutations;
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
-
-		geneVariantCountWriter = new CSVWriter(new FileWriter(new File(outputBasePath + "_geneVariantCount.txt")), '\t', '\0', '\0', "\n");
 
 		String[] samples = referenceGenotypes.getSampleNames();
 
@@ -104,25 +106,21 @@ public class GenePvalueCalculator {
 			sampleHash.put(sample, s++);
 		}
 
-		randomNormalizedPhenotypes = generateRandomNormalizedPheno();
-		
+		randomNormalizedPhenotypes = generateRandomNormalizedPheno(sampleHash);
+
 		r2zScore = new PearsonRToZscoreBinned(100000, sampleHash.size());
-
-	}
-
-	/**
-	 *
-	 * @return gene p-value matrix for each phenotype. rows: genes in same order
-	 * as genes parameter, cols: phenotypes
-	 * @throws java.io.IOException
-	 */
-	public DoubleMatrixDataset<String, String> calculateGenePvalues() throws IOException, Exception {
 
 		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 
 		//Result matrix. Rows: genes, Cols: phenotypes
-		final DoubleMatrixDataset<String, String> genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
-		final int numberPheno = phenotypes.size();
+		genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
+
+		//Result matrix null GWAS. Rows: genes, Cols: phenotypes
+		genePvaluesNullGwas = new DoubleMatrixDataset<>(createGeneHashRows(genes), randomNormalizedPhenotypes.getHashCols());
+
+		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(Arrays.asList(new String[]{"count"})));
+
+		numberRealPheno = phenotypes.size();
 		final int numberGenes = genes.size();
 
 		final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader = new DoubleMatrixDatasetFastSubsetLoader(variantPhenotypeZscoreMatrixPath);
@@ -130,11 +128,6 @@ public class GenePvalueCalculator {
 		final int[] genePValueDistributionPermuations = new int[21];//used to create histogram 
 		final int[] genePValueDistributionChi2Dist = new int[21];//used to create histogram 
 
-		final String[] outputLine = new String[2];
-		int c = 0;
-		outputLine[c++] = "Gene";
-		outputLine[c++] = "NumberVariants";
-		geneVariantCountWriter.writeNext(outputLine);
 		try (final ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
 
 			//All genes are indipendant
@@ -143,7 +136,7 @@ public class GenePvalueCalculator {
 				try {
 
 					//Results are writen in genePvalues
-					runGene(geneI, geneVariantPhenotypeMatrixRowLoader, numberPheno, genePValueDistributionPermuations, genePvalues, genePValueDistributionChi2Dist);
+					runGene(geneI, geneVariantPhenotypeMatrixRowLoader, genePValueDistributionPermuations, genePValueDistributionChi2Dist);
 
 					pb.step();
 				} catch (Exception ex) {
@@ -153,8 +146,6 @@ public class GenePvalueCalculator {
 			});
 
 		}
-
-		geneVariantCountWriter.close();
 
 		LOGGER.debug("countRanPermutationsForGene: " + countRanPermutationsForGene);
 		LOGGER.debug("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
@@ -184,11 +175,27 @@ public class GenePvalueCalculator {
 
 		LOGGER.info("-----------------------");
 
-		return genePvalues;
-
 	}
 
-	private void runGene(int geneI, final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader, final int numberPheno, final int[] genePValueDistributionPermuations, final DoubleMatrixDataset<String, String> genePvalues, final int[] genePValueDistributionChi2Dist) throws IOException, Exception {
+	/**
+	 *
+	 * @return gene p-value matrix for each phenotype. rows: genes in same order
+	 * as genes list, cols: phenotypes
+	 * @throws java.io.IOException
+	 */
+	public DoubleMatrixDataset<String, String> getGenePvalues() throws IOException, Exception {
+		return genePvalues;
+	}
+
+	public DoubleMatrixDataset<String, String> getGenePvaluesNullGwas() throws IOException, Exception {
+		return genePvaluesNullGwas;
+	}
+
+	public DoubleMatrixDataset<String, String> getGeneVariantCount() throws IOException, Exception {
+		return geneVariantCount;
+	}
+
+	private void runGene(int geneI, final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader, final int[] genePValueDistributionPermuations, final int[] genePValueDistributionChi2Dist) throws IOException, Exception {
 		long timeStart;
 		long timeStop;
 
@@ -215,10 +222,15 @@ public class GenePvalueCalculator {
 			variantScaledDosagesPruned = variantScaledDosages.viewColSelection(variantCorrelationsPruned.getHashCols().keySet());
 
 		}
-		
-		//nullGwasZscores will first contain peason r valus but this will be converted to Z-score using a lookup table;
-		final DoubleMatrixDataset<String, String> nullGwasZscores = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantCorrelationsPruned);
-		r2zScore.inplaceRToZ(nullGwasZscores);
+
+		final DoubleMatrixDataset<String, String> nullGwasZscores;
+		if (variantCorrelationsPruned.rows() > 0) {
+			//nullGwasZscores will first contain peason r valus but this will be converted to Z-score using a lookup table;
+			nullGwasZscores = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantScaledDosagesPruned);
+			r2zScore.inplaceRToZ(nullGwasZscores);
+		} else {
+			nullGwasZscores = EMPTY_DATASET;
+		}
 
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
 
@@ -229,12 +241,7 @@ public class GenePvalueCalculator {
 		timeStop = System.currentTimeMillis();
 		timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
-		int c = 0;
-		final String[] outputLine = new String[2];
-		outputLine[c++] = gene.getGene();
-		outputLine[c++] = String.valueOf(variantCorrelationsPruned.rows());
-		//This is writeNext is threadsafe
-		geneVariantCountWriter.writeNext(outputLine);
+		geneVariantCount.setElementQuick(geneI, 0, variantCorrelationsPruned.rows());
 
 		final double[] geneChi2SumNull;
 		if (variantCorrelationsPruned.rows() > 1) {
@@ -278,7 +285,7 @@ public class GenePvalueCalculator {
 		timeStop = System.currentTimeMillis();
 		timeInLoadingZscoreMatrix += (timeStop - timeStart);
 
-		for (int phenoI = 0; phenoI < numberPheno; ++phenoI) {
+		for (int phenoI = 0; phenoI < numberRealPheno; ++phenoI) {
 
 			if (variantCorrelationsPruned.rows() > 1) {
 
@@ -337,6 +344,63 @@ public class GenePvalueCalculator {
 			}
 
 		}
+
+		// Do exactly the same thing but now for the null GWAS
+		for (int nullPhenoI = 0; nullPhenoI < NUMBER_RANDOM_PHENO; ++nullPhenoI) {
+
+			if (variantCorrelationsPruned.rows() > 1) {
+
+				timeStart = System.currentTimeMillis();
+
+				final double geneChi2Sum = nullGwasZscores.getCol(nullPhenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
+
+				timeStop = System.currentTimeMillis();
+				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
+
+				timeStart = System.currentTimeMillis();
+
+				double p = 0.5;
+				//Because we don't expect very strong associations in our null GWAS only check first x permuations for speed
+				for (int perm = 0; perm < NUMBER_PERMUTATION_NULL_GWAS; perm++) {
+					if (geneChi2SumNull[perm] >= geneChi2Sum) {
+						p++;
+					}
+				}
+				p /= (double) NUMBER_PERMUTATION_NULL_GWAS + 1;
+
+				if (p == 1) {
+					p = 0.99999d;
+				}
+				if (p < 1e-300d) {
+					p = 1e-300d;
+				}
+
+				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
+
+				timeStop = System.currentTimeMillis();
+				timeInCalculatingPvalue += (timeStop - timeStart);
+
+			} else if (variantCorrelationsPruned.rows() == 1) {
+
+				//Always row 0
+				double p = ZScores.zToP(-Math.abs(nullGwasZscores.getElementQuick(0, nullPhenoI)));
+				if (p == 1) {
+					p = 0.99999d;
+				}
+				if (p < 1e-300d) {
+					p = 1e-300d;
+				}
+
+				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
+
+			} else {
+				//no variants in or near gene
+				//genePValueDistribution[(int) (20d * 0.99999d)]++;
+				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, 0.5d);
+			}
+
+		}
+
 	}
 
 	/**
@@ -485,12 +549,12 @@ public class GenePvalueCalculator {
 
 	}
 
-	private DoubleMatrixDataset<String, String> generateRandomNormalizedPheno() {
+	private static DoubleMatrixDataset<String, String> generateRandomNormalizedPheno(LinkedHashMap<String, Integer> sampleHash) {
 
 		LinkedHashMap<String, Integer> phenoHash = new LinkedHashMap<>();
 
 		for (int i = 0; i < NUMBER_RANDOM_PHENO; ++i) {
-			phenoHash.put("Pheno" + (i + 1), i);
+			phenoHash.put("RanPheno" + (i + 1), i);
 		}
 
 		DoubleMatrixDataset<String, String> phenoData = new DoubleMatrixDataset(sampleHash, phenoHash);
@@ -507,7 +571,7 @@ public class GenePvalueCalculator {
 			}
 
 		});
-		
+
 		phenoData.normalizeColumns();
 
 		return phenoData;

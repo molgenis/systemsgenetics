@@ -1589,7 +1589,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public static DoubleMatrixDataset<String, String> correlateColumnsOf2ColumnNormalizedDatasets(DoubleMatrixDataset<String, String> d1, DoubleMatrixDataset<String, String> d2) throws Exception {
 
 		if (d1.rows() != d2.rows()) {
-			throw new Exception("When correlating two datasets both should have identical number of rows");
+			throw new Exception("When correlating two datasets both should have identical number of rows. d1 has: " + d1.rows() + " d2 has: " + d2.rows() + " rows");
 		}
 		final DoubleMatrix2D d1Matrix = d1.matrix;
 		final DoubleMatrix2D d2Matrix = d2.matrix;

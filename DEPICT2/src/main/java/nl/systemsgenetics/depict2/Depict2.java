@@ -214,11 +214,18 @@ public class Depict2 {
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
 		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
-		DoubleMatrixDataset<String, String> genePvalues = gpc.calculateGenePvalues();
-
+		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
+		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
+		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
+		
 		LOGGER.info("Finished calculating gene p-values");
 
 		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
+		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
+		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		
+		
+		
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
