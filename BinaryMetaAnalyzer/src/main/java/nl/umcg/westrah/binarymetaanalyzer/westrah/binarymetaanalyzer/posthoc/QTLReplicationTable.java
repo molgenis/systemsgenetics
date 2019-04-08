@@ -1,5 +1,6 @@
 package nl.umcg.westrah.binarymetaanalyzer.westrah.binarymetaanalyzer.posthoc;
 
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
@@ -16,8 +17,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class QTLReplicationTable {
-	
-	
+
+
 	public void run(String referenceFile,
 					String otherFiles,
 					String otherFilesNames,
@@ -25,13 +26,13 @@ public class QTLReplicationTable {
 					boolean includenonSignificanteffects,
 					int minNrDatasetsOverlap,
 					double fdrthreshold) throws IOException {
-		
-		
+
+
 		System.out.println("Reference: " + referenceFile);
 		QTLTextFile t = new QTLTextFile(referenceFile, QTLTextFile.R);
 		EQTL[] referenceQTLArr = t.read();
 		t.close();
-		
+
 		// index
 		HashMap<String, Integer> snpGeneToQTL = new HashMap<String, Integer>();
 		int ctr = 0;
@@ -43,18 +44,18 @@ public class QTLReplicationTable {
 				ctr++;
 			}
 		}
-		
+
 		DetermineLD d = new DetermineLD();
-		
+
 		String[] files = otherFiles.split(",");
 		String[] filenames = otherFilesNames.split(",");
 		EQTL[][] output = new EQTL[referenceQTL.size()][files.length];
-		
+
 		for (int f = 0; f < files.length; f++) {
 			QTLTextFile t2 = new QTLTextFile(files[f], QTLTextFile.R);
 			EQTL[] qtl2 = t2.read();
 			t2.close();
-			
+
 			for (EQTL e : qtl2) {
 //				if (e.getFDR() < fdrthreshold || includenonSignificanteffects) {
 				String query = e.getRsName() + "_" + e.getProbe();
@@ -79,7 +80,7 @@ public class QTLReplicationTable {
 		zscore rsq p fdr
 		
 		*/
-		
+
 		String header = "Gene" +
 				"\tGene-Chr" +
 				"\tGene-Pos" +
@@ -121,21 +122,21 @@ public class QTLReplicationTable {
 		header += "\tNrDatasetsWithFDR<" + fdrthreshold;
 		header += "\tNrDatasetsWithFDR<" + fdrthreshold + "AndSameDirection";
 		header += "\tNrDatasetsWithSameDirection";
-		
-		
+
+
 		TextFile out = new TextFile(outputloc, TextFile.W);
 		out.writeln(header2);
 		out.writeln(header);
-		
+
 		ArrayList<ArrayList<Double>> allzscores = new ArrayList<>();
 		for (int f = 0; f < filenames.length; f++) {
 			allzscores.add(new ArrayList<>());
 		}
-		
+
 		for (int e = 0; e < output.length; e++) {
-			
+
 			EQTL reference = referenceQTL.get(e);
-			
+
 			int n = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
 			double r = ZScores.zToR(reference.getZscore(), n);
 			String ln = reference.getProbe()
@@ -150,7 +151,7 @@ public class QTLReplicationTable {
 					+ "\t" + (r * r)
 					+ "\t" + reference.getPvalue()
 					+ "\t" + reference.getFDR();
-			
+
 			int nroverlap = 0;
 			int nrSignificantDifferentEffectSize = 0;
 			int nrSignificantFDR = 0;
@@ -165,8 +166,8 @@ public class QTLReplicationTable {
 							+ "\t-"
 							+ "\t-";
 				} else {
-					
-					
+
+
 					if (!(other.getFDR() >= fdrthreshold || includenonSignificanteffects)) {
 						ln += "\tNOTSIGNIFICANT"
 								+ "\tNOTSIGNIFICANT"
@@ -174,34 +175,34 @@ public class QTLReplicationTable {
 								+ "\tNOTSIGNIFICANT"
 								+ "\tNOTSIGNIFICANT";
 					} else {
-						
-						
+
+
 						nroverlap++;
 						Boolean flip = BaseAnnot.flipalleles(reference.getAlleles(), reference.getAlleleAssessed(), other.getAlleles(), other.getAlleleAssessed());
 						if (flip != null) {
-							
-							
+
+
 							int nother = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
 							double z = other.getZscore();
 							if (flip) {
 								z *= -1;
 							}
-							
-							
+
+
 							ArrayList<Double> zscoresforeqtlfile = allzscores.get(f);
 							zscoresforeqtlfile.add(z * z);
 							double rother = ZScores.zToR(z, nother);
-							
+
 							double rzref = zFromCorr(r);
 							double rzother = zFromCorr(rother);
 							double se = Math.sqrt((1 / (n - 3d)) + (1 / (nother - 3d)));
 							double zDiff = (rzother - rzref) / se;
 							double rp = cern.jet.stat.Probability.normal(-Math.abs(zDiff)) * 2d;
-							
+
 							if (rp < 0.05) {
 								nrSignificantDifferentEffectSize++;
 							}
-							
+
 							ln += "\t" + z
 									+ "\t" + (rother * rother)
 									+ "\t" + rp
@@ -230,30 +231,33 @@ public class QTLReplicationTable {
 			}
 			if (nroverlap >= minNrDatasetsOverlap) {
 				ln += "\t" + nroverlap + "\t" + nrSignificantDifferentEffectSize + "\t" + nrSignificantFDR + "\t" + nrSignificantFDRSameDirection + "\t" + nrSameDirection;
-				
+
 				out.writeln(ln);
 			}
 		}
 		out.close();
-		
-		
+
+
 		// determine lambdas
+		ChiSquaredDistribution dist = new ChiSquaredDistribution(1);
+		double chisqexp = dist.cumulativeProbability(0.5);
 		TextFile outf2 = new TextFile(outputloc + "-lambdas.txt", TextFile.W);
-		outf2.writeln("Tissue/CellType\tNrEQTLs\tLambda(MedianChiSquared)");
+		outf2.writeln("Tissue/CellType\tNrEQTLs\tLambda(MedianChiSquared/chiexp)");
 		for (int f = 0; f < filenames.length; f++) {
 			ArrayList<Double> zscoresforeqtlfile = allzscores.get(f);
-			
+
 			double[] z = Primitives.toPrimitiveArr(zscoresforeqtlfile);
-			
-			double zmed = JSci.maths.ArrayMath.median(z);
-			String ln = filenames[f] + "\t" + zscoresforeqtlfile.size() + "\t" + zmed;
+
+			double lambda = JSci.maths.ArrayMath.median(z) / chisqexp;
+
+			String ln = filenames[f] + "\t" + zscoresforeqtlfile.size() + "\t" + lambda;
 			outf2.writeln(ln);
 		}
-		
+
 		outf2.close();
-		
+
 	}
-	
+
 	public void rungtex(String referenceFile,
 						String otherFiles,
 						String otherFilesNames,
@@ -261,13 +265,13 @@ public class QTLReplicationTable {
 						boolean includenonSignificanteffects,
 						int minNrDatasetsOverlap,
 						double pvaluethreshold) throws IOException {
-		
+
 		System.out.println("Reference: " + referenceFile);
 		QTLTextFile t = new QTLTextFile(referenceFile, QTLTextFile.R);
 		EQTL[] referenceQTLArr = t.read();
 		t.close();
 		System.out.println(referenceQTLArr.length + " eQTLs... ");
-		
+
 		// index
 		HashMap<String, Integer> snpGeneToQTL = new HashMap<String, Integer>();
 		int ctr = 0;
@@ -277,15 +281,15 @@ public class QTLReplicationTable {
 			referenceQTL.add(e);
 			ctr++;
 		}
-		
+
 		DetermineLD d = new DetermineLD();
-		
+
 		String[] files = otherFiles.split(",");
 		String[] filenames = otherFilesNames.split(",");
 		EQTL[][] output = new EQTL[referenceQTL.size()][files.length];
-		
+
 		for (int f = 0; f < files.length; f++) {
-			
+
 			QTLTextFile t2 = new QTLTextFile(files[f], QTLTextFile.R);
 			EQTL[] qtl2 = t2.read();
 			t2.close();
@@ -315,7 +319,7 @@ public class QTLReplicationTable {
 		zscore rsq p fdr
 		
 		*/
-		
+
 		String header = "Gene" +
 				"\tGene-Chr" +
 				"\tGene-Pos" +
@@ -355,15 +359,15 @@ public class QTLReplicationTable {
 		header += "\tNrDatasetsTested";
 		header += "\tNrDatsetsSignificantP";
 		header += "\tNrDatasetsWithP(differentEffectSize)<0.05";
-		
+
 		TextFile out = new TextFile(outputloc, TextFile.W);
 		out.writeln(header2);
 		out.writeln(header);
-		
+
 		for (int e = 0; e < output.length; e++) {
-			
+
 			EQTL reference = referenceQTL.get(e);
-			
+
 			int n = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
 			double r = ZScores.zToR(reference.getZscore(), n);
 			String ln = reference.getProbe()
@@ -378,7 +382,7 @@ public class QTLReplicationTable {
 					+ "\t" + (r * r)
 					+ "\t" + reference.getPvalue()
 					+ "\t" + reference.getFDR();
-			
+
 			int nroverlap = 0;
 			int nroverlapsignificantlyDifferentEffectSize = 0;
 			int nrOverlapSignificant = 0;
@@ -391,8 +395,8 @@ public class QTLReplicationTable {
 							+ "\t-"
 							+ "\t-";
 				} else {
-					
-					
+
+
 					if (!(other.getPvalue() < pvaluethreshold || includenonSignificanteffects)) {
 						// if pvalue > threshold
 						// or don't include significant effects
@@ -410,23 +414,23 @@ public class QTLReplicationTable {
 							if (flip) {
 								z *= -1;
 							}
-							
+
 							double rother = ZScores.zToR(z, nother);
-							
+
 							double rzref = zFromCorr(r);
 							double rzother = zFromCorr(rother);
 							double se = Math.sqrt((1 / (n - 3d)) + (1 / (nother - 3d)));
 							double zDiff = (rzother - rzref) / se;
 							double rp = cern.jet.stat.Probability.normal(-Math.abs(zDiff)) * 2d;
-							
+
 							if (rp < 0.05) {
 								nroverlapsignificantlyDifferentEffectSize++;
 							}
-							
+
 							if (other.getPvalue() < pvaluethreshold) {
 								nrOverlapSignificant++;
 							}
-							
+
 							ln += "\t" + z
 									+ "\t" + rother
 									+ "\t" + (rp * rp)
@@ -438,40 +442,41 @@ public class QTLReplicationTable {
 			}
 			if (nroverlap >= minNrDatasetsOverlap) {
 				ln += "\t" + nroverlap + "\t" + nrOverlapSignificant + "\t" + nroverlapsignificantlyDifferentEffectSize;
-				
+
 				out.writeln(ln);
 			}
 		}
 		out.close();
 	}
-	
+
 	public void calculateLambdaForPerm(String ref, String folder, String name, int nrPerm, String out) throws IOException {
-		
+
 		HashSet<String> eqtlfilter = new HashSet<String>();
 		TextFile tfr = new TextFile(ref, TextFile.R);
 		tfr.readLine();
+
 		String[] refelems = tfr.readLineElems(TextFile.tab);
 		while (refelems != null) {
 			if (refelems.length > 4) {
 				String id = refelems[1] + "_" + refelems[4];
 				eqtlfilter.add(id);
-			} else if(refelems.length==2){
+			} else if (refelems.length == 2) {
 				String id = refelems[0] + "_" + refelems[1];
 				eqtlfilter.add(id);
 			}
 			refelems = tfr.readLineElems(TextFile.tab);
 		}
 		tfr.close();
-		
-		
+
+
 		System.out.println(eqtlfilter.size() + " eqtls as reference. ");
-		
+
 		String[] namesplit = name.split(",");
 		String[] filesplit = folder.split(",");
-		
+
 		TextFile tfo = new TextFile(out, TextFile.W);
-		
-		
+
+
 		String ln = "Name\tNrEQTLs\tNrSamples";
 		for (int p = 0; p < nrPerm + 1; p++) {
 			if (p == 0) {
@@ -479,16 +484,18 @@ public class QTLReplicationTable {
 			} else {
 				ln += "\tPerm" + p;
 			}
-			
+
 		}
 		tfo.writeln(ln);
-		
+
+		ChiSquaredDistribution dist = new ChiSquaredDistribution(1);
+		double chisqexp = dist.cumulativeProbability(0.5);
 		for (int f = 0; f < filesplit.length; f++) {
 			String outln = namesplit[f];
 			System.out.println(namesplit[f]);
 			for (int p = 0; p < nrPerm + 1; p++) {
 				String file = filesplit[f] + "PermutedEQTLsPermutationRound" + p + ".txt.gz";
-				
+
 				if (p == 0) {
 					file = filesplit[f] + "eQTLs.txt.gz";
 				}
@@ -500,12 +507,12 @@ public class QTLReplicationTable {
 				Integer nrsamples = null;
 				while (elems != null) {
 					if (elems.length > 10) {
-						
+
 						EQTL e = EQTL.fromString(elems, "-", Strings.semicolon);
-						
+
 						String id = e.getRsName() + "_" + e.getProbe();
 						if (eqtlfilter.contains(id)) {
-							
+
 							if (nrsamples == null) {
 								Integer[] samples = e.getDatasetsSamples();
 								int tmpsum = 0;
@@ -523,25 +530,26 @@ public class QTLReplicationTable {
 					elems = tfin.readLineElems(TextFile.tab);
 				}
 				tfin.close();
-				
+
 				System.out.println(zs.size() + " qtls.");
-				
+
 				double[] z = Primitives.toPrimitiveArr(zs);
-				
-				double zmed = JSci.maths.ArrayMath.median(z);
+
+
+				double lambda = JSci.maths.ArrayMath.median(z) / chisqexp;
 				if (p == 0) {
-					outln += "\t" + z.length + "\t" + nrsamples + "\t" + zmed;
+					outln += "\t" + z.length + "\t" + nrsamples + "\t" + lambda;
 				} else {
-					outln += "\t" + zmed;
+					outln += "\t" + lambda;
 				}
-				
+
 			}
 			tfo.writeln(outln);
 		}
 		tfo.close();
-		
+
 	}
-	
+
 	private double zFromCorr(double corr1) {
 		double raplus = 1 * corr1 + 1;
 		double raminus = 1 - corr1;
