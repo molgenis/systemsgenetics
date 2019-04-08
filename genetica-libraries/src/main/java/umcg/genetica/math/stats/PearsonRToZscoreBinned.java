@@ -33,47 +33,53 @@ public class PearsonRToZscoreBinned {
 	 */
 	public PearsonRToZscoreBinned(final int numberOfBins, final int samplesUsedForCor) throws Exception {
 
-//		double power = Math.log10(numberOfBins);
-//
-//		if (power != Math.round(power)) {
-//			throw new Exception("Number of bins must be power of 10");
-//		}
 		final int df = samplesUsedForCor - 2;
 		DoubleRandomEngine randomEngine = new DRand();
 
 		this.binsPerSide = numberOfBins;
-		this.totalNumberOfBins = numberOfBins * 2;
+		this.totalNumberOfBins = (numberOfBins * 2) + 1;
 		this.maxBin = totalNumberOfBins - 1;
 		zscoreLookupTable = new double[totalNumberOfBins];
 
-		final double stepSize = 1d / binsPerSide;
+		final double stepSize = 2d / totalNumberOfBins;
 		halfStep = stepSize / 2;
 
 		for (int bin = 0; bin < totalNumberOfBins; ++bin) {
 
-			final double corBinCenter = -1 + (stepSize * bin) + halfStep;
-
-			StudentT tDistColt = new StudentT(df, randomEngine);
-			double t = corBinCenter / (Math.sqrt((1 - corBinCenter * corBinCenter) / (double) (df)));
-			double pValue;
-			double zScore;
-			if (t < 0) {
-				pValue = tDistColt.cdf(t);
-				if (pValue < 2.0E-323) {
-					pValue = 2.0E-323;
-				}
-				zScore = Probability.normalInverse(pValue);
+			if (bin == this.binsPerSide) {
+				
+				//Enforce r=0 results in z=0
+				zscoreLookupTable[bin] = 0;
+				
 			} else {
-				pValue = tDistColt.cdf(-t);
-				if (pValue < 2.0E-323) {
-					pValue = 2.0E-323;
+
+				final double corBinCenter = -1 + (stepSize * bin) + halfStep;
+
+				StudentT tDistColt = new StudentT(df, randomEngine);
+				double t = corBinCenter / (Math.sqrt((1 - corBinCenter * corBinCenter) / (double) (df)));
+				double pValue;
+				double zScore;
+				if (t < 0) {
+					pValue = tDistColt.cdf(t);
+					if (pValue < 2.0E-323) {
+						pValue = 2.0E-323;
+					}
+					zScore = Probability.normalInverse(pValue);
+				} else {
+					pValue = tDistColt.cdf(-t);
+					if (pValue < 2.0E-323) {
+						pValue = 2.0E-323;
+					}
+					zScore = -Probability.normalInverse(pValue);
 				}
-				zScore = -Probability.normalInverse(pValue);
+
+				zscoreLookupTable[bin] = zScore;
+				
+				//System.out.println("Bin: " + bin + "\tcenter r: " + corBinCenter + "\tZscore: " + zScore);
+				
 			}
 
-			zscoreLookupTable[bin] = zScore;
-
-//			System.out.println("Bin: " + bin + "\tcenter r: " + corBinCenter + "\tZscore: " + zScore);
+			
 
 		}
 
@@ -91,10 +97,11 @@ public class PearsonRToZscoreBinned {
 		} else {
 			bin = Math.round((r + 1) * binsPerSide - halfStep);
 		}
-
+//
 //		System.out.println("r: " + r);
 //		System.out.println("bin: " + bin);
 //		System.out.println("z: " + zscoreLookupTable[(int) bin]);
+//		System.out.println("---");
 		return zscoreLookupTable[(int) bin];
 
 	}

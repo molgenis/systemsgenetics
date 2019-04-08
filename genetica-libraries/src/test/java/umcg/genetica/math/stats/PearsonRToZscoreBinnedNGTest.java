@@ -49,6 +49,11 @@ public class PearsonRToZscoreBinnedNGTest {
 		
 		PearsonRToZscoreBinned r2zScore = new PearsonRToZscoreBinned(10000, testMatrix.rows());
 		
+		//Very small values should result in postive 0 z-score
+		assertEquals(r2zScore.lookupZscoreForR(-0.00000000000001), 0d);
+		assertEquals(r2zScore.lookupZscoreForR(0), 0d);
+		assertEquals(r2zScore.lookupZscoreForR(+0.00000000000001), 0d);
+		
 		r2zScore.inplaceRToZ(corMatrix);
 		
 //		System.out.println("Real Z-score");
@@ -56,6 +61,8 @@ public class PearsonRToZscoreBinnedNGTest {
 //		
 //		System.out.println("Calculated Z-score");
 //		corMatrix.printMatrix();
+		
+		
 		
 		DoubleMatrixDatasetTest.compareTwoMatricesIgnoreNaN(corMatrix, testMatrixRealCorZscores, 0.001);
 		
