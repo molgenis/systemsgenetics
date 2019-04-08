@@ -85,14 +85,22 @@ public class PearsonRToZscoreBinned {
 
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param r pearson r. An r > 1 or r small -1 is accepted for imprecise r calculations
+	 * @return  Z-score
+	 */
 	public double lookupZscoreForR(double r) {
 
 		final long bin;
 
-		//this is needed because due to rounding a r of 1 will not fall into any bin. Also a r > 1 or r < -1 is accepted for imprecise r calculations
+		
 		if (r >= 1) {
+			//this is needed because due to rounding a r of 1 will not fall into any bin. 
 			bin = maxBin;
-		} else if (r <= -1) {
+		} else if (r < -1) {
+			//-1 exactly will always round properly, no need to test this.
 			bin = 0;
 		} else {
 			bin = Math.round((r + 1) * binsPerSide - halfStep);
