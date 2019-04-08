@@ -51,6 +51,7 @@ public class GenePvalueCalculator {
 	private static long timeInLoadingZscoreMatrix = 0;
 	private static long timeInCalculatingPvalue = 0;
 	private static long timeInCalculatingRealSumChi2 = 0;
+	private static long timeInComparingRealChi2ToPermutationChi2 = 0;
 	private static long timeInNormalizingGenotypeDosages = 0;
 
 	private static int countRanPermutationsForGene = 0;
@@ -109,7 +110,7 @@ public class GenePvalueCalculator {
 
 		randomNormalizedPhenotypes = generateRandomNormalizedPheno(sampleHash);
 
-		r2zScore = new PearsonRToZscoreBinned(100000, sampleHash.size());
+		r2zScore = new PearsonRToZscoreBinned(10000000, sampleHash.size());
 
 		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 
@@ -167,6 +168,7 @@ public class GenePvalueCalculator {
 		LOGGER.info("timeInPermutation: " + formatMsForLog(timeInPermutations));
 		LOGGER.info("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
 		LOGGER.info("timeInCalculatingRealSumChi2: " + formatMsForLog(timeInCalculatingRealSumChi2));
+		LOGGER.info("timeInComparingRealChi2ToPermutationChi2: " + formatMsForLog(timeInComparingRealChi2ToPermutationChi2));
 		LOGGER.info("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
 		LOGGER.info("totalTimeInThread: " + formatMsForLog(totalTimeInThread));
 
@@ -288,8 +290,9 @@ public class GenePvalueCalculator {
 		timeStart = System.currentTimeMillis();
 
 		//load current variants from variantPhenotypeMatrix
+		final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix;
 		synchronized (this) {
-			final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
+			geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
 		}
 
 		timeStop = System.currentTimeMillis();
@@ -314,6 +317,12 @@ public class GenePvalueCalculator {
 						p++;
 					}
 				}
+				
+				timeStop = System.currentTimeMillis();
+				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
+				
+				timeStart = System.currentTimeMillis();
+				
 				p /= (double) nrPermutations + 1;
 
 				if (p == 1) {
