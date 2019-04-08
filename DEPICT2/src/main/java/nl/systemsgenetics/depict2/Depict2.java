@@ -209,7 +209,7 @@ public class Depict2 {
 
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 100);
+		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
 		
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
@@ -379,8 +379,8 @@ public class Depict2 {
 	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
 
 		final double[] randomChi2;
-		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE) {
-			randomChi2 = new double[Integer.MAX_VALUE];
+		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE-10) {
+			randomChi2 = new double[Integer.MAX_VALUE-10];
 		} else {
 			randomChi2 = new double[numberOfVariantPerGeneToExpect * numberOfPermutations];
 		}

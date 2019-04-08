@@ -1608,7 +1608,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			d1Cols[i] = d1Matrix.viewColumn(i);
 		}
 
-		final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d1NrCols];
+		final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d2NrCols];
 		for (int i = d2NrCols; --i >= 0;) {
 			d2Cols[i] = d2Matrix.viewColumn(i);
 		}

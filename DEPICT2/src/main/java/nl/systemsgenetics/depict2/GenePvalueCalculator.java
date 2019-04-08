@@ -44,6 +44,7 @@ public class GenePvalueCalculator {
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
 	protected static long timeInLoadingGenotypeDosages = 0;
 
+	private static long totalTimeInThread = 0;
 	private static long timeInPermutations = 0;
 	private static long timeInPruningGenotypeCorrelationMatrix = 0;
 	private static long timeInDoingPca = 0;
@@ -133,6 +134,8 @@ public class GenePvalueCalculator {
 			//All genes are indipendant
 			IntStream.range(0, numberGenes).parallel().forEach((int geneI) -> {
 //			for (int geneI = 0; geneI < numberGenes; ++geneI) {
+
+				long startThread = System.currentTimeMillis();
 				try {
 
 					//Results are writen in genePvalues
@@ -142,6 +145,10 @@ public class GenePvalueCalculator {
 				} catch (Exception ex) {
 					throw new RuntimeException(ex);
 				}
+				
+				long endThread = System.currentTimeMillis();
+				
+				totalTimeInThread += (endThread - startThread);
 
 			});
 
@@ -161,6 +168,7 @@ public class GenePvalueCalculator {
 		LOGGER.info("timeInLoadingZscoreMatrix: " + formatMsForLog(timeInLoadingZscoreMatrix));
 		LOGGER.info("timeInCalculatingRealSumChi2: " + formatMsForLog(timeInCalculatingRealSumChi2));
 		LOGGER.info("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
+		LOGGER.info("totalTimeInThread: " + formatMsForLog(totalTimeInThread));
 
 		LOGGER.info("-----------------------");
 		LOGGER.info("Gene p-value histrogram chi2 dist");
