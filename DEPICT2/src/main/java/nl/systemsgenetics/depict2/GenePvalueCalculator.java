@@ -145,9 +145,9 @@ public class GenePvalueCalculator {
 				} catch (Exception ex) {
 					throw new RuntimeException(ex);
 				}
-				
+
 				long endThread = System.currentTimeMillis();
-				
+
 				totalTimeInThread += (endThread - startThread);
 
 			});
@@ -287,8 +287,10 @@ public class GenePvalueCalculator {
 
 		timeStart = System.currentTimeMillis();
 
-//load current variants from variantPhenotypeMatrix
-		final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
+		//load current variants from variantPhenotypeMatrix
+		synchronized (this) {
+			final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
+		}
 
 		timeStop = System.currentTimeMillis();
 		timeInLoadingZscoreMatrix += (timeStop - timeStart);
