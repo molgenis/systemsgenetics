@@ -19,14 +19,15 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 public class PearsonRToZscoreBinned {
 
 	private final double[] zscoreLookupTable;
-	private final int numberOfBins;
+	private final int totalNumberOfBins;
+	private final int binsPerSide;
 	private final double halfStep;
 	private final int maxBin;
 
 	/**
 	 * It is recommended to name instances of this class r2Zscore ;)
 	 *
-	 * @param numberOfBins determines precision
+	 * @param numberOfBins determines precision.
 	 * @param samplesUsedForCor
 	 * @throws java.lang.Exception
 	 */
@@ -37,20 +38,20 @@ public class PearsonRToZscoreBinned {
 //		if (power != Math.round(power)) {
 //			throw new Exception("Number of bins must be power of 10");
 //		}
-
 		final int df = samplesUsedForCor - 2;
 		DoubleRandomEngine randomEngine = new DRand();
 
-		this.numberOfBins = numberOfBins;
-		this.maxBin = numberOfBins - 1;
-		zscoreLookupTable = new double[numberOfBins];
+		this.binsPerSide = numberOfBins;
+		this.totalNumberOfBins = numberOfBins * 2;
+		this.maxBin = totalNumberOfBins - 1;
+		zscoreLookupTable = new double[totalNumberOfBins];
 
-		final double stepSize = 1d / numberOfBins;
+		final double stepSize = 1d / binsPerSide;
 		halfStep = stepSize / 2;
 
-		for (int bin = 0; bin < numberOfBins; ++bin) {
+		for (int bin = 0; bin < totalNumberOfBins; ++bin) {
 
-			final double corBinCenter = stepSize * bin + halfStep;
+			final double corBinCenter = -1 + (stepSize * bin) + halfStep;
 
 			StudentT tDistColt = new StudentT(df, randomEngine);
 			double t = corBinCenter / (Math.sqrt((1 - corBinCenter * corBinCenter) / (double) (df)));
@@ -71,29 +72,29 @@ public class PearsonRToZscoreBinned {
 			}
 
 			zscoreLookupTable[bin] = zScore;
-			
+
 //			System.out.println("Bin: " + bin + "\tcenter r: " + corBinCenter + "\tZscore: " + zScore);
 
 		}
-		
-		
 
 	}
 
 	public double lookupZscoreForR(double r) {
 
-		
-		
-		long bin = Math.round(Math.abs(r) * numberOfBins - halfStep);
-		
-//		System.out.println("r:" + r);
-//		System.out.println("bin:" + bin);
+		final long bin;
 
-		//this is needed because due to rounding a r of 1 will not fall into any bin. Also a r > 1 is accepted for imprecise r calculations
-		if (bin > maxBin) {
+		//this is needed because due to rounding a r of 1 will not fall into any bin. Also a r > 1 or r < -1 is accepted for imprecise r calculations
+		if (r >= 1) {
 			bin = maxBin;
+		} else if (r <= -1) {
+			bin = 0;
+		} else {
+			bin = Math.round((r + 1) * binsPerSide - halfStep);
 		}
 
+//		System.out.println("r: " + r);
+//		System.out.println("bin: " + bin);
+//		System.out.println("z: " + zscoreLookupTable[(int) bin]);
 		return zscoreLookupTable[(int) bin];
 
 	}

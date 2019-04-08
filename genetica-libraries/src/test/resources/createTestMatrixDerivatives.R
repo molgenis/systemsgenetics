@@ -16,4 +16,8 @@ corPvalues <- corr.test(testMatrix, adjust = "none")$p
 
 corZscores <- apply(corPvalues, 1:2, function(p){qnorm(1 - (p/2))})
 
-write.table(corZscores, file = "testMatrixColumnCorZscoreMatrix.txt", quote = F, sep = "\t", col.names = NA)
+corDirections <- apply(cor(testMatrix), 1:2, function(x){if(x<0){return(-1)}else{return(1)}})
+
+corZscoresDirected <- corZscores * corDirections
+
+write.table(corZscoresDirected, file = "testMatrixColumnCorZscoreMatrix.txt", quote = F, sep = "\t", col.names = NA)

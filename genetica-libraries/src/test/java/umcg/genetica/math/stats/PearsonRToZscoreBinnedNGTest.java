@@ -51,11 +51,11 @@ public class PearsonRToZscoreBinnedNGTest {
 		
 		r2zScore.inplaceRToZ(corMatrix);
 		
-		System.out.println("Real Z-score");
-		testMatrixRealCorZscores.printMatrix();
-		
-		System.out.println("Calculated Z-score");
-		corMatrix.printMatrix();
+//		System.out.println("Real Z-score");
+//		testMatrixRealCorZscores.printMatrix();
+//		
+//		System.out.println("Calculated Z-score");
+//		corMatrix.printMatrix();
 		
 		DoubleMatrixDatasetTest.compareTwoMatricesIgnoreNaN(corMatrix, testMatrixRealCorZscores, 0.001);
 		
