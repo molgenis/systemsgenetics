@@ -176,7 +176,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException, Exception {
 		if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
 			return loadDoubleTextData(fileName, '\t');
-		} else if (fileName.endsWith(".binary")) {
+		} else if (fileName.endsWith(".dat")) {
 			return loadDoubleBinaryData(fileName);
 		} else {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set to: \"tab\" \n Input filename: " + fileName);
@@ -384,7 +384,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @deprecated Untested. For now use loadSubsetOfRowsBinaryDoubleData and
 	 * then do viewColSelection. That option will keep all cols in memory
 	 */
-	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, Set<String> desiredRows, Set<String> desiredCols) throws IOException {
 
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> rowMap = loadIdentifiers(fileName + ".rows.txt");
@@ -1577,7 +1577,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Assumes that columns in both dataset have mean 0 and sd 1
-	 * 
+	 *
 	 * Rows must be identical, only row count will be checked
 	 *
 	 * Columns in d1 will be columns in output, columns in d2 will be rows
@@ -1600,7 +1600,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		final int d1NrCols = d1.columns();
 		final int d2NrCols = d2.columns();
-		
+
 		final int nrRows = d1.rows();
 
 		final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];
