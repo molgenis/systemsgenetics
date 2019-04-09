@@ -240,7 +240,7 @@ public class QTLReplicationTable {
 
 		// determine lambdas
 		ChiSquaredDistribution dist = new ChiSquaredDistribution(1);
-		double chisqexp = dist.cumulativeProbability(0.5);
+		double chisqexp = dist.inverseCumulativeProbability(0.5);
 		TextFile outf2 = new TextFile(outputloc + "-lambdas.txt", TextFile.W);
 		outf2.writeln("Tissue/CellType\tNrEQTLs\tLambda(MedianChiSquared/chiexp)");
 		for (int f = 0; f < filenames.length; f++) {
@@ -489,7 +489,7 @@ public class QTLReplicationTable {
 		tfo.writeln(ln);
 
 		ChiSquaredDistribution dist = new ChiSquaredDistribution(1);
-		double chisqexp = dist.cumulativeProbability(0.5);
+		double chisqexp = dist.inverseCumulativeProbability(0.5);
 		for (int f = 0; f < filesplit.length; f++) {
 			String outln = namesplit[f];
 			System.out.println(namesplit[f]);
