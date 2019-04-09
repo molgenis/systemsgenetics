@@ -1394,7 +1394,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Fast correlation matrix function but only valid if all columns have mean
-	 * 0 and sd 1
+	 * 0 and sd 1. See normalizeColumns()
 	 *
 	 * Does NOT check if conditions valid
 	 *

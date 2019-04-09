@@ -115,12 +115,12 @@ public class GenePvalueCalculator {
 		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 
 		//Result matrix. Rows: genes, Cols: phenotypes
-		genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(phenotypes));
+		genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(phenotypes));
 
 		//Result matrix null GWAS. Rows: genes, Cols: phenotypes
 		genePvaluesNullGwas = new DoubleMatrixDataset<>(createGeneHashRows(genes), randomNormalizedPhenotypes.getHashCols());
 
-		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createPhenoHashCols(Arrays.asList(new String[]{"count"})));
+		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"count"})));
 
 		numberRealPheno = phenotypes.size();
 		final int numberGenes = genes.size();
@@ -489,12 +489,12 @@ public class GenePvalueCalculator {
 		return geneHashRows;
 	}
 
-	public static LinkedHashMap<String, Integer> createPhenoHashCols(final List<String> phenotypes) {
-		LinkedHashMap<String, Integer> phenoHashCols = new LinkedHashMap<>(phenotypes.size());
-		for (int phenoI = 0; phenoI < phenotypes.size(); ++phenoI) {
-			phenoHashCols.put(phenotypes.get(phenoI), phenoI);
+	public static LinkedHashMap<String, Integer> createHashColsFromList(final List<String> list) {
+		LinkedHashMap<String, Integer> hashCols = new LinkedHashMap<>(list.size());
+		for (int i = 0; i < list.size(); ++i) {
+			hashCols.put(list.get(i), i);
 		}
-		return phenoHashCols;
+		return hashCols;
 	}
 
 	public static double[] runPermutationsUsingEigenValues(final double[] eigenValues, final int nrPermutations, double[] randomChi2) {

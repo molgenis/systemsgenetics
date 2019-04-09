@@ -17,8 +17,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -146,6 +148,9 @@ public class Depict2 {
 				case RUN:
 					run(options);
 					break;
+				case RUN2:
+					run2(options, null, null, null);
+					break;
 			}
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Problem running mode: " + options.getMode());
@@ -176,7 +181,7 @@ public class Depict2 {
 			System.err.println("Error meesage: " + e.getMessage());
 			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error: " + e.getMessage(), e);
-			if(LOGGER.isDebugEnabled()){
+			if (LOGGER.isDebugEnabled()) {
 				e.printStackTrace();
 			}
 			System.exit(1);
@@ -210,22 +215,70 @@ public class Depict2 {
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
 		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
-		
+
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
 		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-		
+
 		LOGGER.info("Finished calculating gene p-values");
 
 		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
 		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+
+		LOGGER.info("Gene p-values saved to disc. If needed the analysis can be resummed from this point using mode = RUN2 and exactly the same output path");
+
+		run2(options, genePvalues, genePvaluesNullGwas, geneVariantCount);
+
+	}
+
+	/**
+	 * Part2 of depict. Matrices may be null and then they will be loaded form output path
+	 * 
+	 * All matrices will have genes on the rows in the same order
+	 * 
+	 * @param options
+	 * @param genePvalues
+	 * @param genePvaluesNullGwas
+	 * @param geneVariantCount
+	 * @throws IOException
+	 * @throws Exception 
+	 */
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
+
+		if (genePvalues == null) {
+			LOGGER.info("Continuing previous analysis by loading gene p-values");
+			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
+			LOGGER.info("Old analysis loaded");
+		}
+
+		//Identify genes with atleast one variant in window
+		final LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
+		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
+		final int totalGeneCount = allGenes.size();
+		for (int g = 0; g < totalGeneCount; ++g) {
+			if (geneVariantCount.getElementQuick(g, 0) > 0) {
+				selectedGenes.add(allGenes.get(g));
+			}
+		}
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + selectedGenes.size());
+		
+		//Exclude genes with no variants
+		genePvalues = genePvalues.viewRowSelection(selectedGenes);
+		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
+		geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
+		
+		//Gene weight will have same order as other matrices
+		DoubleMatrixDataset<String, String> geneWeigths = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas);
 		
 		
 		
+
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -379,8 +432,8 @@ public class Depict2 {
 	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
 
 		final double[] randomChi2;
-		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE-10) {
-			randomChi2 = new double[Integer.MAX_VALUE-10];
+		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE - 10) {
+			randomChi2 = new double[Integer.MAX_VALUE - 10];
 		} else {
 			randomChi2 = new double[numberOfVariantPerGeneToExpect * numberOfPermutations];
 		}
