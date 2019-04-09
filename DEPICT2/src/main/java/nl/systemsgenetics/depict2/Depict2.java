@@ -176,6 +176,9 @@ public class Depict2 {
 			System.err.println("Error meesage: " + e.getMessage());
 			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error: " + e.getMessage(), e);
+			if(LOGGER.isDebugEnabled()){
+				e.printStackTrace();
+			}
 			System.exit(1);
 		}
 		LOGGER.info("Completed mode: " + options.getMode());
@@ -206,15 +209,23 @@ public class Depict2 {
 
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 100);
+		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
 		
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
-		DoubleMatrixDataset<String, String> genePvalues = CalculateGenePvalues.calculatorGenePvalues(options.getGwasZscoreMatrixPath(), new GenotypeCorrelationGenotypes(referenceGenotypeData), genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
-
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
+		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
+		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
+		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
+		
 		LOGGER.info("Finished calculating gene p-values");
 
 		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
+		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
+		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		
+		
+		
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -368,8 +379,8 @@ public class Depict2 {
 	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
 
 		final double[] randomChi2;
-		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE) {
-			randomChi2 = new double[Integer.MAX_VALUE];
+		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE-10) {
+			randomChi2 = new double[Integer.MAX_VALUE-10];
 		} else {
 			randomChi2 = new double[numberOfVariantPerGeneToExpect * numberOfPermutations];
 		}
@@ -378,9 +389,6 @@ public class Depict2 {
 		final int nrThreads = Depict2Options.getNumberOfThreadsToUse();
 		final int permPerThread = randomChi2Size / nrThreads;
 		final int leftoverPerm = randomChi2Size % nrThreads;
-
-		System.out.println("permPerThread " + permPerThread);
-		System.out.println("leftoverPerm " + leftoverPerm);
 
 		IntStream.range(0, nrThreads).parallel().forEach(task -> {
 

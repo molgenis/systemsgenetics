@@ -910,6 +910,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return new LinkedHashMap<>(hashCols);
 	}
 
+	public LinkedHashMap<R, Integer> getHashRowsCopy() {
+		return new LinkedHashMap<>(hashRows);
+	}
+
 	public void setRowObjects(List<R> arrayList) throws Exception {
 		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<R, Integer>((int) Math.ceil(arrayList.size() / 0.75));
 		int i = 0;
@@ -1048,8 +1052,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Transposed view
-	 * 
-	 * @return 
+	 *
+	 * @return
 	 */
 	public DoubleMatrixDataset<C, R> viewDice() {
 		return new DoubleMatrixDataset<C, R>(matrix.viewDice(), hashCols, hashRows);
@@ -1389,6 +1393,52 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	/**
+	 * Fast correlation matrix function but only valid if all columns have mean
+	 * 0 and sd 1
+	 *
+	 * Does NOT check if conditions valid
+	 *
+	 * This function is not the same as covariance
+	 *
+	 * @return Correlation matrix on columns
+	 */
+	public DoubleMatrixDataset<C, C> calculateCorrelationMatrixOnNormalizedColumns() {
+
+		int rows = matrix.rows();
+		int columns = matrix.columns();
+		DoubleMatrix2D correlations = new cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D(columns, columns);
+
+		DoubleMatrix1D[] cols = new DoubleMatrix1D[columns];
+		for (int i = columns; --i >= 0;) {
+			cols[i] = matrix.viewColumn(i);
+		}
+
+		for (int i = columns; --i >= 0;) {
+			DoubleMatrix1D col1 = cols[i];
+			for (int j = i + 1; --j >= 0;) {
+
+				if (i == j) {
+					correlations.setQuick(i, j, 1);
+				} else {
+
+					DoubleMatrix1D col2 = cols[j];
+					double sumOfProducts = 0;
+					for (int e = 0; e < rows; ++e) {
+						sumOfProducts += col1.getQuick(e) * col2.getQuick(e);
+					}
+
+					double x = sumOfProducts / (rows - 1);
+					correlations.setQuick(i, j, x);
+					correlations.setQuick(j, i, x); // symmetric
+				}
+			}
+		}
+
+		return new DoubleMatrixDataset<>(correlations, hashCols, hashCols);
+
+	}
+
+	/**
 	 * @return Covariance matrix on columns
 	 */
 	public DoubleMatrixDataset<C, C> calculateCovarianceMatrix() {
@@ -1502,5 +1552,85 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-	
+	/**
+	 * Obviously not recommended for large matrices but great for debugging
+	 *
+	 */
+	public void printMatrix() {
+
+		for (C col : hashCols.keySet()) {
+			System.out.print("\t" + col.toString());
+		}
+		System.out.println();
+
+		ArrayList<R> rowNames = new ArrayList(hashRows.keySet());
+
+		for (int r = 0; r < matrix.rows(); ++r) {
+			System.out.print(rowNames.get(r));
+			for (int c = 0; c < matrix.columns(); ++c) {
+				System.out.print("\t" + matrix.getQuick(r, c));
+			}
+			System.out.println();
+		}
+
+	}
+
+	/**
+	 * Assumes that columns in both dataset have mean 0 and sd 1
+	 * 
+	 * Rows must be identical, only row count will be checked
+	 *
+	 * Columns in d1 will be columns in output, columns in d2 will be rows
+	 *
+	 * @param d1
+	 * @param d2
+	 * @return
+	 */
+	public static DoubleMatrixDataset<String, String> correlateColumnsOf2ColumnNormalizedDatasets(DoubleMatrixDataset<String, String> d1, DoubleMatrixDataset<String, String> d2) throws Exception {
+
+		if (d1.rows() != d2.rows()) {
+			throw new Exception("When correlating two datasets both should have identical number of rows. d1 has: " + d1.rows() + " d2 has: " + d2.rows() + " rows");
+		}
+		final DoubleMatrix2D d1Matrix = d1.matrix;
+		final DoubleMatrix2D d2Matrix = d2.matrix;
+
+		final DoubleMatrixDataset<String, String> correlations = new DoubleMatrixDataset<>(d2.getHashColsCopy(), d1.getHashColsCopy());
+
+		final DoubleMatrix2D corMatrix = correlations.matrix;
+
+		final int d1NrCols = d1.columns();
+		final int d2NrCols = d2.columns();
+		
+		final int nrRows = d1.rows();
+
+		final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];
+		for (int i = d1NrCols; --i >= 0;) {
+			d1Cols[i] = d1Matrix.viewColumn(i);
+		}
+
+		final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d2NrCols];
+		for (int i = d2NrCols; --i >= 0;) {
+			d2Cols[i] = d2Matrix.viewColumn(i);
+		}
+
+		for (int i = d1NrCols; --i >= 0;) {
+			DoubleMatrix1D col1 = d1Cols[i];
+			for (int j = d2NrCols; --j >= 0;) {
+
+				DoubleMatrix1D col2 = d2Cols[j];
+				double sumOfProducts = 0;
+				for (int e = 0; e < nrRows; ++e) {
+					sumOfProducts += col1.getQuick(e) * col2.getQuick(e);
+				}
+
+				double x = sumOfProducts / (nrRows - 1);
+				corMatrix.setQuick(j, i, x);
+
+			}
+		}
+
+		return correlations;
+
+	}
+
 }

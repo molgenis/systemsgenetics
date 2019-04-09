@@ -27,8 +27,8 @@ all.equal( x1234[,1], newx[,1] )
 newc <- matrix( 
   c(1  , 0.4, 0.5, 0.6, 
     0.4, 1  , 0.003  , 0  ,
-    0.5, 0.003  , 1  , -0.8  ,
-    0.6, 0  , -0.8  , 1  ), ncol=4 )
+    0.5, 0.003  , 1  , 0.8  ,
+    0.6, 0  , 0.8  , 1  ), ncol=4 )
 
 # check that it is positive definite
 eigen(newc)
