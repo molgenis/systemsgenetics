@@ -32,9 +32,9 @@ public class Depict2Options {
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
 	private final File genotypeSamplesFile;
-	private final String outputBasePath;
+	private final File outputBasePath;
 	private final File geneInfoFile;
-	private final String gwasZscoreMatrixPath;
+	private final File gwasZscoreMatrixPath;
 	private final int numberOfPermutations;
 	private final int windowExtend;
 	private final double maxRBetweenVariants;
@@ -154,7 +154,7 @@ public class Depict2Options {
 			}
 		}
 
-		outputBasePath = commandLine.getOptionValue('o');
+		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
 
@@ -170,7 +170,7 @@ public class Depict2Options {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
 			}
 
-			gwasZscoreMatrixPath = commandLine.getOptionValue('g');
+			gwasZscoreMatrixPath = new File(commandLine.getOptionValue('g'));
 		} else {
 			gwasZscoreMatrixPath = null;
 		}
@@ -275,26 +275,26 @@ public class Depict2Options {
 		LOGGER.info("Supplied options:");
 
 		LOGGER.info(" * Mode: " + mode.name());
-		LOGGER.info(" * Ouput path: " + outputBasePath);
+		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 
 		switch (mode) {
 			case CONVERT_EQTL:
-				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
 				break;
 			case CONVERT_TXT:
-				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
 			case RUN:
-				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath);
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 
 				if (genotypeBasePath != null) {
 					StringBuilder genotypeBasePaths = new StringBuilder();
 					for (String path : genotypeBasePath) {
-						genotypeBasePaths.append(path);
+						genotypeBasePaths.append(new File(path).getAbsolutePath());
 						genotypeBasePaths.append(' ');
 					}
 					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
@@ -324,7 +324,7 @@ public class Depict2Options {
 	}
 
 	public String getOutputBasePath() {
-		return outputBasePath;
+		return outputBasePath.getPath();
 	}
 
 	public File getLogFile() {
@@ -332,7 +332,7 @@ public class Depict2Options {
 	}
 
 	public String getGwasZscoreMatrixPath() {
-		return gwasZscoreMatrixPath;
+		return gwasZscoreMatrixPath.getPath();
 	}
 
 	public int getNumberOfPermutations() {
