@@ -457,13 +457,13 @@ public class DoubleMatrixDatasetTest {
 
 	}
 
-	private static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
+	public static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
 
 		compareTwoMatrices(m1, m2, 0.00000001);
 
 	}
 
-	private static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
+	public static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
 
 		assertEquals(m1.rows(), m2.rows());
 		assertEquals(m1.columns(), m2.columns());
