@@ -40,66 +40,66 @@ public class GeneWeightCalculator {
 
 		Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
 		
-		final ProgressBar pb = new ProgressBar("Gene weight calculation", chrArmToGeneMapping.size(), ProgressBarStyle.ASCII);
+		final DoubleMatrixDataset<String, String> weights;
 		
-		final DoubleMatrixDataset<String, String> weights = new DoubleMatrixDataset<>(genePvaluesNullGwas.getHashRowsCopy(), createHashColsFromList(Arrays.asList(new String[]{"weight"})));
-
-		chrArmToGeneMapping.keySet().parallelStream().forEach((String chrArm) -> {
+		try (ProgressBar pb = new ProgressBar("Gene weight calculation", chrArmToGeneMapping.size(), ProgressBarStyle.ASCII)) {
 			
-			ArrayList<String> armGenes = chrArmToGeneMapping.get(chrArm);
-
-			DoubleMatrixDataset<String, String> genePvaluesNullGwasArm = genePvaluesNullGwas.viewRowSelection(armGenes);
-			final int numberOfGenesInArm = genePvaluesNullGwasArm.rows();
-
-			final DoubleMatrixDataset<String, String> genePvaluesNullGwasArmT = genePvaluesNullGwasArm.viewDice();
-
-			DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelation = genePvaluesNullGwasArmT.calculateCorrelationMatrix();
-
-			if (LOGGER.isDebugEnabled()) {
-				try {
-					genePvaluesNullGwasGeneArmCorrelation.save(new File(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt"));
-				} catch (IOException ex) {
-					throw new RuntimeException(ex);
+			weights = new DoubleMatrixDataset<>(genePvaluesNullGwas.getHashRowsCopy(), createHashColsFromList(Arrays.asList(new String[]{"weight"})));
+			chrArmToGeneMapping.keySet().parallelStream().forEach((String chrArm) -> {
+				
+				ArrayList<String> armGenes = chrArmToGeneMapping.get(chrArm);
+				
+				DoubleMatrixDataset<String, String> genePvaluesNullGwasArm = genePvaluesNullGwas.viewRowSelection(armGenes);
+				final int numberOfGenesInArm = genePvaluesNullGwasArm.rows();
+				
+				final DoubleMatrixDataset<String, String> genePvaluesNullGwasArmT = genePvaluesNullGwasArm.viewDice();
+				
+				DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelation = genePvaluesNullGwasArmT.calculateCorrelationMatrix();
+				
+				if (LOGGER.isDebugEnabled()) {
+					try {
+						genePvaluesNullGwasGeneArmCorrelation.save(new File(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt"));
+					} catch (IOException ex) {
+						throw new RuntimeException(ex);
+					}
 				}
-			}
-
-			final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(genePvaluesNullGwasGeneArmCorrelation.getMatrixAs2dDoubleArray());
-			final double[] eigenValues = eig.getRealEigenvalues();
-			double[][] factorLoadings = new double[numberOfGenesInArm][numberOfGenesInArm];
-
-			//Calculate the factorloadings:
-			for (int comp = 0; comp < numberOfGenesInArm; comp++) {
-				double eigenvalue = eigenValues[eigenValues.length - 1 - comp];
-				if (eigenvalue < 0) {
-					eigenvalue = 0;
-				}
-				double sqrtEigenvalue = Math.sqrt(eigenvalue);
-				factorLoadings[comp] = JamaHelperFunctions.getEigenVector(eig, comp);
-				for (int a = 0; a < numberOfGenesInArm; a++) {
-					factorLoadings[comp][a] *= sqrtEigenvalue;
-				}
-			}
-
-			//Calculate the weights of the individual genes, to be used for the weighed correlation, to account for co-expression between genes:
-			for (int p = 0; p < numberOfGenesInArm; p++) {
-				double weight = 0;
+				
+				final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(genePvaluesNullGwasGeneArmCorrelation.getMatrixAs2dDoubleArray());
+				final double[] eigenValues = eig.getRealEigenvalues();
+				double[][] factorLoadings = new double[numberOfGenesInArm][numberOfGenesInArm];
+				
+				//Calculate the factorloadings:
 				for (int comp = 0; comp < numberOfGenesInArm; comp++) {
 					double eigenvalue = eigenValues[eigenValues.length - 1 - comp];
-					if (eigenvalue < 1) {
-						eigenvalue = 1;
+					if (eigenvalue < 0) {
+						eigenvalue = 0;
 					}
-					weight += factorLoadings[comp][p] * factorLoadings[comp][p] / eigenvalue;
+					double sqrtEigenvalue = Math.sqrt(eigenvalue);
+					factorLoadings[comp] = JamaHelperFunctions.getEigenVector(eig, comp);
+					for (int a = 0; a < numberOfGenesInArm; a++) {
+						factorLoadings[comp][a] *= sqrtEigenvalue;
+					}
 				}
-
-				weights.setElementQuick(weights.getRowIndex(armGenes.get(p)), 0, weight);
-
-			}
-
-			pb.step();
-
-		});
-		
-		pb.close();
+				
+				//Calculate the weights of the individual genes, to be used for the weighed correlation, to account for co-expression between genes:
+				for (int p = 0; p < numberOfGenesInArm; p++) {
+					double weight = 0;
+					for (int comp = 0; comp < numberOfGenesInArm; comp++) {
+						double eigenvalue = eigenValues[eigenValues.length - 1 - comp];
+						if (eigenvalue < 1) {
+							eigenvalue = 1;
+						}
+						weight += factorLoadings[comp][p] * factorLoadings[comp][p] / eigenvalue;
+					}
+					
+					weights.setElementQuick(weights.getRowIndex(armGenes.get(p)), 0, weight);
+					
+				}
+				
+				pb.step();
+				
+			});
+		}
 
 		return weights;
 

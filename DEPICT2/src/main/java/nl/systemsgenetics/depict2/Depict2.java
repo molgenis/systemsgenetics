@@ -111,7 +111,7 @@ public class Depict2 {
 		}
 
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
+			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.RUN2 || options.getMode() == Depict2Mode.RUN3);
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
@@ -150,6 +150,9 @@ public class Depict2 {
 					break;
 				case RUN2:
 					run2(options, null, null, null, null);
+					break;
+				case RUN3:
+					run3(options, null, null, null, null, null);
 					break;
 			}
 		} catch (TabixFileNotFoundException e) {
@@ -250,7 +253,7 @@ public class Depict2 {
 	 */
 	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes) throws IOException, Exception {
 
-		if (genePvalues == null) {
+		if (options.getMode() == Depict2Mode.RUN2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
@@ -289,7 +292,7 @@ public class Depict2 {
 
 	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes, DoubleMatrixDataset<String, String> geneWeights) throws IOException, Exception {
 
-		if (genePvalues == null) {
+		if (options.getMode() == Depict2Mode.RUN3) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
 			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
@@ -300,6 +303,11 @@ public class Depict2 {
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
 		}
+		
+		
+		
+				
+		
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
