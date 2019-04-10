@@ -170,7 +170,7 @@ public class GenePvalueCalculator {
 		LOGGER.info("timeInCalculatingRealSumChi2: " + formatMsForLog(timeInCalculatingRealSumChi2));
 		LOGGER.info("timeInComparingRealChi2ToPermutationChi2: " + formatMsForLog(timeInComparingRealChi2ToPermutationChi2));
 		LOGGER.info("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
-		LOGGER.info("totalTimeInThread: " + formatMsForLog(totalTimeInThread));
+		LOGGER.info("totalTimeInThread: " + formatMsForLog(totalTimeInThread) + " (" + totalTimeInThread + ") ");
 
 		LOGGER.info("-----------------------");
 		LOGGER.info("Gene p-value histrogram chi2 dist");

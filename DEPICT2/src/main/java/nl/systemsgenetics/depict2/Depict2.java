@@ -49,7 +49,7 @@ public class Depict2 {
 
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
+	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("d:HH:mm:ss");
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
@@ -149,7 +149,7 @@ public class Depict2 {
 					run(options);
 					break;
 				case RUN2:
-					run2(options, null, null, null);
+					run2(options, null, null, null, null);
 					break;
 			}
 		} catch (TabixFileNotFoundException e) {
@@ -229,32 +229,35 @@ public class Depict2 {
 		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
 
-		LOGGER.info("Gene p-values saved to disc. If needed the analysis can be resummed from this point using mode = RUN2 and exactly the same output path");
+		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
-		run2(options, genePvalues, genePvaluesNullGwas, geneVariantCount);
+		run2(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes);
 
 	}
 
 	/**
-	 * Part2 of depict. Matrices may be null and then they will be loaded form output path
-	 * 
+	 * Part2 of depict. Matrices may be null and then they will be loaded form
+	 * output path. If matrices is null genes will be reloaded
+	 *
 	 * All matrices will have genes on the rows in the same order
-	 * 
+	 *
 	 * @param options
 	 * @param genePvalues
 	 * @param genePvaluesNullGwas
 	 * @param geneVariantCount
 	 * @throws IOException
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes) throws IOException, Exception {
 
 		if (genePvalues == null) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
 			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
-			LOGGER.info("Old analysis loaded");
+			LOGGER.info("Gene p-values loaded");
+			genes = readGenes(options.getGeneInfoFile());
+			LOGGER.info("Loaded " + genes.size() + " genes");
 		}
 
 		//Identify genes with atleast one variant in window
@@ -267,18 +270,36 @@ public class Depict2 {
 			}
 		}
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + selectedGenes.size());
-		
+
 		//Exclude genes with no variants
 		genePvalues = genePvalues.viewRowSelection(selectedGenes);
 		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
-		geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
-		
-		//Gene weight will have same order as other matrices
-		DoubleMatrixDataset<String, String> geneWeigths = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas);
-		
-		
-		
+		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
 
+		//Gene weight will have same order as other matrices
+		DoubleMatrixDataset<String, String> geneWeights = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas, genes, options);
+		
+		geneWeights.save(options.getOutputBasePath() + "_geneWeigths.txt");
+
+		LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
+
+		run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneWeights);
+		
+	}
+
+	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes, DoubleMatrixDataset<String, String> geneWeights) throws IOException, Exception {
+
+		if (genePvalues == null) {
+			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
+			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
+			LOGGER.info("Gene p-values loaded");
+			geneWeights = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneWeigths.txt", '\t');
+			LOGGER.info("Gene weights loaded");
+			genes = readGenes(options.getGeneInfoFile());
+			LOGGER.info("Loaded " + genes.size() + " genes");
+		}
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -324,7 +345,7 @@ public class Depict2 {
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3])));
+			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5]));
 
 		}
 

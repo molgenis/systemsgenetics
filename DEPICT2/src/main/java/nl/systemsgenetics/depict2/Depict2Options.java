@@ -6,6 +6,7 @@
 package nl.systemsgenetics.depict2;
 
 import java.io.File;
+import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -13,6 +14,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
@@ -41,6 +43,7 @@ public class Depict2Options {
 	private final File logFile;
 	private final boolean debugMode;
 	private final boolean pvalueToZscore;
+	private final List<PathwayDatabase> pathwayDatabases;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -124,7 +127,7 @@ public class Depict2Options {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos");
+		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
 
@@ -138,6 +141,13 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("pvalueToZscore");
 		OPTIONS.addOption(OptionBuilder.create("p2z"));
 
+		OptionBuilder.withArgName("name=path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withValueSeparator();
+		OptionBuilder.withDescription("Pathway databases, binary matrix with p-values for genes");
+		OptionBuilder.withLongOpt("pathwayDatabase");
+		OPTIONS.addOption(OptionBuilder.create("pd"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -148,7 +158,7 @@ public class Depict2Options {
 		if (commandLine.hasOption('t')) {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
-				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism",commandLine.getOptionValue('t'));
+				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
 			}
@@ -253,7 +263,33 @@ public class Depict2Options {
 				}
 
 			}
+
+			if (commandLine.hasOption("pd")) {
+
+				String[] test = commandLine.getOptionValues("pd");
+				System.out.println(StringUtils.join(test, ";"));
+
+			}
+
+			pathwayDatabases = null;//TMP
+
+		} else if (mode == Depict2Mode.RUN2 || mode == Depict2Mode.RUN3) {
+
+			if (!commandLine.hasOption("ge")) {
+				throw new ParseException("--genes not specified");
+			} else {
+				geneInfoFile = new File(commandLine.getOptionValue("ge"));
+			}
+
+			pathwayDatabases = null;
+			genotypeBasePath = null;
+			genotypeType = null;
+			genotypeSamplesFile = null;
+			maxRBetweenVariants = 0d;
+			numberOfPermutations = 0;
+			windowExtend = 0;
 		} else {
+			pathwayDatabases = null;
 			genotypeBasePath = null;
 			genotypeType = null;
 			genotypeSamplesFile = null;
@@ -309,6 +345,11 @@ public class Depict2Options {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
 				break;
+			case RUN2:
+			case RUN3:
+				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
+				break;
+
 		}
 
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
