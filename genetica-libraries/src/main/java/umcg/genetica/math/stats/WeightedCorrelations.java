@@ -66,13 +66,15 @@ public class WeightedCorrelations {
 		}
 
 		for (int i = d1NrCols; --i >= 0;) {
-			DoubleMatrix1D col1 = d1Cols[i];
+			
+			final DoubleMatrix1D col1 = d1Cols[i];
+			final double wmX = d1ColsWeightedMean[i];
+			
 			for (int j = d2NrCols; --j >= 0;) {
 
-				DoubleMatrix1D col2 = d2Cols[j];
+				final DoubleMatrix1D col2 = d2Cols[j];
 
-				double wmX = d1ColsWeightedMean[i];
-				double wmY = d2ColsWeightedMean[j];
+				final double wmY = d2ColsWeightedMean[j];
 
 				double covXX = 0;
 				double covXY = 0;
