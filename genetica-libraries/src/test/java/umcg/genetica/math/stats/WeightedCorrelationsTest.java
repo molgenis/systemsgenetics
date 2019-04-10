@@ -48,13 +48,13 @@ public class WeightedCorrelationsTest {
 
 		DoubleMatrixDataset<String, String> testMatrixWCor = WeightedCorrelations.weightedCorrelationColumnsOf2Datasets(testMatrix, testMatrix, weights);
 
-		System.out.println("Calculated");
-		testMatrixWCor.printMatrix();
-
-		System.out.println("");
-		System.out.println("Reference");
-		testMatrixRealWCor.printMatrix();
-		
+//		System.out.println("Calculated");
+//		testMatrixWCor.printMatrix();
+//
+//		System.out.println("");
+//		System.out.println("Reference");
+//		testMatrixRealWCor.printMatrix();
+//		
 		
 		compareTwoMatrices(testMatrixWCor, testMatrixRealWCor);
 
