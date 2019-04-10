@@ -284,9 +284,15 @@ public class Depict2 {
 		
 		geneWeights.save(options.getOutputBasePath() + "_geneWeigths.txt");
 
-		LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
+		
 
-		run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneWeights);
+		if(options.getPathwayDatabases().isEmpty()){
+			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
+		} else {
+			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
+			run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneWeights);
+		}
+		
 		
 	}
 
@@ -304,9 +310,9 @@ public class Depict2 {
 			LOGGER.info("Loaded " + genes.size() + " genes");
 		}
 		
+		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 		
 		
-				
 		
 	}
 

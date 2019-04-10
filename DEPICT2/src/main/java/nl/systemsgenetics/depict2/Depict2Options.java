@@ -6,6 +6,8 @@
 package nl.systemsgenetics.depict2;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -14,7 +16,6 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
@@ -264,14 +265,7 @@ public class Depict2Options {
 
 			}
 
-			if (commandLine.hasOption("pd")) {
-
-				String[] test = commandLine.getOptionValues("pd");
-				System.out.println(StringUtils.join(test, ";"));
-
-			}
-
-			pathwayDatabases = null;//TMP
+			pathwayDatabases = parsePd(commandLine);
 
 		} else if (mode == Depict2Mode.RUN2 || mode == Depict2Mode.RUN3) {
 
@@ -281,7 +275,12 @@ public class Depict2Options {
 				geneInfoFile = new File(commandLine.getOptionValue("ge"));
 			}
 
-			pathwayDatabases = null;
+			pathwayDatabases = parsePd(commandLine);
+			
+			if(mode == Depict2Mode.RUN3 && pathwayDatabases.isEmpty()){
+				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN3"); 
+			}
+
 			genotypeBasePath = null;
 			genotypeType = null;
 			genotypeSamplesFile = null;
@@ -299,6 +298,35 @@ public class Depict2Options {
 			windowExtend = 0;
 		}
 
+	}
+
+	private List<PathwayDatabase> parsePd(final CommandLine commandLine) throws ParseException {
+
+		final List<PathwayDatabase> pathwayDatabasesTmp;
+
+		if (commandLine.hasOption("pd")) {
+
+			String[] pdValues = commandLine.getOptionValues("pd");
+
+			if (pdValues.length % 2 != 0) {
+				throw new ParseException("Error parsing --pathwayDatabase. Must be in name=database format");
+			}
+
+			pathwayDatabasesTmp = new ArrayList<>();
+
+			for (int i = 0; i < pdValues.length; i += 2) {
+
+				pathwayDatabasesTmp.add(new PathwayDatabase(pdValues[i], pdValues[i + 1]));
+
+			}
+
+		} else {
+
+			pathwayDatabasesTmp = Collections.emptyList();
+
+		}
+
+		return pathwayDatabasesTmp;
 	}
 
 	public static void printHelp() {
@@ -344,16 +372,31 @@ public class Depict2Options {
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
+
+				logPathwayDatabases();
+
 				break;
 			case RUN2:
 			case RUN3:
 				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
+				logPathwayDatabases();
 				break;
 
 		}
 
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 
+	}
+
+	private void logPathwayDatabases() {
+		if (pathwayDatabases.size() > 0) {
+			LOGGER.info(" * The following pathway databases have been specified:");
+			for (PathwayDatabase database : pathwayDatabases) {
+				LOGGER.info("    - " + database.getName() + " at: " + database.getLocation());
+			}
+		} else {
+			LOGGER.info(" * No pathway databases specified");
+		}
 	}
 
 	public String[] getGenotypeBasePath() {
@@ -406,6 +449,10 @@ public class Depict2Options {
 
 	public boolean isPvalueToZscore() {
 		return pvalueToZscore;
+	}
+
+	public List<PathwayDatabase> getPathwayDatabases() {
+		return pathwayDatabases;
 	}
 
 }
