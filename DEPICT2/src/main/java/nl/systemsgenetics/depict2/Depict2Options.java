@@ -45,6 +45,7 @@ public class Depict2Options {
 	private final boolean debugMode;
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
+	private final File conversionColumnIncludeFilter;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -58,6 +59,8 @@ public class Depict2Options {
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
 				+ "* RUN - Run the DEPICT2 prioritization.\n"
+				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
+				+ "* RUN3 - Run the DEPICT2 prioritization starting at stage 3.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output");
 		OptionBuilder.withLongOpt("mode");
@@ -149,6 +152,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("pathwayDatabase");
 		OPTIONS.addOption(OptionBuilder.create("pd"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Optional file with columns to select during conversion");
+		OptionBuilder.withLongOpt("cols");
+		OPTIONS.addOption(OptionBuilder.create("co"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -188,8 +197,15 @@ public class Depict2Options {
 
 		if (mode == Depict2Mode.CONVERT_TXT) {
 			pvalueToZscore = commandLine.hasOption("p2z");
+			if (commandLine.hasOption("co")) {
+				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
+			} else {
+				conversionColumnIncludeFilter = null;
+			}
 		} else {
 			pvalueToZscore = false;
+			conversionColumnIncludeFilter = null;
+
 		}
 
 		if (mode == Depict2Mode.RUN) {
@@ -276,9 +292,9 @@ public class Depict2Options {
 			}
 
 			pathwayDatabases = parsePd(commandLine);
-			
-			if(mode == Depict2Mode.RUN3 && pathwayDatabases.isEmpty()){
-				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN3"); 
+
+			if (mode == Depict2Mode.RUN3 && pathwayDatabases.isEmpty()) {
+				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN3");
 			}
 
 			genotypeBasePath = null;
@@ -287,6 +303,7 @@ public class Depict2Options {
 			maxRBetweenVariants = 0d;
 			numberOfPermutations = 0;
 			windowExtend = 0;
+
 		} else {
 			pathwayDatabases = null;
 			genotypeBasePath = null;
@@ -453,6 +470,10 @@ public class Depict2Options {
 
 	public List<PathwayDatabase> getPathwayDatabases() {
 		return pathwayDatabases;
+	}
+
+	public File getConversionColumnIncludeFilter() {
+		return conversionColumnIncludeFilter;
 	}
 
 }

@@ -281,19 +281,16 @@ public class Depict2 {
 
 		//Gene weight will have same order as other matrices
 		DoubleMatrixDataset<String, String> geneWeights = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas, genes, options);
-		
+
 		geneWeights.save(options.getOutputBasePath() + "_geneWeigths.txt");
 
-		
-
-		if(options.getPathwayDatabases().isEmpty()){
+		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
 		} else {
 			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
 			run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneWeights);
 		}
-		
-		
+
 	}
 
 	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes, DoubleMatrixDataset<String, String> geneWeights) throws IOException, Exception {
@@ -308,12 +305,18 @@ public class Depict2 {
 			LOGGER.info("Gene weights loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
+
+			//In run two we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
+			genePvalues = genePvalues.viewRowSelection(geneWeights.getHashRows().keySet());
+
 		}
-		
+
 		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
-		
-		
-		
+
+		PathwayEnrichments.doEnrichments(genePvalues, geneWeights, pathwayDatabases, options.getOutputBasePath());
+
+		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -407,7 +410,7 @@ public class Depict2 {
 			}
 		}
 
-		final DoubleMatrixDataset<String, String> matrix;
+		DoubleMatrixDataset<String, String> matrix;
 
 		if (variantsWithDuplicates.size() > 0) {
 
@@ -447,6 +450,11 @@ public class Depict2 {
 				}
 			}
 
+		}
+		
+		if(options.getConversionColumnIncludeFilter() != null){
+			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			matrix = matrix.viewColSelection(colsToSelect);
 		}
 
 		matrix.saveBinary(options.getOutputBasePath());
