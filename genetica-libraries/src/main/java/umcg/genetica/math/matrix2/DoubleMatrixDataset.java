@@ -1386,10 +1386,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @return Correlation matrix on columns
 	 */
 	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix() {
-
 		DoubleMatrix2D correlationMatrix = DoubleStatistic.correlation(DoubleStatistic.covariance(this.matrix));
 		return new DoubleMatrixDataset<>(correlationMatrix, hashCols, hashCols);
-
 	}
 
 	/**

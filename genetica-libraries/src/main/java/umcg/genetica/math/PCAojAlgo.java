@@ -16,6 +16,7 @@ public class PCAojAlgo {
 
 	private double[] eigenvalues;
 	private Eigenvalue<Double> eig;
+	private MatrixStore<Double> eigenValueMatrix;
 
 	public static void main(String[] args) {
 
@@ -34,7 +35,7 @@ public class PCAojAlgo {
 
 			PCAojAlgo ojalgo = new PCAojAlgo();
 			System.out.println("OJ");
-			Eigenvalue<Double> pcaoj = ojalgo.eigenValueDecomposition(cormatarr);
+			ojalgo.eigenValueDecomposition(cormatarr);
 			double[] eigvaroj = ojalgo.getRealEigenValues();
 			double[] eigvarjama = PCA.getRealEigenvalues(pcajama);
 
@@ -105,25 +106,47 @@ public class PCAojAlgo {
 
 	}
 
+	boolean ascendingorder = false;
 
-	public Eigenvalue<Double> eigenValueDecomposition(double[][] data) {
-
+	public void eigenValueDecomposition(double[][] data) {
+		System.out.println("Performing eigenvector decomposition on " + data.length + " x " + data[data.length - 1].length + " matrix ");
 		PrimitiveMatrix matrix = PrimitiveMatrix.FACTORY.rows(data);
+
 
 		eig = Eigenvalue.make(matrix, true);
 
 		if (!eig.decompose(matrix)) {
 			throw new RuntimeException("Decomposition failed");
 		}
-		return eig;
+
+		// check if eigenvalues are in descending order
+		eigenvalues = eig.getEigenvalues().toRawCopy1D();
+
+		for (int i = 0; i < eigenvalues.length - 1; i++) {
+			if (eigenvalues[i] < eigenvalues[eigenvalues.length - 1]) {
+				ascendingorder = true;
+			}
+		}
+
+
+		if (ascendingorder) {
+			System.out.println("WARNING: eigenvalues are in ascending order. Will flip them for you.");
+			// invert eigenvalues
+			double[] tmpeig = new double[eigenvalues.length];
+			for (int d = 0; d < eigenvalues.length; d++) {
+				tmpeig[d] = eigenvalues[eigenvalues.length - 1 - d];
+			}
+			eigenvalues = tmpeig;
+		} else {
+			System.out.println("Eigenvalues are in descending order. ");
+		}
+
+		eigenValueMatrix = eig.getV();
 	}
 
 	public double[] getRealEigenValues() {
 		if (eig == null) {
 			throw new RuntimeException("Eigenvalues requested but no decomposition performed");
-		}
-		if (eigenvalues == null) {
-			eigenvalues = eig.getEigenvalues().toRawCopy1D();
 		}
 		return eigenvalues;
 	}
@@ -132,21 +155,22 @@ public class PCAojAlgo {
 		if (eig == null) {
 			throw new RuntimeException("Eigenvector requested but no decomposition performed");
 		}
-		MatrixStore<Double> eigenValueMatrix = eig.getV();
-//		double[][] data = eigenValueMatrix.toRawCopy2D();
-		int nrrows = (int) eigenValueMatrix.countRows();
-		double[] eigenVector = new double[nrrows];
-		for (int i = 0; i < nrrows; i++) {
-			eigenVector[i] = eigenValueMatrix.get(i, pca); //eigenValueMat[i][pca]; // * Math.sqrt(eigenValues[eigenValues.length - 1 - pca]);
+
+		int nrcols = (int) eigenValueMatrix.countColumns();
+		double[] eigenVector = null;
+		if (ascendingorder) {
+			return eigenValueMatrix.sliceColumn(nrcols - 1 - pca).toRawCopy1D();
+		} else {
+			return eigenValueMatrix.sliceColumn(pca).toRawCopy1D();
 		}
-		return eigenVector;
+
 	}
 
 	public double getEigenValueVar(int pca) {
-
-		if (eigenvalues == null) {
-			getRealEigenValues();
+		if (eig == null) {
+			throw new RuntimeException("Eigenvalue variance requested but no decomposition performed");
 		}
+
 		double sumEigenvalues = 0.0;
 		for (Double d : eigenvalues) {
 			sumEigenvalues += Math.abs(d);

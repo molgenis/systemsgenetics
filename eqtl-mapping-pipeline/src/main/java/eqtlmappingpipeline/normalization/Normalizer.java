@@ -1,6 +1,9 @@
 package eqtlmappingpipeline.normalization;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.DoubleStatistic;
+import edu.emory.mathcs.utils.ConcurrencyUtils;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
@@ -115,12 +118,16 @@ public class Normalizer {
 		Set<String> s = null;
 		if (sampleIncludeList != null) {
 			TextFile t = new TextFile(sampleIncludeList, TextFile.R);
-			s = new HashSet<String>(t.readAsArrayList());
+			s = new HashSet<String>();
+			s.addAll(t.readAsArrayList());
+			System.out.println("Requested to include " + s.size() + " samples.");
+			t.close();
 		}
 		Set<String> p = null;
 		if (probeIncludeList != null) {
 			TextFile t = new TextFile(probeIncludeList, TextFile.R);
 			p = new HashSet<String>(t.readAsArrayList());
+			t.close();
 		}
 		DoubleMatrixDataset<String, String> dataset = null;
 
@@ -151,7 +158,13 @@ public class Normalizer {
 				}
 				if (!missingNames.isEmpty()) {
 					System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
-					System.err.println(missingNames.toString() + "\n");
+					System.err.println("Writing them here: " + sampleIncludeList + "-notfound.txt\n");
+					TextFile outf = new TextFile(sampleIncludeList + "-notfound.txt", TextFile.W);
+					for (String f : missingNames) {
+						outf.writeln(f);
+					}
+					outf.close();
+					System.exit(-1);
 					breakAfterCheck = true;
 				} else if (!extraNames.isEmpty()) {
 					System.err.println("\nMatrix contains unwanted columns, please check filtering list.");
@@ -232,6 +245,11 @@ public class Normalizer {
 			int cores = Runtime.getRuntime().availableProcessors();
 			ConcurrentCorrelation c = new ConcurrentCorrelation(cores);
 
+			int threads = Runtime.getRuntime().availableProcessors();
+			System.out.println("Calculating correlation matrix of " + dataset.columns() + " x " + dataset.columns() + " with " + threads + " threads.");
+//			DoubleMatrixDataset<String, String> cormat = new DoubleMatrixDataset<>(
+//					DoubleStatistic.correlation(DoubleStatistic.correlation(DoubleStatistic.covariance(dataset.getMatrix()))),
+//					dataset.getHashCols(), dataset.getHashCols());
 			DoubleMatrixDataset<String, String> cormat = c.pairwiseCorrelation(dataset.viewDice());
 			Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> PCAResults = calculatePCA(dataset, cormat, outputFileNamePrefix, null);
 			if (nrPCAsOverSamplesToRemove != 0 || nrIntermediatePCAsOverSamplesToRemoveToOutput != 0) {
@@ -737,7 +755,11 @@ public class Normalizer {
 			cumExpVarPCA += expVarPCA;
 			out.write(pcaNr + "\t" + eigenValues[pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA + "\n");
 			evcolnames.add(pca, "Comp" + pcaNr);
-			System.out.println("PCA:\t" + pcaNr + "\t" + eigenValues[pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA);
+			if (pca < 10) {
+				System.out.println("PCA:\t" + pcaNr + "\t" + eigenValues[pca] + "\t" + expVarPCA + "\t" + cumExpVarPCA);
+			} else if (pca == 10) {
+				System.out.println("Remaining eigenvalues in this file: " + expressionFile + ".PCAOverSamplesEigenvalues.txt.gz");
+			}
 		}
 		out.close();
 
