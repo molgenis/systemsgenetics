@@ -481,7 +481,9 @@ public class Normalizer {
 		// load covariate data, and remove samples for which there is missing covariate data.
 		Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> covariateData = loadCovariateValues(covariatesToRemove, traitData);
 		DoubleMatrixDataset<String, String> covariateDataset = covariateData.getLeft();
-		traitData = covariateData.getRight();
+		traitData.setMatrix(covariateData.getRight().getMatrix());
+		traitData.setColObjects(covariateData.getRight().getColObjects());
+		traitData.setRowObjects(covariateData.getRight().getRowObjects());
 
 
 		if (useOLS) {
