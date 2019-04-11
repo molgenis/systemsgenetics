@@ -308,14 +308,35 @@ public class Depict2 {
 
 			//In run two we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
 			genePvalues = genePvalues.viewRowSelection(geneWeights.getHashRows().keySet());
+			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(geneWeights.getHashRows().keySet());
 
 		}
 
 		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
+		DoubleMatrix2D matrix = genePvalues.getMatrix();
+
+		for (int r = 0; r < matrix.rows(); ++r) {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -Math.log10(matrix.getQuick(r, c)));
+			}
+		}
+
 		PathwayEnrichments.doEnrichments(genePvalues, geneWeights, pathwayDatabases, options.getOutputBasePath());
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+//
+//		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
+//
+//		for (int r = 0; r < matrixNull.rows(); ++r) {
+//			for (int c = 0; c < matrixNull.columns(); ++c) {
+//				matrixNull.setQuick(r, c, -Math.log10(matrixNull.getQuick(r, c)));
+//			}
+//		}
+//
+//		PathwayEnrichments.doEnrichments(genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath() + "_nullGwas");
+//
+//		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
 	}
 
@@ -451,8 +472,8 @@ public class Depict2 {
 			}
 
 		}
-		
-		if(options.getConversionColumnIncludeFilter() != null){
+
+		if (options.getConversionColumnIncludeFilter() != null) {
 			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
