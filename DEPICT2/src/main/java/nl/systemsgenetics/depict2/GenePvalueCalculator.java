@@ -40,6 +40,7 @@ public class GenePvalueCalculator {
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int NUMBER_RANDOM_PHENO = 1000;
 	private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
+	private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
 
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
 	protected static long timeInLoadingGenotypeDosages = 0;
@@ -64,6 +65,7 @@ public class GenePvalueCalculator {
 	private final int windowExtend;
 	private final double maxR;
 	private final int nrPermutations;
+	private final double nrPermutationsPlus1Double;
 	private final String outputBasePath;
 	private final double[] randomChi2;
 	private final LinkedHashMap<String, Integer> sampleHash;//In order of the samples in the genotype data
@@ -96,6 +98,7 @@ public class GenePvalueCalculator {
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
 		this.nrPermutations = nrPermutations;
+		this.nrPermutationsPlus1Double = nrPermutations + 1;
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
 
@@ -311,19 +314,19 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				double p = 0.5;
+				double x = 0;
 				for (int perm = 0; perm < nrPermutations; perm++) {
 					if (geneChi2SumNull[perm] >= geneChi2Sum) {
-						p++;
+						x++;
 					}
 				}
-				
+
 				timeStop = System.currentTimeMillis();
 				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
-				
+
 				timeStart = System.currentTimeMillis();
-				
-				p /= (double) nrPermutations + 1;
+
+				double p = (x + 0.5) / nrPermutationsPlus1Double;
 
 				if (p == 1) {
 					p = 0.99999d;
@@ -378,14 +381,14 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				double p = 0.5;
+				double x = 0;
 				//Because we don't expect very strong associations in our null GWAS only check first x permuations for speed
 				for (int perm = 0; perm < NUMBER_PERMUTATION_NULL_GWAS; perm++) {
 					if (geneChi2SumNull[perm] >= geneChi2Sum) {
-						p++;
+						x++;
 					}
 				}
-				p /= (double) NUMBER_PERMUTATION_NULL_GWAS + 1;
+				double p  = (x + 0.5) / NUMBER_PERMUTATION_NULL_GWAS_PLUS_1;
 
 				if (p == 1) {
 					p = 0.99999d;

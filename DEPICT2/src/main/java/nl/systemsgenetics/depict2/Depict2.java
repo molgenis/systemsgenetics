@@ -189,7 +189,7 @@ public class Depict2 {
 			}
 			System.exit(1);
 		}
-		LOGGER.info("Completed mode: " + options.getMode());
+		LOGGER.info("Analysis completed");
 
 		currentDataTime = new Date();
 		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
@@ -330,10 +330,20 @@ public class Depict2 {
 			}
 		}
 
-		PathwayEnrichments.doEnrichments(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath());
+		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+		
+		HashSet<String> hlaGenes = new HashSet<>();
+		for(Gene gene : genes){
+			if(gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))){
+				hlaGenes.add(gene.getGene());
+			}
+		}
 
+		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
+		
+		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 
 	}
 
