@@ -82,9 +82,18 @@ public class PathwayEnrichments {
 					final int numberOfPathways = enrichmentMatrix.rows();
 					final int numberOfPhenotypes = enrichmentMatrix.columns();
 					final int numberOfNullGwasPhenotypes = enrichmentNullMatrix.columns();
-					final double numberOfNullGwasPhenotypesPlus1Double = enrichmentNullMatrix.columns() + 1;
-					final double minPvalue = 1 / numberOfNullGwasPhenotypesPlus1Double;
+//					final double numberOfNullGwasPhenotypesPlus1Double = enrichmentNullMatrix.columns() + 1;
+//					final double minPvalue = 1 / numberOfNullGwasPhenotypesPlus1Double;
 					final double numberOfNullGwasPhenotypesMin1Double = enrichmentNullMatrix.columns() - 1;
+					
+					LOGGER.debug("numberOfNullGwasPhenotypes" + numberOfNullGwasPhenotypes);
+					
+					List<String> pathwayNames;
+					if(LOGGER.isDebugEnabled()){
+						pathwayNames = enrichmentNull.getRowObjects();
+					} else {
+						pathwayNames = Collections.emptyList();
+					}
 
 //					for (int r = 0; r < numberOfPathways; ++r) {
 //
@@ -114,16 +123,20 @@ public class PathwayEnrichments {
 							meanNull += enrichmentNullMatrix.getQuick(r, p);
 						}
 						meanNull /= numberOfNullGwasPhenotypes;
-
+						
 						double x = 0;
 						for (int p = 0; p < numberOfNullGwasPhenotypes; ++p) {
 							x += (enrichmentNullMatrix.getQuick(r, p) - meanNull) * (enrichmentNullMatrix.getQuick(r, p) - meanNull);
 						}
 						double sdNull = Math.sqrt(x / numberOfNullGwasPhenotypesMin1Double);
+						
+						if(LOGGER.isDebugEnabled()){
+							LOGGER.debug(pathwayNames.get(r) + " mean: " + meanNull + " sd: " + sdNull);
+						}
 
 						for (int c = 0; c < numberOfPhenotypes; ++c) {
 
-							final double corr = Math.abs(enrichmentMatrix.getQuick(r, c));
+							final double corr = enrichmentMatrix.getQuick(r, c);
 
 							enrichmentMatrix.setQuick(r, c, (corr - meanNull) / sdNull);
 
