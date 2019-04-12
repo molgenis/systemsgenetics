@@ -321,22 +321,19 @@ public class Depict2 {
 				matrix.setQuick(r, c, -Math.log10(matrix.getQuick(r, c)));
 			}
 		}
+		
+		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
-		PathwayEnrichments.doEnrichments(genePvalues, geneWeights, pathwayDatabases, options.getOutputBasePath());
+		for (int r = 0; r < matrixNull.rows(); ++r) {
+			for (int c = 0; c < matrixNull.columns(); ++c) {
+				matrixNull.setQuick(r, c, -Math.log10(matrixNull.getQuick(r, c)));
+			}
+		}
+
+		PathwayEnrichments.doEnrichments(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath());
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
-//
-//		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
-//
-//		for (int r = 0; r < matrixNull.rows(); ++r) {
-//			for (int c = 0; c < matrixNull.columns(); ++c) {
-//				matrixNull.setQuick(r, c, -Math.log10(matrixNull.getQuick(r, c)));
-//			}
-//		}
-//
-//		PathwayEnrichments.doEnrichments(genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath() + "_nullGwas");
-//
-//		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+
 
 	}
 
