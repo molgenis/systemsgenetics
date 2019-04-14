@@ -314,9 +314,9 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				double x = 0;
+				int x = 0;
 				for (int perm = 0; perm < nrPermutations; perm++) {
-					if (geneChi2SumNull[perm] >= geneChi2Sum) {
+					if (geneChi2Sum < geneChi2SumNull[perm]) {
 						x++;
 					}
 				}
@@ -381,14 +381,14 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				double x = 0;
+				int x = 0;
 				//Because we don't expect very strong associations in our null GWAS only check first x permuations for speed
 				for (int perm = 0; perm < NUMBER_PERMUTATION_NULL_GWAS; perm++) {
-					if (geneChi2SumNull[perm] >= geneChi2Sum) {
+					if (geneChi2Sum < geneChi2SumNull[perm]) {
 						x++;
 					}
 				}
-				double p  = (x + 0.5) / NUMBER_PERMUTATION_NULL_GWAS_PLUS_1;
+				double p = (x + 0.5) / NUMBER_PERMUTATION_NULL_GWAS_PLUS_1;
 
 				if (p == 1) {
 					p = 0.99999d;

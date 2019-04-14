@@ -318,7 +318,7 @@ public class Depict2 {
 
 		for (int r = 0; r < matrix.rows(); ++r) {
 			for (int c = 0; c < matrix.columns(); ++c) {
-				matrix.setQuick(r, c, -Math.log10(matrix.getQuick(r, c)));
+				matrix.setQuick(r, c, ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
 		}
 		
@@ -326,7 +326,7 @@ public class Depict2 {
 
 		for (int r = 0; r < matrixNull.rows(); ++r) {
 			for (int c = 0; c < matrixNull.columns(); ++c) {
-				matrixNull.setQuick(r, c, -Math.log10(matrixNull.getQuick(r, c)));
+				matrixNull.setQuick(r, c, ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
 			}
 		}
 
