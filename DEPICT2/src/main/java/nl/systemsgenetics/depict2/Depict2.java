@@ -142,6 +142,9 @@ public class Depict2 {
 				case CONVERT_TXT:
 					convertTxtToBin(options);
 					break;
+				case CONVERT_GTEX:
+					ConvertGtexGct.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
+					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
@@ -318,31 +321,36 @@ public class Depict2 {
 
 		for (int r = 0; r < matrix.rows(); ++r) {
 			for (int c = 0; c < matrix.columns(); ++c) {
-				matrix.setQuick(r, c, ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
 		}
 		
+		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
 		for (int r = 0; r < matrixNull.rows(); ++r) {
 			for (int c = 0; c < matrixNull.columns(); ++c) {
-				matrixNull.setQuick(r, c, ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
+				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
 			}
 		}
+		
+		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+		
 
 		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
-		
+
 		HashSet<String> hlaGenes = new HashSet<>();
-		for(Gene gene : genes){
-			if(gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))){
+		for (Gene gene : genes) {
+			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
 				hlaGenes.add(gene.getGene());
 			}
 		}
 
 		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
-		
+
 		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 
 	}

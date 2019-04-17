@@ -496,7 +496,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, Set<String> desiredRows, Set<String> desiredCols) throws IOException, Exception {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {
+		return loadSubsetOfTextDoubleData(fileName, delimiter, desiredRows, desiredCols, 0);
+	}
+	
+	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, Set<String> desiredRows, Set<String> desiredCols, int linesToSkip) throws IOException, Exception {
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct"))) {
 			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
 
@@ -504,6 +508,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
+		
+		for(int i = 0 ; i < linesToSkip ; ++i){
+			in.readLine();//Skip first lines
+		}
+		
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
@@ -590,8 +599,19 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException, Exception {
+		
+		return loadDoubleTextDoubleDataExlcudeCols(fileName, delimiter, colsToExclude, 0);
+		
+	}
+	
+	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude, int linesToSkip) throws IOException, Exception {
 
 		TextFile in = new TextFile(fileName, TextFile.R);
+		
+		for(int i = 0 ; i < linesToSkip ; ++i){
+			in.readLine();//Skip first lines
+		}		
+		
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
@@ -605,7 +625,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		}
 
-		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols);
+		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols, linesToSkip);
 
 	}
 

@@ -15,5 +15,6 @@ public enum Depict2Mode {
 	RUN3,
 	CONVERT_TXT,
 	CONVERT_EQTL,
+	CONVERT_GTEX,
 	FIRST1000;
 }

@@ -62,7 +62,8 @@ public class Depict2Options {
 				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
 				+ "* RUN3 - Run the DEPICT2 prioritization starting at stage 3.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
-				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output");
+				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
+				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -184,7 +185,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -207,6 +208,7 @@ public class Depict2Options {
 			conversionColumnIncludeFilter = null;
 
 		}
+
 
 		if (mode == Depict2Mode.RUN) {
 
@@ -361,6 +363,12 @@ public class Depict2Options {
 		switch (mode) {
 			case CONVERT_EQTL:
 				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (pvalueToZscore) {
+					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+				}
+				break;
+			case CONVERT_GTEX:
+				LOGGER.info(" * Gtex median tissue expression GCT file: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
