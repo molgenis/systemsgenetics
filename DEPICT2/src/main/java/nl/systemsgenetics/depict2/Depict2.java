@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -505,7 +506,8 @@ public class Depict2 {
 	}
 
 	public static String formatMsForLog(long ms) {
-		return LOG_TIME_FORMAT.format(new Date(ms));
+		//return LOG_TIME_FORMAT.format(new Date(ms));
+		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
 	}
 
 	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
