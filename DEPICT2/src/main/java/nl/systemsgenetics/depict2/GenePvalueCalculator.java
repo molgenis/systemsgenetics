@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
@@ -75,6 +76,9 @@ public class GenePvalueCalculator {
 	private final DoubleMatrixDataset<String, String> genePvaluesNullGwas;
 	private final DoubleMatrixDataset<String, String> geneVariantCount;
 	private final int numberRealPheno;
+	private final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader;
+	private final int[] genePValueDistributionPermuations;
+	private final int[] genePValueDistributionChi2Dist;
 
 	/**
 	 *
@@ -128,10 +132,10 @@ public class GenePvalueCalculator {
 		numberRealPheno = phenotypes.size();
 		final int numberGenes = genes.size();
 
-		final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader = new DoubleMatrixDatasetFastSubsetLoader(variantPhenotypeZscoreMatrixPath);
+		geneVariantPhenotypeMatrixRowLoader = new DoubleMatrixDatasetFastSubsetLoader(variantPhenotypeZscoreMatrixPath);
 
-		final int[] genePValueDistributionPermuations = new int[21];//used to create histogram 
-		final int[] genePValueDistributionChi2Dist = new int[21];//used to create histogram 
+		genePValueDistributionPermuations = new int[21];//used to create histogram 
+		genePValueDistributionChi2Dist = new int[21];//used to create histogram 
 
 		try (final ProgressBar pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII)) {
 
@@ -143,7 +147,7 @@ public class GenePvalueCalculator {
 				try {
 
 					//Results are writen in genePvalues
-					runGene(geneI, geneVariantPhenotypeMatrixRowLoader, genePValueDistributionPermuations, genePValueDistributionChi2Dist);
+					runGene(geneI);
 
 					pb.step();
 				} catch (Exception ex) {
@@ -208,7 +212,7 @@ public class GenePvalueCalculator {
 		return geneVariantCount;
 	}
 
-	private void runGene(int geneI, final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader, final int[] genePValueDistributionPermuations, final int[] genePValueDistributionChi2Dist) throws IOException, Exception {
+	private void runGene(int geneI) throws IOException, Exception {
 		long timeStart;
 		long timeStop;
 
@@ -597,6 +601,23 @@ public class GenePvalueCalculator {
 		phenoData.normalizeColumns();
 
 		return phenoData;
+
+	}
+
+	private class calculatorThread implements Runnable {
+		
+		private final AtomicInteger counter;
+
+		public calculatorThread(AtomicInteger counter) {
+			this.counter = counter;
+		}		
+
+		@Override
+		public void run() {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		
+		
 
 	}
 

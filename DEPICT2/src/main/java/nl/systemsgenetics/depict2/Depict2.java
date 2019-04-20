@@ -184,7 +184,7 @@ public class Depict2 {
 			System.exit(1);
 		} catch (Exception e) {
 			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error meesage: " + e.getMessage());
+			System.err.println("Error message: " + e.getMessage());
 			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error: " + e.getMessage(), e);
 			if (LOGGER.isDebugEnabled()) {
