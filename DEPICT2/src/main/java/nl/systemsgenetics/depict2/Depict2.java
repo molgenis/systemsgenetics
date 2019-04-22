@@ -235,6 +235,7 @@ public class Depict2 {
 		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
 		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
 
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
@@ -339,9 +340,9 @@ public class Depict2 {
 //		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
 		
 
-//		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
-//
-//		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
+
+		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
 		HashSet<String> hlaGenes = new HashSet<>();
 		for (Gene gene : genes) {
@@ -546,6 +547,30 @@ public class Depict2 {
 
 		return randomChi2;
 
+	}
+	
+	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
+
+		private final String errorSource;
+
+		public ThreadErrorHandler(String errorSource) {
+			this.errorSource = errorSource;
+		}
+		
+		
+		
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+
+			System.err.println("Problem running: " + errorSource);
+			LOGGER.fatal("Error: " + e.getMessage(), e);
+			if (LOGGER.isDebugEnabled()) {
+				e.printStackTrace();
+			} else {
+				System.err.println("See log file for stack trace");
+			}
+			System.exit(1);
+		}
 	}
 
 }
