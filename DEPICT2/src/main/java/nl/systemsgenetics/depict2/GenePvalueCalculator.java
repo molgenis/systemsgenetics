@@ -385,7 +385,7 @@ public class GenePvalueCalculator {
 			} else {
 				//no variants in or near gene
 				//genePValueDistribution[(int) (20d * 0.99999d)]++;
-				genePvalues.setElementQuick(geneI, phenoI, 0.5d);
+				genePvalues.setElementQuick(geneI, phenoI, Double.NaN);
 				countNoVariants++;
 			}
 
@@ -442,7 +442,7 @@ public class GenePvalueCalculator {
 			} else {
 				//no variants in or near gene
 				//genePValueDistribution[(int) (20d * 0.99999d)]++;
-				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, 0.5d);
+				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, Double.NaN);
 			}
 
 		}
@@ -540,7 +540,7 @@ public class GenePvalueCalculator {
 					weightedChi2Perm += eigenValues[g] * randomChi2[i++];
 				} else {
 					double randomZ = rnd.nextGaussian();
-					weightedChi2Perm += eigenValues[g] * randomZ * randomZ;
+					weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
 				}
 
 			}
