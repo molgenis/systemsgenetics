@@ -326,7 +326,7 @@ public class Depict2 {
 			}
 		}
 		
-		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
 
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
@@ -336,12 +336,12 @@ public class Depict2 {
 			}
 		}
 		
-		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+//		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
 		
 
-		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
-
-		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+//		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
+//
+//		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
 		HashSet<String> hlaGenes = new HashSet<>();
 		for (Gene gene : genes) {

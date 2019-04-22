@@ -64,8 +64,14 @@ public class PathwayEnrichments {
 					final DoubleMatrixDataset<String, String> genePvaluesNullGwasSubset = genePvaluesNullGwas.viewRowSelection(genesInPathwayMatrix);
 					final DoubleMatrixDataset<String, String> geneWeightsSubset = geneWeights.viewRowSelection(genesInPathwayMatrix);
 
+					
 					final DoubleMatrixDataset<String, String> pathwayMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(pathwayDatabase.getLocation(), genesInPathwayMatrix);
 
+					genePvaluesSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvalues.txt");
+					genePvaluesNullGwasSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvaluesNull.txt");
+					geneWeightsSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_geneWeights.txt");
+					pathwayMatrix.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_pathwayPvalues.txt");
+					
 					//All matrices should now contain the same genes in the same order
 					//Do enrichment analysis using weighted correlations
 					DoubleMatrixDataset<String, String> enrichment = WeightedCorrelations.weightedCorrelationColumnsOf2Datasets(genePvaluesSubset, pathwayMatrix, geneWeightsSubset);
@@ -145,16 +151,16 @@ public class PathwayEnrichments {
 
 					writeEnrichment(pathwayDatabase, pathwayAnnotations, enrichment, outputBasePath, hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla");
 
-					for (int r = 0; r < numberOfPathways; ++r) {
-
-						for (int c = 0; c < numberOfPhenotypes; ++c) {
-							
-							enrichmentMatrix.setQuick(r, c, ZScores.zToP(enrichmentMatrix.getQuick(r, c)));
-							
-						}
-					}
-
-					writeEnrichment(pathwayDatabase, pathwayAnnotations, enrichment, outputBasePath, hlaGenesToExclude == null ? "_pvalues" : "_pvaluesExHla");
+//					for (int r = 0; r < numberOfPathways; ++r) {
+//
+//						for (int c = 0; c < numberOfPhenotypes; ++c) {
+//							
+//							enrichmentMatrix.setQuick(r, c, ZScores.zToP(enrichmentMatrix.getQuick(r, c)));
+//							
+//						}
+//					}
+//
+//					writeEnrichment(pathwayDatabase, pathwayAnnotations, enrichment, outputBasePath, hlaGenesToExclude == null ? "_pvalues" : "_pvaluesExHla");
 
 				} catch (Exception ex) {
 					throw new RuntimeException(ex);
