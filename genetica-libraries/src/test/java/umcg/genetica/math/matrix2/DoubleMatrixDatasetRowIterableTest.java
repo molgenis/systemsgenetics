@@ -83,13 +83,9 @@ public class DoubleMatrixDatasetRowIterableTest {
 		
 		double[][] dataLoaded = new double[matrixIterable.getNrRows()][0];
 		
-		Iterator<double[]> matrixIterator = matrixIterable.iterator();
-		
 		int row = 0;
-		while(matrixIterator.hasNext()){
-			
-			dataLoaded[row++] = matrixIterator.next();
-			
+		for(double[] nextLine : matrixIterable){
+			dataLoaded[row++] = nextLine;
 		}
 	
 		DoubleMatrixDataset<String, String> matrixFromIterator = new DoubleMatrixDataset<>(dataLoaded, new ArrayList(matrixIterable.getRows()), new ArrayList(matrixIterable.getCols()));
