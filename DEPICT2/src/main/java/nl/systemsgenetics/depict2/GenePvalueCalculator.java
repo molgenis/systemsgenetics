@@ -40,7 +40,7 @@ public class GenePvalueCalculator {
 
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
-	private static final int PERMUTATION_STEP = 10000;
+	private static final int PERMUTATION_STEP = 100;
 	private static final int NUMBER_RANDOM_PHENO = PERMUTATION_STEP;
 	private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
 	private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
@@ -78,11 +78,13 @@ public class GenePvalueCalculator {
 	private final DoubleMatrixDataset<String, String> genePvaluesNullGwas;
 	private final DoubleMatrixDataset<String, String> geneVariantCount;
 	private final DoubleMatrixDataset<String, String> geneMaxPermutationCount;
+	private final DoubleMatrixDataset<String, String> geneRuntime;
 	private final int numberRealPheno;
 	private final DoubleMatrixDatasetFastSubsetLoader geneVariantPhenotypeMatrixRowLoader;
 	private final int[] genePValueDistributionPermuations;
 	private final int[] genePValueDistributionChi2Dist;
 	private final ProgressBar pb;
+	private final double minPvaluePermutations;
 
 	/**
 	 *
@@ -107,6 +109,7 @@ public class GenePvalueCalculator {
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
 		this.maxNrPermutations = nrPermutations;
+		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
 		this.nrPermutationsPlus1Double = nrPermutations + 1;
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
@@ -138,6 +141,7 @@ public class GenePvalueCalculator {
 
 		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"count"})));
 		geneMaxPermutationCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"maxPermutations"})));
+		geneRuntime = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"runtime"})));
 
 		numberRealPheno = phenotypes.size();
 		final int numberGenes = genes.size();
@@ -206,7 +210,7 @@ public class GenePvalueCalculator {
 		LOGGER.info("timeInCalculatingRealSumChi2: " + formatMsForLog(timeInCalculatingRealSumChi2));
 		LOGGER.info("timeInComparingRealChi2ToPermutationChi2: " + formatMsForLog(timeInComparingRealChi2ToPermutationChi2));
 		LOGGER.info("timeInCalculatingPvalue: " + formatMsForLog(timeInCalculatingPvalue));
-		LOGGER.info("totalTimeInThread: " + formatMsForLog(totalTimeInThread) + " (" + totalTimeInThread + ") ");
+		LOGGER.info("totalTimeInThread: " + formatMsForLog(totalTimeInThread));
 
 		LOGGER.info("-----------------------");
 		LOGGER.info("Gene p-value histrogram chi2 dist");
@@ -245,7 +249,14 @@ public class GenePvalueCalculator {
 		return geneMaxPermutationCount;
 	}
 
+	public DoubleMatrixDataset<String, String> getGeneRuntime() {
+		return geneRuntime;
+	}
+
 	private void runGene(int geneI, final double[] geneChi2SumNull) throws IOException, Exception {
+		
+		long geneTimeStart = System.currentTimeMillis();
+		
 		long timeStart;
 		long timeStop;
 
@@ -371,8 +382,7 @@ public class GenePvalueCalculator {
 						}
 					}
 
-					//LOGGER.debug("test");
-				} while (x < 10 && currentNumberPermutations < maxNrPermutations);
+				} while (x < 20 && currentNumberPermutations < maxNrPermutations);
 
 				timeStop = System.currentTimeMillis();
 				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
@@ -381,12 +391,13 @@ public class GenePvalueCalculator {
 
 				double p = (x + 0.5) / (double) (currentNumberPermutations + 1);
 
-				if (p == 1) {
-					p = 0.99999d;
-				}
-				if (p < 1e-300d) {
-					p = 1e-300d;
-				}
+				//These can never happen with current permutations stratagy
+//				if (p == 1) {
+//					p = 0.99999d;
+//				}
+//				if (p < 1e-300d) {
+//					p = 1e-300d;
+//				}
 
 				genePValueDistributionPermuations[(int) (20d * p)]++;
 				genePvalues.setElementQuick(geneI, phenoI, p);
@@ -403,9 +414,10 @@ public class GenePvalueCalculator {
 				if (p == 1) {
 					p = 0.99999d;
 				}
-				if (p < 1e-300d) {
-					p = 1e-300d;
+				if (p < minPvaluePermutations) {
+					p = minPvaluePermutations;
 				}
+
 				genePValueDistributionChi2Dist[(int) (20d * p)]++;
 				genePvalues.setElementQuick(geneI, phenoI, p);
 
@@ -459,12 +471,13 @@ public class GenePvalueCalculator {
 
 				double p = (x + 0.5) / (double) (currentNumberPermutations + 1);
 
-				if (p == 1) {
-					p = 0.99999d;
-				}
-				if (p < 1e-300d) {
-					p = 1e-300d;
-				}
+				//These can never happen with current permutation methods
+//				if (p == 1) {
+//					p = 0.99999d;
+//				}
+//				if (p < 1e-300d) {
+//					p = 1e-300d;
+//				}
 
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
 
@@ -478,8 +491,8 @@ public class GenePvalueCalculator {
 				if (p == 1) {
 					p = 0.99999d;
 				}
-				if (p < 1e-300d) {
-					p = 1e-300d;
+				if (p < minPvaluePermutations) {
+					p = minPvaluePermutations;
 				}
 
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
@@ -493,6 +506,7 @@ public class GenePvalueCalculator {
 		}
 		
 		geneMaxPermutationCount.setElementQuick(geneI, 0, currentNumberPermutationsCalculated);
+		geneRuntime.setElementQuick(geneI, 0, (System.currentTimeMillis() - geneTimeStart));
 
 	}
 

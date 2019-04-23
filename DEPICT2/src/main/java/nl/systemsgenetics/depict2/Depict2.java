@@ -236,6 +236,7 @@ public class Depict2 {
 		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
 		gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
+		gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
 
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
