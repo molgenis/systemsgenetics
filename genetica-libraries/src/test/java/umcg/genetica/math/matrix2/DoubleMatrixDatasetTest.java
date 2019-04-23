@@ -467,7 +467,10 @@ public class DoubleMatrixDatasetTest {
 
 		assertEquals(m1.rows(), m2.rows());
 		assertEquals(m1.columns(), m2.columns());
-
+		
+		assertEquals(m1.getRowObjects(), m2.getRowObjects());
+		assertEquals(m1.getColObjects(), m2.getColObjects());
+		
 		for (int r = 0; r < m1.rows(); ++r) {
 			for (int c = 0; c < m1.columns(); ++c) {
 				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), delta, "Difference at r: " + r + " c: " + c);
