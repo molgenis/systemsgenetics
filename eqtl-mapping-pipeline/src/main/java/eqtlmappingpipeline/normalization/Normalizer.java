@@ -801,11 +801,11 @@ public class Normalizer {
 
 		double[][] evrawdata = datasetEV.getMatrix().toArray();
 
+		double[][] outputmat = datasetPCAOverSamplesPCAs.getMatrix().toArray();
 		IntStream.range(0, nrprobes).parallel().forEach(probe -> {
 //		for (int probe = 0; probe < nrprobes; probe++) {
 //			double[] probePCAs = datasetPCAOverSamplesPCAsrawdata[probe];
 			double[] probedata = dataset.getMatrix().viewRow(probe).toArray(); // datasetrawdata[probe];
-
 			double[] probescores = new double[finalNrOfPCsToCalculate];
 			for (int pc = 0; pc < finalNrOfPCsToCalculate; pc++) {
 				for (int sample = 0; sample < nrsamples; sample++) {
@@ -813,12 +813,13 @@ public class Normalizer {
 					probescores[pc] += (probeCoefficient * probedata[sample]); //datasetPCAOverSamplesPCAs.getElementQuick(probe, pc) + (probeCoefficient * probedata[sample]);
 				}
 			}
-			datasetPCAOverSamplesPCAs.getMatrix().viewRow(probe).assign(probescores);
+			outputmat[probe] = probescores;
+
 			pb.iterateSynched();
 		});
 //		}
 		pb.close();
-
+		datasetPCAOverSamplesPCAs.setMatrix(outputmat);
 //		for (int probe = 0; probe < dataset.rows(); probe++) {
 //			for (int sample1 = 0; sample1 < nrOfPCsToCalculate; sample1++) {
 //				for (int sample2 = 0; sample2 < dataset.columns(); sample2++) {
