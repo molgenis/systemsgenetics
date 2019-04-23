@@ -106,17 +106,16 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 				in.read(buffer, 0, nrCols * 8);
 				int bufferLoc = 0;
 				for (int col = 0; col < nrCols; col++) {
-					bits = (long) (0xff & buffer[bufferLoc + 7])
-							| (long) (0xff & buffer[bufferLoc + 6]) << 8
-							| (long) (0xff & buffer[bufferLoc + 5]) << 16
-							| (long) (0xff & buffer[bufferLoc + 4]) << 24
-							| (long) (0xff & buffer[bufferLoc + 3]) << 32
-							| (long) (0xff & buffer[bufferLoc + 2]) << 40
-							| (long) (0xff & buffer[bufferLoc + 1]) << 48
-							| (long) (buffer[bufferLoc]) << 56;
+					bits = (long) (buffer[bufferLoc++]) << 56
+							| (long) (0xff & buffer[bufferLoc++]) << 48
+							| (long) (0xff & buffer[bufferLoc++]) << 40
+							| (long) (0xff & buffer[bufferLoc++]) << 32
+							| (long) (0xff & buffer[bufferLoc++]) << 24
+							| (long) (0xff & buffer[bufferLoc++]) << 16
+							| (long) (0xff & buffer[bufferLoc++]) << 8
+							| (long) (0xff & buffer[bufferLoc++]);
 
 					result[col] = Double.longBitsToDouble(bits);
-					bufferLoc += 8;
 				}
 				nextRow++;
 

@@ -355,17 +355,16 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			in.read(buffer, 0, nrCols * 8);
 			int bufferLoc = 0;
 			for (int col = 0; col < nrCols; col++) {
-				bits = (long) (0xff & buffer[bufferLoc + 7])
-						| (long) (0xff & buffer[bufferLoc + 6]) << 8
-						| (long) (0xff & buffer[bufferLoc + 5]) << 16
-						| (long) (0xff & buffer[bufferLoc + 4]) << 24
-						| (long) (0xff & buffer[bufferLoc + 3]) << 32
-						| (long) (0xff & buffer[bufferLoc + 2]) << 40
-						| (long) (0xff & buffer[bufferLoc + 1]) << 48
-						| (long) (buffer[bufferLoc]) << 56;
+				bits = (long) (buffer[bufferLoc++]) << 56
+						| (long) (0xff & buffer[bufferLoc++]) << 48
+						| (long) (0xff & buffer[bufferLoc++]) << 40
+						| (long) (0xff & buffer[bufferLoc++]) << 32
+						| (long) (0xff & buffer[bufferLoc++]) << 24
+						| (long) (0xff & buffer[bufferLoc++]) << 16
+						| (long) (0xff & buffer[bufferLoc++]) << 8
+						| (long) (0xff & buffer[bufferLoc++]);
 
 				matrix.setQuick(currentRowInSubset, col, Double.longBitsToDouble(bits));
-				bufferLoc += 8;
 			}
 			currentRowInSubset++;
 
@@ -467,21 +466,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				rctr++;
 				int cctr = 0;
 				for (int col = 0; col < nrCols; col++) {
-					bits = (long) (0xff & buffer[bufferLoc + 7])
-							| (long) (0xff & buffer[bufferLoc + 6]) << 8
-							| (long) (0xff & buffer[bufferLoc + 5]) << 16
-							| (long) (0xff & buffer[bufferLoc + 4]) << 24
-							| (long) (0xff & buffer[bufferLoc + 3]) << 32
-							| (long) (0xff & buffer[bufferLoc + 2]) << 40
-							| (long) (0xff & buffer[bufferLoc + 1]) << 48
-							| (long) (buffer[bufferLoc]) << 56;
+					bits = (long) (buffer[bufferLoc++]) << 56
+							| (long) (0xff & buffer[bufferLoc++]) << 48
+							| (long) (0xff & buffer[bufferLoc++]) << 40
+							| (long) (0xff & buffer[bufferLoc++]) << 32
+							| (long) (0xff & buffer[bufferLoc++]) << 24
+							| (long) (0xff & buffer[bufferLoc++]) << 16
+							| (long) (0xff & buffer[bufferLoc++]) << 8
+							| (long) (0xff & buffer[bufferLoc++]);
 
 					if (requestedCols == null || requestedCols.contains(col)) {
 						matrix.setQuick(rctr, cctr, Double.longBitsToDouble(bits));
 						cctr++;
 					}
 
-					bufferLoc += 8;
 				}
 			}
 
@@ -730,17 +728,16 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			in.read(buffer, 0, nrCols * 8);
 			int bufferLoc = 0;
 			for (int col = 0; col < nrCols; col++) {
-				bits = (long) (0xff & buffer[bufferLoc + 7])
-						| (long) (0xff & buffer[bufferLoc + 6]) << 8
-						| (long) (0xff & buffer[bufferLoc + 5]) << 16
-						| (long) (0xff & buffer[bufferLoc + 4]) << 24
-						| (long) (0xff & buffer[bufferLoc + 3]) << 32
-						| (long) (0xff & buffer[bufferLoc + 2]) << 40
-						| (long) (0xff & buffer[bufferLoc + 1]) << 48
-						| (long) (buffer[bufferLoc]) << 56;
+				bits = (long) (buffer[bufferLoc++]) << 56
+						| (long) (0xff & buffer[bufferLoc++]) << 48
+						| (long) (0xff & buffer[bufferLoc++]) << 40
+						| (long) (0xff & buffer[bufferLoc++]) << 32
+						| (long) (0xff & buffer[bufferLoc++]) << 24
+						| (long) (0xff & buffer[bufferLoc++]) << 16
+						| (long) (0xff & buffer[bufferLoc++]) << 8
+						| (long) (0xff & buffer[bufferLoc++]);
 
 				matrix.setQuick(row, col, Double.longBitsToDouble(bits));
-				bufferLoc += 8;
 			}
 		}
 		in.close();
@@ -1427,9 +1424,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		final DoubleMatrix2D innerMatrix = getMatrix();
 		final int rows = innerMatrix.rows();
 		final int columns = innerMatrix.columns();
-		final double rowsMin1 = (double)(rows - 1);
+		final double rowsMin1 = (double) (rows - 1);
 		final DoubleMatrix2D correlations = new cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D(columns, columns);
-		
+
 //		DoubleMatrix1D[] cols = new DoubleMatrix1D[columns];
 //		for (int i = columns; --i >= 0;) {
 //			cols[i] = matrix.viewColumn(i);
@@ -1446,7 +1443,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 					double sumOfProducts = 0;
 					for (int r = 0; r < rows; ++r) {
 //						sumOfProducts += col1.getQuick(r) * col2.getQuick(r);
-						sumOfProducts += innerMatrix.getQuick(r,i) * innerMatrix.getQuick(r,j);
+						sumOfProducts += innerMatrix.getQuick(r, i) * innerMatrix.getQuick(r, j);
 					}
 
 					double x = sumOfProducts / rowsMin1;
