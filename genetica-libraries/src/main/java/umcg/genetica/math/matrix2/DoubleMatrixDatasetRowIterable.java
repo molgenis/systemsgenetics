@@ -127,4 +127,8 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 		}
 	}
 
+	public void close() throws IOException {
+		in.close();
+	}
+
 }
