@@ -5,8 +5,7 @@
  */
 package nl.systemsgenetics.depict2.development;
 
-import org.apache.commons.lang.time.DurationFormatUtils;
-import org.apache.commons.math3.distribution.ChiSquaredDistribution;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 /**
  *
@@ -20,10 +19,13 @@ public class Test {
 	public static void main(String[] args) {
 		
 		//System.out.println(DurationFormatUtils.formatDuration(1123456789, "H:mm:ss.S"));
-		ChiSquaredDistribution x = new ChiSquaredDistribution(1);
-		double y = x.inverseCumulativeProbability(0.5);
-		System.out.println(y);
+//		ChiSquaredDistribution x = new ChiSquaredDistribution(1);
+//		double y = x.inverseCumulativeProbability(0.5);
+//		System.out.println(y);
 		
+		DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
+
+		descriptiveStatistics.addValue(0);
 		
 	}
 	
