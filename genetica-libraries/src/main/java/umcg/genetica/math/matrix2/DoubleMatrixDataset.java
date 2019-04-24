@@ -176,7 +176,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException, Exception {
 		if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
 			return loadDoubleTextData(fileName, '\t');
-		} else if (fileName.endsWith(".binary")) {
+		} else if (fileName.endsWith(".dat")) {
 			return loadDoubleBinaryData(fileName);
 		} else {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set to: \"tab\" \n Input filename: " + fileName);
@@ -383,7 +383,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @deprecated Untested. For now use loadSubsetOfRowsBinaryDoubleData and
 	 * then do viewColSelection. That option will keep all cols in memory
 	 */
-	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, HashSet<String> desiredRows, HashSet<String> desiredCols) throws IOException {
+	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, Set<String> desiredRows, Set<String> desiredCols) throws IOException {
 
 		//Now load the row and column identifiers from files
 		LinkedHashMap<String, Integer> rowMap = loadIdentifiers(fileName + ".rows.txt");
@@ -1403,10 +1403,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @return Correlation matrix on columns
 	 */
 	public DoubleMatrixDataset<C, C> calculateCorrelationMatrix() {
-
 		DoubleMatrix2D correlationMatrix = DoubleStatistic.correlation(DoubleStatistic.covariance(this.matrix));
 		return new DoubleMatrixDataset<>(correlationMatrix, hashCols, hashCols);
-
 	}
 
 	/**

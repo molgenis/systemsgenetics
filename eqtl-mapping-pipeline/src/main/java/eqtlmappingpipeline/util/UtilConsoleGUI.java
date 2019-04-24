@@ -13,7 +13,8 @@ import umcg.genetica.console.ConsoleGUIElems;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.trityper.ConvertDoubleMatrixDataToTriTyper;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,7 +34,7 @@ public class UtilConsoleGUI {
 		GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
 		SORTEQTLFILEBYZSCORE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
 		ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITEQTLFILEBYCHR, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO,
-		SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR
+		SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR, CONVERTBINMAT
 	}
 	
 	;
@@ -267,7 +268,7 @@ public class UtilConsoleGUI {
 									in = in.substring(0, in.length() - 4);
 								}
 								System.out.println("Converting: " + in);
-								DoubleMatrixDataset<String, String> ds = new DoubleMatrixDataset<String, String>(in);
+								DoubleMatrixDataset<String, String> ds = DoubleMatrixDataset.loadDoubleBinaryData(in);
 								ds.save(out);
 							}
 						}
