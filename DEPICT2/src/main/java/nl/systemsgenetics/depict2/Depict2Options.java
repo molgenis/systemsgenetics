@@ -46,6 +46,7 @@ public class Depict2Options {
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
 	private final File conversionColumnIncludeFilter;
+	private final boolean correctForLambdaInflation;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -158,6 +159,11 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Optional file with columns to select during conversion");
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
+		
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Correct the GWAS for the lambda inflation");
+		OptionBuilder.withLongOpt("correctLambda");
+		OPTIONS.addOption(OptionBuilder.create("cl"));
 
 	}
 
@@ -178,6 +184,7 @@ public class Depict2Options {
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
+		correctForLambdaInflation = commandLine.hasOption("cl");
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m"));
@@ -397,6 +404,7 @@ public class Depict2Options {
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
+				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
 
 				logPathwayDatabases();
 
@@ -484,4 +492,8 @@ public class Depict2Options {
 		return conversionColumnIncludeFilter;
 	}
 
+	public boolean correctForLambdaInflation() {
+		return correctForLambdaInflation;
+	}
+	
 }

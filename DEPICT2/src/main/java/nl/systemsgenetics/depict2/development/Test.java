@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.depict2.development;
 
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 /**
@@ -22,10 +23,9 @@ public class Test {
 //		ChiSquaredDistribution x = new ChiSquaredDistribution(1);
 //		double y = x.inverseCumulativeProbability(0.5);
 //		System.out.println(y);
-		
-		DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
 
-		descriptiveStatistics.addValue(0);
+		System.out.println(new ChiSquaredDistribution(1).inverseCumulativeProbability(0.5));
+		
 		
 	}
 	

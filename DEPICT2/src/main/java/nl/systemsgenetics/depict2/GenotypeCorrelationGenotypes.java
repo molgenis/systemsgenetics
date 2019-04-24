@@ -60,7 +60,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 			}
 		}
 
-		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset(sampleHash, variantHash);
+		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset<>(sampleHash, variantHash);
 
 		DoubleMatrix2D dosageMatrix = dosageDataset.getMatrix();
 
