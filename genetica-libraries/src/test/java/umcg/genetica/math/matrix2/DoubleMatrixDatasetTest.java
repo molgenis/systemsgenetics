@@ -457,17 +457,20 @@ public class DoubleMatrixDatasetTest {
 
 	}
 
-	private static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
+	public static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {
 
 		compareTwoMatrices(m1, m2, 0.00000001);
 
 	}
 
-	private static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
+	public static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
 
 		assertEquals(m1.rows(), m2.rows());
 		assertEquals(m1.columns(), m2.columns());
-
+		
+		assertEquals(m1.getRowObjects(), m2.getRowObjects());
+		assertEquals(m1.getColObjects(), m2.getColObjects());
+		
 		for (int r = 0; r < m1.rows(); ++r) {
 			for (int c = 0; c < m1.columns(); ++c) {
 				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), delta, "Difference at r: " + r + " c: " + c);

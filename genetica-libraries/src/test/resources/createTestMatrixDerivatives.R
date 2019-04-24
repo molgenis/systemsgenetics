@@ -21,3 +21,15 @@ corDirections <- apply(cor(testMatrix), 1:2, function(x){if(x<0){return(-1)}else
 corZscoresDirected <- corZscores * corDirections
 
 write.table(corZscoresDirected, file = "testMatrixColumnCorZscoreMatrix.txt", quote = F, sep = "\t", col.names = NA)
+
+
+library(weights)
+
+weights <- runif (100)
+weights = weights + (1 - mean(weights))
+
+weightedCorRes <- wtd.cor(testMatrix, weight = weights, mean1 = FALSE)
+weightedCor <- weightedCorRes$correlation
+
+write.table(weights, file = "randomWeights.txt", quote = F, sep = "\t", col.names = NA)
+write.table(weightedCor, file = "testMatrixColumnWeightedCorMatrix.txt", quote = F, sep = "\t", col.names = NA)

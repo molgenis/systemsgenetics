@@ -6,6 +6,9 @@
 package nl.systemsgenetics.depict2;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -41,6 +44,8 @@ public class Depict2Options {
 	private final File logFile;
 	private final boolean debugMode;
 	private final boolean pvalueToZscore;
+	private final List<PathwayDatabase> pathwayDatabases;
+	private final File conversionColumnIncludeFilter;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -54,8 +59,11 @@ public class Depict2Options {
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
 				+ "* RUN - Run the DEPICT2 prioritization.\n"
+				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
+				+ "* RUN3 - Run the DEPICT2 prioritization starting at stage 3.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
-				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output");
+				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
+				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -124,7 +132,7 @@ public class Depict2Options {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos");
+		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
 
@@ -138,6 +146,19 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("pvalueToZscore");
 		OPTIONS.addOption(OptionBuilder.create("p2z"));
 
+		OptionBuilder.withArgName("name=path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withValueSeparator();
+		OptionBuilder.withDescription("Pathway databases, binary matrix with p-values for genes");
+		OptionBuilder.withLongOpt("pathwayDatabase");
+		OPTIONS.addOption(OptionBuilder.create("pd"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Optional file with columns to select during conversion");
+		OptionBuilder.withLongOpt("cols");
+		OPTIONS.addOption(OptionBuilder.create("co"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -148,7 +169,7 @@ public class Depict2Options {
 		if (commandLine.hasOption('t')) {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
-				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism",commandLine.getOptionValue('t'));
+				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
 			}
@@ -164,7 +185,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -177,9 +198,17 @@ public class Depict2Options {
 
 		if (mode == Depict2Mode.CONVERT_TXT) {
 			pvalueToZscore = commandLine.hasOption("p2z");
+			if (commandLine.hasOption("co")) {
+				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
+			} else {
+				conversionColumnIncludeFilter = null;
+			}
 		} else {
 			pvalueToZscore = false;
+			conversionColumnIncludeFilter = null;
+
 		}
+
 
 		if (mode == Depict2Mode.RUN) {
 
@@ -253,7 +282,32 @@ public class Depict2Options {
 				}
 
 			}
+
+			pathwayDatabases = parsePd(commandLine);
+
+		} else if (mode == Depict2Mode.RUN2 || mode == Depict2Mode.RUN3) {
+
+			if (!commandLine.hasOption("ge")) {
+				throw new ParseException("--genes not specified");
+			} else {
+				geneInfoFile = new File(commandLine.getOptionValue("ge"));
+			}
+
+			pathwayDatabases = parsePd(commandLine);
+
+			if (mode == Depict2Mode.RUN3 && pathwayDatabases.isEmpty()) {
+				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN3");
+			}
+
+			genotypeBasePath = null;
+			genotypeType = null;
+			genotypeSamplesFile = null;
+			maxRBetweenVariants = 0d;
+			numberOfPermutations = 0;
+			windowExtend = 0;
+
 		} else {
+			pathwayDatabases = null;
 			genotypeBasePath = null;
 			genotypeType = null;
 			genotypeSamplesFile = null;
@@ -263,6 +317,35 @@ public class Depict2Options {
 			windowExtend = 0;
 		}
 
+	}
+
+	private List<PathwayDatabase> parsePd(final CommandLine commandLine) throws ParseException {
+
+		final List<PathwayDatabase> pathwayDatabasesTmp;
+
+		if (commandLine.hasOption("pd")) {
+
+			String[] pdValues = commandLine.getOptionValues("pd");
+
+			if (pdValues.length % 2 != 0) {
+				throw new ParseException("Error parsing --pathwayDatabase. Must be in name=database format");
+			}
+
+			pathwayDatabasesTmp = new ArrayList<>();
+
+			for (int i = 0; i < pdValues.length; i += 2) {
+
+				pathwayDatabasesTmp.add(new PathwayDatabase(pdValues[i], pdValues[i + 1]));
+
+			}
+
+		} else {
+
+			pathwayDatabasesTmp = Collections.emptyList();
+
+		}
+
+		return pathwayDatabasesTmp;
 	}
 
 	public static void printHelp() {
@@ -280,6 +363,12 @@ public class Depict2Options {
 		switch (mode) {
 			case CONVERT_EQTL:
 				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (pvalueToZscore) {
+					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+				}
+				break;
+			case CONVERT_GTEX:
+				LOGGER.info(" * Gtex median tissue expression GCT file: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
@@ -308,11 +397,31 @@ public class Depict2Options {
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
+
+				logPathwayDatabases();
+
 				break;
+			case RUN2:
+			case RUN3:
+				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
+				logPathwayDatabases();
+				break;
+
 		}
 
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 
+	}
+
+	private void logPathwayDatabases() {
+		if (pathwayDatabases.size() > 0) {
+			LOGGER.info(" * The following pathway databases have been specified:");
+			for (PathwayDatabase database : pathwayDatabases) {
+				LOGGER.info("    - " + database.getName() + " at: " + database.getLocation());
+			}
+		} else {
+			LOGGER.info(" * No pathway databases specified");
+		}
 	}
 
 	public String[] getGenotypeBasePath() {
@@ -365,6 +474,14 @@ public class Depict2Options {
 
 	public boolean isPvalueToZscore() {
 		return pvalueToZscore;
+	}
+
+	public List<PathwayDatabase> getPathwayDatabases() {
+		return pathwayDatabases;
+	}
+
+	public File getConversionColumnIncludeFilter() {
+		return conversionColumnIncludeFilter;
 	}
 
 }

@@ -320,10 +320,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			matrix = new DenseLargeDoubleMatrix2D(rowsToView.size(), originalColMap.size());
 		}
 
-		File fileBinary = new File(fileName + ".dat");
-		RandomAccessFile in = new RandomAccessFile(fileBinary, "r");
-		int nrRows;
-		int nrCols;
+		final File fileBinary = new File(fileName + ".dat");
+		final RandomAccessFile in = new RandomAccessFile(fileBinary, "r");
+		final int nrRows;
+		final int nrCols;
 		byte[] bytes = new byte[4];
 		in.read(bytes, 0, 4);
 		nrRows = byteArrayToInt(bytes);
@@ -338,9 +338,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols");
 		}
 
-		byte[] buffer = new byte[nrCols * 8];
+		final byte[] buffer = new byte[nrCols * 8];
 
-		long rowLength = 8l * nrCols;
+		final long rowLength = 8l * nrCols;
 		long bits;
 
 		int currentRowInSubset = 0;
@@ -355,17 +355,16 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			in.read(buffer, 0, nrCols * 8);
 			int bufferLoc = 0;
 			for (int col = 0; col < nrCols; col++) {
-				bits = (long) (0xff & buffer[bufferLoc + 7])
-						| (long) (0xff & buffer[bufferLoc + 6]) << 8
-						| (long) (0xff & buffer[bufferLoc + 5]) << 16
-						| (long) (0xff & buffer[bufferLoc + 4]) << 24
-						| (long) (0xff & buffer[bufferLoc + 3]) << 32
-						| (long) (0xff & buffer[bufferLoc + 2]) << 40
-						| (long) (0xff & buffer[bufferLoc + 1]) << 48
-						| (long) (buffer[bufferLoc]) << 56;
+				bits = (long) (buffer[bufferLoc++]) << 56
+						| (long) (0xff & buffer[bufferLoc++]) << 48
+						| (long) (0xff & buffer[bufferLoc++]) << 40
+						| (long) (0xff & buffer[bufferLoc++]) << 32
+						| (long) (0xff & buffer[bufferLoc++]) << 24
+						| (long) (0xff & buffer[bufferLoc++]) << 16
+						| (long) (0xff & buffer[bufferLoc++]) << 8
+						| (long) (0xff & buffer[bufferLoc++]);
 
 				matrix.setQuick(currentRowInSubset, col, Double.longBitsToDouble(bits));
-				bufferLoc += 8;
 			}
 			currentRowInSubset++;
 
@@ -467,21 +466,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				rctr++;
 				int cctr = 0;
 				for (int col = 0; col < nrCols; col++) {
-					bits = (long) (0xff & buffer[bufferLoc + 7])
-							| (long) (0xff & buffer[bufferLoc + 6]) << 8
-							| (long) (0xff & buffer[bufferLoc + 5]) << 16
-							| (long) (0xff & buffer[bufferLoc + 4]) << 24
-							| (long) (0xff & buffer[bufferLoc + 3]) << 32
-							| (long) (0xff & buffer[bufferLoc + 2]) << 40
-							| (long) (0xff & buffer[bufferLoc + 1]) << 48
-							| (long) (buffer[bufferLoc]) << 56;
+					bits = (long) (buffer[bufferLoc++]) << 56
+							| (long) (0xff & buffer[bufferLoc++]) << 48
+							| (long) (0xff & buffer[bufferLoc++]) << 40
+							| (long) (0xff & buffer[bufferLoc++]) << 32
+							| (long) (0xff & buffer[bufferLoc++]) << 24
+							| (long) (0xff & buffer[bufferLoc++]) << 16
+							| (long) (0xff & buffer[bufferLoc++]) << 8
+							| (long) (0xff & buffer[bufferLoc++]);
 
 					if (requestedCols == null || requestedCols.contains(col)) {
 						matrix.setQuick(rctr, cctr, Double.longBitsToDouble(bits));
 						cctr++;
 					}
 
-					bufferLoc += 8;
 				}
 			}
 
@@ -496,7 +494,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, Set<String> desiredRows, Set<String> desiredCols) throws IOException, Exception {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz"))) {
+		return loadSubsetOfTextDoubleData(fileName, delimiter, desiredRows, desiredCols, 0);
+	}
+
+	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, Set<String> desiredRows, Set<String> desiredCols, int linesToSkip) throws IOException, Exception {
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct"))) {
 			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
 
@@ -504,6 +506,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int columnOffset = 1;
 
 		TextFile in = new TextFile(fileName, TextFile.R);
+
+		for (int i = 0; i < linesToSkip; ++i) {
+			in.readLine();//Skip first lines
+		}
+
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
@@ -591,7 +598,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude) throws IOException, Exception {
 
+		return loadDoubleTextDoubleDataExlcudeCols(fileName, delimiter, colsToExclude, 0);
+
+	}
+
+	public static DoubleMatrixDataset<String, String> loadDoubleTextDoubleDataExlcudeCols(String fileName, char delimiter, HashSet<String> colsToExclude, int linesToSkip) throws IOException, Exception {
+
 		TextFile in = new TextFile(fileName, TextFile.R);
+
+		for (int i = 0; i < linesToSkip; ++i) {
+			in.readLine();//Skip first lines
+		}
+
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
@@ -605,7 +623,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		}
 
-		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols);
+		return DoubleMatrixDataset.loadSubsetOfTextDoubleData(fileName, delimiter, null, desiredCols, linesToSkip);
 
 	}
 
@@ -710,17 +728,16 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			in.read(buffer, 0, nrCols * 8);
 			int bufferLoc = 0;
 			for (int col = 0; col < nrCols; col++) {
-				bits = (long) (0xff & buffer[bufferLoc + 7])
-						| (long) (0xff & buffer[bufferLoc + 6]) << 8
-						| (long) (0xff & buffer[bufferLoc + 5]) << 16
-						| (long) (0xff & buffer[bufferLoc + 4]) << 24
-						| (long) (0xff & buffer[bufferLoc + 3]) << 32
-						| (long) (0xff & buffer[bufferLoc + 2]) << 40
-						| (long) (0xff & buffer[bufferLoc + 1]) << 48
-						| (long) (buffer[bufferLoc]) << 56;
+				bits = (long) (buffer[bufferLoc++]) << 56
+						| (long) (0xff & buffer[bufferLoc++]) << 48
+						| (long) (0xff & buffer[bufferLoc++]) << 40
+						| (long) (0xff & buffer[bufferLoc++]) << 32
+						| (long) (0xff & buffer[bufferLoc++]) << 24
+						| (long) (0xff & buffer[bufferLoc++]) << 16
+						| (long) (0xff & buffer[bufferLoc++]) << 8
+						| (long) (0xff & buffer[bufferLoc++]);
 
 				matrix.setQuick(row, col, Double.longBitsToDouble(bits));
-				bufferLoc += 8;
 			}
 		}
 		in.close();
@@ -860,14 +877,14 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		out.close();
 	}
 
-	private static byte[] intToByteArray(int value) {
+	protected static byte[] intToByteArray(int value) {
 		return new byte[]{(byte) (value >>> 24),
 			(byte) (value >>> 16),
 			(byte) (value >>> 8),
 			(byte) value};
 	}
 
-	private static int byteArrayToInt(byte[] b) {
+	protected static int byteArrayToInt(byte[] b) {
 		return (b[0] << 24)
 				+ ((b[1] & 0xff) << 16)
 				+ ((b[2] & 0xff) << 8)
@@ -1394,7 +1411,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Fast correlation matrix function but only valid if all columns have mean
-	 * 0 and sd 1
+	 * 0 and sd 1. See normalizeColumns()
 	 *
 	 * Does NOT check if conditions valid
 	 *
@@ -1404,30 +1421,32 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 */
 	public DoubleMatrixDataset<C, C> calculateCorrelationMatrixOnNormalizedColumns() {
 
-		int rows = matrix.rows();
-		int columns = matrix.columns();
-		DoubleMatrix2D correlations = new cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D(columns, columns);
+		final DoubleMatrix2D innerMatrix = getMatrix();
+		final int rows = innerMatrix.rows();
+		final int columns = innerMatrix.columns();
+		final double rowsMin1 = (double) (rows - 1);
+		final DoubleMatrix2D correlations = new cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D(columns, columns);
 
-		DoubleMatrix1D[] cols = new DoubleMatrix1D[columns];
+//		DoubleMatrix1D[] cols = new DoubleMatrix1D[columns];
+//		for (int i = columns; --i >= 0;) {
+//			cols[i] = matrix.viewColumn(i);
+//		}
 		for (int i = columns; --i >= 0;) {
-			cols[i] = matrix.viewColumn(i);
-		}
-
-		for (int i = columns; --i >= 0;) {
-			DoubleMatrix1D col1 = cols[i];
+			//DoubleMatrix1D col1 = cols[i];
 			for (int j = i + 1; --j >= 0;) {
 
 				if (i == j) {
 					correlations.setQuick(i, j, 1);
 				} else {
 
-					DoubleMatrix1D col2 = cols[j];
+//					DoubleMatrix1D col2 = cols[j];
 					double sumOfProducts = 0;
-					for (int e = 0; e < rows; ++e) {
-						sumOfProducts += col1.getQuick(e) * col2.getQuick(e);
+					for (int r = 0; r < rows; ++r) {
+//						sumOfProducts += col1.getQuick(r) * col2.getQuick(r);
+						sumOfProducts += innerMatrix.getQuick(r, i) * innerMatrix.getQuick(r, j);
 					}
 
-					double x = sumOfProducts / (rows - 1);
+					double x = sumOfProducts / rowsMin1;
 					correlations.setQuick(i, j, x);
 					correlations.setQuick(j, i, x); // symmetric
 				}
@@ -1577,7 +1596,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	/**
 	 * Assumes that columns in both dataset have mean 0 and sd 1
-	 * 
+	 *
 	 * Rows must be identical, only row count will be checked
 	 *
 	 * Columns in d1 will be columns in output, columns in d2 will be rows
@@ -1600,7 +1619,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		final int d1NrCols = d1.columns();
 		final int d2NrCols = d2.columns();
-		
+
 		final int nrRows = d1.rows();
 
 		final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];

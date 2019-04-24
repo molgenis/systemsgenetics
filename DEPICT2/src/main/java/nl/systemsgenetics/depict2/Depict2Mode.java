@@ -11,7 +11,10 @@ package nl.systemsgenetics.depict2;
  */
 public enum Depict2Mode {
 	RUN,
+	RUN2,
+	RUN3,
 	CONVERT_TXT,
 	CONVERT_EQTL,
+	CONVERT_GTEX,
 	FIRST1000;
 }
