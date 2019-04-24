@@ -17,13 +17,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -47,7 +50,7 @@ public class Depict2 {
 
 	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
+	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("d:HH:mm:ss");
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
@@ -109,7 +112,7 @@ public class Depict2 {
 		}
 
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
+			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.RUN2 || options.getMode() == Depict2Mode.RUN3);
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
@@ -140,11 +143,20 @@ public class Depict2 {
 				case CONVERT_TXT:
 					convertTxtToBin(options);
 					break;
+				case CONVERT_GTEX:
+					ConvertGtexGct.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
+					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
 				case RUN:
 					run(options);
+					break;
+				case RUN2:
+					run2(options, null, null, null, null);
+					break;
+				case RUN3:
+					run3(options, null, null, null, null, null);
 					break;
 			}
 		} catch (TabixFileNotFoundException e) {
@@ -173,15 +185,15 @@ public class Depict2 {
 			System.exit(1);
 		} catch (Exception e) {
 			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error meesage: " + e.getMessage());
+			System.err.println("Error message: " + e.getMessage());
 			System.err.println("See log file for stack trace");
 			LOGGER.fatal("Error: " + e.getMessage(), e);
-			if(LOGGER.isDebugEnabled()){
+			if (LOGGER.isDebugEnabled()) {
 				e.printStackTrace();
 			}
 			System.exit(1);
 		}
-		LOGGER.info("Completed mode: " + options.getMode());
+		LOGGER.info("Analysis completed");
 
 		currentDataTime = new Date();
 		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
@@ -210,22 +222,140 @@ public class Depict2 {
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
 		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
-		
+
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
 		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2);
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-		
+
 		LOGGER.info("Finished calculating gene p-values");
 
 		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
 		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
+		gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
+
+		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
+
+		run2(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes);
+
+	}
+
+	/**
+	 * Part2 of depict. Matrices may be null and then they will be loaded form
+	 * output path. If matrices is null genes will be reloaded
+	 *
+	 * All matrices will have genes on the rows in the same order
+	 *
+	 * @param options
+	 * @param genePvalues
+	 * @param genePvaluesNullGwas
+	 * @param geneVariantCount
+	 * @throws IOException
+	 * @throws Exception
+	 */
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes) throws IOException, Exception {
+
+		if (options.getMode() == Depict2Mode.RUN2) {
+			LOGGER.info("Continuing previous analysis by loading gene p-values");
+			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
+			LOGGER.info("Gene p-values loaded");
+			genes = readGenes(options.getGeneInfoFile());
+			LOGGER.info("Loaded " + genes.size() + " genes");
+		}
+
+		//Identify genes with atleast one variant in window
+		final LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
+		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
+		final int totalGeneCount = allGenes.size();
+		for (int g = 0; g < totalGeneCount; ++g) {
+			if (geneVariantCount.getElementQuick(g, 0) > 0) {
+				selectedGenes.add(allGenes.get(g));
+			}
+		}
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + selectedGenes.size());
+
+		//Exclude genes with no variants
+		genePvalues = genePvalues.viewRowSelection(selectedGenes);
+		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
+		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
+
+		//Gene weight will have same order as other matrices
+		DoubleMatrixDataset<String, String> geneWeights = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas, genes, options);
+
+		geneWeights.save(options.getOutputBasePath() + "_geneWeigths.txt");
+
+		if (options.getPathwayDatabases().isEmpty()) {
+			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
+		} else {
+			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
+			run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneWeights);
+		}
+
+	}
+
+	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes, DoubleMatrixDataset<String, String> geneWeights) throws IOException, Exception {
+
+		if (options.getMode() == Depict2Mode.RUN3) {
+			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
+			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
+			LOGGER.info("Gene p-values loaded");
+			geneWeights = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneWeigths.txt", '\t');
+			LOGGER.info("Gene weights loaded");
+			genes = readGenes(options.getGeneInfoFile());
+			LOGGER.info("Loaded " + genes.size() + " genes");
+
+			//In run two we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
+			genePvalues = genePvalues.viewRowSelection(geneWeights.getHashRows().keySet());
+			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(geneWeights.getHashRows().keySet());
+
+		}
+
+		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+
+		DoubleMatrix2D matrix = genePvalues.getMatrix();
+
+		for (int r = 0; r < matrix.rows(); ++r) {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+			}
+		}
 		
+//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+
+		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
+
+		for (int r = 0; r < matrixNull.rows(); ++r) {
+			for (int c = 0; c < matrixNull.columns(); ++c) {
+				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
+			}
+		}
 		
+//		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
 		
+
+		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
+
+		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+
+		HashSet<String> hlaGenes = new HashSet<>();
+		for (Gene gene : genes) {
+			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
+				hlaGenes.add(gene.getGene());
+			}
+		}
+
+		PathwayEnrichments.performAndSaveEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
+
+		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
+
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -271,7 +401,7 @@ public class Depict2 {
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3])));
+			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5]));
 
 		}
 
@@ -319,7 +449,7 @@ public class Depict2 {
 			}
 		}
 
-		final DoubleMatrixDataset<String, String> matrix;
+		DoubleMatrixDataset<String, String> matrix;
 
 		if (variantsWithDuplicates.size() > 0) {
 
@@ -361,6 +491,11 @@ public class Depict2 {
 
 		}
 
+		if (options.getConversionColumnIncludeFilter() != null) {
+			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			matrix = matrix.viewColSelection(colsToSelect);
+		}
+
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}
@@ -373,14 +508,15 @@ public class Depict2 {
 	}
 
 	public static String formatMsForLog(long ms) {
-		return LOG_TIME_FORMAT.format(new Date(ms));
+		//return LOG_TIME_FORMAT.format(new Date(ms));
+		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
 	}
 
 	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
 
 		final double[] randomChi2;
-		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE-10) {
-			randomChi2 = new double[Integer.MAX_VALUE-10];
+		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE - 10) {
+			randomChi2 = new double[Integer.MAX_VALUE - 10];
 		} else {
 			randomChi2 = new double[numberOfVariantPerGeneToExpect * numberOfPermutations];
 		}
@@ -412,6 +548,30 @@ public class Depict2 {
 
 		return randomChi2;
 
+	}
+	
+	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
+
+		private final String errorSource;
+
+		public ThreadErrorHandler(String errorSource) {
+			this.errorSource = errorSource;
+		}
+		
+		
+		
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+
+			System.err.println("Problem running: " + errorSource);
+			LOGGER.fatal("Error: " + e.getMessage(), e);
+			if (LOGGER.isDebugEnabled()) {
+				e.printStackTrace();
+			} else {
+				System.err.println("See log file for stack trace");
+			}
+			System.exit(1);
+		}
 	}
 
 }
