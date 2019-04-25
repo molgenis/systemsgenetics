@@ -287,7 +287,7 @@ public class Depict2 {
 		//Gene weight will have same order as other matrices
 		DoubleMatrixDataset<String, String> geneWeights = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas, genes, options);
 
-		geneWeights.save(options.getOutputBasePath() + "_geneWeigths.txt");
+		geneWeights.save(options.getOutputBasePath() + "_geneWeights.txt");
 
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
@@ -306,7 +306,7 @@ public class Depict2 {
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
 			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
-			geneWeights = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneWeigths.txt", '\t');
+			geneWeights = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneWeights.txt", '\t');
 			LOGGER.info("Gene weights loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
