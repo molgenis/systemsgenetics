@@ -190,7 +190,7 @@ public class PathwayEnrichments {
 				}
 
 				LOGGER.debug("Completed " + pathwayDatabase.getName() + " enrichment");
-				
+
 				pb.step();
 
 			});
@@ -267,14 +267,21 @@ public class PathwayEnrichments {
 
 			CellStyle largePvalueStyle = enrichmentWorkbook.createCellStyle();
 			largePvalueStyle.setDataFormat(format.getFormat("0.0000"));
-			
+
 			CellStyle smallPvalueStyle = enrichmentWorkbook.createCellStyle();
 			smallPvalueStyle.setDataFormat(format.getFormat("0.00E+0"));
-			
-			CellStyle hlink_style = enrichmentWorkbook.createCellStyle();
-			Font hlink_font = enrichmentWorkbook.createFont();
-			hlink_font.setUnderline(Font.U_SINGLE);
-			hlink_style.setFont(hlink_font);
+
+			CellStyle hlinkStyle = enrichmentWorkbook.createCellStyle();
+			Font hlinkFont = enrichmentWorkbook.createFont();
+			hlinkFont.setUnderline(Font.U_SINGLE);
+			hlinkStyle.setFont(hlinkFont);
+
+			CellStyle boldStyle = enrichmentWorkbook.createCellStyle();
+			Font fontBold = enrichmentWorkbook.createFont();
+			fontBold.setBold(true);
+			boldStyle.setFont(fontBold);
+
+			XSSFSheet overviewSheet = (XSSFSheet) enrichmentWorkbook.createSheet("Overview");
 
 			for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 
@@ -297,8 +304,7 @@ public class PathwayEnrichments {
 
 				table.getCTTable().addNewAutoFilter();
 
-				databaseSheet.createFreezePane(0, 1);
-
+				//databaseSheet.createFreezePane(0, 1);
 				XSSFRow headerRow = databaseSheet.createRow(0);
 				int hc = 0;
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene set");
@@ -311,10 +317,12 @@ public class PathwayEnrichments {
 				for (int r = 0; r < databaseEnrichment.rows(); ++r) {
 					XSSFRow row = databaseSheet.createRow(r + 1);//+1 for header
 
-					row.createCell(0, CellType.STRING).setCellValue(geneSets.get(r));
+					String geneSet = geneSets.get(order[r]);
+
+					row.createCell(0, CellType.STRING).setCellValue(geneSet);
 
 					if (maxAnnotations > 0) {
-						ArrayList<String> thisPathwayAnnotations = pathwayAnnotations.getAnnotationsForPathway(geneSets.get(r));
+						ArrayList<String> thisPathwayAnnotations = pathwayAnnotations.getAnnotationsForPathway(geneSet);
 						if (thisPathwayAnnotations == null) {
 							for (int j = 0; j < maxAnnotations; ++j) {
 								row.createCell(j + 1, CellType.STRING).setCellValue("");
@@ -330,7 +338,7 @@ public class PathwayEnrichments {
 										Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
 										link.setAddress(annotation);
 										cell.setHyperlink(link);
-										cell.setCellStyle(hlink_style);
+										cell.setCellStyle(hlinkStyle);
 									}
 
 								} else {
@@ -340,15 +348,15 @@ public class PathwayEnrichments {
 							}
 						}
 					}
-					
+
 					double zscore = traitEnrichment.getQuick(order[r]);
-					
+
 					XSSFCell zscoreCell = row.createCell(1 + maxAnnotations, CellType.NUMERIC);
 					zscoreCell.setCellValue(zscore);
 					zscoreCell.setCellStyle(zscoreStyle);
-					
+
 					double pvalue = ZScores.zToP(zscore);
-					
+
 					XSSFCell pvalueCell = row.createCell(2 + maxAnnotations, CellType.NUMERIC);
 					pvalueCell.setCellValue(pvalue);
 					pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
@@ -361,14 +369,56 @@ public class PathwayEnrichments {
 				}
 
 			}
-			
+
 			File excelFile = new File(outputBasePath + "_enrichtments_" + trait + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
 			int nr = 1;
-			while (excelFile.exists()){
+			while (excelFile.exists()) {
 				excelFile = new File(outputBasePath + "_enrichtments_" + trait + (hlaExcluded ? "_exHla" : "" + "_" + nr + ".xlsx"));
 				nr++;
 			}
-			
+
+			int r = 0;
+			XSSFRow row = overviewSheet.createRow(r++);
+			XSSFCell cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Pathway enrichment analysis for: " + trait);
+			cell.setCellStyle(boldStyle);
+
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Generated using DEPICT" + Depict2.VERSION);
+			cell.setCellStyle(boldStyle);
+
+			overviewSheet.createRow(r++);
+
+			XSSFTable table = overviewSheet.createTable(new AreaReference(new CellReference(r, 0), new CellReference(r + pathwayDatabases.size(), 1), SpreadsheetVersion.EXCEL2007));
+			table.setName("OverviewTable");
+			table.setDisplayName("Overview");
+
+			table.setStyleName("TableStyleLight9");
+			table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
+
+			row = overviewSheet.createRow(r++);
+			row.createCell(0, CellType.STRING).setCellValue("Gene set database");
+			row.createCell(1, CellType.STRING).setCellValue("Number of sets");
+
+			for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
+				row = overviewSheet.createRow(r++);
+				cell = row.createCell(0, CellType.STRING);
+				cell.setCellValue(pathwayDatabase.getName());
+
+				Hyperlink link = createHelper.createHyperlink(HyperlinkType.DOCUMENT);
+				link.setAddress(pathwayDatabase.getName()+ "!A1");
+				cell.setHyperlink(link);
+				cell.setCellStyle(hlinkStyle);
+
+				row.createCell(1, CellType.NUMERIC).setCellValue(enrichments.get(pathwayDatabase).rows());
+			}
+
+			for (int c = 0; c < 2; ++c) {
+				overviewSheet.autoSizeColumn(c);
+				overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
+			}
+
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
 
 			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");

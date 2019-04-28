@@ -70,7 +70,8 @@ public class GenePvalueCalculator {
 	private final int windowExtend;
 	private final double maxR;
 	private final int maxNrPermutations;
-	private final double nrPermutationsPlus1Double;
+	private final long maxNrPermutations2;
+	//private final double nrPermutationsPlus1Double;
 	private final String outputBasePath;
 	private final double[] randomChi2;
 	private final LinkedHashMap<String, Integer> sampleHash;//In order of the samples in the genotype data
@@ -87,6 +88,7 @@ public class GenePvalueCalculator {
 	private final int[] genePValueDistributionChi2Dist;
 	private final ProgressBar pb;
 	private final double minPvaluePermutations;
+	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
 
@@ -113,8 +115,10 @@ public class GenePvalueCalculator {
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
 		this.maxNrPermutations = nrPermutations;
+		this.maxNrPermutations2 = Long.MAX_VALUE - 1;
 		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
-		this.nrPermutationsPlus1Double = nrPermutations + 1;
+		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
+		//this.nrPermutationsPlus1Double = nrPermutations + 1;
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
 		this.correctForLambdaInflation = correctForLambdaInflation;
@@ -306,6 +310,7 @@ public class GenePvalueCalculator {
 		//Rows: samples, cols: variants
 		final DoubleMatrixDataset<String, String> variantScaledDosagesPruned;
 		final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
+		final int variantCorrelationsPrunedRows;
 
 		{
 
@@ -318,6 +323,7 @@ public class GenePvalueCalculator {
 
 			timeStart = System.currentTimeMillis();
 			variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
+			variantCorrelationsPrunedRows = variantCorrelationsPruned.rows();
 			timeStop = System.currentTimeMillis();
 			timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
 
@@ -326,7 +332,7 @@ public class GenePvalueCalculator {
 		}
 
 		final DoubleMatrixDataset<String, String> nullGwasZscores;
-		if (variantCorrelationsPruned.rows() > 0) {
+		if (variantCorrelationsPrunedRows > 0) {
 			//nullGwasZscores will first contain peason r valus but this will be converted to Z-score using a lookup table;
 			nullGwasZscores = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantScaledDosagesPruned);
 			r2zScore.inplaceRToZ(nullGwasZscores);
@@ -334,7 +340,7 @@ public class GenePvalueCalculator {
 			nullGwasZscores = EMPTY_DATASET;
 		}
 
-		if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
+		if (LOGGER.isDebugEnabled() & variantCorrelationsPrunedRows > 1) {
 
 			variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
 
@@ -343,12 +349,12 @@ public class GenePvalueCalculator {
 		timeStop = System.currentTimeMillis();
 		timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
-		geneVariantCount.setElementQuick(geneI, 0, variantCorrelationsPruned.rows());
+		geneVariantCount.setElementQuick(geneI, 0, variantCorrelationsPrunedRows);
 
 		int currentNumberPermutationsCalculated = 0;
 		final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 		final double[] eigenValues;
-		if (variantCorrelationsPruned.rows() > 1) {
+		if (variantCorrelationsPrunedRows > 1) {
 
 			timeStart = System.currentTimeMillis();
 
@@ -384,7 +390,7 @@ public class GenePvalueCalculator {
 		//load current variants from variantPhenotypeMatrix
 		final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix;
 		synchronized (this) {
-			geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
+			geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getHashRows().keySet());
 		}
 
 		if (correctForLambdaInflation) {
@@ -401,7 +407,7 @@ public class GenePvalueCalculator {
 
 		for (int phenoI = 0; phenoI < numberRealPheno; ++phenoI) {
 
-			if (variantCorrelationsPruned.rows() > 1) {
+			if (variantCorrelationsPrunedRows > 1) {
 
 				timeStart = System.currentTimeMillis();
 
@@ -414,7 +420,7 @@ public class GenePvalueCalculator {
 
 				int x = 0;
 				int perm = 0;
-				int currentNumberPermutations = 0;
+				long currentNumberPermutations = 0;
 
 				do {
 
@@ -432,6 +438,18 @@ public class GenePvalueCalculator {
 					}
 
 				} while (x < 20 && currentNumberPermutations < maxNrPermutations);
+
+				while (x < 10 && currentNumberPermutations < maxNrPermutations2) {
+					double weightedChi2Perm = 0;
+					for (int g = 0; g < eigenValues.length; g++) {
+						double randomZ = rnd.nextGaussian();
+						weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
+					}
+					if (geneChi2Sum < weightedChi2Perm) {
+						x++;
+					}
+					currentNumberPermutations++;
+				}
 
 				timeStop = System.currentTimeMillis();
 				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
@@ -455,15 +473,15 @@ public class GenePvalueCalculator {
 
 				countBasedPvalueOnPermutations++;
 
-			} else if (variantCorrelationsPruned.rows() == 1) {
+			} else if (variantCorrelationsPrunedRows == 1) {
 
 				//Always row 0
 				double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
 				if (p == 1) {
 					p = 0.99999d;
 				}
-				if (p < minPvaluePermutations) {
-					p = minPvaluePermutations;
+				if (p < minPvaluePermutations2) {
+					p = minPvaluePermutations2;
 				}
 
 				genePValueDistributionChi2Dist[(int) (20d * p)]++;
@@ -483,7 +501,7 @@ public class GenePvalueCalculator {
 		// Do exactly the same thing but now for the null GWAS
 		for (int nullPhenoI = 0; nullPhenoI < NUMBER_RANDOM_PHENO; ++nullPhenoI) {
 
-			if (variantCorrelationsPruned.rows() > 1) {
+			if (variantCorrelationsPrunedRows > 1) {
 
 				timeStart = System.currentTimeMillis();
 
@@ -530,7 +548,7 @@ public class GenePvalueCalculator {
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingPvalue += (timeStop - timeStart);
 
-			} else if (variantCorrelationsPruned.rows() == 1) {
+			} else if (variantCorrelationsPrunedRows == 1) {
 
 				//Always row 0
 				double p = ZScores.zToP(-Math.abs(nullGwasZscores.getElementQuick(0, nullPhenoI)));

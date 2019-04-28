@@ -50,7 +50,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class Depict2 {
 
-	private static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
+	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("d:HH:mm:ss");
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
@@ -119,7 +119,7 @@ public class Depict2 {
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
 
-			LOGGER.info("DEPICT2 version: " + VERSION);
+			LOGGER.info("DEPICT" + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
 
 			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
