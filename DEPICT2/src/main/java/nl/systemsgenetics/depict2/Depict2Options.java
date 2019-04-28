@@ -8,6 +8,7 @@ package nl.systemsgenetics.depict2;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -192,7 +193,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.SPECIAL) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -329,6 +330,7 @@ public class Depict2Options {
 	private List<PathwayDatabase> parsePd(final CommandLine commandLine) throws ParseException {
 
 		final List<PathwayDatabase> pathwayDatabasesTmp;
+		
 
 		if (commandLine.hasOption("pd")) {
 
@@ -338,10 +340,15 @@ public class Depict2Options {
 				throw new ParseException("Error parsing --pathwayDatabase. Must be in name=database format");
 			}
 
+			final HashSet<String> duplicateChecker = new HashSet<>();
 			pathwayDatabasesTmp = new ArrayList<>();
 
 			for (int i = 0; i < pdValues.length; i += 2) {
 
+				if(!duplicateChecker.add(pdValues[i])){
+					throw new ParseException("Error parsing --pathwayDatabase. Duplicate database name found");
+				}
+				
 				pathwayDatabasesTmp.add(new PathwayDatabase(pdValues[i], pdValues[i + 1]));
 
 			}

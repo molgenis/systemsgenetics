@@ -1327,7 +1327,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @param colsToView
 	 * @return
 	 */
-	public DoubleMatrixDataset<R, C> viewColSelection(C[] colsToView) {
+	public DoubleMatrixDataset<R, C> viewColSelection(C... colsToView) {
 
 		return viewColSelection(Arrays.asList(colsToView));
 
@@ -1467,6 +1467,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public int getRowIndex(R row) {
 		return this.hashRows.get(row);
+	}
+	
+	public int getColIndex(C col) {
+		return this.hashCols.get(col);
 	}
 
 	public DoubleMatrixDataset<R, C> createRowForceNormalDuplicate() {

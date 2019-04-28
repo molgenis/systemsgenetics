@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -159,6 +160,8 @@ public class Depict2 {
 				case RUN3:
 					run3(options, null, null, null, null, null);
 					break;
+				case SPECIAL:
+					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
 			}
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Problem running mode: " + options.getMode());
@@ -339,9 +342,9 @@ public class Depict2 {
 		}
 		
 //		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
-		HashMap<String, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
+		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
 
-				
+		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
 		
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
