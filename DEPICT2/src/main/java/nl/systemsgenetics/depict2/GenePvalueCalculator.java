@@ -444,7 +444,7 @@ public class GenePvalueCalculator {
 
 				while (x < 10 && currentNumberPermutations < maxNrPermutations2) {
 					double weightedChi2Perm = 0;
-					for (int g = 0; ++g < eigenValuesLength; ) {
+					for (int g = -1; ++g < eigenValuesLength; ) {
 						//double randomZ = rnd.nextGaussian();
 
 						//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
