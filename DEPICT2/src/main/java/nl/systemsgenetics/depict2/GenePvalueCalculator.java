@@ -45,7 +45,7 @@ public class GenePvalueCalculator {
 	private static final int PERMUTATION_STEP = 100;
 	private static final int NUMBER_RANDOM_PHENO = PERMUTATION_STEP;
 	private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
-	private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
+	//private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
 
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
 	protected static long timeInLoadingGenotypeDosages = 0;
@@ -115,7 +115,7 @@ public class GenePvalueCalculator {
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
 		this.maxNrPermutations = nrPermutations;
-		this.maxNrPermutations2 = Long.MAX_VALUE - 1;
+		this.maxNrPermutations2 = 1000000000000l;//Long.MAX_VALUE - 1;
 		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
 		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
 		//this.nrPermutationsPlus1Double = nrPermutations + 1;
@@ -354,13 +354,15 @@ public class GenePvalueCalculator {
 		int currentNumberPermutationsCalculated = 0;
 		final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 		final double[] eigenValues;
+		final int eigenValuesLength;
 		if (variantCorrelationsPrunedRows > 1) {
 
 			timeStart = System.currentTimeMillis();
 
 			final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
 			eigenValues = eig.getRealEigenvalues();
-			for (int e = 0; e < eigenValues.length; e++) {
+			eigenValuesLength = eigenValues.length;
+			for (int e = 0; e < eigenValuesLength; e++) {
 				if (eigenValues[e] < 0) {
 					eigenValues[e] = 0;
 				}
@@ -383,6 +385,7 @@ public class GenePvalueCalculator {
 			countRanPermutationsForGene++;
 		} else {
 			eigenValues = null;
+			eigenValuesLength = 0;
 		}
 
 		timeStart = System.currentTimeMillis();
@@ -426,7 +429,7 @@ public class GenePvalueCalculator {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
 					if (currentNumberPermutations >= currentNumberPermutationsCalculated) {
-						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd);
+						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, eigenValuesLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
 					currentNumberPermutations += PERMUTATION_STEP;
@@ -441,9 +444,25 @@ public class GenePvalueCalculator {
 
 				while (x < 10 && currentNumberPermutations < maxNrPermutations2) {
 					double weightedChi2Perm = 0;
-					for (int g = 0; g < eigenValues.length; g++) {
-						double randomZ = rnd.nextGaussian();
+					for (int g = 0; ++g < eigenValuesLength; ) {
+						//double randomZ = rnd.nextGaussian();
+
+						//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
+						double v1, v2, s;
+						do {
+							v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+							v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+							s = v1 * v1 + v2 * v2;
+						} while (s >= 1 || s == 0);
+						double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
+						double randomZ = v1 * multiplier;
 						weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
+						
+						if(++g < eigenValuesLength){
+							randomZ = v2 * multiplier;
+							weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
+						}
+						
 					}
 					if (geneChi2Sum < weightedChi2Perm) {
 						x++;
@@ -520,7 +539,7 @@ public class GenePvalueCalculator {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
 					if (currentNumberPermutations >= currentNumberPermutationsCalculated) {
-						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd);
+						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, eigenValuesLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
 					currentNumberPermutations += PERMUTATION_STEP;
@@ -657,8 +676,10 @@ public class GenePvalueCalculator {
 	 * @param randomChi2 reference distribution
 	 * @param start zero based count
 	 * @param stop zero based count, so must be < nrPermutation @return
+	 * @param rnd
+	 * @param eigenValuesLength
 	 */
-	public static void runPermutationsUsingEigenValues(final double[] geneChi2SumNull, final double[] eigenValues, double[] randomChi2, final int start, final int stop, final ThreadLocalRandom rnd) {
+	public static void runPermutationsUsingEigenValues(final double[] geneChi2SumNull, final double[] eigenValues, double[] randomChi2, final int start, final int stop, final ThreadLocalRandom rnd, final int eigenValuesLength) {
 
 		final int randomChi2Size = randomChi2.length;
 
@@ -666,7 +687,7 @@ public class GenePvalueCalculator {
 		int i = start;
 		for (int perm = start; perm < stop; perm++) {
 			double weightedChi2Perm = 0;
-			for (int g = 0; g < eigenValues.length; g++) {
+			for (int g = 0; g < eigenValuesLength; g++) {
 
 				if (i < randomChi2Size) {
 					weightedChi2Perm += eigenValues[g] * randomChi2[i++];
