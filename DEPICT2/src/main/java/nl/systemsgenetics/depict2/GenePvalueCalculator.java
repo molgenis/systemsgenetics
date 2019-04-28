@@ -461,6 +461,8 @@ public class GenePvalueCalculator {
 						if(++g < eigenValuesLength){
 							randomZ = v2 * multiplier;
 							weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
+						} else {
+							break;//Would happen automaticly but would require second check
 						}
 						
 					}
