@@ -115,7 +115,7 @@ public class GenePvalueCalculator {
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
 		this.maxNrPermutations = nrPermutations;
-		this.maxNrPermutations2 = 1000000000000l;//Long.MAX_VALUE - 1;
+		this.maxNrPermutations2 = 1000000000l;//Long.MAX_VALUE - 1;
 		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
 		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
 		//this.nrPermutationsPlus1Double = nrPermutations + 1;
