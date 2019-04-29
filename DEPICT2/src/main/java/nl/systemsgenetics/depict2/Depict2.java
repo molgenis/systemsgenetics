@@ -145,6 +145,9 @@ public class Depict2 {
 				case CONVERT_TXT:
 					convertTxtToBin(options);
 					break;
+				case CONVERT_BIN:
+					convertBinToTxt(options);
+					break;
 				case CONVERT_GTEX:
 					ConvertGtexGct.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
 					break;
@@ -230,7 +233,7 @@ public class Depict2 {
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
 		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation());
-		
+
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
@@ -330,9 +333,8 @@ public class Depict2 {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
 		}
-		
-//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
 
+//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
 		for (int r = 0; r < matrixNull.rows(); ++r) {
@@ -340,12 +342,12 @@ public class Depict2 {
 				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
 			}
 		}
-		
+
 //		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
 		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
 
 		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
-		
+
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
 		HashSet<String> hlaGenes = new HashSet<>();
@@ -496,11 +498,19 @@ public class Depict2 {
 
 		if (options.getConversionColumnIncludeFilter() != null) {
 			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			LOGGER.info("Number of selected columns: " + colsToSelect.size());
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
 
 		matrix.saveBinary(options.getOutputBasePath());
 
+	}
+	
+	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
+		
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		matrix.save(options.getOutputBasePath());
+		
 	}
 
 	private static void convertEqtlToBin(Depict2Options options) throws IOException {
@@ -515,13 +525,13 @@ public class Depict2 {
 		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
 	}
 
-	private static double[] generateRandomChi2(int numberOfPermutations, int numberOfVariantPerGeneToExpect) {
+	private static double[] generateRandomChi2(long numberOfPermutations, int numberOfVariantPerGeneToExpect) {
 
 		final double[] randomChi2;
-		if (((long) numberOfPermutations) * numberOfVariantPerGeneToExpect > Integer.MAX_VALUE - 10) {
+		if ((numberOfPermutations * numberOfVariantPerGeneToExpect) > Integer.MAX_VALUE - 10) {
 			randomChi2 = new double[Integer.MAX_VALUE - 10];
 		} else {
-			randomChi2 = new double[numberOfVariantPerGeneToExpect * numberOfPermutations];
+			randomChi2 = new double[numberOfVariantPerGeneToExpect * (int) numberOfPermutations];
 		}
 
 		final int randomChi2Size = randomChi2.length;
@@ -552,7 +562,7 @@ public class Depict2 {
 		return randomChi2;
 
 	}
-	
+
 	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
 
 		private final String errorSource;
@@ -560,9 +570,7 @@ public class Depict2 {
 		public ThreadErrorHandler(String errorSource) {
 			this.errorSource = errorSource;
 		}
-		
-		
-		
+
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
 

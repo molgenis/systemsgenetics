@@ -168,7 +168,9 @@ public class PathwayEnrichments {
 						}
 					}
 
-					enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla" + ".txt");
+					//System.out.println(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
+					
+					enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
 
 					synchronized (enrichmentZscores) {
 						enrichmentZscores.put(pathwayDatabase, enrichment);
@@ -370,10 +372,10 @@ public class PathwayEnrichments {
 
 			}
 
-			File excelFile = new File(outputBasePath + "_enrichtments_" + trait + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+			File excelFile = new File(outputBasePath + "_enrichtments" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_enrichtments_" + trait + (hlaExcluded ? "_exHla" : "" + "_" + nr + ".xlsx"));
+				excelFile = new File(outputBasePath + "_enrichtments" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "" + "_" + nr + ".xlsx"));
 				nr++;
 			}
 
@@ -407,7 +409,7 @@ public class PathwayEnrichments {
 				cell.setCellValue(pathwayDatabase.getName());
 
 				Hyperlink link = createHelper.createHyperlink(HyperlinkType.DOCUMENT);
-				link.setAddress(pathwayDatabase.getName()+ "!A1");
+				link.setAddress(pathwayDatabase.getName() + "!A1");
 				cell.setHyperlink(link);
 				cell.setCellStyle(hlinkStyle);
 

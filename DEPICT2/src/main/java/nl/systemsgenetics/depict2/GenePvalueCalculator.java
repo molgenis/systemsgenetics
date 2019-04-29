@@ -108,14 +108,14 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, long nrPermutations, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
-		this.maxNrPermutations = nrPermutations;
-		this.maxNrPermutations2 = 1000000000l;//Long.MAX_VALUE - 1;
+		this.maxNrPermutations = nrPermutations < 100000000 ? (int) nrPermutations : 100000000;
+		this.maxNrPermutations2 = nrPermutations;//Long.MAX_VALUE - 1;
 		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
 		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
 		//this.nrPermutationsPlus1Double = nrPermutations + 1;
