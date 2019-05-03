@@ -23,6 +23,7 @@ import java.util.Set;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.depict2.Depict2.readMatrixAnnotations;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
@@ -53,7 +54,7 @@ public class PathwayEnrichments {
 
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
-	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> genePvalues, final DoubleMatrixDataset<String, String> genePvaluesNullGwas, final DoubleMatrixDataset<String, String> geneWeights, final List<PathwayDatabase> pathwayDatabases, final String outputBasePath, HashSet<String> hlaGenesToExclude) {
+	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final DoubleMatrixDataset<String, String> geneWeights, final List<PathwayDatabase> pathwayDatabases, final String outputBasePath, HashSet<String> hlaGenesToExclude) {
 
 		final Set<String> excludeGenes;
 		if (hlaGenesToExclude == null) {
@@ -76,27 +77,34 @@ public class PathwayEnrichments {
 					String pathwayGene;
 					while (pathwayGeneIterator.hasNext()) {
 						pathwayGene = pathwayGeneIterator.next();
-						if (!genePvalues.containsRow(pathwayGene) || excludeGenes.contains(pathwayGene)) {
+						if (!geneZscores.containsRow(pathwayGene) || excludeGenes.contains(pathwayGene)) {
 							pathwayGeneIterator.remove();
 						}
 					}
 					//Now genesInPathwayMatrix will only contain genes that are also in the gene p-value matrix
 
-					final DoubleMatrixDataset<String, String> genePvaluesSubset = genePvalues.viewRowSelection(genesInPathwayMatrix);
-					final DoubleMatrixDataset<String, String> genePvaluesNullGwasSubset = genePvaluesNullGwas.viewRowSelection(genesInPathwayMatrix);
+					final DoubleMatrixDataset<String, String> geneZscoresSubset = geneZscores.viewRowSelection(genesInPathwayMatrix);
+					final DoubleMatrixDataset<String, String> geneZscoresNullGwasSubset = geneZscoresNullGwas.viewRowSelection(genesInPathwayMatrix);
 					final DoubleMatrixDataset<String, String> geneWeightsSubset = geneWeights.viewRowSelection(genesInPathwayMatrix);
 
-					final DoubleMatrixDataset<String, String> pathwayMatrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(pathwayDatabase.getLocation(), genesInPathwayMatrix);
+					final DoubleMatrixDataset<String, String> genePathwayZscores = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(pathwayDatabase.getLocation(), genesInPathwayMatrix);
 
-					genePvaluesSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvalues.txt");
-					genePvaluesNullGwasSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvaluesNull.txt");
+					geneZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvalues.txt");
+					geneZscoresNullGwasSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvaluesNull.txt");
 					geneWeightsSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_geneWeights.txt");
-					pathwayMatrix.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_pathwayZscores.txt");
+					genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_pathwayZscores.txt");
+
+					inplaceCorrectGenePathwayZscoresForWeights(genePathwayZscores, geneWeightsSubset);
+					
+					genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_pathwayZscoresAfterCorrection.txt");
 
 					//All matrices should now contain the same genes in the same order
 					//Do enrichment analysis using weighted correlations
-					DoubleMatrixDataset<String, String> enrichment = WeightedCorrelations.weightedCorrelationColumnsOf2Datasets(genePvaluesSubset, pathwayMatrix, geneWeightsSubset);
-					DoubleMatrixDataset<String, String> enrichmentNull = WeightedCorrelations.weightedCorrelationColumnsOf2Datasets(genePvaluesNullGwasSubset, pathwayMatrix, geneWeightsSubset);
+					DoubleMatrixDataset<String, String> enrichment = WeightedCorrelations.weightedCorrelationColumnsOf2Datasets(geneZscoresSubset, genePathwayZscores, geneWeightsSubset);
+					DoubleMatrixDataset<String, String> enrichmentNull = WeightedCorrelations.weightedCorrelationColumnsOf2Datasets(geneZscoresNullGwasSubset, genePathwayZscores, geneWeightsSubset);
+
+					enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_correlations" : "_correlationsExHla") + ".txt");
+					enrichmentNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (hlaGenesToExclude == null ? "_correlations" : "_correlationsExHla") + ".txt");
 
 //					PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
 					//writeEnrichment(pathwayDatabase, pathwayAnnotations, enrichment, outputBasePath, hlaGenesToExclude == null ? "_correlations" : "_correlationsExHla");
@@ -169,7 +177,6 @@ public class PathwayEnrichments {
 					}
 
 					//System.out.println(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
-					
 					enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
 
 					synchronized (enrichmentZscores) {
@@ -427,6 +434,35 @@ public class PathwayEnrichments {
 			break;
 
 		}
+	}
+
+	private static void inplaceCorrectGenePathwayZscoresForWeights(DoubleMatrixDataset<String, String> genePathwayZscores, DoubleMatrixDataset<String, String> geneWeightsSubset) {
+
+		final DoubleMatrix2D genePathwayZscoresMatrix = genePathwayZscores.getMatrix();
+		final DoubleMatrix2D geneWeightsSubsetMatrix = geneWeightsSubset.getMatrix();
+
+		for (int pathway = 0; pathway < genePathwayZscoresMatrix.columns(); ++pathway) {
+
+			final SimpleRegression regression = new SimpleRegression();
+
+			for (int gene = 0; gene < genePathwayZscoresMatrix.rows(); ++gene) {
+
+				regression.addData(geneWeightsSubsetMatrix.getQuick(gene, 0), genePathwayZscoresMatrix.getQuick(gene, pathway));
+
+			}
+
+			final double b0 = regression.getIntercept();
+			final double b1 = regression.getSlope();
+			
+			for (int gene = 0; gene < genePathwayZscoresMatrix.rows(); ++gene) {
+
+				//Residual = realValue - b0 + b1 * geneWeight
+				genePathwayZscoresMatrix.setQuick(gene, pathway, genePathwayZscoresMatrix.getQuick(gene, pathway) - (b0 + (b1 * geneWeightsSubsetMatrix.getQuick(gene, 0))));
+				
+			}
+
+		}
+
 	}
 
 }

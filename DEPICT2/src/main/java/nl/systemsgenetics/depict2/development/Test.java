@@ -5,21 +5,9 @@
  */
 package nl.systemsgenetics.depict2.development;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import org.apache.poi.ss.SpreadsheetVersion;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.TableStyleInfo;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.util.AreaReference;
-import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFTable;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableStyleInfo;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 /**
  *
@@ -51,7 +39,6 @@ public class Test {
 //		table.getCTTable().addNewAutoFilter();
 //
 //		databaseSheet.createFreezePane(0, 1);
-
 //		table_style.getStyle()
 //		table_style.setShowColumnStripes(false); //showColumnStripes=0
 //		table_style.setShowRowStripes(true); //showRowStripes=1   
@@ -74,11 +61,28 @@ public class Test {
 //		}
 //
 //		enrichmentWorkbook.write(new FileOutputStream(new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\test.xlsx")));
+		SimpleRegression regression = new SimpleRegression();
 
-		System.out.println("test");
-		System.out.println(Integer.MAX_VALUE);
-		System.out.println(Long.MAX_VALUE);
-		System.out.println(0.5 / Long.MAX_VALUE);
+		regression.addData(10, 3);
+		regression.addData(11, 4);
+		regression.addData(12, 5);
+		regression.addData(11, 4);
+		regression.addData(9, 3);
+		regression.addData(9, 2);
+
+		System.out.println("Intercept: " + regression.getIntercept());
+		System.out.println("Slope: " + regression.getSlope());
+		
+		double b0 = regression.getIntercept();
+		double b1 = regression.getSlope();
+		
+		System.out.println(regression.predict(10));
+		System.out.println(b0 + (b1 * 10));
+		System.out.println(3 - regression.predict(10));
+		
+
+		System.out.println(regression.predict(11));
+		System.out.println(4 - regression.predict(11));
 
 	}
 
