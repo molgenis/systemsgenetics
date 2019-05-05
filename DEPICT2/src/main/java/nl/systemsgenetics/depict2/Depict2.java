@@ -292,15 +292,15 @@ public class Depict2 {
 		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
 
 		//Gene weight will have same order as other matrices
-		DoubleMatrixDataset<String, String> geneWeights = GeneWeightCalculator.calculateGeneWeights(genePvaluesNullGwas, genes, options);
+		DoubleMatrixDataset<String, String> geneInvCorMatrix = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwas, genes, options);
 
-		geneWeights.save(options.getOutputBasePath() + "_geneWeights.txt");
+		geneInvCorMatrix.save(options.getOutputBasePath() + "_geneInvCor.txt");
 
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
 		} else {
 			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
-			run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneWeights);
+			run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneInvCorMatrix);
 		}
 
 	}
