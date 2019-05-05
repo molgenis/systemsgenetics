@@ -161,7 +161,7 @@ public class Depict2 {
 					run2(options, null, null, null, null);
 					break;
 				case RUN3:
-					run3(options, null, null, null, null, null);
+					run3(options, null, null, null, null);
 					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
@@ -300,27 +300,26 @@ public class Depict2 {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
 		} else {
 			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
-			run3(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes, geneInvCorMatrix);
+			run3(options, genePvalues, genePvaluesNullGwas, genes, geneInvCorMatrix);
 		}
 
 	}
 
-	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes, DoubleMatrixDataset<String, String> geneWeights) throws IOException, Exception {
+	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneInvCorMatrix) throws IOException, Exception {
 
 		if (options.getMode() == Depict2Mode.RUN3) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
 			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
-			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
-			geneWeights = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneWeights.txt", '\t');
+			geneInvCorMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_GeneCorMatrix.txt", '\t');
 			LOGGER.info("Gene weights loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
 
-			//In run two we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
-			genePvalues = genePvalues.viewRowSelection(geneWeights.getHashRows().keySet());
-			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(geneWeights.getHashRows().keySet());
+			//In run2 we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
+			genePvalues = genePvalues.viewRowSelection(geneInvCorMatrix.getHashRows().keySet());
+			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(geneInvCorMatrix.getHashRows().keySet());
 
 		}
 
@@ -328,6 +327,7 @@ public class Depict2 {
 
 		DoubleMatrix2D matrix = genePvalues.getMatrix();
 
+		//Inplace convert gene p-values to z-scores
 		for (int r = 0; r < matrix.rows(); ++r) {
 			for (int c = 0; c < matrix.columns(); ++c) {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
@@ -344,7 +344,7 @@ public class Depict2 {
 		}
 
 //		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), null);
+		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneInvCorMatrix, pathwayDatabases, options.getOutputBasePath(), null);
 
 		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
 
@@ -357,8 +357,10 @@ public class Depict2 {
 			}
 		}
 
-		PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneWeights, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
+		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneInvCorMatrix, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
 
+		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
+		
 		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 
 	}

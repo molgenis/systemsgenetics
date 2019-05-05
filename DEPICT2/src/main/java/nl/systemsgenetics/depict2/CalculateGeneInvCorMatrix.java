@@ -27,6 +27,13 @@ public class CalculateGeneInvCorMatrix {
 
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 
+	/**
+	 * 
+	 * @param genePvaluesNullGwas
+	 * @param genes
+	 * @param options
+	 * @return 
+	 */
 	public static DoubleMatrixDataset<String, String> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Depict2Options options) {
 
 		Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());

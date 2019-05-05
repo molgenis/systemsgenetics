@@ -322,7 +322,7 @@ public class GenePvalueCalculator {
 			timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
 			timeStart = System.currentTimeMillis();
-			variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
+			variantCorrelationsPruned = pruneCorrelationMatrix(variantCorrelations, maxR);
 			variantCorrelationsPrunedRows = variantCorrelationsPruned.rows();
 			timeStop = System.currentTimeMillis();
 			timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
@@ -726,7 +726,7 @@ public class GenePvalueCalculator {
 
 	}
 
-	private static DoubleMatrixDataset<String, String> pruneCorrelatinMatrix(DoubleMatrixDataset<String, String> correlationMatrixForRange, double maxR) {
+	protected static DoubleMatrixDataset<String, String> pruneCorrelationMatrix(DoubleMatrixDataset<String, String> correlationMatrixForRange, double maxR) {
 
 		ArrayList<String> variantNames = correlationMatrixForRange.getRowObjects();
 		LinkedHashSet<String> includedVariants = new LinkedHashSet<>(correlationMatrixForRange.rows());
