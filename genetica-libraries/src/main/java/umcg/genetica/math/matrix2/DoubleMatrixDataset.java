@@ -1219,6 +1219,68 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * @param colsToView
 	 * @return
 	 */
+	public DoubleMatrixDataset<R, C> viewSelection(R[] rowsToView, C... colsToView) {
+		return viewSelection(Arrays.asList(rowsToView), Arrays.asList(colsToView));
+	}
+
+	/**
+	 * Creates a new view to this dataset with a subset of rows and columns.
+	 * <p>
+	 * New order of rows and cols is based on input order.
+	 *
+	 * @param rowsToView
+	 * @param colsToView
+	 * @return
+	 */
+	public DoubleMatrixDataset<R, C> viewSelection(Collection<R> rowsToView, Collection<C> colsToView) {
+
+		int[] rowNrs = new int[rowsToView.size()];
+
+		LinkedHashMap<R, Integer> newHashRows = new LinkedHashMap<>(rowsToView.size());
+
+		int i = 0;
+		for (R row : rowsToView) {
+
+			//Null pointer below probabli indicates looking for non existing row
+			rowNrs[i] = hashRows.get(row);
+			newHashRows.put(row, i++);
+
+		}
+
+		if (rowsToView.size() != newHashRows.size()) {
+			throw new RuntimeException("Duplicates in rowsToView");
+		}
+
+		int[] colNrs = new int[colsToView.size()];
+
+		LinkedHashMap<C, Integer> newHashCols = new LinkedHashMap<>(colsToView.size());
+
+		i = 0;
+		for (C col : colsToView) {
+
+			//Null pointer below probabli indicates looking for non existing row
+			colNrs[i] = hashCols.get(col);
+			newHashCols.put(col, i++);
+
+		}
+
+		if (colsToView.size() != newHashCols.size()) {
+			throw new RuntimeException("Duplicates in colsToView");
+		}
+
+		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, colNrs), newHashRows, newHashCols);
+
+	}
+
+	/**
+	 * Creates a new view to this dataset with a subset of rows and columns.
+	 * <p>
+	 * New order of rows and cols is based on input order.
+	 *
+	 * @param rowsToView
+	 * @param colsToView
+	 * @return
+	 */
 	public DoubleMatrixDataset<R, C> viewSelection(LinkedHashSet<R> rowsToView, LinkedHashSet<C> colsToView) {
 
 		int[] rowNrs = new int[rowsToView.size()];
@@ -1315,7 +1377,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new RuntimeException("Duplicates in rowsToView");
 		}
 
-		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, hashCols);
+		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, this.hashCols);
 
 	}
 
@@ -1360,7 +1422,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			throw new RuntimeException("Duplicates in colsToView");
 		}
 
-		return new DoubleMatrixDataset<>(matrix.viewSelection(null, colNrs), hashRows, newHashCols);
+		return new DoubleMatrixDataset<>(matrix.viewSelection(null, colNrs), this.hashRows, newHashCols);
 
 	}
 
@@ -1468,7 +1530,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public int getRowIndex(R row) {
 		return this.hashRows.get(row);
 	}
-	
+
 	public int getColIndex(C col) {
 		return this.hashCols.get(col);
 	}
