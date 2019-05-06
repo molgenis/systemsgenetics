@@ -3,7 +3,9 @@ package umcg.genetica.math.matrix2;
 import org.apache.commons.io.input.CountingInputStream;
 
 import java.io.*;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -41,13 +43,13 @@ public class DoubleMatrixDatasetRandomAccessReader<R extends Comparable, C exten
 		nrCols = is.readInt();
 
 		hashRows = (LinkedHashMap<R, Integer>) DoubleMatrixDataset.loadIdentifiers(filename + ".rows.txt");
-		hashCols = (LinkedHashMap<C, Integer>) DoubleMatrixDataset.loadIdentifiers(filename + ".rows.txt");
+		hashCols = (LinkedHashMap<C, Integer>) DoubleMatrixDataset.loadIdentifiers(filename + ".cols.txt");
 
 		headerLen = 8;
 		bytesPerRow = 8 * nrCols;
 		buffersize = bytesPerRow * 10;
 		currentPos = headerLen;
-		System.out.println("Rows: " + nrRows + ", Cols: " + nrCols + ", bytes per row: " + bytesPerRow);
+		System.out.println(filename + " is " + nrRows + " rows and " + nrCols + " cols; bytes per row: " + bytesPerRow);
 	}
 
 
@@ -75,30 +77,51 @@ public class DoubleMatrixDatasetRandomAccessReader<R extends Comparable, C exten
 	public double[] getRow(int row, double[] buffer) throws IOException {
 		long seekLoc = ((long) row * bytesPerRow) + headerLen;
 
+//		System.out.println(row + "\t" + seekLoc + "\t" + bytesPerRow + "\t" + headerLen);
 		if (seekLoc > filesize) {
 			throw new IllegalArgumentException("Seek location for row: " + row + ", " + seekLoc + " is outside file size: " + filesize);
 		}
 		// if row is the next row, don't use random access..
 		if (seekLoc - currentPos == 0) {
-
+//			System.out.println("Getting using channel");
 			return getNextRow(buffer);
 		}
+//		System.out.println("Getting using RAF");
 
 		// else use random access
 		channel.position(seekLoc);
 		if (bytebuffer == null) {
-			bytebuffer = ByteBuffer.wrap(new byte[bytesPerRow]);
-
+//			System.out.println("Creating new bytebuffer: " + bytesPerRow);
+			bytebuffer = ByteBuffer.allocate(bytesPerRow);
+		} else {
+//			System.out.println("Resetting bytebyffer: " + bytesPerRow);
+			((Buffer) bytebuffer).clear();
 		}
-		channel.read(bytebuffer);
+
+		int nrbytesread = channel.read(bytebuffer);
+		if (nrbytesread < bytesPerRow) {
+			System.out.println("Error: read " + nrbytesread + " while expected " + bytesPerRow);
+			System.exit(-1);
+		}
 		currentPos = seekLoc + bytesPerRow;
+
 
 		// TODO: change the position of the datainputstream? this is probably very very slow...
 		// question is whether this is needed when the position of the channel underlying a datainputstream is changed?
 		// does DataInputStream have a counter of it's own?
 		counter = new CountingInputStream(new BufferedInputStream(Channels.newInputStream(channel), buffersize));
 		is = new DataInputStream(counter);
-		return bytebuffer.asDoubleBuffer().array();
+		double[] output = new double[nrCols];
+
+
+//		System.out.println("position: " + bytebuffer.position() + "\tremaining: " + bytebuffer.remaining());
+		((Buffer) bytebuffer).flip();
+		for (int i = 0; i < nrCols; i++) {
+			output[i] = bytebuffer.getDouble();
+//			System.out.println(i + "\t" + output[i]);
+		}
+
+		return output;
 
 	}
 
@@ -126,5 +149,9 @@ public class DoubleMatrixDatasetRandomAccessReader<R extends Comparable, C exten
 
 	public int rows() {
 		return nrRows;
+	}
+
+	public int cols() {
+		return nrCols;
 	}
 }

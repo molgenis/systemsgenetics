@@ -50,7 +50,7 @@ public class QuantileNormalization {
         IntStream.range(0, sampleCount).parallel().forEach(sampleID -> {
             double[] x = new double[probeCount];
 
-            for (int probeID = 0; probeID < probeCount; probeID++) {
+             for (int probeID = 0; probeID < probeCount; probeID++) {
                 x[probeID] = data.getElementQuick(probeID, sampleID); //rawData[probeID][sampleID];
             }
             java.util.Arrays.sort(x);
