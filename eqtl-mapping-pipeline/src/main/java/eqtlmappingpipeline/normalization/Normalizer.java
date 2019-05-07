@@ -722,7 +722,6 @@ public class Normalizer {
 		System.out.println("Calculating PCA over file: " + fileNamePrefix);
 		System.out.println("- Performing PCA over correlation matrix of size: " + correlationMatrix.rows() + "x" + correlationMatrix.rows());
 		PCAojAlgo pcaObj = new PCAojAlgo();
-		double[][] cormat = correlationMatrix.getMatrix().toArray();
 		pcaObj.eigenValueDecomposition(correlationMatrix.getMatrix().toArray());
 
 		if (nrOfPCsToCalculate == null || nrOfPCsToCalculate > dataset.columns()) {
@@ -797,7 +796,7 @@ public class Normalizer {
 		// multithread
 		ProgressBar pb = new ProgressBar(dataset.rows(), "Calculating the PCA scores per probe: ");
 		Integer finalNrOfPCsToCalculate = nrOfPCsToCalculate;
-		DoubleMatrixDataset<String, String> finalDatasetEV = datasetEV;
+//		DoubleMatrixDataset<String, String> finalDatasetEV = datasetEV;
 
 		double[][] evrawdata = datasetEV.getMatrix().toArray();
 
