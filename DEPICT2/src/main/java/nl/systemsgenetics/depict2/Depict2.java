@@ -52,7 +52,6 @@ public class Depict2 {
 
 	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final SimpleDateFormat LOG_TIME_FORMAT = new SimpleDateFormat("d:HH:mm:ss");
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
@@ -60,10 +59,6 @@ public class Depict2 {
 			+ "  |                                       |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
-
-	static {
-		LOG_TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
 
 	/**
 	 * @param args the command line arguments
@@ -436,6 +431,10 @@ public class Depict2 {
 
 	private static void convertTxtToBin(Depict2Options options) throws IOException, Exception {
 
+		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+		
 		final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(options.getGwasZscoreMatrixPath(), '\t');
 		final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(options.getGwasZscoreMatrixPath(), '\t');
 
