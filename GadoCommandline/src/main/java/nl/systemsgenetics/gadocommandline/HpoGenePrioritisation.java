@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.genenetworkbackend.hpo;
+package nl.systemsgenetics.gadocommandline;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import org.apache.log4j.Logger;
 import org.biojava.nbio.ontology.Term;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -38,56 +39,29 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 public class HpoGenePrioritisation {
 
 	private static final NumberFormat Z_FORMAT = new DecimalFormat("#0.0##");
+	private static final Logger LOGGER = Logger.getLogger(HpoGenePrioritisation.class);
 
-	public static void main(String[] args) throws IOException, ParseException, Exception {
+	public static void prioritize(GadoOptions options) throws IOException, ParseException, Exception {
 
-		//final File hpoPredictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions.txt.gz");
-		//spliked
-		final File hpoPredictionMatrixFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions_spiked.txt");
-		final File ensgSymbolMappingFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
-		final File significantTermsFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions2\\hpo_predictions_bonSigTerms.txt");
-		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
-		final double minZscoreOtherCandidates = 5;
+		final File hpoPredictionMatrixFile = options.getPredictionMatrixFile();
+		final File ensgSymbolMappingFile = options.getGenesFile();
+		//final File hpoOboFile = options.getHpoOboFile();
 
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo2.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_termen_Linda_processed.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\Prioritisations");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\hpos_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\hpoSolvedCases_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations3Spiked");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\hpo_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\Prioritisations");
+		final File caseHpoFile = options.getProcessedCaseHpoFile();
+		final File outputFolder = new File(options.getOutputBasePath());
 
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\extraUnsolved\\hpo_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\extraUnsolved\\Prioritisations");
-
-		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Vibe\\hpo_selected.txt");
-		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Vibe\\Prioritisations");
-
-
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioMieke\\hpo_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioMieke\\Prioritisations\\");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioEdgar\\hpo_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioEdgar\\Prioritisations\\");
-//		final File caseHpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalcasehpo_EditedSipko3_JanJongbloed_selected.txt");
-//		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\Prioritisations2");
 		outputFolder.mkdirs();
 
 		Map<String, String> ensgSymbolMapping = loadEnsgToHgnc(ensgSymbolMappingFile);
 
 		HashMap<String, LinkedHashSet<String>> caseHpo = loadCaseHpo(caseHpoFile);
 
-		LinkedHashSet<String> significantTerms = loadSignificantTerms(significantTermsFile);
+		//HpoOntology hpoOntology = new HpoOntology(hpoOboFile);
 
-		HpoOntology hpoOntology = new HpoOntology(hpoOboFile);
+		DoubleMatrixDataset<String, String> hpoPredictionMatrix = DoubleMatrixDataset.loadDoubleBinaryData(hpoPredictionMatrixFile.getAbsolutePath());
+		ArrayList<String> genes = hpoPredictionMatrix.getRowObjects();
 
-		DoubleMatrixDataset<String, String> hpoPredictionMatrix = DoubleMatrixDataset.loadDoubleData(hpoPredictionMatrixFile.getAbsolutePath());
-		DoubleMatrixDataset<String, String> hpoPredictionMatrixSignificant = hpoPredictionMatrix.viewColSelection(significantTerms);
-		ArrayList<String> genes = hpoPredictionMatrixSignificant.getRowObjects();
-
-		System.out.println("Done loading data");
+		LOGGER.info("Loaded HPO prediction matrix");
 
 		BufferedWriter sampleFileWriter = new BufferedWriter(new FileWriter(new File(outputFolder, "samples.txt")));
 
@@ -95,20 +69,17 @@ public class HpoGenePrioritisation {
 
 			String caseId = caseHpoEntry.getKey();
 			LinkedHashSet<String> hpo = caseHpoEntry.getValue();
-			double zSum = 0;
 
 			sampleFileWriter.append(caseId);
 			sampleFileWriter.append('\n');
 
-			System.out.println("Processing: " + caseId);
-
 			for (String term : hpo) {
-				if (!hpoPredictionMatrixSignificant.containsCol(term)) {
-					System.err.println("Missing HPO: " + term);
+				if (!hpoPredictionMatrix.containsCol(term)) {
+					throw new RuntimeException("Missing HPO: " + term);
 				}
 			}
 
-			DoubleMatrixDataset<String, String> predictionCaseTerms = hpoPredictionMatrixSignificant.viewColSelection(hpo);
+			DoubleMatrixDataset<String, String> predictionCaseTerms = hpoPredictionMatrix.viewColSelection(hpo);
 			DoubleMatrix2D predictionCaseTermsMatrix = predictionCaseTerms.getMatrix();
 			GenePrioritisationResult[] geneResults = new GenePrioritisationResult[genes.size()];
 
@@ -130,7 +101,7 @@ public class HpoGenePrioritisation {
 
 			CSVWriter writer = new CSVWriter(new FileWriter(new File(outputFolder, caseId + ".txt")), '\t', '\0', '\0', "\n");
 
-			String[] outputLine = new String[5 + hpo.size()];
+			String[] outputLine = new String[4 + hpo.size()];
 			int c = 0;
 			outputLine[c++] = "Ensg";
 			outputLine[c++] = "Hgnc";
@@ -139,7 +110,7 @@ public class HpoGenePrioritisation {
 			for (String term : hpo) {
 				outputLine[c++] = term;
 			}
-			outputLine[c++] = "PossibleAdditionalHpos";
+			//outputLine[c++] = "PossibleAdditionalHpos";
 			writer.writeNext(outputLine);
 
 			int rank = 1;
@@ -154,12 +125,14 @@ public class HpoGenePrioritisation {
 					outputLine[c++] = Z_FORMAT.format(geneZs.getQuick(i));
 				}
 
-				outputLine[c++] = getOtherPossibleHpoTerms(geneResult.getEnsg(), hpo, hpoPredictionMatrixSignificant, minZscoreOtherCandidates, hpoOntology);
+				//outputLine[c++] = getOtherPossibleHpoTerms(geneResult.getEnsg(), hpo, hpoPredictionMatrixSignificant, minZscoreOtherCandidates, hpoOntology);
 
 				writer.writeNext(outputLine);
 			}
 
 			writer.close();
+			
+			LOGGER.info("Finished gene prioritization for " + caseId);
 
 		}
 
@@ -209,21 +182,6 @@ public class HpoGenePrioritisation {
 		}
 
 		return Collections.unmodifiableMap(mapping);
-
-	}
-
-	public static LinkedHashSet<String> loadSignificantTerms(File significantTermsFile) throws IOException {
-
-		LinkedHashSet<String> significantTerms = new LinkedHashSet<>();
-
-		BufferedReader reader = new BufferedReader(new FileReader(significantTermsFile));
-
-		String line;
-		while ((line = reader.readLine()) != null) {
-			significantTerms.add(line);
-		}
-
-		return significantTerms;
 
 	}
 

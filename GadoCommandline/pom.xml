@@ -6,9 +6,15 @@
 		<artifactId>systemsgenetics</artifactId>
 		<version>1.0.3-SNAPSHOT</version>
 	</parent>
-	<artifactId>DEPICT2</artifactId> 
-	<version>2.0.17-SNAPSHOT</version>
+	<artifactId>GadoCommandline</artifactId>
+	<version>1.0.1</version>
 	<packaging>jar</packaging>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+	
 	<build>
 		<resources>
 			<resource>
@@ -19,7 +25,7 @@
 				</includes>
 			</resource>
 		</resources>
-		<finalName>Depict2-${project.version}</finalName>
+		<finalName>GadoCommandline-${project.version}</finalName>
 		<plugins>
 			<!-- The configuration of maven-assembly-plugin -->
 			<plugin>
@@ -63,7 +69,7 @@
 							-->
 							<classpathPrefix>lib/</classpathPrefix>
 							<!-- Specifies the main class of the application -->
-							<mainClass>nl.systemsgenetics.depict2.Depict2</mainClass>
+							<mainClass>nl.systemsgenetics.gadocommandline.GadoCommandline</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -87,29 +93,9 @@
 			<version>4.0</version>
 		</dependency>
 		<dependency>
-			<groupId>com.edwardraff</groupId>
-			<artifactId>JSAT</artifactId>
-			<version>0.0.9</version>
-		</dependency>
-		<dependency>
-			<groupId>net.sf.jsci</groupId>
-			<artifactId>jsci</artifactId>
-			<version>1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>gov.nist.math</groupId>
-			<artifactId>jama</artifactId>
-			<version>1.0.3</version>
-		</dependency>
-		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
 			<artifactId>genetica-libraries</artifactId>
 			<version>1.0.10-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>me.tongfei</groupId>
-			<artifactId>progressbar</artifactId>
-			<version>0.7.2</version>
 		</dependency>
 		<dependency>
 			<groupId>log4j</groupId>
@@ -117,9 +103,9 @@
 			<version>1.2.17</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>4.1.0</version>
+			<groupId>org.biojava</groupId>
+			<artifactId>biojava-ontology</artifactId>
+			<version>5.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>nl.systemsgenetics</groupId>
@@ -134,4 +120,5 @@
 		</dependency>
 
 	</dependencies>
+	
 </project>

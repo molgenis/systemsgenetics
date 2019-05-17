@@ -3,20 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.depict2;
+package nl.systemsgenetics.gadocommandline;
 
 /**
  *
  * @author patri
  */
-public enum Depict2Mode {
-	RUN,
-	RUN2,
-	RUN3,
-	CONVERT_TXT,
-	CONVERT_BIN,
-	CONVERT_EQTL,
-	CONVERT_GTEX,
-	FIRST1000,
-	SPECIAL;
+public enum GadoMode {
+	PROCESS,
+	PRIORITIZE;
 }

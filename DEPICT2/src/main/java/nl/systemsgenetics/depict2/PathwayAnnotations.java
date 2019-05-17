@@ -41,7 +41,7 @@ public class PathwayAnnotations {
 			String[] nextLine;
 			while ((nextLine = reader.readNext()) != null) {
 
-				ArrayList<String> thisAnnotions = new ArrayList();
+				ArrayList<String> thisAnnotions = new ArrayList<>();
 
 				for (int i = 1; i < nextLine.length; ++i) {
 					thisAnnotions.add(nextLine[i]);

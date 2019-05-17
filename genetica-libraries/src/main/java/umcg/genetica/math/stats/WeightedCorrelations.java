@@ -51,39 +51,44 @@ public class WeightedCorrelations {
 
 		final int nrRows = d1.rows();
 
-		final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];
+		//final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];
 		final double[] d1ColsWeightedMean = new double[d1NrCols];
 		for (int i = d1NrCols; --i >= 0;) {
-			d1Cols[i] = d1Matrix.viewColumn(i);
-			d1ColsWeightedMean[i] = weightedMean(d1Cols[i], weigths);
+			//d1Cols[i] = d1Matrix.viewColumn(i);
+			d1ColsWeightedMean[i] = weightedMean(d1Matrix.viewColumn(i), weigths);
 		}
 
-		final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d2NrCols];
+		//final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d2NrCols];
 		final double[] d2ColsWeightedMean = new double[d2NrCols];
 		for (int i = d2NrCols; --i >= 0;) {
-			d2Cols[i] = d2Matrix.viewColumn(i);
-			d2ColsWeightedMean[i] = weightedMean(d2Cols[i], weigths);
+			//d2Cols[i] = d2Matrix.viewColumn(i);
+			d2ColsWeightedMean[i] = weightedMean(d2Matrix.viewColumn(i), weigths);
 		}
 
-		for (int i = d1NrCols; --i >= 0;) {
+		for (int d1c = d1NrCols; --d1c >= 0;) {
 			
-			final DoubleMatrix1D col1 = d1Cols[i];
-			final double wmX = d1ColsWeightedMean[i];
+			//final DoubleMatrix1D col1 = d1Cols[i];
+			final double wmX = d1ColsWeightedMean[d1c];
 			
-			for (int j = d2NrCols; --j >= 0;) {
+			for (int d2c = d2NrCols; --d2c >= 0;) {
 
-				final DoubleMatrix1D col2 = d2Cols[j];
+				//final DoubleMatrix1D col2 = d2Cols[j];
 
-				final double wmY = d2ColsWeightedMean[j];
+				final double wmY = d2ColsWeightedMean[d2c];
 
 				double covXX = 0;
 				double covXY = 0;
 				double covYY = 0;
 
-				for (int e = 0; e < nrRows; ++e) {
-					covXX += weigths.getQuick(e) * (col1.getQuick(e) - wmX) * (col1.getQuick(e) - wmX);
-					covXY += weigths.getQuick(e) * (col1.getQuick(e) - wmX) * (col2.getQuick(e) - wmY);
-					covYY += weigths.getQuick(e) * (col2.getQuick(e) - wmY) * (col2.getQuick(e) - wmY);
+				for (int r = 0; r < nrRows; ++r) {
+					
+					final double weight = weigths.getQuick(r);
+					final double d1eMinWmx = d1Matrix.getQuick(r, d1c) - wmX;
+					final double d2eMinWmy = d2Matrix.getQuick(r, d2c) - wmY;
+					
+					covXX += weight * d1eMinWmx * d1eMinWmx;
+					covXY += weight * d1eMinWmx * d2eMinWmy;
+					covYY += weight * d2eMinWmy * d2eMinWmy;
 
 				}
 
@@ -92,7 +97,7 @@ public class WeightedCorrelations {
 				covYY /= sumOfWeights;
 				final double corr = covXY / (Math.sqrt(covXX * covYY));
 
-				corMatrix.setQuick(j, i, corr);
+				corMatrix.setQuick(d2c, d1c, corr);
 
 			}
 		}

@@ -8,6 +8,7 @@ package nl.systemsgenetics.depict2;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -38,7 +39,7 @@ public class Depict2Options {
 	private final File outputBasePath;
 	private final File geneInfoFile;
 	private final File gwasZscoreMatrixPath;
-	private final int numberOfPermutations;
+	private final long numberOfPermutations;
 	private final int windowExtend;
 	private final double maxRBetweenVariants;
 	private final File logFile;
@@ -46,6 +47,7 @@ public class Depict2Options {
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
 	private final File conversionColumnIncludeFilter;
+	private final boolean correctForLambdaInflation;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -62,6 +64,7 @@ public class Depict2Options {
 				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
 				+ "* RUN3 - Run the DEPICT2 prioritization starting at stage 3.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
+				+ "* CONVERT_TXT - Convert a binary matrix to a txt. Use --gwas and --output\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
 				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output");
 		OptionBuilder.withLongOpt("mode");
@@ -159,6 +162,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Correct the GWAS for the lambda inflation");
+		OptionBuilder.withLongOpt("correctLambda");
+		OPTIONS.addOption(OptionBuilder.create("cl"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -178,14 +186,15 @@ public class Depict2Options {
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
+		correctForLambdaInflation = commandLine.hasOption("cl");
 
 		try {
-			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m"));
+			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
 		} catch (IllegalArgumentException e) {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -209,7 +218,6 @@ public class Depict2Options {
 
 		}
 
-
 		if (mode == Depict2Mode.RUN) {
 
 			if (!commandLine.hasOption("p")) {
@@ -217,7 +225,7 @@ public class Depict2Options {
 			} else {
 
 				try {
-					numberOfPermutations = Integer.parseInt(commandLine.getOptionValue('p'));
+					numberOfPermutations = Long.parseLong(commandLine.getOptionValue('p'));
 				} catch (NumberFormatException e) {
 					throw new ParseException("Error parsing --permutations \"" + commandLine.getOptionValue('p') + "\" is not an int");
 				}
@@ -331,9 +339,14 @@ public class Depict2Options {
 				throw new ParseException("Error parsing --pathwayDatabase. Must be in name=database format");
 			}
 
+			final HashSet<String> duplicateChecker = new HashSet<>();
 			pathwayDatabasesTmp = new ArrayList<>();
 
 			for (int i = 0; i < pdValues.length; i += 2) {
+
+				if (!duplicateChecker.add(pdValues[i])) {
+					throw new ParseException("Error parsing --pathwayDatabase. Duplicate database name found");
+				}
 
 				pathwayDatabasesTmp.add(new PathwayDatabase(pdValues[i], pdValues[i + 1]));
 
@@ -375,7 +388,11 @@ public class Depict2Options {
 				break;
 			case CONVERT_TXT:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				break;
+			case CONVERT_BIN:
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
 			case RUN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -397,6 +414,7 @@ public class Depict2Options {
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
+				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
 
 				logPathwayDatabases();
 
@@ -444,7 +462,7 @@ public class Depict2Options {
 		return gwasZscoreMatrixPath.getPath();
 	}
 
-	public int getNumberOfPermutations() {
+	public long getNumberOfPermutations() {
 		return numberOfPermutations;
 	}
 
@@ -482,6 +500,10 @@ public class Depict2Options {
 
 	public File getConversionColumnIncludeFilter() {
 		return conversionColumnIncludeFilter;
+	}
+
+	public boolean correctForLambdaInflation() {
+		return correctForLambdaInflation;
 	}
 
 }
