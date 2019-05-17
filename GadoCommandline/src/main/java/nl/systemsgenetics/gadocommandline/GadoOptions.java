@@ -155,7 +155,11 @@ public class GadoOptions {
 		}
 
 		if (commandLine.hasOption("hp")) {
-			predictionMatrixFile = new File(commandLine.getOptionValue("hp"));
+			String hp = commandLine.getOptionValue("hp");
+			if(hp.endsWith(".dat")){
+				hp = hp.substring(0, hp.length()-4);
+			}
+			predictionMatrixFile = new File(hp);
 		} else {
 			if (mode == GadoMode.PRIORITIZE) {
 				throw new ParseException("Option --hpoPredictions is requered for mode PRIORITIZE");
