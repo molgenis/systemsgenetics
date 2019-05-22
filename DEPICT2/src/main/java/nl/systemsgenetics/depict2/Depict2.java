@@ -20,9 +20,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.ExtractCol;
@@ -287,30 +286,33 @@ public class Depict2 {
 		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
 
 		//Gene weight will have same order as other matrices
-		DoubleMatrixDataset<String, String> geneInvCorMatrix = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwas, genes, options);
+		List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwas, genes, options);
 
-		geneInvCorMatrix.save(options.getOutputBasePath() + "_geneInvCor.txt");
+		
 
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
 		} else {
 			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
-			run3(options, genePvalues, genePvaluesNullGwas, genes, geneInvCorMatrix);
+			run3(options, genePvalues, genePvaluesNullGwas, genes, invCorMatrixPerChrArm);
 		}
 
 	}
 
-	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneInvCorMatrix) throws IOException, Exception {
+	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm) throws IOException, Exception {
 
 		if (options.getMode() == Depict2Mode.RUN3) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
 			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
-			geneInvCorMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_GeneCorMatrix.txt", '\t');
-			LOGGER.info("Gene weights loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
+			
+			final Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
+			
+			geneInvCorMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_GeneCorMatrix.txt", '\t');
+			LOGGER.info("Gene weights loaded");
 
 			//In run2 we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
 			genePvalues = genePvalues.viewRowSelection(geneInvCorMatrix.getHashRows().keySet());

@@ -44,7 +44,6 @@ import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
-import umcg.genetica.math.stats.WeightedCorrelations;
 import umcg.genetica.math.stats.ZScores;
 
 /**

@@ -64,7 +64,7 @@ public class Depict2Options {
 				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
 				+ "* RUN3 - Run the DEPICT2 prioritization starting at stage 3.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
-				+ "* CONVERT_TXT - Convert a binary matrix to a txt. Use --gwas and --output\n"
+				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
 				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output");
 		OptionBuilder.withLongOpt("mode");

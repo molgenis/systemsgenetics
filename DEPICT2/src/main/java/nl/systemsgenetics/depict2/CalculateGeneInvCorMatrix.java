@@ -10,6 +10,7 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,15 +33,17 @@ public class CalculateGeneInvCorMatrix {
 	 * @param genePvaluesNullGwas
 	 * @param genes
 	 * @param options
-	 * @return 
+	 * @return inv cor matrix per chr arm
 	 */
-	public static DoubleMatrixDataset<String, String> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Depict2Options options) {
+	public static List<DoubleMatrixDataset<String, String>> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Depict2Options options) {
 
-		Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
+		final Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
+		
+		final List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = Collections.synchronizedList(new ArrayList<>(chrArmToGeneMapping.size()));
 
-		LinkedHashMap<String, Integer> geneHash = genePvaluesNullGwas.getHashRowsCopy();
+		//LinkedHashMap<String, Integer> geneHash = genePvaluesNullGwas.getHashRowsCopy();
 
-		final DoubleMatrixDataset<String, String> invCorMatrix = new DoubleMatrixDataset<>(geneHash, geneHash);
+		//final DoubleMatrixDataset<String, String> invCorMatrix = new DoubleMatrixDataset<>(geneHash, geneHash);
 
 		try (ProgressBar pb = new ProgressBar("Gene inv cor calculation", chrArmToGeneMapping.size(), ProgressBarStyle.ASCII)) {
 
@@ -50,7 +53,7 @@ public class CalculateGeneInvCorMatrix {
 
 				final DoubleMatrixDataset<String, String> genePvaluesNullGwasArm = genePvaluesNullGwas.viewRowSelection(armGenes);
 				
-				final DoubleMatrixDataset<String, String> invCorMatrixArmGenes = invCorMatrix.viewSelection(armGenes, armGenes);
+				//final DoubleMatrixDataset<String, String> invCorMatrixArmGenes = invCorMatrix.viewSelection(armGenes, armGenes);
 			
 				final DoubleMatrixDataset<String, String> genePvaluesNullGwasArmT = genePvaluesNullGwasArm.viewDice();
 
@@ -63,17 +66,29 @@ public class CalculateGeneInvCorMatrix {
 						throw new RuntimeException(ex);
 					}
 				}
-
-				DoubleMatrix2D genePvaluesNullGwasGeneArmCorrelationInverse = new DenseDoubleAlgebra().inverse(genePvaluesNullGwasGeneArmCorrelation.getMatrix());
 				
-				invCorMatrixArmGenes.getMatrix().assign(genePvaluesNullGwasGeneArmCorrelationInverse);
+				final DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelationPruned = GenePvalueCalculator.pruneCorrelationMatrix(genePvaluesNullGwasGeneArmCorrelation, 1);
+
+				final DoubleMatrix2D genePvaluesNullGwasGeneArmCorrelationInverseMatrix = new DenseDoubleAlgebra().inverse(genePvaluesNullGwasGeneArmCorrelationPruned.getMatrix());
+
+				final DoubleMatrixDataset genePvaluesNullGwasGeneArmCorrelationInverse = new DoubleMatrixDataset(genePvaluesNullGwasGeneArmCorrelationInverseMatrix, genePvaluesNullGwasGeneArmCorrelationPruned.getHashRows(), genePvaluesNullGwasGeneArmCorrelationPruned.getHashCols());
+				
+				try {
+					genePvaluesNullGwasGeneArmCorrelationInverse.save(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt");
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+				
+				invCorMatrixPerChrArm.add(genePvaluesNullGwasGeneArmCorrelationInverse);
+				
+				//invCorMatrixArmGenes.getMatrix().assign(genePvaluesNullGwasGeneArmCorrelationInverse);
 				
 				pb.step();
 
 			});
 		}
 
-		return invCorMatrix;
+		return invCorMatrixPerChrArm;
 
 	}
 
