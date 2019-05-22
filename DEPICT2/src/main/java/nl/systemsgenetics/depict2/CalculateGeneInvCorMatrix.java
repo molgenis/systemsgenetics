@@ -92,7 +92,7 @@ public class CalculateGeneInvCorMatrix {
 
 	}
 
-	private static Map<String, ArrayList<String>> createChrArmGeneMapping(List<Gene> genes, LinkedHashMap<String, Integer> hashRows) {
+	protected static Map<String, ArrayList<String>> createChrArmGeneMapping(List<Gene> genes, LinkedHashMap<String, Integer> hashRows) {
 		Map<String, ArrayList<String>> chrArmToGeneMapping = new HashMap<>(25);
 		for (Gene gene : genes) {
 
