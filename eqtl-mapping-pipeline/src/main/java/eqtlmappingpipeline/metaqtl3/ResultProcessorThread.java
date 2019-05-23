@@ -304,6 +304,7 @@ public class ResultProcessorThread extends Thread {
 				
 				progressbar.iterate();
 			}
+
 			
 			progressbar.close();
 			

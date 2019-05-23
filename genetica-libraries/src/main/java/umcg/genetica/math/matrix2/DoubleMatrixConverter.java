@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class DoubleMatrixConverter {
 
-	public static void textToBinary(String in, String out) throws IOException {
+	public static void TextToBinary(String in, String out) throws IOException {
 		TextFile tf = new TextFile(in, TextFile.R);
 		ArrayList<String> colids = new ArrayList<>();
 		String[] header = tf.readLineElems(Strings.whitespace);
