@@ -454,7 +454,33 @@ public class DoubleMatrixDatasetTest {
 		assertEquals(dataset8.getElementQuick(1, 1), 5.55d);
 		assertEquals(dataset8.getElementQuick(2, 0), 0d);
 		assertEquals(dataset8.getElementQuick(2, 1), -12.2d);
-
+		
+	}
+	
+	@Test
+	public void viewSubset() throws IOException, Exception {
+		
+		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+		
+		ArrayList<String> cols = new ArrayList<>();
+		
+		cols.add(testMatrix.getColObjects().get(2));
+		cols.add(testMatrix.getColObjects().get(1));
+		
+		ArrayList<String> rows = new ArrayList<>();
+		
+		rows.add(testMatrix.getRowObjects().get(5));
+		rows.add(testMatrix.getRowObjects().get(8));
+		rows.add(testMatrix.getRowObjects().get(2));
+				
+		DoubleMatrixDataset<String, String> a = testMatrix.viewRowSelection(rows).viewColSelection(cols);
+		DoubleMatrixDataset<String, String> b = testMatrix.viewColSelection(cols).viewRowSelection(rows);
+		DoubleMatrixDataset<String, String> c = testMatrix.viewSelection(rows, cols);
+	
+		
+		compareTwoMatrices(a,b);
+		compareTwoMatrices(a,c);
+		
 	}
 
 	public static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2) {

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.genenetworkbackend.hpo;
+package nl.systemsgenetics.gadocommandline;
 
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.apache.log4j.Logger;
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 
@@ -29,50 +30,33 @@ import org.biojava.nbio.ontology.Term;
  *
  * @author patri
  */
-public class processCaseHpo {
+public class ProcessCaseHpo {
 
+	private static final Logger LOGGER = Logger.getLogger(ProcessCaseHpo.class);
+	
 	/**
-	 * @param args the command line arguments
+	 * @param options
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 * @throws ParseException
 	 */
-	public static void main(String[] args) throws IOException, FileNotFoundException, ParseException {
+	public static void process(GadoOptions options) throws IOException, FileNotFoundException, ParseException {
 
-		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
-		final File hpoPredictionInfoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\predictions\\hpo_predictions_auc_bonferroni.txt");
-		final File updatedIdFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\updatedHpoId.txt");
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\orginalCaseHpo.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\selectedHpo.txt");
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\unsolvedDcmHpo.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\unsolvedDcmHpoSelected.txt");
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\hpos.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsDcm\\hpos_selected.txt");
+		final File hpoOboFile = options.getHpoOboFile();
+		final File hpoPredictionInfoFile = options.getPredictionInfoFile();
 
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\hpoSolvedCases.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\hpoSolvedCases_selected.txt");
+		final File caseHpo = options.getInputCaseHpoFile();
+		final File outputFile = new File(options.getOutputBasePath());
 
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioMieke\\hpos.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\PrioritisationsCardioMieke\\hpo_selected.txt");
-
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\hpo5gpm.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\hpo_selected.txt");
-
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\extraUnsolved\\hpo.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\extraUnsolved\\hpo_selected.txt");
-
-		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Vibe\\hpo.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Vibe\\hpo_selected.txt");
-
-
-//		final File caseHpo = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_5GPM.txt");
-//		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\PrioritizeRequests\\HPO_5GPM_processed.txt");
 		final double correctedPCutoff = 0.05;
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
 		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
-
+		
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 
-		Map<String, String> updatedHpoId = loadUpdatedIds(updatedIdFile);
+		//Map<String, String> updatedHpoId = loadUpdatedIds(updatedIdFile);
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpo))).withCSVParser(parser).build();
@@ -88,10 +72,14 @@ public class processCaseHpo {
 		outputLine[c++] = "OriginalHpoDescription";
 		outputLine[c++] = "ExcludeFromPrioritisation";
 		writer.writeNext(outputLine);
+		
+		int sampleCounter = 0;
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
+			++sampleCounter;
+			
 			String sampleId = nextLine[0];
 			HashSet<String> sampleHpo = new HashSet<>();
 
@@ -103,12 +91,16 @@ public class processCaseHpo {
 					continue;
 				}
 
-				if (updatedHpoId.containsKey(hpo)) {
-					hpo = updatedHpoId.get(hpo);
-				}
+//				if (updatedHpoId.containsKey(hpo)) {
+//					hpo = updatedHpoId.get(hpo);
+//				}
 
 				if (sampleHpo.add(hpo)) {
 
+					if(!hpoOntology.containsTerm(hpo)){
+						LOGGER.info("Warning term not found for: " + hpo + " of sample: " + sampleId);
+					}
+					
 					Term hpoTerm = hpoOntology.getTerm(hpo);
 					PredictionInfo info = predictionInfo.get(hpo);
 
@@ -118,7 +110,7 @@ public class processCaseHpo {
 						List<Term> alternativeTerms = hpoFinder.getPredictableTerms(hpoTerm, correctedPCutoff);
 
 						if(alternativeTerms.isEmpty()){
-							System.out.println("Warning no alternative found for: " + hpo);
+							LOGGER.info("No alternative found for: " + hpo + " of sample: " + sampleId + " this term will be ignored");
 						}
 						
 						for (Term alternativeTerm : alternativeTerms) {
@@ -152,6 +144,8 @@ public class processCaseHpo {
 		}
 		
 		writer.close();
+		
+		LOGGER.info("Processed HPO terms of " + sampleCounter + " samples");
 
 	}
 

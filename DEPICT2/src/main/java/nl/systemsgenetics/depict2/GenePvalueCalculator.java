@@ -18,17 +18,19 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.depict2.Depict2.formatMsForLog;
 import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
+import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowIterable;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 import umcg.genetica.math.stats.ZScores;
 
@@ -43,7 +45,7 @@ public class GenePvalueCalculator {
 	private static final int PERMUTATION_STEP = 100;
 	private static final int NUMBER_RANDOM_PHENO = PERMUTATION_STEP;
 	private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
-	private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
+	//private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
 
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
 	protected static long timeInLoadingGenotypeDosages = 0;
@@ -68,7 +70,8 @@ public class GenePvalueCalculator {
 	private final int windowExtend;
 	private final double maxR;
 	private final int maxNrPermutations;
-	private final double nrPermutationsPlus1Double;
+	private final long maxNrPermutations2;
+	//private final double nrPermutationsPlus1Double;
 	private final String outputBasePath;
 	private final double[] randomChi2;
 	private final LinkedHashMap<String, Integer> sampleHash;//In order of the samples in the genotype data
@@ -85,6 +88,9 @@ public class GenePvalueCalculator {
 	private final int[] genePValueDistributionChi2Dist;
 	private final ProgressBar pb;
 	private final double minPvaluePermutations;
+	private final double minPvaluePermutations2;
+	private final boolean correctForLambdaInflation;
+	private final double[] lambdaInflations;
 
 	/**
 	 *
@@ -102,17 +108,20 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, String outputBasePath, double[] randomChi2) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, long nrPermutations, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
-		this.maxNrPermutations = nrPermutations;
+		this.maxNrPermutations = nrPermutations < 100000000 ? (int) nrPermutations : 100000000;
+		this.maxNrPermutations2 = nrPermutations;//Long.MAX_VALUE - 1;
 		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
-		this.nrPermutationsPlus1Double = nrPermutations + 1;
+		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
+		//this.nrPermutationsPlus1Double = nrPermutations + 1;
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
+		this.correctForLambdaInflation = correctForLambdaInflation;
 
 		if (nrPermutations % PERMUTATION_STEP != 0) {
 			throw new Exception("Number of permutaitons must be dividable by: " + PERMUTATION_STEP);
@@ -133,6 +142,46 @@ public class GenePvalueCalculator {
 
 		final List<String> phenotypes = Depict2.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 
+		numberRealPheno = phenotypes.size();
+		final int numberGenes = genes.size();
+
+		if (this.correctForLambdaInflation) {
+
+			this.lambdaInflations = new double[numberRealPheno];
+
+			double y = new ChiSquaredDistribution(1).inverseCumulativeProbability(0.5);
+
+			DoubleMatrixDatasetRowIterable gwasStreamer = new DoubleMatrixDatasetRowIterable(variantPhenotypeZscoreMatrixPath);
+
+			DescriptiveStatistics[] medianCalculators = new DescriptiveStatistics[numberRealPheno];
+			for (int p = 0; p < numberRealPheno; ++p) {
+				medianCalculators[p] = new DescriptiveStatistics(gwasStreamer.getNrRows());
+			}
+
+			for (double[] variantZscores : gwasStreamer) {
+
+				for (int p = 0; p < numberRealPheno; ++p) {
+					medianCalculators[p].addValue(variantZscores[p] * variantZscores[p]);
+				}
+
+			}
+
+			IntStream.range(0, numberRealPheno).parallel().forEach(p -> {
+
+				final double medianChi2 = medianCalculators[p].getPercentile(50);
+
+				lambdaInflations[p] = medianChi2 / y;
+
+				//if(LOGGER.isDebugEnabled()){
+				LOGGER.info("Pheno_" + phenotypes.get(p) + " median chi2: " + medianChi2 + " lambda inflation: " + lambdaInflations[p]);
+				//}
+
+			});
+
+		} else {
+			this.lambdaInflations = null;
+		}
+
 		//Result matrix. Rows: genes, Cols: phenotypes
 		genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(phenotypes));
 
@@ -142,9 +191,6 @@ public class GenePvalueCalculator {
 		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"count"})));
 		geneMaxPermutationCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"maxPermutations"})));
 		geneRuntime = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"runtime"})));
-
-		numberRealPheno = phenotypes.size();
-		final int numberGenes = genes.size();
 
 		geneVariantPhenotypeMatrixRowLoader = new DoubleMatrixDatasetFastSubsetLoader(variantPhenotypeZscoreMatrixPath);
 
@@ -231,13 +277,12 @@ public class GenePvalueCalculator {
 	 *
 	 * @return gene p-value matrix for each phenotype. rows: genes in same order
 	 * as genes list, cols: phenotypes
-	 * @throws java.io.IOException
 	 */
 	public DoubleMatrixDataset<String, String> getGenePvalues() {
 		return genePvalues;
 	}
 
-	public DoubleMatrixDataset<String, String> getGenePvaluesNullGwas(){
+	public DoubleMatrixDataset<String, String> getGenePvaluesNullGwas() {
 		return genePvaluesNullGwas;
 	}
 
@@ -254,9 +299,9 @@ public class GenePvalueCalculator {
 	}
 
 	private void runGene(int geneI, final double[] geneChi2SumNull) throws IOException, Exception {
-		
+
 		long geneTimeStart = System.currentTimeMillis();
-		
+
 		long timeStart;
 		long timeStop;
 
@@ -265,6 +310,7 @@ public class GenePvalueCalculator {
 		//Rows: samples, cols: variants
 		final DoubleMatrixDataset<String, String> variantScaledDosagesPruned;
 		final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
+		final int variantCorrelationsPrunedRows;
 
 		{
 
@@ -276,7 +322,8 @@ public class GenePvalueCalculator {
 			timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
 			timeStart = System.currentTimeMillis();
-			variantCorrelationsPruned = pruneCorrelatinMatrix(variantCorrelations, maxR);
+			variantCorrelationsPruned = pruneCorrelationMatrix(variantCorrelations, maxR);
+			variantCorrelationsPrunedRows = variantCorrelationsPruned.rows();
 			timeStop = System.currentTimeMillis();
 			timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
 
@@ -285,7 +332,7 @@ public class GenePvalueCalculator {
 		}
 
 		final DoubleMatrixDataset<String, String> nullGwasZscores;
-		if (variantCorrelationsPruned.rows() > 0) {
+		if (variantCorrelationsPrunedRows > 0) {
 			//nullGwasZscores will first contain peason r valus but this will be converted to Z-score using a lookup table;
 			nullGwasZscores = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantScaledDosagesPruned);
 			r2zScore.inplaceRToZ(nullGwasZscores);
@@ -293,7 +340,7 @@ public class GenePvalueCalculator {
 			nullGwasZscores = EMPTY_DATASET;
 		}
 
-		if (LOGGER.isDebugEnabled() & variantCorrelationsPruned.rows() > 1) {
+		if (LOGGER.isDebugEnabled() & variantCorrelationsPrunedRows > 1) {
 
 			variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_corMatrix.txt"));
 
@@ -302,18 +349,20 @@ public class GenePvalueCalculator {
 		timeStop = System.currentTimeMillis();
 		timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
-		geneVariantCount.setElementQuick(geneI, 0, variantCorrelationsPruned.rows());
+		geneVariantCount.setElementQuick(geneI, 0, variantCorrelationsPrunedRows);
 
 		int currentNumberPermutationsCalculated = 0;
 		final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 		final double[] eigenValues;
-		if (variantCorrelationsPruned.rows() > 1) {
+		final int eigenValuesLength;
+		if (variantCorrelationsPrunedRows > 1) {
 
 			timeStart = System.currentTimeMillis();
 
 			final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
 			eigenValues = eig.getRealEigenvalues();
-			for (int e = 0; e < eigenValues.length; e++) {
+			eigenValuesLength = eigenValues.length;
+			for (int e = 0; e < eigenValuesLength; e++) {
 				if (eigenValues[e] < 0) {
 					eigenValues[e] = 0;
 				}
@@ -336,6 +385,7 @@ public class GenePvalueCalculator {
 			countRanPermutationsForGene++;
 		} else {
 			eigenValues = null;
+			eigenValuesLength = 0;
 		}
 
 		timeStart = System.currentTimeMillis();
@@ -343,7 +393,16 @@ public class GenePvalueCalculator {
 		//load current variants from variantPhenotypeMatrix
 		final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix;
 		synchronized (this) {
-			geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getRowObjects());
+			geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getHashRows().keySet());
+		}
+
+		if (correctForLambdaInflation) {
+			DoubleMatrix2D geneVariantPhenotypeMatrixInternal = geneVariantPhenotypeMatrix.getMatrix();
+			for (int v = 0; v < geneVariantPhenotypeMatrix.rows(); ++v) {
+				for (int p = 0; p < geneVariantPhenotypeMatrix.columns(); ++p) {
+					geneVariantPhenotypeMatrixInternal.setQuick(v, p, Math.sqrt((geneVariantPhenotypeMatrixInternal.getQuick(v, p) * geneVariantPhenotypeMatrixInternal.getQuick(v, p)) / lambdaInflations[p]));
+				}
+			}
 		}
 
 		timeStop = System.currentTimeMillis();
@@ -351,7 +410,7 @@ public class GenePvalueCalculator {
 
 		for (int phenoI = 0; phenoI < numberRealPheno; ++phenoI) {
 
-			if (variantCorrelationsPruned.rows() > 1) {
+			if (variantCorrelationsPrunedRows > 1) {
 
 				timeStart = System.currentTimeMillis();
 
@@ -364,14 +423,13 @@ public class GenePvalueCalculator {
 
 				int x = 0;
 				int perm = 0;
-				int currentNumberPermutations = 0;
+				long currentNumberPermutations = 0;
 
 				do {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
-
 					if (currentNumberPermutations >= currentNumberPermutationsCalculated) {
-						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd);
+						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, eigenValuesLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
 					currentNumberPermutations += PERMUTATION_STEP;
@@ -383,6 +441,36 @@ public class GenePvalueCalculator {
 					}
 
 				} while (x < 20 && currentNumberPermutations < maxNrPermutations);
+
+				while (x < 10 && currentNumberPermutations < maxNrPermutations2) {
+					double weightedChi2Perm = 0;
+					for (int g = -1; ++g < eigenValuesLength; ) {
+						//double randomZ = rnd.nextGaussian();
+
+						//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
+						double v1, v2, s;
+						do {
+							v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+							v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+							s = v1 * v1 + v2 * v2;
+						} while (s >= 1 || s == 0);
+						double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
+						double randomZ = v1 * multiplier;
+						weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
+						
+						if(++g < eigenValuesLength){
+							randomZ = v2 * multiplier;
+							weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
+						} else {
+							break;//Would happen automaticly but would require second check
+						}
+						
+					}
+					if (geneChi2Sum < weightedChi2Perm) {
+						x++;
+					}
+					currentNumberPermutations++;
+				}
 
 				timeStop = System.currentTimeMillis();
 				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
@@ -398,7 +486,6 @@ public class GenePvalueCalculator {
 //				if (p < 1e-300d) {
 //					p = 1e-300d;
 //				}
-
 				genePValueDistributionPermuations[(int) (20d * p)]++;
 				genePvalues.setElementQuick(geneI, phenoI, p);
 
@@ -407,15 +494,15 @@ public class GenePvalueCalculator {
 
 				countBasedPvalueOnPermutations++;
 
-			} else if (variantCorrelationsPruned.rows() == 1) {
+			} else if (variantCorrelationsPrunedRows == 1) {
 
 				//Always row 0
 				double p = ZScores.zToP(-Math.abs(geneVariantPhenotypeMatrix.getElementQuick(0, phenoI)));
 				if (p == 1) {
 					p = 0.99999d;
 				}
-				if (p < minPvaluePermutations) {
-					p = minPvaluePermutations;
+				if (p < minPvaluePermutations2) {
+					p = minPvaluePermutations2;
 				}
 
 				genePValueDistributionChi2Dist[(int) (20d * p)]++;
@@ -435,7 +522,7 @@ public class GenePvalueCalculator {
 		// Do exactly the same thing but now for the null GWAS
 		for (int nullPhenoI = 0; nullPhenoI < NUMBER_RANDOM_PHENO; ++nullPhenoI) {
 
-			if (variantCorrelationsPruned.rows() > 1) {
+			if (variantCorrelationsPrunedRows > 1) {
 
 				timeStart = System.currentTimeMillis();
 
@@ -453,9 +540,8 @@ public class GenePvalueCalculator {
 				do {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
-
 					if (currentNumberPermutations >= currentNumberPermutationsCalculated) {
-						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd);
+						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, eigenValuesLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
 					currentNumberPermutations += PERMUTATION_STEP;
@@ -467,7 +553,7 @@ public class GenePvalueCalculator {
 					}
 
 					//LOGGER.debug("test");
-				} while (x < 10 && currentNumberPermutations < maxNrPermutations);
+				} while (x < 20 && currentNumberPermutations < maxNrPermutations);
 
 				double p = (x + 0.5) / (double) (currentNumberPermutations + 1);
 
@@ -478,13 +564,12 @@ public class GenePvalueCalculator {
 //				if (p < 1e-300d) {
 //					p = 1e-300d;
 //				}
-
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
 
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingPvalue += (timeStop - timeStart);
 
-			} else if (variantCorrelationsPruned.rows() == 1) {
+			} else if (variantCorrelationsPrunedRows == 1) {
 
 				//Always row 0
 				double p = ZScores.zToP(-Math.abs(nullGwasZscores.getElementQuick(0, nullPhenoI)));
@@ -504,7 +589,7 @@ public class GenePvalueCalculator {
 			}
 
 		}
-		
+
 		geneMaxPermutationCount.setElementQuick(geneI, 0, currentNumberPermutationsCalculated);
 		geneRuntime.setElementQuick(geneI, 0, (System.currentTimeMillis() - geneTimeStart));
 
@@ -540,7 +625,7 @@ public class GenePvalueCalculator {
 			}
 		}
 
-		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset(sampleHash, variantHash);
+		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset<>(sampleHash, variantHash);
 
 		DoubleMatrix2D dosageMatrix = dosageDataset.getMatrix();
 
@@ -593,17 +678,18 @@ public class GenePvalueCalculator {
 	 * @param randomChi2 reference distribution
 	 * @param start zero based count
 	 * @param stop zero based count, so must be < nrPermutation @return
+	 * @param rnd
+	 * @param eigenValuesLength
 	 */
-	public static void runPermutationsUsingEigenValues(final double[] geneChi2SumNull, final double[] eigenValues, double[] randomChi2, final int start, final int stop, final ThreadLocalRandom rnd) {
+	public static void runPermutationsUsingEigenValues(final double[] geneChi2SumNull, final double[] eigenValues, double[] randomChi2, final int start, final int stop, final ThreadLocalRandom rnd, final int eigenValuesLength) {
 
 		final int randomChi2Size = randomChi2.length;
 
 		//LOGGER.debug("start: " + start + " stop: " + stop);
-
 		int i = start;
 		for (int perm = start; perm < stop; perm++) {
 			double weightedChi2Perm = 0;
-			for (int g = 0; g < eigenValues.length; g++) {
+			for (int g = 0; g < eigenValuesLength; g++) {
 
 				if (i < randomChi2Size) {
 					weightedChi2Perm += eigenValues[g] * randomChi2[i++];
@@ -640,7 +726,7 @@ public class GenePvalueCalculator {
 
 	}
 
-	private static DoubleMatrixDataset<String, String> pruneCorrelatinMatrix(DoubleMatrixDataset<String, String> correlationMatrixForRange, double maxR) {
+	protected static DoubleMatrixDataset<String, String> pruneCorrelationMatrix(DoubleMatrixDataset<String, String> correlationMatrixForRange, double maxR) {
 
 		ArrayList<String> variantNames = correlationMatrixForRange.getRowObjects();
 		LinkedHashSet<String> includedVariants = new LinkedHashSet<>(correlationMatrixForRange.rows());
@@ -670,7 +756,7 @@ public class GenePvalueCalculator {
 			phenoHash.put("RanPheno" + (i + 1), i);
 		}
 
-		DoubleMatrixDataset<String, String> phenoData = new DoubleMatrixDataset(sampleHash, phenoHash);
+		DoubleMatrixDataset<String, String> phenoData = new DoubleMatrixDataset<>(sampleHash, phenoHash);
 
 		DoubleMatrix2D phenoMatrix = phenoData.getMatrix();
 

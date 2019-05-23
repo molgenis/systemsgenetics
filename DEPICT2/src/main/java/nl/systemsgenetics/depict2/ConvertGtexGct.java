@@ -20,7 +20,7 @@ public class ConvertGtexGct {
 	
 	public static void convertGct(String gctFile, String outputMatrixPath) throws Exception{
 		
-		final HashSet<String> colToExclude = new HashSet();
+		final HashSet<String> colToExclude = new HashSet<>();
 		colToExclude.add("Description");
 		
 		DoubleMatrixDataset<String, String> gtexMedianExp = DoubleMatrixDataset.loadDoubleTextDoubleDataExlcudeCols(gctFile, '\t', colToExclude, 2);
