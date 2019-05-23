@@ -315,9 +315,13 @@ public class Depict2 {
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
 
+			
 			final Map<String, ArrayList<String>> chrArmToGeneMapping = CalculateGeneInvCorMatrix.createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
+			invCorMatrixPerChrArm = new ArrayList<>(chrArmToGeneMapping.size());
 			for (String chrArm : chrArmToGeneMapping.keySet()) {
-				invCorMatrixPerChrArm.add(DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt", '\t'));
+				if(new File(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt").exists()){
+					invCorMatrixPerChrArm.add(DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt", '\t'));
+				}
 			}
 
 			LOGGER.info("Gene weights loaded");
