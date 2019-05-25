@@ -282,11 +282,32 @@ public class Depict2 {
 
 		//Exclude genes with no variants
 		genePvalues = genePvalues.viewRowSelection(selectedGenes);
-		final DoubleMatrixDataset<String, String> genePvaluesNullGwasTmp = genePvaluesNullGwas.viewRowSelection(selectedGenes);
+		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
 		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
 
+		DoubleMatrix2D matrix = genePvalues.getMatrix();
+
+		//Inplace convert gene p-values to z-scores
+		for (int r = 0; r < matrix.rows(); ++r) {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+			}
+		}
+		genePvalues.normalizeColumns();
+		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
+
+		for (int r = 0; r < matrixNull.rows(); ++r) {
+			for (int c = 0; c < matrixNull.columns(); ++c) {
+				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
+			}
+		}
+
+		genePvaluesNullGwas.normalizeColumns();
+		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+		
 		//Gene weight will have same order as other matrices
-		List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwasTmp, genes, options);
+		List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix( genePvaluesNullGwas, genes, options);
 
 		selectedGenes.clear();
 		for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm) {
@@ -294,7 +315,6 @@ public class Depict2 {
 		}
 
 		genePvalues = genePvalues.viewRowSelection(selectedGenes);
-		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
 
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
@@ -308,56 +328,39 @@ public class Depict2 {
 	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm) throws IOException, Exception {
 
 		if (options.getMode() == Depict2Mode.RUN3) {
-			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
-			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
-			LOGGER.info("Gene p-values loaded");
-			genes = readGenes(options.getGeneInfoFile());
-			LOGGER.info("Loaded " + genes.size() + " genes");
-
-			
-			final Map<String, ArrayList<String>> chrArmToGeneMapping = CalculateGeneInvCorMatrix.createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
-			invCorMatrixPerChrArm = new ArrayList<>(chrArmToGeneMapping.size());
-			for (String chrArm : chrArmToGeneMapping.keySet()) {
-				if(new File(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt").exists()){
-					invCorMatrixPerChrArm.add(DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt", '\t'));
-				}
-			}
-
-			LOGGER.info("Gene weights loaded");
-
-			final LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
-			for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm) {
-				selectedGenes.addAll(chrArmMatrix.getHashRows().keySet());
-			}
-
-			//In run2 we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
-			genePvalues = genePvalues.viewRowSelection(selectedGenes);
-			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
+			throw new Exception("Currently not supported. Starting at RUN2 is possible");
+//			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
+//			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+//			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+//			LOGGER.info("Gene p-values loaded");
+//			genes = readGenes(options.getGeneInfoFile());
+//			LOGGER.info("Loaded " + genes.size() + " genes");
+//
+//			
+//			final Map<String, ArrayList<String>> chrArmToGeneMapping = CalculateGeneInvCorMatrix.createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
+//			invCorMatrixPerChrArm = new ArrayList<>(chrArmToGeneMapping.size());
+//			for (String chrArm : chrArmToGeneMapping.keySet()) {
+//				if(new File(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt").exists()){
+//					invCorMatrixPerChrArm.add(DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt", '\t'));
+//				}
+//			}
+//
+//			LOGGER.info("Gene weights loaded");
+//
+//			final LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
+//			for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm) {
+//				selectedGenes.addAll(chrArmMatrix.getHashRows().keySet());
+//			}
+//
+//			//In run2 we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
+//			genePvalues = genePvalues.viewRowSelection(selectedGenes);
+//			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
 
 		}
 
 		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
-		DoubleMatrix2D matrix = genePvalues.getMatrix();
-
-		//Inplace convert gene p-values to z-scores
-		for (int r = 0; r < matrix.rows(); ++r) {
-			for (int c = 0; c < matrix.columns(); ++c) {
-				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
-			}
-		}
-
-//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
-		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
-
-		for (int r = 0; r < matrixNull.rows(); ++r) {
-			for (int c = 0; c < matrixNull.columns(); ++c) {
-				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
-			}
-		}
-
-//		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+		
 		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, invCorMatrixPerChrArm, pathwayDatabases, options.getOutputBasePath(), null);
 
 		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
