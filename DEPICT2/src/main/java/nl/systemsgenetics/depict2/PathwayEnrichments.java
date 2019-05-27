@@ -5,8 +5,10 @@
  */
 package nl.systemsgenetics.depict2;
 
+import cern.colt.function.tdouble.DoubleFunction;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import com.opencsv.CSVWriter;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
@@ -495,36 +497,47 @@ public class PathwayEnrichments {
 
 	private static DoubleMatrixDataset<String, String> glsFixedInvCor(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> genePathwayZscores, final DoubleMatrixDataset<String, String> geneInvCor) {
 
-		//Will contain the results
+		//Will contain the results rows: pathways, cols: traits
 		final DoubleMatrixDataset<String, String> betas = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
 		DoubleMatrix2D betasMatrix = betas.getMatrix();
 
+		final int numberOfGenes = geneZscores.rows();
 		final int numberTraits = geneZscores.columns();
 		final int numberOfPathways = genePathwayZscores.columns();
 
 		final DoubleMatrix2D geneInvCorMatrix = geneInvCor.getMatrix();
+		final DoubleMatrix2D genePathwayZscoresMatrix = genePathwayZscores.getMatrix();
+
+		//result of transpose geneZscoresTrait times inv correlation matrix
+		DoubleMatrix2D A = geneZscores.getMatrix().like(1, numberOfGenes);
+		DoubleMatrix2D B = geneZscores.getMatrix().like(1, numberOfPathways);
 
 		//	final DenseDoubleAlgebra algebra = new DenseDoubleAlgebra();
 		for (int traitI = 0; traitI < numberTraits; ++traitI) {
 
-			DoubleMatrix1D traitGeneZscores = geneZscores.getCol(traitI);
+			try {
 
-			for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
+				DoubleMatrix2D geneZscoresTrait = geneZscores.viewColAsMmatrix(traitI);
 
-				try {
-					DoubleMatrix1D currentPathwayZscores = genePathwayZscores.getCol(pathwayI);
+				geneZscoresTrait.zMult(geneInvCorMatrix, A, 1, 0, true, false);
 
-					final double beta = geneInvCorMatrix.zMult(currentPathwayZscores, null).zDotProduct(traitGeneZscores);
+				double x = 1d / A.viewRow(0).zDotProduct(geneZscoresTrait.viewColumn(0));
 
-					betasMatrix.setQuick(pathwayI, traitI, beta);
-				} catch (Exception e) {
-					LOGGER.fatal("Number of pathways: " + numberOfPathways);
-					LOGGER.fatal("Current pathway: " + pathwayI);
-					LOGGER.fatal("Dim genePathwayZscores: " + genePathwayZscores.rows() + "x" + genePathwayZscores.columns());
-					LOGGER.fatal("Dim genePathwayZscores internal: " + genePathwayZscores.getMatrix().rows() + "x" + genePathwayZscores.getMatrix().columns());
-
-					throw (e);
+				for(int g = 0 ; g < numberOfGenes ; ++g){
+					A.setQuick(0, g, A.getQuick(0, g) * x);
 				}
+				
+				A.zMult(genePathwayZscoresMatrix, B);
+				
+				betasMatrix.viewColumn(traitI).assign(B.viewRow(0));
+
+			} catch (Exception e) {
+				LOGGER.fatal("Number of pathways: " + numberOfPathways);
+				LOGGER.fatal("Current trait index: " + traitI);
+				LOGGER.fatal("Dim genePathwayZscores: " + genePathwayZscores.rows() + "x" + genePathwayZscores.columns());
+				LOGGER.fatal("Dim genePathwayZscores internal: " + genePathwayZscores.getMatrix().rows() + "x" + genePathwayZscores.getMatrix().columns());
+
+				throw (e);
 			}
 		}
 
