@@ -13,8 +13,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.log4j.Logger;
@@ -35,11 +37,11 @@ public class CalculateGeneInvCorMatrix {
 	 * @param options
 	 * @return inv cor matrix per chr arm
 	 */
-	public static List<DoubleMatrixDataset<String, String>> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Depict2Options options) {
+	public static Map<String, DoubleMatrixDataset<String, String>> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Depict2Options options) {
 
 		final Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
 
-		final List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = Collections.synchronizedList(new ArrayList<>(chrArmToGeneMapping.size()));
+		final Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = Collections.synchronizedMap(new HashMap<>(chrArmToGeneMapping.size()));
 
 		//LinkedHashMap<String, Integer> geneHash = genePvaluesNullGwas.getHashRowsCopy();
 		//final DoubleMatrixDataset<String, String> invCorMatrix = new DoubleMatrixDataset<>(geneHash, geneHash);
@@ -64,18 +66,44 @@ public class CalculateGeneInvCorMatrix {
 					}
 				}
 
-				final DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelationPruned = GenePvalueCalculator.pruneCorrelationMatrix(genePvaluesNullGwasGeneArmCorrelation, 0.9);
+				//We need to take the inverse of the correlation matrix. To do that the correlation between genes can't be correlated
+				//Simply removing highly correlated genes did not always work, therefor:
+				//(1) create correlation matrix of correlations
+				//(2) identifie genes that have correlated correlation
+				//(3) prune gene correlation matrix
+				DoubleMatrixDataset<String, String> correlationOfCorrelations = genePvaluesNullGwasGeneArmCorrelation.calculateCorrelationMatrix();
+
+				ArrayList<String> variantNames = correlationOfCorrelations.getRowObjects();
+				LinkedHashSet<String> includedGenes = new LinkedHashSet<>(correlationOfCorrelations.rows());
+
+				rows:
+				for (int r = 0; r < correlationOfCorrelations.rows(); ++r) {
+					cols:
+					for (int c = 0; c < r; ++c) {
+						if (Math.abs(correlationOfCorrelations.getElementQuick(r, c)) >= 0.95 && includedGenes.contains(variantNames.get(c))) {
+							continue rows;
+						}
+					}
+					includedGenes.add(variantNames.get(r));
+				}
+
+				final DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelationPruned = genePvaluesNullGwasGeneArmCorrelation.viewSelection(includedGenes, includedGenes);
 
 				final DoubleMatrix2D genePvaluesNullGwasGeneArmCorrelationInverseMatrix;
 				try {
-					 genePvaluesNullGwasGeneArmCorrelationInverseMatrix = new DenseDoubleAlgebra().inverse(genePvaluesNullGwasGeneArmCorrelationPruned.getMatrix());
+					genePvaluesNullGwasGeneArmCorrelationInverseMatrix = new DenseDoubleAlgebra().inverse(genePvaluesNullGwasGeneArmCorrelationPruned.getMatrix());
 				} catch (RuntimeException ex) {
-					
+
 					LOGGER.fatal("Error during matrix inverse of: " + chrArm);
 					LOGGER.fatal("Marix before prune: " + genePvaluesNullGwasGeneArmCorrelation.getMatrix().toStringShort());
 					LOGGER.fatal("Matrix info: " + genePvaluesNullGwasGeneArmCorrelationPruned.getMatrix().toStringShort());
-					
-					
+
+//					try {
+//						genePvaluesNullGwasGeneArmCorrelationPruned.save(options.getOutputBasePath() + "singularMatrix.txt");
+//					} catch (IOException ex1) {
+//						throw ex;
+//					}
+
 					throw ex;
 				}
 				final DoubleMatrixDataset genePvaluesNullGwasGeneArmCorrelationInverse = new DoubleMatrixDataset(genePvaluesNullGwasGeneArmCorrelationInverseMatrix, genePvaluesNullGwasGeneArmCorrelationPruned.getHashRows(), genePvaluesNullGwasGeneArmCorrelationPruned.getHashCols());
@@ -86,9 +114,8 @@ public class CalculateGeneInvCorMatrix {
 					throw new RuntimeException(ex);
 				}
 
-				invCorMatrixPerChrArm.add(genePvaluesNullGwasGeneArmCorrelationInverse);
+				invCorMatrixPerChrArm.put(chrArm, genePvaluesNullGwasGeneArmCorrelationInverse);
 
-				//invCorMatrixArmGenes.getMatrix().assign(genePvaluesNullGwasGeneArmCorrelationInverse);
 				pb.step();
 
 			});

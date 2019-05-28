@@ -293,8 +293,10 @@ public class Depict2 {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
 		}
-		genePvalues.normalizeColumns();
-		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+//		genePvalues.normalizeColumns();
+//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+//		
+		
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
 		for (int r = 0; r < matrixNull.rows(); ++r) {
@@ -303,14 +305,14 @@ public class Depict2 {
 			}
 		}
 
-		genePvaluesNullGwas.normalizeColumns();
-		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+//		genePvaluesNullGwas.normalizeColumns();
+//		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
 		
 		//Gene weight will have same order as other matrices
-		List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix( genePvaluesNullGwas, genes, options);
+		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix( genePvaluesNullGwas, genes, options);
 
 		selectedGenes.clear();
-		for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm) {
+		for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm.values()) {
 			selectedGenes.addAll(chrArmMatrix.getHashRows().keySet());
 		}
 
@@ -325,7 +327,7 @@ public class Depict2 {
 
 	}
 
-	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm) throws IOException, Exception {
+	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm) throws IOException, Exception {
 
 		if (options.getMode() == Depict2Mode.RUN3) {
 			throw new Exception("Currently not supported. Starting at RUN2 is possible");
@@ -367,18 +369,18 @@ public class Depict2 {
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
-		HashSet<String> hlaGenes = new HashSet<>();
-		for (Gene gene : genes) {
-			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
-				hlaGenes.add(gene.getGene());
-			}
-		}
-
-		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, invCorMatrixPerChrArm, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
-
-		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
-
-		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
+//		HashSet<String> hlaGenes = new HashSet<>();
+//		for (Gene gene : genes) {
+//			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
+//				hlaGenes.add(gene.getGene());
+//			}
+//		}
+//
+//		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, invCorMatrixPerChrArm, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
+//		
+//		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
+//
+//		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 
 	}
 

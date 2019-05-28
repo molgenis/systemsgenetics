@@ -5,10 +5,8 @@
  */
 package nl.systemsgenetics.depict2;
 
-import cern.colt.function.tdouble.DoubleFunction;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import com.opencsv.CSVWriter;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
@@ -23,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
@@ -46,7 +45,6 @@ import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
-import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
 
 /**
@@ -57,7 +55,7 @@ public class PathwayEnrichments {
 
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
-	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, List<DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm, final List<PathwayDatabase> pathwayDatabases, final String outputBasePath, HashSet<String> hlaGenesToExclude) throws IOException {
+	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm, final List<PathwayDatabase> pathwayDatabases, final String outputBasePath, HashSet<String> hlaGenesToExclude) throws IOException {
 
 		ConcurrencyUtils.setNumberOfThreads(Depict2Options.getNumberOfThreadsToUse());
 
@@ -78,16 +76,19 @@ public class PathwayEnrichments {
 					//final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader();
 					DoubleMatrixDataset<String, String> genePathwayZscores = DoubleMatrixDataset.loadDoubleBinaryData(pathwayDatabase.getLocation());
 
-					genePathwayZscores.normalizeColumns();
+					//genePathwayZscores.normalizeColumns();
 
 					final List<String> genesInPathwayMatrix = new ArrayList<>(genePathwayZscores.getHashRows().keySet());//readMatrixAnnotations(new File(pathwayDatabase.getLocation() + ".rows.txt"));
 
-					DoubleMatrixDataset<String, String> enrichment = new DoubleMatrixDataset<>(genePathwayZscores.getHashCols().keySet(), geneZscores.getHashCols().keySet());
-					DoubleMatrixDataset<String, String> enrichmentNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashCols().keySet(), geneZscoresNullGwas.getHashCols().keySet());
+					DoubleMatrixDataset<String, String> enrichment = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
+					DoubleMatrixDataset<String, String> enrichmentNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscoresNullGwas.getHashColsCopy());
 
 					chrArms:
-					for (DoubleMatrixDataset<String, String> invCorMatrixChrArm : invCorMatrixPerChrArm) {
+					for (Map.Entry<String, DoubleMatrixDataset<String, String>> invCorMatrixChrArmEntry : invCorMatrixPerChrArm.entrySet()) {
 						//invCorMatrixPerChrArm.parallelStream().forEach((DoubleMatrixDataset<String, String> invCorMatrixChrArm) -> {
+
+						final String chrArm = invCorMatrixChrArmEntry.getKey();
+						final DoubleMatrixDataset<String, String> invCorMatrixChrArm = invCorMatrixChrArmEntry.getValue();
 
 						final ArrayList<String> chrArmGenesInPathwayMatrix = new ArrayList<>(genesInPathwayMatrix);
 
@@ -111,16 +112,18 @@ public class PathwayEnrichments {
 
 							final DoubleMatrixDataset<String, String> genePathwayZscoresSubset = genePathwayZscores.viewRowSelection(chrArmGenesInPathwayMatrix);
 
-//						geneZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvalues.txt");
-//						geneZscoresNullGwasSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_genePvaluesNull.txt");
-//						geneInvCorMatrix.save(outputBasePath + "_" + pathwayDatabase.getNa "_Enme() + "_Enrichment_geneInvCor.txt");
-//						genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_pathwayZscores.txt");
-							//inplaceCorrectGenePathwayZscoresForWeights(genePathwayZscores, geneWeightsSubset);
-//						genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_pathwayZscoresAfterCorrection.txt");
+							geneZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_genePvalues.txt");
+							geneZscoresNullGwasSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_genePvaluesNull.txt");
+							geneInvCorMatrixSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt");
+							genePathwayZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_pathwayZscores.txt");
+
 							//All matrices should now contain the same genes in the same order
 							//Calculate beta's using GLS using the precalculated inverse of the gene correlations
 							DoubleMatrixDataset<String, String> enrichmentChrArm = glsFixedInvCor(geneZscoresSubset, genePathwayZscoresSubset, geneInvCorMatrixSubset);
 							DoubleMatrixDataset<String, String> enrichmentNullChrArm = glsFixedInvCor(geneZscoresNullGwasSubset, genePathwayZscoresSubset, geneInvCorMatrixSubset);
+
+							enrichmentChrArm.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_betas.txt");
+							enrichmentNullChrArm.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_betasNull.txt");
 
 							//synchronized (enrichment) {
 							enrichment.getMatrix().assign(enrichmentChrArm.getMatrix(), DoubleFunctions.plus);
@@ -234,9 +237,10 @@ public class PathwayEnrichments {
 
 			});
 
-			return enrichmentZscores;
-
+			
 		}
+		
+		return enrichmentZscores;
 
 	}
 
@@ -495,7 +499,15 @@ public class PathwayEnrichments {
 
 	}
 
-	private static DoubleMatrixDataset<String, String> glsFixedInvCor(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> genePathwayZscores, final DoubleMatrixDataset<String, String> geneInvCor) {
+	/**
+	 * Note not a GLS over the full geneZscores matrix but per GWAS
+	 *
+	 * @param geneZscores
+	 * @param genePathwayZscores
+	 * @param geneInvCor
+	 * @return
+	 */
+	protected static DoubleMatrixDataset<String, String> glsFixedInvCor(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> genePathwayZscores, final DoubleMatrixDataset<String, String> geneInvCor) {
 
 		//Will contain the results rows: pathways, cols: traits
 		final DoubleMatrixDataset<String, String> betas = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
@@ -523,12 +535,12 @@ public class PathwayEnrichments {
 
 				double x = 1d / A.viewRow(0).zDotProduct(geneZscoresTrait.viewColumn(0));
 
-				for(int g = 0 ; g < numberOfGenes ; ++g){
+				for (int g = 0; g < numberOfGenes; ++g) {
 					A.setQuick(0, g, A.getQuick(0, g) * x);
 				}
-				
+
 				A.zMult(genePathwayZscoresMatrix, B);
-				
+
 				betasMatrix.viewColumn(traitI).assign(B.viewRow(0));
 
 			} catch (Exception e) {
