@@ -109,7 +109,7 @@ public class GenotypeHarmonizerTest {
             while (aligendVariantSampleAllelesIterator.hasNext()) {
                 Alleles aligned = aligendVariantSampleAllelesIterator.next();
                 Alleles original = orignalVariantSampleAllelesIterator.next();
-                assertEquals(aligned, original, "Inconsistant for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
+                assertEquals(aligned, original, "Inconsistent for SNP: " + aligendVariant.getPrimaryVariantId() + " " + aligned.getAllelesAsString() + " vs " + original.getAllelesAsString());
             }
             assertEquals(orignalVariantSampleAllelesIterator.hasNext(), false);
 

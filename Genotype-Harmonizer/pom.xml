@@ -7,7 +7,7 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>Genotype-Harmonizer</artifactId>
-	<version>1.4.21-SNAPSHOT</version>
+	<version>1.4.22-SNAPSHOT</version>
 	<name>Genotype Harmonizer</name>
 	<packaging>jar</packaging>
 	<dependencies>

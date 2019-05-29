@@ -45,10 +45,14 @@ public class TriTyperGenotypeData {
 	}
 
 	public final void load(String loc) throws IOException {
+		load(loc, null, null);
+	}
+
+	public final void load(String loc, String snpmaploc, String snploc) throws IOException {
 
 		loc = Gpio.formatAsDirectory(loc);
 
-		checkFiles(loc);
+		checkFiles(loc, snpmaploc, snploc);
 
 		TextFile t = new TextFile(loc + "Individuals.txt", TextFile.R);
 		String[] lineElems = t.readLineElemsReturnReference(TextFile.tab);
@@ -162,14 +166,18 @@ public class TriTyperGenotypeData {
 			System.exit(-1);
 		}
 
-		if (Gpio.exists(loc + "SNPs.txt")) {
-			t = new TextFile(loc + "SNPs.txt", TextFile.R, 32 * 1024);
-		} else if (Gpio.exists(loc + "SNPs.txt.gz")) {
-			t = new TextFile(loc + "SNPs.txt.gz", TextFile.R, 32 * 1024);
-		} else {
-			throw new FileNotFoundException("SNPs file not found");
-		}
 
+		if (snploc != null) {
+			t = new TextFile(snploc, TextFile.R, 32 * 1024);
+		} else {
+			if (Gpio.exists(loc + "SNPs.txt")) {
+				t = new TextFile(loc + "SNPs.txt", TextFile.R, 32 * 1024);
+			} else if (Gpio.exists(loc + "SNPs.txt.gz")) {
+				t = new TextFile(loc + "SNPs.txt.gz", TextFile.R, 32 * 1024);
+			} else {
+				throw new FileNotFoundException("SNPs file not found");
+			}
+		}
 
 		LinkedList<String> tmpSNP = new LinkedList<String>();
 		LinkedList<String[]> tmpSNPAlleles = null; //
@@ -236,13 +244,18 @@ public class TriTyperGenotypeData {
 			System.exit(-1);
 		}
 
-		if (Gpio.exists(loc + "SNPMappings.txt")) {
-			t = new TextFile(loc + "SNPMappings.txt", TextFile.R, 100 * 1024);
-		} else if (Gpio.exists(loc + "SNPMappings.txt.gz")) {
-			t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R, 100 * 1024);
+		if (snpmaploc != null) {
+			t = new TextFile(snpmaploc, TextFile.R, 100 * 1024);
 		} else {
-			throw new FileNotFoundException("SNPMappings not found");
+			if (Gpio.exists(loc + "SNPMappings.txt")) {
+				t = new TextFile(loc + "SNPMappings.txt", TextFile.R, 100 * 1024);
+			} else if (Gpio.exists(loc + "SNPMappings.txt.gz")) {
+				t = new TextFile(loc + "SNPMappings.txt.gz", TextFile.R, 100 * 1024);
+			} else {
+				throw new FileNotFoundException("SNPMappings not found");
+			}
 		}
+
 
 		System.out.println("Reading: " + t.getFileName());
 		lineElems = t.readLineElemsReturnReference(TextFile.tab);
@@ -412,16 +425,18 @@ public class TriTyperGenotypeData {
 		return individuals;
 	}
 
-	private void checkFiles(String loc) throws IOException {
+	private void checkFiles(String loc, String snpmaploc, String snploc) throws IOException {
 		if (!Gpio.exists(loc)) {
 			throw new IOException("Error: Directory " + loc + " does not exist.");
 		} else if (!Gpio.exists(loc + "PhenotypeInformation.txt")) {
 			throw new IOException("Error: Required file " + loc + "PhenotypeInformation.txt does not exist.");
 		} else if (!Gpio.exists(loc + "Individuals.txt")) {
 			throw new IOException("Error: Required file " + loc + "Individuals.txt does not exist.");
-		} else if (!Gpio.exists(loc + "SNPMappings.txt") && !Gpio.exists(loc + "SNPMappings.txt.gz")) {
+		} else if ((snpmaploc != null && !Gpio.exists(snpmaploc))
+				|| (!Gpio.exists(loc + "SNPMappings.txt") && !Gpio.exists(loc + "SNPMappings.txt.gz"))) {
 			throw new IOException("Error: Required file " + loc + "SNPMappings.txt (or SNPMappings.txt.gz) does not exist.");
-		} else if (!Gpio.exists(loc + "SNPs.txt") && !Gpio.exists(loc + "SNPs.txt.gz")) {
+		} else if ((snploc != null && !Gpio.exists(snploc))
+				|| (!Gpio.exists(loc + "SNPs.txt") && !Gpio.exists(loc + "SNPs.txt.gz"))) {
 			throw new IOException("Error: Required file " + loc + "SNPs.txt (or SNPs.txt.gz) does not exist.");
 		}
 		// GenotypeMatrix.dat

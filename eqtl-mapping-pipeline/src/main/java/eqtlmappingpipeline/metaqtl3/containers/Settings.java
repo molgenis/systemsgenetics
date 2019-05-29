@@ -796,6 +796,18 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			Gpio.formatAsDirectory(dataloc);
 			
 			s.genotypeLocation = dataloc;
+
+			try{
+				s.snpFileLocation  = config.getString("datasets.dataset(" + i + ").snps", null);
+			} catch (Exception e) {
+
+			}
+
+			try{
+				s.snpmapFileLocation  = config.getString("datasets.dataset(" + i + ").snpmappings", null);
+			} catch (Exception e) {
+
+			}
 			
 			// see if there are covariates to load
 			String covariateFile = null;
