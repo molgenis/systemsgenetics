@@ -105,7 +105,7 @@ sd(pathwayGeneScores2[,1])
 
 t(gwasGeneScores2) %*% randomGwasScoresCorInverse
 
-gwas1 <- as.matrix(gwasGeneScores2[,2])
+gwas1 <- as.matrix(gwasGeneScores2[,1])
 
 solve(t(gwas1) %*% randomGwasScoresCorInverse %*% gwas1) %*% (t(gwas1) %*% randomGwasScoresCorInverse) %*% as.matrix(pathwayGeneScores2[,1])
 
@@ -120,15 +120,73 @@ y <- gwasGeneScores2[,1]
 
 sum(x*y)
 
+idenity4x4 <- matrix(0,nrow=4,ncol=4)
+diag(idenity4x4) <- 1
+
+
+
+
+
+solve(t(gwas1) %*% idenity4x4 %*% gwas1) %*% (t(gwas1) %*% idenity4x4) %*% as.matrix(pathwayGeneScores2)
+
+
+idenity6x6 <- matrix(0,nrow=6,ncol=6)
+diag(idenity6x6) <- 1
+
+idenity3x3 <- matrix(0,nrow=3,ncol=3)
+diag(idenity3x3) <- 1
+
+gwas4 <- c(0.3,0.4,0.4,0.6,0,0.1)
+pathwayGeneScores4 <- c(0.2,0.3,0.4,0.5,1,0.5)
+
+gwas4x <- (gwas4 - mean(gwas4))/sd(gwas4)
+pathwayGeneScores4x <- (pathwayGeneScores4 - mean(pathwayGeneScores4)) / sd(pathwayGeneScores4)
+
+gwas4a <- gwas4x[1:3]
+gwas4b <- gwas4x[4:6]
+
+pathwayGeneScores4a <- pathwayGeneScores4x[1:3]
+pathwayGeneScores4b <- pathwayGeneScores4x[4:6]
+
+solve(t(gwas4x) %*% idenity6x6 %*% gwas4x) %*% (t(gwas4x) %*% idenity6x6) %*% as.matrix(pathwayGeneScores4x)
+cor(gwas4x, pathwayGeneScores4x)
+
+(b1 <- solve(t(gwas4a) %*% idenity3x3 %*% gwas4a) %*% (t(gwas4a) %*% idenity3x3) %*% as.matrix(pathwayGeneScores4a))
+(b2 <- solve(t(gwas4b) %*% idenity3x3 %*% gwas4b) %*% (t(gwas4b) %*% idenity3x3) %*% as.matrix(pathwayGeneScores4b))
+
+b1 + b2
+
+gwas4ax <- (gwas4a - mean(gwas4a))/sd(gwas4a)
+gwas4bx <- (gwas4b - mean(gwas4b))/sd(gwas4b)
+
+pathwayGeneScores4ax <- (pathwayGeneScores4a - mean(pathwayGeneScores4a))/sd(pathwayGeneScores4a)
+pathwayGeneScores4bx <- (pathwayGeneScores4b - mean(pathwayGeneScores4b))/sd(pathwayGeneScores4b)
+
+
+(b1 <- solve(t(gwas4ax) %*% idenity3x3 %*% gwas4ax) %*% (t(gwas4ax) %*% idenity3x3) %*% as.matrix(pathwayGeneScores4ax))
+(b2 <- solve(t(gwas4bx) %*% idenity3x3 %*% gwas4bx) %*% (t(gwas4bx) %*% idenity3x3) %*% as.matrix(pathwayGeneScores4bx))
+
+
+b1 + b2
+
+cor(gwas4x, pathwayGeneScores4x)
+
+cor(gwas4ax, pathwayGeneScores4ax)
+
+cor(gwas4b, pathwayGeneScores4b)
 
 
 setwd("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\DEPICT2\\src\\test\\resources\\")
 
+write.table(idenity4x4, file = "idenity4x4.txt", quote = F, sep = "\t", col.names = NA)
 write.table(randomGwasScoresCorInverse, file = "invCorMatrix.txt", quote = F, sep = "\t", col.names = NA)
 write.table(gwasGeneScores2, file = "gwasGeneScores.txt", quote = F, sep = "\t", col.names = NA)
 write.table(pathwayGeneScores2, file = "pathwayGeneScores.txt", quote = F, sep = "\t", col.names = NA)
 
-gls(gwas1 ~ pathwayGeneScores2[,1] + pathwayGeneScores2[,2] + pathwayGeneScores2[,3], correlation = randomGwasScoresCor)
+
+
+
+#gls(gwas1 ~ pathwayGeneScores2[,1] + pathwayGeneScores2[,2] + pathwayGeneScores2[,3], correlation = randomGwasScoresCor)
 
 
 

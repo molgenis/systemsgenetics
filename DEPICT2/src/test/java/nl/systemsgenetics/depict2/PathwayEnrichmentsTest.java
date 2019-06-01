@@ -38,17 +38,26 @@ public class PathwayEnrichmentsTest {
 	@Test
 	public void testGlsFixedInvCor() throws URISyntaxException, Exception {
 
+		File identityFile = new File(this.getClass().getResource("/idenity4x4.txt").toURI());
 		File invCorFile = new File(this.getClass().getResource("/invCorMatrix.txt").toURI());
 		File pathwayFile = new File(this.getClass().getResource("/pathwayGeneScores.txt").toURI());
 		File gwasFile = new File(this.getClass().getResource("/gwasGeneScores.txt").toURI());
 		
+		DoubleMatrixDataset<String, String> identity = DoubleMatrixDataset.loadDoubleTextData(identityFile.getAbsolutePath(), '\t');
 		DoubleMatrixDataset<String, String> geneZscores = DoubleMatrixDataset.loadDoubleTextData(gwasFile.getAbsolutePath(), '\t');
 		DoubleMatrixDataset<String, String> genePathwayZscores = DoubleMatrixDataset.loadDoubleTextData(pathwayFile.getAbsolutePath(), '\t');
 		DoubleMatrixDataset<String, String> geneInvCor = DoubleMatrixDataset.loadDoubleTextData(invCorFile.getAbsolutePath(), '\t');
 		DoubleMatrixDataset expResult = null;
-		DoubleMatrixDataset result = PathwayEnrichments.glsFixedInvCor(geneZscores, genePathwayZscores, geneInvCor);
 		
-		geneInvCor.printMatrix();
+		
+		identity.printMatrix();
+		
+		System.out.println(identity.getMatrix().toString());
+		
+		DoubleMatrixDataset result = PathwayEnrichments.glsFixedInvCor(geneZscores, genePathwayZscores, identity);
+		
+		
+		
 		
 		result.printMatrix();
 		
