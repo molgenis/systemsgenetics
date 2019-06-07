@@ -293,8 +293,8 @@ public class Depict2 {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
 		}
-//		genePvalues.normalizeColumns();
-//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+		genePvalues.normalizeColumns();
+		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
 //		
 		
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
@@ -305,8 +305,8 @@ public class Depict2 {
 			}
 		}
 
-//		genePvaluesNullGwas.normalizeColumns();
-//		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+		genePvaluesNullGwas.normalizeColumns();
+		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
 		
 		//Gene weight will have same order as other matrices
 		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix( genePvaluesNullGwas, genes, options);

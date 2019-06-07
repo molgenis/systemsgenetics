@@ -1464,6 +1464,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrix2D viewColAsMmatrix(int col) {
 		return matrix.viewSelection(null, new int[]{col});
 	}
+	
+	public DoubleMatrix2D viewRowAsMmatrix(int row) {
+		return matrix.viewSelection(new int[]{row}, null);
+	}
 
 	/**
 	 * @return Correlation matrix on columns

@@ -43,8 +43,8 @@ public class GenePvalueCalculator {
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int PERMUTATION_STEP = 100;
-	private static final int NUMBER_RANDOM_PHENO = PERMUTATION_STEP;
-	private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
+	private static final int NUMBER_RANDOM_PHENO = 1000;
+	//private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
 	//private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
 
 	protected static long timeInCreatingGenotypeCorrelationMatrix = 0;
