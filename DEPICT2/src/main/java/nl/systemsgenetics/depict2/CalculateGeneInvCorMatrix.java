@@ -103,7 +103,6 @@ public class CalculateGeneInvCorMatrix {
 //					} catch (IOException ex1) {
 //						throw ex;
 //					}
-
 					throw ex;
 				}
 				final DoubleMatrixDataset genePvaluesNullGwasGeneArmCorrelationInverse = new DoubleMatrixDataset(genePvaluesNullGwasGeneArmCorrelationInverseMatrix, genePvaluesNullGwasGeneArmCorrelationPruned.getHashRows(), genePvaluesNullGwasGeneArmCorrelationPruned.getHashCols());

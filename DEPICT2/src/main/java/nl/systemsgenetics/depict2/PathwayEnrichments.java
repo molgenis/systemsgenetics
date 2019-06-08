@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +45,7 @@ import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
 
 /**
@@ -54,7 +56,7 @@ public class PathwayEnrichments {
 
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
-	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm, final List<PathwayDatabase> pathwayDatabases, final String outputBasePath, HashSet<String> hlaGenesToExclude) throws IOException {
+	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final List<String> genesWithPvalue, final List<PathwayDatabase> pathwayDatabases, List<Gene> genes, final String outputBasePath, HashSet<String> hlaGenesToExclude) throws IOException {
 
 		ConcurrencyUtils.setNumberOfThreads(Depict2Options.getNumberOfThreadsToUse());
 
@@ -67,29 +69,51 @@ public class PathwayEnrichments {
 
 		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichmentZscores = new HashMap<>(pathwayDatabases.size());
 
-		try (ProgressBar pb = new ProgressBar("Pathway enrichtment analysis", pathwayDatabases.size() + (pathwayDatabases.size() * invCorMatrixPerChrArm.size()), ProgressBarStyle.ASCII)) {
+		try (ProgressBar pb = new ProgressBar("Pathway enrichtment analysis", pathwayDatabases.size(), ProgressBarStyle.ASCII)) {
 
 			pathwayDatabases.parallelStream().forEach((PathwayDatabase pathwayDatabase) -> {
 				//for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 				try {
-					//final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader();
-					DoubleMatrixDataset<String, String> genePathwayZscores;
-					if(pathwayDatabase.isTextBasedMatrix()){
+
+					final DoubleMatrixDataset<String, String> genePathwayZscores;
+					final LinkedHashSet<String> sharedGenes;
+
+					if (pathwayDatabase.isTextBasedMatrix()) {
 						genePathwayZscores = DoubleMatrixDataset.loadDoubleTextData(pathwayDatabase.getLocation(), '\t');
+						sharedGenes = new LinkedHashSet<>(genePathwayZscores.getHashRows().keySet());
+						
 					} else {
-						genePathwayZscores = DoubleMatrixDataset.loadDoubleBinaryData(pathwayDatabase.getLocation());
+
+						final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
+
+						Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
+						
+						sharedGenes = new LinkedHashSet<>();
+						
+						for (String gene : genesWithPvalue) {
+							if(pathwayGenes.contains(gene) && !excludeGenes.contains(gene)){
+								sharedGenes.add(gene);
+							}
+						}
+				
+						genePathwayZscores = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
+	
 					}
-					
+
 					genePathwayZscores.normalizeColumns();
 					
 					
-					final List<String> genesInPathwayMatrix = new ArrayList<>(genePathwayZscores.getHashRows().keySet());//readMatrixAnnotations(new File(pathwayDatabase.getLocation() + ".rows.txt"));
-//					HashMap<String, DoubleMatrixDataset<String, String>> geneZscoresPerChrArm = new HashMap<>();
-//					HashMap<String, DoubleMatrixDataset<String, String>> geneZscoresNullGwasPerChrArm = new HashMap<>();
-//					HashMap<String, DoubleMatrixDataset<String, String>> genePathwayZscoresPerChrArm = new HashMap<>();
-//					HashMap<String, DoubleMatrixDataset<String, String>> invCorMatrixChrArm2 = new HashMap<>();//Matched genes / order to other matrices above
+				
+					
+					
+					
+					
+					
+					final Map<String, ArrayList<String>> geneChrArmMapping = createChrArmGeneMapping(genes, sharedGenes);
+					
+					
+					
 
-//
 					LinkedHashMap<String, Integer> singleColMap = new LinkedHashMap<>(1);
 					singleColMap.put("B1", 0);
 
@@ -103,22 +127,18 @@ public class PathwayEnrichments {
 
 					//DO NOT make this loop multithreaded, is not save
 					chrArms:
-					for (Map.Entry<String, DoubleMatrixDataset<String, String>> invCorMatrixChrArmEntry : invCorMatrixPerChrArm.entrySet()) {
+					for (Map.Entry<String, ArrayList<String>> chrArmMappingEntry : geneChrArmMapping.entrySet()) {
 						//invCorMatrixPerChrArm.parallelStream().forEach((DoubleMatrixDataset<String, String> invCorMatrixChrArm) -> {
 
-						final String chrArm = invCorMatrixChrArmEntry.getKey();
-						final DoubleMatrixDataset<String, String> invCorMatrixChrArm = invCorMatrixChrArmEntry.getValue();
-						
+						final String chrArm = chrArmMappingEntry.getKey();
+						final ArrayList<String> armGenes = chrArmMappingEntry.getValue();
+
 						//invCorMatrixChrArm.setMatrix(DoubleFactory2D.dense.identity(invCorMatrixChrArm.rows()));
+						final ArrayList<String> chrArmGenesInPathwayMatrix = new ArrayList<>(armGenes.size());
 
-						final ArrayList<String> chrArmGenesInPathwayMatrix = new ArrayList<>(genesInPathwayMatrix);
-
-						Iterator<String> pathwayGeneIterator = chrArmGenesInPathwayMatrix.iterator();
-						String pathwayGene;
-						while (pathwayGeneIterator.hasNext()) {
-							pathwayGene = pathwayGeneIterator.next();
-							if (!geneZscores.containsRow(pathwayGene) || !invCorMatrixChrArm.containsRow(pathwayGene) || excludeGenes.contains(pathwayGene)) {
-								pathwayGeneIterator.remove();
+						for (String armGene : armGenes) {
+							if (genePathwayZscores.containsRow(armGene)) {
+								chrArmGenesInPathwayMatrix.add(armGene);
 							}
 						}
 						//Now genesInPathwayMatrix will only contain genes that are also in the gene p-value matrix
@@ -129,7 +149,7 @@ public class PathwayEnrichments {
 
 							final DoubleMatrixDataset<String, String> geneZscoresSubset = geneZscores.viewRowSelection(chrArmGenesInPathwayMatrix);
 							final DoubleMatrixDataset<String, String> geneZscoresNullGwasSubset = geneZscoresNullGwas.viewRowSelection(chrArmGenesInPathwayMatrix);
-							final DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = invCorMatrixChrArm.viewSelection(chrArmGenesInPathwayMatrix, chrArmGenesInPathwayMatrix);
+							final DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = armGenes.viewSelection(chrArmGenesInPathwayMatrix, chrArmGenesInPathwayMatrix);
 							final DoubleMatrixDataset<String, String> genePathwayZscoresSubset = genePathwayZscores.viewRowSelection(chrArmGenesInPathwayMatrix);
 
 							geneZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_genePvalues.txt");
@@ -140,10 +160,9 @@ public class PathwayEnrichments {
 							//Inplace update of b1 and b2
 							glsStep1(geneZscoresSubset, geneInvCorMatrixSubset, genePathwayZscoresSubset, b1, b2);
 							glsStep1(geneZscoresNullGwasSubset, geneInvCorMatrixSubset, genePathwayZscoresSubset, b1NullGwas, b2NullGwas);
-							
+
 //							b1.printMatrix();
 //							b2.printMatrix();
-
 //							geneZscoresPerChrArm.put(chrArm, geneZscoresSubset);
 //							geneZscoresNullGwasPerChrArm.put(chrArm, geneZscoresNullGwas);
 //							
@@ -171,7 +190,7 @@ public class PathwayEnrichments {
 
 					final int numberOfPathways = genePathwayZscores.columns();
 					final int numberTraits = geneZscores.columns();
-					
+
 					for (int traitI = 0; traitI < numberTraits; ++traitI) {
 						final double b1Trait = b1.getElementQuick(traitI, 0);
 						for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
@@ -185,7 +204,6 @@ public class PathwayEnrichments {
 //					b1.printMatrix();
 //					b2.printMatrix();
 //					enrichment.printMatrix();
-					
 					final int numberTraitsNull = geneZscoresNullGwas.columns();
 
 					for (int traitI = 0; traitI < numberTraitsNull; ++traitI) {
@@ -197,9 +215,8 @@ public class PathwayEnrichments {
 
 						}
 					}
-					
+
 //					enrichmentNull.printMatrix();
-					
 					enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_correlations" : "_correlationsExHla") + ".txt");
 					enrichmentNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (hlaGenesToExclude == null ? "_correlations" : "_correlationsExHla") + ".txt");
 
@@ -271,7 +288,7 @@ public class PathwayEnrichments {
 
 						}
 					}
-					
+
 					enrichment.printMatrix();
 
 					//System.out.println(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
@@ -637,11 +654,9 @@ public class PathwayEnrichments {
 
 				DoubleMatrix2D geneZscoresTrait = geneZscoresSubset.viewColAsMmatrix(traitI);
 				geneZscoresTrait.zMult(geneInvCorMatrix, A, 1, 0, true, false);
-				
 
 				final double x = A.viewRow(0).zDotProduct(geneZscoresTrait.viewColumn(0));
-			
-				
+
 				//Col order should be the same
 				b1.setElementQuick(0, traitI, x + b1.getElementQuick(0, traitI));
 
@@ -660,6 +675,28 @@ public class PathwayEnrichments {
 			}
 		}
 
+	}
+
+	private static Map<String, ArrayList<String>> createChrArmGeneMapping(List<Gene> genes, LinkedHashSet<String> includedGenes) {
+		Map<String, ArrayList<String>> chrArmToGeneMapping = new HashMap<>(25);
+		for (Gene gene : genes) {
+
+			if (includedGenes.contains(gene.getGene())) {
+
+				String chrArm = gene.getChrAndArm();
+
+				ArrayList<String> armGenes = chrArmToGeneMapping.get(chrArm);
+				if (armGenes == null) {
+					armGenes = new ArrayList<>();
+					chrArmToGeneMapping.put(chrArm, armGenes);
+				}
+
+				armGenes.add(gene.getGene());
+
+			}
+
+		}
+		return chrArmToGeneMapping;
 	}
 
 }

@@ -131,7 +131,7 @@ public class PathwayEnrichmentsTest {
 		invCorMatrixPerChrArm2.put("1q", geneInvCor1q);
 		invCorMatrixPerChrArm2.put("1p", geneInvCor1p);
 
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> result2 = PathwayEnrichments.performEnrichmentAnalysis(geneZscores, geneZscoresNullGwas, invCorMatrixPerChrArm2, pathwayDatabases, outputBasePath, hlaGenesToExclude);
+		//HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> result2 = PathwayEnrichments.performEnrichmentAnalysis(geneZscores, geneZscoresNullGwas, invCorMatrixPerChrArm2, pathwayDatabases, outputBasePath, hlaGenesToExclude);
 
 //assertEquals(result, expResult);
 		// TODO review the generated test code and remove the default call to fail.

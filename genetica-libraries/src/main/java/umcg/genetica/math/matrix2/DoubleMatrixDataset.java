@@ -1723,5 +1723,13 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return correlations;
 
 	}
+	
+	/**
+	 * 
+	 * @return fully independent copy of this matrix. 
+	 */
+	public DoubleMatrixDataset<R,C> duplicate(){
+		return new DoubleMatrixDataset<>(matrix.copy(), getHashRowsCopy(), getHashColsCopy());
+	}
 
 }
