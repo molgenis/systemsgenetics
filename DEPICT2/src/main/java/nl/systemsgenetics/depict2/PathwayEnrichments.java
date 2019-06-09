@@ -61,10 +61,6 @@ public class PathwayEnrichments {
 
 		ConcurrencyUtils.setNumberOfThreads(Depict2Options.getNumberOfThreadsToUse());
 
-		HashSet<String> uncorrelatedGenes = findUncorrelatedGenes(geneZscoresNullGwas, genesWithPvalue, genes, 0.95);
-
-		LOGGER.info("Number of uncorrelated genes: " + uncorrelatedGenes.size());
-
 		final Set<String> excludeGenes;
 		if (hlaGenesToExclude == null) {
 			excludeGenes = Collections.emptySet();
@@ -78,50 +74,67 @@ public class PathwayEnrichments {
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 
 			final DoubleMatrixDataset<String, String> genePathwayZscores;
+			final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader;
 			final LinkedHashSet<String> sharedGenes;
 
 			if (pathwayDatabase.isTextBasedMatrix()) {
 				LOGGER.info("WARNING using a debug function!");
-				genePathwayZscores = DoubleMatrixDataset.loadDoubleTextData(pathwayDatabase.getLocation(), '\t');
-				sharedGenes = new LinkedHashSet<>(genePathwayZscores.getHashRows().keySet());
+				sharedGenes = new LinkedHashSet<>(DoubleMatrixDataset.loadDoubleTextData(pathwayDatabase.getLocation(), '\t').getHashRows().keySet());
+				pathwayMatrixLoader = null;
 
 			} else {
 
-				final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
+				pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
 
 				Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
 
 				sharedGenes = new LinkedHashSet<>();
 
-				for (String gene : uncorrelatedGenes) {
+				for (String gene : genesWithPvalue) {
 					if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene)) {
 						sharedGenes.add(gene);
 					}
 				}
 
-				genePathwayZscores = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
-
 			}
 
 			final Map<String, ArrayList<String>> geneChrArmMapping = createChrArmGeneMapping(genes, sharedGenes);
+
 			try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichtment analysis", geneChrArmMapping.size() + 2, ProgressBarStyle.ASCII)) {
+
+				DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwas.viewRowSelection(sharedGenes).duplicate();
+				tmp.normalizeColumns();
+
+				HashSet<String> sharedUncorrelatedGenes = findUncorrelatedGenes(tmp, sharedGenes, genes, 0.9);
+
+				LOGGER.info("Number of uncorrelated genes: " + sharedUncorrelatedGenes.size());
+
+				if (pathwayDatabase.isTextBasedMatrix()) {
+					genePathwayZscores = DoubleMatrixDataset.loadDoubleTextData(pathwayDatabase.getLocation(), '\t');
+				} else {
+					genePathwayZscores = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedUncorrelatedGenes);
+				}
 
 				genePathwayZscores.normalizeColumns();
 
-				final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched;
-				final DoubleMatrixDataset<String, String> geneZscoresNullGwasPathwayMatched;
+//				final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched = geneZscores.viewRowSelection(sharedGenes).viewDice().createRowForceNormalDuplicate().viewDice();
+//				final DoubleMatrixDataset<String, String> geneZscoresNullGwasPathwayMatched = geneZscoresNullGwas.viewRowSelection(sharedGenes).viewDice().createRowForceNormalDuplicate().viewDice();
+				final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched = geneZscores.viewRowSelection(sharedUncorrelatedGenes).duplicate();
+				final DoubleMatrixDataset<String, String> geneZscoresNullGwasPathwayMatched = geneZscoresNullGwas.viewRowSelection(sharedUncorrelatedGenes).duplicate();
 
-				{
-					DoubleMatrixDataset<String, String> geneZscoresPathwayMatchedTmp = geneZscores.viewRowSelection(sharedGenes).duplicate();
-					DoubleMatrixDataset<String, String> geneZscoresNullGwasPathwayMatchedTmp = geneZscoresNullGwas.viewRowSelection(sharedGenes).duplicate();
+				geneZscoresPathwayMatched.normalizeColumns();
+				geneZscoresNullGwasPathwayMatched.normalizeColumns();
 
-					geneZscoresPathwayMatchedTmp.normalizeColumns();
-					geneZscoresPathwayMatched = geneZscoresPathwayMatchedTmp.viewDice().createRowForceNormalDuplicate().viewDice();
-
-					geneZscoresNullGwasPathwayMatchedTmp.normalizeColumns();
-					geneZscoresNullGwasPathwayMatched = geneZscoresNullGwasPathwayMatchedTmp.viewDice().createRowForceNormalDuplicate().viewDice();
-				}
-
+//				{
+//					DoubleMatrixDataset<String, String> geneZscoresPathwayMatchedTmp = geneZscores.viewRowSelection(sharedGenes).duplicate();
+//					DoubleMatrixDataset<String, String> geneZscoresNullGwasPathwayMatchedTmp = geneZscoresNullGwas.viewRowSelection(sharedGenes).duplicate();
+//
+//					geneZscoresPathwayMatchedTmp.normalizeColumns();
+//					geneZscoresPathwayMatched = geneZscoresPathwayMatchedTmp.viewDice().createRowForceNormalDuplicate().viewDice();
+//
+//					geneZscoresNullGwasPathwayMatchedTmp.normalizeColumns();
+//					geneZscoresNullGwasPathwayMatched = geneZscoresNullGwasPathwayMatchedTmp.viewDice().createRowForceNormalDuplicate().viewDice();
+//				}
 				LinkedHashMap<String, Integer> singleColMap = new LinkedHashMap<>(1);
 				singleColMap.put("B1", 0);
 
