@@ -347,12 +347,29 @@ public class Depict2 {
 		}
 
 		//Identify genes with atleast one variant in window
-		final ArrayList<String> selectedGenes = new ArrayList<>();
+		final HashSet<String> selectedGenes = new HashSet<>();
 		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
 		final int totalGeneCount = allGenes.size();
 		for (int g = 0; g < totalGeneCount; ++g) {
 			if (geneVariantCount.getElementQuick(g, 0) > 0) {
 				selectedGenes.add(allGenes.get(g));
+			}
+		}
+		
+		DoubleMatrix2D matrix = genePvalues.getMatrix();
+
+		//Inplace convert gene p-values to z-scores
+		for (int r = 0; r < matrix.rows(); ++r) {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+			}
+		}
+		
+		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
+
+		for (int r = 0; r < matrixNull.rows(); ++r) {
+			for (int c = 0; c < matrixNull.columns(); ++c) {
+				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
 			}
 		}
 
