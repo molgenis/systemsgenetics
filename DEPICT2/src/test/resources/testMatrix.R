@@ -178,8 +178,8 @@ cor(gwas4x, pathwayGeneScores4x)
  
 
 #gwasRandom <- matrix(rnorm(60), ncol = 10, nrow = 6)
-gwasRandomA <- gwasRandom[1,1:3]
-gwasRandomB <- gwasRandom[1,4:6]
+gwasRandomA <- gwasRandom[1:3,5]
+gwasRandomB <- gwasRandom[4:6,5]
 
 d <- t(gwasRandomA) %*% idenity3x3
 e <- t(gwasRandomB) %*% idenity3x3
@@ -187,6 +187,40 @@ f <- d %*% gwasRandomA + e %*% gwasRandomB
 g <- d %*% pathwayGeneScores4a + e %*% pathwayGeneScores4b
 
 g / f[1,1]
+
+
+invCor1p <- solve(matrix(c(1,0.5,0.3,0.5,1,0.1,0.3,0.1,1),nrow = 3))
+invCor1q <- solve(matrix(c(1,0.3,0.1,0.3,1,-0.5,0.1,-0.5,1),nrow = 3))
+
+d <- t(gwas4a) %*% invCor1p
+e <- t(gwas4b) %*% invCor1q
+f <- d %*% gwas4a + e %*% gwas4b
+g <- d %*% pathwayGeneScores4a + e %*% pathwayGeneScores4b
+
+realRes <- g / f[1,1]
+
+nullRes <- matrix(0, ncol = 10, nrow = 3)
+
+for(i in 1:10){
+  
+  gwasRandomA <- gwasRandom[1:3,i]
+  gwasRandomB <- gwasRandom[4:6,i]
+  
+  d <- t(gwasRandomA) %*% invCor1p
+  e <- t(gwasRandomB) %*% invCor1q
+  f <- d %*% gwasRandomA + e %*% gwasRandomB
+  g <- d %*% pathwayGeneScores4a + e %*% pathwayGeneScores4b
+  
+  nullRes[,i] <- g / f[1,1]
+  
+  
+}
+
+
+nullMean <- apply(nullRes, 1, mean)
+nullsd <- apply(nullRes, 1, sd)
+
+(realRes - nullMean) / nullsd
 
 
 setwd("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\DEPICT2\\src\\test\\resources\\")
@@ -210,8 +244,16 @@ idenity1q <- idenity3x3
 rownames(idenity1q) <- paste0("Gene",4:6)
 colnames(idenity1q) <- paste0("Gene",4:6)
 
+rownames(invCor1p) <- paste0("Gene",1:3)
+colnames(invCor1p) <- paste0("Gene",1:3)
+
+rownames(invCor1q) <- paste0("Gene",4:6)
+colnames(invCor1q) <- paste0("Gene",4:6)
+
 write.table(idenity1p, file = "identity1p.txt", quote = F, sep = "\t", col.names = NA)
 write.table(idenity1q, file = "identity1q.txt", quote = F, sep = "\t", col.names = NA)
+write.table(invCor1p, file = "invCor1p.txt", quote = F, sep = "\t", col.names = NA)
+write.table(invCor1q, file = "invCor1q.txt", quote = F, sep = "\t", col.names = NA)
 #write.table(randomGwasScoresCorInverse, file = "invCorMatrix.txt", quote = F, sep = "\t", col.names = NA)
 write.table(gwas4xMatrix, file = "gwasGeneScores.txt", quote = F, sep = "\t", col.names = NA)
 write.table(gwasRandom, file = "gwasGeneScoresNull.txt", quote = F, sep = "\t", col.names = NA)
@@ -246,5 +288,16 @@ solve(t(a) %*% b %*% a) %*% (t(a) %*% b %*% c)
 a
 b
 
+
+
+
+y <- matrix(c(1,0.5,0.3,0.5,1,0.1,0.3,0.1,1),nrow = 3)
+z <- y[c(1,3),c(1,3)]
+
+y
+z
+
+solve(y)
+solve(z)
 
 

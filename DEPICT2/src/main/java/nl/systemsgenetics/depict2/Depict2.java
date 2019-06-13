@@ -355,7 +355,7 @@ public class Depict2 {
 				selectedGenes.add(allGenes.get(g));
 			}
 		}
-		
+
 		DoubleMatrix2D matrix = genePvalues.getMatrix();
 
 		//Inplace convert gene p-values to z-scores
@@ -364,7 +364,7 @@ public class Depict2 {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
 		}
-		
+
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
 		for (int r = 0; r < matrixNull.rows(); ++r) {
@@ -377,7 +377,7 @@ public class Depict2 {
 
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), null);
+		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), null, 500, 500);
 
 		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
 
