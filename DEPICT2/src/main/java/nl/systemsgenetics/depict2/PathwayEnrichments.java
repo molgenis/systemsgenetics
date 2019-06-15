@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.depict2;
 
+import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
@@ -57,7 +58,7 @@ public class PathwayEnrichments {
 
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
-	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final HashSet<String> genesWithPvalue, final List<PathwayDatabase> pathwayDatabases, List<Gene> genes, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas) throws IOException, Exception {
+	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final HashSet<String> genesWithPvalue, final List<PathwayDatabase> pathwayDatabases, List<Gene> genes, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final double genePruningR, final boolean ignoreGeneCorrelations) throws IOException, Exception {
 
 		ConcurrencyUtils.setNumberOfThreads(Depict2Options.getNumberOfThreadsToUse());
 		
@@ -125,7 +126,7 @@ public class PathwayEnrichments {
 				DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.viewRowSelection(sharedGenes).duplicate();
 				tmp.normalizeColumns();
 
-				LinkedHashSet<String> sharedUncorrelatedGenes = findUncorrelatedGenes(tmp, sharedGenes, genes, 0.9);
+				LinkedHashSet<String> sharedUncorrelatedGenes = findUncorrelatedGenes(tmp, sharedGenes, genes, genePruningR);
 
 				LOGGER.debug("Number of uncorrelated genes: " + sharedUncorrelatedGenes.size());
 
@@ -177,7 +178,6 @@ public class PathwayEnrichments {
 						final String chrArm = chrArmMappingEntry.getKey();
 						final ArrayList<String> armGenes = chrArmMappingEntry.getValue();
 
-						//invCorMatrixChrArm.setMatrix(DoubleFactory2D.dense.identity(invCorMatrixChrArm.rows()));
 						final ArrayList<String> chrArmGenesInPathwayMatrix = new ArrayList<>(armGenes.size());
 
 						for (String armGene : armGenes) {
@@ -207,7 +207,11 @@ public class PathwayEnrichments {
 
 							final DoubleMatrix2D geneInvCorMatrixSubsetMatrix;
 							try {
-								geneInvCorMatrixSubsetMatrix = new DenseDoubleAlgebra().inverse(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix());
+								if(ignoreGeneCorrelations){
+									geneInvCorMatrixSubsetMatrix = DoubleFactory2D.dense.identity(geneZscoresNullGwasSubsetGeneCorrelations.rows());
+								} else {
+									geneInvCorMatrixSubsetMatrix = new DenseDoubleAlgebra().inverse(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix());
+								}
 							} catch (Exception ex){
 								LOGGER.fatal(pathwayDatabase.getName() + " " +  chrArm);
 								throw ex;

@@ -43,7 +43,7 @@ public class GenePvalueCalculator {
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int PERMUTATION_STEP = 100;
-	private static final int NUMBER_RANDOM_PHENO = 1000;
+	private final int numberRandomPhenotypes;
 	//private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
 	//private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
 
@@ -91,6 +91,8 @@ public class GenePvalueCalculator {
 	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
+	private final int nrSampleToUseForCorrelation;
+	private final int nrSamplesToUseForNullBetas;
 
 	/**
 	 *
@@ -105,10 +107,13 @@ public class GenePvalueCalculator {
 	 * @param nrPermutations
 	 * @param outputBasePath
 	 * @param randomChi2
+	 * @param correctForLambdaInflation
+	 * @param nrSampleToUseForCorrelation
+	 * @param nrSamplesToUseForNullBetas
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, long nrPermutations, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, long nrPermutations, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
@@ -122,6 +127,7 @@ public class GenePvalueCalculator {
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
 		this.correctForLambdaInflation = correctForLambdaInflation;
+		this.numberRandomPhenotypes = nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas;
 
 		if (nrPermutations % PERMUTATION_STEP != 0) {
 			throw new Exception("Number of permutaitons must be dividable by: " + PERMUTATION_STEP);
@@ -136,7 +142,7 @@ public class GenePvalueCalculator {
 			sampleHash.put(sample, s++);
 		}
 
-		randomNormalizedPhenotypes = generateRandomNormalizedPheno(sampleHash);
+		randomNormalizedPhenotypes = generateRandomNormalizedPheno(sampleHash, numberRandomPhenotypes);
 
 		r2zScore = new PearsonRToZscoreBinned(10000000, sampleHash.size());//10000000
 
@@ -270,6 +276,8 @@ public class GenePvalueCalculator {
 		}
 
 		LOGGER.info("-----------------------");
+		this.nrSampleToUseForCorrelation = nrSampleToUseForCorrelation;
+		this.nrSamplesToUseForNullBetas = nrSamplesToUseForNullBetas;
 
 	}
 
@@ -520,7 +528,7 @@ public class GenePvalueCalculator {
 		}
 
 		// Do exactly the same thing but now for the null GWAS
-		for (int nullPhenoI = 0; nullPhenoI < NUMBER_RANDOM_PHENO; ++nullPhenoI) {
+		for (int nullPhenoI = 0; nullPhenoI < numberRandomPhenotypes; ++nullPhenoI) {
 
 			if (variantCorrelationsPrunedRows > 1) {
 
@@ -748,11 +756,11 @@ public class GenePvalueCalculator {
 
 	}
 
-	private static DoubleMatrixDataset<String, String> generateRandomNormalizedPheno(LinkedHashMap<String, Integer> sampleHash) {
+	private static DoubleMatrixDataset<String, String> generateRandomNormalizedPheno(LinkedHashMap<String, Integer> sampleHash, final int numberRandomPhenotypes) {
 
 		LinkedHashMap<String, Integer> phenoHash = new LinkedHashMap<>();
 
-		for (int i = 0; i < NUMBER_RANDOM_PHENO; ++i) {
+		for (int i = 0; i < numberRandomPhenotypes; ++i) {
 			phenoHash.put("RanPheno" + (i + 1), i);
 		}
 
@@ -762,7 +770,7 @@ public class GenePvalueCalculator {
 
 		final int sampleCount = sampleHash.size();
 
-		IntStream.range(0, NUMBER_RANDOM_PHENO).parallel().forEach(pi -> {
+		IntStream.range(0, numberRandomPhenotypes).parallel().forEach(pi -> {
 
 			final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 			for (int s = 0; s < sampleCount; ++s) {

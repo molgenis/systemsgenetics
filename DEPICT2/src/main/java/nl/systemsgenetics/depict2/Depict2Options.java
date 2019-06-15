@@ -48,6 +48,10 @@ public class Depict2Options {
 	private final List<PathwayDatabase> pathwayDatabases;
 	private final File conversionColumnIncludeFilter;
 	private final boolean correctForLambdaInflation;
+	private final int permutationPathwayEnrichment;
+	private final int permutationGeneCorrelations;
+	private final boolean ignoreGeneCorrelations;
+	private final double genePruningR;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -167,6 +171,29 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("correctLambda");
 		OPTIONS.addOption(OptionBuilder.create("cl"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Ignore gene correlations in pathway enrichment (not recommended)");
+		OptionBuilder.withLongOpt("ignoreGeneCorrelations");
+		OPTIONS.addOption(OptionBuilder.create("igc"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Number of random phenotypes to use to determine gene correlations");
+		OptionBuilder.withLongOpt("permutationGeneCorrelations");
+		OPTIONS.addOption(OptionBuilder.create("pgc"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Number of random phenotypes to use to determine null distribution pathway enrichment");
+		OptionBuilder.withLongOpt("permutationPathwayEnrichment");
+		OPTIONS.addOption(OptionBuilder.create("ppe"));
+
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Exclude correlated genes in pathway enrichments");
+		OptionBuilder.withLongOpt("genePruningR");
+		OPTIONS.addOption(OptionBuilder.create("gpr"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -216,6 +243,43 @@ public class Depict2Options {
 			pvalueToZscore = false;
 			conversionColumnIncludeFilter = null;
 
+		}
+
+		if (mode == Depict2Mode.RUN || mode == Depict2Mode.RUN2) {
+			if (!commandLine.hasOption("pgc")) {
+				throw new ParseException("--permutationGeneCorrelations not specified");
+			} else {
+				try {
+					permutationGeneCorrelations = Integer.parseInt(commandLine.getOptionValue("pgc"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --permutationGeneCorrelations \"" + commandLine.getOptionValue("pgc") + "\" is not an int");
+				}
+			}
+			if (!commandLine.hasOption("ppe")) {
+				throw new ParseException("--permutationPathwayEnrichment not specified");
+			} else {
+				try {
+					permutationPathwayEnrichment = Integer.parseInt(commandLine.getOptionValue("ppe"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
+				}
+			}
+			if (!commandLine.hasOption("gpr")) {
+				throw new ParseException("--genePruningR not specified");
+			} else {
+				try {
+					genePruningR = Double.parseDouble(commandLine.getOptionValue("gpr"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --genePruningR \"" + commandLine.getOptionValue("gpr") + "\" is not an double");
+				}
+			}
+
+			ignoreGeneCorrelations = commandLine.hasOption("igc");
+		} else {
+			ignoreGeneCorrelations = false;
+			permutationGeneCorrelations = 0;
+			permutationPathwayEnrichment = 0;
+			genePruningR = 0;
 		}
 
 		if (mode == Depict2Mode.RUN) {
@@ -293,7 +357,7 @@ public class Depict2Options {
 
 			pathwayDatabases = parsePd(commandLine);
 
-		} else if (mode == Depict2Mode.RUN2 || mode == Depict2Mode.RUN3) {
+		} else if (mode == Depict2Mode.RUN2) {
 
 			if (!commandLine.hasOption("ge")) {
 				throw new ParseException("--genes not specified");
@@ -303,8 +367,8 @@ public class Depict2Options {
 
 			pathwayDatabases = parsePd(commandLine);
 
-			if (mode == Depict2Mode.RUN3 && pathwayDatabases.isEmpty()) {
-				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN3");
+			if (pathwayDatabases.isEmpty()) {
+				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN2");
 			}
 
 			genotypeBasePath = null;
@@ -414,13 +478,20 @@ public class Depict2Options {
 				if (pvalueToZscore) {
 					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
 				}
+				LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + permutationGeneCorrelations);
+				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + permutationPathwayEnrichment);
+				LOGGER.info(" * Gene pruning r: " + genePruningR);
+				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
 
 				logPathwayDatabases();
 
 				break;
 			case RUN2:
-			case RUN3:
+				LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + permutationGeneCorrelations);
+				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + permutationPathwayEnrichment);
+				LOGGER.info(" * Gene pruning r: " + genePruningR);
+				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 				logPathwayDatabases();
 				break;
@@ -504,6 +575,22 @@ public class Depict2Options {
 
 	public boolean correctForLambdaInflation() {
 		return correctForLambdaInflation;
+	}
+
+	public int getPermutationPathwayEnrichment() {
+		return permutationPathwayEnrichment;
+	}
+
+	public int getPermutationGeneCorrelations() {
+		return permutationGeneCorrelations;
+	}
+
+	public boolean isIgnoreGeneCorrelations() {
+		return ignoreGeneCorrelations;
+	}
+
+	public double getGenePruningR() {
+		return genePruningR;
 	}
 
 }
