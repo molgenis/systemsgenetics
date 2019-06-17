@@ -671,20 +671,75 @@ public class MetaQTL3 {
 		pb.close();
 		pb = new ProgressBar(m_snpList.length, "- Linking snps between datasets.");
 		ProgressBar finalPb1 = pb;
+
+
+		AtomicInteger[] nrShared = new AtomicInteger[m_gg.length];
+		AtomicInteger[][] nrSharedWithOtherDatasets = new AtomicInteger[m_gg.length][m_gg.length];
+		for (int d = 0; d < m_gg.length; d++) {
+			nrShared[d] = new AtomicInteger(0);
+			for (int d2 = 0; d2 < m_gg.length; d2++) {
+				nrSharedWithOtherDatasets[d][d2] = new AtomicInteger();
+			}
+		}
+
 		IntStream.range(0, m_snpList.length).parallel().forEach(p -> {
 			String snp = m_snpList[p];
+			int ct = 0;
 			for (int d = 0; d < m_gg.length; d++) {
 				Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
 				if (tmp == -9) {
 					m_snpTranslationTable.setQuick(d, p, -9);
 				} else {
 					m_snpTranslationTable.setQuick(d, p, tmp);
+					ct++;
 				}
+			}
 
+			for (int d = 0; d < m_gg.length; d++) {
+				int id = m_snpTranslationTable.getQuick(d, p);
+				for (int d2 = 0; d2 < m_gg.length; d2++) {
+					int id2 = m_snpTranslationTable.getQuick(d2, p);
+					if (id != -9 && id2 != -9) {
+						nrSharedWithOtherDatasets[d][d2].getAndIncrement();
+					}
+				}
+			}
+			nrShared[ct-1].getAndIncrement();
+
+			// remove snp if not present in at least n datasets
+			if (ct < m_settings.requireAtLeastNumberOfDatasets) {
+				for (int d = 0; d < m_gg.length; d++) {
+					m_snpTranslationTable.setQuick(d, p, -9);
+				}
 			}
 			finalPb1.iterateSynched();
 		});
 		finalPb1.close();
+
+		System.out.println("Number of SNPs shared per dataset");
+		System.out.println("NrShared\tNrSNPs");
+		for (int c = 0; c < nrShared.length; c++) {
+			System.out.println(c + "\t" + nrShared[c].get());
+		}
+		System.out.println();
+		String header = "-";
+		for (int d = 0; d < m_gg.length; d++) {
+			header += "\t" + m_gg[d].getSettings().name;
+		}
+
+		System.out.println("Sharing of SNPs between datasets:");
+		System.out.println(header);
+
+		for (int d = 0; d < m_gg.length; d++) {
+			String ln = m_gg[d].getSettings().name;
+			for (int d2 = 0; d2 < m_gg.length; d2++) {
+				ln += "\t" + nrSharedWithOtherDatasets[d][d2].get();
+			}
+			System.out.println(ln);
+		}
+		System.out.println();
+
+
 //        for (int p = 0; p < m_snpList.length; p++) {
 //            String snp = m_snpList[p];
 //            for (int d = 0; d < m_gg.length; d++) {

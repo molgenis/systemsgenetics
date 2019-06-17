@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 /**
@@ -264,6 +265,7 @@ public class TriTyperGenotypeData {
 		chrPos = new int[SNPs.length];
 		int linenr = 0;
 		int nrWoAnnotation = 0;
+		HashSet<String> notFoundChr = new HashSet<String>();
 		while (lineElems != null) {
 			if (lineElems.length > 2) {
 				int snpNum = snpToSNPId.get(lineElems[2]);
@@ -272,7 +274,16 @@ public class TriTyperGenotypeData {
 				if (snpNum != -9 && !"null".equals(lineElems[0]) && !"null".equals(lineElems[1])) {
 
 					if (lineElems[0].length() > 0 && !lineElems[0].equals("-1")) {
-						chr[snpNum] = ChrAnnotation.parseChr(lineElems[0]);
+						if (!notFoundChr.contains(lineElems[0])) {
+							byte snpchr = ChrAnnotation.parseChr(lineElems[0]);
+							chr[snpNum] = snpchr;
+							if (snpchr == -1) {
+								notFoundChr.add(lineElems[0]);
+							}
+						} else {
+							chr[snpNum] = -1;
+						}
+
 					} else {
 						chr[snpNum] = -1;
 						unknownchr = true;
@@ -433,10 +444,10 @@ public class TriTyperGenotypeData {
 		} else if (!Gpio.exists(loc + "Individuals.txt")) {
 			throw new IOException("Error: Required file " + loc + "Individuals.txt does not exist.");
 		} else if ((snpmaploc != null && !Gpio.exists(snpmaploc))
-				|| (!Gpio.exists(loc + "SNPMappings.txt") && !Gpio.exists(loc + "SNPMappings.txt.gz"))) {
+				&& (!Gpio.exists(loc + "SNPMappings.txt") && !Gpio.exists(loc + "SNPMappings.txt.gz"))) {
 			throw new IOException("Error: Required file " + loc + "SNPMappings.txt (or SNPMappings.txt.gz) does not exist.");
 		} else if ((snploc != null && !Gpio.exists(snploc))
-				|| (!Gpio.exists(loc + "SNPs.txt") && !Gpio.exists(loc + "SNPs.txt.gz"))) {
+				&& (!Gpio.exists(loc + "SNPs.txt") && !Gpio.exists(loc + "SNPs.txt.gz"))) {
 			throw new IOException("Error: Required file " + loc + "SNPs.txt (or SNPs.txt.gz) does not exist.");
 		}
 		// GenotypeMatrix.dat
