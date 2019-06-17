@@ -15,11 +15,19 @@ public class PathwayDatabase {
 	
 	private final String name;
 	private final String location;
+	private final boolean textBasedMatrix;//Only used for testing
 
 	public PathwayDatabase(String name, String location) {
 		this.name = name;
 		this.location = location;
+		this.textBasedMatrix = false;
 	}
+
+	protected PathwayDatabase(String name, String location, boolean textBasedMatrix) {
+		this.name = name;
+		this.location = location;
+		this.textBasedMatrix = textBasedMatrix;
+	}	
 
 	public String getName() {
 		return name;
@@ -27,6 +35,10 @@ public class PathwayDatabase {
 
 	public String getLocation() {
 		return location;
+	}
+
+	protected boolean isTextBasedMatrix() {
+		return textBasedMatrix;
 	}
 
 	@Override

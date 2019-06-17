@@ -8,7 +8,7 @@
 	</parent>
 	<groupId>nl.systemsgenetics</groupId>
 	<artifactId>systemsgenetics</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.4-SNAPSHOT</version>
 	<packaging>pom</packaging>	
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

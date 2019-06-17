@@ -18,11 +18,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.ExtractCol;
@@ -109,7 +109,7 @@ public class Depict2 {
 		}
 
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.RUN2 || options.getMode() == Depict2Mode.RUN3);
+			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.RUN2);
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
@@ -154,9 +154,6 @@ public class Depict2 {
 					break;
 				case RUN2:
 					run2(options, null, null, null, null);
-					break;
-				case RUN3:
-					run3(options, null, null, null, null);
 					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
@@ -227,7 +224,7 @@ public class Depict2 {
 
 		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
 
-		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation());
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment());
 
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
@@ -241,7 +238,7 @@ public class Depict2 {
 
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
-		run2(options, genePvalues, genePvaluesNullGwas, geneVariantCount, genes);
+		run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
 
 	}
 
@@ -258,7 +255,7 @@ public class Depict2 {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes) throws IOException, Exception {
+	private static void run2Old(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes) throws IOException, Exception {
 
 		if (options.getMode() == Depict2Mode.RUN2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
@@ -286,39 +283,78 @@ public class Depict2 {
 		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
 		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
 
-		//Gene weight will have same order as other matrices
-		DoubleMatrixDataset<String, String> geneInvCorMatrix = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwas, genes, options);
+		DoubleMatrix2D matrix = genePvalues.getMatrix();
 
-		geneInvCorMatrix.save(options.getOutputBasePath() + "_geneInvCor.txt");
+		//Inplace convert gene p-values to z-scores
+		for (int r = 0; r < matrix.rows(); ++r) {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+			}
+		}
+		genePvalues.normalizeColumns();
+		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
+//		
+
+		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
+
+		for (int r = 0; r < matrixNull.rows(); ++r) {
+			for (int c = 0; c < matrixNull.columns(); ++c) {
+				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
+			}
+		}
+
+		genePvaluesNullGwas.normalizeColumns();
+		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
+
+		//Gene weight will have same order as other matrices
+		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwas, genes, options);
+
+		selectedGenes.clear();
+		for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm.values()) {
+			selectedGenes.addAll(chrArmMatrix.getHashRows().keySet());
+		}
+
+		genePvalues = genePvalues.viewRowSelection(selectedGenes);
 
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
 		} else {
 			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
-			run3(options, genePvalues, genePvaluesNullGwas, genes, geneInvCorMatrix);
+			//run3(options, genePvalues, genePvaluesNullGwas, genes, invCorMatrixPerChrArm);
 		}
 
 	}
 
-	private static void run3(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneInvCorMatrix) throws IOException, Exception {
+	/**
+	 *
+	 * @param options
+	 * @param genePvalues
+	 * @param genePvaluesNullGwas
+	 * @param genes
+	 * @throws IOException
+	 * @throws Exception
+	 */
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
 
-		if (options.getMode() == Depict2Mode.RUN3) {
-			LOGGER.info("Continuing previous analysis by loading gene p-values and gene weigthts");
+		if (options.getMode() == Depict2Mode.RUN2) {
+			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
 			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
-			geneInvCorMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_GeneCorMatrix.txt", '\t');
-			LOGGER.info("Gene weights loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
-
-			//In run2 we only calculate weigths for genes with atleast one variant in the GWAS. We have to redo this selection
-			genePvalues = genePvalues.viewRowSelection(geneInvCorMatrix.getHashRows().keySet());
-			genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(geneInvCorMatrix.getHashRows().keySet());
-
 		}
 
-		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+		//Identify genes with atleast one variant in window
+		final HashSet<String> selectedGenes = new HashSet<>();
+		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
+		final int totalGeneCount = allGenes.size();
+		for (int g = 0; g < totalGeneCount; ++g) {
+			if (geneVariantCount.getElementQuick(g, 0) > 0) {
+				selectedGenes.add(allGenes.get(g));
+			}
+		}
 
 		DoubleMatrix2D matrix = genePvalues.getMatrix();
 
@@ -329,7 +365,6 @@ public class Depict2 {
 			}
 		}
 
-//		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
 		for (int r = 0; r < matrixNull.rows(); ++r) {
@@ -338,26 +373,28 @@ public class Depict2 {
 			}
 		}
 
-//		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneInvCorMatrix, pathwayDatabases, options.getOutputBasePath(), null);
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + selectedGenes.size());
+
+		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+
+		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), null, options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getGenePruningR(), options.isIgnoreGeneCorrelations());
 
 		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
-		HashSet<String> hlaGenes = new HashSet<>();
-		for (Gene gene : genes) {
-			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
-				hlaGenes.add(gene.getGene());
-			}
-		}
-
-		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, geneInvCorMatrix, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
-
-		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
-		
-		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
-
+//		HashSet<String> hlaGenes = new HashSet<>();
+//		for (Gene gene : genes) {
+//			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
+//				hlaGenes.add(gene.getGene());
+//			}
+//		}
+//
+//		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, invCorMatrixPerChrArm, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
+//		
+//		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
+//
+//		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -434,7 +471,7 @@ public class Depict2 {
 		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
 			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
 		}
-		
+
 		final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(options.getGwasZscoreMatrixPath(), '\t');
 		final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(options.getGwasZscoreMatrixPath(), '\t');
 
@@ -506,12 +543,12 @@ public class Depict2 {
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}
-	
+
 	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
-		
+
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 		matrix.save(options.getOutputBasePath());
-		
+
 	}
 
 	private static void convertEqtlToBin(Depict2Options options) throws IOException {

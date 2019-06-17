@@ -60,12 +60,8 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 	 */
 	public DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(Collection<String> rowsToView) throws IOException, Exception {
 
-		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.size());
-
-		for (String rowToView : rowsToView) {
-			rowsToViewHash.add(rowToView);
-		}
-
+		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView);
+		
 		if (rowsToViewHash.size() != rowsToView.size()) {
 			
 			StringBuilder duplicateRowsRequested = new StringBuilder();
@@ -73,7 +69,7 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 			HashSet<String> rowsSeen = new HashSet<>();
 			
 			for (String rowToView : rowsToView) {
-				
+	
 				if(!rowsSeen.add(rowToView)){
 					duplicateRowsRequested.append(rowToView);
 					duplicateRowsRequested.append(";");
