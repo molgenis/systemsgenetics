@@ -1570,6 +1570,34 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return newDataset;
 
 	}
+	
+	public DoubleMatrixDataset<R, C> createColumnForceNormalDuplicate() {
+
+		DoubleMatrixDataset<R, C> newDataset = new DoubleMatrixDataset<>(hashRows, hashCols);
+
+		NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED,
+				TiesStrategy.AVERAGE);
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			double[] col = matrix.viewColumn(c).toArray();
+
+			double mean = JSci.maths.ArrayMath.mean(col);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(col);
+
+			double[] rankedValues = ranking.rank(col);
+
+			for (int s = 0; s < matrix.rows(); s++) {
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+
+				newDataset.setElementQuick(s, c, mean + cern.jet.stat.Probability.normalInverse(pValue) * stdev);
+			}
+
+		}
+
+		return newDataset;
+
+	}
 
 	/**
 	 *

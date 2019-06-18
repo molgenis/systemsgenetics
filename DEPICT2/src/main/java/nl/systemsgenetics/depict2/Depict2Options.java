@@ -53,6 +53,8 @@ public class Depict2Options {
 	private final int permutationGeneCorrelations;
 	private final boolean ignoreGeneCorrelations;
 	private final double genePruningR;
+	private final boolean forceNormalGenePvalues;
+	private final boolean forceNormalPathwayPvalues;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -195,6 +197,16 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("genePruningR");
 		OPTIONS.addOption(OptionBuilder.create("gpr"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Force normal gene p-values before pathway enrichtment");
+		OptionBuilder.withLongOpt("forceNormalGenePvalues");
+		OPTIONS.addOption(OptionBuilder.create("fngp"));
+
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Force normal pathway p-values before pathway enrichtment");
+		OptionBuilder.withLongOpt("forceNormalPathwayPvalues");
+		OPTIONS.addOption(OptionBuilder.create("fnpp"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -214,7 +226,10 @@ public class Depict2Options {
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
+		ignoreGeneCorrelations = commandLine.hasOption("igc");
 		correctForLambdaInflation = commandLine.hasOption("cl");
+		forceNormalGenePvalues = commandLine.hasOption("fngp");
+		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
@@ -275,9 +290,7 @@ public class Depict2Options {
 				}
 			}
 
-			ignoreGeneCorrelations = commandLine.hasOption("igc");
 		} else {
-			ignoreGeneCorrelations = false;
 			permutationGeneCorrelations = 0;
 			permutationPathwayEnrichment = 0;
 			genePruningR = 0;
@@ -493,6 +506,8 @@ public class Depict2Options {
 				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
 				LOGGER.info(" * Gene pruning r: " + genePruningR);
 				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
+				LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
+				LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
 				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 				logPathwayDatabases();
 				break;
@@ -592,6 +607,14 @@ public class Depict2Options {
 
 	public double getGenePruningR() {
 		return genePruningR;
+	}
+
+	public boolean isForceNormalGenePvalues() {
+		return forceNormalGenePvalues;
+	}
+
+	public boolean isForceNormalPathwayPvalues() {
+		return forceNormalPathwayPvalues;
 	}
 
 }

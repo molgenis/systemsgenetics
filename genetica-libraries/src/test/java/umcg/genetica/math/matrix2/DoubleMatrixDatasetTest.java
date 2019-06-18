@@ -97,7 +97,7 @@ public class DoubleMatrixDatasetTest {
 		dataset.setElementQuick(0, 3, 4);
 		dataset.setElementQuick(0, 4, 5);
 
-		DoubleMatrixDataset datasetForNormal = dataset.createRowForceNormalDuplicate();
+		DoubleMatrixDataset datasetForceNormal = dataset.createRowForceNormalDuplicate();
 
 //		System.out.println(datasetForNormal.getElementQuick(0, 0));
 //		System.out.println(datasetForNormal.getElementQuick(0, 1));
@@ -105,9 +105,14 @@ public class DoubleMatrixDatasetTest {
 //		System.out.println(datasetForNormal.getElementQuick(0, 3));
 //		System.out.println(datasetForNormal.getElementQuick(0, 4));
 //		
-		assertEquals(datasetForNormal.getElementQuick(0, 0), 0.9736890569622489, 0.000001);
-		assertEquals(datasetForNormal.getElementQuick(0, 4), 5.0263109430377515, 0.000001);
+		assertEquals(datasetForceNormal.getElementQuick(0, 0), 0.9736890569622489, 0.000001);
+		assertEquals(datasetForceNormal.getElementQuick(0, 4), 5.0263109430377515, 0.000001);
 
+		
+		DoubleMatrixDataset datasetForceNormal2 = dataset.viewDice().createColumnForceNormalDuplicate().viewDice();
+		
+		compareTwoMatrices(datasetForceNormal2, datasetForceNormal);
+		
 	}
 
 	@Test
