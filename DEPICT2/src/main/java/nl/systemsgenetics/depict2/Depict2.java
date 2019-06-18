@@ -13,12 +13,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +50,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class Depict2 {
 
+	public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
 	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
@@ -209,8 +210,8 @@ public class Depict2 {
 		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
 		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
-		LOGGER.info("Number of phenotypes in GWAS matrix: " + phenotypesInZscoreMatrix.size());
-		LOGGER.info("Number of variants in GWAS matrix: " + variantsInZscoreMatrix.size());
+		LOGGER.info("Number of phenotypes in GWAS matrix: " + LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
+		LOGGER.info("Number of variants in GWAS matrix: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 
@@ -222,7 +223,7 @@ public class Depict2 {
 
 		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
 
-		LOGGER.info("Prepared reference null distribution with " + randomChi2.length + " values");
+		LOGGER.info("Prepared reference null distribution with " + LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
 		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment());
 
@@ -276,7 +277,7 @@ public class Depict2 {
 				selectedGenes.add(allGenes.get(g));
 			}
 		}
-		LOGGER.info("Number of genes with atleast one variant in specified window: " + selectedGenes.size());
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
 
 		//Exclude genes with no variants
 		genePvalues = genePvalues.viewRowSelection(selectedGenes);
@@ -373,7 +374,7 @@ public class Depict2 {
 			}
 		}
 
-		LOGGER.info("Number of genes with atleast one variant in specified window: " + selectedGenes.size());
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
 
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
