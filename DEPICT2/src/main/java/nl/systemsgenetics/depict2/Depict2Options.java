@@ -466,7 +466,9 @@ public class Depict2Options {
 				break;
 			case CONVERT_TXT:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
-				LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
+				if(conversionColumnIncludeFilter != null){
+					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
+				}				
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
 			case CONVERT_BIN:
