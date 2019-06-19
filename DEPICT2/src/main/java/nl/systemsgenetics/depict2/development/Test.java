@@ -7,7 +7,7 @@ package nl.systemsgenetics.depict2.development;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
+import java.text.DecimalFormat;
 
 /**
  *
@@ -61,28 +61,33 @@ public class Test {
 //		}
 //
 //		enrichmentWorkbook.write(new FileOutputStream(new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\test.xlsx")));
-		SimpleRegression regression = new SimpleRegression();
+//		SimpleRegression regression = new SimpleRegression();
+//
+//		regression.addData(10, 3);
+//		regression.addData(11, 4);
+//		regression.addData(12, 5);
+//		regression.addData(11, 4);
+//		regression.addData(9, 3);
+//		regression.addData(9, 2);
+//
+//		System.out.println("Intercept: " + regression.getIntercept());
+//		System.out.println("Slope: " + regression.getSlope());
+//		
+//		double b0 = regression.getIntercept();
+//		double b1 = regression.getSlope();
+//		
+//		System.out.println(regression.predict(10));
+//		System.out.println(b0 + (b1 * 10));
+//		System.out.println(3 - regression.predict(10));
+//		
+//
+//		System.out.println(regression.predict(11));
+//		System.out.println(4 - regression.predict(11));
 
-		regression.addData(10, 3);
-		regression.addData(11, 4);
-		regression.addData(12, 5);
-		regression.addData(11, 4);
-		regression.addData(9, 3);
-		regression.addData(9, 2);
+		DecimalFormat largeIntFormatter = new DecimalFormat("###,###");
 
-		System.out.println("Intercept: " + regression.getIntercept());
-		System.out.println("Slope: " + regression.getSlope());
-		
-		double b0 = regression.getIntercept();
-		double b1 = regression.getSlope();
-		
-		System.out.println(regression.predict(10));
-		System.out.println(b0 + (b1 * 10));
-		System.out.println(3 - regression.predict(10));
-		
-
-		System.out.println(regression.predict(11));
-		System.out.println(4 - regression.predict(11));
+		String format = largeIntFormatter.format(1000000000);
+		System.out.println(format);
 
 	}
 
