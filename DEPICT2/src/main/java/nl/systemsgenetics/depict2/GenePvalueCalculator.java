@@ -91,8 +91,6 @@ public class GenePvalueCalculator {
 	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
-	private final int nrSampleToUseForCorrelation;
-	private final int nrSamplesToUseForNullBetas;
 
 	/**
 	 *
@@ -276,8 +274,6 @@ public class GenePvalueCalculator {
 		}
 
 		LOGGER.info("-----------------------");
-		this.nrSampleToUseForCorrelation = nrSampleToUseForCorrelation;
-		this.nrSamplesToUseForNullBetas = nrSamplesToUseForNullBetas;
 
 	}
 

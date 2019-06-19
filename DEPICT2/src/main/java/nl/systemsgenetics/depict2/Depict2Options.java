@@ -55,6 +55,7 @@ public class Depict2Options {
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
+	private final int geneCorrelationWindow;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -178,6 +179,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Ignore gene correlations in pathway enrichment (not recommended)");
 		OptionBuilder.withLongOpt("ignoreGeneCorrelations");
 		OPTIONS.addOption(OptionBuilder.create("igc"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Window in bases to calculate gene correlations for GLS of pathway enrichment (-1 for no limit)");
+		OptionBuilder.withLongOpt("geneCorrelationWindow");
+		OPTIONS.addOption(OptionBuilder.create("gcw"));
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
@@ -289,11 +296,27 @@ public class Depict2Options {
 					throw new ParseException("Error parsing --genePruningR \"" + commandLine.getOptionValue("gpr") + "\" is not an double");
 				}
 			}
+			if (!commandLine.hasOption("ge")) {
+				throw new ParseException("--genes not specified");
+			} else {
+				geneInfoFile = new File(commandLine.getOptionValue("ge"));
+			}
+			if (!commandLine.hasOption("gpr")) {
+				throw new ParseException("--geneCorrelationWindow not specified");
+			} else {
+				try {
+					geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an double");
+				}
+			}
 
 		} else {
 			permutationGeneCorrelations = 0;
 			permutationPathwayEnrichment = 0;
 			genePruningR = 0;
+			geneInfoFile = null;
+			geneCorrelationWindow = 0;
 		}
 
 		if (mode == Depict2Mode.RUN) {
@@ -327,12 +350,6 @@ public class Depict2Options {
 				} catch (NumberFormatException e) {
 					throw new ParseException("Error parsing --variantCorrelation \"" + commandLine.getOptionValue('v') + "\" is not an double");
 				}
-			}
-
-			if (!commandLine.hasOption("ge")) {
-				throw new ParseException("--genes not specified");
-			} else {
-				geneInfoFile = new File(commandLine.getOptionValue("ge"));
 			}
 
 			if (!commandLine.hasOption('r')) {
@@ -373,11 +390,7 @@ public class Depict2Options {
 
 		} else if (mode == Depict2Mode.RUN2) {
 
-			if (!commandLine.hasOption("ge")) {
-				throw new ParseException("--genes not specified");
-			} else {
-				geneInfoFile = new File(commandLine.getOptionValue("ge"));
-			}
+			
 
 			pathwayDatabases = parsePd(commandLine);
 
@@ -397,7 +410,6 @@ public class Depict2Options {
 			genotypeBasePath = null;
 			genotypeType = null;
 			genotypeSamplesFile = null;
-			geneInfoFile = null;
 			maxRBetweenVariants = 0d;
 			numberOfPermutations = 0;
 			windowExtend = 0;
@@ -496,6 +508,7 @@ public class Depict2Options {
 				}
 				LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
 				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
+				LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
 				LOGGER.info(" * Gene pruning r: " + genePruningR);
 				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
@@ -506,6 +519,7 @@ public class Depict2Options {
 			case RUN2:
 				LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
 				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
+				LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
 				LOGGER.info(" * Gene pruning r: " + genePruningR);
 				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 				LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
@@ -617,6 +631,10 @@ public class Depict2Options {
 
 	public boolean isForceNormalPathwayPvalues() {
 		return forceNormalPathwayPvalues;
+	}
+
+	public int getGeneCorrelationWindow() {
+		return geneCorrelationWindow;
 	}
 
 }
