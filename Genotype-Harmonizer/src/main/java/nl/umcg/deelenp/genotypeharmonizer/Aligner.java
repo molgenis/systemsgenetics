@@ -8,6 +8,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,14 +72,21 @@ public class Aligner {
 		int nonGcNonAtSnpsSwapped = 0;
 
 		//In this loop we filter the variants present in the reference and swap the AG, AC, TC, TG SNPs.
+
+		Instant start = Instant.now();
+
 		studyVariants:
 		for (ModifiableGeneticVariant studyVariant : alignedStudyData.getModifiableGeneticVariants()) {
 
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
+
 				//LOGGER.info("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
-				System.out.println("Iteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed");
+				Instant tmp = Instant.now();
+				long elapsed = Duration.between(start, tmp).toMinutes();
+
+				System.out.print("\rIteration 1 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed out of " + alignedStudyData.getVariantIdMap().size() + " - Time elapsed: " + elapsed + " minutes.");
 			}
 
 			if (!studyVariant.isMapped()) {
