@@ -243,7 +243,6 @@ public class Depict2 {
 
 	}
 
-
 	/**
 	 *
 	 * @param options
@@ -293,27 +292,28 @@ public class Depict2 {
 		}
 
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
+		
+		final HashSet<String> hlaGenes;
+		if (options.isExcludeHla()) {
+			hlaGenes = new HashSet<>();
+			for (Gene gene : genes) {
+				if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
+					hlaGenes.add(gene.getGene());
+				}
+			}
+			LOGGER.info("Excluding " + hlaGenes.size() + " genes");
+		} else {
+			hlaGenes = null;
+		}
 
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), null, options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getGenePruningR(), options.isIgnoreGeneCorrelations(), options.isForceNormalGenePvalues(), options.isForceNormalPathwayPvalues(), options.getGeneCorrelationWindow());
+		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), hlaGenes, options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getGenePruningR(), options.isIgnoreGeneCorrelations(), options.isForceNormalGenePvalues(), options.isForceNormalPathwayPvalues(), options.getGeneCorrelationWindow());
 
-		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
+		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), options.isExcludeHla());
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
-//		HashSet<String> hlaGenes = new HashSet<>();
-//		for (Gene gene : genes) {
-//			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
-//				hlaGenes.add(gene.getGene());
-//			}
-//		}
-//
-//		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, invCorMatrixPerChrArm, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
-//		
-//		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
-//
-//		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {

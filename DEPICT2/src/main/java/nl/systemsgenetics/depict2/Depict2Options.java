@@ -56,6 +56,7 @@ public class Depict2Options {
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
 	private final int geneCorrelationWindow;
+	private final boolean excludeHla;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -179,7 +180,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Ignore gene correlations in pathway enrichment (not recommended)");
 		OptionBuilder.withLongOpt("ignoreGeneCorrelations");
 		OPTIONS.addOption(OptionBuilder.create("igc"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Window in bases to calculate gene correlations for GLS of pathway enrichment (-1 for no limit)");
@@ -214,6 +215,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("forceNormalPathwayPvalues");
 		OPTIONS.addOption(OptionBuilder.create("fnpp"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Exclude HLA region during pathway enrichments (chr6 20mb - 40mb)");
+		OptionBuilder.withLongOpt("excludeHla");
+		OPTIONS.addOption(OptionBuilder.create("eh"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -237,6 +243,7 @@ public class Depict2Options {
 		correctForLambdaInflation = commandLine.hasOption("cl");
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
 		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
+		excludeHla = commandLine.hasOption("eh");
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
@@ -390,8 +397,6 @@ public class Depict2Options {
 
 		} else if (mode == Depict2Mode.RUN2) {
 
-			
-
 			pathwayDatabases = parsePd(commandLine);
 
 			if (pathwayDatabases.isEmpty()) {
@@ -478,9 +483,9 @@ public class Depict2Options {
 				break;
 			case CONVERT_TXT:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
-				if(conversionColumnIncludeFilter != null){
+				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
-				}				
+				}
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
 			case CONVERT_BIN:
@@ -499,39 +504,42 @@ public class Depict2Options {
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
 				LOGGER.info(" * Gene window extend in bases: " + LARGE_INT_FORMAT.format(windowExtend));
-				LOGGER.info(" * Number of permutations: " + LARGE_INT_FORMAT.format(numberOfPermutations));
+				LOGGER.info(" * Max number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
-				LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
-				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
-				if (pvalueToZscore) {
-					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
-				}
-				LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
-				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
-				LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
-				LOGGER.info(" * Gene pruning r: " + genePruningR);
-				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
-				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
 
-				logPathwayDatabases();
+				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
+				logSharedRun1Run2();
 
 				break;
 			case RUN2:
-				LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
-				LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
-				LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
-				LOGGER.info(" * Gene pruning r: " + genePruningR);
-				LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
-				LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
-				LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
-				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
-				logPathwayDatabases();
+				logSharedRun1Run2();
+				
 				break;
 
 		}
 
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 
+	}
+
+	private void logSharedRun1Run2() {
+
+		if (pvalueToZscore) {
+			LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+		}
+		LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
+		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
+
+		LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
+		LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
+		LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
+		LOGGER.info(" * Gene pruning r: " + genePruningR);
+		LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
+		LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
+		LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
+		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
+		logPathwayDatabases();
+		
 	}
 
 	private void logPathwayDatabases() {
@@ -635,6 +643,10 @@ public class Depict2Options {
 
 	public int getGeneCorrelationWindow() {
 		return geneCorrelationWindow;
+	}
+
+	public boolean isExcludeHla() {
+		return excludeHla;
 	}
 
 }
