@@ -259,8 +259,8 @@ public class PathwayEnrichments {
 					}
 				}
 
-				enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_betas" : "_correlationsExHla") + ".txt");
-				enrichmentNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (hlaGenesToExclude == null ? "_betas" : "_correlationsExHla") + ".txt");
+				enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt");
+				enrichmentNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt");
 
 				DoubleMatrix2D enrichmentMatrix = enrichment.getMatrix();
 				DoubleMatrix2D enrichmentNullMatrix = enrichmentNull.getMatrix();
