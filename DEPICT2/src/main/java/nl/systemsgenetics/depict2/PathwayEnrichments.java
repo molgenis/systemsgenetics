@@ -148,6 +148,9 @@ public class PathwayEnrichments {
 				geneZscoresPathwayMatched.normalizeColumns();
 				geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
 				geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
+				
+				genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
+				geneZscoresPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
 
 				LinkedHashMap<String, Integer> singleColMap = new LinkedHashMap<>(1);
 				singleColMap.put("B1", 0);
@@ -244,9 +247,6 @@ public class PathwayEnrichments {
 					}
 				}
 
-//					b1.printMatrix();
-//					b2.printMatrix();
-//					enrichment.printMatrix();
 				final int numberTraitsNull = geneZscoresNullGwasNullBetas.columns();
 
 				for (int traitI = 0; traitI < numberTraitsNull; ++traitI) {
@@ -305,8 +305,6 @@ public class PathwayEnrichments {
 					}
 				}
 
-				//enrichment.printMatrix();
-				//System.out.println(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
 				enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
 
 				enrichmentZscores.put(pathwayDatabase, enrichment);
