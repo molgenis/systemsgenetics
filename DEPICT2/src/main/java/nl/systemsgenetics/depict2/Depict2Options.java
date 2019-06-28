@@ -314,7 +314,7 @@ public class Depict2Options {
 				try {
 					geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
 				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an double");
+					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an int");
 				}
 			}
 
