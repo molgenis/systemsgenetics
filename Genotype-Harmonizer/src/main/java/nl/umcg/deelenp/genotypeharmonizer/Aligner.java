@@ -255,6 +255,7 @@ public class Aligner {
 		if (iterationCounter == 0) {
 			throw new GenotypeAlignmentException("No variants where found in the input genotype data. Please check your variant filter options");
 		}
+		System.out.println();
 
 		LOGGER.info("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
 		System.out.println("Iteration 1 - Completed, non A/T and non G/C SNPs are aligned " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsEncountered) + " found and " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(nonGcNonAtSnpsSwapped) + " swapped");
@@ -336,14 +337,17 @@ public class Aligner {
 		int swapBasedOnLdCount = 0;
 		removedSnpsBasedOnLdCheck = 0;
 
+		start = Instant.now();
 		//Third loop over the included variants. Now that the other variants are fixed we can focus on the GC and AT SNPs.
 		for (int variantIndex = 0; variantIndex < studyVariantList.size(); ++variantIndex) {
 
 			++iterationCounter;
 
 			if (iterationCounter % 10000 == 0) {
+				Instant tmp = Instant.now();
+				long elapsed = Duration.between(start, tmp).toMinutes();
 				//LOGGER.info("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " GC or AT SNPs checked)");
-				System.out.println("Iteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " G/C or A/T SNPs checked)");
+				System.out.print("\rIteration 3 - " + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(iterationCounter) + " variants processed (" + GenotypeHarmonizer.DEFAULT_NUMBER_FORMATTER.format(GcAtSnpsEncountered) + " G/C or A/T SNPs checked). Time elapsed: " + elapsed + " minutes.");
 			}
 
 			ModifiableGeneticVariant studyVariant = studyVariantList.get(variantIndex);

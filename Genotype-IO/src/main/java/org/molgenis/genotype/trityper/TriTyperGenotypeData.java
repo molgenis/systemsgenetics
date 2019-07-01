@@ -485,24 +485,58 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 
+	byte[] readAheadBuffer = null;
+	byte[] snpbytebuffer = null;
+	long readAheadBufferStart = 0;
+	long readAheadBufferEnd = 0;
+
 	@Override
 	public List<Alleles> getSampleVariants(GeneticVariant variant) {
 
-		//This is save to do because it would not make sence that a non trityper variant would call this functioon. Unless someone is hacking the api (which they should not do) :)
+		// This is safe to do because it would not make sense that a non trityper variant would call this function. Unless someone is hacking the api (which they should not do) :)
 		long index = ((ReadOnlyGeneticVariantTriTyper) variant).getIndexOfVariantInTriTyperData();
 
 		int numIndividuals = samples.size();
 		long indexLong = (index) * (numIndividuals * 2);
 
-		byte[] buffer = new byte[2 * numIndividuals];
 		try {
-			genotypeHandle.seek(indexLong);
-			if (genotypeHandle.read(buffer) != buffer.length) {
 
-				LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+//			if (readAheadBuffer == null ||
+//					indexLong > readAheadBufferEnd ||
+//					indexLong < readAheadBufferStart ||
+//					indexLong < readAheadBufferEnd) {
+//				// determine buffer len (~512kb)
+//				int bytesPerIndividual = (numIndividuals * 2);
+//				int nrbytes = 512 * 1024;
+//				if (indexLong + nrbytes > genotypeHandle.length()) { // prevent overflow
+//					nrbytes = (int) (genotypeHandle.length() - indexLong);
+//				} else if (bytesPerIndividual > nrbytes) {
+//					nrbytes = bytesPerIndividual;
+//				} else {
+//					nrbytes = nrbytes - (nrbytes % bytesPerIndividual); // pick a value as close to 512kb as possible, but still representing units of snps
+//				}
+//
+//				readAheadBufferStart = indexLong;
+//				readAheadBufferEnd = readAheadBufferStart + nrbytes;
+//				if (readAheadBuffer == null || nrbytes != readAheadBuffer.length) {
+//					readAheadBuffer = new byte[nrbytes];
+//				}
+//
+//				if (genotypeHandle.read(readAheadBuffer) != readAheadBuffer.length) {
+//					LOG.fatal("ERROR loading trityper SNP: " + variant.getPrimaryVariantId() + " at: " + variant.getSequenceName() + ":" + variant.getStartPos() + " variant index: " + index);
+//
+//					throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
+//				}
+//
+//			}
 
-				throw new GenotypeDataException("Could not read bytes from: " + indexLong + " in genotype file " + genotypeDataFile.getAbsolutePath() + " (size: " + genotypeDataFile.length() + ")");
+			if (snpbytebuffer == null) {
+				snpbytebuffer = new byte[2 * numIndividuals];
 			}
+
+			genotypeHandle.seek(indexLong);
+			genotypeHandle.read(snpbytebuffer);
+
 
 		} catch (IOException e) {
 
@@ -516,7 +550,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		for (int i = 0; i < numIndividuals; i++) {
 			if (sampleFilter == null || sampleFilter.doesSamplePassFilter(samples.get(i))) {
 				int allele2Pos = numIndividuals + i;
-				Alleles a = Alleles.createAlleles(TriTyperAlleleAnnotation.convertByteToAllele(buffer[i]), TriTyperAlleleAnnotation.convertByteToAllele(buffer[allele2Pos]));
+				Alleles a = Alleles.createAlleles(TriTyperAlleleAnnotation.convertByteToAllele(snpbytebuffer[i]), TriTyperAlleleAnnotation.convertByteToAllele(snpbytebuffer[allele2Pos]));
 				alleles.add(a);
 			}
 		}

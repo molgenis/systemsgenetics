@@ -321,8 +321,7 @@ class GenotypeHarmonizer {
 		if (parameters.getRefBasePath() != null) {
 
 			try {
-				// Test: don't cache reference data for quicker lookups
-				refData = parameters.getRefType().createGenotypeData(parameters.getRefBasePath(), 1);
+				refData = parameters.getRefType().createGenotypeData(parameters.getRefBasePath(), genotypeDataCache);
 			} catch (TabixFileNotFoundException e) {
 				System.err.println("Tabix file not found for reference data at: " + e.getPath() + "\n"
 						+ "Please see README on how to create a tabix file");
