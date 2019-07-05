@@ -239,8 +239,11 @@ public class Depict2 {
 
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
-		run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
-
+		if (options.getPathwayDatabases().isEmpty()) {
+			LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode RUN2 and exactly the same output path and genes file to continue");
+		} else {
+			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
+		}
 	}
 
 	/**
@@ -292,7 +295,7 @@ public class Depict2 {
 		}
 
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
-		
+
 		final HashSet<String> hlaGenes;
 		if (options.isExcludeHla()) {
 			hlaGenes = new HashSet<>();

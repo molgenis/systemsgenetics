@@ -5,10 +5,13 @@
  */
 package nl.systemsgenetics.depict2;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
+import ch.unil.genescore.vegas.Davies;
+import ch.unil.genescore.vegas.Farebrother;
 import com.opencsv.CSVWriter;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,7 +26,6 @@ import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.depict2.Depict2.formatMsForLog;
-import static nl.systemsgenetics.depict2.JamaHelperFunctions.eigenValueDecomposition;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
@@ -64,6 +66,8 @@ public class GenePvalueCalculator {
 
 	private static int countRanPermutationsForGene = 0;
 	private static int countBasedPvalueOnPermutations = 0;
+	private static int countBasedPvalueOnFarebrother = 0;
+	private static int countBasedPvalueOnPermutationsAfterFailedFarebrother = 0;
 	private static int countUseChi2DistForPvalue = 0;
 	private static int countNoVariants = 0;
 
@@ -247,10 +251,12 @@ public class GenePvalueCalculator {
 
 		pb.close();
 
-		LOGGER.debug("countRanPermutationsForGene: " + countRanPermutationsForGene);
-		LOGGER.debug("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
-		LOGGER.debug("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
-		LOGGER.debug("countNoVariants: " + countNoVariants);
+		LOGGER.info("countRanPermutationsForGene: " + countRanPermutationsForGene);
+		LOGGER.info("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
+		LOGGER.info("countBasedPvalueOnPermutationsAfterFailedFarebrother: " + countBasedPvalueOnPermutationsAfterFailedFarebrother);
+		LOGGER.info("countBasedPvalueOnFarebrother: " + countBasedPvalueOnFarebrother);
+		LOGGER.info("countUseChi2DistForPvalue: " + countUseChi2DistForPvalue);
+		LOGGER.info("countNoVariants: " + countNoVariants);
 
 		LOGGER.info("timeInLoadingGenotypeDosages: " + formatMsForLog(timeInLoadingGenotypeDosages));
 		LOGGER.info("timeInNormalizingGenotypeDosages: " + formatMsForLog(timeInNormalizingGenotypeDosages));
@@ -365,24 +371,45 @@ public class GenePvalueCalculator {
 
 		int currentNumberPermutationsCalculated;
 		final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-		final double[] eigenValues;
-		final int eigenValuesLength;
+		final double[] lambdas;
+		final int lambdasLength;
 		if (variantCorrelationsPrunedRows > 1) {
 
 			timeStart = System.currentTimeMillis();
 
-			final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
-			eigenValues = eig.getRealEigenvalues();
-			eigenValuesLength = eigenValues.length;
-			for (int e = 0; e < eigenValuesLength; e++) {
-				if (eigenValues[e] < 0) {
-					eigenValues[e] = 0;
+			final DenseDoubleEigenvalueDecomposition eig = new DenseDoubleEigenvalueDecomposition(variantCorrelationsPruned.getMatrix());
+			//final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
+			final DoubleMatrix1D eigenValues = eig.getRealEigenvalues().viewFlip();
+			final long eigenValuesLenght = eigenValues.size();
+
+			//Method below if from PASCAL to select relevant eigen values
+			double sumPosEigen = 0;
+			for (int i = 0; i < eigenValuesLenght; i++) {
+				double e = eigenValues.getQuick(i);
+				if (e > 0) {
+					sumPosEigen += e;
 				}
 			}
 
+			final double cutoff = sumPosEigen / 10000;//Only use components that explain significant part of variantion
+
+			int eigenValuesToUse = 0;
+
+			for (int i = 0; i < eigenValuesLenght; i++) {
+				sumPosEigen -= eigenValues.getQuick(i);
+				eigenValuesToUse++;
+
+				if (sumPosEigen < cutoff) {
+					break;
+				}
+			}
+
+			lambdas = eigenValues.viewPart(0, eigenValuesToUse).toArray();
+			lambdasLength = eigenValuesToUse;
+
 			if (LOGGER.isDebugEnabled()) {
 
-				saveEigenValues(eigenValues, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
+				saveEigenValues(lambdas, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
 
 			}
 
@@ -396,12 +423,12 @@ public class GenePvalueCalculator {
 
 			countRanPermutationsForGene++;
 
-			runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, 0, MIN_PERMUTATIONS, rnd, eigenValuesLength);
+			runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, 0, MIN_PERMUTATIONS, rnd, lambdasLength);
 			currentNumberPermutationsCalculated = MIN_PERMUTATIONS;
 
 		} else {
-			eigenValues = null;
-			eigenValuesLength = 0;
+			lambdas = null;
+			lambdasLength = 0;
 			currentNumberPermutationsCalculated = 0;
 		}
 
@@ -431,11 +458,15 @@ public class GenePvalueCalculator {
 
 		timeStop = System.currentTimeMillis();
 		timeInLoadingZscoreMatrix += (timeStop - timeStart);
+		
+		Farebrother farebrother = null;
+		Davies davies = null;
 
 		for (int phenoI = 0; phenoI < numberRealPheno; ++phenoI) {
 
 			if (variantCorrelationsPrunedRows > 1) {
 
+				//PASCAL would now check if there is only a single significant lambda. For us this cannot hapend because of the pruning of SNPs
 				timeStart = System.currentTimeMillis();
 
 				final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
@@ -453,7 +484,7 @@ public class GenePvalueCalculator {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
 					if (currentNumberPermutationsForThisTraitGene >= currentNumberPermutationsCalculated) {
-						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, eigenValuesLength);
+						runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, lambdasLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
 					currentNumberPermutationsForThisTraitGene += PERMUTATION_STEP;
@@ -466,35 +497,35 @@ public class GenePvalueCalculator {
 
 				} while (x < 20 && currentNumberPermutationsForThisTraitGene < maxNrPermutations);
 
-				while (x < 10 && currentNumberPermutationsForThisTraitGene < maxNrPermutations2) {
-					double weightedChi2Perm = 0;
-					for (int g = -1; ++g < eigenValuesLength;) {
-						//double randomZ = rnd.nextGaussian();
-
-						//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
-						double v1, v2, s;
-						do {
-							v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
-							v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
-							s = v1 * v1 + v2 * v2;
-						} while (s >= 1 || s == 0);
-						double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
-						double randomZ = v1 * multiplier;
-						weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
-
-						if (++g < eigenValuesLength) {
-							randomZ = v2 * multiplier;
-							weightedChi2Perm += eigenValues[g] * (randomZ * randomZ);
-						} else {
-							break;//Will happen automaticly but would require second check
-						}
-
-					}
-					if (geneChi2Sum < weightedChi2Perm) {
-						x++;
-					}
-					currentNumberPermutationsForThisTraitGene++;
-				}
+//				while (x < 10 && currentNumberPermutationsForThisTraitGene < maxNrPermutations2) {
+//					double weightedChi2Perm = 0;
+//					for (int g = -1; ++g < lambdasLength;) {
+//						//double randomZ = rnd.nextGaussian();
+//
+//						//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
+//						double v1, v2, s;
+//						do {
+//							v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+//							v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+//							s = v1 * v1 + v2 * v2;
+//						} while (s >= 1 || s == 0);
+//						double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
+//						double randomZ = v1 * multiplier;
+//						weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
+//
+//						if (++g < lambdasLength) {
+//							randomZ = v2 * multiplier;
+//							weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
+//						} else {
+//							break;//Will happen automaticly but would require second check
+//						}
+//
+//					}
+//					if (geneChi2Sum < weightedChi2Perm) {
+//						x++;
+//					}
+//					currentNumberPermutationsForThisTraitGene++;
+//				}
 
 //				if (currentNumberPermutationsForThisTraitGene == maxNrPermutations2) {
 //					File nullFile = new File(outputBasePath + "_" + gene.getGene() + "_nullDistribution_" + variantCorrelationsPrunedRows + "variants" + "_xIs" + x + ".txt");
@@ -506,14 +537,32 @@ public class GenePvalueCalculator {
 //					}
 //					nullWriter.close();
 //				}
-
 				timeStop = System.currentTimeMillis();
 				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
 
 				timeStart = System.currentTimeMillis();
 
-				double p = (x + 0.5) / (double) (currentNumberPermutationsForThisTraitGene + 1);
-
+				final double p;
+				
+				if(x < 20){
+					//permutations not able to estimate p-value
+					if(farebrother == null){
+						farebrother = new Farebrother(lambdas);
+					}
+					double farebrotherP = farebrother.probQsupx(geneChi2Sum);
+					if(farebrother.getIfault() != 0){
+						//farebrother failed best we can do is permutation p-value
+						p = (x + 0.5) / (double) (currentNumberPermutationsForThisTraitGene + 1);
+						countBasedPvalueOnPermutationsAfterFailedFarebrother++;
+					} else {
+						p = farebrotherP;
+						countBasedPvalueOnFarebrother++;
+					}
+				} else {
+					countBasedPvalueOnPermutations++;
+					p = (x + 0.5) / (double) (currentNumberPermutationsForThisTraitGene + 1);
+				}
+				
 				LOGGER.debug(gene.getGene() + " permutation: " + currentNumberPermutationsForThisTraitGene + " count null larger than real: " + x + " pvalue:" + p);
 
 				//These can never happen with current permutations stratagy
@@ -528,8 +577,6 @@ public class GenePvalueCalculator {
 
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingPvalue += (timeStop - timeStart);
-
-				countBasedPvalueOnPermutations++;
 
 			} else if (variantCorrelationsPrunedRows == 1) {
 
@@ -557,7 +604,9 @@ public class GenePvalueCalculator {
 		}
 
 		// Do exactly the same thing but now for the null GWAS
-		for (int nullPhenoI = 0; nullPhenoI < numberRandomPhenotypes; ++nullPhenoI) {
+		for (int nullPhenoI = 0;
+				nullPhenoI < numberRandomPhenotypes;
+				++nullPhenoI) {
 
 			if (variantCorrelationsPrunedRows > 1) {
 
@@ -578,7 +627,7 @@ public class GenePvalueCalculator {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
 					if (currentNumberPermutations >= currentNumberPermutationsCalculated) {
-						runPermutationsUsingEigenValues(geneChi2SumNull, eigenValues, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, eigenValuesLength);
+						runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, lambdasLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
 					currentNumberPermutations += PERMUTATION_STEP;
@@ -627,8 +676,10 @@ public class GenePvalueCalculator {
 
 		}
 
-		geneMaxPermutationCount.setElementQuick(geneI, 0, currentNumberPermutationsCalculated);
-		geneRuntime.setElementQuick(geneI, 0, (System.currentTimeMillis() - geneTimeStart));
+		geneMaxPermutationCount.setElementQuick(geneI,
+				0, currentNumberPermutationsCalculated);
+		geneRuntime.setElementQuick(geneI,
+				0, (System.currentTimeMillis() - geneTimeStart));
 
 	}
 
