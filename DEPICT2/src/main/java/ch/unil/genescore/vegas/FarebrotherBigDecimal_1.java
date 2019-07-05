@@ -21,6 +21,10 @@
  *******************************************************************************/
 package ch.unil.genescore.vegas;
 
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 
@@ -32,7 +36,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
  * Algorithm AS 204 Appl. Statist. (1984) Vol. 33, No.3
  * ruben evaluates the probability that a positive definite quadratic form in Normal variates is less than a given value
  */
-public class Farebrother implements WeightedChisquareAlgorithm  {
+public class FarebrotherBigDecimal_1 implements WeightedChisquareAlgorithm  {
 
 	// ARGUMENTS
 	/** Value point at which the survival function is to be evaluated */
@@ -63,7 +67,7 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 	// PUBLIC METHODS
 	
 	/** Constructor */
-	public Farebrother(double[] lambda) {
+	public FarebrotherBigDecimal_1(double[] lambda) {
 
 		lambda_ = lambda;
 		
@@ -76,7 +80,7 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 			delta_[i] = 0;
 		
 		eps_ = 1e-20;
-		maxit_ = 5000000;	
+		maxit_ = 500000;	
 		mode_ = -1.0;
 	}
 
@@ -93,10 +97,16 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 		
 		// compute
 		ruben();
+		
+		System.out.println("Normal farebrother res: " + res_);
+		
 		res_ = 1 - res_;
 		if(res_<1E-15){
 			res_=1E-15;
 		}
+		
+		
+		
 		return res_;
 	}
 
@@ -119,13 +129,11 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 			    
 		int i,k,m,j;
 		//double pnorm(double q, double mean, double sd, int lower_tail, int log_p);
-		double ao, aoinv, z, bbeta, eps2, hold, hold2, sum, sum1, dans, lans, pans, prbty, tol;
+		double  z, hold2, dans, lans, pans, tol;
 		double[] gamma = new double[lambda_.length];
 		double[] theta = new double[lambda_.length];
-		double[] a = new double[maxit_];
-		double[] b = new double[maxit_];
-		
-		hold = 0;//TMP
+		BigDecimal[] a = new BigDecimal[maxit_];
+		BigDecimal[] b = new BigDecimal[maxit_];
 			    
 		if ((lambda_.length<1) || (q_<=0) || (maxit_ <1) || (eps_<=0.0)) {
 			res_ = -2.0;
@@ -136,35 +144,44 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 		tol = -200.0;
 
 		// Preliminaries
-		sum = lambda_[0];
-		bbeta = sum;
+		BigDecimal sum = new BigDecimal(lambda_[0]);
+		BigDecimal bbeta = sum;
+		BigDecimal hold = BigDecimal.ZERO;
 			      
 		for (i=1;i<=lambda_.length;i++) {
-			hold = lambda_[i-1];
-			if ((hold<=0.0) || (h_[i-1]<1) || (delta_[i-1]<0.0)) {
+			hold = new BigDecimal(lambda_[i-1]);
+			if ((hold.doubleValue() <=0.0) || (h_[i-1]<1) || (delta_[i-1]<0.0)) {
 				res_ = -7.0;
 				ifault_ = -i;
 				return;
 			}	
-			if (bbeta > hold) bbeta = hold; // calcul du max des lambdas
-			if (sum < hold) sum = hold;    // calcul du min des lambdas
+			if (bbeta.doubleValue() > hold.doubleValue()) bbeta = hold; // calcul du max des lambdas
+			if (sum.doubleValue() < hold.doubleValue()) sum = hold;    // calcul du min des lambdas
 		}
+		
 			  
 		if (mode_ > 0.0) {
 			// if ((2.0/(1.0/bbeta+1.0/sum))>1.8*sum) bbeta = sum; // comme dans NAG : methode avec betaA
-			bbeta = mode_*bbeta;
+			throw new RuntimeException();
+			//bbeta = mode_*bbeta;
 		} else {
-			bbeta = 2.0/(1.0/bbeta+1.0/sum);  // methode avec betaB
+			//bbeta = 2.0/(1.0/bbeta+1.0/sum);  // methode avec betaB
+			bbeta = new BigDecimal("2").divide(BigDecimal.ONE.divide(bbeta, MathContext.DECIMAL128).add(BigDecimal.ONE.divide(sum, MathContext.DECIMAL128)), MathContext.DECIMAL128);
+			
 		}
+		
+		System.out.println("bbeta: " + bbeta);
+		System.out.println("sum: " + sum);
+		
 
 		k = 0;
-		sum = 1.0;
-		sum1 = 0.0;
+		sum = BigDecimal.ONE;
+		BigDecimal sum1 = BigDecimal.ZERO;
 		for (i=1;i<=lambda_.length;i++) {
-			hold = bbeta/lambda_[i-1];
-			gamma[i-1] = 1.0 - hold;
-			sum = sum*Math.pow(hold,h_[i-1]); //???? pas sur ..
-			sum1 = sum1 + delta_[i-1];
+			hold = bbeta.divide(new BigDecimal(lambda_[i-1]), MathContext.DECIMAL128);
+			gamma[i-1] = BigDecimal.ONE.subtract(hold).doubleValue();
+			sum = sum.multiply(hold.pow(h_[i-1]));
+			sum1 = sum1.add(new BigDecimal(delta_[i-1]));
 			k = k + h_[i-1];
 			theta[i-1] = 1.0;
 		}
@@ -173,16 +190,21 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 		System.out.println("sum1: " +  sum1);
 		System.out.println("hold: " + hold);
 			    
-		ao = Math.exp(0.5*(Math.log(sum)-sum1));
+		BigDecimal ao = new BigDecimal("0.5").multiply(new BigDecimal(Math.log(sum.doubleValue())).subtract(sum1));   //Math.exp(0.5*(Math.log(sum)-sum1));
+		
+		
+		
 		
 		System.out.println("ao:" + ao);
 		
-		if (ao <= 0.0) {
+		double hold3;
+		
+		if (ao.compareTo(BigDecimal.ZERO) <= 0.0) {
 			res_ = 0.0;
 			dnsty = 0.0;
 			ifault_ = 1; // returns after this (the rest of the function is in the else)
 		} else { // evaluate probability and density of chi-squared on k degrees of freedom. The constant 0.22579135264473 is ln(sqrt(pi/2))
-			z = q_/bbeta;
+			z = q_/bbeta.doubleValue();
 			      
 			if ((k%2) == 0) { // k est un entier donc on regarde si k est divisible par 2: k == (k/2)*k 
 				i = 2;
@@ -209,27 +231,32 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 			}
 			      
 			// evaluate successive terms of expansion
+			
+			System.out.println("pans: " + pans);
 			      
-			prbty = pans;
+			BigDecimal prbty = new BigDecimal(pans);
 			dnsty = dans;
-			eps2 = eps_/ao;
-			aoinv = 1.0/ao;
-			sum = aoinv - 1.0;
+			BigDecimal eps2 = new BigDecimal(eps_).divide(ao);
+			
+			System.out.println("eps2: " + eps2);
+			
+			BigDecimal aoinv = BigDecimal.ONE.divide(ao);
+			sum = aoinv.subtract(BigDecimal.ONE);
 
 			for (m=1;m<=maxit_;m++) {
-				sum1 = 0.0;
+				sum1 = BigDecimal.ZERO;
 				for (i=1;i<=lambda_.length;i++) {
-					hold = theta[i-1];
-					hold2 = hold*gamma[i-1];
+					hold3 = theta[i-1];
+					hold2 = hold3 * gamma[i-1];
 					theta[i-1] = hold2;
-					sum1 = sum1 + hold2*h_[i-1]+m*delta_[i-1]*(hold-hold2);
+					sum1 = sum1.add(new BigDecimal(hold2*h_[i-1]+m*delta_[i-1]*(hold3-hold2)));
 				}
-				sum1 = 0.5*sum1;
+				sum1 = new BigDecimal("0.5").multiply(sum1);
 				b[m-1] = sum1;
 				for (i=m-1;i>=1;i--) {
-					sum1 = sum1 + b[i-1]*a[m-i-1]; 
+					sum1 = sum1.add(b[i-1].multiply(a[m-i-1]));//sum1 = sum1 + b[i-1]*a[m-i-1]; 
 				}
-				sum1 = sum1/(double)m;
+				sum1 = sum1.divide(new BigDecimal(m));
 				a[m-1] = sum1;
 				k = k + 2;
 				if (lans < tol) {
@@ -239,29 +266,23 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 					dans = dans*z/(double)k;
 				}
 				pans = pans - dans;
-				sum = sum - sum1;
-				dnsty = dnsty + dans*sum1;
-				sum1 = pans*sum1;
-				prbty = prbty + sum1;
-				if (prbty<(-aoinv)) {
+				sum = sum.subtract(sum1);
+				dnsty = dnsty + dans*sum1.doubleValue();
+				sum1 = new BigDecimal(pans).multiply(sum1);
+				prbty = prbty.add(sum1);
+				if (prbty.compareTo(aoinv.negate()) < 0) {
 					res_ = -3.0;
 					ifault_ = 3;
 					return;
 				}
-				
-				if(m == 1 || m % 1000 == 0){
-					System.out.println(sum + "\t" + sum1 + "\t" + lans + "\t"  + dans + "\t" + pans + "\t" + dnsty  + "\t" + prbty);
-				}
-				
-				if (Math.abs(pans*sum) < eps2) {
-					if (Math.abs(sum1) < eps2) {
+				if (new BigDecimal(pans).multiply(sum).abs().compareTo(eps2) < 0) {
+					if (sum1.abs().compareTo(eps2) < 0) {
 						ifault_ = 0; // this is overwritten below (ifault_=4) -- I now changed the code below
 						// I COMMENTED THIS SO WE CAN See IF THERE WAS CONVERGENCE OR NOT -daniel
 						//m = maxit_+1; // and WHY would you do that?
 						break;
 					}
 				}
-				
 			}
 
 			if (m > maxit_)  // I ADDED THIS IF, OTHERWISE IT MAKES NO SENSE -daniel
@@ -269,18 +290,23 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 			// Check if I understood correctly
 			assert ifault_ == 0 || ifault_ == 4;
 			
-			System.out.println("ao : " + ao);
+			System.out.println("ao: " + ao);
 			System.out.println("prbty: " + prbty);
 			
-			dnsty = ao*dnsty/(bbeta+bbeta);
-			prbty = ao*prbty;
+			
+			prbty = ao.multiply(prbty);
+			
+			System.out.println("Big decimal p-value: " + new BigDecimal("1").subtract(prbty).doubleValue());
+			
+			//dnsty = ao*dnsty/(bbeta+bbeta);
+			//prbty = ao*prbty.doubleValue();
 			
 			// With my edits above, this now makes a bit mores sense
-			if (prbty<0.0 || prbty>1.0) {ifault_ = ifault_ + 5; // why the ... would they write it like this? I.e., ifault_ = 9
+			if (prbty.doubleValue()<0.0 || prbty.doubleValue()>1.0) {ifault_ = ifault_ + 5; // why the ... would they write it like this? I.e., ifault_ = 9
 			} else {
 				if (dnsty<0.0) ifault_ = ifault_ + 6;
 			}
-			res_ = prbty;
+			res_ = prbty.doubleValue();
 		}
 
 		return;

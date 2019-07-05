@@ -546,11 +546,11 @@ public class GenePvalueCalculator {
 				
 				if(x < 20){
 					//permutations not able to estimate p-value
-					if(farebrother == null){
-						farebrother = new Farebrother(lambdas);
+					if(davies == null){
+						davies = new Davies(lambdas);
 					}
-					double farebrotherP = farebrother.probQsupx(geneChi2Sum);
-					if(farebrother.getIfault() != 0){
+					double farebrotherP = davies.probQsupx(geneChi2Sum);
+					if(davies.getIfault() != 0){
 						//farebrother failed best we can do is permutation p-value
 						p = (x + 0.5) / (double) (currentNumberPermutationsForThisTraitGene + 1);
 						countBasedPvalueOnPermutationsAfterFailedFarebrother++;

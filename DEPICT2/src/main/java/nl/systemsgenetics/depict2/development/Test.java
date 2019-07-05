@@ -5,9 +5,14 @@
  */
 package nl.systemsgenetics.depict2.development;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import ch.unil.genescore.vegas.Farebrother;
+import ch.unil.genescore.vegas.FarebrotherBigDecimal;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.DecimalFormat;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -18,7 +23,7 @@ public class Test {
 	/**
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) throws IOException, FileNotFoundException {
+	public static void main(String[] args) throws IOException, FileNotFoundException, Exception {
 
 		//System.out.println(DurationFormatUtils.formatDuration(1123456789, "H:mm:ss.S"));
 //		ChiSquaredDistribution x = new ChiSquaredDistribution(1);
@@ -83,11 +88,56 @@ public class Test {
 //
 //		System.out.println(regression.predict(11));
 //		System.out.println(4 - regression.predict(11));
+	
 
-		DecimalFormat largeIntFormatter = new DecimalFormat("###,###");
+		DoubleMatrixDataset<String, String> eigenMatrix = DoubleMatrixDataset.loadDoubleTextData("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Height_v24_special\\Height_ENSG00000197959_eigenValues.txt", '\t');
 
-		String format = largeIntFormatter.format(1000000000);
-		System.out.println(format);
+		DoubleMatrix1D eigenValues = eigenMatrix.viewCol(0).viewFlip();
+
+		final long eigenValuesLenght = eigenValues.size();
+
+		//Method below if from PASCAL to select relevant eigen values
+		double sumPosEigen = 0;
+		for (int i = 0; i < eigenValuesLenght; i++) {
+			double e = eigenValues.getQuick(i);
+			if (e > 0) {
+				sumPosEigen += e;
+			}
+		}
+
+		final double cutoff = sumPosEigen / 10000;//Only use components that explain significant part of variantion
+
+		int eigenValuesToUse = 0;
+
+		for (int i = 0; i < eigenValuesLenght; i++) {
+			sumPosEigen -= eigenValues.getQuick(i);
+			eigenValuesToUse++;
+
+			if (sumPosEigen < cutoff) {
+				break;
+			}
+		}
+
+		double[] lambdas = eigenValues.viewPart(0, eigenValuesToUse).toArray();
+		
+		System.out.println(Arrays.toString(lambdas));
+		
+		
+		
+//		FarebrotherBigDecimal f2 = new FarebrotherBigDecimal(lambdas);
+//		
+//	System.out.println(f2.probQsupx(20));
+//	System.out.println("Error: " + f2.getIfault());
+//		
+		
+		System.out.println("-----------");
+		
+		Farebrother f1 = new Farebrother(lambdas);
+		
+		System.out.println(f1.probQsupx(2000));
+		System.out.println(f1.getIfault());
+		
+		
 
 	}
 
