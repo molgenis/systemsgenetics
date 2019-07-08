@@ -9,7 +9,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
-import ch.unil.genescore.vegas.Davies;
 import ch.unil.genescore.vegas.Farebrother;
 import com.opencsv.CSVWriter;
 import java.io.File;
@@ -43,10 +42,13 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class GenePvalueCalculator {
 
+	public static final int MAX_ROUND_1_RESCUE = 100000000;
+	
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
-	private static final int PERMUTATION_STEP = 100;
+	private static final int PERMUTATION_STEP = 1000;
 	private static final int MIN_PERMUTATIONS = 10000;
+	private static final double MIN_PVALUE_FAREBROTHER = 1e-12;
 	private final int numberRandomPhenotypes;
 	//private static final int NUMBER_PERMUTATION_NULL_GWAS = 10000;
 	//private static final double NUMBER_PERMUTATION_NULL_GWAS_PLUS_1 = NUMBER_PERMUTATION_NULL_GWAS + 1;
@@ -76,7 +78,8 @@ public class GenePvalueCalculator {
 	private final int windowExtend;
 	private final double maxR;
 	private final int maxNrPermutations;
-	private final long maxNrPermutations2;
+	private final int maxNrPermutationsRescue1;
+	private final long maxNrPermutationsRescue2;
 	//private final double nrPermutationsPlus1Double;
 	private final String outputBasePath;
 	private final double[] randomChi2;
@@ -93,8 +96,8 @@ public class GenePvalueCalculator {
 	private final int[] genePValueDistributionPermuations;
 	private final int[] genePValueDistributionChi2Dist;
 	private final ProgressBar pb;
-	private final double minPvaluePermutations;
-	private final double minPvaluePermutations2;
+//	private final double minPvaluePermutations;
+//	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
 
@@ -117,16 +120,18 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, long nrPermutations, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
 		this.windowExtend = windowExtend;
 		this.maxR = maxR;
-		this.maxNrPermutations = nrPermutations < 100000000 ? (int) nrPermutations : 100000000;
-		this.maxNrPermutations2 = nrPermutations;//Long.MAX_VALUE - 1;
-		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations + 1);
-		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
+		this.maxNrPermutations = nrPermutations;
+		this.maxNrPermutationsRescue1 = nrRescuePermutation < MAX_ROUND_1_RESCUE ? (int) nrRescuePermutation : MAX_ROUND_1_RESCUE;
+		this.maxNrPermutationsRescue2 = nrRescuePermutation;
+
+//		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations2 + 1);
+//		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
 		//this.nrPermutationsPlus1Double = nrPermutations + 1;
 		this.outputBasePath = outputBasePath;
 		this.randomChi2 = randomChi2;
@@ -458,9 +463,8 @@ public class GenePvalueCalculator {
 
 		timeStop = System.currentTimeMillis();
 		timeInLoadingZscoreMatrix += (timeStop - timeStart);
-		
+
 		Farebrother farebrother = null;
-		Davies davies = null;
 
 		for (int phenoI = 0; phenoI < numberRealPheno; ++phenoI) {
 
@@ -476,56 +480,26 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				int x = 0;
+				int countNullLargerChi2ThanReal = 0;
 				int perm = 0;
-				long currentNumberPermutationsForThisTraitGene = MIN_PERMUTATIONS - PERMUTATION_STEP;
+				long currentNumberPermutationsForThisPhenoGeneCombo = MIN_PERMUTATIONS - PERMUTATION_STEP;
 
 				do {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
-					if (currentNumberPermutationsForThisTraitGene >= currentNumberPermutationsCalculated) {
+					if (currentNumberPermutationsForThisPhenoGeneCombo >= currentNumberPermutationsCalculated) {
 						runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, lambdasLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
-					currentNumberPermutationsForThisTraitGene += PERMUTATION_STEP;
+					currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-					while (++perm < currentNumberPermutationsForThisTraitGene) {
+					while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
 						if (geneChi2Sum < geneChi2SumNull[perm]) {
-							x++;
+							countNullLargerChi2ThanReal++;
 						}
 					}
 
-				} while (x < 20 && currentNumberPermutationsForThisTraitGene < maxNrPermutations);
-
-//				while (x < 10 && currentNumberPermutationsForThisTraitGene < maxNrPermutations2) {
-//					double weightedChi2Perm = 0;
-//					for (int g = -1; ++g < lambdasLength;) {
-//						//double randomZ = rnd.nextGaussian();
-//
-//						//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
-//						double v1, v2, s;
-//						do {
-//							v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
-//							v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
-//							s = v1 * v1 + v2 * v2;
-//						} while (s >= 1 || s == 0);
-//						double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
-//						double randomZ = v1 * multiplier;
-//						weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
-//
-//						if (++g < lambdasLength) {
-//							randomZ = v2 * multiplier;
-//							weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
-//						} else {
-//							break;//Will happen automaticly but would require second check
-//						}
-//
-//					}
-//					if (geneChi2Sum < weightedChi2Perm) {
-//						x++;
-//					}
-//					currentNumberPermutationsForThisTraitGene++;
-//				}
+				} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutations);
 
 //				if (currentNumberPermutationsForThisTraitGene == maxNrPermutations2) {
 //					File nullFile = new File(outputBasePath + "_" + gene.getGene() + "_nullDistribution_" + variantCorrelationsPrunedRows + "variants" + "_xIs" + x + ".txt");
@@ -543,35 +517,81 @@ public class GenePvalueCalculator {
 				timeStart = System.currentTimeMillis();
 
 				final double p;
-				
-				if(x < 20){
+
+				if (countNullLargerChi2ThanReal < 5) {
 					//permutations not able to estimate p-value
-					if(davies == null){
-						davies = new Davies(lambdas);
+					if (farebrother == null) {
+						farebrother = new Farebrother(lambdas);
 					}
-					double farebrotherP = davies.probQsupx(geneChi2Sum);
-					if(davies.getIfault() != 0){
-						//farebrother failed best we can do is permutation p-value
-						p = (x + 0.5) / (double) (currentNumberPermutationsForThisTraitGene + 1);
+					double farebrotherP = farebrother.probQsupx(geneChi2Sum);
+
+					if (farebrother.getIfault() != 0) {
+						//farebrother failed best we can do is some more permutation p-value
+
+						//First fast permutations that can be used for other phenotypes / permutations
+						do {
+							//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
+							if (currentNumberPermutationsForThisPhenoGeneCombo >= currentNumberPermutationsCalculated) {
+								runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, lambdasLength);
+								currentNumberPermutationsCalculated += PERMUTATION_STEP;
+							}
+							currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
+
+							while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+								if (geneChi2Sum < geneChi2SumNull[perm]) {
+									countNullLargerChi2ThanReal++;
+								}
+							}
+
+						} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+
+						//Fall back to slower purmtations that are not saved
+						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
+							double weightedChi2Perm = 0;
+							for (int g = -1; ++g < lambdasLength;) {
+								//double randomZ = rnd.nextGaussian();
+
+								//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
+								double v1, v2, s;
+								do {
+									v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+									v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+									s = v1 * v1 + v2 * v2;
+								} while (s >= 1 || s == 0);
+								double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
+								double randomZ = v1 * multiplier;
+								weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
+
+								if (++g < lambdasLength) {
+									randomZ = v2 * multiplier;
+									weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
+								} else {
+									break;//Will happen automaticly but would require second check
+								}
+
+							}
+							if (geneChi2Sum < weightedChi2Perm) {
+								countNullLargerChi2ThanReal++;
+							}
+							currentNumberPermutationsForThisPhenoGeneCombo++;
+						}
+						p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
 						countBasedPvalueOnPermutationsAfterFailedFarebrother++;
+						LOGGER.debug(gene.getGene() + " permutation: " + currentNumberPermutationsForThisPhenoGeneCombo + " count null larger than real: " + countNullLargerChi2ThanReal + " pvalue:" + p);
+
 					} else {
-						p = farebrotherP;
+						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
+						p = farebrotherP <= 1e-12 ? 1e-12 : farebrotherP;
 						countBasedPvalueOnFarebrother++;
 					}
 				} else {
 					countBasedPvalueOnPermutations++;
-					p = (x + 0.5) / (double) (currentNumberPermutationsForThisTraitGene + 1);
+					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
+					LOGGER.debug(gene.getGene() + " permutation: " + currentNumberPermutationsForThisPhenoGeneCombo + " count null larger than real: " + countNullLargerChi2ThanReal + " pvalue:" + p);
 				}
-				
-				LOGGER.debug(gene.getGene() + " permutation: " + currentNumberPermutationsForThisTraitGene + " count null larger than real: " + x + " pvalue:" + p);
 
-				//These can never happen with current permutations stratagy
-//				if (p == 1) {
-//					p = 0.99999d;
-//				}
-//				if (p < 1e-300d) {
-//					p = 1e-300d;
-//				}
+				
+
 				genePValueDistributionPermuations[(int) (20d * p)]++;
 				genePvalues.setElementQuick(geneI, phenoI, p);
 
@@ -585,8 +605,8 @@ public class GenePvalueCalculator {
 				if (p == 1) {
 					p = 0.99999d;
 				}
-				if (p < minPvaluePermutations2) {
-					p = minPvaluePermutations2;
+				if (p < MIN_PVALUE_FAREBROTHER) {
+					p = MIN_PVALUE_FAREBROTHER;
 				}
 
 				genePValueDistributionChi2Dist[(int) (20d * p)]++;
@@ -619,37 +639,106 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				int x = 0;
+				int countNullLargerChi2ThanReal = 0;
 				int perm = 0;
-				int currentNumberPermutations = 0;
+				long currentNumberPermutationsForThisPhenoGeneCombo = MIN_PERMUTATIONS - PERMUTATION_STEP;
 
 				do {
 
 					//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
-					if (currentNumberPermutations >= currentNumberPermutationsCalculated) {
+					if (currentNumberPermutationsForThisPhenoGeneCombo >= currentNumberPermutationsCalculated) {
 						runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, lambdasLength);
 						currentNumberPermutationsCalculated += PERMUTATION_STEP;
 					}
-					currentNumberPermutations += PERMUTATION_STEP;
+					currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-					while (++perm < currentNumberPermutations) {
+					while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
 						if (geneChi2Sum < geneChi2SumNull[perm]) {
-							x++;
+							countNullLargerChi2ThanReal++;
 						}
 					}
 
-					//LOGGER.debug("test");
-				} while (x < 20 && currentNumberPermutations < maxNrPermutations);
+				} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutations);
 
-				double p = (x + 0.5) / (double) (currentNumberPermutations + 1);
+				timeStop = System.currentTimeMillis();
+				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
 
-				//These can never happen with current permutation methods
-//				if (p == 1) {
-//					p = 0.99999d;
-//				}
-//				if (p < 1e-300d) {
-//					p = 1e-300d;
-//				}
+				timeStart = System.currentTimeMillis();
+
+				final double p;
+
+				if (countNullLargerChi2ThanReal < 5) {
+					//permutations not able to estimate p-value
+					if (farebrother == null) {
+						farebrother = new Farebrother(lambdas);
+					}
+					double farebrotherP = farebrother.probQsupx(geneChi2Sum);
+
+					if (farebrother.getIfault() != 0) {
+						//farebrother failed best we can do is some more permutation p-value
+
+						//First fast permutations that can be used for other phenotypes / permutations
+						do {
+							//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
+							if (currentNumberPermutationsForThisPhenoGeneCombo >= currentNumberPermutationsCalculated) {
+								runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, currentNumberPermutationsCalculated, currentNumberPermutationsCalculated + PERMUTATION_STEP, rnd, lambdasLength);
+								currentNumberPermutationsCalculated += PERMUTATION_STEP;
+							}
+							currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
+
+							while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+								if (geneChi2Sum < geneChi2SumNull[perm]) {
+									countNullLargerChi2ThanReal++;
+								}
+							}
+
+						} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+
+						//Fall back to slower purmtations that are not saved
+						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
+							double weightedChi2Perm = 0;
+							for (int g = -1; ++g < lambdasLength;) {
+								//double randomZ = rnd.nextGaussian();
+
+								//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
+								double v1, v2, s;
+								do {
+									v1 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+									v2 = 2 * rnd.nextDouble() - 1; // between -1 and 1
+									s = v1 * v1 + v2 * v2;
+								} while (s >= 1 || s == 0);
+								double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
+								double randomZ = v1 * multiplier;
+								weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
+
+								if (++g < lambdasLength) {
+									randomZ = v2 * multiplier;
+									weightedChi2Perm += lambdas[g] * (randomZ * randomZ);
+								} else {
+									break;//Will happen automaticly but would require second check
+								}
+
+							}
+							if (geneChi2Sum < weightedChi2Perm) {
+								countNullLargerChi2ThanReal++;
+							}
+							currentNumberPermutationsForThisPhenoGeneCombo++;
+						}
+						p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
+						countBasedPvalueOnPermutationsAfterFailedFarebrother++;
+				
+
+					} else {
+						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
+						p = farebrotherP <= 1e-12 ? 1e-12 : farebrotherP;
+						countBasedPvalueOnFarebrother++;
+					}
+				} else {
+					countBasedPvalueOnPermutations++;
+					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
+				
+				}
+				
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
 
 				timeStop = System.currentTimeMillis();
@@ -662,8 +751,8 @@ public class GenePvalueCalculator {
 				if (p == 1) {
 					p = 0.99999d;
 				}
-				if (p < minPvaluePermutations) {
-					p = minPvaluePermutations;
+				if (p < MIN_PVALUE_FAREBROTHER) {
+					p = MIN_PVALUE_FAREBROTHER;
 				}
 
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
@@ -878,7 +967,7 @@ public class GenePvalueCalculator {
 			int i;
 			while ((i = counter.getAndIncrement()) < genes.size()) {
 				try {
-					final double[] geneChi2SumNull = new double[maxNrPermutations];//The array will be recyceld. But the content will be overwritten
+					final double[] geneChi2SumNull = new double[maxNrPermutationsRescue1];//The array will be recyceld. But the content will be overwritten
 					runGene(i, geneChi2SumNull);
 					pb.step();
 				} catch (Exception ex) {

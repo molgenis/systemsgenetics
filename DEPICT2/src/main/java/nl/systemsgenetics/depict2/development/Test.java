@@ -6,13 +6,12 @@
 package nl.systemsgenetics.depict2.development;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import ch.unil.genescore.vegas.Farebrother;
-import ch.unil.genescore.vegas.FarebrotherBigDecimal;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Arrays;
-import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -84,61 +83,90 @@ public class Test {
 //		System.out.println(regression.predict(10));
 //		System.out.println(b0 + (b1 * 10));
 //		System.out.println(3 - regression.predict(10));
-//		
+//
 //
 //		System.out.println(regression.predict(11));
 //		System.out.println(4 - regression.predict(11));
-	
+		//QRDecomposition qr = new QRDecomposition(null);
+		//qr.getSolver()
+		DenseDoubleMatrix2D A = new DenseDoubleMatrix2D(6, 6);
 
-		DoubleMatrixDataset<String, String> eigenMatrix = DoubleMatrixDataset.loadDoubleTextData("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Height_v24_special\\Height_ENSG00000197959_eigenValues.txt", '\t');
-
-		DoubleMatrix1D eigenValues = eigenMatrix.viewCol(0).viewFlip();
-
-		final long eigenValuesLenght = eigenValues.size();
-
-		//Method below if from PASCAL to select relevant eigen values
-		double sumPosEigen = 0;
-		for (int i = 0; i < eigenValuesLenght; i++) {
-			double e = eigenValues.getQuick(i);
-			if (e > 0) {
-				sumPosEigen += e;
-			}
+		for (int i = 0; i < A.rows(); ++i) {
+			A.setQuick(i, i, 1);
 		}
 
-		final double cutoff = sumPosEigen / 10000;//Only use components that explain significant part of variantion
+//		A.setQuick(0, 1, -1);
+//		A.setQuick(1, 0, -1);
 
-		int eigenValuesToUse = 0;
+		System.out.println("Cor matrix");
+		System.out.println(A.toString());
 
-		for (int i = 0; i < eigenValuesLenght; i++) {
-			sumPosEigen -= eigenValues.getQuick(i);
-			eigenValuesToUse++;
+//		DoubleMatrix2D B = DoubleFactory2D.dense.identity(A.rows());
+//
+//		System.out.println("Cor identify matrix");
+//		System.out.println(B.toString());
+//
+//		DoubleMatrix2D X = B.copy();
+//		DenseDoubleQRDecomposition qr = new DenseDoubleQRDecomposition(A);
+//		System.out.println(qr.toString());
+//		qr.solve(X);
+//		DoubleMatrix2D inv = X.viewPart(0, 0, A.columns(), B.columns()).copy();
+//		System.out.println("Invers of cor matrix");
+//		System.out.println(inv.toString());
+	
+		final DenseDoubleSingularValueDecomposition svd = new DenseDoubleSingularValueDecomposition(A, true, true);
 
-			if (sumPosEigen < cutoff) {
+		System.out.println(svd.toString());
+		
+		double[] s = svd.getSingularValues();
+		
+		
+		System.out.println(Arrays.toString(s));
+		
+		final int numberOfComponents = s.length;
+		
+		int firstNonPositive;
+		for(firstNonPositive = 0 ; firstNonPositive < numberOfComponents; ++firstNonPositive ){
+			if(s[firstNonPositive] <= 0){
 				break;
 			}
 		}
-
-		double[] lambdas = eigenValues.viewPart(0, eigenValuesToUse).toArray();
 		
-		System.out.println(Arrays.toString(lambdas));
+		System.out.println(firstNonPositive);
+		
+		s = Arrays.copyOfRange(s, 0, firstNonPositive);
+		
+		System.out.println(Arrays.toString(s));
+		
+		DoubleMatrix2D v = svd.getV().viewPart(0, 0, numberOfComponents, firstNonPositive);
+		DoubleMatrix2D ut = svd.getU().viewPart(0, 0, numberOfComponents, firstNonPositive).viewDice();		
 		
 		
+		System.out.println("v");
+		System.out.println(v.toString());
+		System.out.println("u transposed");
+		System.out.println(ut.toString());
+	
+		for(int r = 0 ; r < s.length ; r++){
+			final double x = 1/ s[r];
+			System.out.println(x);
+			for(int c = 0 ; c < firstNonPositive ; c++){
+				ut.setQuick(r, c, x * ut.getQuick(r, c));
+			}
+		}
 		
-//		FarebrotherBigDecimal f2 = new FarebrotherBigDecimal(lambdas);
-//		
-//	System.out.println(f2.probQsupx(20));
-//	System.out.println("Error: " + f2.getIfault());
-//		
+		System.out.println("1/s * u transposed");
+		System.out.println(ut.toString());
 		
-		System.out.println("-----------");
+		DoubleMatrix2D inv = v.zMult(ut, null);
 		
-		Farebrother f1 = new Farebrother(lambdas);
+		System.out.println(inv.toString());
 		
-		System.out.println(f1.probQsupx(2000));
-		System.out.println(f1.getIfault());
 		
+		System.out.println("Function");
 		
 
 	}
+	
 
 }

@@ -75,8 +75,8 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 		for (int i=0; i<lambda.length; i++)
 			delta_[i] = 0;
 		
-		eps_ = 1e-20;
-		maxit_ = 5000000;	
+		eps_ = 1e-16;
+		maxit_ = 1000000;
 		mode_ = -1.0;
 	}
 
@@ -169,13 +169,13 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 			theta[i-1] = 1.0;
 		}
 		
-		System.out.println("sum: " + sum);
-		System.out.println("sum1: " +  sum1);
-		System.out.println("hold: " + hold);
+//		System.out.println("sum: " + sum);
+//		System.out.println("sum1: " +  sum1);
+//		System.out.println("hold: " + hold);
 			    
 		ao = Math.exp(0.5*(Math.log(sum)-sum1));
 		
-		System.out.println("ao:" + ao);
+//		System.out.println("ao:" + ao);
 		
 		if (ao <= 0.0) {
 			res_ = 0.0;
@@ -249,9 +249,9 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 					return;
 				}
 				
-				if(m == 1 || m % 1000 == 0){
-					System.out.println(sum + "\t" + sum1 + "\t" + lans + "\t"  + dans + "\t" + pans + "\t" + dnsty  + "\t" + prbty);
-				}
+//				if(m == 1 || m % 1000 == 0){
+//					System.out.println(sum + "\t" + sum1 + "\t" + lans + "\t"  + dans + "\t" + pans + "\t" + dnsty  + "\t" + prbty);
+//				}
 				
 				if (Math.abs(pans*sum) < eps2) {
 					if (Math.abs(sum1) < eps2) {
@@ -267,11 +267,13 @@ public class Farebrother implements WeightedChisquareAlgorithm  {
 			if (m > maxit_)  // I ADDED THIS IF, OTHERWISE IT MAKES NO SENSE -daniel
 				ifault_ = 4;
 			// Check if I understood correctly
-			assert ifault_ == 0 || ifault_ == 4;
+			if(!(ifault_ == 0 || ifault_ == 4)){
+				throw new RuntimeException();
+			}
 			
-			System.out.println("ao : " + ao);
-			System.out.println("prbty: " + prbty);
-			
+//			System.out.println("ao : " + ao);
+//			System.out.println("prbty: " + prbty);
+//			
 			dnsty = ao*dnsty/(bbeta+bbeta);
 			prbty = ao*prbty;
 			

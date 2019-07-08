@@ -40,7 +40,8 @@ public class Depict2Options {
 	private final File outputBasePath;
 	private final File geneInfoFile;
 	private final File gwasZscoreMatrixPath;
-	private final long numberOfPermutations;
+	private final int numberOfPermutations;
+	private final long numberOfPermutationsRescue;
 	private final int windowExtend;
 	private final double maxRBetweenVariants;
 	private final File logFile;
@@ -126,7 +127,19 @@ public class Depict2Options {
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Number of permutations");
+		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values. Recommended: 100,000; min: 10,000; max: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
+		OptionBuilder.withLongOpt("permutations");
+		OPTIONS.addOption(OptionBuilder.create("p"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Number of permutations to use as fallback incase Farebrother's RUBEN algorithm failed. Optional but recommende to do atleast: 100,000,000. ");
+		OptionBuilder.withLongOpt("permutationsRescue");
+		OPTIONS.addOption(OptionBuilder.create("pr"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values ");
 		OptionBuilder.withLongOpt("permutations");
 		OPTIONS.addOption(OptionBuilder.create("p"));
 
@@ -333,11 +346,33 @@ public class Depict2Options {
 			} else {
 
 				try {
-					numberOfPermutations = Long.parseLong(commandLine.getOptionValue('p'));
+					numberOfPermutations = Integer.parseInt(commandLine.getOptionValue('p'));
 				} catch (NumberFormatException e) {
 					throw new ParseException("Error parsing --permutations \"" + commandLine.getOptionValue('p') + "\" is not an int");
 				}
+				
+				if(numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE){
+					throw new ParseException("Error parsing --permutations max is: " + GenePvalueCalculator.MAX_ROUND_1_RESCUE);
+				}
+	
 			}
+			
+			if (!commandLine.hasOption("pr")) {
+				numberOfPermutationsRescue = numberOfPermutations;
+			} else {
+
+				try {
+					numberOfPermutationsRescue = Long.parseLong(commandLine.getOptionValue("pr"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --permutationsRescue \"" + commandLine.getOptionValue('p') + "\" is not an long");
+				}
+				
+				if(numberOfPermutationsRescue < numberOfPermutations){
+					throw new ParseException("--permutationsRescue must be atleast equal to --permutations. If no extra permutations are wanted this option can be omited");
+				}
+				
+			}
+
 
 			if (!commandLine.hasOption("w")) {
 				throw new ParseException("--window not specified");
@@ -408,6 +443,7 @@ public class Depict2Options {
 			genotypeSamplesFile = null;
 			maxRBetweenVariants = 0d;
 			numberOfPermutations = 0;
+			numberOfPermutationsRescue = 0;
 			windowExtend = 0;
 
 		} else {
@@ -417,6 +453,7 @@ public class Depict2Options {
 			genotypeSamplesFile = null;
 			maxRBetweenVariants = 0d;
 			numberOfPermutations = 0;
+			numberOfPermutationsRescue = 0;
 			windowExtend = 0;
 		}
 
@@ -504,7 +541,8 @@ public class Depict2Options {
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
 				LOGGER.info(" * Gene window extend in bases: " + LARGE_INT_FORMAT.format(windowExtend));
-				LOGGER.info(" * Max number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
+				LOGGER.info(" * Initial number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
+				LOGGER.info(" * Max number of rescue permutations to calculate gene p-values if RUBEN has failed: " + LARGE_INT_FORMAT.format(numberOfPermutationsRescue));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
 
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
@@ -573,7 +611,7 @@ public class Depict2Options {
 		return gwasZscoreMatrixPath.getPath();
 	}
 
-	public long getNumberOfPermutations() {
+	public int getNumberOfPermutations() {
 		return numberOfPermutations;
 	}
 
@@ -647,6 +685,10 @@ public class Depict2Options {
 
 	public boolean isExcludeHla() {
 		return excludeHla;
+	}
+
+	public long getNumberOfPermutationsRescue() {
+		return numberOfPermutationsRescue;
 	}
 
 }
