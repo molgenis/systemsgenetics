@@ -499,7 +499,7 @@ public class GenePvalueCalculator {
 						}
 					}
 
-				} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutations);
+				} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutations);
 
 //				if (currentNumberPermutationsForThisTraitGene == maxNrPermutations2) {
 //					File nullFile = new File(outputBasePath + "_" + gene.getGene() + "_nullDistribution_" + variantCorrelationsPrunedRows + "variants" + "_xIs" + x + ".txt");
@@ -518,7 +518,7 @@ public class GenePvalueCalculator {
 
 				final double p;
 
-				if (countNullLargerChi2ThanReal < 5) {
+				if (countNullLargerChi2ThanReal < 20) {
 					//permutations not able to estimate p-value
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
@@ -543,7 +543,7 @@ public class GenePvalueCalculator {
 								}
 							}
 
-						} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
 
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
@@ -658,7 +658,7 @@ public class GenePvalueCalculator {
 						}
 					}
 
-				} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutations);
+				} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutations);
 
 				timeStop = System.currentTimeMillis();
 				timeInComparingRealChi2ToPermutationChi2 += (timeStop - timeStart);
@@ -667,7 +667,7 @@ public class GenePvalueCalculator {
 
 				final double p;
 
-				if (countNullLargerChi2ThanReal < 5) {
+				if (countNullLargerChi2ThanReal < 20) {
 					//permutations not able to estimate p-value
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
@@ -692,7 +692,7 @@ public class GenePvalueCalculator {
 								}
 							}
 
-						} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
 
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
@@ -725,16 +725,16 @@ public class GenePvalueCalculator {
 							currentNumberPermutationsForThisPhenoGeneCombo++;
 						}
 						p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
-						countBasedPvalueOnPermutationsAfterFailedFarebrother++;
+						//countBasedPvalueOnPermutationsAfterFailedFarebrother++;
 				
 
 					} else {
 						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
 						p = farebrotherP <= 1e-12 ? 1e-12 : farebrotherP;
-						countBasedPvalueOnFarebrother++;
+						//countBasedPvalueOnFarebrother++;
 					}
 				} else {
-					countBasedPvalueOnPermutations++;
+					//countBasedPvalueOnPermutations++;
 					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
 				
 				}
