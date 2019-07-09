@@ -93,7 +93,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public int numberOfVariantsToBuffer = 1000;
 	public boolean skipFDRCalculation = false;
 	public boolean usemd5hash = true;
-	public boolean sortsnps = true;
+	public boolean sortsnps = false;
 	public boolean dumpeverythingtodisk;
 	public Integer stopWithPermutation;
 

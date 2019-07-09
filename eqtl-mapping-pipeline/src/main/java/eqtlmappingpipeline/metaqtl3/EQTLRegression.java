@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import umcg.genetica.console.MultiThreadProgressBar;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.trityper.*;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.stream.IntStream;
 
 /**
  * @author harmjan
@@ -118,15 +120,15 @@ public class EQTLRegression {
 		}
 
 		//Remove multiple SNPs acting on one single probe:
-		for (int d = 0; d < gg.length; d++) {
+		MultiThreadProgressBar pb = new MultiThreadProgressBar(gg.length);
+		IntStream.range(0, gg.length).parallel().forEach(d -> {
 			HashSet<EQTL> hashEQTLsMultipleRegressionRegressedOut = new HashSet<EQTL>();
 			HashMap<Integer, Boolean> snpPassesQC = new HashMap<Integer, Boolean>();
 
 			TriTyperGeneticalGenomicsDataset currentDataset = gg[d];
 			String[] probes = gg[d].getExpressionData().getProbes();
 			System.out.print("Dataset:\t" + gg[d].getSettings().name);
-			ProgressBar pgb = new ProgressBar(probes.length);
-
+			pb.setSubtasks(d, probes.length);
 			for (int p = 0; p < probes.length; p++) {
 
 				ArrayList<EQTL> covariatesForThisProbe = hashProbesCovariates.get(probes[p]);
@@ -146,10 +148,20 @@ public class EQTLRegression {
 								// load SNP
 
 								SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);
-								ggSNPLoaders[d].loadGenotypes(currentSNP);
+								try {
+									ggSNPLoaders[d].loadGenotypes(currentSNP);
+								} catch (IOException ex) {
+									ex.printStackTrace();
+									System.exit(-1);
+								}
 
 								if (ggSNPLoaders[d].hasDosageInformation()) {
-									ggSNPLoaders[d].loadDosage(currentSNP);
+									try {
+										ggSNPLoaders[d].loadDosage(currentSNP);
+									} catch (IOException ex) {
+										ex.printStackTrace();
+										System.exit(-1);
+									}
 								}
 
 								if (currentSNP.passesQC()) {
@@ -190,6 +202,7 @@ public class EQTLRegression {
 										snpPassesQC.put(snpId, false);
 									}
 								} else {
+
 									snpPassesQC.put(snpId, false);
 									currentSNP.clearGenotypes();
 								}
@@ -463,12 +476,15 @@ public class EQTLRegression {
 						s.clearGenotypes();
 					}
 				}
-				pgb.iterate();
+				pb.iterate(d);
+				if (p % 1000 == 0) {
+					pb.display();
+				}
 			}
-			pgb.print();
-			pgb.close();
+			pb.complete(d);
 			System.out.println("");
-		}
+		});
+		pb.allCompleted();
 
 		for (int ds = 0; ds < gg.length; ds++) {
 //            gg[ds].getExpressionData().calcMeanAndVariance();

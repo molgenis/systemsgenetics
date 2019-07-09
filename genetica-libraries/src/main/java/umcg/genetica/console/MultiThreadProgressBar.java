@@ -43,9 +43,9 @@ public class MultiThreadProgressBar {
 			}
 			
 			if (subtasks[q] == -1) {
-				outln.append("NO START");
+				outln.append("N");
 			} else if (complete[q]) {
-				outln.append("COMPLETE");
+				outln.append("C");
 			} else {
 				double perc = (double) ctrs[q] / subtasks[q];
 				outln.append(defaultFormat.format(perc));

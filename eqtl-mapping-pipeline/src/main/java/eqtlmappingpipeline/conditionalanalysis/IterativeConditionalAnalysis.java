@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * @author harm-jan
@@ -85,7 +87,8 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 					
 					// regress significant eQTLs
 					eqr.regressOutEQTLEffects(toRegress, m_gg);
-					
+
+					numAvailableInds = 0;
 					// recalculate mean and SD
 					for (int i = 0; i < m_gg.length; i++) {
 						if (!m_settings.performParametricAnalysis) {
@@ -124,7 +127,8 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 			
 			// regress significant eQTLs
 			eqr.regressOutEQTLEffects(toRegress, m_gg);
-			
+
+			numAvailableInds = 0;
 			// recalculate mean and SD
 			for (int i = 0; i < m_gg.length; i++) {
 				if (!m_settings.performParametricAnalysis) {
@@ -161,39 +165,49 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 		int numDatasets = m_settings.datasetSettings.size();
 		m_gg = new TriTyperGeneticalGenomicsDataset[numDatasets];
 		numAvailableInds = 0;
-		for (int i = 0; i < numDatasets; i++) {
-			
+		IntStream.range(0,numDatasets).parallel().forEach(i->{
 			System.out.println("- Loading dataset: " + m_settings.datasetSettings.get(i).name + "");
 			System.out.println(ConsoleGUIElems.LINE);
-			m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i));
-		}
-		
-		
-		for (int i = 0; i < numDatasets; i++) {
+			try {
+				m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+
+		AtomicInteger avinds = new AtomicInteger();
+
+		IntStream.range(0,numDatasets).parallel().forEach(i->{
 			if (!m_settings.performParametricAnalysis) {
 				m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
 			}
 			m_gg[i].getExpressionData().calcAndSubtractMean();
 			m_gg[i].getExpressionData().calcMeanAndVariance();
-			numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
-		}
-		
+			avinds.getAndAdd(m_gg[i].getExpressionToGenotypeIdArray().length);
+//			numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
+		});
+		numAvailableInds = avinds.get();
+
 		if (m_settings.regressOutEQTLEffectFileName != null && m_settings.regressOutEQTLEffectFileName.trim().length() > 0) {
 			EQTLRegression eqr = new EQTLRegression();
 			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg);
-			for (int i = 0; i < numDatasets; i++) {
+			numAvailableInds = 0;
+			AtomicInteger avinds2 = new AtomicInteger();
+
+			IntStream.range(0,numDatasets).parallel().forEach(i->{
 				if (!m_settings.performParametricAnalysis) {
 					m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
 				}
 				m_gg[i].getExpressionData().calcAndSubtractMean();
 				m_gg[i].getExpressionData().calcMeanAndVariance();
-				numAvailableInds += m_gg[i].getExpressionToGenotypeIdArray().length;
-			}
+				avinds.getAndAdd(m_gg[i].getExpressionToGenotypeIdArray().length);
+
+			});
+			numAvailableInds = avinds.get();
 		}
 		
 		System.out.println(ConsoleGUIElems.LINE);
 		System.out.println("");
-		
 		
 		System.out.println("Accumulating available data...");
 		System.out.print(ConsoleGUIElems.LINE);

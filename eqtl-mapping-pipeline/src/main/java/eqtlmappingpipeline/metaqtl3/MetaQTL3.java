@@ -333,7 +333,7 @@ public class MetaQTL3 {
 			}
 			EQTLRegression eqr = new EQTLRegression();
 			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectsSaveOutput, m_gg);
-
+			numAvailableInds = 0;
 			// shouldn't we re-rank?
 			for (int i = 0; i < numDatasets; i++) {
 				if (!m_settings.performParametricAnalysis) {
