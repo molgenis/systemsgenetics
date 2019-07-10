@@ -221,7 +221,7 @@ public class Depict2 {
 
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
+		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
 
 		LOGGER.info("Prepared reference null distribution with " + LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
