@@ -232,6 +232,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Exclude HLA region during pathway enrichments (chr6 20mb - 40mb)");
 		OptionBuilder.withLongOpt("excludeHla");
 		OPTIONS.addOption(OptionBuilder.create("eh"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Eigenvectors for gene score reconstruction");
+		OptionBuilder.withLongOpt("eigen");
+		OPTIONS.addOption(OptionBuilder.create("e"));
 
 	}
 

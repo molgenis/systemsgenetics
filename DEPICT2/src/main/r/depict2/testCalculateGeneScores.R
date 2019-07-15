@@ -1,7 +1,7 @@
 
 setwd("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
-trait = "Alzheimers_v29/Alzheimers"
+trait = "Height_V29/Alzheimers"
 
 library(readr)
 

@@ -227,7 +227,7 @@ public class GenePvalueCalculator {
 
 		for (int i = 0; i < Depict2Options.getNumberOfThreadsToUse(); ++i) {
 
-			Thread worker = new Thread(new calculatorThread(count));
+			Thread worker = new Thread(new CalculatorThread(count));
 			worker.start();
 			worker.setUncaughtExceptionHandler(threadErrorHandler);
 			threads.add(worker);
@@ -953,11 +953,11 @@ public class GenePvalueCalculator {
 
 	}
 
-	private class calculatorThread implements Runnable {
+	private class CalculatorThread implements Runnable {
 
 		private final AtomicInteger counter;
 
-		public calculatorThread(AtomicInteger counter) {
+		public CalculatorThread(AtomicInteger counter) {
 			this.counter = counter;
 		}
 
