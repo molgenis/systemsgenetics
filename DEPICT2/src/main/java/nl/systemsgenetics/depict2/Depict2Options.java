@@ -233,11 +233,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("excludeHla");
 		OPTIONS.addOption(OptionBuilder.create("eh"));
 		
-		OptionBuilder.withArgName("path");
+		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Eigenvectors for gene score reconstruction");
-		OptionBuilder.withLongOpt("eigen");
-		OPTIONS.addOption(OptionBuilder.create("e"));
+		OptionBuilder.withValueSeparator();
+		OptionBuilder.withDescription("Eigenvectors and princial componentens [path]_ev.txt & [path]_pc.txt");
+		OptionBuilder.withLongOpt("pca");
+		OPTIONS.addOption(OptionBuilder.create("pca"));
 
 	}
 
@@ -336,8 +337,11 @@ public class Depict2Options {
 					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an int");
 				}
 			}
+			
+			pathwayDatabases = parsePd(commandLine);
 
 		} else {
+			pathwayDatabases = null;
 			permutationGeneCorrelations = 0;
 			permutationPathwayEnrichment = 0;
 			genePruningR = 0;
@@ -434,11 +438,7 @@ public class Depict2Options {
 
 			}
 
-			pathwayDatabases = parsePd(commandLine);
-
 		} else if (mode == Depict2Mode.RUN2) {
-
-			pathwayDatabases = parsePd(commandLine);
 
 			if (pathwayDatabases.isEmpty()) {
 				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN2");
@@ -453,7 +453,6 @@ public class Depict2Options {
 			windowExtend = 0;
 
 		} else {
-			pathwayDatabases = null;
 			genotypeBasePath = null;
 			genotypeType = null;
 			genotypeSamplesFile = null;
