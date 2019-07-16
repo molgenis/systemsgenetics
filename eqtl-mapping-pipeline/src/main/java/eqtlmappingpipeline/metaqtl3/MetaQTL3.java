@@ -650,7 +650,7 @@ public class MetaQTL3 {
 			snpsArr[s] = new InSNP(snp, chr, pos);
 		});
 
-		if (m_gg.length > 1) {
+		if (m_gg.length > 1 && m_settings.sortsnps) {
 			Arrays.parallelSort(snpsArr);
 		}
 
@@ -704,7 +704,7 @@ public class MetaQTL3 {
 					}
 				}
 			}
-			nrShared[ct-1].getAndIncrement();
+			nrShared[ct - 1].getAndIncrement();
 
 			// remove snp if not present in at least n datasets
 			if (ct < m_settings.requireAtLeastNumberOfDatasets) {

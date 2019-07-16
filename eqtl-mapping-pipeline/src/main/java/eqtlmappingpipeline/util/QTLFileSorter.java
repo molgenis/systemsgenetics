@@ -23,22 +23,23 @@ import java.util.Objects;
  * @author harmjan
  */
 public class QTLFileSorter {
-	
+
 	public enum SORTBY {
 		Z, POS
 	}
-	
+
 	public void run(String efile, String outfile, SORTBY s) throws IOException {
 		System.out.println("Loading: " + efile);
-		
+
 		TextFile tf = new TextFile(efile, TextFile.R);
-		ArrayList<QTLObj> eQtls = new ArrayList<>(1000000);
+		int cap = 2500000;
+		ArrayList<QTLObj> eQtls = new ArrayList<>(cap);
 		int ctr = 0;
 		int total = 0;
 		tf.readLine();
 		String ln = tf.readLine();
 		while (ln != null) {
-			if (eQtls.size() == 1000000) {
+			if (eQtls.size() == cap) {
 				if (eQtls != null) {
 					Collections.sort(eQtls, new QTLComparator(s));
 					System.out.println("Writing: " + eQtls.size() + " to batch " + ctr);
@@ -51,28 +52,28 @@ public class QTLFileSorter {
 				}
 				eQtls = new ArrayList<>();
 			}
-			
-			
+
+
 			String[] elems = ln.split("\t");
 			double z = Math.abs(Double.parseDouble(elems[10]));
 			if (!Double.isNaN(z) && Double.isFinite(z)) {
-				
+
 				byte chr = ChrAnnotation.parseChr(elems[2]);
 				Integer pos = Integer.parseInt(elems[3]);
-				
+
 				QTLObj obj = new QTLObj(z, chr, pos, ln, s);
 				eQtls.add(obj);
 				total++;
 			} else {
 //                System.out.println("Z == NaN: " + z + "\t" + ln);
 			}
-			
+
 			ln = tf.readLine();
 		}
-		
+
 		tf.close();
-		
-		
+
+
 		if (eQtls.size() > 0) {
 			Collections.sort(eQtls, new QTLComparator(s));
 			System.out.println("Writing: " + eQtls.size() + " to batch " + ctr);
@@ -84,9 +85,9 @@ public class QTLFileSorter {
 			ctr++;
 		}
 		eQtls = null;
-		
+
 		System.out.println(total + " eqtls over " + ctr + " batches");
-		
+
 		// merge batch files
 		TextFile[] tfs = new TextFile[ctr];
 		String[][] lastlnelems = new String[ctr][];
@@ -102,15 +103,15 @@ public class QTLFileSorter {
 				zarr[c] = Math.abs(Double.parseDouble(lastlnelems[c][3]));
 			}
 		}
-		
+
 		boolean done = false;
 		QTLTextFile out = new QTLTextFile(outfile, QTLTextFile.W);
-		
+
 		int written = 0;
 		while (!done) {
-			
+
 			if (s.equals(SORTBY.Z)) {
-				
+
 				double maxZ = 0;
 				// determine max ln
 				Integer maxc = null;
@@ -123,7 +124,7 @@ public class QTLFileSorter {
 						}
 					}
 				}
-				
+
 				// write selected line
 				if (maxc != null) {
 					out.writeln(Strings.concat(lastlnelems[maxc], Strings.tab));
@@ -142,7 +143,7 @@ public class QTLFileSorter {
 				}
 			} else {
 				double maxZ = Double.MAX_VALUE;
-				
+
 				// determine max ln
 				Integer maxc = null;
 				for (int c = 0; c < ctr; c++) {
@@ -154,7 +155,7 @@ public class QTLFileSorter {
 						}
 					}
 				}
-				
+
 				// write selected line
 				if (maxc != null) {
 					out.writeln(Strings.concat(lastlnelems[maxc], Strings.tab));
@@ -174,26 +175,26 @@ public class QTLFileSorter {
 			}
 		}
 		out.close();
-		
+
 		for (int c = 0; c < ctr; c++) {
 			tfs[c].close();
 		}
-		
+
 		for (int c = 0; c < ctr; c++) {
 			File f = new File(outfile + "-tmp-" + c + ".txt.gz");
 			f.delete();
 		}
 		System.out.println("Done sorting");
 	}
-	
-	
+
+
 	class QTLObj {
 		double z;
 		String ln;
 		SORTBY s;
 		int pos;
 		byte chr;
-		
+
 		public QTLObj(double z, byte chr, int pos, String ln, SORTBY s) {
 			this.z = z;
 			this.ln = ln;
@@ -201,12 +202,12 @@ public class QTLFileSorter {
 			this.chr = chr;
 			this.pos = pos;
 		}
-		
+
 		@Override
 		public boolean equals(Object o) {
-			
+
 			if (s.equals(SORTBY.Z)) {
-				
+
 				if (this == o) return true;
 				if (o == null || getClass() != o.getClass()) return false;
 				QTLObj QTLZObj = (QTLObj) o;
@@ -214,14 +215,14 @@ public class QTLFileSorter {
 			} else {
 				if (this == o) return true;
 				if (o == null || getClass() != o.getClass()) return false;
-				
+
 				QTLObj qtlPosObj = (QTLObj) o;
-				
+
 				if (pos == qtlPosObj.pos && chr == qtlPosObj.chr) return true;
 				return false;
 			}
 		}
-		
+
 		@Override
 		public int hashCode() {
 			if (s.equals(SORTBY.Z)) {
@@ -233,17 +234,17 @@ public class QTLFileSorter {
 			}
 		}
 	}
-	
+
 	class QTLComparator implements Comparator<QTLObj> {
 		SORTBY s;
-		
+
 		QTLComparator(SORTBY s) {
 			this.s = s;
 		}
-		
+
 		@Override
 		public int compare(QTLObj o1, QTLObj o2) {
-			
+
 			if (s.equals(SORTBY.Z)) {
 				if (o1.equals(o2)) {
 
@@ -264,7 +265,7 @@ public class QTLFileSorter {
 				if (o1.equals(o2)) {
 					return 0;
 				}
-				
+
 				if (o1.chr > o2.chr) {
 					return -1;
 				} else if (o1.chr < o2.chr) {
@@ -280,6 +281,6 @@ public class QTLFileSorter {
 			return 0;
 		}
 	}
-	
-	
+
+
 }

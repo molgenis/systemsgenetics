@@ -12,6 +12,7 @@ import umcg.genetica.math.PCA;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Regression;
+import umcg.genetica.text.Strings;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -137,9 +138,9 @@ public class EQTLRegression {
 					ArrayList<EQTL> eventualListOfEQTLs = new ArrayList<EQTL>();
 					ArrayList<SNP> snpsForProbe = new ArrayList<SNP>();
 					ArrayList<double[]> xs = new ArrayList<double[]>();
-					ArrayList<Double> meanxs = new ArrayList<Double>();
 
 
+					// preload SNPs
 					for (EQTL e : covariatesForThisProbe) {
 						if (!hashEQTLsMultipleRegressionRegressedOut.contains(e)) {
 							Integer snpId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
@@ -190,19 +191,17 @@ public class EQTLRegression {
 											if (x[i] != -1) {
 												x[i] -= meanX;
 											} else {
-												x[i] = 0d; // replace missing values with mean (which is now 0)
+												x[i] = 0; // replace missing values with mean (which is now 0)
 											}
 										}
 										eventualListOfEQTLs.add(e);
 										snpsForProbe.add(currentSNP);
 										xs.add(x);
-										meanxs.add(meanX);
 										snpPassesQC.put(snpId, true);
 									} else {
 										snpPassesQC.put(snpId, false);
 									}
 								} else {
-
 									snpPassesQC.put(snpId, false);
 									currentSNP.clearGenotypes();
 								}
@@ -216,7 +215,6 @@ public class EQTLRegression {
 
 						int[] expressionToGenotypeId = currentDataset.getExpressionToGenotypeIdArray();
 						double[] x = xs.get(0);
-						double meanX = meanxs.get(0);
 
 						//Get the expression data:
 						double[][] rawData = currentDataset.getExpressionData().getMatrix();
@@ -230,14 +228,14 @@ public class EQTLRegression {
 						int totalGGSamples = currentDataset.getTotalGGSamples();
 						if (nrSamplesWGenotypeData == totalGGSamples) {
 							//All genotypes have been succesfully called, use quick approach:
-							meanY = currentDataset.getExpressionData().getProbeMean()[p];
-							varianceY = currentDataset.getExpressionData().getProbeVariance()[p];
+							meanY = JSci.maths.ArrayMath.mean(y);
+							varianceY = JSci.maths.ArrayMath.variance(y);
 							for (int s = 0; s < totalGGSamples; s++) {
 								y[s] = rawData[p][s] - meanY;
 							}
 						} else {
 
-							//Not all genotypes have been succesfully called, use slow approach:
+							// Not all genotypes have been succesfully called, use slow approach:
 							int itr = 0;
 							for (int s = 0; s < rawData[p].length; s++) {
 								int genotypeId = expressionToGenotypeId[s];
@@ -260,6 +258,7 @@ public class EQTLRegression {
 						}
 
 						//Get regression coefficient:
+
 						double[] rc = Regression.getLinearRegressionCoefficients(x, y);
 
 						double correlation = JSci.maths.ArrayMath.correlation(x, y);
@@ -284,15 +283,16 @@ public class EQTLRegression {
 
 							//Correct for missing genotypes, first determine average genotype of called samples:
 //                           int[] indWGA = currentDataset.getWGAGenotypeIDs();
+							double[] genotypes = xs.get(0);
 							for (int s = 0; s < totalGGSamples; s++) {
 								int ind = expressionToGenotypeId[s];
 								if (ind != -1) {
-									double valX = currentSNP.getGenotypes()[ind];
-									if (valX == -1) {
-										valX = 0;
-									} else {
-										valX -= meanX;
-									}
+									double valX = genotypes[ind]; // currentSNP.getGenotypes()[ind];
+//									if (valX == -1) {
+//										valX = 0;
+//									} else {
+//										valX -= meanX;
+//									}
 									rawDataUpdated[s] = (double) rawData[p][s] - valX * rc[0];
 								}
 							}
@@ -316,9 +316,7 @@ public class EQTLRegression {
 
 					} else if (eventualListOfEQTLs.size() > 1) {
 
-
 						// use multiple linear regression via PCA
-
 						hashEQTLsMultipleRegressionRegressedOut.addAll(eventualListOfEQTLs);
 
 						int nrSNPs = snpsForProbe.size();
@@ -334,6 +332,7 @@ public class EQTLRegression {
 
 						//Calculate covariance matrix:
 						double[][] correlationMatrix = new double[nrSNPs][nrSNPs];
+						int[][] sampleSizeMatrix = new int[nrSNPs][nrSNPs];
 						double sampleCountMinusOne = totalGGSamples - 1;
 
 						for (int f = 0; f < nrSNPs; f++) {
@@ -343,18 +342,24 @@ public class EQTLRegression {
 
 								double covarianceInterim = 0;
 								for (int h = 0; h < totalGGSamples; h++) {
-									if (dataMatrix[f][h] > -1 && dataMatrix[g][h] > -1) {
+
+									// assume missing values are corrected for here.
+//									if (dataMatrix[f][h] > -1 && dataMatrix[g][h] > -1) {
 										covarianceInterim += dataMatrix[f][h] * dataMatrix[g][h];
 										nrcalledforbothsnps++;
-									}
+//									}
 								}
 
 								double covariance = covarianceInterim / (nrcalledforbothsnps - 1);
 								correlationMatrix[f][g] = covariance;
 								correlationMatrix[g][f] = covariance;
+								sampleSizeMatrix[f][g] = nrcalledforbothsnps;
+								sampleSizeMatrix[g][f] = nrcalledforbothsnps;
+//								System.out.println(f + "\t" + g + "\t" + covariance + "\t" + nrcalledforbothsnps);
 							}
 						}
 
+//						System.exit(-1);
 						//Perform eigenvalue decomposition:
 						Jama.EigenvalueDecomposition eig = PCA.eigenValueDecomposition(correlationMatrix);
 						double[][] eigenArrayLists = new double[correlationMatrix.length][correlationMatrix.length];
@@ -383,6 +388,7 @@ public class EQTLRegression {
 						//All genotypes have been succesfully called:
 						double meanYOriginal = expresionData.getProbeMean()[p];
 						double varianceYOriginal = expresionData.getProbeVariance()[p];
+
 						System.arraycopy(rawData[p], 0, y, 0, totalGGSamples);
 
 						boolean[] regressOutPCA = new boolean[nrSNPs];
@@ -430,9 +436,96 @@ public class EQTLRegression {
 						}
 						if (propExplainedVarianceTrait < 0) {
 							propExplainedVarianceTrait = 0;
-						}
-						explainedVariancePerEQTLProbe[d][(int) Math.round(propExplainedVarianceTrait * 100d)]++;
+						} else if (propExplainedVarianceTrait > 1) {
 
+							System.out.println("Warning: proportion of explained variance > 100%\n" +
+									"Explained variance: " + propExplainedVarianceTrait + "\tDataset: " + gg[d].getSettings().name + "\tTrait: " + probes[p]);
+							System.out.println("Affected QTL: ");
+							for (EQTL s : covariatesForThisProbe) {
+								System.out.println(s.getRsName() + "-" + s.getProbe());
+							}
+
+
+							System.out.println("Offending PCs:");
+							propExplainedVarianceTrait = 0;
+							for (int pca = 0; pca < nrSNPs; pca++) {
+								if (regressOutPCA[pca]) {
+									//Get PCA scores:
+									double[] x = dataMatrixPCScores[pca];
+									//Get correlation coefficient with trait:
+									double correlation = JSci.maths.ArrayMath.correlation(x, y);
+									propExplainedVarianceTrait += correlation * correlation - 1.0d / (double) y.length;
+									System.out.println(pca + "\t" + correlation + "\t" + propExplainedVarianceTrait);
+									for (int q = 0; q < x.length; q++) {
+										double gt = dataMatrix[pca][q];
+										System.out.println(q + "\t" + pca + "\t" + x[q] + "\t" + gt + "\t" + y[q]);
+									}
+								}
+							}
+
+							System.out.println();
+
+
+							System.out.println("Now printing genotypes");
+							// grab genotypes
+							for (EQTL e : covariatesForThisProbe) {
+//								if (!hashEQTLsMultipleRegressionRegressedOut.contains(e)) {
+								Integer snpId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
+								System.out.println(e.getRsName() + "\t" + snpId + "\t" + snpPassesQC.get(snpId));
+								if (snpId != -9 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
+									// load SNP
+
+									SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);
+									try {
+										ggSNPLoaders[d].loadGenotypes(currentSNP);
+									} catch (IOException ex) {
+										ex.printStackTrace();
+										System.exit(-1);
+									}
+
+									if (ggSNPLoaders[d].hasDosageInformation()) {
+										try {
+											ggSNPLoaders[d].loadDosage(currentSNP);
+										} catch (IOException ex) {
+											ex.printStackTrace();
+											System.exit(-1);
+										}
+									}
+
+									System.out.println();
+									if (currentSNP.passesQC()) {
+										int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
+										double[] x = currentSNP.selectGenotypes(indWGA);
+										System.out.println("Genotypes for: " + e.getRsName());
+										for (int i = 0; i < x.length; i++) {
+											System.out.println(i + "\t" + x[i]);
+										}
+										System.out.println(Descriptives.mean(x) + "\t" + Descriptives.variance(x));
+
+
+									}
+								}
+//								}
+							}
+
+
+							System.out.println("");
+							System.out.println("Correlmat: ");
+							for (int i = 0; i < correlationMatrix.length; i++) {
+								System.out.println(Strings.concat(correlationMatrix[i], Strings.tab));
+							}
+
+							System.exit(-1);
+
+							propExplainedVarianceTrait = 1;
+						}
+						try {
+							explainedVariancePerEQTLProbe[d][(int) Math.round(propExplainedVarianceTrait * 100d)]++;
+						} catch (ArrayIndexOutOfBoundsException e) {
+							e.printStackTrace();
+							System.out.println("Error: propExplainedVarianceTrait == " + propExplainedVarianceTrait);
+							System.exit(-1);
+						}
 						//Regress out PC effects on trait:
 						for (int pca = 0; pca < nrSNPs; pca++) {
 							if (regressOutPCA[pca]) {
@@ -477,7 +570,7 @@ public class EQTLRegression {
 					}
 				}
 				pb.iterate(d);
-				if (p % 1000 == 0) {
+				if (p % 10000 == 0) {
 					pb.display();
 				}
 			}
