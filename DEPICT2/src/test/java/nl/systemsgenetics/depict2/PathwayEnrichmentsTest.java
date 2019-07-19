@@ -100,37 +100,37 @@ public class PathwayEnrichmentsTest {
 	@Test
 	public void testPerformEnrichmentAnalysis() throws Exception {
 
-		File identity1qFile = new File(this.getClass().getResource("/identity1q.txt").toURI());
-		File identity1pFile = new File(this.getClass().getResource("/identity1p.txt").toURI());
-		File invCor1qFile = new File(this.getClass().getResource("/invCor1q.txt").toURI());
-		File invCor1pFile = new File(this.getClass().getResource("/invCor1p.txt").toURI());
-		File pathwayFile = new File(this.getClass().getResource("/pathwayGeneScores.txt").toURI());
-		File gwasFile = new File(this.getClass().getResource("/gwasGeneScores.txt").toURI());
-		File gwasFileNull = new File(this.getClass().getResource("/gwasGeneScoresNull.txt").toURI());
-
-		DoubleMatrixDataset<String, String> identity1q = DoubleMatrixDataset.loadDoubleTextData(identity1qFile.getAbsolutePath(), '\t');
-		DoubleMatrixDataset<String, String> identity1p = DoubleMatrixDataset.loadDoubleTextData(identity1pFile.getAbsolutePath(), '\t');
-		DoubleMatrixDataset<String, String> geneZscores = DoubleMatrixDataset.loadDoubleTextData(gwasFile.getAbsolutePath(), '\t');
-		DoubleMatrixDataset<String, String> geneZscoresNullGwas = DoubleMatrixDataset.loadDoubleTextData(gwasFileNull.getAbsolutePath(), '\t');
-		DoubleMatrixDataset<String, String> geneInvCor1q = DoubleMatrixDataset.loadDoubleTextData(invCor1qFile.getAbsolutePath(), '\t');
-		DoubleMatrixDataset<String, String> geneInvCor1p = DoubleMatrixDataset.loadDoubleTextData(invCor1pFile.getAbsolutePath(), '\t');
-
-		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = new HashMap<>();
-		invCorMatrixPerChrArm.put("1q", identity1q);
-		invCorMatrixPerChrArm.put("1p", identity1p);
-
-		List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
-		pathwayDatabases.add(new PathwayDatabase("test", pathwayFile.getAbsolutePath(), true));
-
-		String outputBasePath = tmpOutputFolder.getAbsolutePath() + "testRun";
-		HashSet<String> hlaGenesToExclude = null;
-
-		//HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> result = PathwayEnrichments.performEnrichmentAnalysis(geneZscores, geneZscoresNullGwas, invCorMatrixPerChrArm, pathwayDatabases, outputBasePath, hlaGenesToExclude);
-
-		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm2 = new HashMap<>();
-		invCorMatrixPerChrArm2.put("1q", geneInvCor1q);
-		invCorMatrixPerChrArm2.put("1p", geneInvCor1p);
-
+//		File identity1qFile = new File(this.getClass().getResource("/identity1q.txt").toURI());
+//		File identity1pFile = new File(this.getClass().getResource("/identity1p.txt").toURI());
+//		File invCor1qFile = new File(this.getClass().getResource("/invCor1q.txt").toURI());
+//		File invCor1pFile = new File(this.getClass().getResource("/invCor1p.txt").toURI());
+//		File pathwayFile = new File(this.getClass().getResource("/pathwayGeneScores.txt").toURI());
+//		File gwasFile = new File(this.getClass().getResource("/gwasGeneScores.txt").toURI());
+//		File gwasFileNull = new File(this.getClass().getResource("/gwasGeneScoresNull.txt").toURI());
+//
+//		DoubleMatrixDataset<String, String> identity1q = DoubleMatrixDataset.loadDoubleTextData(identity1qFile.getAbsolutePath(), '\t');
+//		DoubleMatrixDataset<String, String> identity1p = DoubleMatrixDataset.loadDoubleTextData(identity1pFile.getAbsolutePath(), '\t');
+//		DoubleMatrixDataset<String, String> geneZscores = DoubleMatrixDataset.loadDoubleTextData(gwasFile.getAbsolutePath(), '\t');
+//		DoubleMatrixDataset<String, String> geneZscoresNullGwas = DoubleMatrixDataset.loadDoubleTextData(gwasFileNull.getAbsolutePath(), '\t');
+//		DoubleMatrixDataset<String, String> geneInvCor1q = DoubleMatrixDataset.loadDoubleTextData(invCor1qFile.getAbsolutePath(), '\t');
+//		DoubleMatrixDataset<String, String> geneInvCor1p = DoubleMatrixDataset.loadDoubleTextData(invCor1pFile.getAbsolutePath(), '\t');
+//
+//		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = new HashMap<>();
+//		invCorMatrixPerChrArm.put("1q", identity1q);
+//		invCorMatrixPerChrArm.put("1p", identity1p);
+//
+//		List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
+//		pathwayDatabases.add(new PathwayDatabase("test", pathwayFile.getAbsolutePath(), true));
+//
+//		String outputBasePath = tmpOutputFolder.getAbsolutePath() + "testRun";
+//		HashSet<String> hlaGenesToExclude = null;
+//
+//		//HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> result = PathwayEnrichments.performEnrichmentAnalysis(geneZscores, geneZscoresNullGwas, invCorMatrixPerChrArm, pathwayDatabases, outputBasePath, hlaGenesToExclude);
+//
+//		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm2 = new HashMap<>();
+//		invCorMatrixPerChrArm2.put("1q", geneInvCor1q);
+//		invCorMatrixPerChrArm2.put("1p", geneInvCor1p);
+//
 		//HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> result2 = PathwayEnrichments.performEnrichmentAnalysis(geneZscores, geneZscoresNullGwas, invCorMatrixPerChrArm2, pathwayDatabases, outputBasePath, hlaGenesToExclude);
 
 //assertEquals(result, expResult);

@@ -1,7 +1,7 @@
 
 setwd("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
-trait = "Height_V29/Alzheimers"
+trait = "CeD_ichip_v31/CeD_ichip"
 
 library(readr)
 
@@ -26,11 +26,15 @@ genePvalues <- as.matrix(table_tmp[,-1])
 rownames(genePvalues) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
+genePvalues2 <- genePvalues[match(row.names(zscoresNorm),rownames(genePvalues)),,drop=F]
+
 geneScores <- apply(eigenNorm, 1, function(row){row %*% eigenBeta[,1]})
 
 plot(zscoresNorm, geneScores, xlab = "Centered and scaled gene Z-score", ylab = "Reconstructed gene scores")
 cor.test(zscoresNorm, geneScores)
 
 
+plot(-log10(genePvalues2), geneScores, xlab = "-log10(Gene P-values)", ylab = "Reconstructed gene scores", bg = adjustcolor("dodgerblue2", alpha.f = 0.1), pch = 21, col=adjustcolor("dodgerblue2", alpha.f = 0.3))
 
-write.table(cbind(zscoresNorm, geneScores), file = paste0(trait,"_geneScoresExHla.txt"), sep = "\t", quote = F)
+
+write.table(cbind(genePvalues2, geneScores), file = paste0(trait,"_geneScoresExHla.txt"), sep = "\t", quote = F)

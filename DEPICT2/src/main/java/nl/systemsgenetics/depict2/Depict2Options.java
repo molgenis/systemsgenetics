@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.depict2;
 
+import edu.emory.mathcs.utils.ConcurrencyUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,7 +57,7 @@ public class Depict2Options {
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
-	private final int geneCorrelationWindow;
+	//private final int geneCorrelationWindow;
 	private final boolean excludeHla;
 
 	public boolean isDebugMode() {
@@ -194,11 +195,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("ignoreGeneCorrelations");
 		OPTIONS.addOption(OptionBuilder.create("igc"));
 
-		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Window in bases to calculate gene correlations for GLS of pathway enrichment (-1 for no limit)");
-		OptionBuilder.withLongOpt("geneCorrelationWindow");
-		OPTIONS.addOption(OptionBuilder.create("gcw"));
+//		OptionBuilder.withArgName("int");
+//		OptionBuilder.hasArgs();
+//		OptionBuilder.withDescription("Window in bases to calculate gene correlations for GLS of pathway enrichment (-1 for no limit)");
+//		OptionBuilder.withLongOpt("geneCorrelationWindow");
+//		OPTIONS.addOption(OptionBuilder.create("gcw"));
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
@@ -251,6 +252,7 @@ public class Depict2Options {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
 				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
+				ConcurrencyUtils.setNumberOfThreads(numberOfThreadsToUse);
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
 			}
@@ -328,15 +330,15 @@ public class Depict2Options {
 			} else {
 				geneInfoFile = new File(commandLine.getOptionValue("ge"));
 			}
-			if (!commandLine.hasOption("gpr")) {
-				throw new ParseException("--geneCorrelationWindow not specified");
-			} else {
-				try {
-					geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an int");
-				}
-			}
+//			if (!commandLine.hasOption("gcw")) {
+//				throw new ParseException("--geneCorrelationWindow not specified");
+//			} else {
+//				try {
+//					geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
+//				} catch (NumberFormatException e) {
+//					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an int");
+//				}
+//			}
 			
 			pathwayDatabases = parsePd(commandLine);
 
@@ -346,7 +348,7 @@ public class Depict2Options {
 			permutationPathwayEnrichment = 0;
 			genePruningR = 0;
 			geneInfoFile = null;
-			geneCorrelationWindow = 0;
+			//geneCorrelationWindow = 0;
 		}
 
 		if (mode == Depict2Mode.RUN) {
@@ -575,7 +577,7 @@ public class Depict2Options {
 
 		LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
 		LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
-		LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
+		//LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
 		LOGGER.info(" * Gene pruning r: " + genePruningR);
 		LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 		LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
@@ -684,9 +686,9 @@ public class Depict2Options {
 		return forceNormalPathwayPvalues;
 	}
 
-	public int getGeneCorrelationWindow() {
-		return geneCorrelationWindow;
-	}
+//	public int getGeneCorrelationWindow() {
+//		return geneCorrelationWindow;
+//	}
 
 	public boolean isExcludeHla() {
 		return excludeHla;

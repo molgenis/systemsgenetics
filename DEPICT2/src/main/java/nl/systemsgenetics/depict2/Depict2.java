@@ -19,10 +19,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.ExtractCol;
@@ -311,10 +313,36 @@ public class Depict2 {
 
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), hlaGenes, options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getGenePruningR(), options.isIgnoreGeneCorrelations(), options.isForceNormalGenePvalues(), options.isForceNormalPathwayPvalues(), options.getGeneCorrelationWindow());
+		final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
+		final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
+		
+		final Set<String> nullGwasRuns = genePvaluesNullGwas.getHashCols().keySet();
+		if (nullGwasRuns.size() < (nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas)) {
+			throw new Exception("Not enough null gwas runs: " + nullGwasRuns.size() + " < " + nrSampleToUseForCorrelation + " + " + nrSamplesToUseForNullBetas);
+		}
 
-		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), options.isExcludeHla());
+		Iterator<String> nullGwasRunIterator = nullGwasRuns.iterator();
 
+		final LinkedHashSet<String> sampleToUseForCorrelation = new LinkedHashSet<>(nrSampleToUseForCorrelation);
+		for (int i = 0; i < nrSampleToUseForCorrelation; ++i) {
+			sampleToUseForCorrelation.add(nullGwasRunIterator.next());
+		}
+
+		final LinkedHashSet<String> samplesToUseForNullBetas = new LinkedHashSet<>(nrSamplesToUseForNullBetas);
+		for (int i = 0; i < nrSamplesToUseForNullBetas; ++i) {
+			samplesToUseForNullBetas.add(nullGwasRunIterator.next());
+		}
+
+		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
+		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
+
+		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
+		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR()));
+		}
+		
+		ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null);
+		
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
 	}
