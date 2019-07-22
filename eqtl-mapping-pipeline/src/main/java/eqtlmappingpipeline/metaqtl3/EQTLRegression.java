@@ -132,6 +132,7 @@ public class EQTLRegression {
 			pb.setSubtasks(d, probes.length);
 			for (int p = 0; p < probes.length; p++) {
 
+
 				ArrayList<EQTL> covariatesForThisProbe = hashProbesCovariates.get(probes[p]);
 
 				if (covariatesForThisProbe != null) {
@@ -226,36 +227,27 @@ public class EQTLRegression {
 
 						double[] y = new double[nrSamplesWGenotypeData];
 						int totalGGSamples = currentDataset.getTotalGGSamples();
-						if (nrSamplesWGenotypeData == totalGGSamples) {
-							//All genotypes have been succesfully called, use quick approach:
-							meanY = JSci.maths.ArrayMath.mean(y);
-							varianceY = JSci.maths.ArrayMath.variance(y);
-							for (int s = 0; s < totalGGSamples; s++) {
-								y[s] = rawData[p][s] - meanY;
-							}
-						} else {
 
-							// Not all genotypes have been succesfully called, use slow approach:
-							int itr = 0;
-							for (int s = 0; s < rawData[p].length; s++) {
-								int genotypeId = expressionToGenotypeId[s];
-								if (genotypeId != -1) {
-									byte genotype = currentSNP.getGenotypes()[genotypeId];
-									if (genotype != -1 && currentDataset.getGenotypeData().getIsIncluded()[genotypeId]) {
-										double dVal = rawData[p][s];
-										y[itr] = dVal;
-										itr++;
-									}
+						// Copy expression data.
+						int itr = 0;
+						for (int s = 0; s < rawData[p].length; s++) {
+							int genotypeId = expressionToGenotypeId[s];
+							if (genotypeId != -1) {
+								byte genotype = currentSNP.getGenotypes()[genotypeId];
+								if (genotype != -1 && currentDataset.getGenotypeData().getIsIncluded()[genotypeId]) {
+									double dVal = rawData[p][s];
+									y[itr] = dVal;
+									itr++;
 								}
 							}
-							//Normalize subset of data:
-							meanY = JSci.maths.ArrayMath.mean(y);
-							varianceY = JSci.maths.ArrayMath.variance(y);
-							for (int i = 0; i < y.length; i++) {
-								y[i] -= meanY;
-							}
-
 						}
+						//Normalize subset of data:
+						meanY = JSci.maths.ArrayMath.mean(y);
+						varianceY = JSci.maths.ArrayMath.variance(y);
+						for (int i = 0; i < y.length; i++) {
+							y[i] -= meanY;
+						}
+
 
 						//Get regression coefficient:
 
@@ -322,7 +314,6 @@ public class EQTLRegression {
 						int nrSNPs = snpsForProbe.size();
 						int totalGGSamples = currentDataset.getTotalGGSamples();
 
-
 						// use PCA
 						// Multiple SNPs need to be regressed out. Get SNP genotype values, standardize mean and std dev for each of these:
 						double[][] dataMatrix = new double[nrSNPs][0];
@@ -345,8 +336,8 @@ public class EQTLRegression {
 
 									// assume missing values are corrected for here.
 //									if (dataMatrix[f][h] > -1 && dataMatrix[g][h] > -1) {
-										covarianceInterim += dataMatrix[f][h] * dataMatrix[g][h];
-										nrcalledforbothsnps++;
+									covarianceInterim += dataMatrix[f][h] * dataMatrix[g][h];
+									nrcalledforbothsnps++;
 //									}
 								}
 
@@ -402,26 +393,27 @@ public class EQTLRegression {
 							}
 						}
 
-						if (atLeastOnePCANotRegressedOut) {
-							//Provide information on the PCAs:
-							System.out.println("There is at least one PCA that has not been regressed out as it does not explain a lot of genetic variation!:");
-							for (int pca = 0; pca < nrSNPs; pca++) {
-								double[] x = dataMatrixPCScores[pca];
-								double correlation = JSci.maths.ArrayMath.correlation(x, y);
-								double r2 = correlation * correlation;
-								int pcaNr = pca + 1;
-								String snpsStronglyCorrelatedWithPCA = "";
-								for (int snp = 0; snp < nrSNPs; snp++) {
-									double correlationPCASNP = Math.abs(JSci.maths.ArrayMath.correlation(x, dataMatrix[snp]));
-									double r2PCASNP = correlationPCASNP * correlationPCASNP;
-									if (r2PCASNP > 0.1) {
-										snpsStronglyCorrelatedWithPCA += "\t" + snpsForProbe.get(snp).getName() + ", " + r2PCASNP;
-									}
+//						if (atLeastOnePCANotRegressedOut) {
+						//Provide information on the PCAs:
+						System.out.println("There is at least one PCA that has not been regressed out as it does not explain a lot of genetic variation!:");
+						for (int pca = 0; pca < nrSNPs; pca++) {
+							double[] x = dataMatrixPCScores[pca];
+							double correlation = JSci.maths.ArrayMath.correlation(x, y);
+							double r2 = correlation * correlation;
+							int pcaNr = pca + 1;
+							String snpsStronglyCorrelatedWithPCA = "";
+							for (int snp = 0; snp < nrSNPs; snp++) {
+								double correlationPCASNP = Math.abs(JSci.maths.ArrayMath.correlation(x, dataMatrix[snp]));
+								double r2PCASNP = correlationPCASNP * correlationPCASNP;
+								if (r2PCASNP > 0.1) {
+									snpsStronglyCorrelatedWithPCA += "\t" + snpsForProbe.get(snp).getName() + ", " + r2PCASNP;
 								}
-								System.out.println(probes[p] + "\tPCA" + pcaNr + "\tExplainedVariance:\t" + PCA.getEigenValueVar(eigenValues, pca) + "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca] + "\tPCATraitR2:\t" + r2 + "\tSNPsStronglyCorrelatedWithPCA:\t" + snpsStronglyCorrelatedWithPCA);
 							}
-							System.out.println("");
+							System.out.println(probes[p] + "\tPCA" + pcaNr + "\tExplainedVariance:\t" + PCA.getEigenValueVar(eigenValues, pca) + "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca] + "\tPCATraitR2:\t" + r2 + "\tSNPsStronglyCorrelatedWithPCA:\t" + snpsStronglyCorrelatedWithPCA);
+							System.out.println("PC" + pcaNr + " correlation with phenotype: " + JSci.maths.ArrayMath.correlation(y, dataMatrix[pca]));
 						}
+						System.out.println("");
+//						}
 
 						//Process each PC, determine total amount of variation explained by the combination of PCs:
 						double propExplainedVarianceTrait = 0;
@@ -444,79 +436,7 @@ public class EQTLRegression {
 							for (EQTL s : covariatesForThisProbe) {
 								System.out.println(s.getRsName() + "-" + s.getProbe());
 							}
-
-
-							System.out.println("Offending PCs:");
-							propExplainedVarianceTrait = 0;
-							for (int pca = 0; pca < nrSNPs; pca++) {
-								if (regressOutPCA[pca]) {
-									//Get PCA scores:
-									double[] x = dataMatrixPCScores[pca];
-									//Get correlation coefficient with trait:
-									double correlation = JSci.maths.ArrayMath.correlation(x, y);
-									propExplainedVarianceTrait += correlation * correlation - 1.0d / (double) y.length;
-									System.out.println(pca + "\t" + correlation + "\t" + propExplainedVarianceTrait);
-									for (int q = 0; q < x.length; q++) {
-										double gt = dataMatrix[pca][q];
-										System.out.println(q + "\t" + pca + "\t" + x[q] + "\t" + gt + "\t" + y[q]);
-									}
-								}
-							}
-
-							System.out.println();
-
-
-							System.out.println("Now printing genotypes");
-							// grab genotypes
-							for (EQTL e : covariatesForThisProbe) {
-//								if (!hashEQTLsMultipleRegressionRegressedOut.contains(e)) {
-								Integer snpId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
-								System.out.println(e.getRsName() + "\t" + snpId + "\t" + snpPassesQC.get(snpId));
-								if (snpId != -9 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
-									// load SNP
-
-									SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);
-									try {
-										ggSNPLoaders[d].loadGenotypes(currentSNP);
-									} catch (IOException ex) {
-										ex.printStackTrace();
-										System.exit(-1);
-									}
-
-									if (ggSNPLoaders[d].hasDosageInformation()) {
-										try {
-											ggSNPLoaders[d].loadDosage(currentSNP);
-										} catch (IOException ex) {
-											ex.printStackTrace();
-											System.exit(-1);
-										}
-									}
-
-									System.out.println();
-									if (currentSNP.passesQC()) {
-										int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
-										double[] x = currentSNP.selectGenotypes(indWGA);
-										System.out.println("Genotypes for: " + e.getRsName());
-										for (int i = 0; i < x.length; i++) {
-											System.out.println(i + "\t" + x[i]);
-										}
-										System.out.println(Descriptives.mean(x) + "\t" + Descriptives.variance(x));
-
-
-									}
-								}
-//								}
-							}
-
-
-							System.out.println("");
-							System.out.println("Correlmat: ");
-							for (int i = 0; i < correlationMatrix.length; i++) {
-								System.out.println(Strings.concat(correlationMatrix[i], Strings.tab));
-							}
-
 							System.exit(-1);
-
 							propExplainedVarianceTrait = 1;
 						}
 						try {
@@ -526,6 +446,7 @@ public class EQTLRegression {
 							System.out.println("Error: propExplainedVarianceTrait == " + propExplainedVarianceTrait);
 							System.exit(-1);
 						}
+
 						//Regress out PC effects on trait:
 						for (int pca = 0; pca < nrSNPs; pca++) {
 							if (regressOutPCA[pca]) {
@@ -561,6 +482,31 @@ public class EQTLRegression {
 							rawData[p][s] = y[s];
 						}
 
+
+						if (false == true) {
+							for (int pca = 0; pca < nrSNPs; pca++) {
+								double[] x = dataMatrixPCScores[pca];
+								double correlation = JSci.maths.ArrayMath.correlation(x, y);
+								double r2 = correlation * correlation;
+								int pcaNr = pca + 1;
+								String snpsStronglyCorrelatedWithPCA = "";
+								for (int snp = 0; snp < nrSNPs; snp++) {
+									double correlationPCASNP = Math.abs(JSci.maths.ArrayMath.correlation(x, dataMatrix[snp]));
+									double r2PCASNP = correlationPCASNP * correlationPCASNP;
+									if (r2PCASNP > 0.1) {
+										snpsStronglyCorrelatedWithPCA += "\t" + snpsForProbe.get(snp).getName() + ", " + r2PCASNP;
+									}
+								}
+								System.out.println(probes[p] + "\tPCA" + pcaNr
+										+ "\tExplainedVariance:\t" + PCA.getEigenValueVar(eigenValues, pca)
+										+ "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca]
+										+ "\tPCATraitR2:\t" + r2
+										+ "\tSNPsStronglyCorrelatedWithPCA:\t" + snpsStronglyCorrelatedWithPCA);
+
+								System.out.println("PC" + pcaNr + " correlation with phenotype: " + JSci.maths.ArrayMath.correlation(y, dataMatrix[pca]));
+								System.out.println("SNP" + pcaNr + " correlation with phenotype: " + JSci.maths.ArrayMath.correlation(y, dataMatrix[pca]));
+							}
+						}
 						nrEQTLsRegressedOut[d]++;
 
 					}
