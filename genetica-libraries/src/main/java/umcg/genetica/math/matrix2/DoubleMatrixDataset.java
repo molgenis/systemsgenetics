@@ -1671,6 +1671,36 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
+		/**
+	 *
+	 * In place center around 0. Will set mean to 0
+	 *
+	 */
+	public void centerColumns() {
+
+		final int rows = matrix.rows();
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			DoubleMatrix1D col = matrix.viewColumn(c);
+
+			double colSum = 0;
+
+			for (int e = 0; e < rows; ++e) {
+				colSum += col.getQuick(e);
+			}
+
+			final double mean = colSum / rows;
+
+
+			for (int e = 0; e < rows; ++e) {
+				col.setQuick(e, (col.getQuick(e) - mean));
+			}
+
+		}
+
+	}
+	
 	/**
 	 * Obviously not recommended for large matrices but great for debugging
 	 *
