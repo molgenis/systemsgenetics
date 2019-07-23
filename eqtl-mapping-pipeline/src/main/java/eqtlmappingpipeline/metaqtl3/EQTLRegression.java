@@ -393,27 +393,27 @@ public class EQTLRegression {
 							}
 						}
 
-//						if (atLeastOnePCANotRegressedOut) {
-						//Provide information on the PCAs:
-						System.out.println("There is at least one PCA that has not been regressed out as it does not explain a lot of genetic variation!:");
-						for (int pca = 0; pca < nrSNPs; pca++) {
-							double[] x = dataMatrixPCScores[pca];
-							double correlation = JSci.maths.ArrayMath.correlation(x, y);
-							double r2 = correlation * correlation;
-							int pcaNr = pca + 1;
-							String snpsStronglyCorrelatedWithPCA = "";
-							for (int snp = 0; snp < nrSNPs; snp++) {
-								double correlationPCASNP = Math.abs(JSci.maths.ArrayMath.correlation(x, dataMatrix[snp]));
-								double r2PCASNP = correlationPCASNP * correlationPCASNP;
-								if (r2PCASNP > 0.1) {
-									snpsStronglyCorrelatedWithPCA += "\t" + snpsForProbe.get(snp).getName() + ", " + r2PCASNP;
+						if (atLeastOnePCANotRegressedOut) {
+							//Provide information on the PCAs:
+							System.out.println("There is at least one PCA that has not been regressed out as it does not explain a lot of genetic variation!:");
+							for (int pca = 0; pca < nrSNPs; pca++) {
+								double[] x = dataMatrixPCScores[pca];
+								double correlation = JSci.maths.ArrayMath.correlation(x, y);
+								double r2 = correlation * correlation;
+								int pcaNr = pca + 1;
+								String snpsStronglyCorrelatedWithPCA = "";
+								for (int snp = 0; snp < nrSNPs; snp++) {
+									double correlationPCASNP = Math.abs(JSci.maths.ArrayMath.correlation(x, dataMatrix[snp]));
+									double r2PCASNP = correlationPCASNP * correlationPCASNP;
+									if (r2PCASNP > 0.1) {
+										snpsStronglyCorrelatedWithPCA += "\t" + snpsForProbe.get(snp).getName() + ", " + r2PCASNP;
+									}
 								}
+								System.out.println(probes[p] + "\tPCA" + pcaNr + "\tExplainedVariance:\t" + PCA.getEigenValueVar(eigenValues, pca) + "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca] + "\tPCATraitR2:\t" + r2 + "\tSNPsStronglyCorrelatedWithPCA:\t" + snpsStronglyCorrelatedWithPCA);
+								System.out.println("PC" + pcaNr + " correlation with phenotype: " + JSci.maths.ArrayMath.correlation(y, dataMatrix[pca]));
 							}
-							System.out.println(probes[p] + "\tPCA" + pcaNr + "\tExplainedVariance:\t" + PCA.getEigenValueVar(eigenValues, pca) + "\tEigenvalue:\t" + eigenValues[eigenValues.length - 1 - pca] + "\tPCATraitR2:\t" + r2 + "\tSNPsStronglyCorrelatedWithPCA:\t" + snpsStronglyCorrelatedWithPCA);
-							System.out.println("PC" + pcaNr + " correlation with phenotype: " + JSci.maths.ArrayMath.correlation(y, dataMatrix[pca]));
+							System.out.println("");
 						}
-						System.out.println("");
-//						}
 
 						//Process each PC, determine total amount of variation explained by the combination of PCs:
 						double propExplainedVarianceTrait = 0;

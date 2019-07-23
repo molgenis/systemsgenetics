@@ -6,6 +6,7 @@ package eqtlmappingpipeline.conditionalanalysis;
 
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
+import eqtlmappingpipeline.normalization.Normalizer;
 import eqtlmappingpipeline.util.QTLFileMerger;
 import gnu.trove.set.hash.THashSet;
 import umcg.genetica.console.ConsoleGUIElems;
@@ -32,6 +33,15 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 	public static void main(String[] args) {
 
+//		Normalizer z = new Normalizer();
+//		try {
+//			z.rank("D:\\Sync\\SyncThing\\Data\\Ref\\geuvadis\\rnaseq-EUR\\GD660.GeneQuantCount-EUR-CPM-TMM.txt.gz",
+//					"D:\\Sync\\SyncThing\\Data\\Ref\\geuvadis\\rnaseq-EUR\\GD660.GeneQuantCount-EUR-CPM-TMM-ranked.txt.gz");
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		System.exit(0);
+
 		IterativeConditionalAnalysis s = new IterativeConditionalAnalysis();
 		try {
 			s.run("D:\\Sync\\SyncThing\\Data\\Ref\\geuvadis\\2019-07-18-GEUVADIS.xml", null,
@@ -46,12 +56,9 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 	private Integer startIter = 1;
 
 
-
 	public void run(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
 					String ingt, String inexp, String inexpplatform, String inexpannot, String gte,
 					String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads) throws IOException, Exception {
-
-
 
 
 		initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, null, null);
@@ -124,7 +131,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 //					 recalculate mean and SD
 					for (int i = 0; i < m_gg.length; i++) {
 //						if (!m_settings.performParametricAnalysis) {
-							m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
+//						m_gg[i].getExpressionData().rankAllExpressionData(m_settings.equalRankForTies);
 //						}
 //						m_gg[i].getExpressionData().calcAndSubtractMean();
 //						m_gg[i].getExpressionData().calcMeanAndVariance();
