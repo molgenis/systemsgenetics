@@ -22,30 +22,30 @@
 	<files>
 		<file>
 			<source>README.md</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 		</file>
 		<file>
 			<source>LICENSE</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 		</file>
 		<file>
 			<source>${project.build.directory}/eqtl-mapping-pipeline-${project.version}.jar</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<destName>eqtl-mapping-pipeline.jar</destName>
 		</file>
 		<file>
 			<source>src/main/resources/cisSnps.txt.gz</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<destName>cisSnps.txt.gz</destName>
 		</file>
 		<file>
 			<source>src/main/resources/settings.xml</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<destName>settings.xml</destName>
 		</file>
 		<file>
 			<source>src/main/resources/transSnps.txt.gz</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<destName>transSnps.txt.gz</destName>
 		</file>		
 	</files>
@@ -58,14 +58,14 @@
 		-->
 		<fileSet>
 			<directory>${project.build.scriptSourceDirectory}</directory>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<includes>
 				<include>settings.xml</include>
 			</includes>		
 		</fileSet>
 		<fileSet>
 			<directory>src/main/resources/GeuvadisTestData</directory>
-			<outputDirectory>/GeuvadisTestData</outputDirectory>
+			<outputDirectory>./GeuvadisTestData</outputDirectory>
 			<includes>
 				<include>*</include>
 			</includes>		
