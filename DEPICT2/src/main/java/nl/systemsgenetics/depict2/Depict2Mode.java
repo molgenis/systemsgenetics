@@ -17,5 +17,6 @@ public enum Depict2Mode {
 	CONVERT_EQTL,
 	CONVERT_GTEX,
 	FIRST1000,
+	CORRELATE_GENES,
 	SPECIAL;
 }

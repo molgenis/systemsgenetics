@@ -57,7 +57,7 @@ public class Depict2Options {
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
-	//private final int geneCorrelationWindow;
+	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
 
 	public boolean isDebugMode() {
@@ -73,11 +73,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("On of the following modes:\n"
 				+ "* RUN - Run the DEPICT2 prioritization.\n"
 				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
-				+ "* RUN3 - Run the DEPICT2 prioritization starting at stage 3.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
 				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
-				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output");
+				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output"
+				+ "* CORRELATE_GENES - Create gene correlation matrix Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes"
+		);
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -131,13 +132,13 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values. Recommended: 100,000; min: 10,000; max: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 		OptionBuilder.withLongOpt("permutations");
 		OPTIONS.addOption(OptionBuilder.create("p"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Number of permutations to use as fallback incase Farebrother's RUBEN algorithm failed. Optional but recommende to do atleast: 100,000,000. ");
 		OptionBuilder.withLongOpt("permutationsRescue");
 		OPTIONS.addOption(OptionBuilder.create("pr"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values ");
@@ -195,11 +196,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("ignoreGeneCorrelations");
 		OPTIONS.addOption(OptionBuilder.create("igc"));
 
-//		OptionBuilder.withArgName("int");
-//		OptionBuilder.hasArgs();
-//		OptionBuilder.withDescription("Window in bases to calculate gene correlations for GLS of pathway enrichment (-1 for no limit)");
-//		OptionBuilder.withLongOpt("geneCorrelationWindow");
-//		OPTIONS.addOption(OptionBuilder.create("gcw"));
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Window in bases to calculate gene correlations for GLS of pathway enrichment");
+		OptionBuilder.withLongOpt("geneCorrelationWindow");
+		OPTIONS.addOption(OptionBuilder.create("gcw"));
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArgs();
@@ -233,7 +234,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Exclude HLA region during pathway enrichments (chr6 20mb - 40mb)");
 		OptionBuilder.withLongOpt("excludeHla");
 		OPTIONS.addOption(OptionBuilder.create("eh"));
-		
+
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
@@ -273,7 +274,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -297,171 +298,179 @@ public class Depict2Options {
 
 		}
 
-		if (mode == Depict2Mode.RUN || mode == Depict2Mode.RUN2) {
-			if (!commandLine.hasOption("pgc")) {
-				throw new ParseException("--permutationGeneCorrelations not specified");
-			} else {
-				try {
-					permutationGeneCorrelations = Integer.parseInt(commandLine.getOptionValue("pgc"));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --permutationGeneCorrelations \"" + commandLine.getOptionValue("pgc") + "\" is not an int");
+		switch (mode) {
+			case RUN:
+			case RUN2:
+				if (!commandLine.hasOption("pgc")) {
+					throw new ParseException("--permutationGeneCorrelations not specified");
+				} else {
+					try {
+						permutationGeneCorrelations = Integer.parseInt(commandLine.getOptionValue("pgc"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationGeneCorrelations \"" + commandLine.getOptionValue("pgc") + "\" is not an int");
+					}
 				}
-			}
-			if (!commandLine.hasOption("ppe")) {
-				throw new ParseException("--permutationPathwayEnrichment not specified");
-			} else {
-				try {
-					permutationPathwayEnrichment = Integer.parseInt(commandLine.getOptionValue("ppe"));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
+				if (!commandLine.hasOption("ppe")) {
+					throw new ParseException("--permutationPathwayEnrichment not specified");
+				} else {
+					try {
+						permutationPathwayEnrichment = Integer.parseInt(commandLine.getOptionValue("ppe"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
+					}
 				}
-			}
-			if (!commandLine.hasOption("gpr")) {
-				throw new ParseException("--genePruningR not specified");
-			} else {
-				try {
-					genePruningR = Double.parseDouble(commandLine.getOptionValue("gpr"));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --genePruningR \"" + commandLine.getOptionValue("gpr") + "\" is not an double");
+				if (!commandLine.hasOption("gpr")) {
+					throw new ParseException("--genePruningR not specified");
+				} else {
+					try {
+						genePruningR = Double.parseDouble(commandLine.getOptionValue("gpr"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --genePruningR \"" + commandLine.getOptionValue("gpr") + "\" is not an double");
+					}
 				}
-			}
-			if (!commandLine.hasOption("ge")) {
-				throw new ParseException("--genes not specified");
-			} else {
-				geneInfoFile = new File(commandLine.getOptionValue("ge"));
-			}
-//			if (!commandLine.hasOption("gcw")) {
-//				throw new ParseException("--geneCorrelationWindow not specified");
-//			} else {
-//				try {
-//					geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
-//				} catch (NumberFormatException e) {
-//					throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an int");
-//				}
-//			}
-			
-			pathwayDatabases = parsePd(commandLine);
-
-		} else {
-			pathwayDatabases = null;
-			permutationGeneCorrelations = 0;
-			permutationPathwayEnrichment = 0;
-			genePruningR = 0;
-			geneInfoFile = null;
-			//geneCorrelationWindow = 0;
+				if (!commandLine.hasOption("ge")) {
+					throw new ParseException("--genes not specified");
+				} else {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				}
+				if (!commandLine.hasOption("gcw")) {
+					throw new ParseException("--geneCorrelationWindow not specified");
+				} else {
+					try {
+						geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --geneCorrelationWindow \"" + commandLine.getOptionValue("gcw") + "\" is not an int");
+					}
+				}
+				pathwayDatabases = parsePd(commandLine);
+				break;
+			case CORRELATE_GENES:
+				if (!commandLine.hasOption("ge")) {
+					throw new ParseException("--genes not specified");
+				} else {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				}
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				break;
+			default:
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				genePruningR = 0;
+				geneInfoFile = null;
+				geneCorrelationWindow = 0;
+				break;
 		}
 
-		if (mode == Depict2Mode.RUN) {
-
-			if (!commandLine.hasOption("p")) {
-				throw new ParseException("--permutations not specified");
-			} else {
-
-				try {
-					numberOfPermutations = Integer.parseInt(commandLine.getOptionValue('p'));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --permutations \"" + commandLine.getOptionValue('p') + "\" is not an int");
-				}
-				
-				if(numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE){
-					throw new ParseException("Error parsing --permutations max is: " + GenePvalueCalculator.MAX_ROUND_1_RESCUE);
-				}
-	
-			}
-			
-			if (!commandLine.hasOption("pr")) {
-				numberOfPermutationsRescue = numberOfPermutations;
-			} else {
-
-				try {
-					numberOfPermutationsRescue = Long.parseLong(commandLine.getOptionValue("pr"));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --permutationsRescue \"" + commandLine.getOptionValue('p') + "\" is not an long");
-				}
-				
-				if(numberOfPermutationsRescue < numberOfPermutations){
-					throw new ParseException("--permutationsRescue must be atleast equal to --permutations. If no extra permutations are wanted this option can be omited");
-				}
-				
-			}
-
-
-			if (!commandLine.hasOption("w")) {
-				throw new ParseException("--window not specified");
-			} else {
-				try {
-					windowExtend = Integer.parseInt(commandLine.getOptionValue('w'));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --window \"" + commandLine.getOptionValue('w') + "\" is not an int");
-				}
-			}
-
-			if (!commandLine.hasOption("v")) {
-				throw new ParseException("--variantCorrelation not specified");
-			} else {
-				try {
-					maxRBetweenVariants = Double.parseDouble(commandLine.getOptionValue('v'));
-				} catch (NumberFormatException e) {
-					throw new ParseException("Error parsing --variantCorrelation \"" + commandLine.getOptionValue('v') + "\" is not an double");
-				}
-			}
-
-			if (!commandLine.hasOption('r')) {
-
-				throw new ParseException("--referenceGenotypes not specified");
-
-			} else {
-
-				genotypeBasePath = commandLine.getOptionValues('r');
-
-				if (commandLine.hasOption("rs")) {
-					genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+		switch (mode) {
+			case RUN:
+				if (!commandLine.hasOption("p")) {
+					throw new ParseException("--permutations not specified");
 				} else {
-					genotypeSamplesFile = null;
-				}
 
-				try {
-					if (commandLine.hasOption('R')) {
-						genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
-					} else {
-						if (genotypeBasePath[0].endsWith(".vcf")) {
-							throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
-						}
-						try {
-							genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
-						} catch (GenotypeDataException e) {
-							throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
-						}
+					try {
+						numberOfPermutations = Integer.parseInt(commandLine.getOptionValue('p'));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutations \"" + commandLine.getOptionValue('p') + "\" is not an int");
 					}
 
-				} catch (IllegalArgumentException e) {
-					throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					if (numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE) {
+						throw new ParseException("Error parsing --permutations max is: " + GenePvalueCalculator.MAX_ROUND_1_RESCUE);
+					}
+
 				}
+				if (!commandLine.hasOption("pr")) {
+					numberOfPermutationsRescue = numberOfPermutations;
+				} else {
 
-			}
+					try {
+						numberOfPermutationsRescue = Long.parseLong(commandLine.getOptionValue("pr"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationsRescue \"" + commandLine.getOptionValue('p') + "\" is not an long");
+					}
 
-		} else if (mode == Depict2Mode.RUN2) {
+					if (numberOfPermutationsRescue < numberOfPermutations) {
+						throw new ParseException("--permutationsRescue must be atleast equal to --permutations. If no extra permutations are wanted this option can be omited");
+					}
 
-			if (pathwayDatabases.isEmpty()) {
-				throw new ParseException("The option --pathwayDatabase is needed for mode=RUN2");
-			}
+				}
+				if (!commandLine.hasOption("w")) {
+					throw new ParseException("--window not specified");
+				} else {
+					try {
+						windowExtend = Integer.parseInt(commandLine.getOptionValue('w'));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --window \"" + commandLine.getOptionValue('w') + "\" is not an int");
+					}
+				}
+				if (!commandLine.hasOption("v")) {
+					throw new ParseException("--variantCorrelation not specified");
+				} else {
+					try {
+						maxRBetweenVariants = Double.parseDouble(commandLine.getOptionValue('v'));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --variantCorrelation \"" + commandLine.getOptionValue('v') + "\" is not an double");
+					}
+				}
+				if (!commandLine.hasOption('r')) {
 
-			genotypeBasePath = null;
-			genotypeType = null;
-			genotypeSamplesFile = null;
-			maxRBetweenVariants = 0d;
-			numberOfPermutations = 0;
-			numberOfPermutationsRescue = 0;
-			windowExtend = 0;
+					throw new ParseException("--referenceGenotypes not specified");
 
-		} else {
-			genotypeBasePath = null;
-			genotypeType = null;
-			genotypeSamplesFile = null;
-			maxRBetweenVariants = 0d;
-			numberOfPermutations = 0;
-			numberOfPermutationsRescue = 0;
-			windowExtend = 0;
+				} else {
+
+					genotypeBasePath = commandLine.getOptionValues('r');
+
+					if (commandLine.hasOption("rs")) {
+						genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+					} else {
+						genotypeSamplesFile = null;
+					}
+
+					try {
+						if (commandLine.hasOption('R')) {
+							genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
+						} else {
+							if (genotypeBasePath[0].endsWith(".vcf")) {
+								throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+							}
+							try {
+								genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
+							} catch (GenotypeDataException e) {
+								throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
+							}
+						}
+
+					} catch (IllegalArgumentException e) {
+						throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					}
+
+				}
+				break;
+			case RUN2:
+				if (pathwayDatabases.isEmpty()) {
+					throw new ParseException("The option --pathwayDatabase is needed for mode=RUN2");
+				}
+				genotypeBasePath = null;
+				genotypeType = null;
+				genotypeSamplesFile = null;
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				break;
+			default:
+				genotypeBasePath = null;
+				genotypeType = null;
+				genotypeSamplesFile = null;
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				break;
 		}
 
 	}
@@ -535,6 +544,10 @@ public class Depict2Options {
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
+			case CORRELATE_GENES:
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				break;
 			case RUN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 
@@ -558,7 +571,7 @@ public class Depict2Options {
 				break;
 			case RUN2:
 				logSharedRun1Run2();
-				
+
 				break;
 
 		}
@@ -577,14 +590,14 @@ public class Depict2Options {
 
 		LOGGER.info(" * Number of permutations to use to calculate gene correlations: " + LARGE_INT_FORMAT.format(permutationGeneCorrelations));
 		LOGGER.info(" * Number of permutations to use for pathway enrichments: " + LARGE_INT_FORMAT.format(permutationPathwayEnrichment));
-		//LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
+		LOGGER.info(" * Window to calculate gene correlations for GLS: " + LARGE_INT_FORMAT.format(geneCorrelationWindow));
 		LOGGER.info(" * Gene pruning r: " + genePruningR);
 		LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 		LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
 		LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
 		logPathwayDatabases();
-		
+
 	}
 
 	private void logPathwayDatabases() {
@@ -686,10 +699,10 @@ public class Depict2Options {
 		return forceNormalPathwayPvalues;
 	}
 
-//	public int getGeneCorrelationWindow() {
-//		return geneCorrelationWindow;
-//	}
-
+	public int getGeneCorrelationWindow() {
+		return geneCorrelationWindow;
+	}
+	
 	public boolean isExcludeHla() {
 		return excludeHla;
 	}
