@@ -20,7 +20,7 @@ public class PathwayDatabase {
 		this.name = name;
 		this.location = location;
 	}
-
+	
 	public String getName() {
 		return name;
 	}
