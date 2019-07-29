@@ -12,10 +12,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Set;
+
 import static umcg.genetica.math.matrix2.DoubleMatrixDataset.*;
 
 /**
- *
  * @author patri
  */
 public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
@@ -42,13 +42,14 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 		nrCols = byteArrayToInt(bytes);
 
 		if (nrRows != originalRowMap.size()) {
-			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows");
+			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows. Expected " + originalRowMap.size() + " but found " + nrRows);
 		}
 
 		if (nrCols != originalColMap.size()) {
-			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols");
+			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols. Expected " + originalColMap.size() + " but found " + nrCols);
 		}
 
+		System.out.println(fileName + " is " + nrRows + " rows and " + nrCols + " cols");
 	}
 
 	public int getNrRows() {
@@ -125,6 +126,10 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 				throw new RuntimeException(ex);
 			}
 		}
+	}
+
+	public void close() throws IOException {
+		in.close();
 	}
 
 }

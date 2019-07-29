@@ -23,6 +23,7 @@ import umcg.genetica.io.trityper.*;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.text.Strings;
 import umcg.genetica.util.RunTimer;
 
 import java.io.File;
@@ -333,7 +334,7 @@ public class MetaQTL3 {
 			}
 			EQTLRegression eqr = new EQTLRegression();
 			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectsSaveOutput, m_gg);
-
+			numAvailableInds = 0;
 			// shouldn't we re-rank?
 			for (int i = 0; i < numDatasets; i++) {
 				if (!m_settings.performParametricAnalysis) {
@@ -650,7 +651,7 @@ public class MetaQTL3 {
 			snpsArr[s] = new InSNP(snp, chr, pos);
 		});
 
-		if (m_gg.length > 1) {
+		if (m_gg.length > 1 && m_settings.sortsnps) {
 			Arrays.parallelSort(snpsArr);
 		}
 
@@ -658,45 +659,52 @@ public class MetaQTL3 {
 		for (int i = 0; i < m_snpList.length; i++) {
 			m_snpList[i] = snpsArr[i].snp;
 		}
-
-		// create snp translation table..
-		if ((m_gg.length * (long) m_snpList.length) < (Integer.MAX_VALUE - 2)) {
-			m_snpTranslationTable = new DenseIntMatrix2D(m_gg.length, m_snpList.length);
-		} else {
-			m_snpTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_snpList.length);
-		}
-
-//        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
 		System.out.println();
 		pb.close();
-		pb = new ProgressBar(m_snpList.length, "- Linking snps between datasets.");
-		ProgressBar finalPb1 = pb;
-		IntStream.range(0, m_snpList.length).parallel().forEach(p -> {
-			String snp = m_snpList[p];
-			for (int d = 0; d < m_gg.length; d++) {
-				Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
-				if (tmp == -9) {
-					m_snpTranslationTable.setQuick(d, p, -9);
-				} else {
-					m_snpTranslationTable.setQuick(d, p, tmp);
-				}
 
+
+		indexVariants();
+
+		if (m_gg.length > 1 && m_settings.requireAtLeastNumberOfDatasets > 1) {
+			System.out.println("Re-indexing to make sure we're only testing variants that are present in at least " + m_settings.requireAtLeastNumberOfDatasets + " datasets.");
+			ArrayList<String> newList = new ArrayList<>();
+			for (int s = 0; s < m_snpList.length; s++) {
+				int shared = 0;
+				for (int d = 0; d < m_gg.length; d++) {
+					int id = m_snpTranslationTable.getQuick(d, s);
+					if (id >= 0) {
+						shared++;
+					}
+				}
+				if (shared >= m_settings.requireAtLeastNumberOfDatasets) {
+					newList.add(m_snpList[s]);
+				}
 			}
-			finalPb1.iterateSynched();
-		});
-		finalPb1.close();
-//        for (int p = 0; p < m_snpList.length; p++) {
-//            String snp = m_snpList[p];
-//            for (int d = 0; d < m_gg.length; d++) {
-//                Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
-//                if (tmp == -9) {
-//                    m_snpTranslationTable.setQuick(d, p, -9);
-//                } else {
-//                    m_snpTranslationTable.setQuick(d, p, tmp);
-//                }
+
+			m_snpList = newList.toArray(new String[0]);
+
+			indexVariants();
+
+		}
+
+		// debug:
+//		System.out.println("Indexes of first 50 variants:");
+//		String[] names = new String[m_gg.length];
+//		for (int d = 0; d < m_gg.length; d++) {
+//			names[d] = m_gg[d].getSettings().name;
+//		}
+//		System.out.println("-\t" + Strings.concat(names, Strings.tab));
+//		for (int i = 0; i < 50; i++) {
+//			int[] indices = new int[m_gg.length];
+//			for (int d = 0; d < m_gg.length; d++) {
+//				indices[d] = m_snpTranslationTable.getQuick(d, i);
+//			}
 //
-//            }
-//        }
+//			System.out.println("SNP: " + i + "\t" + Strings.concat(indices, Strings.tab));
+//		}
+//		System.exit(-1);
+
+
 		excludedSNPs.close();
 
 		// now determine which of the SNPs that was queried for does not exist in any of the datasets.
@@ -725,6 +733,86 @@ public class MetaQTL3 {
 			}
 		}
 
+	}
+
+	private void indexVariants() {
+
+		// create snp translation table..
+		if ((m_gg.length * (long) m_snpList.length) < (Integer.MAX_VALUE - 2)) {
+			m_snpTranslationTable = new DenseIntMatrix2D(m_gg.length, m_snpList.length);
+		} else {
+			m_snpTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_snpList.length);
+		}
+
+		ProgressBar pb = new ProgressBar(m_snpList.length, "- Linking snps between datasets.");
+		ProgressBar finalPb1 = pb;
+
+		AtomicInteger[] nrShared = new AtomicInteger[m_gg.length];
+		AtomicInteger[][] nrSharedWithOtherDatasets = new AtomicInteger[m_gg.length][m_gg.length];
+		for (int d = 0; d < m_gg.length; d++) {
+			nrShared[d] = new AtomicInteger(0);
+			for (int d2 = 0; d2 < m_gg.length; d2++) {
+				nrSharedWithOtherDatasets[d][d2] = new AtomicInteger();
+			}
+		}
+
+		IntStream.range(0, m_snpList.length).parallel().forEach(p -> {
+			String snp = m_snpList[p];
+			int ct = 0;
+			for (int d = 0; d < m_gg.length; d++) {
+				Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
+				if (tmp == -9) {
+					m_snpTranslationTable.setQuick(d, p, -9);
+				} else {
+					m_snpTranslationTable.setQuick(d, p, tmp);
+					ct++;
+				}
+			}
+
+			for (int d = 0; d < m_gg.length; d++) {
+				int id = m_snpTranslationTable.getQuick(d, p);
+				for (int d2 = 0; d2 < m_gg.length; d2++) {
+					int id2 = m_snpTranslationTable.getQuick(d2, p);
+					if (id != -9 && id2 != -9) {
+						nrSharedWithOtherDatasets[d][d2].getAndIncrement();
+					}
+				}
+			}
+
+			nrShared[ct - 1].getAndIncrement();
+
+			// remove snp if not present in at least n datasets
+			if (ct < m_settings.requireAtLeastNumberOfDatasets) {
+				for (int d = 0; d < m_gg.length; d++) {
+					m_snpTranslationTable.setQuick(d, p, -9);
+				}
+			}
+			finalPb1.iterateSynched();
+		});
+		finalPb1.close();
+
+		System.out.println("Number of SNPs shared per dataset");
+		System.out.println("NrShared\tNrSNPs");
+		for (int c = 0; c < nrShared.length; c++) {
+			System.out.println(c + "\t" + nrShared[c].get());
+		}
+		System.out.println();
+		String header = "-";
+		for (int d = 0; d < m_gg.length; d++) {
+			header += "\t" + m_gg[d].getSettings().name;
+		}
+
+		System.out.println("Sharing of SNPs between datasets:");
+		System.out.println(header);
+
+		for (int d = 0; d < m_gg.length; d++) {
+			String ln = m_gg[d].getSettings().name;
+			for (int d2 = 0; d2 < m_gg.length; d2++) {
+				ln += "\t" + nrSharedWithOtherDatasets[d][d2].get();
+			}
+			System.out.println(ln);
+		}
+		System.out.println();
 	}
 
 	protected void createProbeList() throws IOException {

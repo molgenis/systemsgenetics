@@ -22,6 +22,7 @@ public class NormalizationConsoleGUI {
 		String cov = null;
 
 		boolean fullNorm = true;
+		boolean prerank = false;
 		boolean runLogTransform = false;
 		boolean runMTransform = false;
 		boolean runQQNorm = false;
@@ -54,6 +55,10 @@ public class NormalizationConsoleGUI {
 			}
 			if (arg.equals("--logtransform")) {
 				runLogTransform = true;
+				fullNorm = false;
+			}
+			if (arg.equals("--prerank")) {
+				prerank = true;
 				fullNorm = false;
 			}
 			if (arg.equals("--binary")) {
@@ -161,12 +166,18 @@ public class NormalizationConsoleGUI {
 				p.saveBinary = true;
 			}
 
+			if (prerank) {
+				p.rank(in, out);
+				System.exit(0);
+			}
+
 			if (!fullNorm) {
 				p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
 						runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
 						runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues,
 						forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
 			} else {
+
 				// run full normalization
 				p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
 						true, true, false, true, true, true, false, false, false,
@@ -196,7 +207,8 @@ public class NormalizationConsoleGUI {
 				+ "--centerscale\t\t\t\tCenter the mean to 0, linearly scale using standard deviation\n"
 				+ "--adjustPCA\t\t\t\tRun PCA adjustment \n"
 				+ "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
-				+ "--sampleInclude\t\t\t\tList of high quality sample, other samples will be removed. \n"
+				+ "--sampleInclude\t\t\t\tList of high quality sample, other samples will be removed.\n"
+				+ "--prerank\t\t\t\tRank the data before normalization\n"
 				+ "\n"
 				+ "Covariate adjustment parameters:\n"
 				+ "--cov\t\t\tstring\t\tCovariates to remove\n"

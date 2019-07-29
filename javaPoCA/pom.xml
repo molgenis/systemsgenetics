@@ -4,7 +4,7 @@
     <parent>
         <groupId>nl.systemsgenetics</groupId>
         <artifactId>systemsgenetics</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.4-SNAPSHOT</version>
     </parent>
     <artifactId>javaPCoA</artifactId>
     <version>1.0.7-SNAPSHOT</version>
@@ -36,6 +36,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.1</version>
                 <configuration>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -61,7 +62,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
+                <version>3.8.1</version>
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>
