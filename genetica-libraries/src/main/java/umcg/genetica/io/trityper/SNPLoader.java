@@ -43,9 +43,9 @@ public class SNPLoader {
         this(genotypehandle, dosagehandle, indIsIncluded, isFemale, 1000);
     }
 
-    int gtmaplen;
-    int dsmaplen;
-    int numberOfVariantsInMemoryMap = 1000;
+    private int gtmaplen;
+    private int dsmaplen;
+    private int numberOfVariantsInMemoryMap = 1000;
 
     public SNPLoader(RandomAccessFile genotypeHandle, RandomAccessFile dosageHandle, Boolean[] isIncluded, Boolean[] isFemale, int numberOfVariantsToBuffer) {
 

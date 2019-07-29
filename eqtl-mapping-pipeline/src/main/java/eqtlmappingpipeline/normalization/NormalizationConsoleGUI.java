@@ -166,15 +166,18 @@ public class NormalizationConsoleGUI {
 				p.saveBinary = true;
 			}
 
+			if (prerank) {
+				p.rank(in, out);
+				System.exit(0);
+			}
+
 			if (!fullNorm) {
 				p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
 						runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
 						runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues,
 						forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
 			} else {
-				if (prerank) {
-					p.rank(in, out);
-				}
+
 				// run full normalization
 				p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
 						true, true, false, true, true, true, false, false, false,

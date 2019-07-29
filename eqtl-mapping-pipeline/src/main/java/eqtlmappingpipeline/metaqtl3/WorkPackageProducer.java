@@ -64,23 +64,8 @@ class WorkPackageProducer extends Thread {
 
 		// create workpackage objects: determine to which probe each snp should be mapped
 
-		int workPackageBufferSize = 1;
 
-		double sumaveragesnpsize = 0;
-		try {
-			for (int d = 0; d < m_SNPLoaders.length; d++) {
-				sumaveragesnpsize += m_SNPLoaders[d].getAverageSNPSize(m_gg[d].getGenotypeData().getSNPs().length);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// make sure not to load more than 500mb worth of SNP data per block
-		// SNPLoader has it's own buffer of a set number of variants
-		sumaveragesnpsize /= m_SNPLoaders.length;
-		workPackageBufferSize = 1; // 256; // (int) Math.floor((double) (16 * 1048576) / sumaveragesnpsize);
-
-
+		int workPackageBufferSize = m_settings.numberOfVariantsToBuffer;
 		if (m_workPackages.length < workPackageBufferSize) {
 			workPackageBufferSize = m_workPackages.length;
 		}
@@ -88,7 +73,7 @@ class WorkPackageProducer extends Thread {
 //		System.out.println("Loading " + workPackageBufferSize + " SNPs per buffer.");
 //		System.out.println();
 		int workPackagesPassingQC = 0;
-		int numProcessed = 0;
+		int currentBufferPosition = 0;
 
 //		workPackageBufferSize = 1;
 
@@ -112,10 +97,10 @@ class WorkPackageProducer extends Thread {
 			}
 
 
-			while (numProcessed < m_workPackages.length) {
+			while (currentBufferPosition < m_workPackages.length) {
 
-				if (numProcessed + workPackageBufferSize > m_workPackages.length) {
-					workPackageBufferSize = m_workPackages.length - numProcessed;
+				if (currentBufferPosition + workPackageBufferSize > m_workPackages.length) {
+					workPackageBufferSize = m_workPackages.length - currentBufferPosition;
 				}
 
 				WorkPackage[] workPackageBuffer = new WorkPackage[workPackageBufferSize];
@@ -127,21 +112,21 @@ class WorkPackageProducer extends Thread {
 
 				// load a set of workpackages in the buffer
 				int numInBuffer = 0;
-				while ((numInBuffer < workPackageBufferSize) && (numProcessed < m_workPackages.length)) {
-					WorkPackage toAdd = m_workPackages[numProcessed];
+				while ((numInBuffer < workPackageBufferSize) && (currentBufferPosition < m_workPackages.length)) {
+					WorkPackage toAdd = m_workPackages[currentBufferPosition];
 					if (toAdd != null) {
 						workPackageBuffer[numInBuffer] = toAdd;
 						numInBuffer++;
 					}
-					numProcessed++;
+					currentBufferPosition++;
 				}
 
 				// load the SNPs for each dataset
-				int finalWorkPackageBufferSize = workPackageBufferSize;
 				StringBuilder[][] finalQcBuffer = qcBuffer;
-				IntStream.range(0, m_gg.length).parallel().forEach(d -> {
-					SNPLoader loader = m_SNPLoaders[d];
+				int finalWorkPackageBufferSize = workPackageBufferSize;
 
+				IntStream.range(0, m_gg.length).forEach(d -> {
+					SNPLoader loader = m_SNPLoaders[d];
 					boolean dosageAvailable = loader.hasDosageInformation();
 
 					for (int i = 0; i < finalWorkPackageBufferSize; i++) {
@@ -168,14 +153,6 @@ class WorkPackageProducer extends Thread {
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
-							if (!dSNP.passesQC() || dSNP.getCR() < m_callratethreshold || dSNP.getMAF() < m_mafthreshold || dSNP.getHWEP() < m_hwethreshold || dSNP.getAlleleItr() > 2) {
-								snps[d].setPassesQC(false);
-							} else {
-								wp.incrementDatasetsPassingQC();
-//								short dsPassingQC = wp.getDatasetsPassingQC();
-//								dsPassingQC++;
-//								wp.setDatasetsPassingQC(dsPassingQC);
-							}
 
 							if (!m_permuting && m_settings.writeSNPQCLog) {
 								Integer snpid = m_gg[d].getGenotypeData().getSnpToSNPId().get(dSNP.getName());
@@ -200,9 +177,15 @@ class WorkPackageProducer extends Thread {
 										append(dSNP.getCR()).append("\t").append(dSNP.getMAF()).append("\t").append(dSNP.getHWEP()).append("\t").append(dSNP.passesQC());
 							}
 
-							if (!dSNP.passesQC()) {
+							if (!dSNP.passesQC() || dSNP.getCR() < m_callratethreshold
+									|| dSNP.getMAF() < m_mafthreshold
+									|| dSNP.getHWEP() < m_hwethreshold
+									|| dSNP.getAlleleItr() > 2) {
+								snps[d].setPassesQC(false);
 								snps[d].clearGenotypes();
 								snps[d] = null;
+							} else {
+								wp.incrementDatasetsPassingQC();
 							}
 						} else {
 							if (!m_permuting && m_settings.writeSNPQCLog) {
@@ -216,7 +199,7 @@ class WorkPackageProducer extends Thread {
 							WorkPackage wp = workPackageBuffer[i];
 							SNP[] snps = wp.getSnps();
 							SNP dSNP = snps[d];
-							if (wp.getDatasetsPassingQC() > 0 && dSNP != null && dSNP.passesQC()) {
+							if (dSNP != null && dSNP.passesQC()) {
 								try {
 									loader.loadDosage(dSNP);
 								} catch (IOException e) {
@@ -263,8 +246,6 @@ class WorkPackageProducer extends Thread {
 							|| (wp.getDatasetsPassingQC() >= m_settings.requireAtLeastNumberOfDatasets)) {
 						// check whether alleles should be flipped.
 						boolean allelesOk = detmermineAlleleFlips(wp, snplog);
-
-
 						if (allelesOk) {
 							// put the fully loaded WP in the queue for further processing...
 							try {

@@ -75,6 +75,9 @@ public class Normalizer {
 
 
 	public void rank(String input, String output) throws IOException {
+		System.out.println("Ranking data.");
+		System.out.println("Input: " + input);
+		System.out.println("Output: " + output);
 		TextFile tf = new TextFile(input, TextFile.R);
 		TextFile outf = new TextFile(output, TextFile.W);
 		outf.writeln(tf.readLine());

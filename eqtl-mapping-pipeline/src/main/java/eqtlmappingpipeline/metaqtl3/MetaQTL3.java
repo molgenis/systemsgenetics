@@ -23,6 +23,7 @@ import umcg.genetica.io.trityper.*;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.text.Strings;
 import umcg.genetica.util.RunTimer;
 
 import java.io.File;
@@ -658,6 +659,83 @@ public class MetaQTL3 {
 		for (int i = 0; i < m_snpList.length; i++) {
 			m_snpList[i] = snpsArr[i].snp;
 		}
+		System.out.println();
+		pb.close();
+
+
+		indexVariants();
+
+		if (m_gg.length > 1 && m_settings.requireAtLeastNumberOfDatasets > 1) {
+			System.out.println("Re-indexing to make sure we're only testing variants that are present in at least " + m_settings.requireAtLeastNumberOfDatasets + " datasets.");
+			ArrayList<String> newList = new ArrayList<>();
+			for (int s = 0; s < m_snpList.length; s++) {
+				int shared = 0;
+				for (int d = 0; d < m_gg.length; d++) {
+					int id = m_snpTranslationTable.getQuick(d, s);
+					if (id >= 0) {
+						shared++;
+					}
+				}
+				if (shared >= m_settings.requireAtLeastNumberOfDatasets) {
+					newList.add(m_snpList[s]);
+				}
+			}
+
+			m_snpList = newList.toArray(new String[0]);
+
+			indexVariants();
+
+		}
+
+		// debug:
+//		System.out.println("Indexes of first 50 variants:");
+//		String[] names = new String[m_gg.length];
+//		for (int d = 0; d < m_gg.length; d++) {
+//			names[d] = m_gg[d].getSettings().name;
+//		}
+//		System.out.println("-\t" + Strings.concat(names, Strings.tab));
+//		for (int i = 0; i < 50; i++) {
+//			int[] indices = new int[m_gg.length];
+//			for (int d = 0; d < m_gg.length; d++) {
+//				indices[d] = m_snpTranslationTable.getQuick(d, i);
+//			}
+//
+//			System.out.println("SNP: " + i + "\t" + Strings.concat(indices, Strings.tab));
+//		}
+//		System.exit(-1);
+
+
+		excludedSNPs.close();
+
+		// now determine which of the SNPs that was queried for does not exist in any of the datasets.
+		if (m_settings.tsSNPsConfine != null) {
+			Iterator<String> it = m_settings.tsSNPsConfine.iterator();
+			if (m_settings.tsSNPsConfine.isEmpty()) {
+				System.err.println("ERROR: a SNP confinement file is specified in the settings, but it is apparently empty? " + m_settings.strConfineSNP);
+			} else {
+				String next = it.next();
+
+				TextFile querySNPNotPresent = new TextFile(m_settings.outputReportsDir + "querySNPsNotPresentInDataset.txt.gz", TextFile.W);
+				while (it.hasNext()) {
+					boolean isPresentInAnyDataset = false;
+					for (int d = 0; d < m_gg.length; d++) {
+						Integer id = m_gg[d].getGenotypeData().getSnpToSNPId().get(next);
+						if (id != -9) {
+							isPresentInAnyDataset = true;
+						}
+					}
+					if (!isPresentInAnyDataset) {
+						querySNPNotPresent.writeln(next);
+					}
+					next = it.next();
+				}
+				querySNPNotPresent.close();
+			}
+		}
+
+	}
+
+	private void indexVariants() {
 
 		// create snp translation table..
 		if ((m_gg.length * (long) m_snpList.length) < (Integer.MAX_VALUE - 2)) {
@@ -666,12 +744,8 @@ public class MetaQTL3 {
 			m_snpTranslationTable = new DenseLargeIntMatrix2D(m_gg.length, m_snpList.length);
 		}
 
-//        m_snpTranslationTable = new Integer[m_gg.length][m_snpList.length];
-		System.out.println();
-		pb.close();
-		pb = new ProgressBar(m_snpList.length, "- Linking snps between datasets.");
+		ProgressBar pb = new ProgressBar(m_snpList.length, "- Linking snps between datasets.");
 		ProgressBar finalPb1 = pb;
-
 
 		AtomicInteger[] nrShared = new AtomicInteger[m_gg.length];
 		AtomicInteger[][] nrSharedWithOtherDatasets = new AtomicInteger[m_gg.length][m_gg.length];
@@ -704,6 +778,7 @@ public class MetaQTL3 {
 					}
 				}
 			}
+
 			nrShared[ct - 1].getAndIncrement();
 
 			// remove snp if not present in at least n datasets
@@ -738,48 +813,6 @@ public class MetaQTL3 {
 			System.out.println(ln);
 		}
 		System.out.println();
-
-
-//        for (int p = 0; p < m_snpList.length; p++) {
-//            String snp = m_snpList[p];
-//            for (int d = 0; d < m_gg.length; d++) {
-//                Integer tmp = m_gg[d].getGenotypeData().getSnpToSNPId().get(snp);
-//                if (tmp == -9) {
-//                    m_snpTranslationTable.setQuick(d, p, -9);
-//                } else {
-//                    m_snpTranslationTable.setQuick(d, p, tmp);
-//                }
-//
-//            }
-//        }
-		excludedSNPs.close();
-
-		// now determine which of the SNPs that was queried for does not exist in any of the datasets.
-		if (m_settings.tsSNPsConfine != null) {
-			Iterator<String> it = m_settings.tsSNPsConfine.iterator();
-			if (m_settings.tsSNPsConfine.isEmpty()) {
-				System.err.println("ERROR: a SNP confinement file is specified in the settings, but it is apparently empty? " + m_settings.strConfineSNP);
-			} else {
-				String next = it.next();
-
-				TextFile querySNPNotPresent = new TextFile(m_settings.outputReportsDir + "querySNPsNotPresentInDataset.txt.gz", TextFile.W);
-				while (it.hasNext()) {
-					boolean isPresentInAnyDataset = false;
-					for (int d = 0; d < m_gg.length; d++) {
-						Integer id = m_gg[d].getGenotypeData().getSnpToSNPId().get(next);
-						if (id != -9) {
-							isPresentInAnyDataset = true;
-						}
-					}
-					if (!isPresentInAnyDataset) {
-						querySNPNotPresent.writeln(next);
-					}
-					next = it.next();
-				}
-				querySNPNotPresent.close();
-			}
-		}
-
 	}
 
 	protected void createProbeList() throws IOException {
