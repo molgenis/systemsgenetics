@@ -487,7 +487,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		in.close();
 
 		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, newRowMap, newColMap);
-		LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, reqrows, reqcols});
+		//LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, reqrows, reqcols});
 
 		return dataset;
 
@@ -592,7 +592,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
 
-		LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
+		//LOGGER.log(Level.INFO, "''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, dataset.matrix.rows(), dataset.matrix.columns()});
 		return dataset;
 	}
 
@@ -743,7 +743,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		in.close();
 
 		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
-		LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
+		//LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
 
 		return dataset;
 	}
@@ -1460,6 +1460,14 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrix1D viewCol(int col) {
 		return matrix.viewColumn(col);
 	}
+	
+	public DoubleMatrix2D viewColAsMmatrix(int col) {
+		return matrix.viewSelection(null, new int[]{col});
+	}
+	
+	public DoubleMatrix2D viewRowAsMmatrix(int row) {
+		return matrix.viewSelection(new int[]{row}, null);
+	}
 
 	/**
 	 * @return Correlation matrix on columns
@@ -1562,6 +1570,34 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return newDataset;
 
 	}
+	
+	public DoubleMatrixDataset<R, C> createColumnForceNormalDuplicate() {
+
+		DoubleMatrixDataset<R, C> newDataset = new DoubleMatrixDataset<>(hashRows, hashCols);
+
+		NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED,
+				TiesStrategy.AVERAGE);
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			double[] col = matrix.viewColumn(c).toArray();
+
+			double mean = JSci.maths.ArrayMath.mean(col);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(col);
+
+			double[] rankedValues = ranking.rank(col);
+
+			for (int s = 0; s < matrix.rows(); s++) {
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+
+				newDataset.setElementQuick(s, c, mean + cern.jet.stat.Probability.normalInverse(pValue) * stdev);
+			}
+
+		}
+
+		return newDataset;
+
+	}
 
 	/**
 	 *
@@ -1635,6 +1671,36 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
+		/**
+	 *
+	 * In place center around 0. Will set mean to 0
+	 *
+	 */
+	public void centerColumns() {
+
+		final int rows = matrix.rows();
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			DoubleMatrix1D col = matrix.viewColumn(c);
+
+			double colSum = 0;
+
+			for (int e = 0; e < rows; ++e) {
+				colSum += col.getQuick(e);
+			}
+
+			final double mean = colSum / rows;
+
+
+			for (int e = 0; e < rows; ++e) {
+				col.setQuick(e, (col.getQuick(e) - mean));
+			}
+
+		}
+
+	}
+	
 	/**
 	 * Obviously not recommended for large matrices but great for debugging
 	 *
@@ -1714,6 +1780,14 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		return correlations;
 
+	}
+	
+	/**
+	 * 
+	 * @return fully independent copy of this matrix. 
+	 */
+	public DoubleMatrixDataset<R,C> duplicate(){
+		return new DoubleMatrixDataset<>(matrix.copy(), getHashRowsCopy(), getHashColsCopy());
 	}
 
 }

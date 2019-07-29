@@ -5,6 +5,8 @@
  */
 package nl.systemsgenetics.depict2;
 
+import java.util.Objects;
+
 /**
  *
  * @author patri
@@ -54,6 +56,43 @@ public class Gene {
 		}
 		return sb.toString().intern();
 
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 67 * hash + Objects.hashCode(this.gene);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final Gene other = (Gene) obj;
+		if (this.start != other.start) {
+			return false;
+		}
+		if (this.stop != other.stop) {
+			return false;
+		}
+		if (!Objects.equals(this.gene, other.gene)) {
+			return false;
+		}
+		if (!Objects.equals(this.chr, other.chr)) {
+			return false;
+		}
+		if (!Objects.equals(this.band, other.band)) {
+			return false;
+		}
+		return true;
 	}
 
 }

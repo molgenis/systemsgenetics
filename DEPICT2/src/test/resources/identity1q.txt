@@ -1,0 +1,4 @@
+	Gene4	Gene5	Gene6
+Gene4	1	0	0
+Gene5	0	1	0
+Gene6	0	0	1
