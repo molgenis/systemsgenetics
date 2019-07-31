@@ -1,7 +1,7 @@
 
 setwd("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
-trait = "Height_v32/Height"
+trait = "Height_v33/Height"
 
 library(readr)
 
@@ -45,3 +45,21 @@ plot(geneScores2[match(x,names(geneScores2))], geneScores[match(x,names(geneScor
 cor.test(geneScores2[match(x,names(geneScores2))], geneScores[match(x,names(geneScores))])
 
 geneScores2 <- geneScores
+
+
+
+table_tmp <- read_delim("pathwayDatabasesTxt/eigenvectors_1588.txt", delim = "\t", quote = "")
+eigen1588 <- as.matrix(table_tmp[,-1])
+rownames(eigen1588) <- table_tmp[,1][[1]]
+rm(table_tmp)
+
+pcMean <- apply(eigen1588, 2, mean)
+pcSd <- apply(eigen1588, 2, sd)
+
+for(i in 1:ncol(eigen1588)){
+  eigen1588[,i] <- (eigen1588[,i] - pcMean[i]) / pcSd[i]
+}
+
+
+geneScoresEigen <- apply(eigen1588, 1, function(row){row %*% eigenBeta[,1]})
+

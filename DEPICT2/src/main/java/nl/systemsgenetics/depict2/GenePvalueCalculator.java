@@ -43,7 +43,7 @@ import umcg.genetica.math.stats.ZScores;
 public class GenePvalueCalculator {
 
 	public static final int MAX_ROUND_1_RESCUE = 100000000;
-	
+
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int PERMUTATION_STEP = 1000;
@@ -493,8 +493,8 @@ public class GenePvalueCalculator {
 					}
 					currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-					while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-						if (geneChi2Sum < geneChi2SumNull[perm]) {
+					while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+						if (geneChi2Sum < geneChi2SumNull[perm++]) {
 							countNullLargerChi2ThanReal++;
 						}
 					}
@@ -518,7 +518,10 @@ public class GenePvalueCalculator {
 
 				final double p;
 
+				LOGGER.debug("Done initial permutation for:\t" + gene.getGene() + "\tphenoI:\t" + phenoI + "\tcountNullLargerChi2ThanReal:\t" + countNullLargerChi2ThanReal + "\tused permutations:\t" + currentNumberPermutationsForThisPhenoGeneCombo);
+
 				if (countNullLargerChi2ThanReal < 20) {
+					
 					//permutations not able to estimate p-value
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
@@ -537,14 +540,16 @@ public class GenePvalueCalculator {
 							}
 							currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-							while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-								if (geneChi2Sum < geneChi2SumNull[perm]) {
+							while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+								if (geneChi2Sum < geneChi2SumNull[perm++]) {
 									countNullLargerChi2ThanReal++;
 								}
 							}
 
 						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
 
+						LOGGER.debug("Done first rescue permutation for:\t" + gene.getGene() + "\tphenoI:\t" + phenoI + "\tcountNullLargerChi2ThanReal:\t" + countNullLargerChi2ThanReal + "\tused permutations:\t" + currentNumberPermutationsForThisPhenoGeneCombo);
+						
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
 							double weightedChi2Perm = 0;
@@ -582,6 +587,7 @@ public class GenePvalueCalculator {
 					} else {
 						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
 						p = farebrotherP <= 1e-12 ? 1e-12 : farebrotherP;
+						LOGGER.debug("Using farebrother pvalue for:\t" + gene.getGene() + "\tphenoI:\t" + phenoI + "\tfarebrotherP:\t" + p);
 						countBasedPvalueOnFarebrother++;
 					}
 				} else {
@@ -589,8 +595,6 @@ public class GenePvalueCalculator {
 					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
 					LOGGER.debug(gene.getGene() + " permutation: " + currentNumberPermutationsForThisPhenoGeneCombo + " count null larger than real: " + countNullLargerChi2ThanReal + " pvalue:" + p);
 				}
-
-				
 
 				genePValueDistributionPermuations[(int) (20d * p)]++;
 				genePvalues.setElementQuick(geneI, phenoI, p);
@@ -623,10 +627,14 @@ public class GenePvalueCalculator {
 
 		}
 
+		geneMaxPermutationCount.setElementQuick(geneI, 0, currentNumberPermutationsCalculated);
+
+		int nullUsingFarebrother = 0;
+		int nullUsingRescue1 = 0;
+		int nullUsingRescue2 = 0;
+		
 		// Do exactly the same thing but now for the null GWAS
-		for (int nullPhenoI = 0;
-				nullPhenoI < numberRandomPhenotypes;
-				++nullPhenoI) {
+		for (int nullPhenoI = 0; nullPhenoI < numberRandomPhenotypes; ++nullPhenoI) {
 
 			if (variantCorrelationsPrunedRows > 1) {
 
@@ -652,8 +660,8 @@ public class GenePvalueCalculator {
 					}
 					currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-					while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-						if (geneChi2Sum < geneChi2SumNull[perm]) {
+					while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+						if (geneChi2Sum < geneChi2SumNull[perm++]) {
 							countNullLargerChi2ThanReal++;
 						}
 					}
@@ -672,11 +680,16 @@ public class GenePvalueCalculator {
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
 					}
+					
+					++nullUsingFarebrother;
+					
 					double farebrotherP = farebrother.probQsupx(geneChi2Sum);
 
 					if (farebrother.getIfault() != 0) {
 						//farebrother failed best we can do is some more permutation p-value
 
+						nullUsingRescue1++;
+						
 						//First fast permutations that can be used for other phenotypes / permutations
 						do {
 							//LOGGER.debug("Start do with current permutations " + currentNumberPermutations + " x = " + x + " end: " + (currentNumberPermutations + PERMUTATION_STEP) + "?" + ((currentNumberPermutations + PERMUTATION_STEP) < maxNrPermutations));
@@ -686,14 +699,18 @@ public class GenePvalueCalculator {
 							}
 							currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-							while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-								if (geneChi2Sum < geneChi2SumNull[perm]) {
+							while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+								if (geneChi2Sum < geneChi2SumNull[perm++]) {
 									countNullLargerChi2ThanReal++;
 								}
 							}
 
 						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
 
+						if(countNullLargerChi2ThanReal < 5){
+							++nullUsingRescue2;
+						}
+						
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
 							double weightedChi2Perm = 0;
@@ -726,7 +743,6 @@ public class GenePvalueCalculator {
 						}
 						p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
 						//countBasedPvalueOnPermutationsAfterFailedFarebrother++;
-				
 
 					} else {
 						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
@@ -736,9 +752,9 @@ public class GenePvalueCalculator {
 				} else {
 					//countBasedPvalueOnPermutations++;
 					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
-				
+
 				}
-				
+
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
 
 				timeStop = System.currentTimeMillis();
@@ -764,9 +780,9 @@ public class GenePvalueCalculator {
 			}
 
 		}
+		
+		LOGGER.debug("Random phenotype permutations\t" + gene.getGene() + "\tnullUsingFarebrother\t" + nullUsingFarebrother + "\tnullUsingRescue1\t" + nullUsingRescue1 + "\tnullUsingRescue2\t" + nullUsingRescue2);
 
-		geneMaxPermutationCount.setElementQuick(geneI,
-				0, currentNumberPermutationsCalculated);
 		geneRuntime.setElementQuick(geneI,
 				0, (System.currentTimeMillis() - geneTimeStart));
 

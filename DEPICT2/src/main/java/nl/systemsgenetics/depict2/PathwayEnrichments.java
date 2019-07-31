@@ -111,14 +111,16 @@ public class PathwayEnrichments {
 //			geneZscoresPathwayMatched.centerColumns();
 //			geneZscoresNullGwasCorrelationPathwayMatched.centerColumns();
 //			geneZscoresNullGwasNullBetasPathwayMatched.centerColumns();
-
 			geneZscoresPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
 
 			genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
 			geneZscoresPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
-			geneZscoresNullGwasNullBetasPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedNullGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
+			
+			if (LOGGER.isDebugEnabled()) {
+				geneZscoresNullGwasNullBetasPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedNullGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
+			}
 
 			LinkedHashMap<String, Integer> singleColMap = new LinkedHashMap<>(1);
 			singleColMap.put("B1", 0);
@@ -175,12 +177,21 @@ public class PathwayEnrichments {
 					final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetasSubset = geneZscoresNullGwasNullBetasPathwayMatched.viewRowSelection(chrArmGenesInPathwayMatrix);
 					final DoubleMatrixDataset<String, String> genePathwayZscoresSubset = genePathwayZscores.viewRowSelection(chrArmGenesInPathwayMatrix);
 
-					final DoubleMatrixDataset<String, String> geneZscoresNullGwasSubsetGeneCorrelations = createLocalGeneCorrelation(geneZscoresNullGwasCorrelationSubset, armGenesInPathwayMatrix, geneCorrelationWindow);
+					final DoubleMatrixDataset<String, String> geneZscoresNullGwasSubsetGeneCorrelations;
+					if (geneCorrelationWindow < 0) {
+						LOGGER.debug("Creatling full correlation matrix for chr arm");
+						geneZscoresNullGwasSubsetGeneCorrelations = geneZscoresNullGwasCorrelationSubset.viewDice().calculateCorrelationMatrix();
+					} else {
+						LOGGER.debug("Creating correlation matrix in window: " + geneCorrelationWindow);
+						geneZscoresNullGwasSubsetGeneCorrelations = createLocalGeneCorrelation(geneZscoresNullGwasCorrelationSubset, armGenesInPathwayMatrix, geneCorrelationWindow);
+					}
 
 					//geneZscoresNullGwasSubsetGeneCorrelations = geneZscoresNullGwasCorrelationSubset.viewDice().calculateCorrelationMatrix();
-					geneZscoresNullGwasSubsetGeneCorrelations.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCor.txt");
-					geneZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneScores.txt");
-					genePathwayZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_pathwayScores.txt");
+					if (LOGGER.isDebugEnabled()) {
+						geneZscoresNullGwasSubsetGeneCorrelations.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCor.txt");
+						geneZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneScores.txt");
+						genePathwayZscoresSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_pathwayScores.txt");
+					}
 
 					final DoubleMatrix2D geneInvCorMatrixSubsetMatrix;
 					try {
@@ -195,18 +206,22 @@ public class PathwayEnrichments {
 						LOGGER.fatal(pathwayDatabase.getName() + " " + chrArm);
 						throw ex;
 					}
-					
+
 					DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = new DoubleMatrixDataset<>(geneInvCorMatrixSubsetMatrix, geneZscoresNullGwasSubsetGeneCorrelations.getHashRows(), geneZscoresNullGwasSubsetGeneCorrelations.getHashCols());
-					
-					geneInvCorMatrixSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt");
+
+					if (LOGGER.isDebugEnabled()) {
+						geneInvCorMatrixSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt");
+					}
 
 //final DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = new DoubleMatrixDataset<>(geneInvCorMatrixSubsetMatrix, geneZscoresNullGwasNullBetasSubset.getHashRows(), geneZscoresNullGwasNullBetasSubset.getHashRows());
 //geneInvCorMatrixSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt");
 					glsStep1(geneZscoresSubset, geneInvCorMatrixSubsetMatrix, genePathwayZscoresSubset, b1Arm, b2Arm);
 					glsStep1(geneZscoresNullGwasNullBetasSubset, geneInvCorMatrixSubsetMatrix, genePathwayZscoresSubset, b1NullGwasArm, b2NullGwasArm);
 
-					b1Arm.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_b1.txt");
-					b2Arm.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_b2.txt");
+					if (LOGGER.isDebugEnabled()) {
+						b1Arm.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_b1.txt");
+						b2Arm.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_b2.txt");
+					}
 
 					pb.step();
 
@@ -241,8 +256,10 @@ public class PathwayEnrichments {
 				b2NullGwas.getMatrix().assign(b2Arm.getMatrix(), cern.jet.math.tdouble.DoubleFunctions.plus);
 			}
 
-			b1.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_b1.txt");
-			b2.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_b2.txt");
+			if (LOGGER.isDebugEnabled()) {
+				b1.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_b1.txt");
+				b2.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_b2.txt");
+			}
 
 			betas = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
 			betasNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscoresNullGwasNullBetas.getHashColsCopy());

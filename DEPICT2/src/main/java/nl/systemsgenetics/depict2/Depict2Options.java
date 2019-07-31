@@ -59,6 +59,8 @@ public class Depict2Options {
 	private final boolean forceNormalPathwayPvalues;
 	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
+	private boolean corMatrixZscores = false;
+	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -77,7 +79,7 @@ public class Depict2Options {
 				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
 				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output"
-				+ "* CORRELATE_GENES - Create gene correlation matrix Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes"
+				+ "* CORRELATE_GENES - Create gene correlation matrix with 0 on diagnonal. Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes. Optionally use --corZscore to create Z-score matrix"
 		);
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
@@ -241,6 +243,18 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Eigenvectors and princial componentens [path]_ev.txt & [path]_pc.txt");
 		OptionBuilder.withLongOpt("pca");
 		OPTIONS.addOption(OptionBuilder.create("pca"));
+		
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("When using --mode CORRELATE_GENES to correlate genes save results as Z-scores instead of r's.");
+		OptionBuilder.withLongOpt("corZscore");
+		OPTIONS.addOption(OptionBuilder.create("cz"));
+		
+		OptionBuilder.withArgName("cols");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN");
+		OptionBuilder.withLongOpt("columnsToExtract");
+		OPTIONS.addOption(OptionBuilder.create("cte"));
+		
 
 	}
 
@@ -350,12 +364,17 @@ public class Depict2Options {
 				} else {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
 				}
+				corMatrixZscores = commandLine.hasOption("cz");
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
+			case CONVERT_BIN:
+				if (commandLine.hasOption("cte")) {
+					columnsToExtract = commandLine.getOptionValues("cte");
+				}
 			default:
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
@@ -543,10 +562,12 @@ public class Depict2Options {
 				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
 				break;
 			case CORRELATE_GENES:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off" ));
 				break;
 			case RUN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -711,4 +732,12 @@ public class Depict2Options {
 		return numberOfPermutationsRescue;
 	}
 
+	public boolean isCorMatrixZscores() {
+		return corMatrixZscores;
+	}
+
+	public String[] getColumnsToExtract() {
+		return columnsToExtract;
+	}
+	
 }

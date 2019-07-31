@@ -43,7 +43,7 @@ import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
-import static org.testng.Assert.*;
+import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 
 /**
  *
@@ -269,21 +269,7 @@ public class Depict2 {
 			LOGGER.info("Gene p-values loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
-		} else {
-
-			DoubleMatrixDataset<String, String> genePvalues2 = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-			DoubleMatrixDataset<String, String> genePvaluesNullGwas2 = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
-			DoubleMatrixDataset<String, String> geneVariantCount2 = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
-
-			List<Gene> genes2 = readGenes(options.getGeneInfoFile());
-			
-			assertEquals(genes, genes2);
-			
-			compareTwoMatrices(genePvalues, genePvalues2, 0);
-			compareTwoMatrices(genePvaluesNullGwas, genePvaluesNullGwas2, 0);
-			compareTwoMatrices(geneVariantCount, geneVariantCount2, 0);
-			
-		}
+		} 
 
 		//Identify genes with atleast one variant in window
 		final HashSet<String> selectedGenes = new HashSet<>();
@@ -513,7 +499,14 @@ public class Depict2 {
 	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		matrix.save(options.getOutputBasePath());
+		
+		String[] columnsToExtract = options.getColumnsToExtract();
+		
+		if(columnsToExtract != null){
+			matrix = matrix.viewColSelection(columnsToExtract);
+		}
+		
+		matrix.save(options.getOutputBasePath() + ".txt");
 
 	}
 
@@ -586,6 +579,17 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> expressionMatrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', genes, null);
 
 		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
+		
+		if(options.isCorMatrixZscores()){
+			PearsonRToZscoreBinned r2zScore = new PearsonRToZscoreBinned(10000000, expressionMatrix.columns());
+			r2zScore.inplaceRToZ(corMatrix);
+			LOGGER.info("Converted correlations to Z-scores");
+		}
+		
+		for(int i = 0 ; i < corMatrix.columns() ; ++i){
+			corMatrix.setElementQuick(i, i, 0);
+		}
+		LOGGER.info("Diagnonal set to zero as this might inflate coregulation towards genes in GWAS loci");
 
 		corMatrix.saveBinary(options.getOutputBasePath());
 
@@ -615,20 +619,5 @@ public class Depict2 {
 		}
 	}
 
-	public static void compareTwoMatrices(DoubleMatrixDataset<String, String> m1, DoubleMatrixDataset<String, String> m2, double delta) {
-
-		assertEquals(m1.rows(), m2.rows());
-		assertEquals(m1.columns(), m2.columns());
-
-		assertEquals(m1.getRowObjects(), m2.getRowObjects());
-		assertEquals(m1.getColObjects(), m2.getColObjects());
-
-		for (int r = 0; r < m1.rows(); ++r) {
-			for (int c = 0; c < m1.columns(); ++c) {
-				assertEquals(m1.getElementQuick(r, c), m2.getElementQuick(r, c), delta, "Difference at r: " + r + " c: " + c);
-			}
-		}
-
-	}
 
 }
