@@ -12,6 +12,9 @@ deconvolution of expression quantitative trait loci ([Decon-eQTL](Decon-eQTL)) i
 In R do
 
 ```
+install.packages('devtools')
+install.packages('matrixStats')
+install.packages('truncnorm')
 library('devtools')
 # NOTE: This can take a few minutes:
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
