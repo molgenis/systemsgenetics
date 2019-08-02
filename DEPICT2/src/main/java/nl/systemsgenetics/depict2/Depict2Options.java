@@ -47,6 +47,7 @@ public class Depict2Options {
 	private final double maxRBetweenVariants;
 	private final File logFile;
 	private final boolean debugMode;
+	private final File debugFolder;
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
 	private final File conversionColumnIncludeFilter;
@@ -276,6 +277,7 @@ public class Depict2Options {
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
+		debugFolder = new File(outputBasePath + "_debugFiles");
 		ignoreGeneCorrelations = commandLine.hasOption("igc");
 		correctForLambdaInflation = commandLine.hasOption("cl");
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
@@ -738,6 +740,10 @@ public class Depict2Options {
 
 	public String[] getColumnsToExtract() {
 		return columnsToExtract;
+	}
+
+	public File getDebugFolder() {
+		return debugFolder;
 	}
 	
 }

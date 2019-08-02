@@ -100,6 +100,7 @@ public class GenePvalueCalculator {
 //	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
+	private final File debugFolder;
 
 	/**
 	 *
@@ -120,7 +121,7 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final File debugFolder) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
@@ -129,6 +130,7 @@ public class GenePvalueCalculator {
 		this.maxNrPermutations = nrPermutations;
 		this.maxNrPermutationsRescue1 = nrRescuePermutation < MAX_ROUND_1_RESCUE ? (int) nrRescuePermutation : MAX_ROUND_1_RESCUE;
 		this.maxNrPermutationsRescue2 = nrRescuePermutation;
+		this.debugFolder = debugFolder;
 
 //		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations2 + 1);
 //		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
@@ -340,7 +342,7 @@ public class GenePvalueCalculator {
 
 			if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
 
-				variantCorrelations.save(new File(outputBasePath + "_" + gene.getGene() + "_variantCorMatrix.txt"));
+				variantCorrelations.save(new File(debugFolder, gene.getGene() + "_variantCorMatrix.txt"));
 
 			}
 
@@ -365,7 +367,7 @@ public class GenePvalueCalculator {
 
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPrunedRows > 1) {
 
-			variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_variantCorMatrixPruned.txt"));
+			variantCorrelationsPruned.save(new File(debugFolder, gene.getGene() + "_variantCorMatrixPruned.txt"));
 
 		}
 
@@ -414,7 +416,7 @@ public class GenePvalueCalculator {
 
 			if (LOGGER.isDebugEnabled()) {
 
-				saveEigenValues(lambdas, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
+				saveEigenValues(lambdas, new File(debugFolder, gene.getGene() + "_eigenValues.txt"));
 
 			}
 
@@ -446,7 +448,7 @@ public class GenePvalueCalculator {
 		}
 
 		if (LOGGER.isDebugEnabled()) {
-			geneVariantPhenotypeMatrix.save(new File(outputBasePath + "_" + gene.getGene() + "_variantPvalues.txt"));
+			geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvalues.txt"));
 		}
 
 		if (correctForLambdaInflation) {
@@ -457,7 +459,7 @@ public class GenePvalueCalculator {
 				}
 			}
 			if (LOGGER.isDebugEnabled()) {
-				geneVariantPhenotypeMatrix.save(new File(outputBasePath + "_" + gene.getGene() + "_variantPvaluesLambdaCorrected.txt"));
+				geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvaluesLambdaCorrected.txt"));
 			}
 		}
 
@@ -674,8 +676,9 @@ public class GenePvalueCalculator {
 				timeStart = System.currentTimeMillis();
 
 				final double p;
-
-				if (countNullLargerChi2ThanReal < 20) {
+				
+				//For permutation phenotypes use threshold of 5 not 20
+				if (countNullLargerChi2ThanReal < 5) {
 					//permutations not able to estimate p-value
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
@@ -705,7 +708,7 @@ public class GenePvalueCalculator {
 								}
 							}
 
-						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+						} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
 
 						if(countNullLargerChi2ThanReal < 5){
 							++nullUsingRescue2;

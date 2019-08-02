@@ -123,6 +123,7 @@ public class Depict2 {
 
 			if (options.isDebugMode()) {
 				Logger.getRootLogger().setLevel(Level.DEBUG);
+				options.getDebugFolder().mkdir();
 			} else {
 				Logger.getRootLogger().setLevel(Level.INFO);
 			}
