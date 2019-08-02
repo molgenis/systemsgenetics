@@ -230,7 +230,7 @@ public class Depict2 {
 
 		LOGGER.info("Prepared reference null distribution with " + LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
-		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getNumberOfPermutationsRescue(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment());
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getNumberOfPermutationsRescue(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getDebugFolder());
 
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
@@ -341,7 +341,7 @@ public class Depict2 {
 
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow()));
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder()));
 		}
 
 		ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null);
