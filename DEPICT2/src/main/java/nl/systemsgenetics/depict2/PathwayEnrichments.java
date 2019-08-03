@@ -22,7 +22,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import jdk.internal.joptsimple.internal.Strings;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
@@ -103,13 +102,13 @@ public class PathwayEnrichments {
 
 			if (forceNormalGenePvalues) {
 				LOGGER.debug("Doing force normal gene p-values");
-				geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, true, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
-				geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, true, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
-				geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, true, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
+				geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, false, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
+				geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, false, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
+				geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
 			} else {
-				geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, true, metaGenesPerArm.values());
-				geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, true, metaGenesPerArm.values());
-				geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, true, metaGenesPerArm.values());
+				geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, false, metaGenesPerArm.values());
+				geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, false, metaGenesPerArm.values());
+				geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values());
 			}
 			
 			genePathwayZscores.normalizeColumns();
@@ -617,7 +616,7 @@ public class PathwayEnrichments {
 		}
 
 		public String getMetaGeneId() {
-			return Strings.join(genes, "_");
+			return String.join("_", genes);
 		}
 
 	}
@@ -634,7 +633,7 @@ public class PathwayEnrichments {
 		int r = 0;
 		for (HashSet<MetaGene> metaGenesPerArm : metaGenes) {
 			for (MetaGene metaGene : metaGenesPerArm) {
-				metaGenesRows.put(metaGene.getMetaGeneId(), r);
+				metaGenesRows.put(metaGene.getMetaGeneId(), r++);
 			}
 		}
 
