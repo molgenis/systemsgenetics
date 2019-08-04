@@ -161,6 +161,9 @@ public class Depict2 {
 				case CORRELATE_GENES:
 					correlateGenes(options);
 					break;
+				case TRANSPOSE:
+					tranposeBinMatrix(options);
+					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
 			}
@@ -596,6 +599,12 @@ public class Depict2 {
 
 		LOGGER.info("Correlation matrix saved to: " + options.getOutputBasePath() + ".dat");
 
+	}
+
+	private static void tranposeBinMatrix(Depict2Options options) throws IOException {
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		matrix = matrix.viewDice();
+		matrix.saveBinary(options.getOutputBasePath());
 	}
 
 	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
