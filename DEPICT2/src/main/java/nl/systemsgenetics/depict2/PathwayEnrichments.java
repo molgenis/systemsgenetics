@@ -110,16 +110,15 @@ public class PathwayEnrichments {
 				geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, false, metaGenesPerArm.values());
 				geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values());
 			}
-			
+
 			genePathwayZscores.normalizeColumns();
 			geneZscoresPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
 
-			genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
-			geneZscoresPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
-
 			if (LOGGER.isDebugEnabled()) {
+				genePathwayZscores.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla")).getAbsolutePath());
+				geneZscoresPathwayMatched.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla")).getAbsolutePath());
 				geneZscoresNullGwasNullBetasPathwayMatched.save(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedNullGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt"));
 			}
 
@@ -145,9 +144,9 @@ public class PathwayEnrichments {
 					final ArrayList<String> chrArmGenesInPathwayMatrix = new ArrayList<>(armGenes.size());
 
 					for (MetaGene armGene : armGenes) {
-						
-							chrArmGenesInPathwayMatrix.add(armGene.getMetaGeneId());
-						
+
+						chrArmGenesInPathwayMatrix.add(armGene.getMetaGeneId());
+
 					}
 					//Now genesInPathwayMatrix will only contain genes that are also in the gene p-value matrix
 
@@ -178,8 +177,8 @@ public class PathwayEnrichments {
 
 					final DoubleMatrixDataset<String, String> geneZscoresNullGwasSubsetGeneCorrelations;
 //					if (geneCorrelationWindow < 0) {
-						LOGGER.debug("Creatling full correlation matrix for chr arm");
-						geneZscoresNullGwasSubsetGeneCorrelations = geneZscoresNullGwasCorrelationSubset.viewDice().calculateCorrelationMatrix();
+					LOGGER.debug("Creatling full correlation matrix for chr arm");
+					geneZscoresNullGwasSubsetGeneCorrelations = geneZscoresNullGwasCorrelationSubset.viewDice().calculateCorrelationMatrix();
 //					} else {
 //						LOGGER.debug("Creating correlation matrix in window: " + geneCorrelationWindow);
 //						geneZscoresNullGwasSubsetGeneCorrelations = createLocalGeneCorrelation(geneZscoresNullGwasCorrelationSubset, armGenesInPathwayMatrix, geneCorrelationWindow);
@@ -209,7 +208,7 @@ public class PathwayEnrichments {
 					DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = new DoubleMatrixDataset<>(geneInvCorMatrixSubsetMatrix, geneZscoresNullGwasSubsetGeneCorrelations.getHashRows(), geneZscoresNullGwasSubsetGeneCorrelations.getHashCols());
 
 					if (LOGGER.isDebugEnabled()) {
-						geneInvCorMatrixSubset.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt"));
+						geneInvCorMatrixSubset.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor").getAbsolutePath());
 					}
 
 //final DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = new DoubleMatrixDataset<>(geneInvCorMatrixSubsetMatrix, geneZscoresNullGwasNullBetasSubset.getHashRows(), geneZscoresNullGwasNullBetasSubset.getHashRows());
@@ -288,8 +287,8 @@ public class PathwayEnrichments {
 				}
 			}
 
-			betas.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt");
-			betasNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt");
+			betas.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			betasNull.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
 
 			pb.step();
 		}
@@ -343,7 +342,7 @@ public class PathwayEnrichments {
 				}
 			}
 
-			enrichmentPvalues.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
+			enrichmentPvalues.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
 		}
 
 		return enrichmentPvalues;

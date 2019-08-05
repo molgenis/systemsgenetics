@@ -239,12 +239,13 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
 
-		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
-		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
+		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
+		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
-		gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
-		gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
-
+		if (LOGGER.isDebugEnabled()) {
+			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
+			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
+		}
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
 		if (options.getPathwayDatabases().isEmpty()) {
@@ -267,13 +268,23 @@ public class Depict2 {
 
 		if (options.getMode() == Depict2Mode.RUN2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
-			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
+				genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
+				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
+			} else if (new File(options.getOutputBasePath() + "_genePvalues.txt").exists()) {
+				//This is for some legacy results. New versions of DEPICT2 will not create these files
+				genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			} else {
+				LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
+				LOGGER.fatal("First use --mode RUN to calculate gene p-values");
+				return;
+			}
 			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
 			genes = readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
-		} 
+		}
 
 		//Identify genes with atleast one variant in window
 		final HashSet<String> selectedGenes = new HashSet<>();
@@ -503,13 +514,13 @@ public class Depict2 {
 	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		
+
 		String[] columnsToExtract = options.getColumnsToExtract();
-		
-		if(columnsToExtract != null){
+
+		if (columnsToExtract != null) {
 			matrix = matrix.viewColSelection(columnsToExtract);
 		}
-		
+
 		matrix.save(options.getOutputBasePath() + ".txt");
 
 	}
@@ -583,14 +594,14 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> expressionMatrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', genes, null);
 
 		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
-		
-		if(options.isCorMatrixZscores()){
+
+		if (options.isCorMatrixZscores()) {
 			PearsonRToZscoreBinned r2zScore = new PearsonRToZscoreBinned(10000000, expressionMatrix.columns());
 			r2zScore.inplaceRToZ(corMatrix);
 			LOGGER.info("Converted correlations to Z-scores");
 		}
-		
-		for(int i = 0 ; i < corMatrix.columns() ; ++i){
+
+		for (int i = 0; i < corMatrix.columns(); ++i) {
 			corMatrix.setElementQuick(i, i, 0);
 		}
 		LOGGER.info("Diagnonal set to zero as this might inflate coregulation towards genes in GWAS loci");
@@ -628,6 +639,5 @@ public class Depict2 {
 			System.exit(1);
 		}
 	}
-
 
 }
