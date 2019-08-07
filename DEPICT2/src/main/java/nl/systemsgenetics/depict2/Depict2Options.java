@@ -245,18 +245,17 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Eigenvectors and princial componentens [path]_ev.txt & [path]_pc.txt");
 		OptionBuilder.withLongOpt("pca");
 		OPTIONS.addOption(OptionBuilder.create("pca"));
-		
+
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("When using --mode CORRELATE_GENES to correlate genes save results as Z-scores instead of r's.");
 		OptionBuilder.withLongOpt("corZscore");
 		OPTIONS.addOption(OptionBuilder.create("cz"));
-		
+
 		OptionBuilder.withArgName("cols");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN");
 		OptionBuilder.withLongOpt("columnsToExtract");
 		OPTIONS.addOption(OptionBuilder.create("cte"));
-		
 
 	}
 
@@ -362,10 +361,10 @@ public class Depict2Options {
 				pathwayDatabases = parsePd(commandLine);
 				break;
 			case CORRELATE_GENES:
-				if (!commandLine.hasOption("ge")) {
-					throw new ParseException("--genes not specified");
-				} else {
+				if (commandLine.hasOption("ge")) {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				} else {
+					geneInfoFile = null;
 				}
 				corMatrixZscores = commandLine.hasOption("cz");
 				pathwayDatabases = null;
@@ -567,13 +566,15 @@ public class Depict2Options {
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
 				break;
-				case TRANSPOSE:
+			case TRANSPOSE:
 				LOGGER.info(" * Matrix to transpose: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
 			case CORRELATE_GENES:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
-				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
-				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off" ));
+				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
+				if(geneInfoFile != null){
+					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				}
 				break;
 			case RUN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -729,7 +730,7 @@ public class Depict2Options {
 	public int getGeneCorrelationWindow() {
 		return geneCorrelationWindow;
 	}
-	
+
 	public boolean isExcludeHla() {
 		return excludeHla;
 	}
@@ -749,5 +750,5 @@ public class Depict2Options {
 	public File getDebugFolder() {
 		return debugFolder;
 	}
-	
+
 }

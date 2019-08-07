@@ -577,23 +577,33 @@ public class Depict2 {
 
 	private static void correlateGenes(Depict2Options options) throws FileNotFoundException, Exception {
 
-		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGeneInfoFile()))).withCSVParser(parser).withSkipLines(0).build();
+		DoubleMatrixDataset<String, String> expressionMatrix;
 
-		final HashSet<String> genes = new HashSet<>();
+		if (options.getGeneInfoFile() != null) {
 
-		String[] nextLine;
-		while ((nextLine = reader.readNext()) != null) {
+			final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGeneInfoFile()))).withCSVParser(parser).withSkipLines(0).build();
 
-			genes.add(nextLine[0]);
+			final HashSet<String> genes = new HashSet<>();
 
+			String[] nextLine;
+			while ((nextLine = reader.readNext()) != null) {
+				genes.add(nextLine[0]);
+			}
+
+			LOGGER.info("Read " + genes.size() + " genes to load");
+
+			expressionMatrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', genes, null);
+
+		} else {
+			expressionMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		}
 
-		LOGGER.info("Read " + genes.size() + " genes to load");
-
-		DoubleMatrixDataset<String, String> expressionMatrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', genes, null);
+		LOGGER.info("Loaded expression matrix with " + expressionMatrix.rows() + " genes and " + expressionMatrix.columns() + " observations");
 
 		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
+		
+		LOGGER.info("Done calculating correlations");
 
 		if (options.isCorMatrixZscores()) {
 			PearsonRToZscoreBinned r2zScore = new PearsonRToZscoreBinned(10000000, expressionMatrix.columns());
