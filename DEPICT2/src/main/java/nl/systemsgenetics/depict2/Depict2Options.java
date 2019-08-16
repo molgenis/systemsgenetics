@@ -58,10 +58,12 @@ public class Depict2Options {
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
+	private final boolean normalizeEigenvectors;
 	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
 	private boolean corMatrixZscores = false;
 	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN
+	private final File variantFilterFile;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -88,7 +90,7 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("m"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("GWAS Z-sccore binary matrix. Rows variants, Cols phenotypes. Without .dat");
 		OptionBuilder.withLongOpt("gwas");
 		OPTIONS.addOption(OptionBuilder.create("g"));
@@ -99,11 +101,17 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("referenceGenotypes");
 		OPTIONS.addOption(OptionBuilder.create("r"));
 
-		OptionBuilder.withArgName("basePath");
-		OptionBuilder.hasArgs();
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Samples to include from reference genotypes");
 		OptionBuilder.withLongOpt("referenceSamples");
 		OPTIONS.addOption(OptionBuilder.create("rs"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with variants to include in gene p-value calculation (optional)");
+		OptionBuilder.withLongOpt("variantFilter");
+		OPTIONS.addOption(OptionBuilder.create("vf"));
 
 		OptionBuilder.withArgName("type");
 		OptionBuilder.hasArg();
@@ -119,50 +127,50 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("R"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("The output path");
 		OptionBuilder.withLongOpt("output");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Maximum number of calculation threads");
 		OptionBuilder.withLongOpt("threads");
 		OPTIONS.addOption(OptionBuilder.create("t"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values. Recommended: 100,000; min: 10,000; max: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 		OptionBuilder.withLongOpt("permutations");
 		OPTIONS.addOption(OptionBuilder.create("p"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of permutations to use as fallback incase Farebrother's RUBEN algorithm failed. Optional but recommende to do atleast: 100,000,000. ");
 		OptionBuilder.withLongOpt("permutationsRescue");
 		OPTIONS.addOption(OptionBuilder.create("pr"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values ");
 		OptionBuilder.withLongOpt("permutations");
 		OPTIONS.addOption(OptionBuilder.create("p"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of bases to add left and right of gene window");
 		OptionBuilder.withLongOpt("window");
 		OPTIONS.addOption(OptionBuilder.create("w"));
 
 		OptionBuilder.withArgName("double");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Max correlation between variants to use (recommend = 0.95)");
 		OptionBuilder.withLongOpt("variantCorrelation");
 		OPTIONS.addOption(OptionBuilder.create("v"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
@@ -185,7 +193,7 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("pd"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Optional file with columns to select during conversion");
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
@@ -207,19 +215,19 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("gcw"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of random phenotypes to use to determine gene correlations");
 		OptionBuilder.withLongOpt("permutationGeneCorrelations");
 		OPTIONS.addOption(OptionBuilder.create("pgc"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of random phenotypes to use to determine null distribution pathway enrichment");
 		OptionBuilder.withLongOpt("permutationPathwayEnrichment");
 		OPTIONS.addOption(OptionBuilder.create("ppe"));
 
 		OptionBuilder.withArgName("double");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Exclude correlated genes in pathway enrichments");
 		OptionBuilder.withLongOpt("genePruningR");
 		OPTIONS.addOption(OptionBuilder.create("gpr"));
@@ -250,8 +258,13 @@ public class Depict2Options {
 		OptionBuilder.withDescription("When using --mode CORRELATE_GENES to correlate genes save results as Z-scores instead of r's.");
 		OptionBuilder.withLongOpt("corZscore");
 		OPTIONS.addOption(OptionBuilder.create("cz"));
+		
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("When using --mode CORRELATE_GENES first normalize the eigen vectors");
+		OptionBuilder.withLongOpt("normalizeEigenvectors");
+		OPTIONS.addOption(OptionBuilder.create("ne"));
 
-		OptionBuilder.withArgName("cols");
+		OptionBuilder.withArgName("strings");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN");
 		OptionBuilder.withLongOpt("columnsToExtract");
@@ -283,6 +296,7 @@ public class Depict2Options {
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
 		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
 		excludeHla = commandLine.hasOption("eh");
+		normalizeEigenvectors = commandLine.hasOption("ne");
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
@@ -389,6 +403,14 @@ public class Depict2Options {
 
 		switch (mode) {
 			case RUN:
+				
+				//variantFilter
+				if(commandLine.hasOption("vf")){
+					variantFilterFile = new File(commandLine.getOptionValue("vf"));
+				} else {
+					variantFilterFile = null;
+				}
+				
 				if (!commandLine.hasOption("p")) {
 					throw new ParseException("--permutations not specified");
 				} else {
@@ -482,6 +504,7 @@ public class Depict2Options {
 				numberOfPermutations = 0;
 				numberOfPermutationsRescue = 0;
 				windowExtend = 0;
+				variantFilterFile = null;
 				break;
 			default:
 				genotypeBasePath = null;
@@ -491,6 +514,7 @@ public class Depict2Options {
 				numberOfPermutations = 0;
 				numberOfPermutationsRescue = 0;
 				windowExtend = 0;
+				variantFilterFile = null;
 				break;
 		}
 
@@ -571,6 +595,7 @@ public class Depict2Options {
 				break;
 			case CORRELATE_GENES:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * First normalize eigen vectors: " + (normalizeEigenvectors ? "on" : "off"));
 				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
 				if(geneInfoFile != null){
 					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
@@ -592,8 +617,10 @@ public class Depict2Options {
 				LOGGER.info(" * Initial number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
 				LOGGER.info(" * Max number of rescue permutations to calculate gene p-values if RUBEN has failed: " + LARGE_INT_FORMAT.format(numberOfPermutationsRescue));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
-
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
+				if(variantFilterFile != null){
+					LOGGER.info(" * Confining analysis to variants in this file: " + variantFilterFile.getAbsolutePath());
+				}
 				logSharedRun1Run2();
 
 				break;
@@ -749,6 +776,14 @@ public class Depict2Options {
 
 	public File getDebugFolder() {
 		return debugFolder;
+	}
+
+	public boolean isNormalizeEigenvectors() {
+		return normalizeEigenvectors;
+	}
+
+	public File getVariantFilterFile() {
+		return variantFilterFile;
 	}
 
 }

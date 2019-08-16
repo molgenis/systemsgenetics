@@ -221,6 +221,20 @@ public class Depict2 {
 		LOGGER.info("Number of phenotypes in GWAS matrix: " + LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
 		LOGGER.info("Number of variants in GWAS matrix: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
+		if (options.getVariantFilterFile() != null) {
+			HashSet<String> variantsToInclude = readVariantFilterFile(options.getVariantFilterFile());
+
+			Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
+			while (variantsInZscoreMatrixIt.hasNext()) {
+				String variant = variantsInZscoreMatrixIt.next();
+				if(!variantsToInclude.contains(variant)){
+					variantsInZscoreMatrixIt.remove();
+				}
+				
+			}
+			LOGGER.info("Number of variants after filtering on selected variants: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+		}
+
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 
 		LOGGER.info("Done loading genotype data");
@@ -296,22 +310,22 @@ public class Depict2 {
 			}
 		}
 
-		DoubleMatrix2D matrix = genePvalues.getMatrix();
+		final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
 		//Inplace convert gene p-values to z-scores
-		for (int r = 0; r < matrix.rows(); ++r) {
+		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
 			for (int c = 0; c < matrix.columns(); ++c) {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
-		}
+		});
 
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
-		for (int r = 0; r < matrixNull.rows(); ++r) {
+		IntStream.range(0, matrixNull.rows()).parallel().forEach(r -> {
 			for (int c = 0; c < matrixNull.columns(); ++c) {
 				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
 			}
-		}
+		});
 
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
 
@@ -430,6 +444,24 @@ public class Depict2 {
 		}
 
 		return new SampleIdIncludeFilter(samples);
+
+	}
+
+	private static HashSet<String> readVariantFilterFile(File variantFilterFile) throws IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantFilterFile))).withCSVParser(parser).withSkipLines(0).build();
+
+		final HashSet<String> variants = new HashSet<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			variants.add(nextLine[0]);
+
+		}
+
+		return variants;
 
 	}
 
@@ -599,10 +631,16 @@ public class Depict2 {
 			expressionMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		}
 
+		if (options.isNormalizeEigenvectors()) {
+			expressionMatrix.normalizeRows();
+			expressionMatrix.normalizeColumns();
+			LOGGER.info("Data row normalized and then column normalized");
+		}
+
 		LOGGER.info("Loaded expression matrix with " + expressionMatrix.rows() + " genes and " + expressionMatrix.columns() + " observations");
 
 		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
-		
+
 		LOGGER.info("Done calculating correlations");
 
 		if (options.isCorMatrixZscores()) {

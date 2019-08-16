@@ -201,7 +201,7 @@ public class PathwayEnrichments {
 							geneInvCorMatrixSubsetMatrix = new DenseDoubleAlgebra().inverse(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix());
 						}
 					} catch (Exception ex) {
-						LOGGER.fatal(pathwayDatabase.getName() + " " + chrArm);
+						LOGGER.fatal(pathwayDatabase.getName() + " " + chrArm + " number of genes: " + geneZscoresNullGwasSubsetGeneCorrelations.rows());
 						throw ex;
 					}
 
@@ -342,7 +342,7 @@ public class PathwayEnrichments {
 				}
 			}
 
-			enrichmentPvalues.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla") + ".txt");
+			enrichmentPvalues.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
 		}
 
 		return enrichmentPvalues;
