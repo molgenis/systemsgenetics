@@ -289,7 +289,7 @@ public class PathwayEnrichments {
 
 			betas.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
 			betasNull.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
-
+			
 			pb.step();
 		}
 	}

@@ -222,8 +222,8 @@ public class ExcelWriter {
 
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
 
-			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");
-			break;
+//			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");
+//			break;
 
 		}
 	}

@@ -64,6 +64,7 @@ public class Depict2Options {
 	private boolean corMatrixZscores = false;
 	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN
 	private final File variantFilterFile;
+	private boolean saveOuputAsExcelFiles;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -269,6 +270,11 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN");
 		OptionBuilder.withLongOpt("columnsToExtract");
 		OPTIONS.addOption(OptionBuilder.create("cte"));
+		
+		OptionBuilder.withArgName("strings");
+		OptionBuilder.withDescription("Save enrichement results also as excel files. Will generate 1 file per input phenotype");
+		OptionBuilder.withLongOpt("saveExcel");
+		OPTIONS.addOption(OptionBuilder.create("se"));
 
 	}
 
@@ -297,6 +303,7 @@ public class Depict2Options {
 		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
 		excludeHla = commandLine.hasOption("eh");
 		normalizeEigenvectors = commandLine.hasOption("ne");
+		saveOuputAsExcelFiles = commandLine.hasOption("se");
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
@@ -651,6 +658,7 @@ public class Depict2Options {
 		LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
 		LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
+		LOGGER.info(" * Save output as excel files: " + (saveOuputAsExcelFiles ? "on" : "off"));
 		logPathwayDatabases();
 
 	}
@@ -784,6 +792,10 @@ public class Depict2Options {
 
 	public File getVariantFilterFile() {
 		return variantFilterFile;
+	}
+
+	public boolean isSaveOuputAsExcelFiles() {
+		return saveOuputAsExcelFiles;
 	}
 
 }
