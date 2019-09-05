@@ -4,15 +4,14 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.console.MultiThreadProgressBar;
-import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.trityper.*;
 import umcg.genetica.math.PCA;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
-import umcg.genetica.math.stats.Descriptives;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Regression;
-import umcg.genetica.text.Strings;
+import umcg.genetica.math.stats.VIF;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,7 +48,7 @@ public class EQTLRegression {
 		regressOutEQTLEffects();
 	}
 
-	public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
+	public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg) throws Exception {
 
 
 		this.gg = gg;
@@ -67,8 +66,9 @@ public class EQTLRegression {
 				String[] probes = dsexp.getProbes();
 				String[] individuals = dsexp.getIndividuals();
 				String filename = ds.getSettings().expressionLocation;
+
 				DoubleMatrixDataset<String, String> dsout = new DoubleMatrixDataset<String, String>(matrix, Arrays.asList(probes), Arrays.asList(individuals));
-				dsout.recalculateHashMaps();
+
 				System.out.println("Saving expression file after removal of eQTL effects: " + filename + "-EQTLEffectsRemoved.txt.gz");
 				dsout.save(filename + "-EQTLEffectsRemoved.txt.gz");
 			}
@@ -557,5 +557,268 @@ public class EQTLRegression {
 			System.out.println(output);
 		}
 
+	}
+
+	private void regressOutEQTLsOLS() throws IOException {
+		//Inventorize whether for a particular probe there are multiple SNPs that we want to regress out:
+		HashMap<String, ArrayList<EQTL>> hashProbesCovariates = new HashMap<String, ArrayList<EQTL>>();
+		HashMap<EQTL, Integer> hashEQTLIds = new HashMap<EQTL, Integer>();
+		int nrProbesWithMultipleCovariates = 0;
+
+		for (int v = 0; v < eqtlsToRegressOut.length; v++) {
+			EQTL current = eqtlsToRegressOut[v];
+			hashEQTLIds.put(current, v);
+			String probe = current.getProbe();
+
+			if (!hashProbesCovariates.containsKey(probe)) {
+				ArrayList<EQTL> eqtls = new ArrayList<EQTL>();
+				eqtls.add(current);
+				hashProbesCovariates.put(probe, eqtls);
+			} else {
+				hashProbesCovariates.get(probe).add(current);
+				nrProbesWithMultipleCovariates++;
+			}
+		}
+
+		if (nrProbesWithMultipleCovariates > 0) {
+			System.out.println("There are:\t" + nrProbesWithMultipleCovariates + "\tprobes for which we want to regress out multiple SNPs. This will be conducted through multiple regression employing PCA.");
+		}
+
+		// remove the eqtl effects
+		System.out.println("Removing eQTLs:");
+		int[] nrEQTLsRegressedOut = new int[gg.length];
+		int[][] explainedVariancePerEQTLProbe = new int[gg.length][101];
+
+		SNPLoader[] ggSNPLoaders = new SNPLoader[gg.length];
+		boolean dosageInformationPresentForAllDatasets = true;
+		for (int d = 0; d < gg.length; d++) {
+			ggSNPLoaders[d] = gg[d].getGenotypeData().createSNPLoader(1);
+			if (!ggSNPLoaders[d].hasDosageInformation()) {
+				dosageInformationPresentForAllDatasets = false;
+			}
+		}
+
+		//Remove multiple SNPs acting on one single probe:
+		MultiThreadProgressBar pb = new MultiThreadProgressBar(gg.length);
+
+		// parallelize when multiple datasets present
+		IntStream.range(0, gg.length).parallel().forEach(d -> {
+			HashSet<EQTL> hashEQTLsMultipleRegressionRegressedOut = new HashSet<EQTL>();
+			HashMap<Integer, Boolean> snpPassesQC = new HashMap<Integer, Boolean>();
+
+			TriTyperGeneticalGenomicsDataset currentDataset = gg[d];
+			String[] probes = gg[d].getExpressionData().getProbes();
+			System.out.print("Dataset:\t" + gg[d].getSettings().name);
+			pb.setSubtasks(d, probes.length);
+
+			for (int p = 0; p < probes.length; p++) {
+				ArrayList<EQTL> covariatesForThisProbe = hashProbesCovariates.get(probes[p]);
+
+				if (covariatesForThisProbe != null) {
+					ArrayList<EQTL> eventualListOfEQTLs = new ArrayList<EQTL>();
+					ArrayList<SNP> snpsForProbe = new ArrayList<SNP>();
+					ArrayList<double[]> xs = new ArrayList<double[]>();
+
+
+					// preload SNPs
+					for (EQTL e : covariatesForThisProbe) {
+						if (!hashEQTLsMultipleRegressionRegressedOut.contains(e)) {
+							Integer snpId = gg[d].getGenotypeData().getSnpToSNPId().get(e.getRsName());
+
+							if (snpId != -9 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
+								// load SNP
+
+								SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);
+								try {
+									ggSNPLoaders[d].loadGenotypes(currentSNP);
+								} catch (IOException ex) {
+									ex.printStackTrace();
+									System.exit(-1);
+								}
+
+								if (ggSNPLoaders[d].hasDosageInformation()) {
+									try {
+										ggSNPLoaders[d].loadDosage(currentSNP);
+									} catch (IOException ex) {
+										ex.printStackTrace();
+										System.exit(-1);
+									}
+								}
+
+								if (currentSNP.passesQC()) {
+									int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
+									double[] x = currentSNP.selectGenotypes(indWGA);
+									double meanX = 0;
+									int ctr = 0;
+
+									// calculate mean and variance for genotype, taking into account missing values, if any
+									for (int i = 0; i < x.length; i++) {
+										if (x[i] != -1) {
+											meanX += x[i];
+											ctr++;
+										}
+									}
+									meanX /= ctr;
+									double varianceX = 0.0;
+									for (int i = 0; i < x.length; i++) {
+										if (x[i] != -1) {
+											double xmeanx = x[i] - meanX;
+											varianceX += (xmeanx) * (xmeanx);
+										}
+									}
+									varianceX /= (ctr - 1);
+
+
+									if (varianceX != 0 && currentDataset.getTotalGGSamples() == x.length) {
+										// replace missing values with mean
+										for (int i = 0; i < x.length; i++) {
+											if (x[i] == -1) {
+												x[i] = meanX;
+											}
+//											if (x[i] != -1) {
+//												x[i] -= meanX;
+//											}
+//											else {
+//												x[i] = 0; // replace missing values with mean (which is now 0)
+//											}
+										}
+										eventualListOfEQTLs.add(e);
+										snpsForProbe.add(currentSNP);
+										xs.add(x);
+										snpPassesQC.put(snpId, true);
+									} else {
+										snpPassesQC.put(snpId, false);
+										currentSNP.clearGenotypes();
+									}
+								} else {
+									snpPassesQC.put(snpId, false);
+									currentSNP.clearGenotypes();
+								}
+							}
+						}
+					}
+
+
+					// use OLS for both single variants as well as multiple variants.
+
+					// setup design matrix
+					int nrIndividuals = xs.get(0).length;
+					DoubleMatrixDataset<String, String> xcovars = new DoubleMatrixDataset<>(xs.size(), xs.get(0).length);
+					for (int i = 0; i < nrIndividuals; i++) {
+						xcovars.getHashCols().put("Ind" + i, i);
+					}
+
+					for (int i = 0; i < xs.size(); i++) {
+						double[] vals = xs.get(i);
+						xcovars.getRow(i).assign(vals);
+						String snpid = snpsForProbe.get(i).getName();
+						xcovars.getHashRows().put(snpid, i);
+					}
+
+					// transpose (samples should be on rows)
+					xcovars = xcovars.viewDice();
+
+					// prevent aliasing; correct for variance inflation.
+					VIF vif = new VIF();
+					try {
+						xcovars = vif.vifCorrect(xcovars, (1 - 1E-4));
+
+						// prepare expression
+						int[] expressionToGenotypeId = currentDataset.getExpressionToGenotypeIdArray();
+						double[][] rawData = currentDataset.getExpressionData().getMatrix();
+						double meanY;
+						double varianceY;
+						int nrSamplesWGenotypeData = nrIndividuals;
+
+						double[] y = new double[nrSamplesWGenotypeData];
+						int totalGGSamples = currentDataset.getTotalGGSamples();
+
+						// Copy expression data.
+						int itr = 0;
+						for (int s = 0; s < rawData[p].length; s++) {
+							int genotypeId = expressionToGenotypeId[s];
+
+							// there should not be any missing values at this point..
+							if (currentDataset.getGenotypeData().getIsIncluded()[genotypeId]) {
+								double dVal = rawData[p][s];
+								y[itr] = dVal;
+								itr++;
+							}
+						}
+
+						//Normalize/center subset of data:
+						meanY = JSci.maths.ArrayMath.mean(y);
+						varianceY = JSci.maths.ArrayMath.variance(y);
+						for (int i = 0; i < y.length; i++) {
+							y[i] -= meanY;
+						}
+
+						// use OLS to determine regression coefficients
+						OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
+						ols.newSampleData(y, xcovars.getMatrixAs2dDoubleArray());
+
+						double[] rawDataUpdated = ols.estimateResiduals();
+						double rsq = ols.calculateAdjustedRSquared(); // I'm assuming this is an appropriate approximation of the explained variance.
+						explainedVariancePerEQTLProbe[d][(int) Math.round(rsq * 100d)]++;
+
+						//Make mean and standard deviation of residual gene expression identical to what it was before:
+						double meanUpdated = JSci.maths.ArrayMath.mean(rawDataUpdated);
+						double stdDevRatio = JSci.maths.ArrayMath.standardDeviation(rawDataUpdated) / Math.sqrt(varianceY);
+						for (int s = 0; s < totalGGSamples; s++) {
+							rawDataUpdated[s] -= meanUpdated;
+							rawDataUpdated[s] /= stdDevRatio;
+							rawDataUpdated[s] += meanY;
+						}
+						System.arraycopy(rawDataUpdated, 0, rawData[p], 0, totalGGSamples);
+						nrEQTLsRegressedOut[d]++;
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					for (SNP s : snpsForProbe) {
+						s.clearGenotypes();
+					}
+				}
+				pb.iterate(d);
+				if (p % 10000 == 0) {
+					pb.display();
+				}
+			}
+			pb.complete(d);
+			System.out.println("");
+		});
+		pb.allCompleted();
+
+		for (int ds = 0; ds < gg.length; ds++) {
+//            gg[ds].getExpressionData().calcMeanAndVariance();
+			ggSNPLoaders[ds].close();
+			ggSNPLoaders[ds] = null;
+		}
+
+		System.out.println("\n");
+		System.out.println("eQTLs regressed per dataset:");
+		for (int d = 0; d < gg.length; d++) {
+			System.out.println(gg[d].getSettings().name + "\t" + nrEQTLsRegressedOut[d]);
+		}
+
+		String output;
+		System.out.println("\n");
+		System.out.println("Proportion explained variance of genotypic variation on eQTLs per dataset:");
+
+
+		output = "r2";
+		for (TriTyperGeneticalGenomicsDataset gg1 : gg) {
+			output += "\t" + gg1.getSettings().name;
+		}
+
+		System.out.println(output);
+		for (int e = 0; e <= 100; e++) {
+			double r2 = (double) e / 100;
+			output = String.valueOf(r2);
+			for (int d = 0; d < gg.length; d++) {
+				output += "\t" + explainedVariancePerEQTLProbe[d][e];
+			}
+			System.out.println(output);
+		}
 	}
 }

@@ -1309,52 +1309,56 @@ public class Normalizer {
 			System.exit(-1);
 		}
 
-		// determine variance inflation factor
-		System.out.println("Checking variance inflation factor...");
-		while (inflated) {
-			skipRow = new HashSet<>();
-			for (int row = 0; row < finalCovariates.rows(); row++) {
-				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
-				double[] y = finalCovariates.getRow(row).toArray(); //[row];
+//		// determine variance inflation factor
+//		System.out.println("Checking variance inflation factor...");
+//		while (inflated) {
+//			skipRow = new HashSet<>();
+//			for (int row = 0; row < finalCovariates.rows(); row++) {
+//				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
+//				double[] y = finalCovariates.getRow(row).toArray(); //[row];
+//
+//				// check if variance is >0
+//				double[][] otherCovariates = new double[finalCovariates.columns()][finalCovariates.rows() - 1];
+//				int rowctr = 0;
+//
+//				for (int row2 = 0; row2 < finalCovariates.rows(); row2++) {
+//					if (row != row2) {
+//						for (int s = 0; s < finalCovariates.columns(); s++) {
+//							otherCovariates[s][rowctr] = finalCovariates.getElementQuick(row2, s);
+//						}
+//						rowctr++;
+//					}
+//				}
+//
+//				ols.newSampleData(y, otherCovariates);
+//
+//				double rsq = ols.calculateRSquared();
+//				double vif = 1 / (1 - rsq);
+//				boolean alias = false;
+//
+//				if (rsq > 0.99) {
+//					alias = true;
+//					skipRow.add(row);
+//					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+//					break;
+//				} else {
+//					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+//				}
+//			}
+//
+//			if (skipRow.isEmpty()) {
+//				System.out.println("There are no more collinear covariates.");
+//				inflated = false;
+//			} else {
+//				finalCovariates = excludeRows(finalCovariates, skipRow);
+//				inflated = true;
+//			}
+//			iter++;
+//		}
 
-				// check if variance is >0
-				double[][] otherCovariates = new double[finalCovariates.columns()][finalCovariates.rows() - 1];
-				int rowctr = 0;
+		VIF vif = new VIF();
+		vif.vifCorrect(finalCovariates, (1 - 1E-4));
 
-				for (int row2 = 0; row2 < finalCovariates.rows(); row2++) {
-					if (row != row2) {
-						for (int s = 0; s < finalCovariates.columns(); s++) {
-							otherCovariates[s][rowctr] = finalCovariates.getElementQuick(row2, s);
-						}
-						rowctr++;
-					}
-				}
-
-				ols.newSampleData(y, otherCovariates);
-
-				double rsq = ols.calculateRSquared();
-				double vif = 1 / (1 - rsq);
-				boolean alias = false;
-
-				if (rsq > 0.99) {
-					alias = true;
-					skipRow.add(row);
-					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
-					break;
-				} else {
-					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
-				}
-			}
-
-			if (skipRow.isEmpty()) {
-				System.out.println("There are no more collinear covariates.");
-				inflated = false;
-			} else {
-				finalCovariates = excludeRows(finalCovariates, skipRow);
-				inflated = true;
-			}
-			iter++;
-		}
 
 		System.out.println("");
 		System.out.println("Remaining covariates: ");
