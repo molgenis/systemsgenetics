@@ -65,6 +65,7 @@ public class Depict2Options {
 	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN
 	private final File variantFilterFile;
 	private boolean saveOuputAsExcelFiles;
+	private final File variantGeneLinkingFile;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -160,10 +161,16 @@ public class Depict2Options {
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Number of bases to add left and right of gene window");
+		OptionBuilder.withDescription("Number of bases to add left and right of gene window, use -1 to not have any variants in window");
 		OptionBuilder.withLongOpt("window");
 		OPTIONS.addOption(OptionBuilder.create("w"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Variant gene mapping. col 1: variant ID col 2: ENSG ID. (optional)");
+		OptionBuilder.withLongOpt("variantGene");
+		OPTIONS.addOption(OptionBuilder.create("vg"));
+		
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Max correlation between variants to use (recommend = 0.95)");
@@ -457,6 +464,17 @@ public class Depict2Options {
 						throw new ParseException("Error parsing --window \"" + commandLine.getOptionValue('w') + "\" is not an int");
 					}
 				}
+				
+				if(commandLine.hasOption("vg")){
+					variantGeneLinkingFile = new File(commandLine.getOptionValue("vg"));
+				} else {
+					variantGeneLinkingFile = null;
+				}
+				
+				if(windowExtend < 0 && variantGeneLinkingFile == null){
+					throw new ParseException("No window specified but also no variant gene linking.");
+				}
+				
 				if (!commandLine.hasOption("v")) {
 					throw new ParseException("--variantCorrelation not specified");
 				} else {
@@ -512,6 +530,7 @@ public class Depict2Options {
 				numberOfPermutationsRescue = 0;
 				windowExtend = 0;
 				variantFilterFile = null;
+				variantGeneLinkingFile = null;
 				break;
 			default:
 				genotypeBasePath = null;
@@ -522,6 +541,7 @@ public class Depict2Options {
 				numberOfPermutationsRescue = 0;
 				windowExtend = 0;
 				variantFilterFile = null;
+				variantGeneLinkingFile = null;
 				break;
 		}
 
@@ -620,7 +640,10 @@ public class Depict2Options {
 					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
-				LOGGER.info(" * Gene window extend in bases: " + LARGE_INT_FORMAT.format(windowExtend));
+				LOGGER.info(" * Gene window extend in bases: " + (windowExtend < 0 ? "Not selecting variants in a window" : LARGE_INT_FORMAT.format(windowExtend)));
+				if(variantGeneLinkingFile != null){
+					LOGGER.info(" * Variant to gene linking file: " + variantGeneLinkingFile);
+				}
 				LOGGER.info(" * Initial number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
 				LOGGER.info(" * Max number of rescue permutations to calculate gene p-values if RUBEN has failed: " + LARGE_INT_FORMAT.format(numberOfPermutationsRescue));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
