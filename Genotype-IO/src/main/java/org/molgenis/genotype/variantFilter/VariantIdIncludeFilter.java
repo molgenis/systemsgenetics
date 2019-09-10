@@ -17,7 +17,10 @@ public class VariantIdIncludeFilter implements VariantFilter{
 	private final Set<String> include;
 	
 	public VariantIdIncludeFilter(Set<String> include) {
-		this.include = include == null ? new HashSet<String>() : include;
+		if(include == null ){
+			throw new IllegalArgumentException();
+		}
+		this.include = include;
 	}
 	
 	public VariantIdIncludeFilter(String... ids){

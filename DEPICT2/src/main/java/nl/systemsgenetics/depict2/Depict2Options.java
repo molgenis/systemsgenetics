@@ -821,4 +821,8 @@ public class Depict2Options {
 		return saveOuputAsExcelFiles;
 	}
 
+	public File getVariantGeneLinkingFile() {
+		return variantGeneLinkingFile;
+	}
+
 }

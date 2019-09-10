@@ -4,6 +4,7 @@
  */
 package umcg.genetica.math.matrix2;
 
+import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DoubleStatistic;
@@ -30,7 +31,6 @@ import java.io.RandomAccessFile;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -1460,15 +1460,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrix1D viewCol(C col) {
 		return matrix.viewColumn(hashCols.get(col));
 	}
-	
+
 	public DoubleMatrix1D viewCol(int col) {
 		return matrix.viewColumn(col);
 	}
-	
+
 	public DoubleMatrix2D viewColAsMmatrix(int col) {
 		return matrix.viewSelection(null, new int[]{col});
 	}
-	
+
 	public DoubleMatrix2D viewRowAsMmatrix(int row) {
 		return matrix.viewSelection(new int[]{row}, null);
 	}
@@ -1574,7 +1574,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return newDataset;
 
 	}
-	
+
 	public DoubleMatrixDataset<R, C> createColumnForceNormalDuplicate() {
 
 		DoubleMatrixDataset<R, C> newDataset = new DoubleMatrixDataset<>(hashRows, hashCols);
@@ -1675,7 +1675,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	}
 
-		/**
+	/**
 	 *
 	 * In place center around 0. Will set mean to 0
 	 *
@@ -1696,7 +1696,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 			final double mean = colSum / rows;
 
-
 			for (int e = 0; e < rows; ++e) {
 				col.setQuick(e, (col.getQuick(e) - mean));
 			}
@@ -1704,7 +1703,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 	}
-	
+
 	/**
 	 * Obviously not recommended for large matrices but great for debugging
 	 *
@@ -1785,12 +1784,36 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return correlations;
 
 	}
-	
+
+	public static DoubleMatrixDataset<String, String> concatColumns(DoubleMatrixDataset<String, String> d1, DoubleMatrixDataset<String, String> d2) {
+
+		if (d1.rows() != d2.rows()) {
+			throw new RuntimeException("Both matrix must have equal rows. Now:  " + d1.rows() + " vs " + d2.rows());
+		}
+
+		DoubleMatrix2D m1 = d1.getMatrix();
+		DoubleMatrix2D m2 = d2.getMatrix();
+
+		DoubleMatrix2D m = DoubleFactory2D.dense.appendColumns(m1, m2);
+
+		LinkedHashMap<String, Integer> mergedHashCols = new LinkedHashMap();
+		
+		int i = 0;
+		for(String c : d1.getHashCols().keySet()){
+			mergedHashCols.put(c, i++);
+		}
+		for(String c : d2.getHashCols().keySet()){
+			mergedHashCols.put(c, i++);
+		}
+		
+		return new DoubleMatrixDataset<>(m, d1.getHashRowsCopy(), mergedHashCols);
+	}
+
 	/**
-	 * 
-	 * @return fully independent copy of this matrix. 
+	 *
+	 * @return fully independent copy of this matrix.
 	 */
-	public DoubleMatrixDataset<R,C> duplicate(){
+	public DoubleMatrixDataset<R, C> duplicate() {
 		return new DoubleMatrixDataset<>(matrix.copy(), getHashRowsCopy(), getHashColsCopy());
 	}
 
