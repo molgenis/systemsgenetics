@@ -210,6 +210,8 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
 			eqr.regressOutEQTLEffects(eQTLFile, true, m_gg);
 		} catch (IOException ex) {
 			Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+		} catch (Exception e) {
+			Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, e);
 		}
 	}
 	

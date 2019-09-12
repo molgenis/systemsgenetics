@@ -1356,9 +1356,9 @@ public class Normalizer {
 //			iter++;
 //		}
 
+		// correct for variance inflation...
 		VIF vif = new VIF();
-		vif.vifCorrect(finalCovariates, (1 - 1E-4));
-
+		finalCovariates = vif.vifCorrect(finalCovariates.viewDice(), (1 - 1E-4)); // code here has covariates on the rows; move them to the columns instead.
 
 		System.out.println("");
 		System.out.println("Remaining covariates: ");

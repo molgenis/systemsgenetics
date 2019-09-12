@@ -8,32 +8,33 @@ import java.util.HashSet;
 
 public class VIF {
 
+	// assume covariates are on the columns!
 	public DoubleMatrixDataset<String, String> vifCorrect(DoubleMatrixDataset<String, String> finalCovariates, double threshold) throws Exception {
+
+		System.out.println("VIF: " + finalCovariates.rows() + " x " + finalCovariates.columns());
 
 		// determine variance inflation factor
 		System.out.println("Checking variance inflation factor...");
-		HashSet<Integer> skipRow = new HashSet<>();
+		HashSet<Integer> skipCol = new HashSet<>();
 		boolean inflated = true;
 		int iter = 0;
 		while (inflated) {
-			skipRow = new HashSet<>();
-			for (int row = 0; row < finalCovariates.rows(); row++) {
+			skipCol = new HashSet<>();
+
+			for (int col = 0; col < finalCovariates.columns(); col++) {
 				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
-				double[] y = finalCovariates.getRow(row).toArray(); //[row];
-
+				double[] y = finalCovariates.getCol(col).toArray(); //[row];
 				// check if variance is >0
-				double[][] otherCovariates = new double[finalCovariates.columns()][finalCovariates.rows() - 1];
-				int rowctr = 0;
-
-				for (int row2 = 0; row2 < finalCovariates.rows(); row2++) {
-					if (row != row2) {
-						for (int s = 0; s < finalCovariates.columns(); s++) {
-							otherCovariates[s][rowctr] = finalCovariates.getElementQuick(row2, s);
+				double[][] otherCovariates = new double[finalCovariates.rows()][finalCovariates.columns() - 1];
+				int colctr = 0;
+				for (int col2 = 0; col2 < finalCovariates.columns(); col2++) {
+					if (col != col2) {
+						for (int row = 0; row < finalCovariates.rows(); row++) {
+							otherCovariates[row][colctr] = finalCovariates.getElementQuick(row, col2);
 						}
-						rowctr++;
+						colctr++;
 					}
 				}
-
 				ols.newSampleData(y, otherCovariates);
 
 				double rsq = ols.calculateRSquared();
@@ -42,25 +43,46 @@ public class VIF {
 
 				if (rsq > threshold) {
 					alias = true;
-					skipRow.add(row);
-					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+					skipCol.add(col);
+					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getColObjects().get(col) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
 					break;
 				} else {
-					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getColObjects().get(col) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
 				}
 			}
 
-			if (skipRow.isEmpty()) {
+			if (skipCol.isEmpty()) {
 				System.out.println("There are no more collinear covariates.");
 				inflated = false;
 			} else {
-				finalCovariates = excludeRows(finalCovariates, skipRow);
+				finalCovariates = excludeCols(finalCovariates, skipCol);
 				inflated = true;
 			}
 			iter++;
+
+
 		}
 
 		return finalCovariates;
+	}
+
+	private DoubleMatrixDataset<String, String> excludeCols(DoubleMatrixDataset<String, String> finalCovariates, HashSet<Integer> skipCol) throws Exception {
+		DoubleMatrixDataset<String, String> tmp = new DoubleMatrixDataset<>(finalCovariates.rows(), finalCovariates.columns() - skipCol.size());
+		tmp.setRowObjects(finalCovariates.getRowObjects());
+		ArrayList<String> colObjs = new ArrayList<>();
+		int colctr = 0;
+		for (int col = 0; col < finalCovariates.columns(); col++) {
+			if (!skipCol.contains(col)) {
+				for (int row = 0; row < finalCovariates.rows(); row++) {
+					tmp.setElementQuick(row, colctr, finalCovariates.getElementQuick(row, col));
+				}
+				colObjs.add(finalCovariates.getColObjects().get(col));
+				colctr++;
+			}
+		}
+
+		tmp.setColObjects(colObjs);
+		return tmp;
 	}
 
 	private DoubleMatrixDataset<String, String> excludeRows(DoubleMatrixDataset<String, String> finalCovariates, HashSet<Integer> skipRow) throws Exception {

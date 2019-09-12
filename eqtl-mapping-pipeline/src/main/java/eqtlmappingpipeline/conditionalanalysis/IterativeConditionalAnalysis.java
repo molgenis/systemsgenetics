@@ -44,7 +44,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 		IterativeConditionalAnalysis s = new IterativeConditionalAnalysis();
 		try {
-			s.run("D:\\Sync\\SyncThing\\Data\\Ref\\geuvadis\\2019-07-18-GEUVADIS.xml", null,
+			s.run("D:\\TMP\\geuvadistest\\metaqtlsettings.xml", null,
 					null, null, null, null, null, null, null,
 					true, false, 10, true, false, null, 4);
 		} catch (Exception e) {
@@ -53,8 +53,8 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 	}
 
-	private Integer startIter = 1;
-
+	private Integer startIter = 2;
+	boolean useOLS = true;
 
 	public void run(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
 					String ingt, String inexp, String inexpplatform, String inexpannot, String gte,
@@ -120,7 +120,12 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 					reinit();
 
 					// regress significant eQTLs
-					eqr.regressOutEQTLEffects(toRegress, m_gg);
+					try {
+						eqr.regressOutEQTLEffects(toRegress, m_gg, useOLS);
+					} catch (Exception e) {
+						e.printStackTrace();
+						System.exit(-1);
+					}
 
 					if (saveIntermediateResiduals) {
 						exportResidualsToDisk(origOutputDir, iteration);
@@ -177,7 +182,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 			}
 
 			// regress significant eQTLs
-			eqr.regressOutEQTLEffects(toRegress, m_gg);
+			eqr.regressOutEQTLEffects(toRegress, m_gg, useOLS);
 
 			// save the output
 			exportResidualsToDisk(origOutputDir, 0);
@@ -241,7 +246,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 		if (m_settings.regressOutEQTLEffectFileName != null && m_settings.regressOutEQTLEffectFileName.trim().length() > 0) {
 			EQTLRegression eqr = new EQTLRegression();
-			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg);
+			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg, useOLS);
 			numAvailableInds = 0;
 			AtomicInteger avinds2 = new AtomicInteger();
 

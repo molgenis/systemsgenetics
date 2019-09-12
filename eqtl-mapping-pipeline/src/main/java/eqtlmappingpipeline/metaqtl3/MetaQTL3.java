@@ -426,6 +426,7 @@ public class MetaQTL3 {
 			System.out.println("Done inventorizing SNPs in " + m_gg[v].getSettings().name + "\t" + snps.length + " snps processed.");
 		});
 
+
 		System.out.println(tmpAvailableSNPs.size() + " snps over all datasets.");
 
 		String[] snps = tmpAvailableSNPs.toArray(new String[0]);

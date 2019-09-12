@@ -28,7 +28,11 @@ public class EQTLRegression {
 	TriTyperGeneticalGenomicsDataset[] gg;
 	EQTL[] eqtlsToRegressOut;
 
-	public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
+	public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws Exception {
+		regressOutEQTLEffects(eqtls, gg, false);
+	}
+
+	public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg, boolean useOLS) throws IOException {
 		this.gg = gg;
 
 		this.eqtlsToRegressOut = new EQTL[eqtls.size()];
@@ -38,17 +42,35 @@ public class EQTLRegression {
 			eqtlsToRegressOut[q].setProbe(eqtls.get(q).getRight());
 		}
 		System.out.println("About to regress out: " + eqtls.size() + " QTLs from data.");
-		regressOutEQTLEffects();
+		if (useOLS) {
+			regressOutEQTLsOLS();
+
+		} else {
+			regressOutEQTLEffects();
+		}
+
 	}
 
 	public void regressOutEQTLEffects(EQTL[] eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
+		regressOutEQTLEffects(eqtls, gg, false);
+	}
+
+	public void regressOutEQTLEffects(EQTL[] eqtls, TriTyperGeneticalGenomicsDataset[] gg, boolean useOLS) throws IOException {
 		this.gg = gg;
 		this.eqtlsToRegressOut = eqtls;
 		System.out.println("About to regress out: " + eqtls.length + " QTLs from data.");
-		regressOutEQTLEffects();
+		if (useOLS) {
+			regressOutEQTLsOLS();
+		} else {
+			regressOutEQTLEffects();
+		}
 	}
 
 	public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg) throws Exception {
+		regressOutEQTLEffects(regressOutEQTLEffectFileName, outputfiles, gg, false);
+	}
+
+	public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg, boolean useOLS) throws Exception {
 
 
 		this.gg = gg;
@@ -57,7 +79,11 @@ public class EQTLRegression {
 		eqtlsToRegressOut = in.read();
 		in.close();
 		System.out.println("Number of eQTLs to regress out found in file:\t" + eqtlsToRegressOut.length);
-		regressOutEQTLEffects();
+		if (useOLS) {
+			regressOutEQTLsOLS();
+		} else {
+			regressOutEQTLEffects();
+		}
 		if (outputfiles) {
 			for (int d = 0; d < gg.length; d++) {
 				TriTyperGeneticalGenomicsDataset ds = gg[d];
@@ -718,11 +744,14 @@ public class EQTLRegression {
 					// transpose (samples should be on rows)
 					xcovars = xcovars.viewDice();
 
-					// prevent aliasing; correct for variance inflation.
-					VIF vif = new VIF();
+					System.out.println("Dim: " + xcovars.rows() + "\tx\t" + xcovars.columns());
 					try {
-						xcovars = vif.vifCorrect(xcovars, (1 - 1E-4));
+						if (xcovars.columns() > 1) {
+							VIF vif = new VIF();
+							xcovars = vif.vifCorrect(xcovars, (1 - 1E-4));
+						}
 
+						// prevent aliasing; correct for variance inflation.
 						// prepare expression
 						int[] expressionToGenotypeId = currentDataset.getExpressionToGenotypeIdArray();
 						double[][] rawData = currentDataset.getExpressionData().getMatrix();

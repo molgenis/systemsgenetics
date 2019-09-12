@@ -55,7 +55,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public HashSet<String> tsSNPsConfine = null;                               // Confine analysis to the SNPs in this hash
 	public HashMap<String, HashSet<String>> tsSNPProbeCombinationsConfine;     // Confine analysis to the combinations of SNP and Probes in this hash
 	// plots
-	public double plotOutputPValueCutOff;                                      // Use this p-value as a cutoff for drawing plots
+	public double plotOutputPValueCutOff = -1;                                      // Use this p-value as a cutoff for drawing plots [defaults to off]
 	public String plotOutputDirectory;                                         // Print the plots in this directory
 	public boolean runOnlyPermutations = false;
 	public Integer startWithPermutation;
@@ -498,14 +498,14 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		}
 
 		try {
-			outputplotthreshold = config.getDouble("defaults.output.outputplotthreshold", null);
+			outputplotthreshold = config.getDouble("defaults.output.outputplotthreshold", -1);
 		} catch (Exception e) {
 		}
 
 		if (outputplotthreshold != null) {
 			plotOutputPValueCutOff = outputplotthreshold;
 		} else {
-			plotOutputPValueCutOff = Double.MAX_VALUE;
+			plotOutputPValueCutOff = -1;
 		}
 
 		try {
