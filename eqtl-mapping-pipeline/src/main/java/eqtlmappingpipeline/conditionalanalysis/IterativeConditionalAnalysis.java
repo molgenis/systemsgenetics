@@ -53,7 +53,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 	}
 
-	private Integer startIter = 2;
+	private Integer startIter = 1;
 	boolean useOLS = true;
 
 	public void run(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
@@ -121,6 +121,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 					// regress significant eQTLs
 					try {
+						eqr.setLog(m_settings.outputReportsDir, iteration);
 						eqr.regressOutEQTLEffects(toRegress, m_gg, useOLS);
 					} catch (Exception e) {
 						e.printStackTrace();

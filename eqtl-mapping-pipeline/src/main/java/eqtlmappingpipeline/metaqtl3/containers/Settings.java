@@ -869,6 +869,15 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			s.tsProbesConfine = tsProbesConfine;
 
 		}
+
+		if (datasetSettings.isEmpty()) {
+			System.out.println("Error: no datasets defined");
+			System.exit(-1);
+		} else if (requireAtLeastNumberOfDatasets > datasetSettings.size()) {
+			System.out.println("Error: requireAtLeastNumberOfDatasets is larger than number of loaded datasets");
+			System.exit(-1);
+		}
+
 		// summarize();
 
 	}

@@ -652,7 +652,7 @@ public class MetaQTL3 {
 			snpsArr[s] = new InSNP(snp, chr, pos);
 		});
 
-		if (m_gg.length > 1 && m_settings.sortsnps) {
+		if (m_settings.sortsnps) {
 			Arrays.parallelSort(snpsArr);
 		}
 
