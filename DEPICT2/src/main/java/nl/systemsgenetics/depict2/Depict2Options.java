@@ -108,7 +108,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Samples to include from reference genotypes");
 		OptionBuilder.withLongOpt("referenceSamples");
 		OPTIONS.addOption(OptionBuilder.create("rs"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("File with variants to include in gene p-value calculation (optional)");
@@ -170,7 +170,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Variant gene mapping. col 1: variant ID col 2: ENSG ID. (optional)");
 		OptionBuilder.withLongOpt("variantGene");
 		OPTIONS.addOption(OptionBuilder.create("vg"));
-		
+
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Max correlation between variants to use (recommend = 0.95)");
@@ -266,7 +266,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("When using --mode CORRELATE_GENES to correlate genes save results as Z-scores instead of r's.");
 		OptionBuilder.withLongOpt("corZscore");
 		OPTIONS.addOption(OptionBuilder.create("cz"));
-		
+
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("When using --mode CORRELATE_GENES first normalize the eigen vectors");
 		OptionBuilder.withLongOpt("normalizeEigenvectors");
@@ -277,7 +277,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN");
 		OptionBuilder.withLongOpt("columnsToExtract");
 		OPTIONS.addOption(OptionBuilder.create("cte"));
-		
+
 		OptionBuilder.withArgName("strings");
 		OptionBuilder.withDescription("Save enrichement results also as excel files. Will generate 1 file per input phenotype");
 		OptionBuilder.withLongOpt("saveExcel");
@@ -417,14 +417,14 @@ public class Depict2Options {
 
 		switch (mode) {
 			case RUN:
-				
+
 				//variantFilter
-				if(commandLine.hasOption("vf")){
+				if (commandLine.hasOption("vf")) {
 					variantFilterFile = new File(commandLine.getOptionValue("vf"));
 				} else {
 					variantFilterFile = null;
 				}
-				
+
 				if (!commandLine.hasOption("p")) {
 					throw new ParseException("--permutations not specified");
 				} else {
@@ -464,17 +464,17 @@ public class Depict2Options {
 						throw new ParseException("Error parsing --window \"" + commandLine.getOptionValue('w') + "\" is not an int");
 					}
 				}
-				
-				if(commandLine.hasOption("vg")){
+
+				if (commandLine.hasOption("vg")) {
 					variantGeneLinkingFile = new File(commandLine.getOptionValue("vg"));
 				} else {
 					variantGeneLinkingFile = null;
 				}
-				
-				if(windowExtend < 0 && variantGeneLinkingFile == null){
+
+				if (windowExtend < 0 && variantGeneLinkingFile == null) {
 					throw new ParseException("No window specified but also no variant gene linking.");
 				}
-				
+
 				if (!commandLine.hasOption("v")) {
 					throw new ParseException("--variantCorrelation not specified");
 				} else {
@@ -615,7 +615,9 @@ public class Depict2Options {
 				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
-				LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
+				if (columnsToExtract != null) {
+					LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
+				}
 				break;
 			case TRANSPOSE:
 				LOGGER.info(" * Matrix to transpose: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -624,7 +626,7 @@ public class Depict2Options {
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * First normalize eigen vectors: " + (normalizeEigenvectors ? "on" : "off"));
 				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
-				if(geneInfoFile != null){
+				if (geneInfoFile != null) {
 					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				}
 				break;
@@ -641,14 +643,14 @@ public class Depict2Options {
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
 				LOGGER.info(" * Gene window extend in bases: " + (windowExtend < 0 ? "Not selecting variants in a window" : LARGE_INT_FORMAT.format(windowExtend)));
-				if(variantGeneLinkingFile != null){
+				if (variantGeneLinkingFile != null) {
 					LOGGER.info(" * Variant to gene linking file: " + variantGeneLinkingFile);
 				}
 				LOGGER.info(" * Initial number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
 				LOGGER.info(" * Max number of rescue permutations to calculate gene p-values if RUBEN has failed: " + LARGE_INT_FORMAT.format(numberOfPermutationsRescue));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
-				if(variantFilterFile != null){
+				if (variantFilterFile != null) {
 					LOGGER.info(" * Confining analysis to variants in this file: " + variantFilterFile.getAbsolutePath());
 				}
 				logSharedRun1Run2();
