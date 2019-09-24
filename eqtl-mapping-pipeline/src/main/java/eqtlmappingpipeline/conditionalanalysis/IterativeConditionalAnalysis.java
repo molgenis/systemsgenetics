@@ -44,6 +44,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 		IterativeConditionalAnalysis s = new IterativeConditionalAnalysis();
 		try {
+			s.setStartIter(2);
 			s.run("D:\\TMP\\geuvadistest\\metaqtlsettings.xml", null,
 					null, null, null, null, null, null, null,
 					true, false, 10, true, false, null, 4);
@@ -121,6 +122,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 					// regress significant eQTLs
 					try {
+
 						eqr.setLog(m_settings.outputReportsDir, iteration);
 						eqr.regressOutEQTLEffects(toRegress, m_gg, useOLS);
 					} catch (Exception e) {
@@ -247,6 +249,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 		if (m_settings.regressOutEQTLEffectFileName != null && m_settings.regressOutEQTLEffectFileName.trim().length() > 0) {
 			EQTLRegression eqr = new EQTLRegression();
+
 			eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, false, m_gg, useOLS);
 			numAvailableInds = 0;
 			AtomicInteger avinds2 = new AtomicInteger();

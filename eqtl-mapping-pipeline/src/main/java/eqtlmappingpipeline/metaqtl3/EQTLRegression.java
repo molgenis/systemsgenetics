@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.console.MultiThreadProgressBar;
 import umcg.genetica.containers.Pair;
@@ -13,6 +14,8 @@ import umcg.genetica.math.PCA;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Regression;
 import umcg.genetica.math.stats.VIF;
+import umcg.genetica.text.Strings;
+import umcg.genetica.util.RankDoubleArray;
 
 import java.io.IOException;
 import java.util.*;
@@ -184,17 +187,20 @@ public class EQTLRegression {
 								}
 
 								if (currentSNP.passesQC()) {
+
 									int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
 									double[] x = currentSNP.selectGenotypes(indWGA, true, true); // we want missing genotypes to be included in this case
 									double meanX = 0;
 									int ctr = 0;
 									// calculate mean and variance for genotype, taking into account missing values, if any
 									for (int i = 0; i < x.length; i++) {
+										System.out.println(i + "\t" + x[i]);
 										if (x[i] != -1) {
 											meanX += x[i];
 											ctr++;
 										}
 									}
+									System.out.println();
 									meanX /= ctr;
 									double varianceX = 0.0;
 									for (int i = 0; i < x.length; i++) {
@@ -581,7 +587,8 @@ public class EQTLRegression {
 	private String logdir = null;
 
 	public void setLog(String logdir, int iteration) {
-
+		logiter = iteration;
+		this.logdir = logdir;
 	}
 
 	private void regressOLS(EQTL[] eqtlsToRegressOut, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
@@ -637,14 +644,15 @@ public class EQTLRegression {
 			TextFile logout = null;
 			if (logdir != null) {
 				try {
-					logout = new TextFile(logdir + currentDataset.getSettings().name + "-Iteration" + logiter + ".txt", TextFile.W);
+					logout = new TextFile(logdir + currentDataset.getSettings().name + "-RegressionLog-Iteration" + logiter + ".txt", TextFile.W);
+					System.out.println("Logging dataset " + currentDataset.getSettings().name + " to " + logout.getFileName());
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
 
 //			for (int p = 0; p < probes.length; p++) {
-			int p = 0;
+			int qtlctr = 0;
 			for (Map.Entry<String, ArrayList<EQTL>> eqtl : hashProbesCovariates.entrySet()) {
 				String gene = eqtl.getKey();
 
@@ -708,18 +716,24 @@ public class EQTLRegression {
 
 							} else {
 								int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
-								double[] x = currentSNP.selectGenotypes(indWGA);
+
+								double[] x = currentSNP.selectGenotypes(indWGA, true, true);
 								double meanX = 0;
 								int ctr = 0;
 
 								// calculate mean and variance for genotype, taking into account missing values, if any
+
+//								double[] xorig = new double[x.length];
 								for (int i = 0; i < x.length; i++) {
+//									xorig[i] = x[i];
 									if (x[i] != -1) {
 										meanX += x[i];
 										ctr++;
 									}
 								}
+
 								meanX /= ctr;
+
 								double varianceX = 0.0;
 								for (int i = 0; i < x.length; i++) {
 									if (x[i] != -1) {
@@ -733,20 +747,22 @@ public class EQTLRegression {
 								if (varianceX == 0 || currentDataset.getTotalGGSamples() != x.length) {
 									if (logout != null) {
 										try {
-											logout.writeln(gene + "\t" + e.getRsName() + "\tSNP has zero variance or wrong nr of inds.\tVariance: " + varianceX + "\tinds: " + x.length + "\tMAF: " + currentSNP.getMAF() + "\tHWEP: " + currentSNP.getHWEP() + "\tCR: " + currentSNP.getCR());
+											logout.writeln(gene + "\t" + e.getRsName() + "\tSNP has zero variance or wrong nr of inds.\tVariance: " + varianceX + "\tinds: " + x.length + ", expected: " + currentDataset.getTotalGGSamples() + "\tMAF: " + currentSNP.getMAF() + "\tHWEP: " + currentSNP.getHWEP() + "\tCR: " + currentSNP.getCR());
 										} catch (IOException ex) {
 											ex.printStackTrace();
 										}
 									}
 									snpPassesQC.put(snpId, false);
 									currentSNP.clearGenotypes();
-
 								} else {
 									// replace missing values with mean
+//									System.out.println("Meanx: " + meanX + "\tVarX: " + varianceX);
+//									System.out.println("Genotypes:");
 									for (int i = 0; i < x.length; i++) {
 										if (x[i] == -1) {
 											x[i] = meanX;
 										}
+//										System.out.println(i + "\t" + xorig[i] + "\t" + x[i]);
 //											if (x[i] != -1) {
 //												x[i] -= meanX;
 //											}
@@ -754,6 +770,7 @@ public class EQTLRegression {
 //												x[i] = 0; // replace missing values with mean (which is now 0)
 //											}
 									}
+//									System.out.println();
 									eventualListOfEQTLs.add(e);
 									snpsForProbe.add(currentSNP);
 									xs.add(x);
@@ -811,12 +828,12 @@ public class EQTLRegression {
 
 							// Copy expression data.
 							int itr = 0;
-							for (int s = 0; s < rawData[p].length; s++) {
+							for (int s = 0; s < rawData[geneId].length; s++) {
 								int genotypeId = expressionToGenotypeId[s];
 
 								// there should not be any missing values at this point..
 								if (currentDataset.getGenotypeData().getIsIncluded()[genotypeId]) {
-									double dVal = rawData[p][s];
+									double dVal = rawData[geneId][s];
 									y[itr] = dVal;
 									itr++;
 								}
@@ -835,6 +852,9 @@ public class EQTLRegression {
 
 							double[] rawDataUpdated = ols.estimateResiduals();
 
+							// debug: check whether residuals are correlated to genotype?
+
+
 							double rsq = ols.calculateRSquared(); // I'm assuming this is an appropriate approximation of the explained variance.
 							if (rsq < 0) {
 								if (rsq < -1E-9) {
@@ -848,6 +868,34 @@ public class EQTLRegression {
 
 							explainedVariancePerEQTLProbe[d][(int) Math.round(rsq * 100d)]++;
 
+							if (logout != null) {
+								SpearmansCorrelation sp = new SpearmansCorrelation();
+
+								RankDoubleArray rda = new RankDoubleArray();
+								double[] ry = rda.rank(y);
+								double[] correlcoeff = new double[xcovars.columns()];
+
+//								String[] indsY = currentDataset.getExpressionData().getIndividuals();
+//								String[] indsX = currentDataset.getGenotypeData().getIndividuals();
+
+//								for (int q = 0; q < y.length; q++) {
+//									String outln = indsY[q] + "\t" + indsX[q] + "\t" + indsX[currentDataset.getExpressionToGenotypeIdArray()[q]] + "\t" + y[q] + "\t" + ry[q];
+//									for (int xc = 0; xc < xcovars.columns(); xc++) {
+//										outln += "\t" + xcovars.getElementQuick(q, xc);
+//									}
+//									System.out.println(q + "\t" + outln);
+//								}
+								for (int c = 0; c < xcovars.columns(); c++) {
+									correlcoeff[c] = sp.correlation(xcovars.getCol(c).toArray(), ry);
+								}
+								String logln = gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tcorrel: " + Strings.concat(correlcoeff, Strings.tab);
+								logout.writeln(gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tcorrel: " + Strings.concat(correlcoeff, Strings.tab));
+//								System.out.println(logln);
+
+//								System.exit(-1);
+							}
+
+
 							//Make mean and standard deviation of residual gene expression identical to what it was before:
 							double meanUpdated = JSci.maths.ArrayMath.mean(rawDataUpdated);
 							double stdDevRatio = JSci.maths.ArrayMath.standardDeviation(rawDataUpdated) / Math.sqrt(varianceY);
@@ -856,7 +904,8 @@ public class EQTLRegression {
 								rawDataUpdated[s] /= stdDevRatio;
 								rawDataUpdated[s] += meanY;
 							}
-							System.arraycopy(rawDataUpdated, 0, rawData[p], 0, totalGGSamples);
+
+							System.arraycopy(rawDataUpdated, 0, rawData[geneId], 0, totalGGSamples);
 							nrEQTLsRegressedOut[d]++;
 						} catch (Exception e) {
 							e.printStackTrace();
@@ -869,10 +918,10 @@ public class EQTLRegression {
 
 				}
 				pb.iterate(d);
-				if (p % 10000 == 0) {
+				if (qtlctr % 10000 == 0) {
 					pb.display();
 				}
-				p++;
+				qtlctr++;
 			}
 			pb.complete(d);
 			System.out.println("");
