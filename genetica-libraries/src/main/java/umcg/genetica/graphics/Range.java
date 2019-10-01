@@ -194,4 +194,28 @@ public class Range {
 		}
 		return unitY;
 	}
+
+	public void setMaxX(double maxX) {
+		this.maxX = maxX;
+	}
+
+	public void setMaxY(double maxY) {
+		this.maxY = maxY;
+	}
+
+	public void setMinX(double minX) {
+		this.minX = minX;
+	}
+
+	public void setMinY(double minY) {
+		this.minY = minY;
+	}
+
+	public void setUnitY(Double unitY) {
+		this.unitY = unitY;
+	}
+
+	public void setUnitX(Double unitX) {
+		this.unitX = unitX;
+	}
 }

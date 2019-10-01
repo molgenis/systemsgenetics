@@ -72,7 +72,8 @@ public final class TriTyperGeneticalGenomicsDataset implements Comparable<TriTyp
 		}
 
 		if (includedExpressionIndividuals.isEmpty()) {
-			System.err.println("ERROR: none of the expression samples will be included with your current settings.\nPlease check the links between genotype and gene expression samples and/or your PhenotypeInformation.txt");
+			System.err.println("ERROR: none of the expression samples will be included with your current settings.\n" +
+					"zPlease check the links between genotype and gene expression samples and/or your PhenotypeInformation.txt");
 			System.exit(-1);
 		}
 
