@@ -58,7 +58,7 @@ public class BgenixWriter {
 	 * @param startPos
 	 * @param sizeInBytesInBgenFile
 	 * @param variantId variant ID as is written to bgen file. Variant ID is
-	 * requered by bgen so might be different from the null ID that can be
+	 * required by bgen so might be different from the null ID that can be
 	 * stored in Genetic variant object
 	 */
 	public synchronized void addVariantToIndex(GeneticVariant variant, long startPos, int sizeInBytesInBgenFile, String variantId) {
