@@ -197,8 +197,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             }
         } else {
             // Also throw an exception whenever the BGENIX files metadata is null as returned by the getMetadata method
-// in the bgenixReader object.
-// Not sure if we're ok with null?
+            // in the bgenixReader object.
+            // Not sure if we're ok with null?
             throw new GenotypeDataException("Metadata could not be obtained from the BGENIX file.");
 }
     }
@@ -318,39 +318,32 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		bgenixWriter.writeMetadata(m);
 
 		//Loop through the start of the file
-//		int stepToNextVariant = 0;
-//		if (fileLayout.equals(layout.layOut_1)) {
-//			stepToNextVariant += 4;
-//		}
 		long startSize = pointerFirstSnp;
 		while ((startSize) < bgenFile.length()) {
 			//Loop through variants.
-//			long currentStart = pointerFirstSnp + stepToNextVariant;
 
 			GeneticVariant var = readVariantIdentifyingData(startSize);
 			long currentPointer = this.bgenFile.getFilePointer();
-			long variantGenotypeDataBlockSize = determineVariantGenotypeDataBlockSize(
+			VariantGenotypeDataBlockInfo variantGenotypeDataBlockInfo = extractVariantGenotypeDataBlockInfo(
 					currentPointer);
 
-			// If layout 2, the block size C may include 4 bytes representing D
-			// I suppose the following tries to correct for this??
-			// No, should be substracting 4 instead of adding...
-			if (fileLayout.equals(Layout.layOut_2)) {
-				variantGenotypeDataBlockSize += 4;
-			}
-//			this.bgenFile.seek(currentPointer);
-			startSize = currentPointer + variantGenotypeDataBlockSize;
+			LOGGER.debug("BlockSize: " + variantGenotypeDataBlockInfo.getBlockLength());
+
+			startSize = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
 
 			bgenixWriter.addVariantToIndex(
 					var,
 					pointerFirstSnp,
-					(int) variantGenotypeDataBlockSize,
+					(int) variantGenotypeDataBlockInfo.getBlockLength(),
 					var.getVariantId().getPrimairyId());
+
+//			readGenotypesFromVariant(currentPointer);
 		}
 	}
 
 	private GeneticVariant readVariantIdentifyingData(long filePointer) throws IOException {
 		long lastSnpStart = filePointer;
+		LOGGER.debug("filePointer: " + filePointer);
 		// If layout is equal to 1 then the variant identifying data starts with 4 bytes describing the
 		// number of individuals within the row.
 		if (fileLayout == Layout.layOut_1) {
@@ -370,6 +363,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //		}
 		// Need to check that it is correct with the block infront of the snp id.
 		ArrayList<String> snpIds = new ArrayList<>();
+		LOGGER.debug("SNPinfoBufferPos: " + snpInfoBufferPos);
 		int fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
 		LOGGER.debug("Snp ID length " + fieldLength);
 		snpInfoBufferPos += 2;
@@ -456,75 +450,66 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		// Read
 		if (fileLayout == Layout.layOut_1) {
-			long snpBlockSize = determineVariantGenotypeDataBlockSizeForLayoutOne(
+			long variantBlockSize = getVariantGenotypeDataBlockInfoForLayoutOne(
+					snpInfoBuffer,
+					snpInfoBufferPos).getBlockLength();
+
+            byte[] snpBlockData = getDecompressedBlockData(snpInfoBuffer, snpInfoBufferPos, variantBlockSize);
+            System.out.println(getUInt16(snpBlockData, 0) / 32768f + " " + getUInt16(snpBlockData, 2) / 32768f + " " + getUInt16(snpBlockData, 4) / 32768f);
+
+        } else if (fileLayout.equals(Layout.layOut_2)) {
+			VariantGenotypeDataBlockInfo blockInfo = determineVariantGenotypeDataBlockSizeForLayoutTwo(
 					snpInfoBuffer,
 					snpInfoBufferPos);
+            // Shift reading position 4 bytes
 
-			byte[] snpBlockData = new byte[6 * (int) sampleCount];
-			if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
+            System.out.println("Snp block size: " + blockInfo.getBlockLength());
+			System.out.println("Snp block size decompressed: " + blockInfo.getDecompressedBlockLength());
 
-				snpInfoBufferPos += 4; // Shift reading frame 4 bytes to just after the variant size field
+			// Get the decompressed variant data of length D
+            byte[] snpBlockData = getDecompressedBlockData(
+                    snpInfoBuffer,
+                    snpInfoBufferPos,
+                    blockInfo.getBlockLength(),
+                    (int) blockInfo.getDecompressedBlockLength());
 
-				decompressVariantBlockGzip(snpInfoBuffer,
-						(int) snpBlockSize - 4,
-						snpBlockData,
-						snpInfoBufferPos);
-
-				//Here we can parse from the inflater block for all the samples.
-				System.out.println(getUInt16(snpBlockData, 0) / 32768f + " " + getUInt16(snpBlockData, 2) / 32768f + " " + getUInt16(snpBlockData, 4) / 32768f);
-			} else {
-				//Here we can directly parse from the snpInfoBuffer.
-			}
-
-		} else if (fileLayout.equals(Layout.layOut_2)) {
-			long snpBlockSize = determineVariantGenotypeDataBlockSizeForLayoutTwo(snpInfoBuffer, snpInfoBufferPos);
-			long snpBlockSizeDecompressed = determineDecompressedVariantGenotypeDataBlockSizeForLayoutTwo(
-					snpInfoBuffer,
-					snpInfoBufferPos + 4, // Shift reading frame 4 bytes to decompressed size field.
-					snpBlockSize);
-			System.out.println("Snp block size: " + snpBlockSize);
-			System.out.println("Snp block size decompressed: " + snpBlockSizeDecompressed);
-
-			snpInfoBufferPos += 4; // Shift reading frame 4 bytes to just after the decompressed size field.
-
-			byte[] snpBlockData = new byte[(int) snpBlockSizeDecompressed];
-			switch (snpBlockRepresentation) {
-
-				case compression_1:
-					decompressVariantBlockGzip(snpInfoBuffer, (int) snpBlockSize - 4, snpBlockData, snpInfoBufferPos);
-
-					//At genotype / haplotype data
-				case compression_2:
-					zstdInflater.decompress(snpInfoBuffer, snpInfoBufferPos,(int) snpBlockSize - 4,snpBlockData, 0, (int) snpBlockSizeDecompressed);
-				//Is this enough?
-
-				default:
-					break;
-//					snpInfoBufferPos = ;
-				//Not compressed.
-			}
-			int blockBuffer = 0;
+            int blockBuffer = 0;
 			//must equal data before.
 			int numberOfIndividuals = (int) getUInt32(snpBlockData, blockBuffer);
+			if (numberOfIndividuals != sampleCount) {
+                throw new GenotypeDataException(
+                        "BGEN file format error. Sample counts do not match.");
+            }
 			System.out.println("Number of individuals: " + numberOfIndividuals);
 			blockBuffer += 4;
+
 			//must equal data before.
 			int numberOfAlleles = (int) getUInt16(snpBlockData, blockBuffer);
 			System.out.println("Number of Alleles: " + numberOfAlleles);
 			blockBuffer += 2;
 
+			// Read the minimum ploidy
 			int minPloidy = getUInt8(snpBlockData, blockBuffer);
 			System.out.println("Min ploidy: " + minPloidy);
 			blockBuffer += 1;
+
+			// Read the maximum ploidy
 			int maxPloidy = getUInt8(snpBlockData, blockBuffer);
 			System.out.println("Max ploidy: " + maxPloidy);
 			blockBuffer += 1;
+
+			//
 			for (int i = 0; i < numberOfIndividuals; i++) {
 				//Here we need to handle missing ploidity.
 				//Missingness is encoded by the most significant bit; thus a value of 1 for the most significant bit indicates that no probability data is stored for this sample.
+                int value = snpBlockData[i] & 0xFC;
+                System.out.println("value = " + value);
+                boolean missingness = (snpBlockData[i] >> 8 & 1) == 1;
+                System.out.println("missingness = " + missingness);
 //				System.out.println("ploidity: " + getUInt8(snpBlockData, blockBuffer));
 				blockBuffer += 1;
 			}
+
 			int phased = getUInt8(snpBlockData, blockBuffer);
 			System.out.println("phased: " + phased);
 			blockBuffer += 1;
@@ -544,7 +529,58 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		}
 	}
 
-	private void decompressVariantBlockGzip(byte[] snpInfoBuffer, int snpBlockSize, byte[] snpBlockData, int i2) {
+    private byte[] getDecompressedBlockData(byte[] snpInfoBuffer, int snpInfoBufferPos, long variantBlockSize) {
+        byte[] snpBlockData = new byte[6 * (int) sampleCount];
+        if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
+
+            snpInfoBufferPos += 4; // Shift reading frame 4 bytes to just after the variant size field
+
+            decompressVariantBlockGzip(snpInfoBuffer,
+                    (int) variantBlockSize,
+                    snpBlockData,
+                    snpInfoBufferPos);
+
+            //Here we can parse from the inflater block for all the samples.
+        } else {
+            snpBlockData = Arrays.copyOfRange(
+                    snpInfoBuffer,
+                    snpInfoBufferPos,
+                    (int) (snpInfoBufferPos + variantBlockSize));
+        }
+        return snpBlockData;
+    }
+
+    private byte[] getDecompressedBlockData(byte[] snpInfoBuffer, int snpInfoBufferPos, long variantBlockSize, int snpBlockSizeDecompressed) {
+        // Initialize byte array.
+        byte[] snpBlockData = new byte[snpBlockSizeDecompressed];
+        switch (snpBlockRepresentation) {
+
+            case compression_1:
+                decompressVariantBlockGzip(snpInfoBuffer,
+                        (int) variantBlockSize,
+                        snpBlockData,
+                        snpInfoBufferPos);
+                break;
+
+            //At genotype / haplotype data
+            case compression_2:
+                zstdInflater.decompress(snpInfoBuffer, snpInfoBufferPos, (int) variantBlockSize, snpBlockData, 0, snpBlockSizeDecompressed);
+                //Is this enough?
+                break;
+
+            default:
+                snpBlockData = Arrays.copyOfRange(
+                        snpInfoBuffer,
+                        snpInfoBufferPos,
+                        (int) (snpInfoBufferPos + variantBlockSize));
+                break;
+//					snpInfoBufferPos = ;
+            //Not compressed.
+        }
+        return snpBlockData;
+    }
+
+    private void decompressVariantBlockGzip(byte[] snpInfoBuffer, int snpBlockSize, byte[] snpBlockData, int i2) {
 		gzipInflater.setInput(snpInfoBuffer, i2, snpBlockSize);
 		try {
 			gzipInflater.inflate(snpBlockData);
@@ -580,7 +616,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //
 //	}
 
-	private Long determineVariantGenotypeDataBlockSize(
+	private VariantGenotypeDataBlockInfo extractVariantGenotypeDataBlockInfo(
 			long filePointer) throws IOException {
 
 		// Seek towards the file pointer (bgenFile.getFilePointer();)
@@ -591,63 +627,53 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		this.bgenFile.read(snpInfoBuffer, 0, snpInfoBuffer.length);
 		int snpInfoBufferPos = 0;
 
-		Long snpBlockSize = null;
+		VariantGenotypeDataBlockInfo variantGenotypeDataBlockInfo = null;
 
 		if (fileLayout == Layout.layOut_1) {
-			snpBlockSize = determineVariantGenotypeDataBlockSizeForLayoutOne(snpInfoBuffer, snpInfoBufferPos);
+			variantGenotypeDataBlockInfo = getVariantGenotypeDataBlockInfoForLayoutOne(
+					snpInfoBuffer, snpInfoBufferPos);
 		} else if (fileLayout == Layout.layOut_2) {
-			snpBlockSize = determineVariantGenotypeDataBlockSizeForLayoutTwo(snpInfoBuffer, snpInfoBufferPos);
+			variantGenotypeDataBlockInfo = determineVariantGenotypeDataBlockSizeForLayoutTwo(
+					snpInfoBuffer, snpInfoBufferPos);
 		}
-		return snpBlockSize;
+		return variantGenotypeDataBlockInfo;
 	}
 
-	private Long determineVariantGenotypeDataBlockSizeForLayoutTwo(byte[] snpInfoBuffer, int snpInfoBufferPos) {
-		Long snpBlockSize;
-//		long snpBlockSizeDecompressed;
+	private VariantGenotypeDataBlockInfo determineVariantGenotypeDataBlockSizeForLayoutTwo(byte[] snpInfoBuffer, int snpInfoBufferPos) {
+		long variantBlockSize;
+		long snpBlockSizeDecompressed;
 		// If the file layout is 2,
 		// The genotype data for this variant is equal to the next 4 bytes
-		snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
+		variantBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
 		// Shift the buffer position 4 bytes
 		snpInfoBufferPos += 4;
 
-//		if (snpBlockRepresentation.equals(blockRepresentation.compression_0)) {
-//			snpBlockSizeDecompressed = snpBlockSize;
-//		} else {
-//			snpBlockSizeDecompressed = getUInt32(snpInfoBuffer, snpInfoBufferPos);
-//			snpInfoBufferPos += 4; // Has no function
-//		}
-//		System.out.println("Snp block size: " + snpBlockSize);
-//		System.out.println("Snp block size decompressed: " + snpBlockSizeDecompressed);
-		return snpBlockSize;
-	}
-
-	private Long determineDecompressedVariantGenotypeDataBlockSizeForLayoutTwo(byte[] snpInfoBuffer,
-																			   int snpInfoBufferPos,
-																			   long variantBlockSize) {
-		long snpBlockSizeDecompressed;
-		if (snpBlockRepresentation.equals(blockRepresentation.compression_0)) {
-			snpBlockSizeDecompressed = variantBlockSize;
-		} else {
+		if (!snpBlockRepresentation.equals(blockRepresentation.compression_0)) {
 			snpBlockSizeDecompressed = getUInt32(snpInfoBuffer, snpInfoBufferPos);
-			snpInfoBufferPos += 4; // Has no function
+			return new VariantGenotypeDataBlockInfo(
+					fileLayout,
+					variantBlockSize,
+					snpBlockSizeDecompressed);
 		}
-		return snpBlockSizeDecompressed;
+		return new VariantGenotypeDataBlockInfo(
+				fileLayout,
+				variantBlockSize,
+				false);
 	}
 
-	private Long determineVariantGenotypeDataBlockSizeForLayoutOne(byte[] snpInfoBuffer, int snpInfoBufferPos) {
-		long snpBlockSize;
+	private VariantGenotypeDataBlockInfo getVariantGenotypeDataBlockInfoForLayoutOne(byte[] snpInfoBuffer, int snpInfoBufferPos) {
+		long variantBlockSize;
 		if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
 			// If the file layout is 1 and the variants are zlib compressed
-			// get the snp block size by within the next four bytes
-			snpBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
-			snpBlockSize += 4;
+			// The snp block starts in the 4 bytes after the block size field
+			variantBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
+			return new VariantGenotypeDataBlockInfo(fileLayout, variantBlockSize, true);
 		} else {
 			// If the file layout is 1 and the variants are not zlib compressed,
 			// the genotype data for this variant is 6 times the number of samples
-			snpBlockSize = 6 * sampleCount;
+			variantBlockSize = 6 * sampleCount;
+			return new VariantGenotypeDataBlockInfo(fileLayout, variantBlockSize, false);
 		}
-		System.out.println("Snp block size: " + snpBlockSize);
-		return snpBlockSize;
 	}
 
 	@Override
