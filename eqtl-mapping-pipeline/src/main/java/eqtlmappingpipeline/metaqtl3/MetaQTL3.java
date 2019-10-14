@@ -1282,14 +1282,13 @@ public class MetaQTL3 {
 		if (m_settings.tsSNPProbeCombinationsConfine != null) {
 			m_settings.cisAnalysis = true;
 			m_settings.transAnalysis = false;
-			for (int i = 0; i < m_gg.length; i++) {
-				m_gg[i].getSettings().cisAnalysis = true;
-				m_gg[i].getSettings().transAnalysis = false;
-			}
-			cisTrans = false;
 			cisOnly = true;
 			transOnly = false;
-
+			cisTrans = false;
+			for (int d = 0; d < m_gg.length; d++) {
+				m_gg[d].getSettings().cisAnalysis = true;
+				m_gg[d].getSettings().transAnalysis = false;
+			}
 			probeNameToId = new HashMap<String, Integer>();
 			for (int i = 0; i < m_probeList.length; i++) {
 				probeNameToId.put(m_probeList[i], i);
@@ -1331,8 +1330,28 @@ public class MetaQTL3 {
 
 					ArrayList<Integer> probeOnChr = chrToProbe.get(snpchr);
 
-					// cis trans
-					if (finalCisTrans) {
+
+					ArrayList<Integer> probeToTest = null;
+					if (m_settings.tsSNPProbeCombinationsConfine != null) {
+						HashSet<String> probesSelected;
+						if (m_settings.snpProbeConfineBasedOnChrPos) {
+							probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpchr + ":" + snppos);
+						} else {
+							probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
+						}
+
+						if (probesSelected != null && finalProbeNameToId != null) {
+							probeToTest = new ArrayList<Integer>();
+							for (String probe : probesSelected) {
+								Integer probeId = finalProbeNameToId.get(probe);
+								if (probeId == null) {
+									System.err.println("You selected the following SNP-Probe combination, but probe not present in dataset.\t" + snpname + "\t-\t" + probe);
+								} else {
+									probeToTest.add(probeId);
+								}
+							}
+						}
+					} else if (finalCisTrans) {
 						output = new WorkPackage();
 						output.setMetaSNPId(s);
 						output.setSnps(snps);
@@ -1342,88 +1361,66 @@ public class MetaQTL3 {
 						tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
 //						maxNrTestsToPerform += m_probeList.length;
 						workPackages[s] = output;
-
-						// cis or trans
 					} else {
-						ArrayList<Integer> probeToTest = null;
-						if (m_settings.tsSNPProbeCombinationsConfine != null) {
-							HashSet<String> probesSelected;
-							if (m_settings.snpProbeConfineBasedOnChrPos) {
-								probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpchr + ":" + snppos);
-							} else {
-								probesSelected = m_settings.tsSNPProbeCombinationsConfine.get(snpname);
-							}
+						if (probeOnChr != null && !probeOnChr.isEmpty()) {
+							probeToTest = new ArrayList<Integer>();
+							for (int e = 0; e < probeOnChr.size(); e++) {
+								int p = probeOnChr.get(e);
 
-							if (probesSelected != null && finalProbeNameToId != null) {
-								probeToTest = new ArrayList<Integer>();
-								for (String probe : probesSelected) {
-									Integer probeId = finalProbeNameToId.get(probe);
-									if (probeId == null) {
-										System.err.println("You selected the following SNP-Probe combination, but probe not present in dataset.\t" + snpname + "\t-\t" + probe);
-									} else {
-										probeToTest.add(probeId);
-									}
+								if (Math.abs(midpoint[p] - snppos) < m_settings.ciseQTLAnalysMaxSNPProbeMidPointDistance) {
+									probeToTest.add(p); // depending if the test is cis or trans, we test these probes, or not.
+									// System.out.println(snps[dreq].getName()+"\t"+p+"\t"+probeList[p]+"\t"+Math.abs(midpoint[p] - snppos));
 								}
-							}
-						} else {
-							if (probeOnChr != null && !probeOnChr.isEmpty()) {
-								probeToTest = new ArrayList<Integer>();
-								for (int e = 0; e < probeOnChr.size(); e++) {
-									int p = probeOnChr.get(e);
-
-									if (Math.abs(midpoint[p] - snppos) < m_settings.ciseQTLAnalysMaxSNPProbeMidPointDistance) {
-										probeToTest.add(p); // depending if the test is cis or trans, we test these probes, or not.
-										// System.out.println(snps[dreq].getName()+"\t"+p+"\t"+probeList[p]+"\t"+Math.abs(midpoint[p] - snppos));
-									}
-								}
-							}
-						}
-
-						// don't add the cis-workpackage when there are no probes to test.
-						// cisonly is also used when performing analysis on a certain set of snp-probe combos.
-						if (finalCisOnly && (probeToTest == null || probeToTest.isEmpty())) {
-							workPackages[s] = null;
-
-							// reduce the output size of the snp filter output to query snps, if any
-							if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(m_snpList[s])) {
-								try {
-									excludedSNPs.writelnsynced(snpname + "\tNo probes to test.");
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-							}
-						} else {
-							int[] testprobes = new int[0];
-							if (probeToTest != null) {
-								testprobes = new int[probeToTest.size()];
-								for (int p = 0; p < testprobes.length; p++) {
-									testprobes[p] = probeToTest.get(p);
-								}
-							}
-
-							output = new WorkPackage();
-							output.setMetaSNPId(s);
-							output.setSnps(snps);
-							output.setProbes(testprobes);
-
-							workPackages[s] = output;
-							tmpNumWorkPackages.getAndIncrement();
-//                            numWorkPackages++;
-							if (finalCisOnly) {
-								tmpMaxNrTestsToPerform.getAndAdd(testprobes.length);
-//                                maxNrTestsToPerform += testprobes.length;
-							} else {
-								if (testprobes.length != 0) {
-									tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length - testprobes.length);
-//                                    maxNrTestsToPerform += (m_probeList.length - testprobes.length);
-								} else {
-									tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
-//                                    maxNrTestsToPerform += (m_probeList.length);
-								}
-
 							}
 						}
 					}
+
+					// don't add the cis-workpackage when there are no probes to test.
+					// cisonly is also used when performing analysis on a certain set of snp-probe combos.
+					if ((m_settings.tsSNPProbeCombinationsConfine != null || finalCisOnly)
+							&& (probeToTest == null || probeToTest.isEmpty())) {
+						workPackages[s] = null;
+
+						// reduce the output size of the snp filter output to query snps, if any
+						if (m_settings.tsSNPsConfine == null || m_settings.tsSNPsConfine.contains(m_snpList[s])) {
+							try {
+								excludedSNPs.writelnsynced(snpname + "\tNo probes to test.");
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					} else {
+						int[] testprobes = new int[0];
+						if (probeToTest != null) {
+							testprobes = new int[probeToTest.size()];
+							for (int p = 0; p < testprobes.length; p++) {
+								testprobes[p] = probeToTest.get(p);
+							}
+						}
+
+						output = new WorkPackage();
+						output.setMetaSNPId(s);
+						output.setSnps(snps);
+						output.setProbes(testprobes);
+
+						workPackages[s] = output;
+						tmpNumWorkPackages.getAndIncrement();
+//                            numWorkPackages++;
+						if (finalCisOnly || m_settings.tsSNPProbeCombinationsConfine != null) {
+							tmpMaxNrTestsToPerform.getAndAdd(testprobes.length);
+//                                maxNrTestsToPerform += testprobes.length;
+						} else {
+							if (testprobes.length != 0) {
+								tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length - testprobes.length);
+//                                    maxNrTestsToPerform += (m_probeList.length - testprobes.length);
+							} else {
+								tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
+//                                    maxNrTestsToPerform += (m_probeList.length);
+							}
+
+						}
+					}
+
 
 					pb.iterateSynched();
 				}

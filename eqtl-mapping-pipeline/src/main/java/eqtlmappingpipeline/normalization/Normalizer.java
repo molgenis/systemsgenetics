@@ -262,7 +262,7 @@ public class Normalizer {
 		}
 
 		if (adjustCovariates && covariatesToRemove != null) {
-			outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, useOLSforCovariates, 1E-10);
+			outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, true, 1E-10);
 		}
 
 		if (runPCA) {
@@ -494,7 +494,7 @@ public class Normalizer {
 								   String fileNamePrefix,
 								   String covariatesToRemove,
 								   double varianceExplainedCutoff) throws IOException, Exception {
-		return adjustCovariates(traitData, fileNamePrefix, covariatesToRemove, false, varianceExplainedCutoff);
+		return adjustCovariates(traitData, fileNamePrefix, covariatesToRemove, true, varianceExplainedCutoff);
 	}
 
 	public String adjustCovariates(DoubleMatrixDataset<String, String> traitData,
@@ -538,6 +538,7 @@ public class Normalizer {
 				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
 				ols.newSampleData(y, covariateDataMatrix);
 				double[] yout = ols.estimateResiduals();
+
 
 				for (int c = 0; c < yout.length; c++) {
 					outputmat.setElementQuick(row, c, yout[c]);
@@ -1030,7 +1031,8 @@ public class Normalizer {
 	}
 
 	// NOTE: this new code switches around columns and rows for the covariate matrix
-	private Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> loadCovariateValues(String covariatesToRemove, DoubleMatrixDataset<String, String> dataset) throws Exception {
+	private Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> loadCovariateValues(String covariatesToRemove,
+																											   DoubleMatrixDataset<String, String> dataset) throws Exception {
 		System.out.println("- Removing covariates as defined in: " + covariatesToRemove);
 		TextFile covariates = new TextFile(covariatesToRemove, TextFile.R);
 		int numRows = covariates.countLines() - 1; // minus the header :)
@@ -1105,7 +1107,7 @@ public class Normalizer {
 //            System.out.println("Please note that missing samples will be removed from your eventual corrected --in file.");
 //        }
 		if (!isTransposed && ctr <= numRows + 2 || isTransposed && ctr <= numCols + 2) {
-			System.err.println("Less samples present than minimaly required for the normalization, (minimaly covariats+3 samples needed).");
+			System.err.println("Fewer samples present than minimally required for the normalization, (>covariates+3 samples needed).");
 			System.exit(0);
 		}
 		if (ctr < dataset.columns()) {
@@ -1360,6 +1362,7 @@ public class Normalizer {
 		VIF vif = new VIF();
 		finalCovariates = vif.vifCorrect(finalCovariates.viewDice(), (1 - 1E-4)); // code here has covariates on the rows; move them to the columns instead.
 
+		finalCovariates = finalCovariates.viewDice();
 		System.out.println("");
 		System.out.println("Remaining covariates: ");
 		System.out.println(Strings.concat(finalCovariates.getRowObjects(), Strings.semicolon));

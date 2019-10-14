@@ -97,7 +97,6 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean dumpeverythingtodisk;
 	public Integer stopWithPermutation;
 
-
 	public Settings() {
 	}
 
@@ -106,11 +105,21 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 		XMLConfiguration config = null;
 		if (settingsTextToReplace != null) {
 
-			System.out.println("Found string to replace: " + settingsTextToReplace);
-			System.out.println("Replacement string: " + settingsTextReplaceWith);
+//			System.out.println("Found string to replace: " + settingsTextToReplace);
+//			System.out.println("Replacement string: " + settingsTextReplaceWith);
 
 			String[] queries = settingsTextToReplace.split(",");
 			String[] replacements = settingsTextReplaceWith.split(",");
+
+			if (queries.length != replacements.length) {
+				System.out.println("Issue with replacement strings!");
+				System.out.println("Number of strings to replace not equal!");
+				System.exit(-1);
+			}
+
+			for (int q = 0; q < queries.length; q++) {
+				System.out.println("Will replace " + queries[q] + " with " + replacements[q]);
+			}
 
 			System.out.println("Will attempt to replace template strings in configuration file.");
 			System.out.println(queries.length + " strings to replace with " + replacements.length + " replacements");
@@ -118,6 +127,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 				System.out.println("Error: number of strings to replace and number of replacements should be equal.");
 				System.exit(-1);
 			}
+
 			TextFile tf = new TextFile(settings, TextFile.R);
 			String generatedString = RandomStringUtils.randomAlphabetic(12);
 //			String generatedString = "v2";//RandomStringUtils.randomAlphabetic(12);
@@ -128,7 +138,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 				for (int s = 0; s < queries.length; s++) {
 					String query = queries[s];
 					String replacement = replacements[s];
-					System.out.println(lnctr + "\t" + query + "\t" + replacement);
+//					System.out.println(lnctr + "\t" + query + "\t" + replacement);
 					if (line.contains(query)) {
 //						System.out.println(line + " --> Replacing: " + query + " with " + replacement);
 						line = line.replace(query, replacement);
@@ -200,11 +210,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 			snpQCMAFThreshold = 0.05;
 		}
 
-		// analysis settings
-		try {
-			analysisType = config.getString("defaults.analysis.analysistype");
-		} catch (Exception e) {
-		}
+
 		try {
 			sortsnps = config.getBoolean("defaults.analysis.sortsnps", false);
 		} catch (Exception e) {
@@ -231,6 +237,12 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
 		try {
 			runOnlyPermutations = config.getBoolean("defaults.analysis.onlypermutations", false);
+		} catch (Exception e) {
+		}
+
+		// analysis settings
+		try {
+			analysisType = config.getString("defaults.analysis.analysistype");
 		} catch (Exception e) {
 		}
 
