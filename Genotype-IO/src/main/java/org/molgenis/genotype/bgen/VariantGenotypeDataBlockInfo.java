@@ -104,7 +104,7 @@ class VariantGenotypeDataBlockInfo {
      * @return the length of the decompressed probability data.
      */
     long getDecompressedBlockLength() {
-        return decompressedBlockLength;
+        return decompressedBlockLength != 0 ? decompressedBlockLength : blockLength;
     }
 
     /**

@@ -7,6 +7,12 @@ package org.molgenis.genotype.bgen;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.molgenis.genotype.ResourceTest;
 import org.testng.annotations.Test;
 
@@ -17,6 +23,9 @@ import org.testng.annotations.Test;
 public class BgenGenotypeDataTest extends ResourceTest {
 
 	private BgenGenotypeData genotypeData;
+
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
 
 //	@BeforeClass
 //	public void beforeClass() throws IOException, URISyntaxException {
@@ -34,15 +43,21 @@ public class BgenGenotypeDataTest extends ResourceTest {
 
 	@Test
 	public void testReader_1_2() throws URISyntaxException, IOException {
-		//File bgenixFile = getTestResourceFile("/bgenExamples/complex.bgen");
-		//genotypeData = new BgenGenotypeData(bgenixFile, null);
-		File bgenixFile = getTestResourceFile("/bgenExamples/example.16bits.bgen");
-		genotypeData = new BgenGenotypeData(bgenixFile, null);
+		//File bgenFile = getTestResourceFile("/bgenExamples/complex.bgen");
+		//genotypeData = new BgenGenotypeData(bgenFile, null);
+		folder.create();
+		File bgenFile = getTestResourceFile("/bgenExamples/example.25bits.bgen");
+		Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
+		Files.copy(bgenFile.toPath(), target);
+		genotypeData = new BgenGenotypeData(target.toFile(), null);
 	}
 
 	@Test
 	public void testReader_1_3() throws URISyntaxException, IOException {
-		File bgenixFile = getTestResourceFile("/bgenExamples/example.16bits.zstd.bgen");
-		genotypeData = new BgenGenotypeData(bgenixFile, null);
+		folder.create();
+		File bgenFile = getTestResourceFile("/bgenExamples/example.16bits.zstd.bgen");
+		Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
+		Files.copy(bgenFile.toPath(), target);
+		genotypeData = new BgenGenotypeData(target.toFile(), null);
 	}
 }
