@@ -19,10 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -50,6 +47,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private static final Charset CHARSET = Charset.forName("UTF-8");
 	private final blockRepresentation snpBlockRepresentation;
 	private final Layout fileLayout;
+	private final List<Sample> samples = new ArrayList<>();
+	private final LinkedHashSet<String> sequenceNames = new LinkedHashSet<String>();;
 	private static final GeneticVariantMeta GP_VARIANT = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 	private final SampleVariantsProvider sampleVariantProvider;
 	private final BgenixReader bgenixReader; // Was previously a final field
@@ -253,7 +252,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             // Append the sample identifier to the array of sample ids.
             sampleIds[i] = new String(sampleName, CHARSET);
 //				System.out.println("\t"+sampleIds[i]);
-        }
+			samples.add(new Sample(sampleIds[i], null, null));
+		}
     }
 
 	/**
@@ -398,10 +398,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 					(int) variantGenotypeDataBlockInfo.getBlockLength(),
 					variant.getVariantId().getPrimairyId());
 
-//			readGenotypesFromVariant(currentPointer);
+			readGenotypesFromVariant(currentPointer);
+			break;
 
 			// Get the position in the file to start reading the next variant.
-			variantReadingPosition = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
+//			variantReadingPosition = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
 		}
 	}
 
@@ -541,7 +542,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		this.bgenFile.read(snpInfoBuffer, 0, snpInfoBuffer.length);
 		int snpInfoBufferPos = 0;
 
-		float[][] probabilities = new float[getSamples().size()][3];
+		float[][] probabilities = new float[(int) sampleCount][3];
 
 		// Read
 		if (fileLayout == Layout.layOut_1) {
@@ -549,14 +550,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 					snpInfoBuffer,
 					snpInfoBufferPos);
 
-            byte[] snpBlockData = getDecompressedBlockData(snpInfoBuffer, blockInfo);
+            byte[] variantBlockData = getDecompressedBlockData(filePointer, blockInfo);
 			for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
 				float[] sampleProbabilities = new float[3];
 
-//				System.out.println(getUInt16(snpBlockData, 0) / 32768f + " " + getUInt16(snpBlockData, 2) / 32768f + " " + getUInt16(snpBlockData, 4) / 32768f);
-				sampleProbabilities[0] = getUInt16(snpBlockData, 0) / 32768f;
-				sampleProbabilities[1] = getUInt16(snpBlockData, 2) / 32768f;
-				sampleProbabilities[2] = getUInt16(snpBlockData, 4) / 32768f;
+//				System.out.println(getUInt16(variantBlockData, 0) / 32768f + " " + getUInt16(variantBlockData, 2) / 32768f + " " + getUInt16(variantBlockData, 4) / 32768f);
+				sampleProbabilities[0] = getUInt16(variantBlockData, 0) / 32768f;
+				sampleProbabilities[1] = getUInt16(variantBlockData, 2) / 32768f;
+				sampleProbabilities[2] = getUInt16(variantBlockData, 4) / 32768f;
 				probabilities[sampleIndex] = sampleProbabilities;
 			}
 
@@ -569,11 +570,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			System.out.println("Snp block size decompressed: " + blockInfo.getDecompressedBlockLength());
 
 			// Get the decompressed variant data of length D
-            byte[] variantBlockData = getDecompressedBlockData(
-                    snpInfoBuffer,
-					blockInfo.getBlockOffset(),
-                    blockInfo.getBlockLength(),
-                    (int) blockInfo.getDecompressedBlockLength());
+            byte[] variantBlockData = getDecompressedBlockData(filePointer, blockInfo);
+			System.out.println("variantBlockData.length = " + variantBlockData.length);
 
             int blockBufferOffset = 0;
 			//must equal data before.
@@ -585,7 +583,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			blockBufferOffset += 4;
 
 			//must equal data before.
-			int numberOfAlleles = (int) getUInt16(variantBlockData, blockBufferOffset);
+			int numberOfAlleles = getUInt16(variantBlockData, blockBufferOffset);
 			System.out.println("Number of Alleles: " + numberOfAlleles);
 			blockBufferOffset += 2;
 
@@ -601,8 +599,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 			// Loop through every individual
 			List<Boolean> isMissing = new ArrayList<>();
-			List<Integer> ploidity = new ArrayList<>();
-			ReadPloidity(variantBlockData, isMissing, ploidity);
+			List<Integer> ploidies = new ArrayList<>();
+			ReadPloidiesAndMissingnessByte(variantBlockData, blockBufferOffset, isMissing, ploidies);
 			// Add the number of individuals to the buffer.
 			blockBufferOffset += sampleCount;
 
@@ -613,31 +611,108 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			System.out.println("Bit representation of probability: " + probabilitiesLengthInBits);
 			blockBufferOffset += 1;
 
-			byte[] probabilitiesArray = Arrays.copyOfRange(variantBlockData, blockBufferOffset,
-					variantBlockData.length - blockBufferOffset);
+			System.out.println("blockBufferOffset = " + blockBufferOffset);
+			byte[] probabilitiesArray = Arrays.copyOfRange(
+					variantBlockData, blockBufferOffset,
+					variantBlockData.length);
 
 			if (phased) {
 				readHaplotypeProbabilities(
 						probabilitiesArray,
 						probabilitiesLengthInBits,
 						numberOfAlleles,
-						isMissing, ploidity);
+						isMissing, ploidies);
 			} else {
 				readGenotypeProbabilities(
 						probabilitiesArray,
 						probabilitiesLengthInBits,
-						isMissing, ploidity);
+						numberOfAlleles,
+						isMissing, ploidies);
 			}
 
 		}
 	}
 
+	private List<List<Integer>> combinations(int numberOfAlleles, int ploidy) {
+		List<List<Integer>> combinations = new ArrayList<>();
+		getCombinationsRecursively(combinations, new ArrayList<>(), numberOfAlleles, ploidy);
+		return combinations;
+	}
+
+	private void getCombinationsRecursively(List<List<Integer>> combinations, List<Integer> combination, int numberOfAlleles, int ploidy) {
+		if (combination.size() == ploidy) {
+			combinations.add(0, combination);
+			return;
+		}
+		int i = (combination.size() > 0) ? combination.get(0) : numberOfAlleles;
+		for (; i > 0; i--) {
+			List<Integer> newCombination = new ArrayList<>(combination);
+			newCombination.add(0, i);
+			getCombinationsRecursively(combinations, newCombination, numberOfAlleles, ploidy);
+		}
+	}
+
+	private float calculateProbability(byte[] probabilitiesArray, long bitOffset, int probabilitiesLengthInBits) {
+		// To interpret a stored value x as a probability:
+		// Convet x to an integer in floating point representation
+		float probability = (float) getIntOfNBits(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
+
+		// Divide by (2^B)-1
+		float maxValue = (float) Math.pow(2, probabilitiesLengthInBits) - 1;
+		probability = probability / maxValue;
+		return probability;
+	}
+
 	private void readGenotypeProbabilities(
-			byte[] probabilities,
+			byte[] probabilitiesArray,
 			int probabilitiesLengthInBits,
-			List<Boolean> isMissing,
+			int numberOfAlleles, List<Boolean> isMissing,
 			List<Integer> ploidity) {
 
+		// Define an array consisting of an array of posterior probabilities for each genotype
+		float[][] probabilities = new float[(int) sampleCount][3];
+
+		// Get bit offset
+		long bitOffset = 0;
+
+		// Each probability is stored in B bits.
+		// Values are interpreted by linear interpolation between 0 and 1;
+		// value b corresponds to probability b / ((2^B)-1).
+
+		for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+			if (isMissing.get(sampleIndex)) {
+				bitOffset += probabilitiesLengthInBits;
+				continue;
+			}
+
+			float[] sampleProbabilities = new float[3];
+
+			// Get the list of combinations that should have probabilities in this probability-block.
+			List<List<Integer>> combinations = combinations(
+					numberOfAlleles,
+					ploidity.get(sampleIndex));
+
+			// Keep track of the probabilities
+			float[] genotypeProbabilities = new float[combinations.size()];
+			// Keep track of the sum of all probabilities as the last value is calculated by
+			// subtracting this sum from 1.
+			float sumOfProbabilities = 0;
+			for (int j = 0; j < combinations.size() - 1; j++) {
+				// Get the probability
+				float probability = calculateProbability(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
+				genotypeProbabilities[j] = probability;
+				sumOfProbabilities += probability;
+				// Update the offset of the current bit
+				bitOffset += probabilitiesLengthInBits;
+			}
+			// Calculate probability of Kth allele (P_iK)
+			genotypeProbabilities[combinations.size() - 1] = 1 - sumOfProbabilities;
+
+			// Calculate the probability for homozygous genotype 'AA',
+			// the probability for 'AB', and the probability for 'BB'
+
+			// Deal with stuff that is not diploid or biallelic.
+		}
 	}
 
 	private void readHaplotypeProbabilities(
@@ -649,12 +724,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     	// Define an array consisting of an array of posterior probabilities for each genotype
 		float[][] probabilities = new float[getSamples().size()][3];
 
+		// Get bit offset
+		long bitOffset = 0;
 
 		// Each probability is stored in B bits.
 		// Values are interpreted by linear interpolation between 0 and 1;
 		// value b corresponds to probability b / ((2^B)-1).
 
 		for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+			// If the probabilities are missing for this sample, read zero and continue with the
+			// next sample.
+			if (isMissing.get(sampleIndex)) {
+				// If this is missing, the probability is zero.
+				bitOffset += probabilitiesLengthInBits;
+				continue;
+			}
 
 			float[] sampleProbabilities = new float[3];
 			// Calculate the probability for homozygous genotype 'AA',
@@ -663,12 +747,19 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			// Read Z * (K-1) probabilities of length B.
 			Integer ploidy = ploidity.get(sampleIndex);
 			for (int i = 0; i < ploidy; i++) {
-				for (int j = 0; j < numberOfAlleles - 1; j++) {
-					// Get the P_ij probability
-					int probability = 0;
+				float sumOfProbabilities = 0;
+				float[] alleleProbabilities = new float[numberOfAlleles];
 
+				for (int j = 0; j < numberOfAlleles - 1; j++) {
+					float probability = calculateProbability(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
+					alleleProbabilities[j] = probability;
+					sumOfProbabilities += probability;
+					bitOffset += probabilitiesLengthInBits;
 				}
 				// Calculate probability of Kth allele (P_iK)
+				alleleProbabilities[numberOfAlleles - 1] = 1 - sumOfProbabilities;
+
+				// What now?
 			}
 
 		}
@@ -676,13 +767,16 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	/**
 	 * Read the ploidity and missingness.
-	 *
-	 * @param snpBlockData The byte buffer array to read the genotype data.
+	 *  @param snpBlockData The byte buffer array to read the genotype data.
+	 * @param byteOffset the byte number to start reading ploidies from within the input byte array.
 	 * @param isMissing A list of booleans representing if the corresponding sample has missing probabilities
 	 * @param ploidity A list representing the ploidy of corresponding samples.
 	 */
-	private void ReadPloidity(byte[] snpBlockData, List<Boolean> isMissing, List<Integer> ploidity) {
-		for (int i = 0; i < sampleCount; i++) {
+	private void ReadPloidiesAndMissingnessByte(
+			byte[] snpBlockData, int byteOffset,
+			List<Boolean> isMissing, List<Integer> ploidity) {
+
+		for (int i = byteOffset; i < sampleCount + byteOffset; i++) {
 			// Here we need to handle ploidity and missigness of prababilities.
 			// Missingness is encoded by the most significant bit (MSB);
 			// thus a value of 1 for the most significant bit
@@ -694,8 +788,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			// Get the 6 least significant bits.
 			ploidity.add(snpBlockData[i] & 0x3F);
 
-//				String s1 = String.format("%8s", Integer.toBinaryString(snpBlockData[i] & 0xFF)).replace(' ', '0');
-//                System.out.println("value = " + s1 + " | " + value + " | " + isMissing);
+//			String s1 = String.format("%8s", Integer.toBinaryString(snpBlockData[i] & 0xFF)).replace(' ', '0');
+//			System.out.println("value = " + s1 + " | " + (snpBlockData[i] & 0x3F) + " | " + (snpBlockData[i] & 0x80));
 		}
 	}
 
@@ -726,119 +820,67 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	/**
-	 * Method for obtaining decompressed data for layout 1.
-	 *
-	 * @param snpInfoBuffer The input byte array to decompress.
-	 * @param blockInfo The info of the variant genotype data block.
-	 */
-	private byte[] getDecompressedBlockData(byte[] snpInfoBuffer, VariantGenotypeDataBlockInfo blockInfo) {
-
-		// Initialize byte array of length 6 times the number of samples.
-        byte[] variantDataBlock = new byte[6 * (int) sampleCount];
-		long variantBlockSize = blockInfo.getBlockLength();
-		int variantBlockOffset = blockInfo.getBlockOffset();
-		if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
-			// GZIP decompression
-            decompressVariantBlockGzip(snpInfoBuffer,
-					variantBlockOffset,
-                    (int) variantBlockSize,
-                    variantDataBlock);
-		} else {
-			// No decompression, copy variant data block.
-            variantDataBlock = Arrays.copyOfRange(
-                    snpInfoBuffer,
-					variantBlockOffset,
-                    (int) (variantBlockOffset + variantBlockSize));
-        }
-        return variantDataBlock;
-    }
-
-	/**
 	 * Method for obtaining decompressed data for layout 2.
 	 *
-	 * @param snpInfoBuffer The input byte array to decompress.
-	 * @param blockOffset The offset of the block size from the start of the input byte array.
-	 * @param variantBlockSize The uncompressed block size.
-	 * @param snpBlockSizeDecompressed The block size after
+	 * @param variantDataBlockOffset The position of the variant data block in bytes.
+	 * @param blockInfo The info of the variant genotype data block.
 	 */
-    private byte[] getDecompressedBlockData(byte[] snpInfoBuffer, int blockOffset, long variantBlockSize, int snpBlockSizeDecompressed) {
-        // Initialize byte array.
-        byte[] snpBlockData = new byte[snpBlockSizeDecompressed];
+    private byte[] getDecompressedBlockData(long variantDataBlockOffset, VariantGenotypeDataBlockInfo blockInfo) throws IOException {
+		int variantBlockLength = Math.toIntExact(blockInfo.getBlockLength());
+		int decompressedVariantBlockLength = Math.toIntExact(blockInfo.getDecompressedBlockLength());
+
+		// Initialize byte arrays.
+		byte[] compressedBlockData = new byte[variantBlockLength];
+		byte[] decompressedBlockData = new byte[decompressedVariantBlockLength];
+
+		// Read the compressed / uncompressed data starting from the correct location.
+		this.bgenFile.seek(variantDataBlockOffset + blockInfo.getBlockOffset());
+		this.bgenFile.read(compressedBlockData, 0, variantBlockLength);
+
         switch (snpBlockRepresentation) {
 
             case compression_1:
-                decompressVariantBlockGzip(snpInfoBuffer,
-						blockOffset,
-                        (int) variantBlockSize,
-                        snpBlockData);
+                decompressVariantBlockGzip(
+                		compressedBlockData,
+						decompressedBlockData);
                 break;
 
-            //At genotype / haplotype data
             case compression_2:
-                zstdInflater.decompress(snpInfoBuffer, blockOffset, (int) variantBlockSize, snpBlockData, 0, snpBlockSizeDecompressed);
-                //Is this enough?
+                zstdInflater.decompress(
+                		compressedBlockData,
+						0,
+						variantBlockLength,
+						decompressedBlockData,
+						0,
+						decompressedVariantBlockLength);
                 break;
 
             default:
-                snpBlockData = Arrays.copyOfRange(
-                        snpInfoBuffer,
-						blockOffset,
-                        (int) (blockOffset + variantBlockSize));
+				decompressedBlockData = compressedBlockData;
                 break;
-//					snpInfoBufferPos = ;
-            //Not compressed.
         }
-        return snpBlockData;
+        return decompressedBlockData;
     }
 
 	/**
 	 * Method that decompresses data using the gzipInflater.
-	 *
-	 * @param snpInfoBuffer The input byte array to decompress.
-	 * @param blockOffset The offset of the block size from the start of the input byte array.
-	 * @param snpBlockSize The uncompressed block size.
-	 * @param snpBlockData The decompressed output byte array.
+	 *  @param compressedVariantDataBlock The input byte array to decompress.
+	 * @param outputVariantDataBlock The decompressed output byte array.
 	 */
     private void decompressVariantBlockGzip(
-    		byte[] snpInfoBuffer, int blockOffset, int snpBlockSize, byte[] snpBlockData) {
+			byte[] compressedVariantDataBlock, byte[] outputVariantDataBlock) {
 
     	// Set the input for the gzip inflater.
-		gzipInflater.setInput(snpInfoBuffer, blockOffset, snpBlockSize);
+		gzipInflater.setInput(compressedVariantDataBlock);
 
 		// Try to decompress the data.
 		try {
-			gzipInflater.inflate(snpBlockData);
+			gzipInflater.inflate(outputVariantDataBlock);
 		} catch (DataFormatException e) {
 			throw new GenotypeDataException("Error decompressing bgen data", e);
 		}
 		gzipInflater.reset();
 	}
-
-//	private void readCompleteGeneticVariant(File bgen, long lastSnpStart, int sampleCount, layout currentFileLayout, blockRepresentation currentBlockRepresentation) throws IOException {
-//		//Binary index writer.
-////		for (int snpI = 0; snpI < variantCount; ++snpI) {
-//
-//		long currentPointer= this.bgenFile.getFilePointer();
-//		long stepSize=0L;
-//		
-//		while((currentPointer+stepSize)<bgen.length()){
-//			GeneticVariant var = readSnpInfo((currentPointer+stepSize));
-//			System.out.println(var.getAllIds().get(0));
-//			currentPointer= this.bgenFile.getFilePointer();
-//			
-//			stepSize = DetermineStepSize(currentPointer, currentFileLayout, currentBlockRepresentation, sampleCount);
-//			if(currentFileLayout.equals(layout.layOut_2)){
-//				stepSize+=4;
-//			}
-//			this.bgenFile.seek(currentPointer);
-//			//Here we can process actual genotype info.
-//			
-//			
-////			System.out.println(bgen.length() - (currentPointer+stepSize));
-//			System.out.println("Step to skip, to next variant: " + (int) stepSize);
-//		}
-//
-//	}
 
 	/**
 	 * Method that extracts info about the variant genotype data block.
@@ -929,7 +971,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public List<Sample> getSamples() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return Collections.unmodifiableList(samples);
 	}
 
 	@Override
@@ -949,29 +991,33 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public void close() throws IOException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		bgenFile.close();
 	}
 
 	@Override
 	public List<String> getSeqNames() {
-	    // Corresponds to
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return new ArrayList<>(sequenceNames);
 	}
 
 	@Override
 	public Iterable<Sequence> getSequences() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		List<Sequence> sequences = new ArrayList<>();
+		for (String seqName : getSeqNames()) {
+			sequences.add(new SimpleSequence(seqName, null, this));
+		}
+		return sequences;
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+//		GeneticVariantRange variants = null;
+//		return variants.getVariantAtPos(seqName, startPos);
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
 		BgenixVariantQueryResult bgenixVariants = bgenixReader.getVariantsChromosome(seqName);
-
 		return null;
 	}
 
@@ -1020,26 +1066,56 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 
-	private long getUIntUpTo32Bits(byte[] bytes, int bitOffset, int totalBitsToRead) {
-		int byteOffset = bitOffset / 8;
-		int remainingBitOffset = bitOffset % 8;
+	private int getIntOfNBits(byte[] bytes, long bitOffset, int totalBitsToRead) {
+		// Get the byte to start reading from.
+		int byteOffset = Math.toIntExact(bitOffset / 8);
+		// Get the bit within the byte to start reading from.
+		int remainingBitOffset = Math.toIntExact(bitOffset % 8);
+		// Get the number of bits to read within the initial byte.
+		int nBitsToRead = 8 - remainingBitOffset;
 
-		int numberOfBytes = totalBitsToRead / 8;
-		int remainingBits = totalBitsToRead % 8;
-
-		int bitsToRead = 8 - remainingBitOffset;
-		int readBits = 0;
-
+		// Define result value and a counter for the number of read bits.
+		int nReadBits = 0;
 		int value = 0;
 
-		if (bitsToRead <= totalBitsToRead) {
-			value |= bytes[byteOffset] & ((1 << bitsToRead) - 1);
+//		System.out.println("nBitsToRead = " + nBitsToRead);
+
+//		System.out.println("bitOffset = " + bitOffset);
+
+		// First read the number of bits that should be read from the first byte (8 - remainingBitOffset).
+		// After that, if the condition still applies, read all bits of following bytes, placing these bits
+		// in before the previous read bits (<< readbits)
+		while (nReadBits + 8 < totalBitsToRead) {
+			// Read all bits in the current byte, moving them the number of already read bits to the left,
+			// and masking all bits that are not within the bits that have previously been read or should be read now.
+			value |= bytes[byteOffset] << nReadBits & ((1 << (nBitsToRead + nReadBits)) - 1);
+
+			// Update bit reading numbers
+			nReadBits += nBitsToRead;
+			nBitsToRead = 8;
+
+//			String s1 = String.format("%8s", Integer.toBinaryString(bytes[byteOffset] & 0xFF)).replace(' ', '0');
+//			System.out.println("value = " + s1 + " | " + Long.toString(value,2));
+//			System.out.println("nBitsToRead = " + nBitsToRead);
+
+			// Update offset values
 			byteOffset += 1;
+			remainingBitOffset = 0;
 		}
 
-//		if (11)
+		// Calculate the number of bits that still have to be read.
+		nBitsToRead = totalBitsToRead - (nReadBits - remainingBitOffset);
+//		System.out.println("nBitsToRead = " + (8 - nBitsToRead));
 
-		value |= bytes[byteOffset] >> (8 - bitsToRead) & ((1 << bitsToRead)-1);
+		// First, move the bits that have to be read in the last byte to the right boundary of the byte
+		// (shifting amount defined by: 8 - nBitsToRead and mask the bits that should not be
+		// read.
+		int readBits = bytes[byteOffset] >> (8 - nBitsToRead) & ((1 << nBitsToRead) - 1);
+		// Secondly, move the read bits to the leftmost part of the result value, and mask all other bits.
+		value |= readBits << nReadBits & ((1 << totalBitsToRead) - 1);
+//
+//		String s1 = String.format("%8s", Integer.toBinaryString(bytes[byteOffset] & 0xFF)).replace(' ', '0');
+//		System.out.println("value = " + s1 + " | " + Long.toString(value,2) + " | " + value);
 		return value;
 	}
 
