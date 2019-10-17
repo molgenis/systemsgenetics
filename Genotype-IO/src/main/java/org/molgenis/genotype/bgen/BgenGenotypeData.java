@@ -11,7 +11,9 @@ import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.*;
+import org.molgenis.genotype.variant.range.GeneticVariantRange;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
+import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 import java.io.EOFException;
@@ -51,6 +53,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final LinkedHashSet<String> sequenceNames = new LinkedHashSet<String>();;
 	private static final GeneticVariantMeta GP_VARIANT = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 	private final SampleVariantsProvider sampleVariantProvider;
+	private final int sampleVariantProviderUniqueId;
 	private final BgenixReader bgenixReader; // Was previously a final field
 	private final long sampleCount;
 
@@ -158,7 +161,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		bgenixReader = new BgenixReader(bgenixFile);
         readExistingBgenixFile(bgenFile);
 
-        // If the specified cache size is greater than 0, construct a new SampleVariantProvider
+		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
+		// If the specified cache size is greater than 0, construct a new SampleVariantProvider
 		if (cacheSize > 0) {
 			sampleVariantProvider = new CachedSampleVariantProvider(this, cacheSize);
 		} else {
@@ -399,10 +403,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 					variant.getVariantId().getPrimairyId());
 
 			readGenotypesFromVariant(currentPointer);
-			break;
 
 			// Get the position in the file to start reading the next variant.
-//			variantReadingPosition = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
+			variantReadingPosition = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
 		}
 	}
 
@@ -611,7 +614,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			System.out.println("Bit representation of probability: " + probabilitiesLengthInBits);
 			blockBufferOffset += 1;
 
-			System.out.println("blockBufferOffset = " + blockBufferOffset);
 			byte[] probabilitiesArray = Arrays.copyOfRange(
 					variantBlockData, blockBufferOffset,
 					variantBlockData.length);
@@ -652,13 +654,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		}
 	}
 
-	private float calculateProbability(byte[] probabilitiesArray, long bitOffset, int probabilitiesLengthInBits) {
+	private double calculateProbability(byte[] probabilitiesArray, long bitOffset, int probabilitiesLengthInBits) {
+
 		// To interpret a stored value x as a probability:
-		// Convet x to an integer in floating point representation
-		float probability = (float) getIntOfNBits(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
+		// Convert x to an integer in floating point representation
+		double probability = getIntOfNBits(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
 
 		// Divide by (2^B)-1
-		float maxValue = (float) Math.pow(2, probabilitiesLengthInBits) - 1;
+		double maxValue = Math.pow(2, probabilitiesLengthInBits) - 1;
 		probability = probability / maxValue;
 		return probability;
 	}
@@ -692,22 +695,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 					numberOfAlleles,
 					ploidity.get(sampleIndex));
 
-			// Keep track of the probabilities
-			float[] genotypeProbabilities = new float[combinations.size()];
-			// Keep track of the sum of all probabilities as the last value is calculated by
-			// subtracting this sum from 1.
-			float sumOfProbabilities = 0;
-			for (int j = 0; j < combinations.size() - 1; j++) {
-				// Get the probability
-				float probability = calculateProbability(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
-				genotypeProbabilities[j] = probability;
-				sumOfProbabilities += probability;
-				// Update the offset of the current bit
-				bitOffset += probabilitiesLengthInBits;
-			}
-			// Calculate probability of Kth allele (P_iK)
-			genotypeProbabilities[combinations.size() - 1] = 1 - sumOfProbabilities;
+			double[] genotypeProbabilities = computeApproximateProbabilities(
+					probabilitiesArray, probabilitiesLengthInBits, bitOffset, combinations.size());
 
+			System.out.println("genotypeProbabilities = " + Arrays.toString(genotypeProbabilities));
 			// Calculate the probability for homozygous genotype 'AA',
 			// the probability for 'AB', and the probability for 'BB'
 
@@ -715,11 +706,30 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		}
 	}
 
+	private double[] computeApproximateProbabilities(byte[] probabilitiesArray, int probabilitiesLengthInBits, long bitOffset, int numberOfProbabilities) {
+		// Keep track of the probabilities
+		double[] probabilities = new double[numberOfProbabilities];
+		// Keep track of the sum of all probabilities as the last value is calculated by
+		// subtracting this sum from 1.
+		double sumOfProbabilities = 0;
+		for (int j = 0; j < numberOfProbabilities - 1; j++) {
+			// Get the probability
+			double probability = calculateProbability(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
+			probabilities[j] = probability;
+			sumOfProbabilities += probability;
+			// Update the offset of the current bit
+			bitOffset += probabilitiesLengthInBits;
+		}
+		// Calculate probability of Kth allele (P_iK)
+		probabilities[numberOfProbabilities - 1] = 1 - sumOfProbabilities;
+		return probabilities;
+	}
+
 	private void readHaplotypeProbabilities(
 			byte[] probabilitiesArray,
 			int probabilitiesLengthInBits,
 			int numberOfAlleles, List<Boolean> isMissing,
-			List<Integer> ploidity) {
+			List<Integer> ploidies) {
 
     	// Define an array consisting of an array of posterior probabilities for each genotype
 		float[][] probabilities = new float[getSamples().size()][3];
@@ -744,22 +754,16 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			// Calculate the probability for homozygous genotype 'AA',
 			// the probability for 'AB', and the probability for 'BB'
 
-			// Read Z * (K-1) probabilities of length B.
-			Integer ploidy = ploidity.get(sampleIndex);
+			Integer ploidy = ploidies.get(sampleIndex);
 			for (int i = 0; i < ploidy; i++) {
-				float sumOfProbabilities = 0;
-				float[] alleleProbabilities = new float[numberOfAlleles];
-
-				for (int j = 0; j < numberOfAlleles - 1; j++) {
-					float probability = calculateProbability(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
-					alleleProbabilities[j] = probability;
-					sumOfProbabilities += probability;
-					bitOffset += probabilitiesLengthInBits;
-				}
-				// Calculate probability of Kth allele (P_iK)
-				alleleProbabilities[numberOfAlleles - 1] = 1 - sumOfProbabilities;
+				// Get the probabilities for every allele in this haplotype.
+				double[] alleleProbabilities = computeApproximateProbabilities(
+						probabilitiesArray, probabilitiesLengthInBits, bitOffset, numberOfAlleles);
 
 				// What now?
+
+				// We have per sample probabilities for A1, B1, A2, B2
+				// Which can be converted to AA, AB, BA, BB
 			}
 
 		}
@@ -1009,21 +1013,40 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	@Override
+	public Iterator<GeneticVariant> iterator() {
+		return getGeneticVariants(bgenixReader.getVariants()).iterator();
+	}
+
+	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-//		GeneticVariantRange variants = null;
-//		return variants.getVariantAtPos(seqName, startPos);
+		return getGeneticVariants(bgenixReader.getVariantsPostion(seqName, startPos));
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getSequenceGeneticVariants(String seqName) {
-		BgenixVariantQueryResult bgenixVariants = bgenixReader.getVariantsChromosome(seqName);
-		return null;
+		return getGeneticVariants(bgenixReader.getVariantsChromosome(seqName));
+	}
+
+	private Iterable<GeneticVariant> getGeneticVariants(BgenixVariantQueryResult variantsChromosome) {
+		GeneticVariantRange.GeneticVariantRangeCreate variantRangeFactory = GeneticVariantRange.createRangeFactory();
+
+		for (BgenixVariantQueryResult it = variantsChromosome; it.hasNext(); ) {
+			BgenixVariantData variantData = it.next();
+			long variantDataPosition = variantData.getFile_start_position();
+			try {
+				variantRangeFactory.addVariant(processVariantIdentifyingData(variantDataPosition));
+			} catch (IOException e) {
+				throw new GenotypeDataException(String.format(
+						"Could not read variant data %s at position %d%n",
+						variantData.getRsid(), variantDataPosition));
+			}
+		}
+		return variantRangeFactory.createRange();
 	}
 
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return getGeneticVariants(bgenixReader.getVariantsRange(seqName, rangeStart, rangeEnd));
 	}
 
 	@Override
@@ -1043,12 +1066,12 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public int cacheSize() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return 0;
 	}
 
 	@Override
 	public int getSampleVariantProviderUniqueId() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return sampleVariantProviderUniqueId;
 	}
 
 	@Override
@@ -1063,10 +1086,24 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+//		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+
+		// Obtain the position of the variant in the BGEN file to start reading the sample probabilities from.
+		for (BgenixVariantQueryResult it = bgenixReader.getVariants(); it.hasNext(); ) {
+			BgenixVariantData variantData = it.next();
+		}
+		return null;
 	}
 
-	private int getIntOfNBits(byte[] bytes, long bitOffset, int totalBitsToRead) {
+	/**
+	 * Converts a specified range of bits from a byte array into a 'long' value.
+	 *
+	 * @param bytes The byte array to get the result value from.
+	 * @param bitOffset The bit in the byte array to start reading from.
+	 * @param totalBitsToRead The total number of bits to read from the byte array.
+	 * @return The specified bits converted to a 'long' value.
+	 */
+	private long getIntOfNBits(byte[] bytes, long bitOffset, int totalBitsToRead) {
 		// Get the byte to start reading from.
 		int byteOffset = Math.toIntExact(bitOffset / 8);
 		// Get the bit within the byte to start reading from.
@@ -1076,7 +1113,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		// Define result value and a counter for the number of read bits.
 		int nReadBits = 0;
-		int value = 0;
+		long value = 0;
 
 //		System.out.println("nBitsToRead = " + nBitsToRead);
 
@@ -1112,7 +1149,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		// read.
 		int readBits = bytes[byteOffset] >> (8 - nBitsToRead) & ((1 << nBitsToRead) - 1);
 		// Secondly, move the read bits to the leftmost part of the result value, and mask all other bits.
-		value |= readBits << nReadBits & ((1 << totalBitsToRead) - 1);
+		value |= readBits << nReadBits & ((1L << totalBitsToRead) - 1);
 //
 //		String s1 = String.format("%8s", Integer.toBinaryString(bytes[byteOffset] & 0xFF)).replace(' ', '0');
 //		System.out.println("value = " + s1 + " | " + Long.toString(value,2) + " | " + value);
