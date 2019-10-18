@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.conditionalanalysis;
 
 import eqtlmappingpipeline.metaqtl3.EQTLRegression;
+import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.MetaQTL3;
 import eqtlmappingpipeline.normalization.Normalizer;
 import eqtlmappingpipeline.util.QTLFileMerger;
@@ -90,8 +91,17 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 //				}
 				mapEQTLs();
 			} else {
+
 				// check whether there were significant results in the previous iteration
 				String efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + "-ProbeLevel.txt.gz";
+				if (m_settings.fdrType.equals(FDR.FDRMethod.FULL)) {
+					efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + ".txt.gz";
+				} else if (m_settings.fdrType.equals(FDR.FDRMethod.SNPLEVEL)) {
+					efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + "-SNPLevel.txt.gz";
+				} else if (m_settings.fdrType.equals(FDR.FDRMethod.GENELEVEL)) {
+					efilename = origOutputDir + "/Iteration" + (iteration - 1) + "/eQTLProbesFDR" + fdrthreshold + "-GeneLevel.txt.gz";
+				}
+
 				if (!Gpio.exists(efilename)) {
 					System.err.println("Previous iteration (" + (iteration - 1) + ") did not have any significant results.");
 					System.err.println("File: " + efilename + " does not exist.");
@@ -208,9 +218,9 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 			dsout.setMatrix(matrix);
 
 
-			String foutname = origOutputDir + fname + "-EQTLEffectsRemoved-Iteration-" + iter + ".txt.gz";
+			String foutname = origOutputDir + ds.getSettings().name + "-EQTLEffectsRemoved-Iteration-" + iter + ".txt.gz";
 			if (iter == 0) {
-				foutname = origOutputDir + fname + "-EQTLEffectsRemoved-Iteration-Last.txt.gz";
+				foutname = origOutputDir + ds.getSettings().name + "-EQTLEffectsRemoved-Iteration-Last.txt.gz";
 			}
 			System.out.println("Saving expression file after removal of eQTL effects: " + foutname);
 			dsout.save(foutname);
