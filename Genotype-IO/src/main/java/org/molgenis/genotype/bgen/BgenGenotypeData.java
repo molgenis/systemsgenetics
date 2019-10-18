@@ -38,6 +38,16 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	public enum Layout {
 		layOut_1, layOut_2
 	}
+
+	/**
+	 * Index is the number of last bits used from the first byte
+	 */
+	private static final int[] LAST_BYTE_MASK = {255, 1, 3, 7, 15, 31, 63, 127, 255};
+	/**
+	 * Index is the number of first bits used from the last byte
+	 */
+	private static final int[] FIRST_BYTE_MASK = {0, 128, 192, 224, 240, 248, 252, 254, 255};
+
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 	private final RandomAccessFile bgenFile;
 	private final byte[] byteArray4 = new byte[4]; //resuable 4 byte array
@@ -403,9 +413,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 					variant.getVariantId().getPrimairyId());
 
 			readGenotypesFromVariant(currentPointer);
+			break;
 
 			// Get the position in the file to start reading the next variant.
-			variantReadingPosition = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
+//			variantReadingPosition = currentPointer + variantGenotypeDataBlockInfo.getBlockLengthHeaderInclusive();
 		}
 	}
 
@@ -536,7 +547,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return snpInfoBufferPos;
 	}
 
-	private void readGenotypesFromVariant(long filePointer) throws IOException {
+	private float[][] readGenotypesFromVariant(long filePointer) throws IOException {
 		this.bgenFile.seek(filePointer);
 
 		//Not sure if we want to do the buffer search here. Or we might be able to take a smaller set.
@@ -563,6 +574,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				sampleProbabilities[2] = getUInt16(variantBlockData, 4) / 32768f;
 				probabilities[sampleIndex] = sampleProbabilities;
 			}
+			return probabilities;
 
         } else if (fileLayout.equals(Layout.layOut_2)) {
 			VariantGenotypeDataBlockInfo blockInfo = determineVariantGenotypeDataBlockSizeForLayoutTwo(
@@ -625,40 +637,24 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 						numberOfAlleles,
 						isMissing, ploidies);
 			} else {
-				readGenotypeProbabilities(
+				double[][] completeGenotypeProbabilities = readGenotypeProbabilities(
 						probabilitiesArray,
 						probabilitiesLengthInBits,
 						numberOfAlleles,
 						isMissing, ploidies);
 			}
-
 		}
+		return probabilities;
 	}
 
-	private List<List<Integer>> combinations(int numberOfAlleles, int ploidy) {
-		List<List<Integer>> combinations = new ArrayList<>();
-		getCombinationsRecursively(combinations, new ArrayList<>(), numberOfAlleles, ploidy);
-		return combinations;
-	}
-
-	private void getCombinationsRecursively(List<List<Integer>> combinations, List<Integer> combination, int numberOfAlleles, int ploidy) {
-		if (combination.size() == ploidy) {
-			combinations.add(0, combination);
-			return;
-		}
-		int i = (combination.size() > 0) ? combination.get(0) : numberOfAlleles;
-		for (; i > 0; i--) {
-			List<Integer> newCombination = new ArrayList<>(combination);
-			newCombination.add(0, i);
-			getCombinationsRecursively(combinations, newCombination, numberOfAlleles, ploidy);
-		}
-	}
-
-	private double calculateProbability(byte[] probabilitiesArray, long bitOffset, int probabilitiesLengthInBits) {
+	private double calculateProbability(byte[] probabilitiesArray, int bitOffset, int probabilitiesLengthInBits) {
+		// Each probability is stored in B bits.
+		// Values are interpreted by linear interpolation between 0 and 1;
+		// value b corresponds to probability b / ((2^B)-1).
 
 		// To interpret a stored value x as a probability:
 		// Convert x to an integer in floating point representation
-		double probability = getIntOfNBits(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
+		double probability = readProb(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
 
 		// Divide by (2^B)-1
 		double maxValue = Math.pow(2, probabilitiesLengthInBits) - 1;
@@ -666,47 +662,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return probability;
 	}
 
-	private void readGenotypeProbabilities(
-			byte[] probabilitiesArray,
-			int probabilitiesLengthInBits,
-			int numberOfAlleles, List<Boolean> isMissing,
-			List<Integer> ploidity) {
-
-		// Define an array consisting of an array of posterior probabilities for each genotype
-		float[][] probabilities = new float[(int) sampleCount][3];
-
-		// Get bit offset
-		long bitOffset = 0;
-
-		// Each probability is stored in B bits.
-		// Values are interpreted by linear interpolation between 0 and 1;
-		// value b corresponds to probability b / ((2^B)-1).
-
-		for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
-			if (isMissing.get(sampleIndex)) {
-				bitOffset += probabilitiesLengthInBits;
-				continue;
-			}
-
-			float[] sampleProbabilities = new float[3];
-
-			// Get the list of combinations that should have probabilities in this probability-block.
-			List<List<Integer>> combinations = combinations(
-					numberOfAlleles,
-					ploidity.get(sampleIndex));
-
-			double[] genotypeProbabilities = computeApproximateProbabilities(
-					probabilitiesArray, probabilitiesLengthInBits, bitOffset, combinations.size());
-
-			System.out.println("genotypeProbabilities = " + Arrays.toString(genotypeProbabilities));
-			// Calculate the probability for homozygous genotype 'AA',
-			// the probability for 'AB', and the probability for 'BB'
-
-			// Deal with stuff that is not diploid or biallelic.
-		}
-	}
-
-	private double[] computeApproximateProbabilities(byte[] probabilitiesArray, int probabilitiesLengthInBits, long bitOffset, int numberOfProbabilities) {
+	private double[] computeApproximateProbabilities(byte[] probabilitiesArray, int probabilitiesLengthInBits, int bitOffset, int numberOfProbabilities) {
 		// Keep track of the probabilities
 		double[] probabilities = new double[numberOfProbabilities];
 		// Keep track of the sum of all probabilities as the last value is calculated by
@@ -725,6 +681,51 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return probabilities;
 	}
 
+	private double[][] readGenotypeProbabilities(
+			byte[] probabilitiesArray,
+			int probabilitiesLengthInBits,
+			int numberOfAlleles, List<Boolean> isMissing,
+			List<Integer> ploidies) {
+
+		// Get bit offset
+		int bitOffset = 0;
+
+		// Initialize an array of probabilities.
+		double[][] probabilities = new double[getSamples().size()][];
+
+		for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+			if (ploidies.get(sampleIndex) != 2) {
+				throw new UnsupportedOperationException(String.format(
+						"The genotype of a sample with a ploidy of %d was requested, " +
+								"but only a ploidy of 2 is supported", ploidies.get(sampleIndex)));
+			}
+
+			// Get the list of combinations that should have probabilities in this probability-block.
+			List<List<Integer>> combinations = combinations(
+					numberOfAlleles,
+					ploidies.get(sampleIndex));
+
+			// If the probabilities are missing for this sample, read zero and continue with the
+			// next sample.
+			if (isMissing.get(sampleIndex)) {
+				// If this is missing, the probability is zero.
+				bitOffset += probabilitiesLengthInBits * (combinations.size() - 1);
+				continue;
+			}
+
+			// Get all probabilities for this sample.
+			double[] genotypeProbabilities = computeApproximateProbabilities(
+					probabilitiesArray, probabilitiesLengthInBits, bitOffset, combinations.size());
+			probabilities[sampleIndex] = genotypeProbabilities;
+
+			// Update the bit to read the next probabilities from.
+			bitOffset += probabilitiesLengthInBits * (combinations.size() - 1);
+
+			System.out.println("genotypeProbabilities = " + Arrays.toString(genotypeProbabilities));
+		}
+		return probabilities;
+	}
+
 	private void readHaplotypeProbabilities(
 			byte[] probabilitiesArray,
 			int probabilitiesLengthInBits,
@@ -735,7 +736,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		float[][] probabilities = new float[getSamples().size()][3];
 
 		// Get bit offset
-		long bitOffset = 0;
+		int bitOffset = 0;
 
 		// Each probability is stored in B bits.
 		// Values are interpreted by linear interpolation between 0 and 1;
@@ -1027,23 +1028,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return getGeneticVariants(bgenixReader.getVariantsChromosome(seqName));
 	}
 
-	private Iterable<GeneticVariant> getGeneticVariants(BgenixVariantQueryResult variantsChromosome) {
-		GeneticVariantRange.GeneticVariantRangeCreate variantRangeFactory = GeneticVariantRange.createRangeFactory();
-
-		for (BgenixVariantQueryResult it = variantsChromosome; it.hasNext(); ) {
-			BgenixVariantData variantData = it.next();
-			long variantDataPosition = variantData.getFile_start_position();
-			try {
-				variantRangeFactory.addVariant(processVariantIdentifyingData(variantDataPosition));
-			} catch (IOException e) {
-				throw new GenotypeDataException(String.format(
-						"Could not read variant data %s at position %d%n",
-						variantData.getRsid(), variantDataPosition));
-			}
-		}
-		return variantRangeFactory.createRange();
-	}
-
 	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd) {
 		return getGeneticVariants(bgenixReader.getVariantsRange(seqName, rangeStart, rangeEnd));
@@ -1087,74 +1071,163 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 //		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-
-		// Obtain the position of the variant in the BGEN file to start reading the sample probabilities from.
-		for (BgenixVariantQueryResult it = bgenixReader.getVariants(); it.hasNext(); ) {
-			BgenixVariantData variantData = it.next();
+		long variantDataPosition = getVariantDataPosition(variant);
+//		if (fileLayout == Layout.layOut_1) {
+//			// Just read the layout 1 for probabilities
+//		} else if (fileLayout == Layout.layOut_2) {
+//			//
+//		}
+		try {
+			float[][] probabilities = readGenotypesFromVariant(variantDataPosition);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		return null;
 	}
 
+	private long getVariantDataPosition(GeneticVariant variant) {
+		BgenixVariantQueryResult variantQueryResult = bgenixReader.getVariantsPostion(
+				variant.getSequenceName(), variant.getStartPos());
+		for (BgenixVariantQueryResult it = variantQueryResult; it.hasNext(); ) {
+			BgenixVariantData variantData = it.next();
+			if (variantData.getRsid().equals(variant.getPrimaryVariantId())) {
+				return variantData.getFile_start_position();
+			}
+		}
+		throw new GenotypeDataException(String.format("Variant with primary ID '%s' does not match any indexed variant",
+				variant.getPrimaryVariantId()));
+	}
+
+	private Iterable<GeneticVariant> getGeneticVariants(BgenixVariantQueryResult variantQueryResult) {
+		GeneticVariantRange.GeneticVariantRangeCreate variantRangeFactory = GeneticVariantRange.createRangeFactory();
+
+		for (BgenixVariantQueryResult it = variantQueryResult; it.hasNext(); ) {
+			BgenixVariantData variantData = it.next();
+			long variantDataPosition = variantData.getFile_start_position();
+			try {
+				variantRangeFactory.addVariant(processVariantIdentifyingData(variantDataPosition));
+			} catch (IOException e) {
+				throw new GenotypeDataException(String.format(
+						"Could not read variant data %s at position %d%n",
+						variantData.getRsid(), variantDataPosition));
+			}
+		}
+		return variantRangeFactory.createRange();
+	}
+
 	/**
-	 * Converts a specified range of bits from a byte array into a 'long' value.
+	 * Method that returns the list of all possible allele combinations, for the given number of ploidity.
+	 * These allele combinations, or genotypes represent the way in which genotypes are stored in a layout 2 BGEN file
+	 * for a specific sample.
 	 *
-	 * @param bytes The byte array to get the result value from.
-	 * @param bitOffset The bit in the byte array to start reading from.
-	 * @param totalBitsToRead The total number of bits to read from the byte array.
-	 * @return The specified bits converted to a 'long' value.
+	 * For example, the method returns 4 combinations with 2 alleles and a ploidity of 2:
+	 * [1, 1]
+	 * [2, 1]
+	 * [1, 2]
+	 * [2, 2]
+	 *
+	 * @param numberOfAlleles The number of alleles for the variant to create combinations for.
+	 * @param ploidy The ploidity of the sample to create combinations for.
+	 * @return the combinations of alleles, genotypes, that should be stored in a BGEN file
+	 * for an unphased variant and sample, in this specified order.
 	 */
-	private long getIntOfNBits(byte[] bytes, long bitOffset, int totalBitsToRead) {
-		// Get the byte to start reading from.
-		int byteOffset = Math.toIntExact(bitOffset / 8);
-		// Get the bit within the byte to start reading from.
-		int remainingBitOffset = Math.toIntExact(bitOffset % 8);
-		// Get the number of bits to read within the initial byte.
-		int nBitsToRead = 8 - remainingBitOffset;
+	private static List<List<Integer>> combinations(int numberOfAlleles, int ploidy) {
+		// Construct nested lists
+		List<List<Integer>> combinations = new ArrayList<>();
+		// Get the combinations
+		getCombinationsRecursively(combinations, new ArrayList<>(), numberOfAlleles, ploidy);
+		return combinations;
+	}
 
-		// Define result value and a counter for the number of read bits.
-		int nReadBits = 0;
-		long value = 0;
+	/**
+	 * Method that recursively fills a list of combinations.
+	 *
+	 * @param combinations The list of combinations to fill.
+	 * @param combination The current combination that is being constructed.
+	 * @param numberOfAlleles The number of different values to fit into a combinations.
+	 * @param ploidy The size of a combination.
+	 */
+	private static void getCombinationsRecursively(List<List<Integer>> combinations, List<Integer> combination, int numberOfAlleles, int ploidy) {
+		// If the combination is complete, the size of the combination equals the required size.
+		// Add the combination and return
+		if (combination.size() == ploidy) {
+			combinations.add(0, combination);
+			return;
+		}
+		// Get the first value from the current combination (which is the last one that is inserted),
+		// if it exists, otherwise get the max value.
+		int i = (combination.size() > 0) ? combination.get(0) : numberOfAlleles;
+		// This prevents higher values than the previous value being inserted into the combination, which will cause
+		// duplicate combinations (although in reverse order).
 
-//		System.out.println("nBitsToRead = " + nBitsToRead);
+		// Loop through the possible values from high to low.
+		for (; i > 0; i--) {
+			// Copy the preliminary combination
+			List<Integer> newCombination = new ArrayList<>(combination);
+			// Add a new value to the combination
+			newCombination.add(0, i);
+			getCombinationsRecursively(combinations, newCombination, numberOfAlleles, ploidy);
+		}
+	}
 
+//	/**
+//	 * Converts a specified range of bits from a byte array into a 'long' value.
+//	 *
+//	 * @param bytes The byte array to get the result value from.
+//	 * @param bitOffset The bit in the byte array to start reading from.
+//	 * @param totalBitsToRead The total number of bits to read from the byte array.
+//	 * @return The specified bits converted to a 'long' value.
+//	 */
+//	private static long getIntOfNBits(byte[] bytes, long bitOffset, int totalBitsToRead) {
+//		// Get the byte to start reading from.
+//		int byteOffset = Math.toIntExact(bitOffset / 8);
+//		// Get the bit within the byte to start reading from.
+//		int remainingBitOffset = Math.toIntExact(bitOffset % 8);
+//		// Get the number of bits to read within the initial byte.
+//		long nBitsToRead = 8 - remainingBitOffset;
+//
+//		// Define result value and a counter for the number of read bits.
+//		long nReadBits = 0;
+//		long value = 0;
+//
 //		System.out.println("bitOffset = " + bitOffset);
-
-		// First read the number of bits that should be read from the first byte (8 - remainingBitOffset).
-		// After that, if the condition still applies, read all bits of following bytes, placing these bits
-		// in before the previous read bits (<< readbits)
-		while (nReadBits + 8 < totalBitsToRead) {
-			// Read all bits in the current byte, moving them the number of already read bits to the left,
-			// and masking all bits that are not within the bits that have previously been read or should be read now.
-			value |= bytes[byteOffset] << nReadBits & ((1 << (nBitsToRead + nReadBits)) - 1);
-
-			// Update bit reading numbers
-			nReadBits += nBitsToRead;
-			nBitsToRead = 8;
-
+//
+//		// First read the number of bits that should be read from the first byte (8 - remainingBitOffset).
+//		// After that, if the condition still applies, read all bits of following bytes, placing these bits
+//		// in before the previous read bits (<< readbits)
+//		while (nReadBits + 8 < totalBitsToRead) {
+//			// Read all bits in the current byte, moving them the number of already read bits to the left,
+//			// and masking all bits that are not within the bits that have previously been read or should be read now.
+//			System.out.println("nBitsToRead = " + nBitsToRead);
+//			value |= bytes[byteOffset] >> (8 - nBitsToRead) & ((1L << (nBitsToRead + nReadBits)) - 1);
+//
+//			// Update bit reading numbers
+//			nReadBits += nBitsToRead;
+//			nBitsToRead = 8;
+//
 //			String s1 = String.format("%8s", Integer.toBinaryString(bytes[byteOffset] & 0xFF)).replace(' ', '0');
 //			System.out.println("value = " + s1 + " | " + Long.toString(value,2));
-//			System.out.println("nBitsToRead = " + nBitsToRead);
-
-			// Update offset values
-			byteOffset += 1;
-			remainingBitOffset = 0;
-		}
-
-		// Calculate the number of bits that still have to be read.
-		nBitsToRead = totalBitsToRead - (nReadBits - remainingBitOffset);
-//		System.out.println("nBitsToRead = " + (8 - nBitsToRead));
-
-		// First, move the bits that have to be read in the last byte to the right boundary of the byte
-		// (shifting amount defined by: 8 - nBitsToRead and mask the bits that should not be
-		// read.
-		int readBits = bytes[byteOffset] >> (8 - nBitsToRead) & ((1 << nBitsToRead) - 1);
-		// Secondly, move the read bits to the leftmost part of the result value, and mask all other bits.
-		value |= readBits << nReadBits & ((1L << totalBitsToRead) - 1);
+//
+//			// Update offset values
+//			byteOffset += 1;
+//			remainingBitOffset = 0;
+//		}
+//
+//		// Calculate the number of bits that still have to be read.
+//		nBitsToRead = totalBitsToRead - (nReadBits - remainingBitOffset);
+//		System.out.println("nBitsToRead = " + nBitsToRead);
+//
+//		// First, move the bits that have to be read in the last byte to the right boundary of the byte
+//		// (shifting amount defined by: 8 - nBitsToRead and mask the bits that should not be
+//		// read.
+//		long readBits = bytes[byteOffset] >> (8 - nBitsToRead) & ((1 << nBitsToRead) - 1);
+//		// Secondly, move the read bits to the leftmost part of the result value, and mask all other bits.
+//		value |= readBits << nReadBits & ((1L << totalBitsToRead) - 1);
 //
 //		String s1 = String.format("%8s", Integer.toBinaryString(bytes[byteOffset] & 0xFF)).replace(' ', '0');
 //		System.out.println("value = " + s1 + " | " + Long.toString(value,2) + " | " + value);
-		return value;
-	}
+//		return value;
+//	}
 
 	/**
 	 * Convert 4 bytes to unsigned 32 bit int from index. Returns long since
@@ -1200,6 +1273,90 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	 */
 	private int getUInt8(byte[] bytes, int startIndex) {
 		int value = bytes[0 + startIndex] & 0xFF;
+		return value;
+	}
+
+	private static double readProb(byte[] bytes, int bitOffset, int totalBitsToRead) {
+
+		// Get the byte to start reading from.
+		int firstByteIndex = bitOffset / 8;
+		// Get the bit within the byte to start reading from.
+		int remainingBitOffset = bitOffset % 8;
+
+		int totalBytesMin1 = (remainingBitOffset + totalBitsToRead - 1) / 8;
+
+
+		//int bitsFromLastByte2 = totalBits - ((totalBytesMin1 - 1) * 8) - (8 - remainingBitOffset);
+		//Below is simplification of real formula above
+		int nBitsFromLastByte = totalBitsToRead - (totalBytesMin1 * 8) + remainingBitOffset;
+
+		//Below is old way to calculate nBitsFromLastByte but I think above is faster
+//		int nBitsFromLastByte = (totalBits + remainingBitOffset) % 8;
+//		if (nBitsFromLastByte == 0) {
+//			nBitsFromLastByte = 8;
+//		}
+
+
+
+		int bitShiftAfterFirstByte = 8 - remainingBitOffset;
+
+		System.out.println("bitOffset = " + bitOffset);
+		System.out.println("Total bytes min 1: " + totalBytesMin1);
+		System.out.println("First byte: " + firstByteIndex);
+		System.out.println("Index of first bit first byte: " + remainingBitOffset);
+		System.out.println("Total bits: " + totalBitsToRead);
+		System.out.println("Bits from last byte: " + nBitsFromLastByte);
+		System.out.println("Last byte mask: " + Integer.toBinaryString(LAST_BYTE_MASK[nBitsFromLastByte]));
+		System.out.println("First byte mask: " + Integer.toBinaryString(FIRST_BYTE_MASK[bitShiftAfterFirstByte]));
+		System.out.println("Bit shift after first byte: " + bitShiftAfterFirstByte);
+
+		long value; // long because values are stored as unsigned int
+
+		//Switch because this is very fast compared to loops or if statements
+		switch (totalBytesMin1) {
+			case 0:
+				value
+						= bytes[firstByteIndex] >> (remainingBitOffset) & LAST_BYTE_MASK[8 - totalBitsToRead];
+				break;
+			case 1:
+				//Last byte parsing is different then longer encoding
+				value
+						= (bytes[firstByteIndex + 1] & LAST_BYTE_MASK[nBitsFromLastByte]) << bitShiftAfterFirstByte
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[bitShiftAfterFirstByte]) >> remainingBitOffset;
+				break;
+			case 2:
+				value
+						= (bytes[firstByteIndex + 2] & LAST_BYTE_MASK[nBitsFromLastByte]) << (8 + bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex + 1] & 255) << (bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[bitShiftAfterFirstByte]) >> remainingBitOffset;
+				break;
+			case 3:
+				System.out.println(String.format("%8s", Integer.toBinaryString(bytes[firstByteIndex] & 0xFF)).replace(' ', '0'));
+				System.out.println(String.format("%8s", Integer.toBinaryString(bytes[firstByteIndex + 1] & 0xFF)).replace(' ', '0'));
+				System.out.println(String.format("%8s", Integer.toBinaryString(bytes[firstByteIndex + 2] & 0xFF)).replace(' ', '0'));
+				System.out.println(String.format("%8s", Integer.toBinaryString(bytes[firstByteIndex + 3] & 0xFF)).replace(' ', '0'));
+				value
+						= ((long) bytes[firstByteIndex + 3] & LAST_BYTE_MASK[nBitsFromLastByte]) << (16 + bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex + 2] & 255) << (8 + bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex + 1] & 255) << (bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[bitShiftAfterFirstByte]) >> remainingBitOffset;
+				break;
+			case 4:
+				value
+						= ((long) bytes[firstByteIndex + 4] & LAST_BYTE_MASK[nBitsFromLastByte]) << (24 + bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex + 3] & 255) << (16 + bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex + 2] & 255) << (8 + bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex + 1] & 255) << (bitShiftAfterFirstByte)
+						| (bytes[firstByteIndex] & FIRST_BYTE_MASK[bitShiftAfterFirstByte]) >> remainingBitOffset;
+				break;
+
+			default:
+				throw new GenotypeDataException("Error parsing bgen file. Debug info: totalBits=" + totalBitsToRead + " remainingBitOffset=" + remainingBitOffset + " totalBits=" + totalBitsToRead);
+		}
+
+		System.out.println("Result: " + value);
+		System.out.println("Result in bin: " + Long.toBinaryString(value));
+
 		return value;
 	}
 }
