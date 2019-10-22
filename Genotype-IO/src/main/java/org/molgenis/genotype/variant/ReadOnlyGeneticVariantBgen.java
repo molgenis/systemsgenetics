@@ -1,6 +1,5 @@
-package org.molgenis.genotype.bgen;
+package org.molgenis.genotype.variant;
 
-import org.molgenis.genotype.variant.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -288,10 +287,7 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 			return false;
 		}
 		final ReadOnlyGeneticVariantBgen other = (ReadOnlyGeneticVariantBgen) obj;
-		if (this.indexStartGenotypeBlock != other.indexStartGenotypeBlock) {
-			return false;
-		}
-		return true;
+		return this.indexStartGenotypeBlock == other.indexStartGenotypeBlock;
 	}
 	
 	
