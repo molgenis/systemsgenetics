@@ -10,11 +10,14 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.molgenis.genotype.ResourceTest;
-import org.testng.annotations.Test;
+import org.molgenis.genotype.variant.GeneticVariant;
 
 /**
  *
@@ -27,10 +30,6 @@ public class BgenGenotypeDataTest extends ResourceTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-//	@BeforeClass
-//	public void beforeClass() throws IOException, URISyntaxException {
-//		genotypeData = new BgenGenotypeData(getTest3Bgen(), getTest3Sample());
-//	}
 	@Test
 	public void testSomeMethod() {
 		// TODO review the generated test code and remove the default call to fail.
@@ -45,7 +44,6 @@ public class BgenGenotypeDataTest extends ResourceTest {
 	public void testReader_1_2() throws URISyntaxException, IOException {
 		//File bgenFile = getTestResourceFile("/bgenExamples/complex.bgen");
 		//genotypeData = new BgenGenotypeData(bgenFile, null);
-		folder.create();
 		File bgenFile = getTestResourceFile("/bgenExamples/example.25bits.bgen");
 		Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
 		Files.copy(bgenFile.toPath(), target);
@@ -54,10 +52,23 @@ public class BgenGenotypeDataTest extends ResourceTest {
 
 	@Test
 	public void testReader_1_3() throws URISyntaxException, IOException {
-		folder.create();
 		File bgenFile = getTestResourceFile("/bgenExamples/example.16bits.zstd.bgen");
 		Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
 		Files.copy(bgenFile.toPath(), target);
 		genotypeData = new BgenGenotypeData(target.toFile(), null);
+	}
+
+	@Test
+	public void testReaderHaplotypes() throws URISyntaxException, IOException {
+		File bgenFile = getTestResourceFile("/bgenExamples/haplotypes.bgen");
+		Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
+		Files.copy(bgenFile.toPath(), target);
+		genotypeData = new BgenGenotypeData(target.toFile(), null);
+
+		for (GeneticVariant next : genotypeData) {
+			System.out.println("next = " + next.getPrimaryVariantId());
+			float[][] sampleGenotypeProbilities = next.getSampleGenotypeProbilities();
+			System.out.println("sampleGenotypeProbilities = " + Arrays.deepToString(sampleGenotypeProbilities));
+		}
 	}
 }
