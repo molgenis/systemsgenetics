@@ -11,7 +11,7 @@ public class TmpTest {
 	/**
 	 * Index is the number of last bits used from the first byte
 	 */
-	static final int[] LAST_BYTE_MASK = {1, 3, 7, 15, 31, 63, 127, 255};
+	static final int[] LAST_BYTE_MASK = {255, 1, 3, 7, 15, 31, 63, 127, 255};
 	/**
 	 * Index is the number of first bits used from the last byte
 	 */
@@ -54,27 +54,22 @@ public class TmpTest {
 		
 //		System.out.println("---------");
 		
-		bits = 23;
+		bits = 4;
 		factor = (1L << bits) - 1;
 
 		System.out.println("Prob divide factor: " + factor);
 
-		readProb(test, 8, bits);
-		double intOfNBits = getIntOfNBits(test, 8, bits);
-		System.out.println("intOfNBits = " + intOfNBits / factor);
+		readProb(test, 1, bits);
+		readProb(test, 5, bits);
+		readProb(test, 9, bits);
+		readProb(test, 13, bits);
+		readProb(test, 17, bits);
+
+//		double intOfNBits = getIntOfNBits(test, 10, bits);
+//		System.out.println("intOfNBits = " + intOfNBits / factor);
 
 	}
 
-	/**
-	 *
-	 * @param bytes
-	 * @param firstByteIndex zero based index of first byte in byte array
-	 * @param indexBitInFirstByte zero based index of first used bit in first
-	 * byte
-	 * @param totalBits
-	 * @param conversionFactor
-	 * @return
-	 */
 	private static double readProb(byte[] bytes, int bitOffset, int totalBitsToRead) {
 
 		// Get the byte to start reading from.
@@ -99,14 +94,15 @@ public class TmpTest {
 
 		int bitShiftAfterFirstByte = 8 - remainingBitOffset;
 
-		System.out.println("Total bytes min 1: " + totalBytesMin1);
-		System.out.println("First byte: " + firstByteIndex);
-		System.out.println("Index of first bit first byte: " + remainingBitOffset);
-		System.out.println("Total bits: " + totalBitsToRead);
-		System.out.println("Bits from last byte: " + nBitsFromLastByte);
-		System.out.println("First byte mask: " + Integer.toBinaryString(LAST_BYTE_MASK[remainingBitOffset]));
-		System.out.println("Last byte mask: " + Integer.toBinaryString(FIRST_BYTE_MASK[nBitsFromLastByte]));
-		System.out.println("Bit shift after first byte: " + bitShiftAfterFirstByte);
+//		System.out.println("bitOffset = " + bitOffset);
+//		System.out.println("Total bytes min 1: " + totalBytesMin1);
+//		System.out.println("First byte: " + firstByteIndex);
+//		System.out.println("Index of first bit first byte: " + remainingBitOffset);
+//		System.out.println("Total bits: " + totalBitsToRead);
+//		System.out.println("Bits from last byte: " + nBitsFromLastByte);
+//		System.out.println("Last byte mask: " + Integer.toBinaryString(LAST_BYTE_MASK[nBitsFromLastByte]));
+//		System.out.println("First byte mask: " + Integer.toBinaryString(FIRST_BYTE_MASK[bitShiftAfterFirstByte]));
+//		System.out.println("Bit shift after first byte: " + bitShiftAfterFirstByte);
 
 		long value; // long because values are stored as unsigned int
 
@@ -114,7 +110,7 @@ public class TmpTest {
 		switch (totalBytesMin1) {
 			case 0:
 				value
-						= bytes[firstByteIndex] >> (remainingBitOffset) & LAST_BYTE_MASK[8 - totalBitsToRead];
+						= bytes[firstByteIndex] >> (remainingBitOffset) & LAST_BYTE_MASK[totalBitsToRead];
 				break;
 			case 1:
 				//Last byte parsing is different then longer encoding
