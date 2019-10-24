@@ -23,14 +23,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -87,7 +85,7 @@ public class GenePvalueCalculator {
 	private static int countNoVariants = 0;
 
 	private final RandomAccessGenotypeData referenceGenotypes;
-   private final List<Gene> genes;
+	private final List<Gene> genes;
 	private final int windowExtend;
 	private final double maxR;
 	private final int maxNrPermutations;
@@ -116,6 +114,8 @@ public class GenePvalueCalculator {
 	private final File debugFolder;
 	private final HashMap<String, GeneticVariant> variantIdMap;
 	private final HashMap<String, HashSet<String>> variantGeneMapping;
+	private final CSVWriter variantPerGeneWriter;
+	private final String[] variantPerGeneOutputLine;
 
 	/**
 	 *
@@ -136,7 +136,7 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final File debugFolder, final File variantGeneMappingFile) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final File debugFolder, final File variantGeneMappingFile, final File usedVariantsPerGeneFile) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
@@ -155,7 +155,18 @@ public class GenePvalueCalculator {
 		this.correctForLambdaInflation = correctForLambdaInflation;
 		this.numberRandomPhenotypes = nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas;
 
-		
+		if (usedVariantsPerGeneFile != null) {
+			variantPerGeneWriter = new CSVWriter(new FileWriter(usedVariantsPerGeneFile), '\t', '\0', '\0', "\n");
+			variantPerGeneOutputLine = new String[2];
+			int c = 0;
+			variantPerGeneOutputLine[c++] = "Variant";
+			variantPerGeneOutputLine[c++] = "Gene";
+			variantPerGeneWriter.writeNext(variantPerGeneOutputLine);
+		} else {
+			variantPerGeneWriter = null;
+			variantPerGeneOutputLine = null;
+		}
+
 		if (variantGeneMappingFile != null) {
 			this.variantGeneMapping = loadVariantGeneMapping(variantGeneMappingFile);
 
@@ -287,6 +298,9 @@ public class GenePvalueCalculator {
 		totalTimeInThread += (endThread - startThread);
 
 		pb.close();
+		if (variantPerGeneWriter != null) {
+			variantPerGeneWriter.close();
+		}
 
 		LOGGER.info("countRanPermutationsForGene: " + countRanPermutationsForGene);
 		LOGGER.info("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
@@ -365,24 +379,24 @@ public class GenePvalueCalculator {
 		{
 
 			final DoubleMatrixDataset<String, String> variantScaledDosagesRange;
-			if(windowExtend >= 0){		
+			if (windowExtend >= 0) {
 				DoubleMatrixDataset<String, String> tmp = loadVariantScaledDosageMatrix(gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
-				
-				if(tmp.columns() == 0){
+
+				if (tmp.columns() == 0) {
 					//no variants in range
 					variantScaledDosagesRange = null;
 				} else {
 					variantScaledDosagesRange = tmp;
 				}
-				
+
 			} else {
 				variantScaledDosagesRange = null;
 			}
-			
+
 			final DoubleMatrixDataset<String, String> variantScaledDosagesIds;
-			if(variantGeneMapping != null && variantGeneMapping.containsKey(gene.getGene())){
+			if (variantGeneMapping != null && variantGeneMapping.containsKey(gene.getGene())) {
 				DoubleMatrixDataset<String, String> tmp = loadVariantScaledDosageMatrix(variantGeneMapping.get(gene.getGene()));
-				if(tmp.columns() == 0){
+				if (tmp.columns() == 0) {
 					//no variants in range
 					variantScaledDosagesIds = null;
 				} else {
@@ -391,35 +405,35 @@ public class GenePvalueCalculator {
 			} else {
 				variantScaledDosagesIds = null;
 			}
-			
-			if(variantScaledDosagesRange == null && variantScaledDosagesIds == null){
+
+			if (variantScaledDosagesRange == null && variantScaledDosagesIds == null) {
 				variantScaledDosages = new DoubleMatrixDataset<>(0, 0);
-			} else if(variantScaledDosagesRange == null){
+			} else if (variantScaledDosagesRange == null) {
 				variantScaledDosages = variantScaledDosagesIds;
-			} else if(variantScaledDosagesIds == null){
+			} else if (variantScaledDosagesIds == null) {
 				variantScaledDosages = variantScaledDosagesRange;
-			} else{
+			} else {
 				//Both are not null so they need to be merged
-				
+
 				//First identify variants in de ID matrix that are not in the range matrix
 				ArrayList<String> variantsFoundBasedOnId = variantScaledDosagesIds.getColObjects();
 				Iterator<String> variantsFoundBasedOnIdIt = variantsFoundBasedOnId.iterator();
-				while(variantsFoundBasedOnIdIt.hasNext()){
+				while (variantsFoundBasedOnIdIt.hasNext()) {
 					String variantId = variantsFoundBasedOnIdIt.next();
-					if(variantScaledDosagesRange.containsCol(variantId)){
+					if (variantScaledDosagesRange.containsCol(variantId)) {
 						variantsFoundBasedOnIdIt.remove();
 					}
 				}
-				
+
 				//variantsFoundBasedOnId now only contains variants not yet in variantScaledDosagesRange
-				if(variantsFoundBasedOnId.isEmpty()){
+				if (variantsFoundBasedOnId.isEmpty()) {
 					variantScaledDosages = variantScaledDosagesRange;
 				} else {
 					variantScaledDosages = DoubleMatrixDataset.concatColumns(variantScaledDosagesRange, variantScaledDosagesIds.viewColSelection(variantsFoundBasedOnId));
 				}
-				
+
 			}
-			
+
 			timeStart = System.currentTimeMillis();
 			final DoubleMatrixDataset<String, String> variantCorrelations = variantScaledDosages.calculateCorrelationMatrixOnNormalizedColumns();
 			timeStop = System.currentTimeMillis();
@@ -428,6 +442,21 @@ public class GenePvalueCalculator {
 			if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
 
 				variantCorrelations.save(new File(debugFolder, gene.getGene() + "_variantCorMatrix.txt"));
+
+			}
+
+			if (variantPerGeneWriter != null) {
+				int c;
+
+				synchronized (variantPerGeneWriter) {
+					for (String variant : variantScaledDosages.getHashCols().keySet()) {
+						c = 0;
+						variantPerGeneOutputLine[c++] = variant;
+						variantPerGeneOutputLine[c++] = gene.getGene();
+						variantPerGeneWriter.writeNext(variantPerGeneOutputLine);
+					}
+					variantPerGeneWriter.flush();
+				}
 
 			}
 

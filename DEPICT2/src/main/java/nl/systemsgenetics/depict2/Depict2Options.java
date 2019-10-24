@@ -66,6 +66,7 @@ public class Depict2Options {
 	private final File variantFilterFile;
 	private boolean saveOuputAsExcelFiles;
 	private final File variantGeneLinkingFile;
+	private final boolean saveUsedVariantsPerGene;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -271,6 +272,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("When using --mode CORRELATE_GENES first normalize the eigen vectors");
 		OptionBuilder.withLongOpt("normalizeEigenvectors");
 		OPTIONS.addOption(OptionBuilder.create("ne"));
+		
+		
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Save all the variants used per gene to calculate the gene p-value (Warning this will create a very large file)");
+		OptionBuilder.withLongOpt("saveUsedVariantsPerGene");
+		OPTIONS.addOption(OptionBuilder.create("uvg"));
 
 		OptionBuilder.withArgName("strings");
 		OptionBuilder.hasArgs();
@@ -311,7 +318,8 @@ public class Depict2Options {
 		excludeHla = commandLine.hasOption("eh");
 		normalizeEigenvectors = commandLine.hasOption("ne");
 		saveOuputAsExcelFiles = commandLine.hasOption("se");
-
+		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
+		
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
 		} catch (IllegalArgumentException e) {
@@ -650,6 +658,7 @@ public class Depict2Options {
 				LOGGER.info(" * Max number of rescue permutations to calculate gene p-values if RUBEN has failed: " + LARGE_INT_FORMAT.format(numberOfPermutationsRescue));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
+				LOGGER.info(" * Save which variants that are used per gene to calculate the gene p-value: " + (saveUsedVariantsPerGene ? "on" : "off"));
 				if (variantFilterFile != null) {
 					LOGGER.info(" * Confining analysis to variants in this file: " + variantFilterFile.getAbsolutePath());
 				}
@@ -827,4 +836,8 @@ public class Depict2Options {
 		return variantGeneLinkingFile;
 	}
 
+	public boolean isSaveUsedVariantsPerGene() {
+		return saveUsedVariantsPerGene;
+	}
+	
 }
