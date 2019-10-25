@@ -7,6 +7,8 @@ package org.molgenis.genotype.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
+
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -210,5 +212,35 @@ public class ProbabilitiesConvertor {
 		return dosages;
 
 
+	}
+
+	public static float[][] convertBgenProbabilitiesToProbabilities(double[][] bgenProbabilities) {
+		// Define an array consisting of an array of posterior bgenProbabilities for each genotype
+		float[][] probabilities = new float[bgenProbabilities.length][3];
+
+		for (int sampleIndex = 0; sampleIndex < bgenProbabilities.length; sampleIndex++) {
+			// Get the length of the probabilities array
+			int probabilitiesArrayLength = bgenProbabilities[sampleIndex].length;
+			// Test if this length fits within the result
+			if (probabilitiesArrayLength != 3) {
+				throw new UnsupportedOperationException(String.format(
+						"Encountered %d posterior probabilities for sample %d, " +
+								"indicating that the variant is not biallelic or that the sample is not diploid." +
+								"Posterior probabilities outside of BGEN are only supported for up to " +
+								"3 posterior probabilities",
+						probabilitiesArrayLength, sampleIndex));
+			}
+			// Initialize empty array for float values.
+			float[] sampleProbabilities = new float[probabilitiesArrayLength];
+			// Get the array of doubles
+			double[] sampleProbabilitiesBgen = bgenProbabilities[sampleIndex];
+			// Convert the array of doubles to the array of floats
+			IntStream.range(0, probabilitiesArrayLength)
+					.forEach(index -> sampleProbabilities[index] = (float) sampleProbabilitiesBgen[index]);
+			// Insert the floats
+			probabilities[sampleIndex] = sampleProbabilities;
+		}
+
+		return probabilities;
 	}
 }
