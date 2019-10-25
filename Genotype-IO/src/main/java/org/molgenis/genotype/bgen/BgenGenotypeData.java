@@ -70,15 +70,15 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final long sampleCount;
 	private List<Boolean> phasing;
 
-	public BgenGenotypeData(File bgenFile, File sampleFile) throws IOException {
-		this(bgenFile, sampleFile, 1000);
+	public BgenGenotypeData(File bgenFile) throws IOException {
+		this(bgenFile, 1000);
 	}
 
-	public BgenGenotypeData(File bgenFile, File sampleFile, int cacheSize) throws IOException {
-		this(bgenFile, sampleFile, cacheSize, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
+	public BgenGenotypeData(File bgenFile, int cacheSize) throws IOException {
+		this(bgenFile, cacheSize, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
 	}
 
-	public BgenGenotypeData(File bgenFile, File sampleFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
+	public BgenGenotypeData(File bgenFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
 
 		this.bgenFile = new RandomAccessFile(bgenFile, "r");
 
@@ -150,9 +150,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             processSampleIdentifierBlock(snpOffset, headerSize);
         }
 
-//		System.out.println("offset:"+ (snpOffset + 4));
 		File bgenixFile = new File(bgenFile.getAbsolutePath() + ".bgi");
-		System.out.println(bgenFile.getAbsolutePath() + ".bgi");
 
 		// Get the start of the variant data block
 		long pointerFirstSnp = snpOffset + 4;
@@ -693,6 +691,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			if (isMissing.get(sampleIndex)) {
 				// If this is missing, the probability is zero.
 				bitOffset += probabilitiesLengthInBits * (combinations.size() - 1);
+				probabilities[sampleIndex] = new double[combinations.size()];
 				continue;
 			}
 
@@ -703,8 +702,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 			// Update the bit to read the next probabilities from.
 			bitOffset += probabilitiesLengthInBits * (combinations.size() - 1);
-
-			System.out.println("genotypeProbabilities = " + Arrays.toString(genotypeProbabilities));
 		}
 		return probabilities;
 	}
@@ -731,7 +728,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			// next sample.
 			if (isMissing.get(sampleIndex)) {
 				// If this is missing, the probability is zero.
-				bitOffset += probabilitiesLengthInBits * (ploidy * numberOfAlleles);
+				bitOffset += probabilitiesLengthInBits * (ploidy * (numberOfAlleles - 1));
+				probabilities[sampleIndex] = new double[ploidy * numberOfAlleles];
 				continue;
 			}
 
@@ -744,7 +742,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				// Get the probabilities for every allele in this haplotype.
 				double[] alleleProbabilities = computeApproximateProbabilities(
 						probabilitiesArray, probabilitiesLengthInBits, bitOffset, numberOfAlleles);
-				bitOffset += (numberOfAlleles * probabilitiesLengthInBits - 1);
+				bitOffset += ((numberOfAlleles - 1) * probabilitiesLengthInBits);
 
 				phasedProbabilities[i] = alleleProbabilities;
 
@@ -753,10 +751,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				// We have per sample probabilities for A1, B1, A2, B2
 				// Which can be converted to AA, AB, BA, BB
 			}
-			System.out.println("phasedProbabilities = " + Arrays.deepToString(phasedProbabilities));
 			probabilities[sampleIndex] = phasedProbabilitiesToGenotypeProbabilitiesBgen(
 					phasedProbabilities, ploidy, numberOfAlleles);
-			System.out.println("probabilities[sampleIndex] = " + Arrays.toString(probabilities[sampleIndex]));
 		}
 		return probabilities;
 	}
@@ -764,26 +760,31 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private double[] phasedProbabilitiesToGenotypeProbabilitiesBgen(double[][] phasedProbabilities,
 																	Integer ploidy,
 																	int numberOfAlleles) {
+		// Get all possible combinations of alleles for the haplotypes (all permutations)
 		List<List<Integer>> haplotypeCombinations = getGenotypeCombinations(
 				numberOfAlleles, ploidy, false);
+		// Get all possible combinations of alleles for the genotypes (only ordered)
 		List<List<Integer>> genotypeCombinations = getGenotypeCombinations(
 				numberOfAlleles, ploidy, true);
 
 		// Initialize an array of probabilities.
 		double[] genotypeProbabilities = new double[genotypeCombinations.size()];
 
+		// Get a map of genotype combinations
 		Map<List<Integer>, Integer> map = new HashMap<>();
 		for (int i = 0; i < genotypeCombinations.size(); i++) {
 			List<Integer> combination = genotypeCombinations.get(i);
 			map.put(combination, i);
 		}
-		System.out.println("combinations = " + genotypeCombinations);
-//
+
+		// Loop through the combinations of haplotypes
 		for (List<Integer> haplotypeCombination : haplotypeCombinations) {
 			double probability = 1;
+			// Multiply the probabilities that correspond to the indices within the haplotype combination
 			for (int haplotypeIndex = 0; haplotypeIndex < haplotypeCombination.size(); haplotypeIndex++) {
 				probability *= phasedProbabilities[haplotypeIndex][haplotypeCombination.get(haplotypeIndex)];
 			}
+			// Add the multiplied probability of this combination to the other combinations with the same genotype
 			Collections.sort(haplotypeCombination);
 			genotypeProbabilities[map.get(Collections.unmodifiableList(haplotypeCombination))] += probability;
 		}
@@ -1113,8 +1114,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         }
 		// Make sure that probabilities for other than diploid samples
 		// and biallelic variants raise an exception.
+		double[][] sampleGenotypeProbabilitiesBgen = getSampleGenotypeProbabilitiesBgen((ReadOnlyGeneticVariantBgen) variant);
 		return ProbabilitiesConvertor.convertBgenProbabilitiesToProbabilities(
-		        getSampleGenotypeProbabilitiesBgen((ReadOnlyGeneticVariantBgen) variant));
+				sampleGenotypeProbabilitiesBgen);
 	}
 
 	public double[][] getSampleGenotypeProbabilitiesBgen(ReadOnlyGeneticVariantBgen variant) {
@@ -1145,19 +1147,27 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	/**
-	 * Method that returns the list of all possible allele combinations, for the given number of ploidity.
+	 * Method that returns the list of all possible allele combinations, for the given ploidy.
 	 * These allele combinations, or genotypes represent the way in which genotypes are stored in a layout 2 BGEN file
-	 * for a specific sample.
+	 * for a specific sample, if onlyOrdered is true, otherwise also permutations of these combinations are returned.
 	 *
-	 * For example, the method returns 4 combinations with 2 alleles and a ploidity of 2:
+	 * For example, the method returns 4 combinations with 2 alleles and a ploidy of 2
+	 * in case of all combinations:
 	 * [1, 1]
 	 * [2, 1]
+	 * [1, 2]
+	 * [2, 2]
+	 * The method returns 3 combinations with 2 alleles and a ploidy of 2
+	 * in case only ordered combinations are requested:
+	 * [1, 1]
 	 * [1, 2]
 	 * [2, 2]
 	 *
 	 * @param numberOfAlleles The number of alleles for the variant to create combinations for.
 	 * @param ploidy The ploidity of the sample to create combinations for.
-	 * @return the combinations of alleles, genotypes, that should be stored in a BGEN file
+	 * @param onlyOrdered Flag indicating if the combinations should only be the sorted combinations according to the
+	 *                    BGEN file specifications.
+	 * @return the combinations of alleles that represent all possible genotypes or haplotypes
 	 * for an unphased variant and sample, in this specified order.
 	 */
 	private static List<List<Integer>> getGenotypeCombinations(int numberOfAlleles, int ploidy, boolean onlyOrdered) {
@@ -1184,6 +1194,15 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return combinations;
 	}
 
+	/**
+	 * Method that recursively fills a list of combinations.
+	 * Every permutation of a possible combination are returned.
+	 *
+	 * @param combinations The list of combinations to fill.
+	 * @param combination The current combination that is being constructed.
+	 * @param maxAlleleValue The number of different values to fit into a combinations.
+	 * @param ploidy The size of a combination.
+	 */
 	private static void getAllCombinationsRecursively(
 			List<List<Integer>> combinations, List<Integer> combination, int maxAlleleValue, int ploidy) {
 		// If the combination is complete, the size of the combination equals the required size.
@@ -1205,6 +1224,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	/**
 	 * Method that recursively fills a list of combinations.
+	 * Combinations are always ordered.
 	 *
 	 * @param combinations The list of combinations to fill.
 	 * @param combination The current combination that is being constructed.
