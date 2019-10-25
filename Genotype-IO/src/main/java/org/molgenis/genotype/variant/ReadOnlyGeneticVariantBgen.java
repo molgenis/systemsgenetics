@@ -7,6 +7,7 @@ import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.bgen.BgenGenotypeData;
 import org.molgenis.genotype.bgen.VariantGenotypeDataBlockInfo;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
@@ -215,6 +216,11 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 		return sampleVariantsProvider.getSampleProbilities(this);
 	}
 
+	public double[][] getSampleGenotypeProbabilitiesBgen() {
+		BgenGenotypeData sampleVariantsProviderBgen = (BgenGenotypeData) this.sampleVariantsProvider;
+		return sampleVariantsProviderBgen.getSampleGenotypeProbabilitiesBgen(this);
+	}
+
 	@Override
     public Map<String, ?> getAnnotationValues() {
         return Collections.emptyMap();
@@ -297,5 +303,4 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 	public VariantGenotypeDataBlockInfo getDataBlockInfo() {
 		return dataBlockInfo;
 	}
-	
 }
